@@ -9,6 +9,7 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { AmountText } from "@/components/money/AmountText";
 import { emptyToNull } from "@/lib/utils/emptyToNull";
+import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { useDepots } from "@/features/depots/hooks";
 import { useSecurities } from "@/features/securities/hooks";
 import {
@@ -121,7 +122,7 @@ export function NewPaymentPage() {
     try {
       computed = computePaymentAmounts(values, depot.base_currency);
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : "Ungültige Beträge.");
+      setSubmitError(getErrorMessage(error, "Ungültige Beträge."));
       return;
     }
 
@@ -171,9 +172,7 @@ export function NewPaymentPage() {
       }
       void navigate("/eingaenge");
     } catch (error) {
-      setSubmitError(
-        error instanceof Error ? error.message : "Speichern fehlgeschlagen.",
-      );
+      setSubmitError(getErrorMessage(error, "Speichern fehlgeschlagen."));
     }
   });
 

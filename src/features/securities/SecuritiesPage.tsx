@@ -3,6 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Building2, Pencil, Plus, RotateCcw, Archive as ArchiveIcon } from "lucide-react";
 import { emptyToNull } from "@/lib/utils/emptyToNull";
+import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -98,9 +99,7 @@ function SecurityFormDialog({
       reset();
       onOpenChange(false);
     } catch (error) {
-      setSubmitError(
-        error instanceof Error ? error.message : "Speichern fehlgeschlagen.",
-      );
+      setSubmitError(getErrorMessage(error, "Speichern fehlgeschlagen."));
     }
   });
 
