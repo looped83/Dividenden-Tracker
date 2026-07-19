@@ -29,10 +29,11 @@ export function RegisterPage() {
     });
 
     if (error) {
+      console.error("Supabase signUp error:", error);
       setFormError(
         error.message.includes("already registered")
           ? "Für diese E-Mail-Adresse besteht bereits ein Konto."
-          : "Registrierung fehlgeschlagen. Bitte versuche es erneut.",
+          : `Registrierung fehlgeschlagen: ${error.message}`,
       );
       return;
     }
