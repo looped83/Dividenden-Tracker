@@ -146,10 +146,16 @@ function SecurityFormDialog({
             <div className="space-y-1.5">
               <Label htmlFor="security-country">Land</Label>
               <Input id="security-country" {...register("country")} />
+              {errors.country && (
+                <p className="text-sm text-negative">{errors.country.message}</p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="security-currency">Währung</Label>
               <Input id="security-currency" {...register("currency")} />
+              {errors.currency && (
+                <p className="text-sm text-negative">{errors.currency.message}</p>
+              )}
             </div>
           </div>
           <div className="space-y-1.5">
