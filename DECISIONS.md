@@ -428,3 +428,54 @@ nachzubilden — bislang nur manuell verifiziert, kein automatisierter Regressio
 | O-10 | ~~GitHub Pages Repo-Secrets eintragen, Pages-Quelle auf „GitHub Actions" stellen~~ (D-030) | erledigt |
 | O-11 | Custom-SMTP-Anbieter (z. B. Resend) einrichten, damit E-Mail-Bestätigung ohne scharfes Rate-Limit dauerhaft aktiviert werden kann | vor Produktivbetrieb |
 | O-12 | Migrationsweg gegen das reale Supabase-Projekt automatisieren (Supabase-CLI/Docker statt manuellem SQL Editor, D-033), sobald in der Implementierungsumgebung verfügbar | sobald verfügbar |
+
+---
+
+## Phase-4-Entscheidungen
+
+### D-034 — exceljs statt SheetJS für den produktiven Import
+
+SheetJS-CDN unerreichbar, npm-`xlsx` CVE-eingefroren (D-015/D-026). Der Phase-4-
+Import nutzt daher durchgängig **exceljs** (dynamischer Import, eigener Chunk).
+Damit ist die offene Frage **O-1 erledigt**. CSV wird von einem eigenen,
+abhängigkeitsfreien Parser gelesen (UTF-8/BOM, Delimiter-Heuristik über mehrere
+Zeilen, RFC-4180-Quoting) statt Papa Parse.
+
+### D-035 — Importstatus bleibt beim bestehenden Enum
+
+Die feineren Statuswerte der Aufgabenstellung (`uploaded`, `mapping_required`,
+`ready`, `importing`, `completed_with_warnings`, `failed`) werden **nicht** als
+DB-Enumwerte geführt. Verbindlich bleibt `analyzing → pending_confirmation →
+committed → rolled_back / discarded` (D-010); die feineren Zustände sind reine
+UI-Wizard-Phasen. Begründung: keine inkompatible Parallelstruktur; der atomare
+Commit braucht keinen persistenten `importing`-Zwischenstatus (eine
+fehlgeschlagene Transaktion rollt automatisch nach `pending_confirmation` zurück).
+
+### D-036 — Netto-only: brutto = netto nach ausdrücklicher Bestätigung
+
+Da die Datei nur Netto-EUR enthält und `gross_amount` NOT NULL ist, wird nach
+expliziter Nutzerbestätigung im Mapping-Schritt `gross_amount = net_amount` und
+Steuern = 0 gesetzt (erfüllt `net_amount_invariance` exakt). Es werden keine
+Brutto-/Steuer-/FX-/Stückzahlwerte erfunden (bleiben `null`).
+
+### D-037 — Neue Import-Unternehmen archiviert, nie automatisch aktiv
+
+Durch den historischen Import neu entstehende Wertpapiere werden mit
+`archived_at` gesetzt und `created_by_import_id` markiert
+(`data_quality='incomplete'`). Bestehende Stammdaten behalten ihren Status; der
+Import aktiviert nie ein archiviertes und archiviert nie ein aktives Unternehmen.
+
+### D-038 — Atomarer Import ausschließlich serverseitig
+
+Produktive Speicherung nur über die transaktionale RPC `commit_import`
+(security invoker, ein Aufruf/eine Transaktion, serverseitige
+Kontrollsummen-Verifikation), nicht über 1.439 Einzel-Inserts. Rückbau über
+`rollback_import` (Soft Delete/Archivierung, audit-erhaltend). `guard_import_status`
+macht `committed`/`rolled_back` final und nur über die RPCs erreichbar.
+
+### Aktualisierte offene Entscheidungen
+
+- **O-1 erledigt** (D-034): Excel-Parser ist exceljs, nicht SheetJS.
+- **O-5** (Umfang Mapping-Vorlagen): Das Spaltenmapping wird in
+  `imports.column_mapping` (jsonb) je Import persistiert; eine benannte
+  Vorlagen-Bibliothek ist weiterhin vertagt.

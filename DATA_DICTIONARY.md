@@ -193,3 +193,14 @@ Formular programmatisch belegt, nicht abgefragt: `gross_amount` = `net_amount`,
 Felder bleiben nur über den Excel-/CSV-Import oder direkte Datenbankzugriffe befüllbar.
 Fehlende Steuerdetails setzen den Eingang **nicht** auf schlechtere Datenqualität (Steuern = 0
 ist ein gültiger Zustand, z. B. Freistellungsauftrag).
+
+---
+
+## Phase 4 — Import (neue Felder/Tabellen)
+
+- `securities.created_by_import_id` uuid → imports(id), null bei manuell/regulär angelegten. Zusammen mit `archived_at is not null` ⇒ Anzeige „Historisch – durch Import erstellt".
+- `depots.created_by_import_id` uuid → imports(id).
+- `security_aliases(alias_normalized, security_id, source_import_id)` — bestätigte Namenszuordnung; `alias_normalized` = `normalizeCompareName(Quellname)` (NFC, lower, Whitespace/Apostroph/Bindestrich vereinheitlicht).
+- `import_rows(import_id, source_row_number, payment_id, classification, raw, normalized, warnings)` — Herkunft je Quellzeile. `classification ∈ {imported, excluded, duplicate_skipped, invalid}`. `raw`/`normalized` sind jsonb der Original- bzw. normalisierten Werte.
+- `imports.checksums` (jsonb, nach Commit gefüllt): `{ row_count, total_net, min_date, max_date, by_year:{<jahr>:{count,sum}}, by_broker:{<name>:{count}} }`.
+- Beträge des historischen Imports: `net_amount = gross_amount` (EUR), Steuern 0, `original_currency='EUR'`, `original_gross/net/fx_rate/quantity/amount_per_share = null` (keine erfundenen Werte).

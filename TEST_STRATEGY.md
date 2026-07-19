@@ -165,3 +165,39 @@ Auth-Nutzern (A, B) über supabase-js:
 - Realistische Fixture-Historie: ≥ 5 Jahre, ≥ 40 Wertpapiere, EUR/USD/CHF, Sonderdividenden,
   Korrekturen, Archivierte — Grundlage für Statistik- und E2E-Tests
 - Keine echten persönlichen Daten in Fixtures oder Repo
+
+---
+
+## Phase 4 — Importtests (umgesetzt)
+
+### Unit (`tests/unit/lib/import/`, Vitest)
+
+Excel-Serien (1900/1904), Datumsformate (de/iso/slash inkl. Mehrdeutigkeit,
+ungültige Daten), Beträge (deutsch/englisch/neutral, Klammern/Minus,
+Mehrdeutigkeit, Decimal-Summierung inkl. 0,1+0,2=0,30), Spaltenmapping
+(de/en-Synonyme), Namensnormalisierung, konservatives Matching (Allianz,
+Realty Income, JP Morgan, JPM EU/US Equity werden NICHT automatisch gemergt),
+Broker-Normalisierung, Zeilen-Fingerprint (gleiche fachliche Werte ⇒ gleicher
+Hash; Gladstone 4,76 ≠ 7,84), Kontrollsummen je Jahr/Broker.
+
+### Integration & realer E2E-Datenpfad (`tests/integration/import.test.ts`)
+
+Läuft gegen eine echte lokale PostgreSQL mit allen Migrationen und die
+**bereitgestellte Excel-Datei** (`tests/fixtures/Details-Dividenden-2012-2026.xlsx`):
+
+1. Analyse: ein sichtbares Blatt `Dividenden`, keine verbundenen Zellen, Header
+   `Datum/Investment/Betrag/Broker`, 4 Pflichtspalten automatisch erkannt.
+2. Normalisierung: 1.439 gültige Zeilen, 0 Fehler, Summe **49.391,57 €**,
+   Zeitraum 15.11.2012–17.07.2026, alle 15 Jahreswerte exakt, 94 Investmentnamen,
+   Broker 312/1.012/115, Gladstone-Mehrfachzahlung erhalten.
+3. `commit_import` speichert atomar 1.439 Zahlungen, 94 archivierte Wertpapiere
+   (alle mit Herkunft), 3 Depots, 1.439 `import_rows`; serverseitige
+   Kontrollsummen bestätigt.
+4. Manipulierter Erwartungswert → vollständige Ablehnung, 0 gespeicherte Zeilen.
+5. Wiederholungsimport wird am Datei-Hash erkannt.
+6. `rollback_import` entfernt genau die Daten dieses Imports; Bestand/Summen
+   wieder wie zuvor.
+7. RLS-Isolation und Statusguard (Nutzer B, Anon, Client-Statuswechsel).
+
+Ergebnis der Suite: 126 Unit-Tests und 65 Integrationstests grün; die
+GUI-Wizard-Schicht ist eine dünne Hülle über exakt diesen getesteten Funktionen.

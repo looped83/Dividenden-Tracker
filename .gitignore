@@ -18,3 +18,8 @@ coverage
 # Testartefakte
 playwright-report
 test-results
+
+# Persoenliche Import-Testdatei (Finanzdaten) — nie einchecken (Phase 4)
+tests/fixtures/*.xlsx
+tests/fixtures/*.xls
+tests/fixtures/*.csv

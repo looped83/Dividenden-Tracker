@@ -371,3 +371,58 @@ TEST_STRATEGY.md §4.
 3. Migrationen sind vorwärtsgerichtet; Korrekturen erfolgen durch neue Migrationen, nie durch
    Editieren bereits angewendeter Dateien.
 4. CI wendet alle Migrationen auf eine leere und auf eine mit Seed-Daten befüllte Datenbank an.
+
+---
+
+## Phase 4 — Import-Datenmodell (umgesetzt)
+
+Migration `0016_import_phase4.sql`. Es entsteht keine parallele Struktur:
+importierte Zahlungen liegen in `dividend_payments`, Stammdaten in
+`securities`/`depots`.
+
+### Neue Herkunftsspalten
+
+| Tabelle | Spalte | Typ | Zweck |
+|---|---|---|---|
+| `securities` | `created_by_import_id` | `uuid → imports(id)` | Welcher Import hat dieses Wertpapier neu angelegt (Grundlage für Rollback und die Kennzeichnung „Historisch – durch Import erstellt": `archived_at is not null and created_by_import_id is not null`). |
+| `depots` | `created_by_import_id` | `uuid → imports(id)` | Analog für neu angelegte Depots. |
+
+### `security_aliases` (bestätigte Namenszuordnungen, IMPORT_SPEC Stufe C)
+
+| Spalte | Typ | Anmerkung |
+|---|---|---|
+| `id` | uuid PK | |
+| `user_id` | uuid → auth.users | RLS-Eigentümer |
+| `alias_normalized` | text (1–200) | normalisierter Quellname (`normalizeCompareName`) |
+| `security_id` | uuid → securities | genau ein Zielunternehmen |
+| `source_import_id` | uuid → imports | Herkunft der Alias-Entscheidung |
+| `created_at` | timestamptz | |
+
+Unique `(user_id, alias_normalized)`. RLS: select/insert/delete nur eigene.
+
+### `import_rows` (Zeilen-Herkunft/Provenance, IMPORT_SPEC §16)
+
+| Spalte | Typ | Anmerkung |
+|---|---|---|
+| `id` | uuid PK | |
+| `user_id` | uuid → auth.users | RLS-Eigentümer |
+| `import_id` | uuid → imports | |
+| `source_row_number` | int ≥ 1 | ursprüngliche Zeilennummer der Quelldatei |
+| `payment_id` | uuid → dividend_payments (nullable) | erzeugte Zahlung |
+| `classification` | text | `imported` / `excluded` / `duplicate_skipped` / `invalid` |
+| `raw` | jsonb | Original-Zellwerte |
+| `normalized` | jsonb | normalisierte Werte (u. a. `broker` für Kontrollsummen) |
+| `warnings` | jsonb | |
+
+Unique `(import_id, source_row_number)`. RLS: select/insert nur eigene.
+
+### Serverseitige Transaktions-RPCs
+
+- `commit_import(p_import_id uuid, p_payload jsonb) returns imports` — `security invoker`, ein Aufruf/eine Transaktion. Legt neue archivierte Wertpapiere, Depots und Aliase an, fügt Zahlungen + `import_rows` ein, berechnet Kontrollsummen (Anzahl, Summe, min/max, je Jahr, je Broker) neu und vergleicht sie mit `p_payload.expected`. Jede Abweichung → `raise` → vollständiger Rollback der Transaktion. Erfolgsfall: `imports.status = 'committed'`.
+- `rollback_import(p_import_id uuid) returns imports` — archiviert alle aktiven Zahlungen des Imports (Soft Delete, audit-erhaltend), archiviert durch den Import angelegte Wertpapiere/Depots ohne verbleibende aktive Referenzen, löscht ausschließlich aus diesem Import stammende Aliase, setzt `status = 'rolled_back'`. Der Importdatensatz selbst bleibt Historie.
+
+### Statusguard
+
+`guard_import_status()` (BEFORE UPDATE auf `imports`): `committed`/`rolled_back`
+sind final; ein Client kann diese Zielstatus nur über die RPCs erreichen (GUC
+`app.import_txn`). Verhindert „Client markiert Import selbst als abgeschlossen".

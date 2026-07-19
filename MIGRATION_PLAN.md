@@ -88,3 +88,20 @@ jeweiligen Import sowie in `MIGRATION_LOG.md` im privaten Betriebsordner, nicht 
 | Alt-Duplikate bereits in Numbers | Stufe-3/4-Erkennung markiert sie; Entscheidung wird protokolliert statt automatisch bereinigt |
 | Ermüdung bei vielen Jahren („schnell durchklicken") | Ein Jahr pro Sitzung; Abnahme-Checkliste je Jahr verpflichtend abhaken |
 | Doppelpflege-Phase wird vergessen | Wöchentlicher Abgleichstermin; Backup-/Paritätsstatus im Dashboard-Bereich Datensicherung sichtbar |
+
+## 6. Phase 4 — technische Umsetzung des Imports
+
+Migration `0016_import_phase4.sql` liefert die Werkzeuge für die eigentliche
+Datenmigration:
+
+- Herkunftsspalten `securities.created_by_import_id`, `depots.created_by_import_id`.
+- Tabellen `security_aliases` (bestätigte Namenszuordnungen) und `import_rows`
+  (Zeilen-Herkunft).
+- RPCs `commit_import` (atomar, serverseitig kontrollsummen-verifiziert) und
+  `rollback_import` (transaktionaler Vollrückbau).
+
+Verifizierte Kontrollwerte der bereitgestellten Datei (als Abnahmebasis der
+Migration): 1.439 Zeilen · 49.391,57 € · 15.11.2012–17.07.2026 · Broker
+312/1.012/115 · alle Jahreswerte laut IMPORT_SPEC §13. Neu entstehende
+Unternehmen werden **archiviert** angelegt (`archived_at`, `created_by_import_id`),
+nicht automatisch aktiviert; bestehende Stammdaten behalten ihren Status.

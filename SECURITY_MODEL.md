@@ -175,3 +175,34 @@ Mit **zwei Testnutzern A und B** gegen lokale Supabase-Instanz (Details TEST_STR
   **keine Beträge, Notizen, Dateiinhalte, Tokens oder E-Mail-Adressen**.
 - Kein externer Logging-/Tracking-Dienst (Grundsatz 15).
 - Supabase-seitige Logs verbleiben im verwalteten Projekt (Zugriff nur Projektinhaber).
+
+---
+
+## Phase 4 — Import-Sicherheit (umgesetzt)
+
+### RLS neuer Objekte
+
+- `security_aliases`, `import_rows`: RLS aktiv, `revoke all from anon`,
+  Policies `using/with check (user_id = auth.uid())`, `enforce_user_id`-Trigger.
+- `commit_import`/`rollback_import` laufen als **security invoker** — RLS bleibt
+  aktiv, jede eingefügte Zeile durchläuft dieselben Trigger/Checks wie eine
+  manuelle Eingabe. Beide sperren den Importdatensatz per `for update` und
+  prüfen `user_id = auth.uid()`; „nicht gefunden" und „keine Berechtigung" sind
+  ununterscheidbar (kein Info-Leak).
+
+### Serverseitige Kontrollen (nicht nur Frontend)
+
+- Kontrollsummen werden in `commit_import` **erneut** aus den gespeicherten
+  Zeilen berechnet und gegen `expected` geprüft; Manipulation der erwarteten
+  Werte oder der Zeilenzahl → `raise` → Rollback (Test: „manipulierter
+  Zeilenzahl-Erwartungswert wird komplett abgelehnt").
+- `guard_import_status()` verhindert, dass ein Client `imports.status` selbst auf
+  `committed`/`rolled_back` setzt (nur über die RPCs, GUC `app.import_txn`).
+
+### Automatisiert getestete Angriffe (`tests/integration/import.test.ts`, `rls.test.ts`)
+
+- Nutzer B sieht Import/Importzeilen/Zahlungen von Nutzer A nicht.
+- Nutzer B kann den Import von Nutzer A nicht zurückrollen.
+- Ein nicht angemeldeter Nutzer kann keinen Import anlegen (anon revoked).
+- Ein Client kann einen Import nicht selbst als `committed` markieren.
+- Ein manipulierter Erwartungswert bricht den gesamten Import ab (Atomarität).
