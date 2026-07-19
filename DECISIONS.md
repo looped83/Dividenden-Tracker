@@ -479,3 +479,14 @@ macht `committed`/`rolled_back` final und nur über die RPCs erreichbar.
 - **O-5** (Umfang Mapping-Vorlagen): Das Spaltenmapping wird in
   `imports.column_mapping` (jsonb) je Import persistiert; eine benannte
   Vorlagen-Bibliothek ist weiterhin vertagt.
+
+### D-039 — Datenqualität spiegelt beim Speichern die Vollständigkeit wider
+
+Beim Anlegen/Bearbeiten eines Wertpapiers wird `data_quality` aus den
+Stammdaten neu abgeleitet (`deriveDataQuality`, eine Wahrheit für Formular und
+Unternehmens-Import): **„OK" nur, wenn Ticker, ISIN, WKN, Land, Sektor und
+Währung gefüllt sind**; Notiz und Standard-Depot zählen nicht. Ergänzt der
+Nutzer bei einem importierten, archivierten Unternehmen die fehlenden Felder,
+wechselt der Zustand automatisch von „Unvollständig" auf „OK"; fehlt etwas,
+bleibt/wird es „Unvollständig". `needs_review` (ungültige Importquelle) hat
+Vorrang, solange die Felder unvollständig sind.
