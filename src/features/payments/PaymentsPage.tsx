@@ -20,16 +20,6 @@ import { useDepots } from "@/features/depots/hooks";
 import { useSecurities } from "@/features/securities/hooks";
 import { usePayments } from "@/features/payments/hooks";
 import type { PaymentFilters } from "@/lib/supabase/repositories/payments";
-import type { PaymentType } from "@/lib/supabase/database.types";
-
-const PAYMENT_TYPE_LABELS: Record<PaymentType, string> = {
-  regular: "Regulär",
-  special: "Sonderdividende",
-  correction: "Korrektur",
-  cancellation: "Storno",
-  refund: "Erstattung",
-  other: "Sonstiges",
-};
 
 function formatDate(value: string): string {
   return new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" }).format(
@@ -44,14 +34,12 @@ export function PaymentsPage() {
   const [searchTerm, setSearchTerm] = React.useState("");
   const [depotId, setDepotId] = React.useState("");
   const [securityId, setSecurityId] = React.useState("");
-  const [paymentType, setPaymentType] = React.useState<PaymentType | "">("");
   const [includeArchived, setIncludeArchived] = React.useState(false);
 
   const filters: PaymentFilters = {
     searchTerm: searchTerm || undefined,
     depotId: depotId || undefined,
     securityId: securityId || undefined,
-    paymentType: paymentType || undefined,
     includeArchived,
   };
 
@@ -127,25 +115,6 @@ export function PaymentsPage() {
             ))}
           </Select>
         </div>
-        <div className="min-w-40 space-y-1.5">
-          <label htmlFor="payments-type-filter" className="text-sm text-muted-foreground">
-            Art
-          </label>
-          <Select
-            id="payments-type-filter"
-            value={paymentType}
-            onChange={(event) => {
-              setPaymentType(event.target.value as PaymentType | "");
-            }}
-          >
-            <option value="">Alle Arten</option>
-            {Object.entries(PAYMENT_TYPE_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </Select>
-        </div>
         <label className="flex h-11 items-center gap-2 text-sm text-muted-foreground">
           <input
             type="checkbox"
@@ -179,8 +148,6 @@ export function PaymentsPage() {
               <TableHead>Datum</TableHead>
               <TableHead>Unternehmen</TableHead>
               <TableHead>Depot</TableHead>
-              <TableHead>Art</TableHead>
-              <TableHead className="text-right">Brutto</TableHead>
               <TableHead className="text-right">Netto</TableHead>
               <TableHead>Status</TableHead>
             </TableRow>
@@ -211,14 +178,6 @@ export function PaymentsPage() {
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {depot?.name ?? "—"}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {PAYMENT_TYPE_LABELS[payment.payment_type]}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <AmountText
-                      amount={Money.fromString(payment.gross_amount, currency)}
-                    />
                   </TableCell>
                   <TableCell className="text-right">
                     <AmountText amount={Money.fromString(payment.net_amount, currency)} />
