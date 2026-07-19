@@ -2,6 +2,11 @@ import { createBrowserRouter } from "react-router";
 import { AppShell } from "@/app/AppShell";
 import { MorePage } from "@/app/MorePage";
 import { NotFoundPage } from "@/app/NotFoundPage";
+import { RequireAuth } from "@/app/auth/RequireAuth";
+import { LoginPage } from "@/features/auth/LoginPage";
+import { RegisterPage } from "@/features/auth/RegisterPage";
+import { ResetPasswordRequestPage } from "@/features/auth/ResetPasswordRequestPage";
+import { ResetPasswordConfirmPage } from "@/features/auth/ResetPasswordConfirmPage";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
 import { NewPaymentPage } from "@/features/payments/NewPaymentPage";
 import { PaymentsPage } from "@/features/payments/PaymentsPage";
@@ -18,9 +23,17 @@ import { SettingsPage } from "@/features/settings/SettingsPage";
  * React Router 8 im Library-Modus (kein SSR/Framework-Modus, ARCHITECTURE.md K-2).
  */
 export const router = createBrowserRouter([
+  { path: "/login", element: <LoginPage /> },
+  { path: "/registrieren", element: <RegisterPage /> },
+  { path: "/passwort-vergessen", element: <ResetPasswordRequestPage /> },
+  { path: "/passwort-zuruecksetzen", element: <ResetPasswordConfirmPage /> },
   {
     path: "/",
-    element: <AppShell />,
+    element: (
+      <RequireAuth>
+        <AppShell />
+      </RequireAuth>
+    ),
     children: [
       { index: true, element: <DashboardPage /> },
       { path: "eingaenge", element: <PaymentsPage /> },

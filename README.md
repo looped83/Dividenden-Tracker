@@ -4,23 +4,39 @@ Persönliche Web-App zur langfristigen, zuverlässigen Dokumentation **tatsächl
 Dividendeneingänge** — als Ablösung einer langjährig gepflegten Numbers-Tabelle.
 PWA für Mac, iPad und iPhone. Supabase Postgres als Source of Truth.
 
-**Status:** Phase 1 (Projektgrundlage und Designsystem) ist umgesetzt. Die weiteren Phasen
-folgen dem Phasenplan in [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).
+**Status:** Phase 1 (Projektgrundlage und Designsystem) und Phase 2 (Supabase, Auth und
+Datenbank) sind umgesetzt. Die weiteren Phasen folgen dem Phasenplan in
+[IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).
 
 ## Entwicklung
 
 ```bash
 npm install
-npm run dev        # Entwicklungsserver
+npm run dev        # Entwicklungsserver (benoetigt .env, siehe .env.example)
 npm run typecheck  # TypeScript strict, ohne Emit
 npm run lint       # ESLint (inkl. Geld-Verbotsliste, CALCULATION_RULES.md §8)
 npm run format:check
-npm test           # Vitest (Unit-Tests)
+npm test           # Vitest (Unit-Tests, kein Datenbankzugriff)
 npm run build      # Produktions-Build
 ```
 
 Node.js ≥ 22 wird vorausgesetzt. Alle Paketversionen sind exakt gepinnt
 (siehe [ARCHITECTURE.md](ARCHITECTURE.md) §2).
+
+Für den Betrieb wird ein Supabase-Projekt benötigt: `.env` aus `.env.example` anlegen und
+`VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` eintragen (SECURITY_MODEL.md §5).
+
+### Datenbank und Sicherheitstests
+
+```bash
+npm run db:test:reset     # baut eine lokale Test-Datenbank aus supabase/migrations neu auf
+npm run test:integration  # Constraints/Trigger/RLS gegen eine echte PostgreSQL-Instanz
+```
+
+Voraussetzung ist eine lokal erreichbare PostgreSQL-16-Instanz (siehe
+`scripts/db/reset-test-db.sh` für die Verbindungsparameter). Die eigentliche lokale
+Supabase-CLI (`supabase start`, Docker-basiert) ist der empfohlene Weg für die reguläre
+Entwicklung; die Integrationstests selbst benötigen nur reines PostgreSQL (DECISIONS.md D-027).
 
 ## Spezifikation
 
