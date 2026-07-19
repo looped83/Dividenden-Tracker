@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabase/client";
 import { AuthLayout } from "@/features/auth/AuthLayout";
+import { AppleSignInButton } from "@/features/auth/AppleSignInButton";
 import { loginSchema, type LoginFormValues } from "@/features/auth/schemas";
 
 interface LocationState {
@@ -52,6 +53,14 @@ export function LoginPage() {
         </>
       }
     >
+      <AppleSignInButton />
+
+      <div className="flex items-center gap-3">
+        <div className="h-px flex-1 bg-border" />
+        <span className="text-xs text-muted-foreground">oder</span>
+        <div className="h-px flex-1 bg-border" />
+      </div>
+
       <form onSubmit={(event) => void onSubmit(event)} className="space-y-4" noValidate>
         <div className="space-y-1.5">
           <Label htmlFor="email">E-Mail-Adresse</Label>
