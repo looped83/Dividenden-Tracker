@@ -57,6 +57,7 @@ function SecurityFormDialog({
 }) {
   const createSecurity = useCreateSecurity();
   const updateSecurity = useUpdateSecurity();
+  const [submitError, setSubmitError] = React.useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -77,6 +78,7 @@ function SecurityFormDialog({
   });
 
   const onSubmit = handleSubmit(async (values) => {
+    setSubmitError(null);
     const input = {
       name: values.name,
       ticker: emptyToNull(values.ticker),
@@ -87,13 +89,19 @@ function SecurityFormDialog({
       currency: emptyToNull(values.currency),
       note: emptyToNull(values.note),
     };
-    if (security) {
-      await updateSecurity.mutateAsync({ id: security.id, input });
-    } else {
-      await createSecurity.mutateAsync(input);
+    try {
+      if (security) {
+        await updateSecurity.mutateAsync({ id: security.id, input });
+      } else {
+        await createSecurity.mutateAsync(input);
+      }
+      reset();
+      onOpenChange(false);
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error ? error.message : "Speichern fehlgeschlagen.",
+      );
     }
-    reset();
-    onOpenChange(false);
   });
 
   return (
@@ -153,6 +161,11 @@ function SecurityFormDialog({
             <Label htmlFor="security-note">Notiz</Label>
             <Textarea id="security-note" {...register("note")} />
           </div>
+          {submitError && (
+            <p role="alert" className="text-sm text-negative">
+              {submitError}
+            </p>
+          )}
           <DialogFooter>
             <Button type="submit" disabled={isSubmitting}>
               {security ? "Speichern" : "Anlegen"}
