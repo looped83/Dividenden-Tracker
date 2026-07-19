@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase/client";
 import type { Database, PaymentType } from "@/lib/supabase/database.types";
+import { normalizeAmountFields } from "@/lib/supabase/repositories/normalizeAmountFields";
 
 export type DividendPayment = Database["public"]["Tables"]["dividend_payments"]["Row"];
 export type DividendPaymentInsert =
@@ -56,7 +57,7 @@ export async function fetchPayments(
 
   const { data, error } = await query;
   if (error) throw error;
-  return data;
+  return data.map(normalizeAmountFields);
 }
 
 export async function fetchPaymentById(id: string): Promise<DividendPayment> {
@@ -66,7 +67,7 @@ export async function fetchPaymentById(id: string): Promise<DividendPayment> {
     .eq("id", id)
     .single();
   if (error) throw error;
-  return data;
+  return normalizeAmountFields(data);
 }
 
 export async function createPayment(
@@ -78,7 +79,7 @@ export async function createPayment(
     .select()
     .single();
   if (error) throw error;
-  return data;
+  return normalizeAmountFields(data);
 }
 
 export async function updatePayment(
@@ -92,7 +93,7 @@ export async function updatePayment(
     .select()
     .single();
   if (error) throw error;
-  return data;
+  return normalizeAmountFields(data);
 }
 
 export async function archivePayment(
@@ -104,7 +105,7 @@ export async function archivePayment(
     p_reason: reason ?? null,
   });
   if (error) throw error;
-  return data;
+  return normalizeAmountFields(data);
 }
 
 export async function unarchivePayment(id: string): Promise<DividendPayment> {
