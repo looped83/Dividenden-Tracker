@@ -384,6 +384,32 @@ DATA_MODEL.md §1 bleibt vollstaendig erhalten.
 jederzeit ignoriert oder falsch vorbelegt sein, ohne dass das die eigentlichen Zahlungsdaten
 verfaelscht.
 
+## D-036 · `search_path` von Funktionen, die pgcrypto nutzen, muss `extensions` einschliessen
+**Kontext:** Live-Fehler beim Archivieren eines Dividendeneingangs: "function digest(text,
+unknown) does not exist". Ursache: Supabase installiert `pgcrypto` standardmaessig in ein
+Schema `extensions`, nicht in `public` (anders als eine lokale, per CLI/psql angelegte
+PostgreSQL-Instanz, wo `create extension pgcrypto;` ohne Schema-Angabe direkt in `public`
+landet — siehe D-027, weshalb dieser Unterschied in der Implementierungsumgebung nicht
+auffiel). `recompute_business_fingerprint()` (0009) ruft `digest()` auf, hatte aber keinen
+eigenen `search_path`; sie erbte daher den des Aufrufers. Ein direktes UPDATE ueber
+PostgREST funktioniert, weil die API-Verbindung `extensions` per Supabase-Standard im
+`search_path` fuehrt — `archive_payment()` (0011) setzt jedoch explizit `search_path =
+public` fuer sich selbst, wodurch der davon ausgeloeste BEFORE-Trigger `digest()` nicht mehr
+findet. Lokal gegen eine simulierte Supabase-Schema-Aufteilung (`extensions`-Schema +
+`grant usage ... to authenticated`, siehe TEST_STRATEGY.md-Luecke unten) reproduziert:
+INSERT gelingt, `archive_payment()` schlaegt mit exakt derselben Fehlermeldung fehl.
+**Entscheidung:** `recompute_business_fingerprint()` und `archive_payment()` bekommen
+`set search_path = public, extensions` (0015). Nicht existierende Schemata im `search_path`
+verursachen in Postgres keinen Fehler (sie werden bei der Namensaufloesung uebersprungen),
+daher ist das auch gegen die lokale Test-Datenbank ohne `extensions`-Schema unschaedlich.
+**Konsequenz:** Jede kuenftige Funktion, die eine Extension-Funktion aufruft (`digest`,
+`gen_random_bytes`, …), muss denselben `search_path` explizit setzen — sich auf den
+ererbten `search_path` des Aufrufers zu verlassen, ist auf dem echten Supabase-Projekt
+nicht sicher, wenn irgendein Aufrufer (wie `archive_payment()`) den Pfad selbst einschraenkt.
+Dieser Bug-Modus laesst sich mit der aktuellen lokalen Testumgebung (TEST_STRATEGY.md §5/§6)
+nicht automatisiert abdecken, ohne das `extensions`-Schema samt Berechtigungen dort
+nachzubilden — bislang nur manuell verifiziert, kein automatisierter Regressionstest.
+
 ---
 
 ## Offene Entscheidungen (bewusst vertagt)
