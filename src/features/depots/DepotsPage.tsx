@@ -55,6 +55,7 @@ function PortfolioFormDialog({
 }) {
   const createPortfolio = useCreatePortfolio();
   const updatePortfolio = useUpdatePortfolio();
+  const [submitError, setSubmitError] = React.useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -66,14 +67,21 @@ function PortfolioFormDialog({
   });
 
   const onSubmit = handleSubmit(async (values) => {
+    setSubmitError(null);
     const input = { name: values.name, note: emptyToNull(values.note) };
-    if (portfolio) {
-      await updatePortfolio.mutateAsync({ id: portfolio.id, input });
-    } else {
-      await createPortfolio.mutateAsync(input);
+    try {
+      if (portfolio) {
+        await updatePortfolio.mutateAsync({ id: portfolio.id, input });
+      } else {
+        await createPortfolio.mutateAsync(input);
+      }
+      reset();
+      onOpenChange(false);
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error ? error.message : "Speichern fehlgeschlagen.",
+      );
     }
-    reset();
-    onOpenChange(false);
   });
 
   return (
@@ -96,6 +104,11 @@ function PortfolioFormDialog({
             <Label htmlFor="portfolio-note">Notiz</Label>
             <Textarea id="portfolio-note" {...register("note")} />
           </div>
+          {submitError && (
+            <p role="alert" className="text-sm text-negative">
+              {submitError}
+            </p>
+          )}
           <DialogFooter>
             <Button type="submit" disabled={isSubmitting}>
               {portfolio ? "Speichern" : "Anlegen"}
@@ -120,6 +133,7 @@ function DepotFormDialog({
 }) {
   const createDepot = useCreateDepot();
   const updateDepot = useUpdateDepot();
+  const [submitError, setSubmitError] = React.useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -137,6 +151,7 @@ function DepotFormDialog({
   });
 
   const onSubmit = handleSubmit(async (values) => {
+    setSubmitError(null);
     const input = {
       name: values.name,
       portfolio_id: emptyToNull(values.portfolioId),
@@ -144,15 +159,21 @@ function DepotFormDialog({
       base_currency: values.baseCurrency,
       note: emptyToNull(values.note),
     };
-    if (depot) {
-      // Basiswaehrung ist nach Anlage nur aenderbar ohne vorhandene Zahlungen
-      // (guard_base_currency_change-Trigger, DECISIONS.md D-002).
-      await updateDepot.mutateAsync({ id: depot.id, input });
-    } else {
-      await createDepot.mutateAsync(input);
+    try {
+      if (depot) {
+        // Basiswaehrung ist nach Anlage nur aenderbar ohne vorhandene Zahlungen
+        // (guard_base_currency_change-Trigger, DECISIONS.md D-002).
+        await updateDepot.mutateAsync({ id: depot.id, input });
+      } else {
+        await createDepot.mutateAsync(input);
+      }
+      reset();
+      onOpenChange(false);
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error ? error.message : "Speichern fehlgeschlagen.",
+      );
     }
-    reset();
-    onOpenChange(false);
   });
 
   return (
@@ -197,6 +218,11 @@ function DepotFormDialog({
             <Label htmlFor="depot-note">Notiz</Label>
             <Textarea id="depot-note" {...register("note")} />
           </div>
+          {submitError && (
+            <p role="alert" className="text-sm text-negative">
+              {submitError}
+            </p>
+          )}
           <DialogFooter>
             <Button type="submit" disabled={isSubmitting}>
               {depot ? "Speichern" : "Anlegen"}
