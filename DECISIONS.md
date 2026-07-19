@@ -322,6 +322,25 @@ vollstaendigen CSV/Excel-Import-Assistenten mit Bilanz und Duplikaterkennung) bl
 (O-1) und wird bei Phase-4-Start erneut geprueft — dieser schmale Stammdaten-Import ist davon
 unabhaengig und muss bei Bedarf nicht dieselbe Bibliothek verwenden.
 
+## D-033 · Schema-Migrationen auf dem echten Supabase-Projekt per SQL Editor statt CLI
+**Kontext:** Nach Abschluss von Phase 2/3 bestand das reale Supabase-Projekt zwar aus einer
+funktionierenden Auth (GoTrue), aber die eigenen Tabellen (`portfolios`, `depots`,
+`securities`, `dividend_payments`, …) existierten dort nicht — sie wurden bislang ausschliesslich
+gegen eine lokale PostgreSQL-Instanz getestet (D-027), nie gegen das verlinkte Projekt
+angewendet. Fehlerbild beim ersten Live-Test: `Could not find the table 'public.portfolios' in
+the schema cache`. Docker/Supabase-CLI stehen in der Implementierungsumgebung weiterhin nicht
+zur Verfuegung (D-026/D-027).
+**Entscheidung:** Alle 11 Migrationsdateien wurden zu einem einzigen SQL-Skript zusammengefasst
+und vom Nutzer manuell im Supabase-Dashboard (Authentication → SQL Editor) eingefuegt und
+ausgefuehrt — inklusive eines Nachtrags, der fuer bereits vor den Migrationen angelegte
+Auth-Nutzer die fehlende `profiles`-Zeile ergaenzt (der `on_auth_user_created`-Trigger greift
+nur fuer Registrierungen ab dem Zeitpunkt seiner Erstellung).
+**Konsequenz:** Jede kuenftige Schemaaenderung (neue Migration) muss bis zur Verfuegbarkeit von
+Docker/Supabase-CLI in dieser Umgebung ebenso manuell im SQL Editor nachgezogen werden — es gibt
+noch keinen automatisierten Migrationsweg gegen das reale Projekt. Das Skript ist nur fuer eine
+einmalige Anwendung auf ein leeres Projekt ausgelegt (kein `IF NOT EXISTS` auf Tabellen-/
+Typ-Ebene); ein zweiter Lauf wuerde mit "already exists" fehlschlagen.
+
 ---
 
 ## Offene Entscheidungen (bewusst vertagt)
@@ -335,6 +354,8 @@ unabhaengig und muss bei Bedarf nicht dieselbe Bibliothek verwenden.
 | O-5 | Umfang der Mapping-Vorlagen (nur letzte vs. benannte Bibliothek) | Phase 4 |
 | O-6 | TypeScript-7-Umstieg | nach Phase 10 |
 | O-7 | `database.types.ts` per `npm run gen:types` regenerieren und mit der handgepflegten Fassung abgleichen, sobald Docker/ein verlinktes Projekt verfügbar ist (D-028) | sobald verfügbar, spätestens Phase 3 |
-| O-8 | Echten Auth-Flow (Registrierung inkl. E-Mail-Bestätigung, Login, Passwort-Reset) gegen ein reales Supabase-Projekt durchspielen (D-029) | vor Produktivbetrieb — jetzt über GitHub Pages möglich |
-| O-9 | Konkretes Supabase-Projekt anlegen und `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` bereitstellen | ~~Beginn Phase 3~~ erledigt (Projekt `fylmynfwczvyqewnpdol`) |
-| O-10 | GitHub Pages Repo-Secrets (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`) durch den Nutzer eintragen; Pages-Quelle auf „GitHub Actions" stellen (D-030) | sofort |
+| O-8 | ~~Echten Auth-Flow gegen ein reales Supabase-Projekt durchspielen~~ (D-029) | erledigt (Registrierung/Login live getestet, E-Mail-Bestätigung wegen Rate-Limit zwischenzeitlich deaktiviert) |
+| O-9 | ~~Konkretes Supabase-Projekt anlegen und Umgebungsvariablen bereitstellen~~ | erledigt (Projekt `fylmynfwczvyqewnpdol`) |
+| O-10 | ~~GitHub Pages Repo-Secrets eintragen, Pages-Quelle auf „GitHub Actions" stellen~~ (D-030) | erledigt |
+| O-11 | Custom-SMTP-Anbieter (z. B. Resend) einrichten, damit E-Mail-Bestätigung ohne scharfes Rate-Limit dauerhaft aktiviert werden kann | vor Produktivbetrieb |
+| O-12 | Migrationsweg gegen das reale Supabase-Projekt automatisieren (Supabase-CLI/Docker statt manuellem SQL Editor, D-033), sobald in der Implementierungsumgebung verfügbar | sobald verfügbar |

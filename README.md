@@ -4,9 +4,13 @@ Persönliche Web-App zur langfristigen, zuverlässigen Dokumentation **tatsächl
 Dividendeneingänge** — als Ablösung einer langjährig gepflegten Numbers-Tabelle.
 PWA für Mac, iPad und iPhone. Supabase Postgres als Source of Truth.
 
-**Status:** Phase 1 (Projektgrundlage und Designsystem) und Phase 2 (Supabase, Auth und
-Datenbank) sind umgesetzt. Die weiteren Phasen folgen dem Phasenplan in
-[IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).
+**Status (Stand 2026-07-19):** Phase 1 (Projektgrundlage und Designsystem), Phase 2 (Supabase,
+Auth und Datenbank) und Phase 3 (Stammdaten und manuelle Dividendeneingänge, inkl. vorgezogenem
+Excel-Import für Unternehmensdaten) sind umgesetzt und live unter GitHub Pages im Einsatz
+(Auth, Depots, Unternehmen, Dividendeneingänge). Details und bekannte Abweichungen siehe die
+Statusvermerke in [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md). Die weiteren Phasen
+(Import von Dividendeneingängen, Statistiken, Ziele, Backup/Restore, Numbers-Migration, PWA,
+Accessibility/Performance-Audit) sind noch nicht begonnen.
 
 ## Entwicklung
 
