@@ -139,6 +139,29 @@ describe("Foreign Keys", () => {
       }),
     ).rejects.toThrow(/violates foreign key constraint/);
   });
+
+  it("lehnt ein unbekanntes Standard-Depot am Unternehmen ab (0014)", async () => {
+    await expect(
+      asUser(userId, (client) =>
+        client.query("insert into securities (name, default_depot_id) values ($1, $2)", [
+          "FK AG 3",
+          "00000000-0000-0000-0000-000000000000",
+        ]),
+      ),
+    ).rejects.toThrow(/violates foreign key constraint/);
+  });
+
+  it("erlaubt ein Unternehmen mit gueltigem Standard-Depot (0014)", async () => {
+    const { depotId, security } = await asUser(userId, async (client) => {
+      const depotId = await seedDepot(client, "Depot Standard 1");
+      const result = await client.query<{ default_depot_id: string | null }>(
+        "insert into securities (name, default_depot_id) values ($1, $2) returning default_depot_id",
+        ["Standard-Depot AG", depotId],
+      );
+      return { depotId, security: firstRow(result) };
+    });
+    expect(security.default_depot_id).toBe(depotId);
+  });
 });
 
 describe("Unique Constraints", () => {

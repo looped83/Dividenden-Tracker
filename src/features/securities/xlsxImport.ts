@@ -2,6 +2,11 @@ import type { WorksheetTable } from "@/lib/xlsx/parseWorkbook";
 import { ISIN_PATTERN, TICKER_PATTERN, WKN_PATTERN } from "@/features/securities/schemas";
 import type { DataQuality } from "@/lib/supabase/database.types";
 
+export interface ImportDepotOption {
+  id: string;
+  name: string;
+}
+
 export interface ImportedSecurityRow {
   name: string;
   ticker: string | null;
@@ -10,6 +15,9 @@ export interface ImportedSecurityRow {
   country: string | null;
   dataQuality: DataQuality;
   warnings: string[];
+  /** Aufgeloestes Standard-Depot (nur bei Namensuebereinstimmung, DECISIONS.md D-006). */
+  defaultDepotId: string | null;
+  defaultDepotName: string | null;
   /** 1-indizierte Zeilennummer in der Originaldatei (Kopfzeile = 1) fuer Rueckmeldungen. */
   sourceRow: number;
 }
@@ -25,11 +33,12 @@ export interface MappedSecurities {
 }
 
 /** Erkannte Spaltennamen (klein geschrieben) je Zielfeld — robust gegen Reihenfolge/Groß-Kleinschreibung. */
-const HEADER_ALIASES: Record<"name" | "ticker" | "isin" | "wkn", string[]> = {
+const HEADER_ALIASES: Record<"name" | "ticker" | "isin" | "wkn" | "depot", string[]> = {
   name: ["name"],
   ticker: ["symbol", "ticker"],
   isin: ["isin"],
   wkn: ["wkn"],
+  depot: ["depot", "broker", "konto"],
 };
 
 function findColumnIndex(headers: string[], aliases: string[]): number {
@@ -63,12 +72,25 @@ function cellToTrimmedString(
  * den Unternehmens-Stammdaten (DATA_MODEL.md §3.4) und werden ignoriert.
  * Das Land wird aus den ersten zwei Zeichen einer gueltigen ISIN abgeleitet
  * (ISO-3166-Praefix der ISIN-Norm).
+ *
+ * Eine optionale Depot-/Broker-Spalte wird per Namensabgleich (Groß-/
+ * Kleinschreibung egal) gegen die bereits vorhandenen Depots des Nutzers
+ * aufgeloest und als unverbindliches Standard-Depot uebernommen (siehe
+ * `default_depot_id`, DECISIONS.md D-006 — kein erzwungenes Anlegen neuer
+ * Depots aus dem Import, kein Abgleich bei fehlendem Treffer).
  */
-export function mapWorksheetToSecurities(table: WorksheetTable): MappedSecurities {
+export function mapWorksheetToSecurities(
+  table: WorksheetTable,
+  existingDepots: ImportDepotOption[] = [],
+): MappedSecurities {
   const nameIdx = findColumnIndex(table.headers, HEADER_ALIASES.name);
   const tickerIdx = findColumnIndex(table.headers, HEADER_ALIASES.ticker);
   const isinIdx = findColumnIndex(table.headers, HEADER_ALIASES.isin);
   const wknIdx = findColumnIndex(table.headers, HEADER_ALIASES.wkn);
+  const depotIdx = findColumnIndex(table.headers, HEADER_ALIASES.depot);
+  const depotByName = new Map(
+    existingDepots.map((depot) => [depot.name.trim().toLowerCase(), depot]),
+  );
 
   if (nameIdx === -1) {
     throw new Error('Spalte "Name" wurde in der Datei nicht gefunden.');
@@ -118,7 +140,24 @@ export function mapWorksheetToSecurities(table: WorksheetTable): MappedSecuritie
       dataQuality = "incomplete";
     }
 
-    valid.push({ name, ticker, isin, wkn, country, dataQuality, warnings, sourceRow });
+    const depotName = cellToTrimmedString(row, depotIdx);
+    const matchedDepot = depotName ? depotByName.get(depotName.toLowerCase()) : undefined;
+    if (depotName && !matchedDepot) {
+      warnings.push(`Depot „${depotName}" nicht gefunden, kein Standard-Depot gesetzt`);
+    }
+
+    valid.push({
+      name,
+      ticker,
+      isin,
+      wkn,
+      country,
+      dataQuality,
+      warnings,
+      defaultDepotId: matchedDepot?.id ?? null,
+      defaultDepotName: matchedDepot?.name ?? null,
+      sourceRow,
+    });
   });
 
   return { valid, invalid };

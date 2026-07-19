@@ -24,6 +24,7 @@ import {
   type ImportedSecurityRow,
 } from "@/features/securities/xlsxImport";
 import { useCreateSecurity, useSecurities } from "@/features/securities/hooks";
+import { useDepots } from "@/features/depots/hooks";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import type { DataQuality } from "@/lib/supabase/database.types";
 
@@ -61,6 +62,7 @@ export function SecurityImportDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const { data: existingSecurities = [] } = useSecurities();
+  const { data: depots = [] } = useDepots();
   const createSecurity = useCreateSecurity();
   const [state, setState] = React.useState<ImportState>({ step: "select" });
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -76,7 +78,12 @@ export function SecurityImportDialog({
 
     try {
       const table = await parseFirstWorksheet(file);
-      const { valid, invalid } = mapWorksheetToSecurities(table);
+      const { valid, invalid } = mapWorksheetToSecurities(
+        table,
+        depots
+          .filter((depot) => !depot.archived_at)
+          .map((depot) => ({ id: depot.id, name: depot.name })),
+      );
 
       const existingIsins = new Set(
         existingSecurities.filter((s) => s.isin).map((s) => s.isin),
@@ -117,6 +124,7 @@ export function SecurityImportDialog({
           wkn: row.wkn,
           country: row.country,
           data_quality: row.dataQuality,
+          default_depot_id: row.defaultDepotId,
         });
         imported += 1;
       } catch (error) {
@@ -143,7 +151,9 @@ export function SecurityImportDialog({
           <DialogTitle>Unternehmen aus Excel importieren</DialogTitle>
           <DialogDescription>
             Liest Name, Ticker, ISIN und WKN aus der ersten Tabelle einer .xlsx-Datei.
-            Andere Spalten (Stückzahl, Kurse, …) werden ignoriert.
+            Eine Depot-/Broker-Spalte wird per Namensabgleich als Standard-Depot
+            übernommen, falls sie zu einem bestehenden Depot passt. Andere Spalten
+            (Stückzahl, Kurse, …) werden ignoriert.
           </DialogDescription>
         </DialogHeader>
 
@@ -180,6 +190,7 @@ export function SecurityImportDialog({
                     <TableHead>Ticker</TableHead>
                     <TableHead>ISIN</TableHead>
                     <TableHead>Land</TableHead>
+                    <TableHead>Standard-Depot</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -195,6 +206,9 @@ export function SecurityImportDialog({
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {row.country ?? "—"}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {row.defaultDepotName ?? "—"}
                       </TableCell>
                       <TableCell>
                         {row.isDuplicate ? (

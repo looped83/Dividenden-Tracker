@@ -91,6 +91,7 @@ IMPORT_SPEC.md.
 | `currency` | O | char(3) | Übliche Ausschüttungswährung (nur Anzeige/Vorbelegung) |
 | `note` | O | text ≤ 5000 | Persönliche Notiz |
 | `data_quality` | T/A | enum | `ok` · `incomplete` (z. B. per Import ohne ISIN angelegt) · `needs_review` (z. B. Namenskonflikt beim Import); vom System gesetzt, vom Nutzer auf `ok` setzbar |
+| `default_depot_id` | O | uuid → depots | Unverbindlicher Vorschlag für das Depot-Feld beim Anlegen eines Dividendeneingangs und beim Excel-Import (Namensabgleich); keine 1:1-Bindung, jede Zahlung wählt ihr Depot weiterhin unabhängig (D-035) |
 | `created_at`, `updated_at`, `archived_at` | T | timestamptz | wie oben |
 | Abgeleitet (nie gespeichert) | A | — | Summe je Jahr/Monat, Ø-Zahlung, Anzahl Zahlungen, Steuersummen, Anteil am Gesamteinkommen — Formeln in CALCULATION_RULES.md §6 |
 

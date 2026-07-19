@@ -42,6 +42,8 @@ export function NewPaymentPage() {
     register,
     handleSubmit,
     reset,
+    getValues,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<PaymentFormValues>({
     resolver: zodResolver(paymentFormSchema),
@@ -60,6 +62,19 @@ export function NewPaymentPage() {
 
   const activeSecurities = securities.filter((security) => !security.archived_at);
   const activeDepots = depots.filter((depot) => !depot.archived_at);
+
+  /**
+   * Vorbelegung nur als Vorschlag (DATA_MODEL.md §1, DECISIONS.md D-006):
+   * ueberschreibt nie ein bereits gewaehltes Depot und greift nur beim
+   * Neuanlegen, nicht beim Bearbeiten eines bestehenden Eingangs.
+   */
+  const handleSecurityChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    if (isEditMode || getValues("depotId")) return;
+    const security = securities.find((s) => s.id === event.target.value);
+    if (security?.default_depot_id) {
+      setValue("depotId", security.default_depot_id);
+    }
+  };
 
   const onSubmit = handleSubmit(async (values) => {
     setSubmitError(null);
@@ -145,7 +160,10 @@ export function NewPaymentPage() {
 
         <div className="space-y-1.5">
           <Label htmlFor="payment-security">Unternehmen</Label>
-          <Select id="payment-security" {...register("securityId")}>
+          <Select
+            id="payment-security"
+            {...register("securityId", { onChange: handleSecurityChange })}
+          >
             <option value="">Bitte wählen</option>
             {activeSecurities.map((security) => (
               <option key={security.id} value={security.id}>
