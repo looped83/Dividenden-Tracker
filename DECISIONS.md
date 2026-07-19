@@ -190,6 +190,60 @@ cdn.sheetjs.com bzw. wird alternativ gegen eine erreichbare, gepflegte Bezugsque
 falls der CDN-Host dauerhaft nicht erreichbar ist.
 **Konsequenz:** O-1 bleibt offen und wird auf den Start von Phase 4 verschoben (siehe unten).
 
+## D-027 · RLS-/Trigger-Testsuite gegen reines PostgreSQL statt Supabase-CLI (Docker)
+**Kontext:** Phase 2 verlangt eine automatisierte, blockierende RLS-Testsuite mit zwei
+Nutzern (SECURITY_MODEL.md §10). Die Supabase-CLI (`supabase start`, `supabase gen types`)
+benoetigt Docker; in der Implementierungsumgebung dieser Phase startet der Docker-Daemon
+nicht (fehlende Berechtigung fuer `ulimit`/Cgroups in der Sandbox), und `supabase gen types
+typescript --db-url ...` startet intern ebenfalls einen Container, unabhaengig vom
+uebergebenen `--db-url`.
+**Entscheidung:** Alle Migrationen (`supabase/migrations/*.sql`) bleiben unveraendert
+Supabase-kompatibel (sie setzen ein bereits vorhandenes `auth`-Schema voraus, wie es jedes
+echte Supabase-Projekt mitbringt). Fuer lokale/CI-Tests emuliert
+`supabase/test-support/local-postgres-bootstrap.sql` ausschliesslich `auth.users`,
+`auth.uid()` und `auth.role()` sowie die Rollen `anon`/`authenticated`/`service_role` —
+funktional identisch zur echten RLS-Mechanik (`request.jwt.claims`-GUC), da Supabase RLS
+selbst nur Standard-PostgreSQL-RLS ist, kein proprietäres Feature. `scripts/db/reset-test-db.sh`
+baut damit eine Testdatenbank neu auf; `tests/integration/**` (Vitest + `pg`, eigene
+Konfiguration `vitest.integration.config.ts`) simuliert je "Anfrage" eine eigene Transaktion
+mit `SET LOCAL ROLE` + lokaler JWT-Claim-GUC (`tests/integration/support/db.ts`) — analog zu
+PostgREST. 48 Integrationstests decken Constraints/FKs/Unique/Transaktionen/Soft-Delete
+(TEST_STRATEGY.md §5) sowie alle neun anwendbaren Punkte der RLS-Checkliste inkl. zweier
+Testnutzer, anon-Zugriff, manipulierter `user_id`, direkter Anfragen mit manipulierten
+Filtern und RPC-Missbrauch (TEST_STRATEGY.md §6) ab und laufen tatsaechlich (nicht nur
+geschrieben) gegen eine echte PostgreSQL-16-Instanz.
+**Konsequenz:** Volle Testabdeckung von Schema/RLS/Triggern ohne Docker-Abhaengigkeit; CI
+(`.github/workflows/ci.yml`, Job `db-integration`) nutzt einen Postgres-Service-Container
+(auf GitHub-Actions-Runnern funktioniert Docker) und denselben Bootstrap/Migrationslauf.
+**Nicht abgedeckt:** ein echter End-to-End-Lauf durch PostgREST/GoTrue (HTTP-Ebene) sowie
+`supabase gen types typescript` selbst — siehe D-028/O-7.
+
+## D-028 · Datenbanktypen (`database.types.ts`) handgepflegt statt generiert
+**Kontext:** `supabase gen types typescript` erfordert Docker (siehe D-027), auch mit
+`--db-url`. Phase 2 verlangt dennoch typisierten Datenbankzugriff (ARCHITECTURE.md §3,
+Grundsatz 9/D-017: `numeric` als `string`, nie als JS-`number`).
+**Entscheidung:** `src/lib/supabase/database.types.ts` wurde von Hand erstellt und Spalte
+fuer Spalte gegen das tatsaechlich angewendete Schema abgeglichen (`\d+` auf der lokalen
+Testdatenbank), inklusive der Insert/Update-Einschraenkungen aus den Immutable-Field- und
+RLS-Regeln (z. B. `profiles.Insert = never`, `dividend_payments.Update` ohne `source`/
+`import_id`/etc.). Ein `npm run gen:types`-Skript ist bereits hinterlegt.
+**Konsequenz:** Sobald Docker oder ein verlinktes Supabase-Projekt verfuegbar ist, MUSS
+`npm run gen:types` ausgefuehrt und das Ergebnis mit dieser Datei verglichen werden; bis
+dahin muss jede weitere Migration diese Datei manuell nachziehen (Risiko fuer Drift, siehe
+offene Punkte).
+
+## D-029 · Kein Ende-zu-Ende-Test gegen echtes Supabase Auth (GoTrue/PostgREST)
+**Kontext:** Es steht kein echtes Supabase-Projekt und kein lokaler GoTrue/PostgREST-Stack
+zur Verfuegung (Docker-Einschraenkung, siehe D-027).
+**Entscheidung:** Login/Registrierung/Passwort-Reset wurden gegen die UI-Ebene manuell
+geprueft (Playwright: Redirect ins Login bei fehlender Session, Zod-Validierung inkl.
+Passwort-Mindestlaenge und -Bestaetigung, Navigation zwischen den Auth-Seiten) — ohne echten
+Netzwerk-Roundtrip zu `supabase.auth.signInWithPassword`/`signUp`/etc. Die Server-seitige
+Absicherung (RLS, Trigger, `enforce_user_id`, Audit) ist dagegen vollstaendig gegen echtes
+PostgreSQL verifiziert (D-027).
+**Konsequenz:** Vor dem ersten produktiven Einsatz muss der komplette Auth-Flow einmal gegen
+ein echtes (auch ein kostenloses) Supabase-Projekt durchgespielt werden (siehe O-8).
+
 ---
 
 ## Offene Entscheidungen (bewusst vertagt)
@@ -202,3 +256,6 @@ falls der CDN-Host dauerhaft nicht erreichbar ist.
 | O-4 | Konkrete Wertpapier-Stammdaten-Vorschlagsliste (Branchen-Taxonomie) | Phase 3 |
 | O-5 | Umfang der Mapping-Vorlagen (nur letzte vs. benannte Bibliothek) | Phase 4 |
 | O-6 | TypeScript-7-Umstieg | nach Phase 10 |
+| O-7 | `database.types.ts` per `npm run gen:types` regenerieren und mit der handgepflegten Fassung abgleichen, sobald Docker/ein verlinktes Projekt verfügbar ist (D-028) | sobald verfügbar, spätestens Phase 3 |
+| O-8 | Echten Auth-Flow (Registrierung inkl. E-Mail-Bestätigung, Login, Passwort-Reset) gegen ein reales Supabase-Projekt durchspielen (D-029) | vor Produktivbetrieb |
+| O-9 | Konkretes Supabase-Projekt anlegen und `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` bereitstellen | Beginn Phase 3 |
