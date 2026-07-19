@@ -1,5 +1,6 @@
 import type { WorksheetTable } from "@/lib/xlsx/parseWorkbook";
 import { ISIN_PATTERN, TICKER_PATTERN, WKN_PATTERN } from "@/features/securities/schemas";
+import { deriveDataQuality } from "@/features/securities/dataQuality";
 import type { DataQuality } from "@/lib/supabase/database.types";
 
 export interface ImportDepotOption {
@@ -136,8 +137,12 @@ export function mapWorksheetToSecurities(
 
     const country = isin ? isin.slice(0, 2) : null;
 
-    if (dataQuality === "ok" && !ticker && !isin) {
-      dataQuality = "incomplete";
+    // Gleiche Vollstaendigkeitsregel wie im Formular (eine Wahrheit): „OK" nur,
+    // wenn alle Stammdaten gefuellt sind. Dieser Import liefert weder Sektor
+    // noch Waehrung, daher bleiben die Zeilen „Unvollstaendig" — konsistent zur
+    // Anzeige nach einem spaeteren Bearbeiten. „needs_review" hat Vorrang.
+    if (dataQuality !== "needs_review") {
+      dataQuality = deriveDataQuality({ ticker, isin, wkn, country });
     }
 
     const depotName = cellToTrimmedString(row, depotIdx);

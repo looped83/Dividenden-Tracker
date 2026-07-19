@@ -22,7 +22,9 @@ describe("mapWorksheetToSecurities", () => {
         isin: "US0028241000",
         wkn: "850103",
         country: "US",
-        dataQuality: "ok",
+        // Dieser Import liefert weder Sektor noch Waehrung -> „Unvollstaendig"
+        // gemaess der Vollstaendigkeitsregel (deriveDataQuality).
+        dataQuality: "incomplete",
         warnings: [],
         defaultDepotId: null,
         defaultDepotName: null,

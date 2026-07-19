@@ -38,6 +38,7 @@ import {
   securityFormSchema,
   type SecurityFormValues,
 } from "@/features/securities/schemas";
+import { deriveDataQuality } from "@/features/securities/dataQuality";
 import type { Security } from "@/lib/supabase/repositories/securities";
 import type { DataQuality } from "@/lib/supabase/database.types";
 
@@ -96,6 +97,18 @@ function SecurityFormDialog({
       currency: emptyToNull(values.currency),
       note: emptyToNull(values.note),
       default_depot_id: emptyToNull(values.defaultDepotId),
+      // Datenqualitaet spiegelt beim Speichern die Vollstaendigkeit der
+      // Stammdaten wider (z. B. ergaenzte ISIN bei einem importierten,
+      // archivierten Unternehmen -> „OK"). „needs_review" aus dem Import bleibt
+      // nur bestehen, solange die Felder unvollstaendig sind.
+      data_quality: deriveDataQuality({
+        ticker: emptyToNull(values.ticker),
+        isin: emptyToNull(values.isin),
+        wkn: emptyToNull(values.wkn),
+        country: emptyToNull(values.country),
+        sector: emptyToNull(values.sector),
+        currency: emptyToNull(values.currency),
+      }),
     };
     try {
       if (security) {
