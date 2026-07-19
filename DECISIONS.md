@@ -363,6 +363,27 @@ nachgezogen werden, und zwar **nacheinander in zwei getrennten Ausfuehrungen** (
 committen, danach 0013 einfuegen) — sonst schlaegt 0013 fehl, weil der neue Enum-Wert `'delete'`
 nicht in derselben (impliziten) Transaktion verwendet werden darf, in der er hinzugefuegt wurde.
 
+## D-035 · Optionales "Standard-Depot" an Unternehmen (Vorschlag, keine 1:1-Bindung)
+**Kontext:** Der Nutzer wollte beim Anlegen eines Unternehmens direkt ein Depot zuweisen
+koennen, um sowohl das Erfassen von Dividendeneingaengen (Depot-Feld vorausgefuellt) als
+auch den Excel-Import (D-032) zu vereinfachen — die importierte Datei ist typischerweise
+ein Depot-Export und traegt bereits eine Depot-/Broker-Spalte pro Zeile. DATA_MODEL.md §1
+modelliert Unternehmen und Depots jedoch bewusst unabhaengig voneinander (n:m ausschliesslich
+ueber `dividend_payments`); `recompute_business_fingerprint()` nutzt genau das, damit
+dieselbe Aktie in mehreren Depots unterscheidbare Fingerprints erzeugt. D-006 begruendet an
+anderer Stelle explizit, warum ein gespeichertes Zuordnungsfeld zu Widersprueche fuehren kann,
+wenn eine spaetere Buchung doch abweicht.
+**Entscheidung:** `securities.default_depot_id` (0014) wird ergaenzt, aber ausdruecklich nur
+als unverbindlicher Vorschlag: Es fuellt das Depot-Feld beim Anlegen eines neuen
+Dividendeneingangs vor (kann dort jederzeit geaendert werden) und wird beim Excel-Import
+per Namensabgleich aus einer optionalen Depot-/Broker-Spalte gesetzt, sofern ein bestehendes
+Depot mit passendem Namen existiert (kein automatisches Anlegen neuer Depots). Es gibt keine
+Constraint, die eine abweichende Depot-Wahl je Zahlung verhindert — die n:m-Beziehung aus
+DATA_MODEL.md §1 bleibt vollstaendig erhalten.
+**Konsequenz:** Reine Komfortfunktion ohne Ruecksicht auf Datenkonsistenz-Risiken; kann
+jederzeit ignoriert oder falsch vorbelegt sein, ohne dass das die eigentlichen Zahlungsdaten
+verfaelscht.
+
 ---
 
 ## Offene Entscheidungen (bewusst vertagt)

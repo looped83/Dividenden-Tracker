@@ -142,6 +142,7 @@ export interface Database {
           currency: string | null;
           note: string | null;
           data_quality: DataQuality;
+          default_depot_id: string | null;
           created_at: string;
           updated_at: string;
           archived_at: string | null;
@@ -158,6 +159,7 @@ export interface Database {
           currency?: string | null;
           note?: string | null;
           data_quality?: DataQuality;
+          default_depot_id?: string | null;
           archived_at?: string | null;
         };
         Update: Partial<{
@@ -170,9 +172,17 @@ export interface Database {
           currency: string | null;
           note: string | null;
           data_quality: DataQuality;
+          default_depot_id: string | null;
           archived_at: string | null;
         }>;
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "securities_default_depot_id_fkey";
+            columns: ["default_depot_id"];
+            referencedRelation: "depots";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       imports: {
         Row: {

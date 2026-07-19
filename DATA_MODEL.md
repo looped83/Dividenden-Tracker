@@ -141,6 +141,7 @@ create table securities (
   currency      char(3)  check (currency ~ '^[A-Z]{3}$'),      -- übliche Ausschüttungswährung
   note          text check (length(note) <= 5000),
   data_quality  data_quality not null default 'ok',
+  default_depot_id uuid references depots(id),                -- unverbindlicher Vorschlag, siehe unten
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now(),
   archived_at   timestamptz
@@ -153,6 +154,12 @@ create unique index securities_user_name_key on securities(user_id, lower(name))
 ```
 
 ISIN-Prüfziffer (Luhn) wird clientseitig validiert; DB prüft nur das Format (D-008).
+
+`default_depot_id` (0014) ist ausschließlich eine Vorbelegungshilfe (Formular-Vorauswahl,
+Excel-Import) — **keine** 1:1-Bindung. Die tatsächliche Depot-Zuordnung bleibt je
+`dividend_payments`-Zeile unabhängig wählbar (weiterhin n:m über die Zahlung, siehe §1); dasselbe
+Unternehmen kann weiterhin Zahlungen in mehreren Depots haben, ohne dass das im Widerspruch zu
+diesem Feld steht (D-006, D-035).
 
 ### 3.5 `dividend_payments` — Kerntabelle
 

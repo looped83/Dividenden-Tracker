@@ -24,6 +24,8 @@ describe("mapWorksheetToSecurities", () => {
         country: "US",
         dataQuality: "ok",
         warnings: [],
+        defaultDepotId: null,
+        defaultDepotName: null,
         sourceRow: 2,
       },
     ]);
@@ -109,5 +111,35 @@ describe("mapWorksheetToSecurities", () => {
       table(["Name"], [["Erste AG"], [null], ["Dritte AG"]]),
     );
     expect(result.valid.map((row) => row.sourceRow)).toEqual([2, 4]);
+  });
+
+  it("löst eine Depot-Spalte per Namensabgleich (Groß-/Kleinschreibung egal) auf", () => {
+    const result = mapWorksheetToSecurities(
+      table(["Name", "Depot"], [["Beispiel AG", "flatex"]]),
+      [{ id: "depot-1", name: "Flatex" }],
+    );
+    expect(result.valid[0]?.defaultDepotId).toBe("depot-1");
+    expect(result.valid[0]?.defaultDepotName).toBe("Flatex");
+    expect(result.valid[0]?.warnings).toEqual([]);
+  });
+
+  it("setzt kein Standard-Depot und warnt, wenn der Depotname zu keinem bestehenden Depot passt", () => {
+    const result = mapWorksheetToSecurities(
+      table(["Name", "Depot"], [["Beispiel AG", "Unbekanntes Depot"]]),
+      [{ id: "depot-1", name: "Flatex" }],
+    );
+    expect(result.valid[0]?.defaultDepotId).toBeNull();
+    expect(result.valid[0]?.defaultDepotName).toBeNull();
+    expect(result.valid[0]?.warnings).toEqual([
+      'Depot „Unbekanntes Depot" nicht gefunden, kein Standard-Depot gesetzt',
+    ]);
+  });
+
+  it("erkennt auch die Aliasspalten 'Broker' und 'Konto' als Depot-Spalte", () => {
+    const result = mapWorksheetToSecurities(
+      table(["Name", "Broker"], [["Beispiel AG", "Trade Republic"]]),
+      [{ id: "depot-2", name: "Trade Republic" }],
+    );
+    expect(result.valid[0]?.defaultDepotId).toBe("depot-2");
   });
 });

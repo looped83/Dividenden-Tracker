@@ -8,9 +8,11 @@ import { SecurityImportButton } from "@/features/securities/SecurityImportDialog
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
+import { useDepots } from "@/features/depots/hooks";
 import {
   Dialog,
   DialogContent,
@@ -59,6 +61,8 @@ function SecurityFormDialog({
 }) {
   const createSecurity = useCreateSecurity();
   const updateSecurity = useUpdateSecurity();
+  const { data: depots = [] } = useDepots();
+  const activeDepots = depots.filter((depot) => !depot.archived_at);
   const [submitError, setSubmitError] = React.useState<string | null>(null);
   const {
     register,
@@ -76,6 +80,7 @@ function SecurityFormDialog({
       sector: security?.sector ?? "",
       currency: security?.currency ?? "",
       note: security?.note ?? "",
+      defaultDepotId: security?.default_depot_id ?? "",
     },
   });
 
@@ -90,6 +95,7 @@ function SecurityFormDialog({
       sector: emptyToNull(values.sector),
       currency: emptyToNull(values.currency),
       note: emptyToNull(values.note),
+      default_depot_id: emptyToNull(values.defaultDepotId),
     };
     try {
       if (security) {
@@ -164,6 +170,21 @@ function SecurityFormDialog({
             <Input id="security-sector" {...register("sector")} />
           </div>
           <div className="space-y-1.5">
+            <Label htmlFor="security-default-depot">Standard-Depot</Label>
+            <Select id="security-default-depot" {...register("defaultDepotId")}>
+              <option value="">Kein Standard-Depot</option>
+              {activeDepots.map((depot) => (
+                <option key={depot.id} value={depot.id}>
+                  {depot.name}
+                </option>
+              ))}
+            </Select>
+            <p className="text-sm text-muted-foreground">
+              Wird beim Anlegen eines Dividendeneingangs vorausgewählt, kann dort aber
+              jederzeit geändert werden.
+            </p>
+          </div>
+          <div className="space-y-1.5">
             <Label htmlFor="security-note">Notiz</Label>
             <Textarea id="security-note" {...register("note")} />
           </div>
@@ -185,6 +206,8 @@ function SecurityFormDialog({
 
 export function SecuritiesPage() {
   const { data: securities = [], isLoading } = useSecurities();
+  const { data: depots = [] } = useDepots();
+  const depotById = new Map(depots.map((depot) => [depot.id, depot]));
   const archiveSecurity = useArchiveSecurity();
   const [showArchived, setShowArchived] = React.useState(false);
   const [dialog, setDialog] = React.useState<{
@@ -249,6 +272,7 @@ export function SecuritiesPage() {
               <TableHead>Ticker</TableHead>
               <TableHead>ISIN</TableHead>
               <TableHead>Land</TableHead>
+              <TableHead>Standard-Depot</TableHead>
               <TableHead>Datenqualität</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Aktionen</TableHead>
@@ -268,6 +292,11 @@ export function SecuritiesPage() {
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {security.country ?? "—"}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {security.default_depot_id
+                      ? (depotById.get(security.default_depot_id)?.name ?? "—")
+                      : "—"}
                   </TableCell>
                   <TableCell>
                     <Badge variant={quality.variant}>{quality.label}</Badge>

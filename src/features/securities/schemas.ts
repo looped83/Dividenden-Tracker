@@ -32,5 +32,6 @@ export const securityFormSchema = z.object({
   sector: z.string().trim().max(100).optional().or(z.literal("")),
   currency: optionalUpper(CURRENCY_PATTERN, "3-stelliger Waehrungscode, z. B. EUR"),
   note: z.string().trim().max(5000).optional().or(z.literal("")),
+  defaultDepotId: z.string().trim().optional().or(z.literal("")),
 });
 export type SecurityFormValues = z.infer<typeof securityFormSchema>;
