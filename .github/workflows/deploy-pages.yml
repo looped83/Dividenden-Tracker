@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [claude/dividend-tracker-spec-l627i5]
+    branches: [main, claude/dividend-tracker-spec-l627i5]
   workflow_dispatch:
 
 permissions:
