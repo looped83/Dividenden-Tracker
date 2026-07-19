@@ -10,6 +10,8 @@ Abnahmekriterien. Tests der Phase laufen ab dann dauerhaft in CI.
 
 ## Phase 1 — Projektgrundlage und Designsystem
 
+> ✅ **Umgesetzt** (siehe README.md Status-Zeile, DECISIONS.md D-021 ff.).
+
 - **Ziel:** Lauffähiges, getestetes Projektskelett mit Designsystem, ohne Fachlogik.
 - **Scope:** Vite+React+TS-strict-Setup, Tailwind 4, shadcn/ui-Basis, Design-Tokens
   (hell/dunkel), Routing-Gerüst mit 9 Bereichen (Platzhalter), responsive App-Shell
@@ -33,6 +35,9 @@ Abnahmekriterien. Tests der Phase laufen ab dann dauerhaft in CI.
 
 ## Phase 2 — Supabase, Auth und Datenbank
 
+> ✅ **Umgesetzt** und gegen ein echtes Supabase-Projekt in Betrieb (GitHub Pages, D-030).
+> `database.types.ts` bleibt handgepflegt (D-028, O-7 offen).
+
 - **Ziel:** Vollständiges Schema mit RLS, Audit-Triggern und Auth-Flows.
 - **Scope:** Supabase-CLI-Setup (lokal + Projekt), alle Migrationen aus DATA_MODEL.md
   (Enums, Tabellen, Trigger, Views, Policies), Typen-Generierung, Registrierung/Login/Logout/
@@ -54,6 +59,22 @@ Abnahmekriterien. Tests der Phase laufen ab dann dauerhaft in CI.
 - **Voraussetzung:** Sicherheitstestsuite dauerhaft in CI verankert.
 
 ## Phase 3 — Stammdaten und manuelle Dividendeneingänge
+
+> ✅ **Umgesetzt und live** (Stand 2026-07-19). Abweichungen vom ursprünglichen Scope:
+> - Kein `PaymentCardList` (mobile Kartenansicht) und keine Virtualisierung — die Zahlungsliste
+>   ist bislang eine einfache Tabelle ohne Performance-Test bei 10.000 Zeilen (siehe unten).
+> - Kein separates `FilterBar`-Sheet für iPhone; Filter sind Desktop-Inline-Selects.
+> - Zusätzlich, vorgezogen aus Phase 4: Excel-Import für Unternehmens-Stammdaten
+>   (Name/Ticker/ISIN/WKN, `src/features/securities/xlsxImport.ts`, DECISIONS.md D-032) —
+>   kein vollständiger Import-Assistent, keine Dividendeneingänge, keine Duplikaterkennung.
+> - **Nicht erfüllt:** 10.000-Zeilen-Performancetest, E2E-Testsuite gegen echtes Supabase
+>   (nur Unit-Tests + manuelles Testen durch den Nutzer gegen das echte Projekt).
+>
+> **Bekannter offener Fehler:** Neu registrierte Nutzer erhalten über den
+> `on_auth_user_created`-Trigger automatisch eine `profiles`-Zeile; für Nutzer, die vor dem
+> Anlegen der Migrationen bereits existierten, musste das Profil einmalig per Hand
+> nachgetragen werden (siehe Chatverlauf 2026-07-19). Kein Code-Fehler, aber bei künftigen
+> Migrationen auf einem bereits befüllten Projekt zu beachten.
 
 - **Ziel:** Vollwertige manuelle Erfassung, Bearbeitung (auditiert), Storno/Archivierung,
   Listen- und Detailansichten; die App ist erstmals täglich nutzbar.
@@ -80,6 +101,11 @@ Abnahmekriterien. Tests der Phase laufen ab dann dauerhaft in CI.
 - **Voraussetzung:** stabile Erfassung + Audit als Fundament für Import-Vergleiche.
 
 ## Phase 4 — CSV- und Excel-Import
+
+> **Hinweis:** Der Unternehmens-Stammdaten-Import (Name/Ticker/ISIN/WKN) wurde bereits in
+> Phase 3 vorgezogen (`src/features/securities/xlsxImport.ts`, `exceljs`). Diese Phase betrifft
+> ausschließlich den Import von Dividendeneingängen inkl. Bilanz, Duplikaterkennung und
+> Rollback — die SheetJS-vs-Alternative-Entscheidung (O-1) ist davon unabhängig und noch offen.
 
 - **Ziel:** Vollständiger Import-Assistent gemäß IMPORT_SPEC.md inkl. Bilanz, vierstufiger
   Duplikaterkennung, atomarem Commit und Rollback.
