@@ -125,13 +125,78 @@ würde Monatssummen verfälschen (31.12. vs. 01.01.).
 „in Numbers/Excel als XLSX exportieren". Kein eigener BIFF-Sonderweg.
 **Konsequenz:** Realistische Zusage ohne Qualitätsrisiko im Kernpfad.
 
+## D-021 · lib/money: Wertobjekte als Klassen mit privatem Konstruktor statt Parameter-Properties
+**Kontext:** Phase 1 (IMPLEMENTATION_PLAN.md) verlangt ein deterministisches, rein
+funktionales, unabhängig testbares `lib/money`-Grundgerüst; TypeScript strict mode mit
+`erasableSyntaxOnly` verbietet Konstruktor-Parameter-Properties (nicht erasable Syntax).
+**Entscheidung:** `Money`, `Quantity`, `FxRate`, `OriginalAmount`, `PerShareAmount` sind
+unveränderliche Klassen mit privatem Konstruktor und statischen Fabrikmethoden
+(`fromString`, `zero`, …); Felder werden im Konstruktorkörper zugewiesen, keine
+Parameter-Property-Kurzschreibweise. Parsing (`parseCanonicalDecimal`) und Rundung
+(`roundHalfUp`) sind zentrale, geteilte reine Funktionen — keine duplizierte Logik zwischen
+den Wertobjekten.
+**Konsequenz:** Jedes Wertobjekt ist über seine Fabrikmethoden und wenige Instanzmethoden
+vollständig gekapselt und typsicher; UI-Komponenten können keine abweichende Rundung/Parsing
+einführen.
+
+## D-022 · Money.fromString akzeptiert nur das kanonische Dezimalformat
+**Kontext:** CALCULATION_RULES.md §7 beschreibt lokale Zahlenformate (deutsch/englisch,
+Tausendertrennzeichen) für Import und Formulare; das ist explizit Aufgabe von `lib/parsing`
+(Phase 3/4), nicht von `lib/money`.
+**Entscheidung:** `lib/money` (Phase 1) parst ausschließlich ein kanonisches Format (Punkt
+als Dezimaltrennzeichen, kein Tausendertrennzeichen, optionales Vorzeichen) und lehnt
+Komma-/Tausenderformate mit klarer Fehlermeldung ab. Die lokale Formaterkennung entsteht erst
+mit `lib/parsing` in einer späteren Phase und normalisiert vor dem Aufruf von `Money.fromString`.
+**Konsequenz:** Sauberer Schnitt zwischen Rundungs-/Arithmetik-Grundgerüst (Phase 1) und
+Formaterkennung (Phase 3/4); kein verfrühter Scope in Phase 1.
+
+## D-023 · Intl.NumberFormat erhält den kanonischen String, nicht `Number()`
+**Kontext:** R-5 verlangt reine Anzeige-Formatierung ohne erneute Rundung; ein Umweg über
+`.toNumber()` würde Grundsatz 9 (keine unkontrollierten Floats) für sehr große Beträge
+unterlaufen. TypeScripts `StringNumericLiteral`-Typ (lib.es2023.intl.d.ts) akzeptiert
+statisch nur literale Template-Typen, keinen generischen `string`.
+**Entscheidung:** `formatMoney`/`formatPercent` übergeben `toStringValue()`/`toFixed()`
+direkt an `Intl.NumberFormat#format` (von der Laufzeit seit ES2020 unterstützt) mit einem
+gezielt begründeten `as unknown as number`-Cast für die bekannte TS-Typisierungslücke.
+**Konsequenz:** Keine Float-Konvertierung an der Formatierungsgrenze; der Cast ist eng
+gefasst und kommentiert, kein pauschales `any`.
+
+## D-024 · ThemeProvider nutzt `useSyncExternalStore` statt `setState` im Effect
+**Kontext:** Die System-Farbschema-Präferenz ist ein extern veränderlicher Browser-Zustand
+(`matchMedia`); `eslint-plugin-react-hooks` (React 19) markiert synchrones `setState` in
+einem Effekt als Anti-Pattern (kaskadierende Re-Renders).
+**Entscheidung:** Die Systempräferenz wird über `useSyncExternalStore` gelesen; `resolvedTheme`
+ist ein reiner Ableitungswert aus `theme` und der Systempräferenz. Ein einzelner Effekt bleibt
+nur noch für die DOM-Seiteneffekt-Synchronisierung (`classList.toggle`) übrig.
+**Konsequenz:** Keine unterdrückten Lint-Fehler, idiomatisches React-19-Muster für externen
+veränderlichen Zustand.
+
+## D-025 · Theme-Präferenz in localStorage
+**Kontext:** ARCHITECTURE.md §1 untersagt Local Storage/IndexedDB als alleinige Quelle für
+fachliche/finanzielle Daten; die Hell/Dunkel/System-Präferenz ist keine Finanzdatum.
+**Entscheidung:** Die Theme-Präferenz wird ausschließlich als reine UI-Einstellung in
+localStorage gehalten (Schlüssel `dividend-tracker:theme`), unabhängig vom künftigen
+Supabase-Profil (Phase 2 legt zusätzlich `profiles.theme` an; Synchronisierung ggf. in
+späterer Phase, kein Widerspruch zum Source-of-Truth-Grundsatz für Finanzdaten).
+**Konsequenz:** Sofortige, netzwerkunabhängige Theme-Anwendung bereits vor Phase 2.
+
+## D-026 · SheetJS-CDN in der Implementierungsumgebung nicht erreichbar
+**Kontext:** D-015/O-1 sahen vor, die konkrete SheetJS-0.20.x-Version beim Projektsetup von
+`cdn.sheetjs.com` zu verifizieren. In der Sandbox-Umgebung dieser Phase-1-Implementierung ist
+der Host durch die Egress-Policy des Proxys blockiert (403 auf CONNECT).
+**Entscheidung:** SheetJS/xlsx wird planmäßig erst in Phase 4 (CSV- und Excel-Import)
+installiert; die Versionsprüfung erfolgt dort in einer Umgebung mit Zugriff auf
+cdn.sheetjs.com bzw. wird alternativ gegen eine erreichbare, gepflegte Bezugsquelle geprüft,
+falls der CDN-Host dauerhaft nicht erreichbar ist.
+**Konsequenz:** O-1 bleibt offen und wird auf den Start von Phase 4 verschoben (siehe unten).
+
 ---
 
 ## Offene Entscheidungen (bewusst vertagt)
 
 | # | Thema | Vertagt bis |
 |---|---|---|
-| O-1 | Exakte SheetJS-Patch-Version (CDN-Prüfung beim Setup) | Phase 1 |
+| O-1 | Exakte SheetJS-Patch-Version — CDN in der bisherigen Sandbox-Umgebung nicht erreichbar (D-026), Prüfung erneut versuchen | Phase 4 |
 | O-2 | Hosting-Anbieter für das statische Frontend (Anforderungen: Custom Header/CSP, EU-Region) | Phase 2 |
 | O-3 | Supabase-Projektregion und Backup-Politik des Anbieters (zusätzlich zu eigenen JSON-Backups) | Phase 2 |
 | O-4 | Konkrete Wertpapier-Stammdaten-Vorschlagsliste (Branchen-Taxonomie) | Phase 3 |
