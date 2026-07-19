@@ -23,16 +23,6 @@ import {
   usePayment,
   useUnarchivePayment,
 } from "@/features/payments/hooks";
-import type { PaymentType } from "@/lib/supabase/database.types";
-
-const PAYMENT_TYPE_LABELS: Record<PaymentType, string> = {
-  regular: "Regulär",
-  special: "Sonderdividende",
-  correction: "Korrektur",
-  cancellation: "Storno",
-  refund: "Erstattung",
-  other: "Sonstiges",
-};
 
 function formatDate(value: string): string {
   return new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" }).format(
@@ -73,7 +63,6 @@ export function PaymentDetailPage() {
   const depot = depots.find((d) => d.id === payment.depot_id);
   const security = securities.find((s) => s.id === payment.security_id);
   const baseCurrency = toCurrencyCode(depot?.base_currency ?? "EUR");
-  const isForeign = payment.original_gross !== null;
 
   const handleArchive = async () => {
     await archivePayment.mutateAsync({
@@ -135,50 +124,9 @@ export function PaymentDetailPage() {
         </CardHeader>
         <CardContent>
           <DetailRow label="Depot">{depot?.name ?? "—"}</DetailRow>
-          <DetailRow label="Art">{PAYMENT_TYPE_LABELS[payment.payment_type]}</DetailRow>
-          <DetailRow label="Brutto">
-            <AmountText amount={Money.fromString(payment.gross_amount, baseCurrency)} />
-          </DetailRow>
           <DetailRow label="Netto">
             <AmountText amount={Money.fromString(payment.net_amount, baseCurrency)} />
           </DetailRow>
-          <DetailRow label="Kapitalertragsteuer">
-            <AmountText
-              amount={Money.fromString(payment.withholding_tax, baseCurrency)}
-            />
-          </DetailRow>
-          <DetailRow label="Inländische Steuer">
-            <AmountText amount={Money.fromString(payment.domestic_tax, baseCurrency)} />
-          </DetailRow>
-          {payment.solidarity_surcharge && (
-            <DetailRow label="Solidaritätszuschlag">
-              <AmountText
-                amount={Money.fromString(payment.solidarity_surcharge, baseCurrency)}
-              />
-            </DetailRow>
-          )}
-          {payment.church_tax && (
-            <DetailRow label="Kirchensteuer">
-              <AmountText amount={Money.fromString(payment.church_tax, baseCurrency)} />
-            </DetailRow>
-          )}
-          {payment.fees && (
-            <DetailRow label="Gebühren">
-              <AmountText amount={Money.fromString(payment.fees, baseCurrency)} />
-            </DetailRow>
-          )}
-          {isForeign && (
-            <>
-              <DetailRow label="Originalwährung">{payment.original_currency}</DetailRow>
-              <DetailRow label="Brutto (Original)">{payment.original_gross}</DetailRow>
-              <DetailRow label="Netto (Original)">{payment.original_net}</DetailRow>
-              <DetailRow label="Wechselkurs">{payment.fx_rate}</DetailRow>
-            </>
-          )}
-          {payment.quantity && (
-            <DetailRow label="Stückzahl">{payment.quantity}</DetailRow>
-          )}
-          {payment.note && <DetailRow label="Notiz">{payment.note}</DetailRow>}
           {payment.archived_at && payment.archive_reason && (
             <DetailRow label="Storno-Grund">{payment.archive_reason}</DetailRow>
           )}
