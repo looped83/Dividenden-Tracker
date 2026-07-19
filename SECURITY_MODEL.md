@@ -56,6 +56,9 @@ create policy upd on <t> for update using (user_id = auth.uid())
 3. Abweichungen:
    - `profiles`: `id = auth.uid()` statt `user_id`; kein INSERT/DELETE über API (Anlage per Trigger).
    - `imports`: zusätzlich `delete using (user_id = auth.uid() and status in ('analyzing','pending_confirmation','discarded'))`.
+   - `dividend_payments`: zusätzlich `delete using (user_id = auth.uid() and archived_at is not null)`
+     — engste Ausnahme vom Hard-Delete-Verbot, nur für bereits archivierte eigene Zeilen, audit-
+     protokolliert (`action = 'delete'`, siehe D-034).
    - `audit_log`: nur `select using (user_id = auth.uid())`; INSERT ausschließlich über
      `security definer`-Triggerfunktion; kein UPDATE/DELETE für niemanden (insert-only).
 4. `anon`-Rolle hat keinerlei Zugriff auf `public`-Tabellen (Policies gelten für

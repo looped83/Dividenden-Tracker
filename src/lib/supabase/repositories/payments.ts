@@ -111,3 +111,22 @@ export async function archivePayment(
 export async function unarchivePayment(id: string): Promise<DividendPayment> {
   return updatePayment(id, { archived_at: null, archive_reason: null });
 }
+
+/**
+ * Endgueltiges Loeschen (Grundsatz 3, PRODUCT_SPEC.md §3): die RLS-Policy
+ * `dividend_payments_delete_archived_own` (0013) laesst dies ausschliesslich
+ * fuer bereits archivierte eigene Zeilen zu; ein Versuch auf eine nicht
+ * archivierte oder fremde Zeile betrifft 0 Zeilen statt eines Fehlers.
+ */
+export async function deletePayment(id: string): Promise<void> {
+  const { error, count } = await supabase
+    .from("dividend_payments")
+    .delete({ count: "exact" })
+    .eq("id", id);
+  if (error) throw error;
+  if (count === 0) {
+    throw new Error(
+      "Eingang konnte nicht geloescht werden (nicht gefunden, nicht archiviert oder keine Berechtigung).",
+    );
+  }
+}

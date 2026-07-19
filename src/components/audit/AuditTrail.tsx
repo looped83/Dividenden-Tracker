@@ -8,6 +8,7 @@ const ACTION_LABELS: Record<AuditLogRow["action"], string> = {
   update: "Geändert",
   archive: "Archiviert",
   unarchive: "Reaktiviert",
+  delete: "Endgültig gelöscht",
   import_commit: "Import übernommen",
   import_rollback: "Import zurückgerollt",
   restore: "Wiederhergestellt",

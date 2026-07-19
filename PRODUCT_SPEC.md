@@ -72,7 +72,7 @@ Diese 15 Grundsätze sind Abnahmekriterien für jede Phase (siehe IMPLEMENTATION
 
 1. Jeder Dividendeneingang stellt ein konkretes Finanzereignis dar.
 2. Kein Eingang darf stillschweigend verändert werden → jede Änderung erzeugt einen Audit-Log-Eintrag mit Alt-/Neuwerten.
-3. Kein Eingang darf stillschweigend gelöscht werden → es gibt **kein Hard Delete**; nur Storno/Archivierung mit Audit-Eintrag.
+3. Kein Eingang darf stillschweigend gelöscht werden → es gibt **kein Hard Delete**; nur Storno/Archivierung mit Audit-Eintrag. Einzige, eng begrenzte Ausnahme: ein bereits archivierter Eingang kann vom Eigentümer endgültig entfernt werden (Archivierung ist zwingende Voraussetzung, Löschung wird audit-protokolliert, siehe DECISIONS.md D-034).
 4. Kein Eingang darf unbemerkt doppelt importiert werden → vierstufige Duplikaterkennung (IMPORT_SPEC.md §7).
 5. Keine Importzeile darf ohne Rückmeldung verworfen werden → Importbilanz muss aufgehen (IMPORT_SPEC.md §8).
 6. Jede Statistik muss auf konkrete Einzelzahlungen zurückführbar sein → Drill-down ist Pflicht für jede Kennzahl.
