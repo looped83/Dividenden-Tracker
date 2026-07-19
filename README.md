@@ -4,8 +4,25 @@ Persönliche Web-App zur langfristigen, zuverlässigen Dokumentation **tatsächl
 Dividendeneingänge** — als Ablösung einer langjährig gepflegten Numbers-Tabelle.
 PWA für Mac, iPad und iPhone. Supabase Postgres als Source of Truth.
 
-**Status: Planungsphase.** Die Implementierung folgt dem Phasenplan; aktuell existiert
-ausschließlich die verbindliche Spezifikation:
+**Status:** Phase 1 (Projektgrundlage und Designsystem) ist umgesetzt. Die weiteren Phasen
+folgen dem Phasenplan in [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).
+
+## Entwicklung
+
+```bash
+npm install
+npm run dev        # Entwicklungsserver
+npm run typecheck  # TypeScript strict, ohne Emit
+npm run lint       # ESLint (inkl. Geld-Verbotsliste, CALCULATION_RULES.md §8)
+npm run format:check
+npm test           # Vitest (Unit-Tests)
+npm run build      # Produktions-Build
+```
+
+Node.js ≥ 22 wird vorausgesetzt. Alle Paketversionen sind exakt gepinnt
+(siehe [ARCHITECTURE.md](ARCHITECTURE.md) §2).
+
+## Spezifikation
 
 | Dokument | Inhalt |
 |---|---|
