@@ -28,8 +28,12 @@ export function ResetPasswordRequestPage() {
   const onSubmit = handleSubmit(async (values) => {
     // Bewusst kein Unterschied in der Anzeige, ob die E-Mail-Adresse
     // existiert (kein Preisgeben von Kontoinformationen).
+    // window.location.pathname (nicht nur origin) beruecksichtigt den
+    // GitHub-Pages-Unterpfad (z. B. "/Dividenden-Tracker/"); bei einem
+    // Hash-Router ist der pathname unabhaengig von der aktuellen Route immer
+    // der Deployment-Basispfad (DECISIONS.md D-030).
     await supabase.auth.resetPasswordForEmail(values.email, {
-      redirectTo: `${window.location.origin}/passwort-zuruecksetzen`,
+      redirectTo: `${window.location.origin}${window.location.pathname}#/passwort-zuruecksetzen`,
     });
     setSubmitted(true);
   });

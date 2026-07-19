@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router";
+import { createHashRouter } from "react-router";
 import { AppShell } from "@/app/AppShell";
 import { MorePage } from "@/app/MorePage";
 import { NotFoundPage } from "@/app/NotFoundPage";
@@ -21,8 +21,11 @@ import { SettingsPage } from "@/features/settings/SettingsPage";
 /**
  * Routing (PRODUCT_SPEC.md §4): neun Hauptbereiche, kein Kalenderbereich.
  * React Router 8 im Library-Modus (kein SSR/Framework-Modus, ARCHITECTURE.md K-2).
+ * Hash-Router statt Browser-Router: GitHub Pages unterstuetzt kein
+ * server-seitiges SPA-Fallback fuer direkt aufgerufene/neu geladene Routen
+ * (DECISIONS.md D-030). URLs haben dadurch die Form `/#/login` statt `/login`.
  */
-export const router = createBrowserRouter([
+export const router = createHashRouter([
   { path: "/login", element: <LoginPage /> },
   { path: "/registrieren", element: <RegisterPage /> },
   { path: "/passwort-vergessen", element: <ResetPasswordRequestPage /> },

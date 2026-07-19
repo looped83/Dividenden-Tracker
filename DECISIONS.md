@@ -244,6 +244,35 @@ PostgreSQL verifiziert (D-027).
 **Konsequenz:** Vor dem ersten produktiven Einsatz muss der komplette Auth-Flow einmal gegen
 ein echtes (auch ein kostenloses) Supabase-Projekt durchgespielt werden (siehe O-8).
 
+## D-030 · Hosting auf GitHub Pages (statt Vercel/Netlify) — Hash-Router und Basispfad
+**Kontext:** O-2 (Hosting-Anbieter) wurde vom Nutzer entschieden: GitHub Pages, direkt aus
+dem Repository, ohne separaten Hosting-Account. GitHub Pages liefert Projekt-Seiten unter
+einem Unterpfad (`https://<user>.github.io/<repo>/`) und unterstuetzt kein serverseitiges
+SPA-Fallback — ein direkter Aufruf oder Reload einer Unterseite (z. B. `/login`) mit
+`BrowserRouter` liefert ein hartes 404 von GitHub Pages, bevor React Router ueberhaupt laedt.
+**Entscheidung:**
+- `src/app/router.tsx` nutzt `createHashRouter` statt `createBrowserRouter`. URLs haben
+  dadurch die Form `/#/login` statt `/login`; der Pfad vor dem `#` wird nie an den Server
+  geschickt, wodurch das GitHub-Pages-Fallback-Problem strukturell entfaellt (kein
+  404.html-Redirect-Hack noetig).
+- `vite.config.ts` setzt `base: '/Dividenden-Tracker/'` nur, wenn die Umgebungsvariable
+  `GITHUB_PAGES=true` gesetzt ist (vom Deploy-Workflow), sonst bleibt `base: '/'` fuer
+  andere Umgebungen (lokal, ggf. spaeter Vercel) unveraendert.
+- `ResetPasswordRequestPage.tsx` baut den `redirectTo`-Link aus
+  `window.location.origin + window.location.pathname + '#/passwort-zuruecksetzen'` —
+  `pathname` ist bei einem Hash-Router unabhaengig von der aktuellen Route immer der
+  Deployment-Basispfad, das funktioniert also sowohl an der Domainwurzel als auch unter
+  `/Dividenden-Tracker/`.
+- Neuer Workflow `.github/workflows/deploy-pages.yml`: baut bei jedem Push auf
+  `claude/dividend-tracker-spec-l627i5` mit `GITHUB_PAGES=true` sowie den Repo-Secrets
+  `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` und deployt via `actions/deploy-pages`.
+**Konsequenz:** Der Nutzer muss einmalig (a) GitHub Pages in den Repo-Einstellungen mit
+Quelle „GitHub Actions" aktivieren, (b) die zwei Secrets unter Settings → Secrets and
+variables → Actions eintragen, und (c) in Supabase Site URL/Redirect URLs auf die
+GitHub-Pages-URL (inkl. `#/passwort-zuruecksetzen`) anpassen. Wechselt das Hosting spaeter
+zu einem Anbieter mit echtem SPA-Fallback (z. B. Vercel), kann auf `createBrowserRouter`
+zurueckgewechselt werden — beides ist mit denselben Routendefinitionen moeglich.
+
 ---
 
 ## Offene Entscheidungen (bewusst vertagt)
@@ -251,11 +280,12 @@ ein echtes (auch ein kostenloses) Supabase-Projekt durchgespielt werden (siehe O
 | # | Thema | Vertagt bis |
 |---|---|---|
 | O-1 | Exakte SheetJS-Patch-Version — CDN in der bisherigen Sandbox-Umgebung nicht erreichbar (D-026), Prüfung erneut versuchen | Phase 4 |
-| O-2 | Hosting-Anbieter für das statische Frontend (Anforderungen: Custom Header/CSP, EU-Region) | Phase 2 |
+| O-2 | ~~Hosting-Anbieter für das statische Frontend~~ — entschieden: GitHub Pages (D-030) | erledigt |
 | O-3 | Supabase-Projektregion und Backup-Politik des Anbieters (zusätzlich zu eigenen JSON-Backups) | Phase 2 |
 | O-4 | Konkrete Wertpapier-Stammdaten-Vorschlagsliste (Branchen-Taxonomie) | Phase 3 |
 | O-5 | Umfang der Mapping-Vorlagen (nur letzte vs. benannte Bibliothek) | Phase 4 |
 | O-6 | TypeScript-7-Umstieg | nach Phase 10 |
 | O-7 | `database.types.ts` per `npm run gen:types` regenerieren und mit der handgepflegten Fassung abgleichen, sobald Docker/ein verlinktes Projekt verfügbar ist (D-028) | sobald verfügbar, spätestens Phase 3 |
-| O-8 | Echten Auth-Flow (Registrierung inkl. E-Mail-Bestätigung, Login, Passwort-Reset) gegen ein reales Supabase-Projekt durchspielen (D-029) | vor Produktivbetrieb |
-| O-9 | Konkretes Supabase-Projekt anlegen und `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` bereitstellen | Beginn Phase 3 |
+| O-8 | Echten Auth-Flow (Registrierung inkl. E-Mail-Bestätigung, Login, Passwort-Reset) gegen ein reales Supabase-Projekt durchspielen (D-029) | vor Produktivbetrieb — jetzt über GitHub Pages möglich |
+| O-9 | Konkretes Supabase-Projekt anlegen und `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` bereitstellen | ~~Beginn Phase 3~~ erledigt (Projekt `fylmynfwczvyqewnpdol`) |
+| O-10 | GitHub Pages Repo-Secrets (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`) durch den Nutzer eintragen; Pages-Quelle auf „GitHub Actions" stellen (D-030) | sofort |
