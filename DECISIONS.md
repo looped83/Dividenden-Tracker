@@ -273,6 +273,30 @@ GitHub-Pages-URL (inkl. `#/passwort-zuruecksetzen`) anpassen. Wechselt das Hosti
 zu einem Anbieter mit echtem SPA-Fallback (z. B. Vercel), kann auf `createBrowserRouter`
 zurueckgewechselt werden — beides ist mit denselben Routendefinitionen moeglich.
 
+## D-031 · Phase 3: TanStack Query fuer Server-State, `amount_per_share` nur bei Fremdwaehrung befuellt
+**Kontext:** Phase 3 fuehrt die erste echte CRUD-UI ein (Depots/Portfolios, Unternehmen,
+Dividendeneingaenge inkl. Fremdwaehrung und Invariante-Warnung).
+**Entscheidung:**
+- Server-State (Listen, Mutations, Cache-Invalidierung) laeuft ueber `@tanstack/react-query`
+  (bereits in `package.json` vorgesehen, aber bislang nicht verdrahtet) statt eigener
+  `useEffect`/`useState`-Datenladelogik je Seite — ein `QueryClientProvider` wurde in
+  `main.tsx` ergaenzt.
+- Fehlende UI-Bausteine (`Select`, `Table`, `Textarea`, `Dialog`) wurden als schlanke,
+  Tailwind-basierte Komponenten in `src/components/ui/` ergaenzt statt eine vollstaendige
+  Komponentenbibliothek nachzuruesten; `Dialog` nutzt das bereits installierte
+  `@radix-ui/react-dialog` fuer Fokus-Trapping/Escape-Handling, `Select`/`Table` sind reine
+  HTML-Wrapper (kein `@radix-ui/react-select` installiert).
+- Die clientseitige Invariante-Pruefung (`lib/payments/invariant.ts`) spiegelt exakt die
+  Postgres-CHECK-Constraint `net_amount_invariance` (Toleranz ±0,02) und zeigt bei
+  Ueberschreitung eine Warnung mit expliziter Bestaetigungs-Checkbox — nie ein stilles
+  Anpassen (CALCULATION_RULES.md §4).
+- `amount_per_share` (DB-Spalte, R-7) wird nur bei Fremdwaehrungszahlungen aus
+  `original_gross ÷ quantity` befuellt, da bei Inlandszahlungen kein `original_gross`
+  existiert (DATA_MODEL.md `fx_fields_consistency`-Constraint) — bei Inlandszahlungen bleibt
+  die Spalte `null`.
+**Konsequenz:** Weitere Phasen (Statistik, Import) koennen dieselben Repository-/Hook-Module
+(`src/lib/supabase/repositories/*`, `src/features/*/hooks.ts`) wiederverwenden bzw. erweitern.
+
 ---
 
 ## Offene Entscheidungen (bewusst vertagt)
