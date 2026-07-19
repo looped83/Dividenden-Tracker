@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { parseCanonicalDecimal } from "@/lib/money";
+import { normalizeGermanDecimalInput, parseCanonicalDecimal } from "@/lib/money";
 
 function isValidDecimal(value: string): boolean {
   try {
@@ -10,14 +10,26 @@ function isValidDecimal(value: string): boolean {
   }
 }
 
-/** Kanonisches Dezimalformat (Punkt als Trennzeichen, CALCULATION_RULES.md R-1). */
+/**
+ * Nimmt deutsch formatierte Eingaben entgegen (Komma als Dezimaltrennzeichen,
+ * z. B. "12,34") und normalisiert sie auf das kanonische Punkt-Format
+ * (CALCULATION_RULES.md R-1), bevor der Wert weiterverarbeitet wird.
+ */
 function decimalString(label: string) {
   return z
     .string()
     .trim()
     .min(1, `${label} ist erforderlich`)
-    .refine(isValidDecimal, {
-      message: `${label}: ungültige Zahl (z. B. 12.34, Punkt als Dezimaltrennzeichen)`,
+    .transform((value, ctx) => {
+      const normalized = normalizeGermanDecimalInput(value);
+      if (!isValidDecimal(normalized)) {
+        ctx.addIssue({
+          code: "custom",
+          message: `${label}: ungültige Zahl (z. B. 12,34)`,
+        });
+        return z.NEVER;
+      }
+      return normalized;
     });
 }
 

@@ -8,12 +8,37 @@ const baseValues = {
 };
 
 describe("paymentFormSchema", () => {
-  it("akzeptiert gueltige Eingaben", () => {
+  it("akzeptiert eine deutsch formatierte Eingabe mit Komma", () => {
+    const result = paymentFormSchema.safeParse({
+      ...baseValues,
+      netAmount: "73,63",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.netAmount).toBe("73.63");
+    }
+  });
+
+  it("akzeptiert deutsche Tausendertrennzeichen", () => {
+    const result = paymentFormSchema.safeParse({
+      ...baseValues,
+      netAmount: "1.234,56",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.netAmount).toBe("1234.56");
+    }
+  });
+
+  it("akzeptiert auch das kanonische Punkt-Format", () => {
     const result = paymentFormSchema.safeParse({
       ...baseValues,
       netAmount: "73.63",
     });
     expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.netAmount).toBe("73.63");
+    }
   });
 
   it("lehnt fehlenden Nettobetrag ab", () => {
@@ -29,10 +54,10 @@ describe("paymentFormSchema", () => {
     }
   });
 
-  it("lehnt ein Komma statt Punkt als Dezimaltrennzeichen ab", () => {
+  it("lehnt mehrere Kommas ab", () => {
     const result = paymentFormSchema.safeParse({
       ...baseValues,
-      netAmount: "73,63",
+      netAmount: "73,63,12",
     });
     expect(result.success).toBe(false);
   });
@@ -41,7 +66,7 @@ describe("paymentFormSchema", () => {
     const result = paymentFormSchema.safeParse({
       ...baseValues,
       depotId: "",
-      netAmount: "73.63",
+      netAmount: "73,63",
     });
     expect(result.success).toBe(false);
   });
@@ -50,7 +75,7 @@ describe("paymentFormSchema", () => {
     const result = paymentFormSchema.safeParse({
       ...baseValues,
       securityId: "",
-      netAmount: "73.63",
+      netAmount: "73,63",
     });
     expect(result.success).toBe(false);
   });
@@ -59,7 +84,7 @@ describe("paymentFormSchema", () => {
     const result = paymentFormSchema.safeParse({
       ...baseValues,
       payDate: "15.03.2026",
-      netAmount: "73.63",
+      netAmount: "73,63",
     });
     expect(result.success).toBe(false);
   });
