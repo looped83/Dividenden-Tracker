@@ -1,0 +1,189 @@
+# DATA_DICTIONARY.md — Dividend Tracker
+
+Stand: 2026-07-19 · Status: Verbindliches Datenlexikon (Planungsphase)
+
+Klassifikation jedes Feldes:
+
+- **P** = Pflichtfeld (vom Nutzer bzw. Import zwingend zu liefern)
+- **O** = optionales Feld
+- **A** = abgeleitetes Feld (wird aus anderen Feldern berechnet, nie direkt eingegeben)
+- **T** = technisch verwaltetes Feld (System/Trigger, nie vom Client gesetzt)
+
+Typangaben entsprechen DATA_MODEL.md; Rundungs- und Parsing-Regeln: CALCULATION_RULES.md und
+IMPORT_SPEC.md.
+
+---
+
+## 1. Dividendeneingang (`dividend_payments`)
+
+### Identifikation
+
+| Feld | Kl. | Typ | Bedeutung / Regeln |
+|---|---|---|---|
+| `id` | T | uuid | Interne ID, systemvergeben |
+| `user_id` | T | uuid | Eigentümer; immer `auth.uid()`, durch RLS + Trigger erzwungen |
+| `security_id` | P | uuid → securities | Wertpapier/Unternehmen. Bei Import ggf. automatisch angelegt (dann `data_quality='incomplete'`) |
+| `depot_id` | P | uuid → depots | Depot des Zahlungseingangs |
+| (Portfolio) | A | — | Ergibt sich über `depot.portfolio_id`; nicht am Eingang gespeichert (DECISIONS.md D-006) |
+
+### Zahlung
+
+| Feld | Kl. | Typ | Bedeutung / Regeln |
+|---|---|---|---|
+| `pay_date` | P | date | Tatsächliches Zahlungs-/Wertstellungsdatum. Nicht in der Zukunft (Grundsatz 8) |
+| `gross_amount` | P | numeric(14,2) | Bruttobetrag in Basiswährung, final gerundet (R-1) |
+| `net_amount` | P | numeric(14,2) | Nettobetrag in Basiswährung. Bei nur-Brutto-Quellen manuell zu bestätigen, keine stille Ableitung |
+| `withholding_tax` | O (Default 0) | numeric(14,2) | Ausländische Quellensteuer in Basiswährung |
+| `domestic_tax` | O (Default 0) | numeric(14,2) | Inländische Steuer (Kapitalertragsteuer) in Basiswährung |
+| `solidarity_surcharge` | O | numeric(14,2) | Solidaritätszuschlag |
+| `church_tax` | O | numeric(14,2) | Kirchensteuer |
+| `fees` | O | numeric(14,2) | Gebühren/Spesen |
+| `original_currency` | P | char(3) | ISO-4217. Bei EUR-Zahlung = 'EUR' |
+| `original_gross` | O¹ | numeric(18,6) | Bruttobetrag in Originalwährung, ungerundet wie in Quelle |
+| `original_net` | O¹ | numeric(18,6) | Nettobetrag in Originalwährung |
+| `fx_rate` | O¹ | numeric(18,8) | Verwendeter Wechselkurs: Einheiten Basiswährung je 1 Einheit Originalwährung; `Betrag_Basis = Betrag_Original × fx_rate` (Konvention R-2) |
+| `quantity` | O | numeric(18,6) | Stückzahl, Bruchteile erlaubt (Sparpläne) |
+| `amount_per_share` | O/A | numeric(18,8) | Dividende je Aktie in Originalwährung. Direkt erfassbar; wenn leer und `quantity` vorhanden, als Anzeige-Ableitung `original_gross ÷ quantity` berechnet, aber dann **nicht** gespeichert (A) |
+
+¹ Pflicht als Gruppe, sobald `original_currency ≠ Basiswährung` (Constraint `fx_fields_consistency`).
+
+### Klassifikation
+
+| Feld | Kl. | Typ | Bedeutung |
+|---|---|---|---|
+| `payment_type` | P (Default `regular`) | enum | `regular` · `special` · `correction` · `cancellation` · `refund` · `other`. `correction`/`cancellation` dürfen negative Beträge tragen |
+
+### Herkunft
+
+| Feld | Kl. | Typ | Bedeutung |
+|---|---|---|---|
+| `source` | T | enum | `manual` · `csv_import` · `excel_import` · `restore`; vom System anhand des Erfassungswegs gesetzt, danach unveränderlich |
+| `import_id` | T | uuid → imports | Pflicht bei Import-Herkunft, sonst null; unveränderlich |
+| `source_file_name` | T | text | Ursprünglicher Dateiname (Import/Restore) |
+| `source_row_number` | T | int | Datenzeilennummer in der Quelldatei (1-basiert, nach Kopfzeile) |
+| `row_fingerprint` | T | text | SHA-256 des exakten normalisierten Zeileninhalts (Stufe-2-Duplikate) |
+| `business_fingerprint` | T/A | text | SHA-256 fachlicher Schlüsselfelder; serverseitig per Trigger berechnet (CALCULATION_RULES.md §5) |
+
+### Dokumentation
+
+| Feld | Kl. | Typ | Bedeutung |
+|---|---|---|---|
+| `note` | O | text ≤ 5000 | Persönliche Notiz |
+| `created_at` | T | timestamptz | Erstellungszeitpunkt |
+| `updated_at` | T | timestamptz | Letzter Änderungszeitpunkt (Trigger) |
+| `archived_at` | T | timestamptz | Archivierungs-/Stornozeitpunkt (Soft Delete) |
+| `archive_reason` | O | text | Begründung bei Archivierung/Storno |
+| Änderungsverlauf | A | — | Keine Spalte; ergibt sich aus `audit_log` (entity_id = id) |
+
+---
+
+## 2. Wertpapier/Unternehmen (`securities`)
+
+| Feld | Kl. | Typ | Bedeutung / Regeln |
+|---|---|---|---|
+| `id`, `user_id` | T | uuid | wie oben |
+| `name` | P | text ≤ 200 | Anzeigename des Unternehmens; eindeutig je Nutzer (case-insensitive) |
+| `ticker` | O | text ≤ 20 | Börsenkürzel, Großbuchstaben |
+| `isin` | O | char(12) | Format + Luhn-Prüfziffer (clientseitig); eindeutig je Nutzer |
+| `wkn` | O | char(6) | Deutsche Wertpapierkennnummer |
+| `country` | O | char(2) | ISO 3166-1 alpha-2 (Sitzland) |
+| `sector` | O | text | Branche (Freitext mit Vorschlagsliste) |
+| `currency` | O | char(3) | Übliche Ausschüttungswährung (nur Anzeige/Vorbelegung) |
+| `note` | O | text ≤ 5000 | Persönliche Notiz |
+| `data_quality` | T/A | enum | `ok` · `incomplete` (z. B. per Import ohne ISIN angelegt) · `needs_review` (z. B. Namenskonflikt beim Import); vom System gesetzt, vom Nutzer auf `ok` setzbar |
+| `created_at`, `updated_at`, `archived_at` | T | timestamptz | wie oben |
+| Abgeleitet (nie gespeichert) | A | — | Summe je Jahr/Monat, Ø-Zahlung, Anzahl Zahlungen, Steuersummen, Anteil am Gesamteinkommen — Formeln in CALCULATION_RULES.md §6 |
+
+## 3. Depot (`depots`)
+
+| Feld | Kl. | Typ | Bedeutung |
+|---|---|---|---|
+| `id`, `user_id` | T | uuid | |
+| `name` | P | text ≤ 100 | Eindeutig je Nutzer |
+| `broker` | O | text ≤ 100 | |
+| `base_currency` | P (Default EUR) | char(3) | Kontowährung des Depots (informativ; Beträge werden stets in Profil-Basiswährung geführt) |
+| `portfolio_id` | O | uuid → portfolios | Optionale Gruppierung |
+| `note` | O | text ≤ 2000 | |
+| `created_at`, `updated_at`, `archived_at` | T | | |
+| Abgeleitet | A | — | Zahlungen je Depot, Jahres-/Monatssummen, Anteil am Dividendeneinkommen |
+
+## 4. Portfolio (`portfolios`)
+
+| Feld | Kl. | Typ | Bedeutung |
+|---|---|---|---|
+| `id`, `user_id` | T | uuid | |
+| `name` | P | text ≤ 100 | Eindeutig je Nutzer |
+| `note` | O | text ≤ 2000 | |
+| `created_at`, `updated_at`, `archived_at` | T | | |
+
+## 5. Import (`imports`)
+
+| Feld | Kl. | Typ | Bedeutung |
+|---|---|---|---|
+| `id`, `user_id` | T | | |
+| `file_name` | T | text | Originaldateiname |
+| `file_hash` | T | char(64) | SHA-256 der Rohdatei (Stufe-1-Duplikate) |
+| `file_size_bytes` | T | bigint | |
+| `file_type` | T | enum-Check | `csv` · `xlsx` · `xls` |
+| `sheet_name` | T | text | Gewähltes Tabellenblatt (nur Excel) |
+| `status` | T | import_status | Lebenszyklus, siehe IMPORT_SPEC.md §6 |
+| `column_mapping` | T | jsonb | Endgültige Spaltenzuordnung inkl. manueller Eingriffe |
+| `detected_formats` | T | jsonb | Encoding, Trennzeichen, Datums-/Zahlenformat, Kopfzeile |
+| `row_balance` | T | jsonb | Importbilanz (Zeilenklassifikation, IMPORT_SPEC.md §8) |
+| `row_report` | T | jsonb | Je Zeile: Nummer, Klassifikation, Grund, Fingerprint |
+| `checksums` | T | jsonb | Kontrollsummen (Σ brutto, Σ netto, Anzahl) |
+| `created_at`, `committed_at`, `rolled_back_at` | T | timestamptz | |
+
+## 6. Ziel (`goals`)
+
+| Feld | Kl. | Typ | Bedeutung |
+|---|---|---|---|
+| `id`, `user_id` | T | | |
+| `goal_type` | P | enum | `net_year` · `gross_year` · `rolling_12m` · `avg_month_net` · `long_term` |
+| `year` | P bei Jahreszielen | int | Kalenderjahr des Ziels |
+| `target_year` | P bei `long_term` | int | Zieljahr des Langfristziels |
+| `target_amount` | P | numeric(14,2) | Zielbetrag > 0 |
+| `currency` | T (=Basiswährung) | char(3) | |
+| `note` | O | text | |
+| Zielerreichung | A | — | Berechnung in CALCULATION_RULES.md §6.20; nie gespeichert |
+
+## 7. Profil (`profiles`)
+
+| Feld | Kl. | Typ | Bedeutung |
+|---|---|---|---|
+| `id` | T | uuid | = auth.users.id |
+| `base_currency` | P (Default EUR) | char(3) | Basiswährung aller Auswertungen; nur bei leerem Datenbestand änderbar |
+| `locale` | P (Default de-DE) | text | Formatierung |
+| `theme` | O | text | light/dark/system |
+| `backup_reminder_days` | P (Default 30) | int | Erinnerungsintervall |
+| `last_backup_at` | T | timestamptz | Letztes erfolgreiches Backup |
+
+## 8. Audit-Eintrag (`audit_log`)
+
+| Feld | Kl. | Typ | Bedeutung |
+|---|---|---|---|
+| `id` | T | bigint | fortlaufend |
+| `user_id` | T | uuid | Verursacher = Eigentümer |
+| `entity_type`, `entity_id` | T | | Betroffene Entität |
+| `action` | T | enum | insert · update · archive · unarchive · import_commit · import_rollback · restore |
+| `old_values`, `new_values` | T | jsonb | Diff der fachlichen Felder; Ausschlussliste in SECURITY_MODEL.md §8 |
+| `origin` | T | enum | ui · import · rollback · restore · migration |
+| `created_at` | T | timestamptz | |
+
+---
+
+## 9. Zusammenfassung der Pflichtfelder bei manueller Erfassung
+
+Minimal erforderlich, um einen Eingang zu speichern:
+
+1. Wertpapier (`security_id`, ggf. inline neu anlegen mit mindestens `name`)
+2. Depot (`depot_id`)
+3. Zahlungsdatum (`pay_date`)
+4. Bruttobetrag (`gross_amount`) **und** Nettobetrag (`net_amount`) in Basiswährung
+   — bei Fremdwährung stattdessen Originalbeträge + Wechselkurs, Basisbeträge werden daraus
+   berechnet und zur Bestätigung angezeigt (R-2)
+5. Währung (`original_currency`, Default EUR)
+
+Alle übrigen Felder sind optional und können nachgetragen werden; fehlende Steuerdetails setzen
+den Eingang **nicht** auf schlechtere Datenqualität (Steuern = 0 ist ein gültiger Zustand,
+z. B. Freistellungsauftrag).
