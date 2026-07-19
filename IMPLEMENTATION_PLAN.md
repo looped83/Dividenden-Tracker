@@ -272,3 +272,24 @@ Abnahmekriterien. Tests der Phase laufen ab dann dauerhaft in CI.
 - Kennzahlen/Geldpfade: Regeln aus CALCULATION_RULES.md referenziert und getestet
 - Dokumentation aktualisiert (Spec-Abweichungen in DECISIONS.md nachgetragen)
 - Keine offenen TODO-Kommentare in gemergtem Code
+
+---
+
+## Phase 4 — Status: umgesetzt
+
+- Migration `0016_import_phase4.sql` (Herkunftsspalten, `security_aliases`,
+  `import_rows`, `commit_import`, `rollback_import`, `guard_import_status`).
+- Import-Pipeline `src/lib/import/*` (Excel/CSV-Parsing, Datums-/Betrags-/Namens-
+  Normalisierung, konservatives Matching A–D, Alias, Broker, Fingerprint,
+  Dublettenmarkierung, Decimal-Kontrollsummen, RPC-Nutzlast).
+- Wizard `src/features/imports/ImportWizard.tsx` + `ImportsPage.tsx`
+  (Drag-and-drop, Blattauswahl, Mapping, EUR/„brutto=netto"-Bestätigung,
+  Unternehmens-/Broker-Zuordnung, Vorschau mit Jahres-Kontrollwerten und
+  filterbarer Detailtabelle, atomarer Commit, Importhistorie mit Rollback).
+- Repository/Hooks `src/lib/supabase/repositories/imports.ts`,
+  `src/features/imports/hooks.ts`; `database.types.ts` handnachgeführt.
+- Tests: 44 neue Unit-Tests, 12 neue Integrationstests inkl. realer Excel-Datei.
+- Gate grün: typecheck, lint, 126 Unit-Tests, 65 Integrationstests, Produktions-Build.
+
+Bewusst nicht implementiert (außerhalb Phase 4): Kalender-, Prognose- und
+Livekursfunktionen.

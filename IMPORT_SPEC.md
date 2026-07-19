@@ -199,3 +199,65 @@ Jede Kategorie ist aufklappbar bis auf Einzelzeilenebene (Zeilennummer, Original
 Jede Fehler-/Warnmeldung nennt: Zeilennummer der Quelldatei, Spaltenname, Originalwert,
 konkreten Grund („‚31.02.2024' ist kein gültiges Datum"), und — wo möglich — einen
 Lösungshinweis. Sammelmeldungen („17 Zeilen fehlerhaft") sind immer aufklappbar.
+
+---
+
+## 12. Umsetzung Phase 4 (Ist-Stand)
+
+Diese Sektion dokumentiert die tatsächlich implementierte Fassung und begründet
+Abweichungen von der Planung oben.
+
+### Bibliotheken (Abweichung ggü. §1)
+
+- Excel: **exceljs** (nicht SheetJS). `cdn.sheetjs.com` ist in der
+  Implementierungsumgebung nicht erreichbar und das npm-Paket `xlsx@0.18.5` ist
+  mit bekannten CVEs eingefroren (DECISIONS.md D-015/D-026). exceljs wird per
+  dynamischem Import als eigener Chunk geladen. Damit erledigt sich die offene
+  Frage O-1 (SheetJS-Version).
+- CSV: eigener, abhängigkeitsfreier Parser (`src/lib/import/parseCsv.ts`) mit
+  UTF-8/BOM-Erkennung, Mehrzeilen-Delimiter-Heuristik (`;` `,` Tab) und
+  RFC-4180-Quoting statt Papa Parse.
+
+### Import-Pipeline (reine Funktionen, `src/lib/import/`)
+
+`excelDate` (1900/1904-Serien) · `parseDate` (de/iso/slash + Excel-Serie,
+Mehrdeutigkeitsmeldung) · `parseAmount` (deutsch/englisch/neutral, nie
+`parseFloat`, Decimal) · `normalizeName` · `similarity` (Levenshtein +
+Token-Enthaltensein) · `columnMapping` (Synonyme de/en) · `matchCompany`
+(Stufen A–D) · `brokerMatch` · `fingerprint` (SHA-256 via Web Crypto) ·
+`checksums` (Decimal, je Jahr/Broker) · `pipeline` (Normalisierung/Gruppierung) ·
+`buildCommitPayload` (RPC-Nutzlast inkl. erwarteter Kontrollsummen).
+
+### Netto-only-Beträge (Konkretisierung §4/§12)
+
+Die Datei enthält nur Netto in EUR. Nach ausdrücklicher Nutzerbestätigung im
+Mapping-Schritt wird `gross_amount = net_amount`, alle Steuern = 0 gesetzt
+(die `net_amount_invariance`-Constraint ist damit exakt erfüllt). Es werden
+**keine** Brutto-/Steuer-/FX-/Stückzahlwerte erfunden — diese bleiben `null`
+bzw. bei den Steuer-Defaultspalten 0.
+
+### Statusmodell (Abweichung ggü. §6)
+
+Verbindlich bleibt der bestehende `import_status`-Enum
+(`analyzing → pending_confirmation → committed → rolled_back / discarded`,
+DECISIONS.md D-010). Die feineren Zustände der Aufgabenstellung
+(`uploaded`/`mapping_required`/`ready`/`importing`/`completed_with_warnings`/…)
+sind reine UI-Wizard-Phasen und werden **nicht** als zusätzliche DB-Enumwerte
+geführt (keine inkompatible Parallelstruktur). `importing` benötigt keinen
+persistenten Status, da der Commit atomar in einer Transaktion läuft.
+
+### Unternehmensmatching (Stufen, umgesetzt)
+
+- A ISIN/WKN (in dieser Datei nicht vorhanden), B exakter kanonischer Name
+  (genau ein Treffer → Autovorschlag), C bestätigter Alias, D ähnliche Namen
+  **nur als Hinweis**. `Allianz`/`Allianz SE`, `Realty Income`/`… Corporation`,
+  `JP Morgan`/`JPMorgan Chase & Co`, `JPM EU/US Equity` werden nie automatisch
+  zusammengeführt (Unit-Tests `matching.test.ts`).
+
+### Kontrollsummen (verifiziert gegen die reale Datei)
+
+1.439 Zeilen · 15.11.2012–17.07.2026 · **49.391,57 €** · Broker Consorsbank 312 /
+Trade Republic 1.012 / Scalable Capital 115 · alle 15 Jahreswerte exakt ·
+Gladstone Capital 30.09.2025 bleibt zweimal (4,76 € und 7,84 €). Die Serverseite
+(`commit_import`) verifiziert dieselben Summen erneut und lehnt bei Abweichung
+den gesamten Import ab (Integrationstest `tests/integration/import.test.ts`).

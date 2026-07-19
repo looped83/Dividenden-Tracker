@@ -131,3 +131,25 @@ Restore ist idempotent: dasselbe Backup zweimal einspielen (merge) erzeugt keine
 Backup-Roundtrip (Export → Wipe → Restore → byte-/wertgleicher Vergleich), beschädigte und
 unvollständige Backups, ältere Formatversionen, mehrfacher Restore, Merge-Konflikte:
 TEST_STRATEGY.md §7.
+
+---
+
+## Phase 4 — Rollback als Wiederherstellungspfad
+
+Jeder abgeschlossene Import ist über `rollback_import(import_id)` vollständig und
+transaktional rückrollbar (IMPORT_SPEC.md §10/§17):
+
+- Alle aktiven Zahlungen des Imports werden archiviert (Soft Delete,
+  `archive_reason = 'Import-Rollback'`, Audit `origin = 'rollback'`) — kein Hard
+  Delete, das Audit-Log bleibt vollständig erhalten.
+- Durch den Import neu angelegte Wertpapiere/Depots bleiben archiviert, solange
+  keine anderen aktiven Zahlungen darauf verweisen; bereits vorher existierende
+  Stammdaten werden nie angetastet.
+- Nur aus diesem Import stammende Aliase werden entfernt.
+- Der Importdatensatz selbst bleibt als `rolled_back`-Historie erhalten; nach
+  Rollback stimmen aktiver Datenbestand und Summen wieder mit dem Zustand vor
+  dem Import überein (Integrationstest verifiziert: aktive Anzahl 0, aktive
+  Summe `null`).
+
+Die eigenständige JSON-Voll-Sicherung (oben) bleibt der primäre Backup-Pfad;
+der Import-Rollback deckt gezielt genau einen Importlauf ab.

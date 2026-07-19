@@ -98,6 +98,7 @@ export interface Database {
           broker: string | null;
           base_currency: string;
           note: string | null;
+          created_by_import_id: string | null;
           created_at: string;
           updated_at: string;
           archived_at: string | null;
@@ -110,6 +111,7 @@ export interface Database {
           broker?: string | null;
           base_currency?: string;
           note?: string | null;
+          created_by_import_id?: string | null;
           archived_at?: string | null;
         };
         Update: Partial<{
@@ -143,6 +145,7 @@ export interface Database {
           note: string | null;
           data_quality: DataQuality;
           default_depot_id: string | null;
+          created_by_import_id: string | null;
           created_at: string;
           updated_at: string;
           archived_at: string | null;
@@ -160,6 +163,7 @@ export interface Database {
           note?: string | null;
           data_quality?: DataQuality;
           default_depot_id?: string | null;
+          created_by_import_id?: string | null;
           archived_at?: string | null;
         };
         Update: Partial<{
@@ -389,12 +393,80 @@ export interface Database {
         Update: never;
         Relationships: [];
       };
+      security_aliases: {
+        Row: {
+          id: string;
+          user_id: string;
+          alias_normalized: string;
+          security_id: string;
+          source_import_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string;
+          alias_normalized: string;
+          security_id: string;
+          source_import_id?: string | null;
+        };
+        Update: never; // Aliase werden nur angelegt oder geloescht, nie geaendert.
+        Relationships: [
+          {
+            foreignKeyName: "security_aliases_security_id_fkey";
+            columns: ["security_id"];
+            referencedRelation: "securities";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      import_rows: {
+        Row: {
+          id: string;
+          user_id: string;
+          import_id: string;
+          source_row_number: number;
+          payment_id: string | null;
+          classification: "imported" | "excluded" | "duplicate_skipped" | "invalid";
+          raw: Json;
+          normalized: Json;
+          warnings: Json | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string;
+          import_id: string;
+          source_row_number: number;
+          payment_id?: string | null;
+          classification: "imported" | "excluded" | "duplicate_skipped" | "invalid";
+          raw: Json;
+          normalized: Json;
+          warnings?: Json | null;
+        };
+        Update: never;
+        Relationships: [
+          {
+            foreignKeyName: "import_rows_import_id_fkey";
+            columns: ["import_id"];
+            referencedRelation: "imports";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
       archive_payment: {
         Args: { p_id: string; p_reason?: string | null };
         Returns: Database["public"]["Tables"]["dividend_payments"]["Row"];
+      };
+      commit_import: {
+        Args: { p_import_id: string; p_payload: Json };
+        Returns: Database["public"]["Tables"]["imports"]["Row"];
+      };
+      rollback_import: {
+        Args: { p_import_id: string };
+        Returns: Database["public"]["Tables"]["imports"]["Row"];
       };
     };
     Enums: {
