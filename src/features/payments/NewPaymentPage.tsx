@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
+import { toGermanDecimalString } from "@/lib/money";
 import { useDepots } from "@/features/depots/hooks";
 import { useSecurities } from "@/features/securities/hooks";
 import {
@@ -53,7 +54,7 @@ export function NewPaymentPage() {
       securityId: existingPayment.security_id,
       depotId: existingPayment.depot_id,
       payDate: existingPayment.pay_date,
-      netAmount: existingPayment.net_amount,
+      netAmount: toGermanDecimalString(existingPayment.net_amount),
     });
   }, [existingPayment, reset]);
 
@@ -168,7 +169,12 @@ export function NewPaymentPage() {
 
         <div className="space-y-1.5">
           <Label htmlFor="payment-net">Nettobetrag</Label>
-          <Input id="payment-net" inputMode="decimal" {...register("netAmount")} />
+          <Input
+            id="payment-net"
+            inputMode="decimal"
+            placeholder="z. B. 73,63"
+            {...register("netAmount")}
+          />
           {errors.netAmount && (
             <p className="text-sm text-negative">{errors.netAmount.message}</p>
           )}
