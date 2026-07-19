@@ -144,9 +144,14 @@ laufendes Jahr). Die Summe der gefilterten Liste muss exakt der Kennzahl entspre
 - Volltextsuche (Unternehmen, Ticker, ISIN, Notiz)
 - Sortierung nach Datum, Betrag, Unternehmen, Depot
 - Filter: Jahr, Monat, Unternehmen, Depot, Währung, Zahlungsart, Herkunft, Status (aktiv/storniert/archiviert)
-- Manuelle Erfassung über Formular (optimiert für schnelle iPhone-Eingabe)
+- Manuelle Erfassung über Formular (optimiert für schnelle iPhone-Eingabe): erfasst nur
+  Depot, Unternehmen, Zahlungsdatum und Nettobetrag (Komma als Dezimaltrennzeichen); Brutto,
+  Steuern und Fremdwährung sind weiterhin Datenbankfelder, werden im aktuellen Formular aber
+  automatisch abgeleitet statt manuell abgefragt (Bruttobetrag = Nettobetrag, Steuern = 0,
+  Währung = Depot-Basiswährung; siehe DATA_DICTIONARY.md §9)
 - Kontrollierte Bearbeitung: Änderungsdialog mit Begründungsfeld (optional), jede Änderung im Audit Log
-- Storno (Korrektur-Gegenbuchung oder Kennzeichnung) und Archivierung — kein Löschen
+- Storno (Korrektur-Gegenbuchung oder Kennzeichnung) und Archivierung — kein Löschen, außer
+  endgültiges Entfernen eines **bereits archivierten** Eingangs (enge Ausnahme, DECISIONS.md D-034)
 - Detailansicht mit: allen Feldern, Änderungsverlauf, Herkunft (manuell/Import), Link zum ursprünglichen Import inkl. Dateiname und Zeilennummer
 
 ### 5.3 Unternehmen
@@ -154,6 +159,9 @@ laufendes Jahr). Die Summe der gefilterten Liste muss exakt der Kennzahl entspre
 Pro Wertpapier/Unternehmen:
 
 - Stammdaten: Name, Ticker, ISIN, WKN, Land, Branche, Währung, persönliche Notizen
+- Optionales Standard-Depot als unverbindlicher Vorschlag: füllt beim Anlegen eines
+  Dividendeneingangs das Depot-Feld vor und wird beim Excel-Import per Namensabgleich aus
+  einer Depot-/Broker-Spalte übernommen — keine feste Bindung (DECISIONS.md D-035)
 - Datenqualitätsstatus (`ok` / `unvollständig` / `prüfen`) — z. B. fehlende ISIN nach Import
 - Sämtliche historischen Dividendeneingänge
 - Summe pro Jahr und pro Monat, durchschnittliche Zahlung, Anzahl der Zahlungen

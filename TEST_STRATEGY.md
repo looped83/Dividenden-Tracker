@@ -92,11 +92,15 @@ dieselben Rohdaten sein (String-Vergleich der Decimal-Ergebnisse).
   source_row_number)`, aktive Ziele
 - Transaktionen: `commit_import` mit absichtlich ungültiger Zeile → kompletter Rollback,
   keine Teilimporte; `restore_backup`-Abbruch → kein Teilzustand
-- Soft Deletes: DELETE auf fachlichen Tabellen scheitert; Archivieren setzt `archived_at`
+- Soft Deletes: DELETE auf fachlichen Tabellen scheitert; Archivieren setzt `archived_at`.
+  Ausnahme (D-034): DELETE auf `dividend_payments` gelingt ausschließlich für bereits
+  archivierte eigene Zeilen (RLS-Policy `dividend_payments_delete_archived_own`), scheitert
+  weiterhin für aktive oder fremde Zeilen
 - Trigger: `updated_at`, `enforce_user_id`, `protect_payment_immutables` (Änderung von
   `source`/`import_id`/`created_at` scheitert), `recompute_business_fingerprint`
-- Audit Log: INSERT/UPDATE/Archive erzeugen korrekte Diffs; Ausschlussliste greift;
-  insert-only erzwungen
+- Audit Log: INSERT/UPDATE/Archive/Delete erzeugen korrekte Diffs (`action = 'delete'` bei
+  endgültigem Löschen protokolliert die gelöschte Zeile); Ausschlussliste greift; insert-only
+  erzwungen
 
 ## 6. Sicherheitstests (RLS, CI-blockierend)
 
@@ -124,7 +128,10 @@ Auth-Nutzern (A, B) über supabase-js:
 ## 8. E2E-Tests (Playwright; Chromium + WebKit, Viewports Desktop/iPad/iPhone)
 
 1. Registrierung, E-Mail-Bestätigung (lokaler Auth-Testmodus), An-/Abmeldung
-2. Manueller Dividendeneingang inkl. Fremdwährung und Invariante-Warnung
+2. Manueller Dividendeneingang über das vereinfachte Formular (Depot, Unternehmen,
+   Zahlungsdatum, Nettobetrag mit deutschem Komma-Format), Archivieren/Reaktivieren sowohl aus
+   der Listenansicht als auch der Detailseite, endgültiges Löschen eines bereits archivierten
+   Eingangs (D-034)
 3. Dateiimport CSV (deutsches Format) über alle Assistentenschritte
 4. Duplikatprüfung: zweiter Import derselben Datei → Stufe-1-Warnung, Stufe-2/3-Klassifikation,
    Stufe-4-Einzelentscheidung
@@ -136,6 +143,8 @@ Auth-Nutzern (A, B) über supabase-js:
 10. Ziele anlegen, Zielfortschritt
 11. Mobile Darstellung: Bottom-Nav, Touch-Ziele, Formulareingabe iPhone-Viewport
 12. PWA: Installierbarkeit (Manifest-Check), Offline-Banner, Lesecache nach Reload offline
+13. Excel-Import Unternehmen: Name/Ticker/ISIN/WKN sowie optionale Depot-/Broker-Spalte →
+    Standard-Depot per Namensabgleich (D-035)
 
 ## 9. Accessibility-Tests
 

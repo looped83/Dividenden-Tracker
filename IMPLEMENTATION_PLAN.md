@@ -65,8 +65,22 @@ Abnahmekriterien. Tests der Phase laufen ab dann dauerhaft in CI.
 >   ist bislang eine einfache Tabelle ohne Performance-Test bei 10.000 Zeilen (siehe unten).
 > - Kein separates `FilterBar`-Sheet für iPhone; Filter sind Desktop-Inline-Selects.
 > - Zusätzlich, vorgezogen aus Phase 4: Excel-Import für Unternehmens-Stammdaten
->   (Name/Ticker/ISIN/WKN, `src/features/securities/xlsxImport.ts`, DECISIONS.md D-032) —
+>   (Name/Ticker/ISIN/WKN, optional Depot-/Broker-Spalte → `default_depot_id` per
+>   Namensabgleich, `src/features/securities/xlsxImport.ts`, DECISIONS.md D-032/D-035) —
 >   kein vollständiger Import-Assistent, keine Dividendeneingänge, keine Duplikaterkennung.
+> - **Nachträglich vereinfacht (Nutzerwunsch nach Live-Test):** Das manuelle
+>   Erfassungsformular für Dividendeneingänge erfasst nur noch Depot, Unternehmen,
+>   Zahlungsdatum und Nettobetrag (kein Fremdwährungs-Umschalter, keine Steuerfelder, kein
+>   Stückzahl-/Notizfeld im Formular mehr). Bruttobetrag = Nettobetrag, Steuern = 0,
+>   `original_currency` = Depot-Basiswährung werden programmatisch gesetzt; die DB-Spalten
+>   selbst bestehen unverändert fort (DATA_DICTIONARY.md §9). Der Nettobetrag akzeptiert
+>   deutsches Zahlenformat mit Komma (`src/lib/money/germanDecimalInput.ts`).
+> - **Nachträglich ergänzt:** Endgültiges Löschen eines Dividendeneingangs, aber nur wenn
+>   bereits archiviert (enge Ausnahme vom „kein Hard Delete"-Grundsatz, DECISIONS.md D-034);
+>   Archivieren/Reaktivieren zusätzlich direkt aus der Listenansicht, nicht nur der
+>   Detailseite; optionales „Standard-Depot" an Unternehmen als Vorbelegungshilfe
+>   (DECISIONS.md D-035); Fix eines `search_path`-Fehlers, der `archive_payment()` auf dem
+>   echten Supabase-Projekt fehlschlagen ließ (DECISIONS.md D-036).
 > - **Nicht erfüllt:** 10.000-Zeilen-Performancetest, E2E-Testsuite gegen echtes Supabase
 >   (nur Unit-Tests + manuelles Testen durch den Nutzer gegen das echte Projekt).
 >
@@ -78,9 +92,11 @@ Abnahmekriterien. Tests der Phase laufen ab dann dauerhaft in CI.
 
 - **Ziel:** Vollwertige manuelle Erfassung, Bearbeitung (auditiert), Storno/Archivierung,
   Listen- und Detailansichten; die App ist erstmals täglich nutzbar.
-- **Scope:** CRUD (ohne Delete) für Depots, Portfolios, Wertpapiere; Zahlungsformular inkl.
-  Fremdwährung (R-2) und Invariante-Warnung (§4); Zahlungsliste (Tabelle/Karten) mit Suche,
-  Sortierung, allen Filtern; Detailansicht mit `AuditTrail` und Herkunft; `archive_payment`.
+- **Scope:** CRUD (ohne Delete) für Depots, Portfolios, Wertpapiere; vereinfachtes
+  Zahlungsformular (Depot, Unternehmen, Zahlungsdatum, Nettobetrag — siehe Abweichungen oben);
+  Zahlungsliste (Tabelle/Karten) mit Suche, Sortierung, allen Filtern; Detailansicht mit
+  `AuditTrail` und Herkunft; `archive_payment` sowie eine eng begrenzte
+  Hard-Delete-Ausnahme für bereits archivierte Zahlungen (D-034).
 - **Betroffene Komponenten:** `PaymentTable`/`PaymentCardList`, `FilterBar`, Formulare,
   `AuditTrail`, Unternehmens- und Depotseiten (Stammdaten + einfache Historienliste).
 - **Betroffene Dateien:** `src/features/payments|securities|depots/*`, `src/lib/statistics/*`
@@ -88,9 +104,9 @@ Abnahmekriterien. Tests der Phase laufen ab dann dauerhaft in CI.
 - **Datenbankänderungen:** ggf. Feinschliff-Migrationen (Indizes), RPC `archive_payment` final.
 - **Sicherheitsauswirkungen:** unveränderliche Felder (`protect_payment_immutables`) aktiv;
   Audit-Diffs verifiziert.
-- **Tests:** Unit (Formular-Schemata, Invariante), Integration (Audit-Diff, Soft Delete,
-  Fingerprint-Trigger), E2E (Erfassung inkl. Fremdwährung, Bearbeitung mit Verlauf, Storno),
-  RLS-Ergänzungen.
+- **Tests:** Unit (Formular-Schemata, deutsches Zahlenformat), Integration (Audit-Diff, Soft
+  Delete, Hard-Delete-Ausnahme, Fingerprint-Trigger), E2E (Erfassung, Bearbeitung mit Verlauf,
+  Storno/Archivierung, endgültiges Löschen), RLS-Ergänzungen.
 - **Abnahmekriterien:** Grundsätze 1–3, 7, 9 nachweisbar erfüllt (Audit-Verlauf in der UI
   sichtbar); Liste mit 10.000 Seed-Zahlungen flüssig; mobile Erfassung < 30 s für
   Standardfall.

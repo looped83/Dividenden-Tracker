@@ -173,18 +173,23 @@ IMPORT_SPEC.md.
 
 ---
 
-## 9. Zusammenfassung der Pflichtfelder bei manueller Erfassung
+## 9. Felder im manuellen Erfassungsformular (Stand: vereinfachtes Formular)
 
-Minimal erforderlich, um einen Eingang zu speichern:
+Das aktuelle manuelle Erfassungsformular (`src/features/payments/NewPaymentPage.tsx`) fragt
+nach einer Vereinfachung auf Nutzerwunsch nur noch vier Felder ab:
 
-1. Wertpapier (`security_id`, ggf. inline neu anlegen mit mindestens `name`)
-2. Depot (`depot_id`)
+1. Depot (`depot_id`) — ggf. vorbelegt aus dem Standard-Depot des gewählten Unternehmens
+   (`securities.default_depot_id`, siehe §2, D-035)
+2. Wertpapier (`security_id`)
 3. Zahlungsdatum (`pay_date`)
-4. Bruttobetrag (`gross_amount`) **und** Nettobetrag (`net_amount`) in Basiswährung
-   — bei Fremdwährung stattdessen Originalbeträge + Wechselkurs, Basisbeträge werden daraus
-   berechnet und zur Bestätigung angezeigt (R-2)
-5. Währung (`original_currency`, Default EUR)
+4. Nettobetrag (`net_amount`) — Eingabe im deutschen Zahlenformat mit Komma als
+   Dezimaltrennzeichen, wird intern auf das kanonische Punkt-Format normalisiert
 
-Alle übrigen Felder sind optional und können nachgetragen werden; fehlende Steuerdetails setzen
-den Eingang **nicht** auf schlechtere Datenqualität (Steuern = 0 ist ein gültiger Zustand,
-z. B. Freistellungsauftrag).
+Alle übrigen Spalten dieser Tabelle (Bruttobetrag, Steuern, Fremdwährungsfelder, Stückzahl,
+Zahlungsart, Notiz) bleiben Teil des Datenbankschemas (siehe §1) und werden vom manuellen
+Formular programmatisch belegt, nicht abgefragt: `gross_amount` = `net_amount`,
+`withholding_tax`/`domestic_tax` = 0, übrige Steuer-/Fremdwährungsfelder = `null`,
+`original_currency` = Basiswährung des gewählten Depots, `payment_type` = `'regular'`. Diese
+Felder bleiben nur über den Excel-/CSV-Import oder direkte Datenbankzugriffe befüllbar.
+Fehlende Steuerdetails setzen den Eingang **nicht** auf schlechtere Datenqualität (Steuern = 0
+ist ein gültiger Zustand, z. B. Freistellungsauftrag).
