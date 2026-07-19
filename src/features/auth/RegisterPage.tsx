@@ -23,9 +23,15 @@ export function RegisterPage() {
 
   const onSubmit = handleSubmit(async (values) => {
     setFormError(null);
+    // Ohne explizite emailRedirectTo faellt Supabase auf die im Dashboard
+    // hinterlegte Site URL zurueck; explizit setzen passt das Ziel an unseren
+    // Hash-Router und den GitHub-Pages-Unterpfad an (DECISIONS.md D-030).
     const { error } = await supabase.auth.signUp({
       email: values.email,
       password: values.password,
+      options: {
+        emailRedirectTo: `${window.location.origin}${window.location.pathname}#/login`,
+      },
     });
 
     if (error) {
