@@ -217,20 +217,20 @@ describe("Unique Constraints", () => {
 });
 
 describe("Soft Delete (kein Hard Delete, Grundsatz 3)", () => {
-  it("verbietet DELETE auf dividend_payments", async () => {
+  it("verbietet DELETE auf eine aktive (nicht archivierte) dividend_payments-Zeile", async () => {
     const payment = await asUser(userId, async (client) => {
       const depotId = await seedDepot(client, "Depot Delete 1");
       const securityId = await seedSecurity(client, { name: "Delete AG 1" });
       return seedPayment(client, { securityId, depotId });
     });
 
-    // Kein DELETE-Grant fuer authenticated (Least Privilege) -> die
-    // Datenbank verweigert den Zugriff bereits vor jeder RLS-Auswertung.
-    await expect(
-      asUser(userId, (client) =>
-        client.query("delete from dividend_payments where id = $1", [payment.id]),
-      ),
-    ).rejects.toThrow(/permission denied/);
+    // DELETE ist ab 0013 grundsaetzlich gegrantet, aber die RLS-Policy laesst
+    // nur bereits archivierte eigene Zeilen zu (0 betroffene Zeilen statt
+    // Fehler, da der Grant existiert und nur die Policy filtert).
+    const result = await asUser(userId, (client) =>
+      client.query("delete from dividend_payments where id = $1", [payment.id]),
+    );
+    expect(result.rowCount).toBe(0);
 
     const stillThere = await asUser(userId, (client) =>
       client.query("select id from dividend_payments where id = $1", [payment.id]),

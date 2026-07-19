@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Link, useNavigate, useParams } from "react-router";
-import { Pencil, Archive as ArchiveIcon, RotateCcw } from "lucide-react";
+import { Pencil, Archive as ArchiveIcon, RotateCcw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,10 +16,12 @@ import { Label } from "@/components/ui/label";
 import { AmountText } from "@/components/money/AmountText";
 import { AuditTrail } from "@/components/audit/AuditTrail";
 import { Money, toCurrencyCode } from "@/lib/money";
+import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { useDepots } from "@/features/depots/hooks";
 import { useSecurities } from "@/features/securities/hooks";
 import {
   useArchivePayment,
+  useDeletePayment,
   usePayment,
   useUnarchivePayment,
 } from "@/features/payments/hooks";
@@ -47,8 +49,11 @@ export function PaymentDetailPage() {
   const { data: securities = [] } = useSecurities();
   const archivePayment = useArchivePayment();
   const unarchivePayment = useUnarchivePayment();
+  const deletePayment = useDeletePayment();
   const [archiveDialogOpen, setArchiveDialogOpen] = React.useState(false);
   const [archiveReason, setArchiveReason] = React.useState("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+  const [deleteError, setDeleteError] = React.useState<string | null>(null);
 
   if (isLoading) {
     return <p className="text-sm text-muted-foreground">Wird geladen …</p>;
@@ -70,6 +75,16 @@ export function PaymentDetailPage() {
       reason: archiveReason || undefined,
     });
     setArchiveDialogOpen(false);
+  };
+
+  const handleDelete = async () => {
+    setDeleteError(null);
+    try {
+      await deletePayment.mutateAsync(payment.id);
+      void navigate("/eingaenge");
+    } catch (error) {
+      setDeleteError(getErrorMessage(error, "Löschen fehlgeschlagen."));
+    }
   };
 
   return (
@@ -113,6 +128,19 @@ export function PaymentDetailPage() {
               }}
             >
               <ArchiveIcon />
+            </Button>
+          )}
+          {payment.archived_at && (
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label="Endgültig löschen"
+              onClick={() => {
+                setDeleteError(null);
+                setDeleteDialogOpen(true);
+              }}
+            >
+              <Trash2 />
             </Button>
           )}
         </div>
@@ -160,6 +188,32 @@ export function PaymentDetailPage() {
           <DialogFooter>
             <Button variant="destructive" onClick={() => void handleArchive()}>
               Archivieren
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Eingang endgültig löschen</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Dieser Dividendeneingang wird unwiderruflich entfernt und kann nicht
+            wiederhergestellt werden.
+          </p>
+          {deleteError && (
+            <p role="alert" className="text-sm text-negative">
+              {deleteError}
+            </p>
+          )}
+          <DialogFooter>
+            <Button
+              variant="destructive"
+              disabled={deletePayment.isPending}
+              onClick={() => void handleDelete()}
+            >
+              {deletePayment.isPending ? "Wird gelöscht …" : "Endgültig löschen"}
             </Button>
           </DialogFooter>
         </DialogContent>

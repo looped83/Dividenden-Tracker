@@ -35,6 +35,7 @@ export type AuditAction =
   | "update"
   | "archive"
   | "unarchive"
+  | "delete"
   | "import_commit"
   | "import_rollback"
   | "restore";

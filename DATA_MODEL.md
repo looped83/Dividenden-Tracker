@@ -26,7 +26,9 @@ dividend_payments n──0..1 imports
 Grundsätze:
 
 - **Kein Hard Delete** auf fachlichen Tabellen: Soft Delete über `archived_at`; es existieren
-  keine DELETE-Policies (Ausnahme: `imports` im Status `draft/analyzing`, siehe §3.6).
+  keine DELETE-Policies (Ausnahmen: `imports` im Status `draft/analyzing`, siehe §3.6, sowie
+  `dividend_payments` — dort ausschließlich für bereits archivierte eigene Zeilen, mit
+  Audit-Eintrag `action = 'delete'`, siehe D-034).
 - Jede fachliche Tabelle trägt `user_id uuid not null references auth.users(id)`.
 - `created_at`/`updated_at` werden durch Trigger gepflegt, nie vom Client gesetzt.
 - Alle Änderungen an fachlichen Tabellen erzeugen per Trigger Einträge in `audit_log`.

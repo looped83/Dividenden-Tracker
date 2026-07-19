@@ -342,6 +342,52 @@ describe("Audit Log (SECURITY_MODEL.md §8)", () => {
     expect(entries.rows.map((r) => r.action)).toEqual(["insert", "archive", "unarchive"]);
   });
 
+  it("protokolliert das endgueltige Loeschen einer archivierten Zahlung", async () => {
+    const depotId = await asUser(userId, (client) => seedDepot(client, "Depot Audit 6"));
+    const securityId = await asUser(userId, (client) =>
+      seedSecurity(client, { name: "Audit AG 6" }),
+    );
+    const payment = await asUser(userId, (client) =>
+      seedPayment(client, { securityId, depotId, netAmount: "85.00" }),
+    );
+
+    await asUser(userId, (client) =>
+      client.query("update dividend_payments set archived_at = now() where id = $1", [
+        payment.id,
+      ]),
+    );
+    await asUser(userId, (client) =>
+      client.query("delete from dividend_payments where id = $1", [payment.id]),
+    );
+
+    const entries = await asUser(userId, (client) =>
+      client.query<AuditLogRow>(
+        `select action, old_values, new_values from audit_log
+         where entity_type = 'dividend_payment' and entity_id = $1
+         order by created_at asc`,
+        [payment.id],
+      ),
+    );
+
+    expect(entries.rows.map((r) => r.action)).toEqual(["insert", "archive", "delete"]);
+
+    const deleteEntries = await asUser(userId, (client) =>
+      client.query<AuditLogRow>(
+        `select action, old_values, new_values from audit_log
+         where entity_type = 'dividend_payment' and entity_id = $1 and action = 'delete'`,
+        [payment.id],
+      ),
+    );
+    const deleteEntry = firstRow(deleteEntries);
+    expect(deleteEntry.new_values).toBeNull();
+    // to_jsonb() auf einer numeric-Spalte liefert eine JSON-Zahl (Postgres-
+    // Verhalten auf Ebene von jsonb, unabhaengig von PostgREST/supabase-js).
+    expect(deleteEntry.old_values?.net_amount).toBe(85);
+    // Technische Felder duerfen auch beim Loeschen nicht protokolliert werden.
+    expect(deleteEntry.old_values?.id).toBeUndefined();
+    expect(deleteEntry.old_values?.user_id).toBeUndefined();
+  });
+
   it("audit_log ist insert-only: kein UPDATE/DELETE ueber die API", async () => {
     const depotId = await asUser(userId, (client) => seedDepot(client, "Depot Audit 5"));
     const entry = await asUser(userId, (client) =>

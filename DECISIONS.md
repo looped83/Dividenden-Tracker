@@ -341,6 +341,28 @@ noch keinen automatisierten Migrationsweg gegen das reale Projekt. Das Skript is
 einmalige Anwendung auf ein leeres Projekt ausgelegt (kein `IF NOT EXISTS` auf Tabellen-/
 Typ-Ebene); ein zweiter Lauf wuerde mit "already exists" fehlschlagen.
 
+## D-034 · Endgueltiges Loeschen archivierter Dividendeneingaenge (enge Ausnahme von Grundsatz 3)
+**Kontext:** Nutzer wollen fehlerhaft erfasste Dividendeneingaenge nicht nur archivieren,
+sondern tatsaechlich entfernen koennen. Grundsatz 3 (PRODUCT_SPEC.md §3) schliesst Hard Delete
+auf fachlichen Tabellen jedoch bewusst aus (kein stilles Loeschen, Audit-Pflicht); die einzige
+bisherige Ausnahme war `imports` im Entwurfsstatus (0008), wo aber garantiert noch keine
+abgeleiteten Daten existieren — bei `dividend_payments` als Kernbestand ist das nicht der Fall.
+Der Nutzer wurde auf diesen Zielkonflikt hingewiesen und hat sich explizit fuer echtes Loeschen
+statt einer reinen Erweiterung der Archivierung entschieden.
+**Entscheidung:** Hard Delete wird zugelassen, aber ausschliesslich fuer bereits archivierte
+eigene Zeilen (RLS-Policy `dividend_payments_delete_archived_own`, 0013) — der verpflichtende
+Archivierungsschritt verhindert, dass ein aktiver Eingang durch eine einzelne, versehentliche
+Aktion verschwindet. Die Loeschung selbst bleibt nachvollziehbar: `audit_row_change()` wurde um
+den `DELETE`-Fall erweitert und protokolliert die geloeschte Zeile mit `action = 'delete'`,
+bevor sie unwiderruflich entfernt wird (audit_action-Erweiterung in eigener Migration 0012, da
+`ALTER TYPE ... ADD VALUE` vor Verwendung committet sein muss).
+**Konsequenz:** Ab diesem Zeitpunkt existiert fuer `dividend_payments` kein vollstaendiger
+Loeschschutz mehr — eine geloeschte Zeile ist nicht wiederherstellbar (nur der Audit-Log-Eintrag
+bleibt). Migrationen 0012/0013 muessen wie in D-033 beschrieben manuell im Supabase SQL Editor
+nachgezogen werden, und zwar **nacheinander in zwei getrennten Ausfuehrungen** (0012 zuerst
+committen, danach 0013 einfuegen) — sonst schlaegt 0013 fehl, weil der neue Enum-Wert `'delete'`
+nicht in derselben (impliziten) Transaktion verwendet werden darf, in der er hinzugefuegt wurde.
+
 ---
 
 ## Offene Entscheidungen (bewusst vertagt)

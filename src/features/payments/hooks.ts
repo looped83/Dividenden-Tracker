@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   archivePayment,
   createPayment,
+  deletePayment,
   fetchPaymentById,
   fetchPayments,
   unarchivePayment,
@@ -58,6 +59,14 @@ export function useUnarchivePayment() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => unarchivePayment(id),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: PAYMENTS_KEY }),
+  });
+}
+
+export function useDeletePayment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deletePayment(id),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: PAYMENTS_KEY }),
   });
 }
