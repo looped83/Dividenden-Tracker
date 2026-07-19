@@ -297,6 +297,31 @@ Dividendeneingaenge inkl. Fremdwaehrung und Invariante-Warnung).
 **Konsequenz:** Weitere Phasen (Statistik, Import) koennen dieselben Repository-/Hook-Module
 (`src/lib/supabase/repositories/*`, `src/features/*/hooks.ts`) wiederverwenden bzw. erweitern.
 
+## D-032 · `exceljs` statt SheetJS/`xlsx` fuer den Unternehmens-Excel-Import
+**Kontext:** Nutzeranfrage: Unternehmens-Stammdaten (Name/Ticker/ISIN/WKN) aus einer
+bestehenden Depot-Exceldatei importieren koennen, vorgezogen aus Phase 4. D-015/D-026 sahen
+SheetJS von `cdn.sheetjs.com` vor; dieser Host ist in der Implementierungsumgebung weiterhin
+nicht erreichbar (403 auf CONNECT), und das npm-Paket `xlsx` ist bei 0.18.5 mit bekannten CVEs
+eingefroren.
+**Entscheidung:**
+- `exceljs` (npm, aktiv gepflegt) uebernimmt fuer dieses schmale Feature das Einlesen der ersten
+  Tabelle einer `.xlsx`-Datei (`src/lib/xlsx/parseWorkbook.ts`). `npm audit` meldet eine
+  transitive moderate CVE in `uuid` (Buffer-Bounds-Check) — betrifft nur Code-Pfade, die wir
+  nicht aufrufen (wir lesen ausschliesslich, schreiben nie), und läuft rein clientseitig im
+  Browser, kein Server-Angriffsvektor.
+- `exceljs` wird per dynamischem `import()` nachgeladen (eigener ~930-KB-Chunk), damit das
+  Hauptbundle nicht fuer alle Seiten aufgeblaeht wird, obwohl es nur beim Excel-Import auf der
+  Unternehmensseite gebraucht wird.
+- Nur Name/Ticker/ISIN/WKN werden uebernommen; andere Spalten einer Depot-Exportdatei
+  (Stückzahl, Kurse, Kategorie, …) gehoeren fachlich nicht zu den Unternehmens-Stammdaten
+  (DATA_MODEL.md §3.4). Das Land wird aus den ersten zwei Zeichen einer gueltigen ISIN
+  abgeleitet. Bereits vorhandene Unternehmen (Abgleich per ISIN bzw. Name, spiegelt die
+  DB-Unique-Indizes) werden uebersprungen, nicht aktualiert — kein Merge-/Upsert-Flow.
+**Konsequenz:** Die eigentliche Phase-4-Entscheidung (SheetJS vs. Alternative fuer den
+vollstaendigen CSV/Excel-Import-Assistenten mit Bilanz und Duplikaterkennung) bleibt offen
+(O-1) und wird bei Phase-4-Start erneut geprueft — dieser schmale Stammdaten-Import ist davon
+unabhaengig und muss bei Bedarf nicht dieselbe Bibliothek verwenden.
+
 ---
 
 ## Offene Entscheidungen (bewusst vertagt)

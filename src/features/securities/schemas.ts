@@ -1,8 +1,11 @@
 import { z } from "zod";
 
-const TICKER_PATTERN = /^[A-Za-z0-9 .-]{1,20}$/;
-const ISIN_PATTERN = /^[A-Za-z]{2}[A-Za-z0-9]{9}[0-9]$/;
-const WKN_PATTERN = /^[A-Za-z0-9]{6}$/;
+// Exportiert, damit src/features/securities/xlsxImport.ts dieselben Regeln
+// verwendet statt sie zu duplizieren (eine Wahrheit fuer Formular- und
+// Import-Validierung).
+export const TICKER_PATTERN = /^[A-Za-z0-9 .-]{1,20}$/;
+export const ISIN_PATTERN = /^[A-Za-z]{2}[A-Za-z0-9]{9}[0-9]$/;
+export const WKN_PATTERN = /^[A-Za-z0-9]{6}$/;
 const COUNTRY_PATTERN = /^[A-Za-z]{2}$/;
 const CURRENCY_PATTERN = /^[A-Za-z]{3}$/;
 

@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { Building2, Pencil, Plus, RotateCcw, Archive as ArchiveIcon } from "lucide-react";
 import { emptyToNull } from "@/lib/utils/emptyToNull";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
+import { SecurityImportButton } from "@/features/securities/SecurityImportDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -212,6 +213,7 @@ export function SecuritiesPage() {
             />
             Archivierte anzeigen
           </label>
+          <SecurityImportButton />
           <Button
             onClick={() => {
               setDialog({ open: true, security: null });
