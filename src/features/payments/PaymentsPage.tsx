@@ -1,11 +1,19 @@
 import * as React from "react";
 import { Link } from "react-router";
-import { Plus, Wallet } from "lucide-react";
+import { Archive as ArchiveIcon, Plus, RotateCcw, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -16,9 +24,14 @@ import {
 } from "@/components/ui/table";
 import { AmountText } from "@/components/money/AmountText";
 import { Money, toCurrencyCode } from "@/lib/money";
+import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { useDepots } from "@/features/depots/hooks";
 import { useSecurities } from "@/features/securities/hooks";
-import { usePayments } from "@/features/payments/hooks";
+import {
+  useArchivePayment,
+  usePayments,
+  useUnarchivePayment,
+} from "@/features/payments/hooks";
 import type { PaymentFilters } from "@/lib/supabase/repositories/payments";
 
 function formatDate(value: string): string {
@@ -35,6 +48,11 @@ export function PaymentsPage() {
   const [depotId, setDepotId] = React.useState("");
   const [securityId, setSecurityId] = React.useState("");
   const [includeArchived, setIncludeArchived] = React.useState(false);
+  const archivePayment = useArchivePayment();
+  const unarchivePayment = useUnarchivePayment();
+  const [archiveTargetId, setArchiveTargetId] = React.useState<string | null>(null);
+  const [archiveReason, setArchiveReason] = React.useState("");
+  const [archiveError, setArchiveError] = React.useState<string | null>(null);
 
   const filters: PaymentFilters = {
     searchTerm: searchTerm || undefined,
@@ -45,6 +63,21 @@ export function PaymentsPage() {
 
   const { data: payments = [], isLoading } = usePayments(filters);
   const depotById = new Map(depots.map((depot) => [depot.id, depot]));
+
+  const handleArchive = async () => {
+    if (!archiveTargetId) return;
+    setArchiveError(null);
+    try {
+      await archivePayment.mutateAsync({
+        id: archiveTargetId,
+        reason: archiveReason || undefined,
+      });
+      setArchiveTargetId(null);
+      setArchiveReason("");
+    } catch (error) {
+      setArchiveError(getErrorMessage(error, "Archivieren fehlgeschlagen."));
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -150,6 +183,7 @@ export function PaymentsPage() {
               <TableHead>Depot</TableHead>
               <TableHead className="text-right">Netto</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead className="text-right">Aktion</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -189,12 +223,70 @@ export function PaymentsPage() {
                       <Badge variant="positive">Aktiv</Badge>
                     )}
                   </TableCell>
+                  <TableCell className="text-right">
+                    {payment.archived_at ? (
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        aria-label="Reaktivieren"
+                        onClick={() => void unarchivePayment.mutateAsync(payment.id)}
+                      >
+                        <RotateCcw />
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        aria-label="Archivieren"
+                        onClick={() => {
+                          setArchiveReason("");
+                          setArchiveError(null);
+                          setArchiveTargetId(payment.id);
+                        }}
+                      >
+                        <ArchiveIcon />
+                      </Button>
+                    )}
+                  </TableCell>
                 </TableRow>
               );
             })}
           </TableBody>
         </Table>
       )}
+
+      <Dialog
+        open={archiveTargetId !== null}
+        onOpenChange={(open) => {
+          if (!open) setArchiveTargetId(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Eingang archivieren</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-1.5">
+            <Label htmlFor="payments-archive-reason">Grund (optional)</Label>
+            <Input
+              id="payments-archive-reason"
+              value={archiveReason}
+              onChange={(event) => {
+                setArchiveReason(event.target.value);
+              }}
+            />
+          </div>
+          {archiveError && (
+            <p role="alert" className="text-sm text-negative">
+              {archiveError}
+            </p>
+          )}
+          <DialogFooter>
+            <Button variant="destructive" onClick={() => void handleArchive()}>
+              Archivieren
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

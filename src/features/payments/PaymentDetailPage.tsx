@@ -52,6 +52,7 @@ export function PaymentDetailPage() {
   const deletePayment = useDeletePayment();
   const [archiveDialogOpen, setArchiveDialogOpen] = React.useState(false);
   const [archiveReason, setArchiveReason] = React.useState("");
+  const [archiveError, setArchiveError] = React.useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [deleteError, setDeleteError] = React.useState<string | null>(null);
 
@@ -70,11 +71,16 @@ export function PaymentDetailPage() {
   const baseCurrency = toCurrencyCode(depot?.base_currency ?? "EUR");
 
   const handleArchive = async () => {
-    await archivePayment.mutateAsync({
-      id: payment.id,
-      reason: archiveReason || undefined,
-    });
-    setArchiveDialogOpen(false);
+    setArchiveError(null);
+    try {
+      await archivePayment.mutateAsync({
+        id: payment.id,
+        reason: archiveReason || undefined,
+      });
+      setArchiveDialogOpen(false);
+    } catch (error) {
+      setArchiveError(getErrorMessage(error, "Archivieren fehlgeschlagen."));
+    }
   };
 
   const handleDelete = async () => {
@@ -124,6 +130,7 @@ export function PaymentDetailPage() {
               size="icon"
               aria-label="Archivieren"
               onClick={() => {
+                setArchiveError(null);
                 setArchiveDialogOpen(true);
               }}
             >
@@ -185,6 +192,11 @@ export function PaymentDetailPage() {
               }}
             />
           </div>
+          {archiveError && (
+            <p role="alert" className="text-sm text-negative">
+              {archiveError}
+            </p>
+          )}
           <DialogFooter>
             <Button variant="destructive" onClick={() => void handleArchive()}>
               Archivieren
