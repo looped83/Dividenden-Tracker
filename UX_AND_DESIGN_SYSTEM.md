@@ -134,8 +134,11 @@ Eigene zusammengesetzte Komponenten (fachlich):
   („Datum liegt in der Zukunft"), keine reinen Farbmarkierungen.
 - Beträge: Texteingabe mit `inputmode="decimal"`, akzeptiert Komma und Punkt
   (CALCULATION_RULES.md §7), Anzeige normalisiert beim Blur; Währungssuffix im Feld.
-- Fremdwährungsmodus: Umschalter im Formular blendet Originalbetrag/Kurs ein und zeigt die
-  berechneten Basisbeträge zur Bestätigung (R-2).
+- Das manuelle Erfassungsformular für Dividendeneingänge ist bewusst auf vier Felder
+  reduziert (Depot, Unternehmen, Zahlungsdatum, Nettobetrag) — kein Fremdwährungs-Umschalter,
+  keine separaten Steuerfelder mehr im Formular (DATA_DICTIONARY.md §9, DECISIONS.md).
+  Bruttobetrag, Steuern und Fremdwährung bleiben Datenbankfelder, werden aber programmatisch
+  abgeleitet statt manuell abgefragt.
 - Jedes Feld mit sichtbarem Label (keine Placeholder-als-Label), Pflichtfelder markiert.
 
 ## 7. Barrierefreiheit (verbindlich)
