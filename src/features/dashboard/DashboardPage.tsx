@@ -22,6 +22,7 @@ import { MonthlyChart } from "./MonthlyChart";
 import { TopCompanies, DepotDistribution } from "./Distributions";
 import { RecentPayments } from "./RecentPayments";
 import { HistoricalOverview } from "./HistoricalOverview";
+import { GoalSection } from "./GoalSection";
 import { describeSelection, type EntityInfo } from "./format";
 
 interface EntityRow {
@@ -193,6 +194,8 @@ export function DashboardPage() {
       )}
 
       <KpiCards payments={payments} selection={selection} today={today} />
+
+      <GoalSection payments={payments} selection={selection} today={today} />
 
       <MonthlyChart payments={payments} selection={selection} today={today} />
 

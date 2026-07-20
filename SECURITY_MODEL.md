@@ -240,3 +240,25 @@ kein UPDATE, kein anon-Zugriff (`revoke all`, dann minimale Grants). Der
 **Massenaktionen** laufen als einzelne, jeweils RLS-geprüfte Schreibzugriffe je
 Datensatz (kein globaler Bypass); fremde Datensätze/Unternehmen/Depots sind damit
 nicht erreichbar.
+
+---
+
+## Phase 7 — Ziele (RLS)
+
+Die `goals`-Tabelle (Migration 0021) ist von Beginn an RLS-geschützt. `anon` hat
+keinerlei Zugriff (`revoke all`). `authenticated` erhält `select, insert, update,
+delete` **ausschließlich auf eigene Zeilen** über vier Policies
+(`goals_select_own`, `goals_insert_own`, `goals_update_own`, `goals_delete_own`,
+jeweils `user_id = auth.uid()`). Der `enforce_user_id`-Trigger erzwingt zusätzlich
+`user_id = auth.uid()` beim Insert und macht den Eigentümer unveränderlich
+(Defense in Depth). Ein Zugriff auf fremde Ziele über eine direkte ID betrifft
+0 Zeilen statt eines Fehlers (kein Leak).
+
+Der Fortschritt eines Ziels wird ausschließlich aus den **eigenen** aktiven
+Dividendeneingängen des Nutzers berechnet (dieselbe RLS-geschützte Datenbasis wie
+Dashboard/Statistik); fremde Zahlungen sind serverseitig unsichtbar. Es wird
+keine neue SECURITY-DEFINER-Funktion eingeführt — damit entfällt jede
+Umgehungsfläche über unsichere Funktionen. Clientseitige Filter sind nirgends
+Sicherheitsmaßnahme. Anlegen, Ändern und Löschen eines Ziels werden über den
+generischen Audit-Trigger (`entity_type = 'goal'`, Aktion insert/update/delete)
+protokolliert.

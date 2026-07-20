@@ -371,3 +371,51 @@ Zukunftsdatum, fehlende Zuordnung, importierte Zeile ohne Importreferenz,
 ungewöhnlich hoher Betrag. Letzterer ist **relativ**: > `UNUSUALLY_HIGH_FACTOR`
 (= 5) × Median der übrigen aktiven Zahlungen desselben Unternehmens, erst ab
 3 Vergleichszahlungen — keine starre absolute Schwelle, nur ein Hinweis.
+
+---
+
+## 13. Ziele und Fortschritt (Phase 7)
+
+Die zentrale, typisierte Goal-Domain-Schicht (`src/lib/goals`) ist die **einzige**
+Quelle aller Zielkennzahlen. Sie baut auf der Analytics-Schicht (§1–§12) auf; es
+gibt keine parallele Berechnung in React-Komponenten, Karten, Diagrammen oder
+Tooltips. Alle Beträge laufen decimal-sicher über `Money`/`Decimal`; gerundet
+wird ausschließlich für die Anzeige (R-4/R-5).
+
+**Datenbasis (§7).** Fortschritt zählt ausschließlich gültige, aktive
+Dividendeneingänge (`archived_at is null`) des angemeldeten Nutzers — dieselbe
+Datenbasis wie Dashboard und Statistik, inkl. **effektivem** Zahlungsdatum
+(§10). Stornierte und dauerhaft gelöschte Zahlungen sind ausgeschlossen;
+archivierte Unternehmen und Depots bleiben über ihre aktiven Zahlungen
+enthalten. Keine erwarteten, geschätzten oder prognostizierten Beträge.
+
+**Zielzeitraum (§2).**
+- Jahresziel `annual`: 1. Januar – 31. Dezember des `year`.
+- Monatsziel `monthly`: 1. – letzter Tag von `year`/`month` (Schaltjahr über
+  `lastDayOfMonth`).
+
+**Ist-Summe.** `aggregateInRange(payments, period).net` über das effektive
+Zahlungsdatum — deckungsgleich mit dem Drill-down `/eingaenge?year=…[&month=…]`.
+
+**Zielerreichung.** `Fortschritt = Ist / Ziel × 100` (Ziel > 0 garantiert durch
+DB-Constraint). Der Balken ist visuell auf 0–100 % begrenzt; der textliche
+Prozentwert wird auch über 100 % angezeigt.
+
+**Verbleibend / Überschreitung (§11).** `remaining = max(0, Ziel − Ist)`,
+`overshoot = max(0, Ist − Ziel)`. Kein negativer Restbetrag.
+
+**Zielstatus (§6), rein abgeleitet, nie gespeichert.** In dieser Reihenfolge:
+`upcoming` (Zeitraum nicht begonnen) → `exceeded` (Ist > Ziel) → `reached`
+(Ist = Ziel) → `missed` (Zeitraum vorbei und Ziel verfehlt) → sonst `active`.
+
+**Zeitfortschritt (§12), rein beschreibend.** Vergangene Kalendertage ÷ gesamte
+Kalendertage des Zeitraums; der aktuelle Tag wird inklusiv gezählt (konsistent
+zu den YTD-/Monatszeiträumen). Vor Beginn 0 %, nach Ende 100 %. **Keine**
+Hochrechnung, keine erwartete Zielerreichung, kein voraussichtliches
+Erreichungsdatum.
+
+**Dynamik (§28).** Da Zielstände aus den aktuellen Zahlungen abgeleitet werden,
+aktualisiert jede Zahlungs-/Import-Mutation (Anlegen, Bearbeiten, Datum-/
+Betragsänderung, Storno, Reaktivierung, Löschung, Import-Commit/-Rollback) über
+die Invalidierung von `["payments"]` automatisch alle betroffenen Ziele,
+Dashboard und Statistik. Es bleibt kein veralteter Zielstand zurück.

@@ -28,8 +28,7 @@ export type PaymentSource = "manual" | "csv_import" | "excel_import" | "restore"
 export type ImportStatus =
   "analyzing" | "pending_confirmation" | "committed" | "rolled_back" | "discarded";
 export type DataQuality = "ok" | "incomplete" | "needs_review";
-export type GoalType =
-  "net_year" | "gross_year" | "rolling_12m" | "avg_month_net" | "long_term";
+export type GoalType = "annual" | "monthly";
 export type AuditAction =
   | "insert"
   | "update"
@@ -353,30 +352,34 @@ export interface Database {
           id: string;
           user_id: string;
           goal_type: GoalType;
-          year: number | null;
-          target_year: number | null;
+          year: number;
+          month: number | null;
           target_amount: string;
           currency: string;
+          title: string | null;
           note: string | null;
           created_at: string;
           updated_at: string;
-          archived_at: string | null;
         };
         Insert: {
           id?: string;
           user_id?: string;
           goal_type: GoalType;
-          year?: number | null;
-          target_year?: number | null;
+          year: number;
+          month?: number | null;
           target_amount: string;
           currency?: string;
+          title?: string | null;
           note?: string | null;
-          archived_at?: string | null;
         };
         Update: Partial<{
+          goal_type: GoalType;
+          year: number;
+          month: number | null;
           target_amount: string;
+          currency: string;
+          title: string | null;
           note: string | null;
-          archived_at: string | null;
         }>;
         Relationships: [];
       };

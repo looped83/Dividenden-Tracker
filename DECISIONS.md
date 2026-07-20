@@ -724,3 +724,50 @@ Client). Status- und Datenquellenfilter sowie die Sortierung werden als
 URL-Parameter geführt und bleiben nach Reload/Zurück/Vorwärts erhalten.
 **Konsequenz:** Kein N+1, konsistent mit Dashboard/Statistik; bei sehr großen
 Historien greift zusätzlich die vorhandene Seitensteuerung der Tabelle.
+
+---
+
+### D-7-1 — `goals`-Tabelle für Phase 7 neu aufgebaut statt migriert
+
+Die in Migration 0010 angelegte `goals`-Struktur war eine spekulative Vorstufe
+mit Zielarten (`net_year`, `gross_year`, `long_term`, `rolling_12m`,
+`avg_month_net`), die Phase 7 ausdrücklich **nicht** umsetzt, ohne UI und ohne
+produktive Daten. Migration 0021 ersetzt Tabelle und Enum sauber durch die
+verbindlichen Zielarten `annual`/`monthly` mit `year`/`month`/`title`. Das
+vermeidet eine zweite parallele Zielstruktur und ist wegen fehlender Zieldaten
+verlustfrei. `ALTER TYPE ... DROP VALUE` existiert nicht — deshalb `drop type` +
+`create type` nach `drop table` (im selben Transaktions-Migrationsschritt
+zulässig).
+
+### D-7-2 — Zielfortschritt rein abgeleitet, nie gespeichert
+
+Zielstatus, Ist-Summe, Prozent, Rest-/Überschreitungsbetrag und Zeitfortschritt
+werden ausschließlich in der Goal-Domain-Schicht (`src/lib/goals`) aus den
+aktuellen, gültigen Dividendeneingängen berechnet. Kein redundanter Statuswert
+in der DB → keine veralteten Zielstände nach nachträglichen Zahlungsänderungen
+(Storno, Reaktivierung, Löschung, Datums-/Betragskorrektur, Import-Rollback).
+
+### D-7-3 — Zielfortschritt nutzt effektives Zahlungsdatum und die geteilte Dashboard-Historie
+
+Der Fortschritt zählt aktive Eingänge über das **effektive** Zahlungsdatum (§10)
+auf derselben, einmal geladenen Historie wie das Dashboard
+(`["payments","dashboard"]`). Damit stimmen Zielstand, Dashboard, Statistik und
+der Drill-down `/eingaenge?year=…[&month=…]` exakt überein, ohne zusätzliche
+Abfragen je Zielkarte (kein N+1) und ohne neue SECURITY-DEFINER-Funktion.
+
+### D-7-4 — Ziele dürfen direkt und dauerhaft gelöscht werden
+
+Anders als Dividendeneingänge (D-6-1: „erst stornieren") sind Ziele reine, vom
+Nutzer definierte Vergleichswerte ohne fachliche Historie an den Zahlungen. Sie
+dürfen nach Bestätigung direkt hart gelöscht werden (Policy `goals_delete_own`);
+das Löschen entfernt nur die Zieldefinition, keine Zahlungsdaten. Protokolliert
+über den generischen Audit-Trigger (`goal`, Aktion `delete`).
+
+### D-7-5 — Keine Prognosen, keine Hochrechnungen, keine automatischen Vorschläge
+
+Bewusster Scope-Schnitt: die Anwendung zeigt ausschließlich beschreibende Werte
+(Ist, Ziel, Prozent, Rest/Überschreitung, vergangener Zeitanteil). Sie behauptet
+nie eine voraussichtliche Zielerreichung, kein Erreichungsdatum, keinen
+hochgerechneten Jahreswert und macht keine Anlage-/Sparratenempfehlungen. Der
+Zeitfortschritt ist rein beschreibend und wird neutral neben dem finanziellen
+Fortschritt dargestellt.

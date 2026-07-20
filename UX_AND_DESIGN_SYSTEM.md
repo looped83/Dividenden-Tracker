@@ -199,3 +199,32 @@ ausgewiesenen Teilfehlern.
 mit Kategorie-Badge) und Auffälligkeitsliste; Aktion „Keine Dublette" wird
 persistiert. Zugänglich: Dialoge mit Titel/Fokusfalle, Statusinformation nicht
 nur über Farbe (Text-Badges), tastaturbedienbare Auswahl.
+
+---
+
+## Phase 7 — Ziele
+
+**Zielseite (`/ziele`).** Überschrift, kurze fachliche Einordnung („Vergleichs­
+wert, keine Prognose"), primäre Aktion „Ziel anlegen", danach Sektionen für
+aktive, bevorstehende und beendete Ziele als klar lesbare Zielkarten (Grid,
+1/2/3 Spalten je Breite). Detailansicht `/ziele/:id` mit Drill-down zu den
+Eingängen des Zeitraums.
+
+**Zielkarte & Fortschrittsanzeige.** `GoalProgressBar` ist ein zugängliches
+`role="progressbar"` mit `aria-valuemin/max/now` und aussagekräftigem
+`aria-valuetext` (Betrag + Prozent, bei Überschreitung inkl. übertroffenem
+Betrag). Der Balken ist visuell auf 100 % begrenzt; der reale Prozentwert steht
+zusätzlich als Text. Information nie nur über Farbe (Status-Badge mit Text).
+Fortschrittsanimation nur dezent und `motion-reduce`-fest. Bevorstehende Ziele
+zeigen „Beginnt am …" statt Fortschritt (keine negative Bewertung, keine
+Prognose).
+
+**Formular.** Dialog mit React Hook Form + Zod, deutsche Betragseingabe
+(decimal-sicher), verständliche, an Felder gebundene Fehlermeldungen, Schutz vor
+Mehrfach-Übermittlung, Bestätigungsdialog vor dauerhafter Löschung mit klarem
+Hinweis, dass Dividendeneingänge unverändert bleiben.
+
+**Responsive.** Desktop mehrspaltige Karten; iPad adaptive 1–2 Spalten; iPhone
+Karten untereinander mit direkt sichtbarem Ziel-/Ist-Wert und Fortschritt,
+einspaltigem Formular, ausreichend großen Touch-Zielen (44 pt), keine erzwungene
+Desktoptabelle.

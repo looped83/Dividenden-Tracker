@@ -61,9 +61,7 @@ create type import_status as enum (
 
 create type data_quality as enum ('ok', 'incomplete', 'needs_review');
 
-create type goal_type as enum (
-  'net_year', 'gross_year', 'rolling_12m', 'avg_month_net', 'long_term'
-);
+create type goal_type as enum ('annual', 'monthly'); -- Phase 7 (Migration 0021)
 
 create type audit_action as enum (
   'insert', 'update', 'archive', 'unarchive',
@@ -274,33 +272,47 @@ create index imports_user_hash_idx on imports(user_id, file_hash);
 DELETE ist nur für Status `analyzing`/`pending_confirmation`/`discarded` erlaubt (Aufräumen
 abgebrochener Analysen); `committed`/`rolled_back` sind unlöschbare Historie.
 
-### 3.7 `goals`
+### 3.7 `goals` (Phase 7, Migration 0021)
 
 ```sql
+create type goal_type as enum ('annual', 'monthly');
+
 create table goals (
   id            uuid primary key default gen_random_uuid(),
   user_id       uuid not null references auth.users(id),
   goal_type     goal_type not null,
-  year          int check (year between 1990 and 2100),   -- für Jahresziele
-  target_year   int check (target_year between 1990 and 2100), -- für long_term
-  target_amount numeric(14,2) not null check (target_amount > 0),
-  currency      char(3) not null default 'EUR',
+  year          int not null check (year between 1990 and 2100),
+  month         int check (month between 1 and 12),          -- nur bei Monatszielen
+  target_amount numeric(14,2) not null check (target_amount > 0 and target_amount < 1e12),
+  currency      char(3) not null default 'EUR' check (currency ~ '^[A-Z]{3}$'),
+  title         text check (length(title) <= 200),
   note          text check (length(note) <= 2000),
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now(),
-  archived_at   timestamptz,
-  constraint goal_year_consistency check (
-    (goal_type in ('net_year','gross_year') and year is not null and target_year is null)
-    or (goal_type = 'long_term' and target_year is not null and year is null)
-    or (goal_type in ('rolling_12m','avg_month_net') and year is null and target_year is null)
+  constraint goal_month_consistency check (
+    (goal_type = 'annual' and month is null)
+    or (goal_type = 'monthly' and month is not null)
   )
 );
 
-create unique index goals_unique_active on goals(user_id, goal_type, coalesce(year, 0))
-  where archived_at is null;
+-- Eindeutigkeit des Zielzeitraums: hoechstens ein Jahresziel je Jahr und
+-- hoechstens ein Monatsziel je Jahr+Monat. coalesce gibt Jahreszielen den
+-- Monatsschluessel 0, sodass Jahres- und Monatsziel desselben Jahres nie
+-- kollidieren.
+create unique index goals_unique_period on goals (user_id, goal_type, year, coalesce(month, 0));
 ```
 
-Ziele referenzieren keinerlei Zahlungsdaten (strikte Trennung Ist/Ziel, Grundsatz 8).
+Phase 7 baut die in 0010 spekulativ angelegte `goals`-Struktur (Zielarten
+`net_year`/`long_term`/… ohne UI und ohne Daten) sauber neu auf: Migration 0021
+ersetzt Tabelle und Enum durch die verbindlichen Zielarten `annual` und
+`monthly`. Die Architektur erlaubt spaetere Zielarten, ohne sie jetzt umzusetzen.
+
+Ziele referenzieren keinerlei Zahlungsdaten (strikte Trennung Ist/Ziel,
+Grundsatz 8); der Fortschritt wird ausschliesslich aus den tatsaechlichen,
+gueltigen Dividendeneingaengen berechnet und **nie** gespeichert. Anders als
+Zahlungen duerfen Ziele direkt und dauerhaft geloescht werden (DELETE-Policy
+`goals_delete_own`); das Loeschen entfernt nur die Zieldefinition, keine
+Zahlungsdaten.
 
 ### 3.8 `audit_log` — insert-only
 

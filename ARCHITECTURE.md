@@ -350,3 +350,43 @@ zeigt die Detailroute einen kontrollierten Nicht-gefunden-Zustand (kein
 veralteter Cache). Suche/Filter/Sortierung der Liste arbeiten clientseitig auf
 der einmal geladenen, decimal-sicheren Historie (D-6-6), konsistent mit der
 Lade-/Aggregationsstrategie aus Phase 5A.
+
+---
+
+## Phase 7 — Ziele und Fortschritt
+
+**Goal-Domain-Schicht (`src/lib/goals`).** Reine, typisierte, decimal-sichere
+Domain-Schicht (`period.ts`, `progress.ts`, `types.ts`), die auf der
+Analytics-Schicht aufbaut und die **einzige** Quelle aller Zielkennzahlen ist —
+keine Berechnung in Komponenten. Sie bestimmt Zielzeitraum, Ist-Summe,
+Zielerreichung, Rest-/Überschreitungsbetrag, Zielstatus und Zeitfortschritt und
+sortiert Ziele stabil (CALCULATION_RULES.md §13).
+
+**Feature-Schicht (`src/features/goals`).** `hooks.ts` (React-Query-Anbindung,
+Query-Key `["goals"]`), `schemas.ts` (Zod-Formular), `format.ts` (Anzeige/
+Beschriftungen), `GoalsPage`, `GoalDetailPage`, `GoalCard`, `GoalProgressBar`,
+`GoalFormDialog`, `DeleteGoalDialog`. Dashboard-Integration über
+`src/features/dashboard/GoalSection.tsx`.
+
+**Repository (`src/lib/supabase/repositories/goals.ts`).** CRUD gegen die
+RLS-geschützte `goals`-Tabelle, mapt `numeric` einmal in `Money`, wirft
+`GoalDuplicateError` (23505) und `GoalConflictError` (Optimistic Concurrency über
+`updated_at`, wie bei Zahlungen).
+
+**Query-Strategie.** Der Zielfortschritt leitet sich aus derselben aktiven
+Dividendenhistorie ab, die das Dashboard bereits lädt (`["payments","dashboard"]`,
+geteilter Cache, keine zusätzliche Roh-Abfrage je Zielkarte, kein N+1). Es gibt
+bewusst keine neue SECURITY-DEFINER-Funktion oder materialisierte View für die
+aktuelle Datenmenge; die Berechnung ist rein und clientseitig auf der bereits
+übertragenen Historie.
+
+**Cache-Invalidierung.** Zielmutationen invalidieren `["goals"]` (Übersicht,
+Detail, Dashboard-Zielsektion). Zahlungs-/Import-Mutationen invalidieren
+`["payments"]` und aktualisieren dadurch automatisch alle abgeleiteten
+Zielstände. Zentrale Query-Keys, keine verstreuten Schlüssel.
+
+**Dashboard-Interaktion (Auftrag §26).** Einzeljahr → Jahresziel dieses Jahres
+(sonst leerer Zustand mit Anlege-Link); „Alle Jahre" → keine Jahres-Zielkarte,
+nur ein Link zur Zielübersicht; die Monatszielkarte (aktueller Monat) bleibt
+unabhängig von der Jahresauswahl. Keine Karte verwendet je einen anderen
+Zeitraum als ihre sichtbare Beschriftung.

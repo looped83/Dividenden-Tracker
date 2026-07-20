@@ -349,3 +349,32 @@ storniert, D-6-1) mit atomarem Audit, Massenaktionen, Datenqualitätsansicht
 `duplicate_dismissals`). Unit-, Integrations- und RLS-Tests ergänzt; Docs
 aktualisiert. Bewusst nicht umgesetzt: alle unter „Nicht Bestandteil dieser
 Phase" genannten Funktionen.
+
+---
+
+## Phase 7 — Ziele und Fortschritt (umgesetzt)
+
+**DB (Migration 0021).** Ersetzt die spekulative 0010-Struktur: neues Enum
+`goal_type ('annual','monthly')`, neue `goals`-Tabelle mit `year`, optionalem
+`month`, `title`, `note`, `target_amount numeric(14,2)`, Konsistenz-Constraint
+Monat↔Zielart, Eindeutigkeitsindex `goals_unique_period`, vier RLS-Policies
+(inkl. DELETE), Trigger für `user_id`, `updated_at` und Audit (insert/update/
+delete).
+
+**Domain (`src/lib/goals`).** Zielzeitraum, Ist-Summe (Analytics-Schicht,
+effektives Datum), Fortschritt, Rest-/Überschreitungsbetrag, Zielstatus,
+Zeitfortschritt, stabile Sortierung.
+
+**Feature (`src/features/goals`).** Repository, Hooks (Query-Key `["goals"]`,
+Optimistic Concurrency), Zod-Formular, Zielübersicht, Detailansicht mit
+Drill-down, Zielkarte, Fortschrittsbalken, Anlege-/Bearbeiten-Dialog, Löschdialog.
+Dashboard-Zielsektion in `src/features/dashboard/GoalSection.tsx`; Route
+`/ziele/:id` ergänzt.
+
+**Tests.** Unit (Domain, Formular, Formatierung, Karte), Integration
+(Constraints, Eindeutigkeit, decimal, RLS-Isolation, Audit, Löschen ohne
+Zahlungsänderung). Typecheck, Lint, Unit-, Integrationstests und Build grün.
+
+**Bewusst ausgelassen:** Prognosen/Hochrechnungen, erwartete Dividenden,
+Zielkalender, automatische Zielvorschläge/-anpassungen, weitere Zielarten
+(Quartal/rollierend/Depot/Unternehmen), Browser-E2E-Harness.
