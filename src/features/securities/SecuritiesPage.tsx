@@ -1,7 +1,14 @@
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Building2, Pencil, Plus, RotateCcw, Archive as ArchiveIcon } from "lucide-react";
+import {
+  Building2,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Trash2,
+  Archive as ArchiveIcon,
+} from "lucide-react";
 import { emptyToNull } from "@/lib/utils/emptyToNull";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { cn } from "@/lib/utils/cn";
@@ -33,6 +40,7 @@ import {
 import {
   useArchiveSecurity,
   useCreateSecurity,
+  useDeleteSecurity,
   useSecurities,
   useUpdateSecurity,
 } from "@/features/securities/hooks";
@@ -276,6 +284,7 @@ export function SecuritiesPage() {
   const { data: depots = [] } = useDepots();
   const depotById = new Map(depots.map((depot) => [depot.id, depot]));
   const archiveSecurity = useArchiveSecurity();
+  const deleteSecurity = useDeleteSecurity();
   const [showArchived, setShowArchived] = React.useState(false);
   const [dialog, setDialog] = React.useState<{
     open: boolean;
@@ -284,8 +293,21 @@ export function SecuritiesPage() {
     open: false,
     security: null,
   });
+  const [deleteTarget, setDeleteTarget] = React.useState<Security | null>(null);
+  const [deleteError, setDeleteError] = React.useState<string | null>(null);
 
   const visible = securities.filter((s) => showArchived || !s.archived_at);
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleteError(null);
+    try {
+      await deleteSecurity.mutateAsync(deleteTarget.id);
+      setDeleteTarget(null);
+    } catch (error) {
+      setDeleteError(getErrorMessage(error, "Löschen fehlgeschlagen."));
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -412,6 +434,19 @@ export function SecuritiesPage() {
                       >
                         {security.archived_at ? <RotateCcw /> : <ArchiveIcon />}
                       </Button>
+                      {security.archived_at && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`${security.name} endgültig löschen`}
+                          onClick={() => {
+                            setDeleteError(null);
+                            setDeleteTarget(security);
+                          }}
+                        >
+                          <Trash2 />
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -428,6 +463,38 @@ export function SecuritiesPage() {
           setDialog((current) => ({ ...current, open }));
         }}
       />
+
+      <Dialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Unternehmen endgültig löschen</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            {deleteTarget?.name} wird unwiderruflich entfernt und kann nicht
+            wiederhergestellt werden. Das ist nur möglich, solange keine
+            Dividendeneingänge mehr auf dieses Unternehmen verweisen.
+          </p>
+          {deleteError && (
+            <p role="alert" className="text-sm text-negative">
+              {deleteError}
+            </p>
+          )}
+          <DialogFooter>
+            <Button
+              variant="destructive"
+              disabled={deleteSecurity.isPending}
+              onClick={() => void handleDelete()}
+            >
+              {deleteSecurity.isPending ? "Wird gelöscht …" : "Endgültig löschen"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
