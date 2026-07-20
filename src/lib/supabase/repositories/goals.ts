@@ -1,11 +1,9 @@
 import { supabase } from "@/lib/supabase/client";
-import type { Database } from "@/lib/supabase/database.types";
-import { EUR, Money } from "@/lib/money";
 import type { Goal } from "@/lib/goals";
+import { mapGoal, type GoalInsert, type GoalRow, type GoalUpdate } from "./goalMapping";
 
-export type GoalRow = Database["public"]["Tables"]["goals"]["Row"];
-export type GoalInsert = Database["public"]["Tables"]["goals"]["Insert"];
-export type GoalUpdate = Database["public"]["Tables"]["goals"]["Update"];
+export { mapGoal };
+export type { GoalRow, GoalInsert, GoalUpdate };
 
 /**
  * Signalisiert den Verstoss gegen die Eindeutigkeitsregel (Auftrag §21): fuer
@@ -34,22 +32,6 @@ export class GoalConflictError extends Error {
     );
     this.name = "GoalConflictError";
   }
-}
-
-/** Wandelt eine DB-Zeile in ein decimal-sicheres Domain-Objekt (Betrag als Money). */
-export function mapGoal(row: GoalRow): Goal {
-  return {
-    id: row.id,
-    goalType: row.goal_type,
-    year: row.year,
-    month: row.month,
-    targetAmount: Money.fromString(row.target_amount, EUR),
-    currency: row.currency,
-    title: row.title,
-    note: row.note,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  };
 }
 
 /** Aktuelle Zeile (Row) inkl. updated_at fuer Optimistic Concurrency in der UI. */
