@@ -260,3 +260,90 @@ Gleitkomma-Geldarithmetik statt.
 - Eine ausnahmsweise **vor** dem geplanten Monat eingetroffene Zahlung wird dem vorherigen
   geplanten Monat zugerechnet (die Regel geht von „später als geplant" aus). Kein Vorziehen in
   einen künftigen geplanten Monat.
+
+---
+
+## 11. Statistikbereich (Phase 5B)
+
+Verbindliche Definition der Statistik-Kennzahlen. Sie werden **ausschließlich** in der
+Analytics-Schicht `src/lib/statistics` berechnet (reine, decimal-sichere Funktionen), sind die
+einzige Quelle aller Statistikwerte und werden Dashboard-übergreifend wiederverwendet. Keine
+Aggregation, Rundung oder Sortierung nach Betrag/Datum in React-Komponenten oder Diagrammen.
+
+Datenbasis und Storno-/Archivregeln entsprechen §9.1: aktive Eingänge (`archived_at is null`);
+archivierte Unternehmen/Depots bleiben über ihre aktiven Zahlungen enthalten. Datumsdimension
+ist durchgängig der **effektive Monat** (§10). Der Statistikbereich zeigt ausschließlich
+**historische** Auswertungen — keine Prognosen, erwarteten Dividenden, Kurse oder Depotwerte
+(PRODUCT_SPEC.md Grundsatz 8).
+
+### 11.1 Übersicht (`overviewStatistics`)
+
+Über die gefilterte Historie: historische Gesamtsumme (`Σ net`), Anzahl Zahlungen, Anzahl
+Unternehmen und Depots (distinct), erstes/letztes effektives Zahlungsdatum, bester Monat (§5.5),
+bestes Jahr (Kalenderjahr mit maximaler Nettosumme; bei Gleichstand das aktuellere), sowie die
+beiden Durchschnitte aus §11.2.
+
+### 11.2 Durchschnitte
+
+- **Durchschnittliche Zahlung** (`averagePayment`): `Σ net ÷ Anzahl Zahlungen` (0 € ohne
+  Zahlungen). Division über Decimal, Rundung erst am Ende auf 2 Stellen (R-4).
+- **Durchschnittlicher Monat** (`averagePerActiveMonth`): `Σ net ÷ Anzahl aktiver Monate`, wobei
+  ein „aktiver Monat" ein Kalendermonat (Jahr+Monat) mit mindestens einer Zahlung ist. Zahlungsfreie
+  Monate zählen bewusst **nicht** als Divisor (keine künstliche Verwässerung; unterscheidet sich
+  vom Dashboard-`averagePerMonth` §5.4, das auf ein Einzeljahr bezogen ist).
+
+### 11.3 Jahresstatistik (`yearStatistics`)
+
+Ein Eintrag je Kalenderjahr, **neueste Jahre zuerst**. Je Jahr: Dividendensumme, Anzahl
+Zahlungen, Anzahl Unternehmen/Depots (distinct), Durchschnittszahlung (§11.2), bester Monat
+(§5.5) und **schwächster Monat** (Minimum der Monatssummen unter den Monaten **mit** Zahlungen;
+bei Gleichstand der ältere Monat), sowie die Veränderung zum vorhergehenden Kalenderjahr
+(`comparePeriods` §6.4 auf den Jahressummen). Fehlt das Vorjahr in der Datenbasis, gilt „Kein
+Vergleichswert".
+
+### 11.4 Monatsstatistik (`monthAcrossYearsStatistics`)
+
+Genau zwölf Einträge (Kalendermonate 1..12) **über alle Jahre**. Je Monat: Dividendensumme,
+Anzahl Zahlungen, Durchschnittszahlung (§11.2) und die Entwicklung über die Jahre
+(`yearlyBuckets` des Monats, aufsteigend).
+
+### 11.5 Unternehmensstatistik (`securityStatistics` + `sortSecurityStatistics`)
+
+Je Unternehmen (auch archivierte): Gesamtsumme, Anzahl Zahlungen, erstes/letztes effektives
+Datum, Durchschnittszahlung, größte Einzelzahlung (`max net`), Summe je Jahr und Entwicklung über
+die Jahre. Sortierbar nach **Summe** (↓, Tiebreak Anzahl ↓, dann Name), **Anzahl Zahlungen**
+(↓, Tiebreak Summe ↓, dann Name), **Alphabet** (Name, de) und **letzter Zahlung** (Datum ↓,
+fehlende zuletzt, Tiebreak Name).
+
+### 11.6 Depotstatistik (`depotStatistics`)
+
+Je Depot (auch archivierte): Dividendensumme, Anzahl Zahlungen, Anzahl Unternehmen (distinct),
+Entwicklung je Jahr (`yearlyBuckets`) und je Kalendermonat über alle Jahre
+(`calendarMonthBuckets`, zwölf Eimer). Grundordnung: Summe ↓, dann Anzahl ↓.
+
+### 11.7 Heatmap und Diagramme
+
+- **Heatmap** (`heatmapByYearMonth`): eine Zeile je Jahr (neueste zuerst), je zwölf
+  Monatseimer (`monthlyBuckets`). Die Farbintensität ist rein visuell (Wurzelskalierung der
+  Nettosumme); Betrag und Anzahl je Zelle sind zusätzlich als Text (Titel/Screenreader) verfügbar.
+- Alle Diagramme (Jahres-/Monatsentwicklung, Unternehmen nach Summe, Depotverteilung, Heatmap)
+  erhalten die aggregierten Werte fertig aus der Analytics-Schicht und enthalten **keine** eigene
+  Berechnung. Balkenhöhen/Zellintensitäten nutzen `Money.toChartNumber()` ausschließlich visuell
+  (§1/§8); alle angezeigten Beträge stammen aus `formatMoney`.
+
+### 11.8 Filter (`filterPayments`)
+
+Kombinierbarer Filter über Jahr (effektives Kalenderjahr), Unternehmen, Depot, Datenquelle
+(`source`) und Zahlungsart (`payment_type`). Reine UND-Verknüpfung als Vorstufe der Aggregation;
+`null` bedeutet je Kriterium „keine Einschränkung". Der Filter ist URL-serialisiert
+(`?year=&security=&depot=&source=&type=`) und bleibt nach Reload sowie über Browser-Zurück/-Vorwärts
+erhalten.
+
+### 11.9 Drill-down-Garantie
+
+Jede Kennzahl, jeder Diagrammbalken, jede Heatmap-Zelle und jede Tabellenzeile navigiert in die
+gefilterte Zahlungsliste (`/eingaenge`) bzw. — bei „Jahr → Monate dieses Jahres" — in den
+Monats-Unterbereich mit gesetztem Jahresfilter. Der aktive Statistikfilter (Unternehmen/Depot/Jahr)
+wird dabei mit dem konkreten Drill-Kriterium zusammengeführt, sodass die Zielliste dieselbe
+Teilmenge zeigt (Grundsatz 6). `source`/`payment_type` sind in der Zahlungsliste nicht filterbar
+und bleiben beim Drill-down unberücksichtigt.

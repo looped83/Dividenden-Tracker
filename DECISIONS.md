@@ -545,3 +545,48 @@ Umsetzung (nicht-destruktiv):
 - Da der Plan clientseitige Stammdaten sind, wird der effektive Monat **clientseitig**
   berechnet; die Eingangsliste lädt dafür alle Zahlungen (paginiert) und filtert/sortiert lokal
   statt per serverseitigem Datumsfilter.
+
+### D-5B-1 — Statistik teilt die Dashboard-Query, keine zweite Ladung
+
+Der Statistikbereich nutzt denselben Query-Key `['payments','dashboard']` wie das
+Dashboard (`useStatisticsData` → `useDashboardPayments`). Dadurch teilen sich beide
+einen Cache-Eintrag; es entsteht keine zusätzliche Übertragung, keine zweite
+Aggregationsquelle und keine Gefahr divergierender Summen. Die Neubewertung aus
+D-5A-1 (materialisierte Views) bleibt negativ: die clientseitige Aggregation ist für
+den Zielumfang (≥ 10.000 Eingänge, ≥ 500 Unternehmen) ausreichend schnell (O(n),
+memoisiert; durch einen Skalierungstest belegt).
+
+### D-5B-2 — Neue Kennzahlen ausschließlich in der Analytics-Schicht
+
+Sämtliche Statistik-Aggregationen (`filterPayments`, `overviewStatistics`,
+`yearStatistics`, `monthAcrossYearsStatistics`, `securityStatistics`,
+`sortSecurityStatistics`, `depotStatistics`, `calendarMonthBuckets`,
+`heatmapByYearMonth`, …) sind reine Funktionen in `src/lib/statistics`. Komponenten,
+Tabellen und Diagramme erhalten fertige Werte; sie enthalten keine Aggregation,
+Rundung oder Betrags-/Datumssortierung. So bleibt „Kennzahl = Summe der
+Drill-down-Liste" konstruktiv konsistent (Grundsatz 6) und es gibt keine parallele Logik.
+
+### D-5B-3 — „Durchschnittlicher Monat" über aktive Monate
+
+Der Übersichtswert „Ø Monat" teilt die Gesamtsumme durch die Anzahl der Kalendermonate
+**mit** Zahlungen (aktive Monate), nicht durch die volle Monatsspanne. Damit verwässern
+zahlungsfreie Monate die historische Kennzahl nicht. Der Dashboard-Wert „Ø pro Monat"
+(§5.4, auf ein Einzeljahr bezogen, Divisor 12 bzw. begonnene Monate) bleibt davon
+unberührt; beide Definitionen sind in CALCULATION_RULES.md §5.4/§11.2 getrennt dokumentiert.
+
+### D-5B-4 — URL-basierte, kombinierbare Statistikfilter mit Outlet-Kontext
+
+Jahr, Unternehmen, Depot, Datenquelle und Zahlungsart liegen als kombinierbare
+URL-Parameter vor (`?year=&security=&depot=&source=&type=`); Parsing/Serialisierung sind
+reine, isoliert getestete Funktionen (`filterParams.ts`). Die Layoutseite wendet den
+Filter **einmal** an und reicht den gefilterten Datensatz über den React-Router-
+`Outlet`-Kontext (`context.ts`, bewusst Supabase-frei) an alle Unterbereiche weiter — eine
+Filterung/Aggregation je Ansicht, isoliert testbare Unterbereiche.
+
+### D-5B-5 — Tabellen paginiert statt virtualisiert
+
+Die generische `StatTable` setzt Sortierung, Suche und **Paginierung** um (statt
+Virtualisierung). Paginierung deckt die geforderte Skalierung (≥ 500 Unternehmen)
+ohne zusätzliche Abhängigkeit ab, ist einfacher zugänglich (klare Fokus-/ARIA-Semantik,
+`aria-sort`) und begrenzt die gleichzeitig gerenderten Zeilen. Virtualisierung bleibt eine
+spätere Option, falls einzelne Seiten sehr groß werden.

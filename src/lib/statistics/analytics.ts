@@ -15,11 +15,19 @@ import type {
   Aggregate,
   AnalyticsPayment,
   ComparisonResult,
+  DepotStatistics,
   GroupBucket,
+  HeatmapRow,
   HistoricalSummary,
+  MonthAcrossYearsStatistics,
   MonthBucket,
   MonthValue,
+  OverviewStatistics,
+  SecuritySortKey,
+  SecurityStatistics,
+  StatisticsFilter,
   YearBucket,
+  YearStatistics,
 } from "./types";
 
 /**
@@ -362,4 +370,343 @@ export function currentMonthComparison(
 export function availableYears(payments: readonly AnalyticsPayment[]): number[] {
   const years = new Set(payments.map((p) => yearOf(p.payDate)));
   return [...years].sort((a, b) => b - a);
+}
+
+// =============================================================================
+// Phase 5B — Statistikbereich (CALCULATION_RULES.md §11)
+//
+// Alle folgenden Funktionen sind reine, decimal-sichere Aggregationen ueber
+// bereits geparsten {@link AnalyticsPayment}-Datensaetzen mit effektivem Datum
+// (§10). Sie bauen konsequent auf den Basis-Aggregaten oben auf und sind die
+// einzige Quelle der Statistik-Kennzahlen — es entstehen keine parallelen
+// Berechnungen und keine Logik in React-Komponenten.
+// =============================================================================
+
+/**
+ * Wendet den kombinierbaren Statistikfilter (§11) an. Reine Vorstufe der
+ * Aggregation: `null`-Kriterien schraenken nicht ein, gesetzte Kriterien wirken
+ * als UND-Verknuepfung. Der Jahresfilter bezieht sich auf das **effektive**
+ * Kalenderjahr (§10), konsistent zu allen uebrigen Kennzahlen.
+ */
+export function filterPayments(
+  payments: readonly AnalyticsPayment[],
+  filter: StatisticsFilter,
+): AnalyticsPayment[] {
+  return payments.filter((p) => {
+    if (filter.year !== null && yearOf(p.payDate) !== filter.year) return false;
+    if (filter.securityId !== null && p.securityId !== filter.securityId) return false;
+    if (filter.depotId !== null && p.depotId !== filter.depotId) return false;
+    if (filter.source !== null && p.source !== filter.source) return false;
+    if (filter.paymentType !== null && p.paymentType !== filter.paymentType) return false;
+    return true;
+  });
+}
+
+/** True, wenn kein Filterkriterium gesetzt ist. */
+export function isEmptyFilter(filter: StatisticsFilter): boolean {
+  return (
+    filter.year === null &&
+    filter.securityId === null &&
+    filter.depotId === null &&
+    filter.source === null &&
+    filter.paymentType === null
+  );
+}
+
+/** Durchschnittliche Einzelzahlung: Nettosumme ÷ Anzahl Zahlungen (0 € ohne Zahlungen). */
+export function averagePayment(payments: readonly AnalyticsPayment[]): Money {
+  const { net, count } = aggregate(payments);
+  if (count === 0) return ZERO;
+  return Money.fromDecimal(net.toDecimal().div(count), EUR);
+}
+
+/** Groesste einzelne Nettozahlung; null ohne Zahlungen. */
+export function largestPayment(payments: readonly AnalyticsPayment[]): Money | null {
+  let max: Money | null = null;
+  for (const payment of payments) {
+    if (max === null || payment.netAmount.compareTo(max) > 0) max = payment.netAmount;
+  }
+  return max;
+}
+
+/** Anzahl der Kalendermonate (Jahr+Monat) mit mindestens einer Zahlung. */
+export function activeMonthCount(payments: readonly AnalyticsPayment[]): number {
+  const months = new Set<string>();
+  for (const payment of payments) {
+    months.add(`${String(yearOf(payment.payDate))}-${String(monthOf(payment.payDate))}`);
+  }
+  return months.size;
+}
+
+/**
+ * Schwaechster Monat mit Zahlungen (Minimum der Monatssummen). Monate ohne
+ * Zahlungen zaehlen nicht als „schwaechster Monat" (kein kuenstlicher 0 €-Monat).
+ * Bei Gleichstand gewinnt der aeltere Monat (Spiegelbild zu §5.5 „bester Monat").
+ */
+function worstMonthAmong(payments: readonly AnalyticsPayment[]): MonthValue | null {
+  const byMonth = new Map<string, MonthValue>();
+  for (const payment of payments) {
+    const year = yearOf(payment.payDate);
+    const month = monthOf(payment.payDate);
+    const mapKey = `${String(year)}-${String(month)}`;
+    const entry = byMonth.get(mapKey) ?? { year, month, net: ZERO };
+    entry.net = entry.net.add(payment.netAmount);
+    byMonth.set(mapKey, entry);
+  }
+  let worst: MonthValue | null = null;
+  for (const candidate of byMonth.values()) {
+    if (worst === null) {
+      worst = candidate;
+      continue;
+    }
+    const byNet = candidate.net.compareTo(worst.net);
+    if (byNet < 0) {
+      worst = candidate;
+    } else if (byNet === 0) {
+      // Gleichstand: aelterer Monat zuerst.
+      if (
+        candidate.year < worst.year ||
+        (candidate.year === worst.year && candidate.month < worst.month)
+      ) {
+        worst = candidate;
+      }
+    }
+  }
+  return worst;
+}
+
+/** Schwaechster Monat mit Zahlungen innerhalb eines einzelnen Jahres (§11.3). */
+export function worstMonthInYear(
+  payments: readonly AnalyticsPayment[],
+  year: number,
+): MonthValue | null {
+  return worstMonthAmong(payments.filter((p) => yearOf(p.payDate) === year));
+}
+
+/** Bestes Kalenderjahr nach Nettosumme; bei Gleichstand das aktuellere (§11.1). */
+export function bestYear(payments: readonly AnalyticsPayment[]): YearBucket | null {
+  let best: YearBucket | null = null;
+  for (const bucket of yearlyBuckets(payments)) {
+    if (best === null || bucket.net.compareTo(best.net) >= 0) {
+      // yearlyBuckets ist aufsteigend sortiert; „>=" bevorzugt bei Gleichstand
+      // damit den spaeteren (aktuelleren) Jahrgang.
+      best = bucket;
+    }
+  }
+  return best;
+}
+
+/** Zwoelf Kalendermonatseimer ueber **alle** Jahre (Jahr wird ignoriert). */
+export function calendarMonthBuckets(
+  payments: readonly AnalyticsPayment[],
+): MonthBucket[] {
+  const buckets: MonthBucket[] = Array.from({ length: 12 }, (_, index) => ({
+    month: index + 1,
+    net: ZERO,
+    count: 0,
+  }));
+  for (const payment of payments) {
+    const bucket = buckets[monthOf(payment.payDate) - 1];
+    bucket.net = bucket.net.add(payment.netAmount);
+    bucket.count += 1;
+  }
+  return buckets;
+}
+
+/** Partitioniert Zahlungen nach effektivem Kalenderjahr (einmaliger Durchlauf). */
+function partitionByYear(
+  payments: readonly AnalyticsPayment[],
+): Map<number, AnalyticsPayment[]> {
+  const byYear = new Map<number, AnalyticsPayment[]>();
+  for (const payment of payments) {
+    const year = yearOf(payment.payDate);
+    const bucket = byYear.get(year);
+    if (bucket) bucket.push(payment);
+    else byYear.set(year, [payment]);
+  }
+  return byYear;
+}
+
+/** Partitioniert Zahlungen nach einem Schluessel (Unternehmen/Depot). */
+function partitionByKey(
+  payments: readonly AnalyticsPayment[],
+  keyOf: (payment: AnalyticsPayment) => string,
+): Map<string, AnalyticsPayment[]> {
+  const byKey = new Map<string, AnalyticsPayment[]>();
+  for (const payment of payments) {
+    const key = keyOf(payment);
+    const bucket = byKey.get(key);
+    if (bucket) bucket.push(payment);
+    else byKey.set(key, [payment]);
+  }
+  return byKey;
+}
+
+/** Gesamtueberblick der (gefilterten) Historie (§11.1). */
+export function overviewStatistics(
+  payments: readonly AnalyticsPayment[],
+): OverviewStatistics {
+  const { net, count } = aggregate(payments);
+  return {
+    net,
+    count,
+    distinctSecurities: distinctSecurities(payments),
+    distinctDepots: distinctDepots(payments),
+    averagePayment: averagePayment(payments),
+    averageMonth: averagePerActiveMonth(payments),
+    activeMonths: activeMonthCount(payments),
+    bestMonth: bestMonthAllTime(payments),
+    bestYear: bestYear(payments),
+    firstPayDate: firstPayDate(payments),
+    lastPayDate: lastPayDate(payments),
+  };
+}
+
+/** Durchschnitt je aktivem Monat: Nettosumme ÷ Monate mit Zahlungen (§11.1/§11.2). */
+export function averagePerActiveMonth(payments: readonly AnalyticsPayment[]): Money {
+  const months = activeMonthCount(payments);
+  if (months === 0) return ZERO;
+  return Money.fromDecimal(aggregate(payments).net.toDecimal().div(months), EUR);
+}
+
+/** Jahresstatistik, neueste Jahre zuerst (§11.3). */
+export function yearStatistics(payments: readonly AnalyticsPayment[]): YearStatistics[] {
+  const byYear = partitionByYear(payments);
+  const netByYear = new Map<number, Money>();
+  for (const [year, rows] of byYear) netByYear.set(year, aggregate(rows).net);
+
+  const stats: YearStatistics[] = [];
+  for (const [year, rows] of byYear) {
+    const { net, count } = aggregate(rows);
+    const priorYearNet = netByYear.get(year - 1) ?? null;
+    stats.push({
+      year,
+      net,
+      count,
+      distinctSecurities: distinctSecurities(rows),
+      distinctDepots: distinctDepots(rows),
+      averagePayment: averagePayment(rows),
+      bestMonth: bestMonthInYear(rows, year),
+      worstMonth: worstMonthInYear(rows, year),
+      change: comparePeriods(net, priorYearNet),
+      priorYearNet,
+    });
+  }
+  return stats.sort((a, b) => b.year - a.year);
+}
+
+/** Monatsstatistik ueber alle Jahre: ein Eintrag je Kalendermonat 1..12 (§11.4). */
+export function monthAcrossYearsStatistics(
+  payments: readonly AnalyticsPayment[],
+): MonthAcrossYearsStatistics[] {
+  const byMonth = new Map<number, AnalyticsPayment[]>();
+  for (let month = 1; month <= 12; month += 1) byMonth.set(month, []);
+  for (const payment of payments) {
+    byMonth.get(monthOf(payment.payDate))?.push(payment);
+  }
+  return [...byMonth.entries()]
+    .map(([month, rows]) => {
+      const { net, count } = aggregate(rows);
+      return {
+        month,
+        net,
+        count,
+        averagePayment: averagePayment(rows),
+        perYear: yearlyBuckets(rows),
+      };
+    })
+    .sort((a, b) => a.month - b.month);
+}
+
+/** Unternehmensstatistik, unsortiert (Reihenfolge via {@link sortSecurityStatistics}). */
+export function securityStatistics(
+  payments: readonly AnalyticsPayment[],
+): SecurityStatistics[] {
+  const byKey = partitionByKey(payments, (p) => p.securityId);
+  const stats: SecurityStatistics[] = [];
+  for (const [securityId, rows] of byKey) {
+    const { net, count } = aggregate(rows);
+    stats.push({
+      securityId,
+      net,
+      count,
+      firstPayDate: firstPayDate(rows),
+      lastPayDate: lastPayDate(rows),
+      averagePayment: averagePayment(rows),
+      largestPayment: largestPayment(rows),
+      perYear: yearlyBuckets(rows),
+    });
+  }
+  return stats;
+}
+
+/**
+ * Sortiert die Unternehmensstatistik (§11.5). `name`/`lastPayment` mit stabilem
+ * alphabetischem Tiebreaker (de); fehlende letzte Zahlungen zuletzt.
+ */
+export function sortSecurityStatistics(
+  stats: readonly SecurityStatistics[],
+  sortKey: SecuritySortKey,
+  labelOf: (securityId: string) => string,
+): SecurityStatistics[] {
+  const byName = (a: SecurityStatistics, b: SecurityStatistics) =>
+    labelOf(a.securityId).localeCompare(labelOf(b.securityId), "de");
+  return [...stats].sort((a, b) => {
+    switch (sortKey) {
+      case "net": {
+        const byNet = b.net.compareTo(a.net);
+        if (byNet !== 0) return byNet;
+        if (b.count !== a.count) return b.count - a.count;
+        return byName(a, b);
+      }
+      case "count": {
+        if (b.count !== a.count) return b.count - a.count;
+        const byNet = b.net.compareTo(a.net);
+        if (byNet !== 0) return byNet;
+        return byName(a, b);
+      }
+      case "lastPayment": {
+        if (a.lastPayDate !== b.lastPayDate) {
+          if (a.lastPayDate === null) return 1;
+          if (b.lastPayDate === null) return -1;
+          return a.lastPayDate < b.lastPayDate ? 1 : -1;
+        }
+        return byName(a, b);
+      }
+      case "name":
+        return byName(a, b);
+    }
+  });
+}
+
+/** Depotstatistik, unsortiert (Rangfolge via {@link rankGroups} auf net/count). */
+export function depotStatistics(
+  payments: readonly AnalyticsPayment[],
+): DepotStatistics[] {
+  const byKey = partitionByKey(payments, (p) => p.depotId);
+  const stats: DepotStatistics[] = [];
+  for (const [depotId, rows] of byKey) {
+    const { net, count } = aggregate(rows);
+    stats.push({
+      depotId,
+      net,
+      count,
+      distinctSecurities: distinctSecurities(rows),
+      perYear: yearlyBuckets(rows),
+      perMonth: calendarMonthBuckets(rows),
+    });
+  }
+  return stats.sort((a, b) => {
+    const byNet = b.net.compareTo(a.net);
+    if (byNet !== 0) return byNet;
+    return b.count - a.count;
+  });
+}
+
+/** Zahlungs-Heatmap Jahr × Monat: eine Zeile je Jahr, neueste zuerst (§11.7). */
+export function heatmapByYearMonth(payments: readonly AnalyticsPayment[]): HeatmapRow[] {
+  return availableYears(payments).map((year) => ({
+    year,
+    months: monthlyBuckets(payments, year),
+  }));
 }

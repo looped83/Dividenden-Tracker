@@ -231,6 +231,34 @@ Das Dashboard folgt bewusst dem Prinzip aus §4.1 Punkt 3:
   ungültigem Parameter sicher auf das aktuelle Jahr zurück. Drill-downs übergeben Filter an die
   Zahlungsliste (`/eingaenge?year=&month=&security=&depot=`).
 
+### 4.5 Statistik-Datenfluss (Phase 5B)
+
+Der Statistikbereich (`src/features/statistics`) baut vollständig auf 5A auf und führt **keine**
+eigene Query oder Berechnung ein:
+
+- **Geteilter Cache, keine zweite Ladung.** `useStatisticsData()` nutzt denselben Query-Key
+  `['payments','dashboard']` wie das Dashboard (`useDashboardPayments`). Dashboard und Statistik
+  teilen sich damit einen Cache-Eintrag; es entsteht keine zusätzliche Übertragung und keine
+  parallele Aggregation. Der effektive Ausschüttungsmonat (§4.4) wird einmal angewandt.
+- **Analytics-Schicht als einzige Quelle.** Sämtliche Statistik-Kennzahlen (`overviewStatistics`,
+  `yearStatistics`, `monthAcrossYearsStatistics`, `securityStatistics`, `depotStatistics`,
+  `calendarMonthBuckets`, `heatmapByYearMonth`, `filterPayments`, `sortSecurityStatistics`) sind
+  reine Funktionen in `src/lib/statistics` (CALCULATION_RULES.md §11). Komponenten und Diagramme
+  enthalten keine Aggregation, Rundung oder Betrags-/Datumssortierung.
+- **Layout mit geteiltem, gefiltertem Datensatz.** Die Layoutseite (`StatisticsPage`) lädt die
+  Daten, wendet den URL-Filter **einmal** an (`filterPayments`, memoisiert) und reicht die
+  gefilterten Zahlungen samt Namensauflösung über den React-Router-`Outlet`-Kontext an die
+  Unterbereiche (Übersicht, Jahre, Monate, Unternehmen, Depots) weiter. Der Kontext ist bewusst
+  frei von Supabase-Abhängigkeiten (`context.ts`), damit Unterbereiche isoliert testbar bleiben.
+- **URL-Filter.** Jahr, Unternehmen, Depot, Datenquelle und Zahlungsart liegen in der URL
+  (`?year=&security=&depot=&source=&type=`), sind kombinierbar, bleiben nach Reload erhalten und
+  funktionieren mit Browser-Zurück/-Vorwärts. Parsing/Serialisierung sind als reine, isoliert
+  getestete Funktionen ausgelagert (`filterParams.ts`).
+- **Tabellen und Performance.** Die generische `StatTable` bietet Sortierung (per Spalten-Compare,
+  Money über `compareTo`), Suche und **Paginierung**; bei langen Listen (≥ 500 Unternehmen)
+  begrenzt die Seitengröße die gerenderten Zeilen. Aggregationen sind O(n) und memoisiert; ein
+  Skalierungstest deckt ≥ 10.000 Eingänge / ≥ 500 Unternehmen ab.
+
 ---
 
 ## 5. Import-Pipeline (technische Sicht)
