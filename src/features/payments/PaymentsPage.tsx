@@ -1,6 +1,13 @@
 import * as React from "react";
 import { Link, useSearchParams } from "react-router";
-import { Archive as ArchiveIcon, Plus, RotateCcw, Wallet } from "lucide-react";
+import {
+  Archive as ArchiveIcon,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Trash2,
+  Wallet,
+} from "lucide-react";
 import {
   effectivePayDate,
   monthNameDe,
@@ -37,6 +44,7 @@ import { useSecurities } from "@/features/securities/hooks";
 import {
   useAllPayments,
   useArchivePayment,
+  useDeletePayment,
   useUnarchivePayment,
 } from "@/features/payments/hooks";
 
@@ -54,9 +62,12 @@ export function PaymentsPage() {
   const [includeArchived, setIncludeArchived] = React.useState(false);
   const archivePayment = useArchivePayment();
   const unarchivePayment = useUnarchivePayment();
+  const deletePayment = useDeletePayment();
   const [archiveTargetId, setArchiveTargetId] = React.useState<string | null>(null);
   const [archiveReason, setArchiveReason] = React.useState("");
   const [archiveError, setArchiveError] = React.useState<string | null>(null);
+  const [deleteTargetId, setDeleteTargetId] = React.useState<string | null>(null);
+  const [deleteError, setDeleteError] = React.useState<string | null>(null);
 
   // Filter aus der URL: Depot, Unternehmen, Jahr und Monat. So funktionieren
   // Reload, Browser-Zurück und die Drill-downs vom Dashboard (§13).
@@ -151,6 +162,17 @@ export function PaymentsPage() {
       setArchiveReason("");
     } catch (error) {
       setArchiveError(getErrorMessage(error, "Archivieren fehlgeschlagen."));
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTargetId) return;
+    setDeleteError(null);
+    try {
+      await deletePayment.mutateAsync(deleteTargetId);
+      setDeleteTargetId(null);
+    } catch (error) {
+      setDeleteError(getErrorMessage(error, "Löschen fehlgeschlagen."));
     }
   };
 
@@ -343,29 +365,56 @@ export function PaymentsPage() {
                     )}
                   </TableCell>
                   <TableCell className="text-right">
-                    {payment.archived_at ? (
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        aria-label="Reaktivieren"
-                        onClick={() => void unarchivePayment.mutateAsync(payment.id)}
-                      >
-                        <RotateCcw />
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        aria-label="Archivieren"
-                        onClick={() => {
-                          setArchiveReason("");
-                          setArchiveError(null);
-                          setArchiveTargetId(payment.id);
-                        }}
-                      >
-                        <ArchiveIcon />
-                      </Button>
-                    )}
+                    <div className="flex justify-end gap-2">
+                      {payment.archived_at ? (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            aria-label="Reaktivieren"
+                            onClick={() => void unarchivePayment.mutateAsync(payment.id)}
+                          >
+                            <RotateCcw />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            aria-label="Endgültig löschen"
+                            onClick={() => {
+                              setDeleteError(null);
+                              setDeleteTargetId(payment.id);
+                            }}
+                          >
+                            <Trash2 />
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            aria-label="Bearbeiten"
+                            asChild
+                          >
+                            <Link to={`/eingaenge/${payment.id}/bearbeiten`}>
+                              <Pencil />
+                            </Link>
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            aria-label="Archivieren"
+                            onClick={() => {
+                              setArchiveReason("");
+                              setArchiveError(null);
+                              setArchiveTargetId(payment.id);
+                            }}
+                          >
+                            <ArchiveIcon />
+                          </Button>
+                        </>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               );
@@ -402,6 +451,37 @@ export function PaymentsPage() {
           <DialogFooter>
             <Button variant="destructive" onClick={() => void handleArchive()}>
               Archivieren
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={deleteTargetId !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTargetId(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Eingang endgültig löschen</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Dieser Dividendeneingang wird unwiderruflich entfernt und kann nicht
+            wiederhergestellt werden.
+          </p>
+          {deleteError && (
+            <p role="alert" className="text-sm text-negative">
+              {deleteError}
+            </p>
+          )}
+          <DialogFooter>
+            <Button
+              variant="destructive"
+              disabled={deletePayment.isPending}
+              onClick={() => void handleDelete()}
+            >
+              {deletePayment.isPending ? "Wird gelöscht …" : "Endgültig löschen"}
             </Button>
           </DialogFooter>
         </DialogContent>
