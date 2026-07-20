@@ -177,3 +177,25 @@ scrollbarer Container (Datentabellen).
   „Archiviert"-Badge).
 - Skeletons für Ladezustände (`aria-busy`), sprechende Leer-/Fehlertexte statt irreführender
   Nullwerte („Für 2014 liegen keine Dividendeneingänge vor").
+
+## Phase 6 – Verwaltung & Datenqualität
+
+**Stornieren vs. Löschen.** Getrennte Aktionen mit eigenen Dialogen. Der
+Stornodialog („Dividendeneingang stornieren?") betont Erhalt/Reaktivierbarkeit
+und den Ausschluss aus den Standardauswertungen. Der Löschdialog
+(„Dividendeneingang dauerhaft löschen?") zeigt Unternehmen, Datum, Depot, Betrag
+und Datenquelle, weist auf die dauerhafte Wirkung hin und nennt die Aktion
+„Dauerhaft löschen" (kein generisches „OK"); Alternative „Abbrechen".
+
+**Responsive.** Desktop: tabellarische Liste mit Filterleiste, sortierbaren
+Optionen und Mehrfachauswahl. Mobile: kompakte Karten statt gequetschter Tabelle,
+Aktionen als klar beschriftete Schaltflächen; Filter/Sortierung als Selects.
+
+**Massenaktionsleiste.** Erscheint bei Auswahl, zeigt die Anzahl, bietet „alle
+gefilterten auswählen", Bestätigungsdialoge und eine Ergebniszusammenfassung mit
+ausgewiesenen Teilfehlern.
+
+**Datenqualitätsansicht.** Übersichtszahlen, Dublettenvergleich (nebeneinander,
+mit Kategorie-Badge) und Auffälligkeitsliste; Aktion „Keine Dublette" wird
+persistiert. Zugänglich: Dialoge mit Titel/Fokusfalle, Statusinformation nicht
+nur über Farbe (Text-Badges), tastaturbedienbare Auswahl.

@@ -261,3 +261,19 @@ Trade Republic 1.012 / Scalable Capital 115 · alle 15 Jahreswerte exakt ·
 Gladstone Capital 30.09.2025 bleibt zweimal (4,76 € und 7,84 €). Die Serverseite
 (`commit_import`) verifiziert dieselben Summen erneut und lehnt bei Abweichung
 den gesamten Import ab (Integrationstest `tests/integration/import.test.ts`).
+
+## Phase 6 – Erneuter Import nach Einzellöschung
+
+Wird ein importierter Eingang einzeln dauerhaft gelöscht (§13.4), bleibt der
+übergeordnete Importlauf nachvollziehbar und die übrigen Zeilen desselben
+Imports unverändert; die Herkunftszeile der gelöschten Zahlung bleibt als
+Provenance erhalten (`import_rows.payment_id = null`, 0019).
+
+Die Import-Dublettenerkennung arbeitet über den `business_fingerprint`
+(fachliche Identität), nicht über `(import_id, source_row_number)`. Nach einer
+Einzellöschung existiert dieser Fingerprint nicht mehr; die Zeile wird bei einem
+erneuten Import derselben Datei daher wieder als importierbar angeboten (und,
+falls gleichartige Zahlungen bestehen, gemäß bestehender Logik als mögliche
+Dublette gekennzeichnet). Es gibt keinen stillen „bereits verarbeitet"-
+Ausschluss — der Nutzer entscheidet (D-6-5, konsistent mit D-007/D-009).
+Import-Identität und Dublettenlogik bleiben unverändert.

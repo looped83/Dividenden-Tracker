@@ -1,14 +1,14 @@
 import { supabase } from "@/lib/supabase/client";
+import { pairKey } from "@/lib/payments/dataQuality";
 
 /**
  * Persistente „keine Dublette"-Entscheidungen (Phase 6 §16, DECISIONS.md D-6-4).
- * `pair_key` ist der stabile, lexikografisch sortierte Schlüssel zweier
- * Zahlungs-IDs; er identifiziert ein bewusst als „keine Dublette" markiertes
- * Paar unabhängig von der Reihenfolge.
+ * `pair_key` (aus `pairKey`) ist der stabile, lexikografisch sortierte Schlüssel
+ * zweier Zahlungs-IDs; er identifiziert ein bewusst als „keine Dublette"
+ * markiertes Paar unabhängig von der Reihenfolge — dieselbe Funktion wie in der
+ * Erkennung (`findDuplicatePairs`), damit Markierung und Ausblendung
+ * garantiert übereinstimmen.
  */
-export function pairKey(idA: string, idB: string): string {
-  return idA < idB ? `${idA}:${idB}` : `${idB}:${idA}`;
-}
 
 export async function fetchDuplicateDismissals(): Promise<string[]> {
   const { data, error } = await supabase

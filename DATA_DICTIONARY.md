@@ -243,3 +243,16 @@ Laufzeit aus `dividend_payments` (aktive Eingänge, effektiver Monat §10) über
   `paymentType` (= `dividend_payments.payment_type`). `null` = keine Einschränkung.
 - **Entwicklung über die Jahre / Monate** — Zeitreihen je Unternehmen/Depot/Monat
   (`yearlyBuckets`, `calendarMonthBuckets`, `monthlyBuckets`), rein aus aktiven Eingängen.
+
+## Phase 6
+
+- **Status (Oberfläche):** `archived_at is null` → „Aktiv", sonst „Storniert".
+  Die Begriffe „Stornieren/Reaktivieren/Stornogrund" bezeichnen den
+  `archived_at`/`archive_reason`-Mechanismus (D-6-2); technische Feldnamen
+  bleiben unverändert.
+- **Datenquelle (`source`):** `manual` → „Manuell", `csv_import` → „CSV-Import",
+  `excel_import` → „Excel-Import", `restore` → „Wiederhergestellt".
+- **`note`:** optionale Notiz (≤ 5000 Zeichen), im Anlege-/Bearbeitungsformular
+  editierbar, durchsuchbar.
+- **`duplicate_dismissals.pair_key`:** `min(id):max(id)` der beiden als „keine
+  Dublette" markierten Zahlungen.

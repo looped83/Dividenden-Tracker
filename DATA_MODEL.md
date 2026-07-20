@@ -428,3 +428,37 @@ Unique `(import_id, source_row_number)`. RLS: select/insert nur eigene.
 `guard_import_status()` (BEFORE UPDATE auf `imports`): `committed`/`rolled_back`
 sind final; ein Client kann diese Zielstatus nur über die RPCs erreichen (GUC
 `app.import_txn`). Verhindert „Client markiert Import selbst als abgeschlossen".
+
+## Phase 6 – Ergänzungen
+
+### `dividend_payments` – Löschpolicy (0020)
+
+Die DELETE-Policy `dividend_payments_delete_archived_own` (0013, nur stornierte
+Zeilen) wird durch `dividend_payments_delete_own` (`user_id = auth.uid()`)
+ersetzt: eigene Eingänge sind aktiv **oder** storniert dauerhaft löschbar
+(DECISIONS.md D-6-1). Der AFTER-DELETE-Audit-Trigger bleibt unverändert und
+protokolliert jede Löschung atomar (`action = 'delete'`). Fremde Zeilen bleiben
+unlöschbar (0 betroffene Zeilen, kein Leak). Der Trigger
+`protect_payment_immutables` (0009) verhindert weiterhin, dass Herkunftsfelder
+(`source`, `import_id`, `source_row_number`, `row_fingerprint`, `created_at`)
+geändert werden — Bearbeitung erhält daher die Importherkunft.
+
+Optimistic Concurrency nutzt das bestehende `updated_at` (kein neues Feld):
+das UPDATE bindet den beim Öffnen geladenen `updated_at`-Wert; passt er nicht
+mehr, trifft es keine Zeile und die Anwendung meldet einen Konflikt (D-6-3).
+
+### `duplicate_dismissals` (0020)
+
+Persistente „keine Dublette"-Entscheidungen (§16, D-6-4).
+
+| Spalte      | Typ           | Beschreibung |
+|-------------|---------------|--------------|
+| id          | uuid PK       | |
+| user_id     | uuid not null | Eigentümer (RLS, enforce_user_id-Trigger) |
+| pair_key    | text not null | Sortierter Schlüssel `min(id):max(id)` des Paares |
+| created_at  | timestamptz   | |
+
+Unique `(user_id, pair_key)`. RLS: select/insert/delete nur eigene Zeilen; kein
+UPDATE (Einträge sind unveränderlich, Widerruf per DELETE). Kein Bezug am
+Dividendeneingang selbst — die Dublettenerkennung bleibt eine jederzeit neu
+berechenbare Ableitung.

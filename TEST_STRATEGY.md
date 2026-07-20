@@ -259,3 +259,18 @@ decimal-genaue Client-Aggregation ist über die Unit-Tests abgedeckt (Statistik-
 der Phasen-Spezifikation gelisteten E2E-Fälle (Drill-down-Summengleichheit, axe auf Chartseiten)
 sind daher nicht als automatisierte E2E-Tests ausgeführt. Die zugehörige Logik ist über Unit-
 und Integrationstests abgedeckt.
+
+## Phase 6 – Ergänzte Tests
+
+**Unit:** Zahlungsdatum-Validierung inkl. Zukunfts-/1970-Ablehnung; decimal-
+sichere Betragsprüfung (0, negativ, > 2 Nachkommastellen, NaN/Infinity/Exponent,
+Bereich); Notizlänge; Listen-Parameter (Status/Quelle/Sortierung, sichere
+Defaults bei ungültigen Werten); stabile Sortierung; Dublettenerkennung (hohe
+Wahrscheinlichkeit vs. mögliche Dublette, legitime Tranche, Ausblenden
+stornierter/verworfener Paare, keine automatische Löschung); Auffälligkeitsregeln.
+
+**Integration/RLS:** Löschen eigener aktiver **und** stornierter Eingänge;
+fremde Zeilen unlöschbar; atomares Audit (`action='delete'`); Einzellöschung
+importierter Eingänge (Importlauf + übrige Zeilen erhalten, `import_rows`
+entkoppelt); `duplicate_dismissals`-RLS (nur eigene, fremde `user_id` abgewiesen).
+Bestehender „kein aktives Löschen"-Test auf die neue Policy (D-6-1) umgestellt.

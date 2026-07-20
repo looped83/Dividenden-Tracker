@@ -126,20 +126,30 @@ describe("4) UPDATE/Archivierung fremder Zeilen betrifft 0 Zeilen", () => {
   });
 });
 
-describe("5) DELETE auf dividend_payments ist nur fuer bereits archivierte eigene Zeilen erlaubt (Grundsatz 3, engste Ausnahme, 0013)", () => {
-  it("A kann seine aktive (nicht archivierte) Zahlung nicht loeschen", async () => {
-    const result = await asUser(userA, (client) =>
-      client.query("delete from dividend_payments where id = $1", [paymentAId]),
+describe("5) DELETE auf dividend_payments ist fuer eigene Zeilen (aktiv ODER storniert) erlaubt, fremde nie (Phase 6, D-6-1, 0020)", () => {
+  it("A kann seine eigene aktive Zahlung endgueltig loeschen", async () => {
+    const depotId = await asUser(userA, (client) =>
+      seedDepot(client, "Depot Delete Active"),
     );
-    expect(result.rowCount).toBe(0);
+    const securityId = await asUser(userA, (client) =>
+      seedSecurity(client, { name: "Delete Active AG" }),
+    );
+    const payment = await asUser(userA, (client) =>
+      seedPayment(client, { securityId, depotId }),
+    );
+
+    const result = await asUser(userA, (client) =>
+      client.query("delete from dividend_payments where id = $1", [payment.id]),
+    );
+    expect(result.rowCount).toBe(1);
 
     const stillExists = await asUser(userA, (client) =>
-      client.query("select id from dividend_payments where id = $1", [paymentAId]),
+      client.query("select id from dividend_payments where id = $1", [payment.id]),
     );
-    expect(stillExists.rowCount).toBe(1);
+    expect(stillExists.rowCount).toBe(0);
   });
 
-  it("B kann A's archivierte Zahlung nicht loeschen (fremde Zeile)", async () => {
+  it("B kann A's Zahlung nicht loeschen (fremde Zeile)", async () => {
     const depotId = await asUser(userA, (client) =>
       seedDepot(client, "Depot Delete Foreign"),
     );
@@ -148,11 +158,6 @@ describe("5) DELETE auf dividend_payments ist nur fuer bereits archivierte eigen
     );
     const payment = await asUser(userA, (client) =>
       seedPayment(client, { securityId, depotId }),
-    );
-    await asUser(userA, (client) =>
-      client.query("update dividend_payments set archived_at = now() where id = $1", [
-        payment.id,
-      ]),
     );
 
     const result = await asUser(userB, (client) =>
@@ -166,7 +171,7 @@ describe("5) DELETE auf dividend_payments ist nur fuer bereits archivierte eigen
     expect(stillExists.rowCount).toBe(1);
   });
 
-  it("A kann seine eigene archivierte Zahlung endgueltig loeschen", async () => {
+  it("A kann seine eigene stornierte Zahlung endgueltig loeschen", async () => {
     const depotId = await asUser(userA, (client) =>
       seedDepot(client, "Depot Delete Own"),
     );
@@ -191,6 +196,30 @@ describe("5) DELETE auf dividend_payments ist nur fuer bereits archivierte eigen
       client.query("select id from dividend_payments where id = $1", [payment.id]),
     );
     expect(stillExists.rowCount).toBe(0);
+  });
+
+  it("protokolliert die Loeschung atomar im Audit Log (action = 'delete')", async () => {
+    const depotId = await asUser(userA, (client) =>
+      seedDepot(client, "Depot Delete Audit"),
+    );
+    const securityId = await asUser(userA, (client) =>
+      seedSecurity(client, { name: "Delete Audit AG" }),
+    );
+    const payment = await asUser(userA, (client) =>
+      seedPayment(client, { securityId, depotId }),
+    );
+
+    await asUser(userA, (client) =>
+      client.query("delete from dividend_payments where id = $1", [payment.id]),
+    );
+
+    const audit = await asUser(userA, (client) =>
+      client.query(
+        "select action from audit_log where entity_type = 'dividend_payment' and entity_id = $1 and action = 'delete'",
+        [payment.id],
+      ),
+    );
+    expect(audit.rowCount).toBe(1);
   });
 });
 

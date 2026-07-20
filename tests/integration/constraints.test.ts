@@ -239,26 +239,26 @@ describe("Unique Constraints", () => {
   });
 });
 
-describe("Soft Delete (kein Hard Delete, Grundsatz 3)", () => {
-  it("verbietet DELETE auf eine aktive (nicht archivierte) dividend_payments-Zeile", async () => {
+describe("Endgültiges Löschen (Phase 6, D-6-1, 0020)", () => {
+  it("erlaubt DELETE auf eine aktive eigene dividend_payments-Zeile", async () => {
     const payment = await asUser(userId, async (client) => {
       const depotId = await seedDepot(client, "Depot Delete 1");
       const securityId = await seedSecurity(client, { name: "Delete AG 1" });
       return seedPayment(client, { securityId, depotId });
     });
 
-    // DELETE ist ab 0013 grundsaetzlich gegrantet, aber die RLS-Policy laesst
-    // nur bereits archivierte eigene Zeilen zu (0 betroffene Zeilen statt
-    // Fehler, da der Grant existiert und nur die Policy filtert).
+    // Ab 0020 lässt die Policy dividend_payments_delete_own eigene Zeilen zu —
+    // aktiv oder storniert. Der verpflichtende Schutz vor versehentlicher
+    // Löschung liegt jetzt in der Bestätigungsschicht der Oberfläche (D-6-1).
     const result = await asUser(userId, (client) =>
       client.query("delete from dividend_payments where id = $1", [payment.id]),
     );
-    expect(result.rowCount).toBe(0);
+    expect(result.rowCount).toBe(1);
 
     const stillThere = await asUser(userId, (client) =>
       client.query("select id from dividend_payments where id = $1", [payment.id]),
     );
-    expect(stillThere.rowCount).toBe(1);
+    expect(stillThere.rowCount).toBe(0);
   });
 
   it("löscht eine archivierte importierte Zahlung und entkoppelt import_rows (ON DELETE SET NULL, 0019)", async () => {
