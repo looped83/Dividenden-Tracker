@@ -154,3 +154,26 @@ Prüfverfahren: TEST_STRATEGY.md §9.
 Vollständig gleichwertig (kein „nachgereichtes" Theme): eigene Chart- und Statusfarben,
 Kontrastprüfung beider Modi in CI (axe), Manifest-`theme_color` pro Modus, Umschalter in
 Einstellungen (hell/dunkel/System).
+
+## Dashboard (Phase 5A)
+
+**Aufbau (von oben):** Seitenüberschrift → Zeitraumsteuerung → KPI-Karten → monatlicher
+Verlauf → Top-Unternehmen + Depotverteilung (nebeneinander ab `lg`) → letzte Eingänge →
+historische Übersicht. Ruhig, datenorientiert; keine dekorativen Visualisierungen, keine
+3D-Diagramme, keine dauerhafte grün/rot-Bewertung saisonaler Schwankungen.
+
+**Responsive:** KPI-Raster 1 → 2 → 3 Spalten (iPhone/iPad/Desktop); Diagramm füllt die Breite
+(`ResponsiveContainer`), Top-Listen/Depotverteilung als horizontale Balken (auf schmalen Geräten
+untereinander). Touch-Ziele ≥ 44 px (Buttons `size="sm"`/`default`), `overflow-x` nur innerhalb
+scrollbarer Container (Datentabellen).
+
+**Accessibility:**
+- Semantische Überschriften (`h1` „Übersicht", Kartentitel via `CardTitle`).
+- Jedes Diagramm hat `role="img"` mit beschreibendem `aria-label` **und** eine ausklappbare
+  Datentabelle (`<details>` „Datentabelle anzeigen") als text-/tabellarische Alternative.
+- Zeitraum-Buttons mit `aria-pressed`; Fokuszustände sichtbar (`focus-visible:ring`).
+- `prefers-reduced-motion` schaltet Diagramm-Animationen ab.
+- Farben tragen nie die alleinige Information (Betrag/Prozent immer als Text; Archivstatus als
+  „Archiviert"-Badge).
+- Skeletons für Ladezustände (`aria-busy`), sprechende Leer-/Fehlertexte statt irreführender
+  Nullwerte („Für 2014 liegen keine Dividendeneingänge vor").

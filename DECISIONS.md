@@ -490,3 +490,38 @@ Nutzer bei einem importierten, archivierten Unternehmen die fehlenden Felder,
 wechselt der Zustand automatisch von „Unvollständig" auf „OK"; fehlt etwas,
 bleibt/wird es „Unvollständig". `needs_review` (ungültige Importquelle) hat
 Vorrang, solange die Felder unvollständig sind.
+
+## Phase-5A-Entscheidungen (Dashboard)
+
+### D-5A-1 — Clientseitige Aggregation, keine materialisierten Views
+
+Das Dashboard lädt die aktive Historie **einmal** (schlanke Spaltenauswahl) und
+aggregiert alle Kennzahlen clientseitig in `lib/statistics`. Für den aktuellen
+und absehbaren Datenumfang (Kontrollwert 1.439 Zeilen, Ziel ≥ 10.000) ist das
+schnell, testbar und hält „Kennzahl = Summe der Drill-down-Liste" konstruktiv
+konsistent (eine Codequelle). Materialisierte oder aggregierende Views werden
+bewusst **nicht** eingeführt; sie bleiben eine spätere Option, falls die
+Datenmenge dies erfordert (Neubewertung in Phase 5B).
+
+### D-5A-2 — Dashboard-Query im `payments`-Namespace
+
+Der Dashboard-Datensatz nutzt den Query-Key `['payments','dashboard']`, damit die
+bestehenden Invalidierungen (`invalidateQueries(['payments'])` aus Anlegen,
+Bearbeiten, Storno, Reaktivierung, Import-Commit/-Rollback) ihn per Präfix-Match
+automatisch mitaktualisieren. Kein separates Invalidierungsschema, keine Gefahr
+veralteter Summen.
+
+### D-5A-3 — Jahresauswahl als URL-Zustand, clientseitige Filterung
+
+Der ausgewählte Zeitraum liegt in der URL (`?year=2026` / `?year=all`) und wird auf
+den bereits geladenen Datensatz angewandt. Vorteile: teilbare/persistente Ansicht,
+Browser-Zurück/-Vorwärts, kein Refetch beim Jahreswechsel. Ungültige Parameter
+fallen sicher auf das aktuelle Jahr zurück.
+
+### D-5A-4 — `Money.toChartNumber()` als eng begrenzte Float-Ausnahme
+
+Diagrammbibliotheken (recharts) benötigen `number` für Balkenhöhen. Statt eines
+verbotenen `Number(betrag)` kapselt `Money.toChartNumber()` (via `Decimal.toNumber()`)
+diese rein visuelle Umwandlung. Angezeigte Beträge/Tooltips stammen weiterhin aus
+`formatMoney`, Aggregate aus `Money`/Decimal. Die Ausnahme ist in CALCULATION_RULES.md §8
+dokumentiert.

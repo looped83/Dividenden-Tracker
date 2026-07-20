@@ -60,6 +60,42 @@ export async function fetchPayments(
   return data.map(normalizeAmountFields);
 }
 
+/**
+ * Schlanke Datenbasis fuer das Dashboard (Phase 5A): ausschliesslich aktive
+ * Eingaenge (`archived_at is null`) des angemeldeten Nutzers (RLS), reduziert
+ * auf die von der Analytics-Schicht benoetigten Spalten. Es wird **einmal** die
+ * gesamte aktive Historie uebertragen und clientseitig fuer alle Kennzahlen
+ * aggregiert (ARCHITECTURE.md, Query-Strategie 5A) — keine Uebertragung roher
+ * Daten je KPI und kein N+1. Stornierte und zurueckgerollte (archivierte)
+ * Zahlungen sind damit standardmaessig ausgeschlossen; archivierte Unternehmen
+ * und Depots bleiben ueber ihre weiterhin aktiven Zahlungen enthalten.
+ */
+export type DashboardPaymentRow = Pick<
+  DividendPayment,
+  | "id"
+  | "pay_date"
+  | "net_amount"
+  | "gross_amount"
+  | "security_id"
+  | "depot_id"
+  | "payment_type"
+  | "source"
+  | "created_at"
+>;
+
+const DASHBOARD_COLUMNS =
+  "id, pay_date, net_amount, gross_amount, security_id, depot_id, payment_type, source, created_at";
+
+export async function fetchDashboardPayments(): Promise<DashboardPaymentRow[]> {
+  const { data, error } = await supabase
+    .from("dividend_payments")
+    .select(DASHBOARD_COLUMNS)
+    .is("archived_at", null)
+    .order("pay_date", { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
 export async function fetchPaymentById(id: string): Promise<DividendPayment> {
   const { data, error } = await supabase
     .from("dividend_payments")

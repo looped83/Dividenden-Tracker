@@ -150,3 +150,69 @@ TEST_STRATEGY.md §2). Client und `v_stats_*`-Views verwenden dieselben Definiti
 - `toFixed()` für Rundung (nur Decimal-Rundung, `toFixed` allenfalls auf bereits gerundeten Decimals zur String-Ausgabe)
 - `JSON.parse` von Beträgen in `number` (Supabase-Client: `numeric` wird als String transportiert; Typen-Generierung wird entsprechend konfiguriert und getestet)
 - Aggregation im UI-Code vorbei an `lib/statistics`
+
+**Eine begründete Ausnahme:** `Money.toChartNumber()` liefert eine `number` **ausschließlich** für die visuelle Balkenhöhe von Diagrammen (recharts erfordert `number`). Sie darf niemals für Arithmetik oder für angezeigte Beträge verwendet werden — angezeigte Werte laufen über `formatMoney`, Aggregate über `Money`/Decimal.
+
+---
+
+## 9. Dashboard-Zeitraum- und Vergleichslogik (Phase 5A)
+
+Verbindliche Definition der Dashboard-Kennzahlen. Implementiert in `src/lib/statistics`
+(reine, decimal-sichere Funktionen; einzige Quelle aller Dashboard-Werte). Client-UI ruft
+ausschließlich diese Schicht auf; keine Aggregation in React-Komponenten.
+
+### 9.1 Datenbasis (Storno & Archiv)
+
+- Datenbasis sind **aktive Eingänge** (`archived_at is null`). Stornierte Zahlungen sind als
+  archivierte Zeilen modelliert und damit standardmäßig ausgeschlossen; ebenso zurückgerollte
+  Importe (der Rollback archiviert die Zeilen, siehe `rollback_import()` 0016 §6a).
+- Die **Archivierung eines Unternehmens oder Depots** (`securities.archived_at` /
+  `depots.archived_at`) entfernt deren historische Zahlungen **nicht**: solange die Zahlung
+  selbst aktiv ist, zählt sie voll mit. Archivierte Stammdaten werden in der UI sachlich als
+  „Archiviert" gekennzeichnet, aber nie ausgeschlossen.
+
+### 9.2 Zeiträume
+
+| Auswahl | „Ausgewählter Zeitraum" | Vergleichszeitraum |
+|---|---|---|
+| Laufendes Jahr `J` (= aktuelles Jahr) | `[01.01.J, heute]` (YTD) | `[01.01.(J−1), entsprechender Kalendertag (J−1)]` |
+| Abgeschlossenes Jahr `J` (< aktuelles Jahr) | `[01.01.J, 31.12.J]` | `[01.01.(J−1), 31.12.(J−1)]` |
+| Alle Jahre | gesamte aktive Historie | — (kein Vorjahresvergleich) |
+
+- Ein Jahr gilt als **abgeschlossen**, wenn es nicht das aktuelle Kalenderjahr ist.
+- Entsprechender Kalendertag im Vorjahr: gleicher Monat/Tag, `29.02.` → `28.02.` im
+  Nicht-Schaltjahr (Kappung auf den letzten gültigen Monatstag).
+
+### 9.3 Aktueller Monat (§5.2/§6.3)
+
+- Aktuell: `[erster Tag des aktuellen Monats, heute]` (unabhängig von der Jahresauswahl).
+- Vergleich: gleicher Monat im Vorjahr `[01., entsprechender Kalendertag]`; besitzt der
+  Vorjahresmonat weniger Tage, wird auf den letzten gültigen Kalendertag gekappt.
+
+### 9.4 Prozentuale Veränderung (§6.4)
+
+`(aktuell − vergleich) ÷ vergleich × 100`, nur wenn `vergleich > 0`. Sonst:
+
+| Fall | Anzeige |
+|---|---|
+| `vergleich = 0`, `aktuell > 0` | „Neu gegenüber Vorjahr" (kein ∞) |
+| `vergleich = 0` und `aktuell = 0` | „Keine Zahlungen in beiden Zeiträumen" |
+| kein Vergleichszeitraum (Alle Jahre / negativer Vergleichswert) | „Kein Vergleichswert verfügbar" |
+
+Prozentwerte werden erst zur Anzeige auf 1 Nachkommastelle gerundet (R-4); die absolute
+Differenz stammt aus `Money.subtract` (exakt, R-3).
+
+### 9.5 Weitere Dashboard-Kennzahlen
+
+- **Durchschnitt pro Monat (§5.4):** laufendes Jahr `YTD ÷ begonnene Monate` (inkl. aktuellem);
+  abgeschlossenes Jahr `Jahressumme ÷ 12`; bei „Alle Jahre" nicht ausgewiesen.
+- **Bester Monat (§5.5):** Kalendermonat mit maximaler Nettosumme im Zeitraum; bei Gleichstand
+  gewinnt der **aktuellere** Monat.
+- **Top-Unternehmen / Depotverteilung (§9/§10):** `Σ net` je Wertpapier/Depot; Anteil
+  `= Teilsumme ÷ Zeitraum-Gesamtsumme`, „—" wenn Gesamtsumme ≤ 0. Sortierung: Nettosumme ↓,
+  dann Anzahl ↓, dann Name alphabetisch (de).
+- **Monatszeitreihe (§7):** zwölf Monate; zukünftige Monate des laufenden Jahres werden **nicht**
+  als 0 dargestellt, sondern als Lücke „noch nicht begonnen" (keine Prognose). In abgeschlossenen
+  Jahren dürfen zahlungsfreie Monate 0 € sein.
+- **Historische Gesamtsumme (§5.3/§12):** immer über die gesamte aktive Historie, unabhängig von
+  der Jahresauswahl; als historischer Gesamtwert gekennzeichnet.

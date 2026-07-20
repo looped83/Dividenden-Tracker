@@ -204,3 +204,20 @@ ist ein gültiger Zustand, z. B. Freistellungsauftrag).
 - `import_rows(import_id, source_row_number, payment_id, classification, raw, normalized, warnings)` — Herkunft je Quellzeile. `classification ∈ {imported, excluded, duplicate_skipped, invalid}`. `raw`/`normalized` sind jsonb der Original- bzw. normalisierten Werte.
 - `imports.checksums` (jsonb, nach Commit gefüllt): `{ row_count, total_net, min_date, max_date, by_year:{<jahr>:{count,sum}}, by_broker:{<name>:{count}} }`.
 - Beträge des historischen Imports: `net_amount = gross_amount` (EUR), Steuern 0, `original_currency='EUR'`, `original_gross/net/fx_rate/quantity/amount_per_share = null` (keine erfundenen Werte).
+
+## Dashboard-abgeleitete Werte (Phase 5A)
+
+Das Dashboard führt **keine neuen Spalten oder Tabellen** ein; alle Kennzahlen werden zur
+Laufzeit aus `dividend_payments` abgeleitet (Analytics-Schicht `lib/statistics`). Begriffe:
+
+- **Aktiver Eingang** — `dividend_payments.archived_at is null`. Basis aller Dashboard-Kennzahlen.
+  Stornierte und über `rollback_import()` zurückgerollte Zeilen sind archiviert und damit
+  ausgeschlossen.
+- **Zeitraum-Nettosumme** — `Σ net_amount` über aktive Eingänge im gewählten Zeitraum
+  (Datumsdimension `pay_date`).
+- **Historische Gesamtsumme** — `Σ net_amount` über **alle** aktiven Eingänge, unabhängig von der
+  Jahresauswahl.
+- **Archivstatus (Anzeige)** — `securities.archived_at` / `depots.archived_at ≠ null` liefern das
+  „Archiviert"-Label; die zugehörigen aktiven Zahlungen bleiben in allen Kennzahlen enthalten.
+- **`DashboardPaymentRow`** — reduzierte Projektion (`id, pay_date, net_amount, gross_amount,
+  security_id, depot_id, payment_type, source, created_at`) für die einmalige Übertragung.
