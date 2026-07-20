@@ -29,8 +29,8 @@ describe("findDuplicatePairs (§15)", () => {
       payment({ id: "b" }),
     ]);
     expect(pairs).toHaveLength(1);
-    expect(pairs[0]!.category).toBe("high");
-    expect(pairs[0]!.key).toBe(pairKey("a", "b"));
+    expect(pairs[0].category).toBe("high");
+    expect(pairs[0].key).toBe(pairKey("a", "b"));
   });
 
   it("markiert abweichenden Betrag nur als mögliche Dublette, nicht als sicher (legitime Tranche)", () => {
@@ -39,7 +39,7 @@ describe("findDuplicatePairs (§15)", () => {
       payment({ id: "b", net_amount: "25.00" }),
     ]);
     expect(pairs).toHaveLength(1);
-    expect(pairs[0]!.category).toBe("possible");
+    expect(pairs[0].category).toBe("possible");
   });
 
   it("löst niemals automatisch eine Löschung aus – liefert nur Kandidaten (reine Funktion)", () => {

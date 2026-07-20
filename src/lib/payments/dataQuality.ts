@@ -77,8 +77,8 @@ export function findDuplicatePairs<T extends PaymentLike>(
     if (bucket.length < 2) continue;
     for (let i = 0; i < bucket.length; i += 1) {
       for (let j = i + 1; j < bucket.length; j += 1) {
-        const a = bucket[i]!;
-        const b = bucket[j]!;
+        const a = bucket[i];
+        const b = bucket[j];
         const key = pairKey(a.id, b.id);
         if (dismissedKeys.has(key)) continue;
         const sameAmount = amountsEqual(a.net_amount, b.net_amount);
@@ -126,8 +126,8 @@ const MIN_COMPARISON_COUNT = 3;
 function median(values: DecimalInstance[]): DecimalInstance {
   const sorted = [...values].sort((a, b) => a.comparedTo(b));
   const mid = Math.floor(sorted.length / 2);
-  if (sorted.length % 2 === 1) return sorted[mid]!;
-  return sorted[mid - 1]!.plus(sorted[mid]!).dividedBy(2);
+  if (sorted.length % 2 === 1) return sorted[mid];
+  return sorted[mid - 1].plus(sorted[mid]).dividedBy(2);
 }
 
 /**

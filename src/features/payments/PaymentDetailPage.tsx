@@ -1,36 +1,38 @@
 import * as React from "react";
 import { Link, useNavigate, useParams } from "react-router";
-import { Pencil, Archive as ArchiveIcon, RotateCcw, Trash2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Ban, Pencil, RotateCcw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { EmptyState } from "@/components/ui/empty-state";
 import { AmountText } from "@/components/money/AmountText";
 import { AuditTrail } from "@/components/audit/AuditTrail";
-import { Money, toCurrencyCode } from "@/lib/money";
+import { Money, toCurrencyCode, toGermanDecimalString } from "@/lib/money";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { useDepots } from "@/features/depots/hooks";
 import { useSecurities } from "@/features/securities/hooks";
+import {
+  fetchImportById,
+  fetchImportRowForPayment,
+} from "@/lib/supabase/repositories/imports";
 import {
   useArchivePayment,
   useDeletePayment,
   usePayment,
   useUnarchivePayment,
 } from "@/features/payments/hooks";
-
-function formatDate(value: string): string {
-  return new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" }).format(
-    new Date(value),
-  );
-}
+import {
+  formatDate,
+  formatDateTime,
+  isImported,
+  sourceLabel,
+} from "@/features/payments/paymentDisplay";
+import {
+  DeleteDialog,
+  StornoDialog,
+  type PaymentSummaryData,
+} from "@/features/payments/dialogs";
 
 function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -44,42 +46,92 @@ function DetailRow({ label, children }: { label: string; children: React.ReactNo
 export function PaymentDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { data: payment, isLoading } = usePayment(id);
+  const { data: payment, isLoading, isError } = usePayment(id);
   const { data: depots = [] } = useDepots();
   const { data: securities = [] } = useSecurities();
   const archivePayment = useArchivePayment();
   const unarchivePayment = useUnarchivePayment();
   const deletePayment = useDeletePayment();
-  const [archiveDialogOpen, setArchiveDialogOpen] = React.useState(false);
-  const [archiveReason, setArchiveReason] = React.useState("");
-  const [archiveError, setArchiveError] = React.useState<string | null>(null);
-  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+
+  const [stornoOpen, setStornoOpen] = React.useState(false);
+  const [stornoReason, setStornoReason] = React.useState("");
+  const [stornoError, setStornoError] = React.useState<string | null>(null);
+  const [deleteOpen, setDeleteOpen] = React.useState(false);
   const [deleteError, setDeleteError] = React.useState<string | null>(null);
+
+  // Provenance importierter Eingänge (§6): Herkunftszeile + Importlauf.
+  const imported = payment ? isImported(payment.source) : false;
+  const { data: importRow } = useQuery({
+    queryKey: ["payments", "import-row", id],
+    queryFn: () => fetchImportRowForPayment(id ?? ""),
+    enabled: Boolean(id) && imported,
+  });
+  const { data: importRun } = useQuery({
+    queryKey: ["payments", "import-run", payment?.import_id],
+    queryFn: () => fetchImportById(payment?.import_id ?? ""),
+    enabled: Boolean(payment?.import_id),
+  });
 
   if (isLoading) {
     return <p className="text-sm text-muted-foreground">Wird geladen …</p>;
   }
 
-  if (!payment) {
+  // Kontrollierter Nicht-gefunden-Zustand (§6): auch nach dauerhafter Löschung
+  // zeigt die Detailroute keinen veralteten Datensatz mehr.
+  if (isError || !payment) {
     return (
-      <p className="text-sm text-muted-foreground">Dividendeneingang nicht gefunden.</p>
+      <div className="max-w-2xl space-y-6">
+        <EmptyState
+          icon={Trash2}
+          title="Dividendeneingang nicht gefunden"
+          description="Dieser Dividendeneingang existiert nicht (mehr). Möglicherweise wurde er dauerhaft gelöscht."
+          action={
+            <Button asChild>
+              <Link to="/eingaenge">Zurück zur Übersicht</Link>
+            </Button>
+          }
+        />
+      </div>
     );
   }
 
   const depot = depots.find((d) => d.id === payment.depot_id);
   const security = securities.find((s) => s.id === payment.security_id);
-  const baseCurrency = toCurrencyCode(depot?.base_currency ?? "EUR");
+  const currency = toCurrencyCode(depot?.base_currency ?? "EUR");
+  const cancelled = Boolean(payment.archived_at);
 
-  const handleArchive = async () => {
-    setArchiveError(null);
+  const summary: PaymentSummaryData = {
+    company: security?.name ?? "—",
+    depot: depot?.name ?? "—",
+    payDate: payment.pay_date,
+    amount: <AmountText amount={Money.fromString(payment.net_amount, currency)} />,
+    source: sourceLabel(payment.source),
+  };
+
+  // Vergleich Ursprungswert ↔ aktueller Wert (§6): weicht der gespeicherte Wert
+  // vom normalisierten Importwert ab, liegt eine spätere manuelle Änderung vor.
+  const normalized = (importRow?.normalized ?? null) as Record<string, unknown> | null;
+  const rawNet = normalized?.["net_amount"];
+  const importedNet =
+    typeof rawNet === "string" || typeof rawNet === "number" ? String(rawNet) : null;
+  const rawPayDate = normalized?.["pay_date"];
+  const importedPayDate = typeof rawPayDate === "string" ? rawPayDate : null;
+  const netChanged = importedNet !== null && importedNet !== payment.net_amount;
+  const dateChanged = importedPayDate !== null && importedPayDate !== payment.pay_date;
+
+  const handleStorno = async () => {
+    setStornoError(null);
     try {
       await archivePayment.mutateAsync({
         id: payment.id,
-        reason: archiveReason || undefined,
+        reason: stornoReason || undefined,
       });
-      setArchiveDialogOpen(false);
+      setStornoOpen(false);
+      setStornoReason("");
     } catch (error) {
-      setArchiveError(getErrorMessage(error, "Archivieren fehlgeschlagen."));
+      setStornoError(
+        getErrorMessage(error, "Der Dividendeneingang konnte nicht storniert werden."),
+      );
     }
   };
 
@@ -89,38 +141,45 @@ export function PaymentDetailPage() {
       await deletePayment.mutateAsync(payment.id);
       void navigate("/eingaenge");
     } catch (error) {
-      setDeleteError(getErrorMessage(error, "Löschen fehlgeschlagen."));
+      setDeleteError(
+        getErrorMessage(
+          error,
+          "Der Dividendeneingang konnte nicht gelöscht werden. Die Daten wurden nicht verändert.",
+        ),
+      );
     }
   };
 
   return (
     <div className="max-w-2xl space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">
             {security?.name ?? "Dividendeneingang"}
           </h1>
           <p className="text-sm text-muted-foreground">{formatDate(payment.pay_date)}</p>
         </div>
-        <div className="flex items-center gap-2">
-          {payment.archived_at ? (
-            <Badge variant="neutral">Archiviert</Badge>
+        <div className="flex flex-wrap items-center gap-2">
+          {cancelled ? (
+            <Badge variant="warning">Storniert</Badge>
           ) : (
             <Badge variant="positive">Aktiv</Badge>
           )}
-          {!payment.archived_at && (
+          {!cancelled && (
             <Button variant="outline" size="icon" asChild aria-label="Bearbeiten">
               <Link to={`/eingaenge/${payment.id}/bearbeiten`}>
                 <Pencil />
               </Link>
             </Button>
           )}
-          {payment.archived_at ? (
+          {cancelled ? (
             <Button
               variant="outline"
               size="icon"
               aria-label="Reaktivieren"
-              onClick={() => void unarchivePayment.mutateAsync(payment.id)}
+              onClick={() => {
+                void unarchivePayment.mutateAsync(payment.id);
+              }}
             >
               <RotateCcw />
             </Button>
@@ -128,28 +187,27 @@ export function PaymentDetailPage() {
             <Button
               variant="outline"
               size="icon"
-              aria-label="Archivieren"
+              aria-label="Stornieren"
               onClick={() => {
-                setArchiveError(null);
-                setArchiveDialogOpen(true);
+                setStornoReason("");
+                setStornoError(null);
+                setStornoOpen(true);
               }}
             >
-              <ArchiveIcon />
+              <Ban />
             </Button>
           )}
-          {payment.archived_at && (
-            <Button
-              variant="outline"
-              size="icon"
-              aria-label="Endgültig löschen"
-              onClick={() => {
-                setDeleteError(null);
-                setDeleteDialogOpen(true);
-              }}
-            >
-              <Trash2 />
-            </Button>
-          )}
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label="Dauerhaft löschen"
+            onClick={() => {
+              setDeleteError(null);
+              setDeleteOpen(true);
+            }}
+          >
+            <Trash2 />
+          </Button>
         </div>
       </div>
 
@@ -158,15 +216,90 @@ export function PaymentDetailPage() {
           <CardTitle>Details</CardTitle>
         </CardHeader>
         <CardContent>
-          <DetailRow label="Depot">{depot?.name ?? "—"}</DetailRow>
-          <DetailRow label="Netto">
-            <AmountText amount={Money.fromString(payment.net_amount, baseCurrency)} />
+          <DetailRow label="Zahlungsdatum">{formatDate(payment.pay_date)}</DetailRow>
+          <DetailRow label="Unternehmen">
+            {security?.name ?? "—"}
+            {security?.archived_at ? " (archiviert)" : ""}
           </DetailRow>
-          {payment.archived_at && payment.archive_reason && (
-            <DetailRow label="Storno-Grund">{payment.archive_reason}</DetailRow>
+          <DetailRow label="Depot">
+            {depot?.name ?? "—"}
+            {depot?.archived_at ? " (archiviert)" : ""}
+          </DetailRow>
+          <DetailRow label="Nettobetrag">
+            <AmountText amount={Money.fromString(payment.net_amount, currency)} />
+          </DetailRow>
+          <DetailRow label="Währung">{payment.original_currency}</DetailRow>
+          <DetailRow label="Status">{cancelled ? "Storniert" : "Aktiv"}</DetailRow>
+          <DetailRow label="Datenquelle">{sourceLabel(payment.source)}</DetailRow>
+          {payment.note && <DetailRow label="Notiz">{payment.note}</DetailRow>}
+          <DetailRow label="Erstellt">{formatDateTime(payment.created_at)}</DetailRow>
+          <DetailRow label="Zuletzt geändert">
+            {formatDateTime(payment.updated_at)}
+          </DetailRow>
+          {cancelled && payment.archived_at && (
+            <DetailRow label="Storniert am">
+              {formatDateTime(payment.archived_at)}
+            </DetailRow>
+          )}
+          {cancelled && payment.archive_reason && (
+            <DetailRow label="Stornogrund">{payment.archive_reason}</DetailRow>
           )}
         </CardContent>
       </Card>
+
+      {imported && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Importherkunft</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <DetailRow label="Importdatei">
+              {payment.source_file_name ?? importRun?.file_name ?? "—"}
+            </DetailRow>
+            {payment.import_id && (
+              <DetailRow label="Import-ID">
+                <span className="font-mono text-xs">{payment.import_id}</span>
+              </DetailRow>
+            )}
+            {importRun?.committed_at && (
+              <DetailRow label="Importiert am">
+                {formatDateTime(importRun.committed_at)}
+              </DetailRow>
+            )}
+            {payment.source_row_number !== null && (
+              <DetailRow label="Ursprüngliche Zeile">
+                {payment.source_row_number}
+              </DetailRow>
+            )}
+            {importedNet !== null && (
+              <DetailRow label="Importierter Nettobetrag">
+                {toGermanDecimalString(importedNet)}
+                {netChanged && (
+                  <span className="ml-2 text-warning-foreground">
+                    (nachträglich geändert)
+                  </span>
+                )}
+              </DetailRow>
+            )}
+            {importedPayDate !== null && (
+              <DetailRow label="Importiertes Zahlungsdatum">
+                {formatDate(importedPayDate)}
+                {dateChanged && (
+                  <span className="ml-2 text-warning-foreground">
+                    (nachträglich geändert)
+                  </span>
+                )}
+              </DetailRow>
+            )}
+            {(netChanged || dateChanged) && (
+              <p className="pt-2 text-sm text-muted-foreground">
+                Dieser importierte Eingang wurde nach dem Import manuell angepasst. Die
+                Importherkunft bleibt dennoch erhalten.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
@@ -177,59 +310,25 @@ export function PaymentDetailPage() {
         </CardContent>
       </Card>
 
-      <Dialog open={archiveDialogOpen} onOpenChange={setArchiveDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Eingang archivieren</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-1.5">
-            <Label htmlFor="archive-reason">Grund (optional)</Label>
-            <Input
-              id="archive-reason"
-              value={archiveReason}
-              onChange={(event) => {
-                setArchiveReason(event.target.value);
-              }}
-            />
-          </div>
-          {archiveError && (
-            <p role="alert" className="text-sm text-negative">
-              {archiveError}
-            </p>
-          )}
-          <DialogFooter>
-            <Button variant="destructive" onClick={() => void handleArchive()}>
-              Archivieren
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <StornoDialog
+        open={stornoOpen}
+        onOpenChange={setStornoOpen}
+        summary={summary}
+        reason={stornoReason}
+        onReasonChange={setStornoReason}
+        error={stornoError}
+        isPending={archivePayment.isPending}
+        onConfirm={() => void handleStorno()}
+      />
 
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Eingang endgültig löschen</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            Dieser Dividendeneingang wird unwiderruflich entfernt und kann nicht
-            wiederhergestellt werden.
-          </p>
-          {deleteError && (
-            <p role="alert" className="text-sm text-negative">
-              {deleteError}
-            </p>
-          )}
-          <DialogFooter>
-            <Button
-              variant="destructive"
-              disabled={deletePayment.isPending}
-              onClick={() => void handleDelete()}
-            >
-              {deletePayment.isPending ? "Wird gelöscht …" : "Endgültig löschen"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DeleteDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        summary={summary}
+        error={deleteError}
+        isPending={deletePayment.isPending}
+        onConfirm={() => void handleDelete()}
+      />
 
       <Button variant="ghost" onClick={() => void navigate("/eingaenge")}>
         Zurück zur Übersicht

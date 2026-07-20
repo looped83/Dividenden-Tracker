@@ -73,7 +73,7 @@ function positiveMoneyString(label: string) {
 
 /** Lokales heutiges Datum als ISO-String (YYYY-MM-DD), ohne Zeitzonenverschiebung. */
 export function todayIso(reference: Date = new Date()): string {
-  const year = reference.getFullYear();
+  const year = String(reference.getFullYear()).padStart(4, "0");
   const month = String(reference.getMonth() + 1).padStart(2, "0");
   const day = String(reference.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;

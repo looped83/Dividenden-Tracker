@@ -23,7 +23,7 @@ describe("payment date validation (§8)", () => {
     const result = paymentFormSchema.safeParse({ ...base, payDate: todayIso(future) });
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.issues.some((i) => /Zukunft/.test(i.message))).toBe(true);
+      expect(result.error.issues.some((i) => i.message.includes("Zukunft"))).toBe(true);
     }
   });
 
