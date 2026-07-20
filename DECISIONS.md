@@ -534,8 +534,11 @@ Umsetzung (nicht-destruktiv):
 - Neues Feld `securities.payout_months` (smallint[] 1..12; leer = kein Plan). Das echte
   `pay_date` der Zahlungen bleibt unverändert.
 - Reine Funktion `effectivePayDate` (`lib/statistics/effectiveMonth.ts`) ordnet jede Zahlung
-  dem **nächstliegenden** geplanten Monat zu, **inkl. Jahresverschiebung**; bei Gleichstand
-  gewinnt der frühere Monat (CALCULATION_RULES.md §10). Ohne Plan bleibt das echte Datum.
+  dem **letzten fälligen geplanten Monat am/vor dem Zahlungsmonat** zu (inkl. Rückverschiebung
+  über den Jahreswechsel). Die geplanten Monate sind damit maßgebend: eine verspätete Dividende
+  zählt zu dem Monat, für den sie fällig war, nicht zum nächstgelegenen (CALCULATION_RULES.md §10).
+  Ohne Plan bleibt das echte Datum. (Frühere Fassung: „nächstliegender Monat" — auf Nutzerwunsch
+  auf die fachlich maßgebende Rückwärtszuordnung geändert.)
 - Der effektive Monat gilt **überall** (Dashboard-Kennzahlen/Diagramme, Eingangsliste:
   Jahr-/Monatsfilter, Sortierung, angezeigter Monat). Das echte Datum wird bei Abweichung
   zusätzlich ausgewiesen.

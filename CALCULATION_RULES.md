@@ -231,12 +231,16 @@ Auswertungen bildet.
 ### 10.1 Zuordnungsregel (implementiert in `lib/statistics/effectiveMonth.ts`)
 
 - **Ohne Plan** (`payout_months` leer): das echte `pay_date` bleibt maßgeblich.
-- **Mit Plan:** die Zahlung wird dem **nächstliegenden** geplanten Monat zugeordnet — gemessen
-  als absoluter Monatsabstand, geprüft über die geplanten Monate der Jahre `J−1`, `J`, `J+1`
-  (des tatsächlichen Jahres `J`). Die Zuordnung **darf das Jahr verschieben**: eine
-  Anfang-Januar-Zahlung für eine Dezember-Ausschüttung zählt im Dezember des Vorjahres; eine
-  Ende-Dezember-Zahlung für eine Januar-Ausschüttung im Januar des Folgejahres.
-- **Gleichstand:** der **frühere** Monat gewinnt (Dividenden treffen eher später als früher ein).
+- **Mit Plan:** die Zahlung wird dem **letzten fälligen geplanten Monat am oder vor** dem
+  Zahlungsmonat zugeordnet (größter geplanter Monatsindex ≤ Zahlungsmonat), geprüft über die
+  geplanten Monate der Jahre `J−1` und `J`. Die geplanten Monate sind damit **maßgebend**: eine
+  später als geplant eingetroffene Dividende zählt zu dem Monat, für den sie fällig war — nicht
+  zum bloß nächstgelegenen. Beispiel Quartalsplan Mär/Jun/Sep/Dez: Zahlung 2. April → März;
+  Zahlung 28. Mai → ebenfalls März (nicht Juni).
+- **Jahreswechsel:** die Zuordnung darf das Jahr zurück verschieben. Eine Zahlung vor dem ersten
+  geplanten Monat des Jahres zählt zum letzten geplanten Monat des Vorjahres (z. B. Februar bei
+  Plan Mär/Jun/Sep/Dez → Dezember des Vorjahres; Januar bei Dezember-Plan → Dezember des Vorjahres).
+- Fällt der Zahlungsmonat selbst auf einen geplanten Monat, bleibt dieser.
 - Der Tag des effektiven Datums ist der echte Zahltag, begrenzt auf die Länge des Zielmonats
   (z. B. 31.03. → geplanter Februar → 28./29.02.). Er dient nur der internen Datumsdarstellung,
   nicht der Zuordnung.
@@ -253,5 +257,6 @@ Gleitkomma-Geldarithmetik statt.
 
 - Mehrere Zahlungen können auf denselben effektiven Monat fallen (Nachzahlung, Korrektur) —
   sie summieren sich dort erwartungsgemäß.
-- Eine Ende-Dezember-Zahlung eines Januar-Plans kann in ein (aus heutiger Sicht) zukünftiges
-  Jahr rutschen; das ist Folge der bewusst gewählten Jahresverschiebung und kein Prognosewert.
+- Eine ausnahmsweise **vor** dem geplanten Monat eingetroffene Zahlung wird dem vorherigen
+  geplanten Monat zugerechnet (die Regel geht von „später als geplant" aus). Kein Vorziehen in
+  einen künftigen geplanten Monat.

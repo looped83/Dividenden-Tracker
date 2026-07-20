@@ -13,26 +13,27 @@ describe("effectivePayDate (§10 Ausschüttungsmonate)", () => {
     expect(effectivePayDate("2026-04-02", [])).toBe("2026-04-02");
   });
 
-  it("zieht eine verspätete Zahlung auf den nächstliegenden geplanten Monat", () => {
-    // Quartalsplan, Zahlung am 2. April -> nächster geplanter Monat März.
+  it("zieht eine verspätete Zahlung auf den letzten fälligen geplanten Monat", () => {
+    // Quartalsplan, Zahlung am 2. April -> letzter fälliger Monat März.
     expect(effectivePayDate("2026-04-02", [3, 6, 9, 12])).toBe("2026-03-02");
   });
 
-  it("ordnet eine leicht verfrühte Zahlung dem nächsten geplanten Monat zu", () => {
-    // Zahlung 28. Mai, Plan {3,6}: näher an Juni (1) als März (2).
-    expect(effectivePayDate("2026-05-28", [3, 6])).toBe("2026-06-28");
+  it("ordnet auch eine deutlich verspätete Zahlung dem fälligen Monat zu (nicht dem näheren späteren)", () => {
+    // Zahlung 28. Mai, Plan {3,6}: letzter fälliger Monat ist März (nicht Juni).
+    expect(effectivePayDate("2026-05-28", [3, 6])).toBe("2026-03-28");
   });
 
   it("verschiebt über den Jahreswechsel zurück (Januar -> Dezember Vorjahr)", () => {
     expect(effectivePayDate("2026-01-03", [12])).toBe("2025-12-03");
   });
 
-  it("verschiebt über den Jahreswechsel vor (Dezember -> Januar Folgejahr)", () => {
-    expect(effectivePayDate("2025-12-28", [1])).toBe("2026-01-28");
+  it("zählt eine Zahlung vor dem ersten Plan-Monat zum Vorjahres-Monat", () => {
+    // Februar, Plan {3,6,9,12}: kein fälliger Monat in 2026 -> Dezember 2025.
+    expect(effectivePayDate("2026-02-10", [3, 6, 9, 12])).toBe("2025-12-10");
   });
 
-  it("bevorzugt bei Gleichstand den früheren Monat", () => {
-    // April (4), Plan {3,5}: gleich weit zu März (1) und Mai (1) -> März.
+  it("wählt den letzten fälligen Monat, wenn der Zahlungsmonat dazwischen liegt", () => {
+    // April (4), Plan {3,5}: letzter fälliger Monat ist März (Mai liegt danach).
     expect(effectivePayDate("2026-04-15", [3, 5])).toBe("2026-03-15");
   });
 
