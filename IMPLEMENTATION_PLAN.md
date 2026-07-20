@@ -310,3 +310,31 @@ Umgesetzt:
 Bewusst **nicht** Teil von 5A (folgt in späteren Phasen): vollständiger Statistikbereich,
 Vergleichs-/Konzentrations-/Saisonanalysen, Exporte/PDF, Kalender, erwartete Dividenden,
 Prognosen, Kurse/Depotwerte/Performance, Yield on Cost, Total Return, Broker-Sync.
+
+## Phase 5B — Statistik (umgesetzt)
+
+Umgesetzt:
+- Erweiterung der zentralen Analytics-Schicht `src/lib/statistics` um reine, decimal-sichere
+  Statistik-Aggregationen: `filterPayments`/`isEmptyFilter`, `overviewStatistics`,
+  `yearStatistics`, `monthAcrossYearsStatistics`, `securityStatistics` + `sortSecurityStatistics`,
+  `depotStatistics`, `calendarMonthBuckets`, `heatmapByYearMonth`, `averagePayment`,
+  `averagePerActiveMonth`, `largestPayment`, `activeMonthCount`, `worstMonthInYear`, `bestYear`
+  (CALCULATION_RULES.md §11). Keine parallele Logik, keine Berechnung in Komponenten.
+- Statistikbereich `src/features/statistics` mit eigener Navigation und fünf Unterbereichen
+  (Übersicht, Jahre, Monate, Unternehmen, Depots) als verschachtelte Routen unter `/statistiken`.
+- Geteilter Datenfluss mit dem Dashboard (`useStatisticsData` nutzt den Query-Key
+  `['payments','dashboard']`); Outlet-Kontext (`context.ts`) reicht den **einmal** gefilterten
+  Datensatz an alle Unterbereiche weiter (ARCHITECTURE.md §4.5).
+- Globale, kombinierbare, URL-basierte Filter (Jahr, Unternehmen, Depot, Datenquelle,
+  Zahlungsart) mit isoliert getesteter Parse-/Serialisierungsschicht (`filterParams.ts`).
+- Diagramme (Jahres-/Monatsentwicklung, Unternehmen nach Summe, Depotverteilung, Heatmap) mit
+  Datentabellen-Alternative; generische `StatTable` mit Sortierung, Suche und Paginierung.
+- Drill-down von jeder Kennzahl/Tabelle/Zelle in die gefilterte Zahlungsliste bzw. „Jahr →
+  Monate dieses Jahres"; archivierte Unternehmen/Depots bleiben sichtbar und gekennzeichnet.
+- Tests: Unit (Analytics inkl. Filter/Sortierung/Drill-Parameter und Skalierung ≥ 10.000
+  Eingänge / ≥ 500 Unternehmen, URL-Parameter, `StatTable`, Render-Smoke) + Integration
+  (SQL-Datenbasis: Jahres-/Unternehmens-/Depotaggregation, Storno/Archiv, RLS).
+
+Bewusst **nicht** Teil von 5B (Grundsatz 8): Dividendenkalender, Prognosen, erwartete Dividenden,
+Portfolio-Performance/Depotentwicklung, Kurse, Total Return, Kauf-/Verkaufsdaten,
+Renditeberechnung, AI-Empfehlungen.

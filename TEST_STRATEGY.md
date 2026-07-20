@@ -228,3 +228,34 @@ Test-Fixture; diese Werte werden **nicht** in der produktiven UI hartkodiert.
 **Noch offen (keine Infrastruktur im Repo):** Ein Playwright-E2E-Setup existiert (noch) nicht;
 die in der Phasen-Spezifikation gelisteten E2E-Fälle sind daher nicht als automatisierte Tests
 ausgeführt. Die zugehörige Logik ist über Unit- und Integrationstests abgedeckt.
+
+## Phase 5B — Statistik-Tests
+
+**Unit (`tests/unit/lib/statistics`, `tests/unit/features/statistics`):**
+- `statistics.test.ts` — Analytics-Aggregationen: Filter (`filterPayments`, UND-Verknüpfung,
+  Jahr/Unternehmen/Depot/Quelle/Art), Übersicht (Summe, Distinct, Durchschnitte, bester
+  Monat/bestes Jahr, erstes/letztes Datum), Jahresstatistik (Sortierung neueste zuerst, bester/
+  schwächster Monat, Vorjahresvergleich inkl. fehlendem Vorjahr), Monatsstatistik (12 Monate,
+  Entwicklung über Jahre), Unternehmensstatistik + vier Sortierkriterien (Summe/Anzahl/Name/
+  letzte Zahlung), Depotstatistik (Jahres-/Monatsentwicklung), Heatmap, sowie ein
+  Skalierungstest (≥ 10.000 Eingänge / ≥ 500 Unternehmen / mehrere Depots) auf Korrektheit
+  und lineare Aggregation.
+- `filterParams.test.ts` — URL-Parameter des Statistikfilters: Parsen gültiger/ungültiger Werte,
+  Verwerfen unbekannter Enum-Werte und von Zukunftsjahren, Round-Trip Serialisierung↔Parsing,
+  Erhalt nach Reload, Unversehrtheit fremder Parameter.
+- `StatTable.test.tsx` — generische Tabelle: Ausgangsreihenfolge, Sortierung per Spaltenkopf
+  (desc→asc), `initialSort`, Suche, Paginierung, Tastatur-Drill-down (`Enter`).
+- `OverviewTab.test.tsx` — Render-Smoke des Übersichts-Unterbereichs mit echter
+  Analytics-Verdrahtung über den Outlet-Kontext (historische Summe, Kernkennzahlen,
+  Diagramm-Datentabelle).
+
+**Integration (`tests/integration/statistics.test.ts`, benötigt lokale Postgres-DB):** SQL-Ebene
+der Statistik-Datenbasis (identische Query wie `fetchDashboardPayments`): Jahres-, Unternehmens-
+und Depotaggregation per `GROUP BY`, Einbeziehung archivierter Unternehmen/Depots über aktive
+Zahlungen, Ausschluss stornierter (archivierter) Zahlungen, Nutzerisolation (RLS). Die
+decimal-genaue Client-Aggregation ist über die Unit-Tests abgedeckt (Statistik-Abgleich §4).
+
+**Noch offen (unverändert):** Es existiert weiterhin kein Playwright-E2E-Setup im Repo; die in
+der Phasen-Spezifikation gelisteten E2E-Fälle (Drill-down-Summengleichheit, axe auf Chartseiten)
+sind daher nicht als automatisierte E2E-Tests ausgeführt. Die zugehörige Logik ist über Unit-
+und Integrationstests abgedeckt.

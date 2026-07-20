@@ -14,6 +14,11 @@ import { PaymentDetailPage } from "@/features/payments/PaymentDetailPage";
 import { SecuritiesPage } from "@/features/securities/SecuritiesPage";
 import { DepotsPage } from "@/features/depots/DepotsPage";
 import { StatisticsPage } from "@/features/statistics/StatisticsPage";
+import { OverviewTab } from "@/features/statistics/OverviewTab";
+import { YearsTab } from "@/features/statistics/YearsTab";
+import { MonthsTab } from "@/features/statistics/MonthsTab";
+import { CompaniesTab } from "@/features/statistics/CompaniesTab";
+import { DepotsTab } from "@/features/statistics/DepotsTab";
 import { ImportsPage } from "@/features/imports/ImportsPage";
 import { GoalsPage } from "@/features/goals/GoalsPage";
 import { BackupPage } from "@/features/backup/BackupPage";
@@ -46,7 +51,17 @@ export const router = createHashRouter([
       { path: "eingaenge/:id/bearbeiten", element: <NewPaymentPage /> },
       { path: "unternehmen", element: <SecuritiesPage /> },
       { path: "depots", element: <DepotsPage /> },
-      { path: "statistiken", element: <StatisticsPage /> },
+      {
+        path: "statistiken",
+        element: <StatisticsPage />,
+        children: [
+          { index: true, element: <OverviewTab /> },
+          { path: "jahre", element: <YearsTab /> },
+          { path: "monate", element: <MonthsTab /> },
+          { path: "unternehmen", element: <CompaniesTab /> },
+          { path: "depots", element: <DepotsTab /> },
+        ],
+      },
       { path: "importe", element: <ImportsPage /> },
       { path: "ziele", element: <GoalsPage /> },
       { path: "datensicherung", element: <BackupPage /> },

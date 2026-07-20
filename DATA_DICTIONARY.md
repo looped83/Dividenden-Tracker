@@ -222,3 +222,24 @@ Laufzeit aus `dividend_payments` abgeleitet (Analytics-Schicht `lib/statistics`)
   „Archiviert"-Label; die zugehörigen aktiven Zahlungen bleiben in allen Kennzahlen enthalten.
 - **`DashboardPaymentRow`** — reduzierte Projektion (`id, pay_date, net_amount, gross_amount,
   security_id, depot_id, payment_type, source, created_at`) für die einmalige Übertragung.
+
+## Statistik-abgeleitete Werte (Phase 5B)
+
+Der Statistikbereich führt **keine neuen Spalten oder Tabellen** ein; alle Werte werden zur
+Laufzeit aus `dividend_payments` (aktive Eingänge, effektiver Monat §10) über die Analytics-Schicht
+`lib/statistics` abgeleitet. Datenbasis und Archivregeln wie oben (Phase 5A). Begriffe:
+
+- **Durchschnittliche Zahlung** — `Σ net_amount ÷ Anzahl Zahlungen` (`averagePayment`).
+- **Durchschnittlicher Monat** — `Σ net_amount ÷ Anzahl aktiver Monate`, wobei ein aktiver Monat ein
+  Kalendermonat (Jahr+Monat) mit ≥ 1 Zahlung ist (`averagePerActiveMonth`, `activeMonthCount`).
+- **Bester/Schwächster Monat** — Kalendermonat mit maximaler/minimaler Nettosumme; „schwächster"
+  nur unter Monaten mit Zahlungen (`bestMonthInYear`/`worstMonthInYear`).
+- **Bestes Jahr** — Kalenderjahr mit maximaler Nettosumme (`bestYear`).
+- **Größte Einzelzahlung** — `max net_amount` je Unternehmen (`largestPayment`).
+- **Veränderung zum Vorjahr** — Vergleich der Jahressummen (`comparePeriods`, §6.4); „kein
+  Vergleich", wenn das Vorjahr in der Datenbasis fehlt.
+- **Statistikfilter** — kombinierbare, URL-serialisierte Kriterien (`StatisticsFilter`): `year`
+  (effektives Kalenderjahr), `securityId`, `depotId`, `source` (= `dividend_payments.source`),
+  `paymentType` (= `dividend_payments.payment_type`). `null` = keine Einschränkung.
+- **Entwicklung über die Jahre / Monate** — Zeitreihen je Unternehmen/Depot/Monat
+  (`yearlyBuckets`, `calendarMonthBuckets`, `monthlyBuckets`), rein aus aktiven Eingängen.
