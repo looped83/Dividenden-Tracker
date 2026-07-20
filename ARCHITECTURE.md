@@ -198,13 +198,16 @@ Client-seitige Mehrfach-Inserts ohne Transaktion sind für diese Fälle verboten
 
 Das Dashboard folgt bewusst dem Prinzip aus §4.1 Punkt 3:
 
-- **Eine Abfrage, alle Kennzahlen.** `fetchDashboardPayments()`
-  (`lib/supabase/repositories/payments.ts`) lädt **einmal** die gesamte aktive Historie
+- **Eine logische Ladung, alle Kennzahlen.** `fetchDashboardPayments()`
+  (`lib/supabase/repositories/payments.ts`) lädt die gesamte aktive Historie
   (`archived_at is null`), reduziert auf die von der Analytics-Schicht benötigten Spalten
   (`id, pay_date, net/gross_amount, security_id, depot_id, payment_type, source, created_at`).
-  Keine Übertragung roher Daten je KPI, kein N+1, keine widersprüchlichen Einzelberechnungen.
-  Für den aktuellen Datenumfang (Kontrollwert 1.439 Zeilen; Zielhorizont ≥ 10.000) werden
-  **keine** materialisierten Views eingeführt (DECISIONS.md D-5A-1).
+  Da PostgREST eine Antwort auf `db-max-rows` (Supabase-Default 1000) begrenzt, wird
+  **seitenweise** (`.range()`, 1000er-Seiten) mit stabiler, eindeutiger Sortierung
+  (`pay_date desc, id asc`) bis zur Vollständigkeit paginiert — sonst würden bei > 1000
+  Eingängen Zahlungen fehlen (Kontrollwert 1.439). Keine Übertragung roher Daten je KPI,
+  kein N+1, keine widersprüchlichen Einzelberechnungen. Für den aktuellen Datenumfang
+  (Zielhorizont ≥ 10.000) werden **keine** materialisierten Views eingeführt (DECISIONS.md D-5A-1).
 - **Analytics-Schicht** (`lib/statistics`): geparste `AnalyticsPayment`-Datensätze (Beträge
   einmalig zu `Money`), rein funktional und decimal-sicher. Einzige Quelle aller
   Dashboard-Kennzahlen und in Phase 5B für den Statistikbereich wiederverwendbar.
