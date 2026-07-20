@@ -25,11 +25,7 @@ import {
 } from "@/lib/payments/dataQuality";
 import { todayIso } from "@/features/payments/schemas";
 import { formatDate, formatDateTime, isImported, sourceLabel } from "./paymentDisplay";
-import {
-  DeleteDialog,
-  StornoDialog,
-  type PaymentSummaryData,
-} from "./dialogs";
+import { DeleteDialog, StornoDialog, type PaymentSummaryData } from "./dialogs";
 
 export function DataQualityPage() {
   const { data: securities = [] } = useSecurities();
@@ -71,7 +67,9 @@ export function DataQualityPage() {
     const archivedSecurityIds = new Set(
       securities.filter((s) => s.archived_at).map((s) => s.id),
     );
-    const archivedDepotIds = new Set(depots.filter((d) => d.archived_at).map((d) => d.id));
+    const archivedDepotIds = new Set(
+      depots.filter((d) => d.archived_at).map((d) => d.id),
+    );
     return {
       duplicates: duplicatePairs.length,
       anomalies: anomalies.length,
@@ -79,7 +77,8 @@ export function DataQualityPage() {
       importedModified: active.filter(
         (p) => isImported(p.source) && p.updated_at !== p.created_at,
       ).length,
-      archivedCompany: active.filter((p) => archivedSecurityIds.has(p.security_id)).length,
+      archivedCompany: active.filter((p) => archivedSecurityIds.has(p.security_id))
+        .length,
       archivedDepot: active.filter((p) => archivedDepotIds.has(p.depot_id)).length,
     };
   }, [payments, securities, depots, duplicatePairs.length, anomalies.length]);
@@ -95,7 +94,9 @@ export function DataQualityPage() {
     company: securityName(p.security_id),
     depot: depotName(p.depot_id),
     payDate: p.pay_date,
-    amount: <AmountText amount={Money.fromString(p.net_amount, currencyOf(p.depot_id))} />,
+    amount: (
+      <AmountText amount={Money.fromString(p.net_amount, currencyOf(p.depot_id))} />
+    ),
     source: sourceLabel(p.source),
   });
 
@@ -299,9 +300,7 @@ function DuplicateCard({
     <li>
       <Card>
         <CardHeader className="flex-row items-center justify-between gap-2 space-y-0">
-          <CardTitle className="text-base">
-            {securityName(pair.a.security_id)}
-          </CardTitle>
+          <CardTitle className="text-base">{securityName(pair.a.security_id)}</CardTitle>
           <Badge variant={pair.category === "high" ? "negative" : "warning"}>
             {pair.category === "high" ? "Hohe Wahrscheinlichkeit" : "Mögliche Dublette"}
           </Badge>
@@ -324,10 +323,22 @@ function DuplicateCard({
                   <Button variant="outline" size="sm" asChild>
                     <Link to={`/eingaenge/${p.id}`}>Öffnen</Link>
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => { onStorno(p); }}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      onStorno(p);
+                    }}
+                  >
                     Stornieren
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => { onDelete(p); }}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      onDelete(p);
+                    }}
+                  >
                     Löschen
                   </Button>
                 </div>

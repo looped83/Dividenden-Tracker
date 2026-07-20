@@ -24,10 +24,7 @@ function payment(partial: Partial<PaymentLike> & { id: string }): PaymentLike {
 
 describe("findDuplicatePairs (§15)", () => {
   it("erkennt hohe Wahrscheinlichkeit bei identischem Datum, Unternehmen, Depot und Betrag", () => {
-    const pairs = findDuplicatePairs([
-      payment({ id: "a" }),
-      payment({ id: "b" }),
-    ]);
+    const pairs = findDuplicatePairs([payment({ id: "a" }), payment({ id: "b" })]);
     expect(pairs).toHaveLength(1);
     expect(pairs[0].category).toBe("high");
     expect(pairs[0].key).toBe(pairKey("a", "b"));
@@ -107,17 +104,20 @@ describe("detectAnomalies (§18)", () => {
       payment({ id: "d", net_amount: "500.00" }),
     ];
     const anomalies = detectAnomalies(rows, today);
-    expect(anomalies.some((x) => x.code === "unusually_high" && x.payment.id === "d")).toBe(
-      true,
-    );
-    expect(anomalies.some((x) => x.code === "unusually_high" && x.payment.id === "a")).toBe(
-      false,
-    );
+    expect(
+      anomalies.some((x) => x.code === "unusually_high" && x.payment.id === "d"),
+    ).toBe(true);
+    expect(
+      anomalies.some((x) => x.code === "unusually_high" && x.payment.id === "a"),
+    ).toBe(false);
   });
 
   it("meldet keinen ungewöhnlich hohen Betrag ohne genügend Vergleichsdaten", () => {
     const anomalies = detectAnomalies(
-      [payment({ id: "a", net_amount: "10.00" }), payment({ id: "b", net_amount: "500.00" })],
+      [
+        payment({ id: "a", net_amount: "10.00" }),
+        payment({ id: "b", net_amount: "500.00" }),
+      ],
       today,
     );
     expect(anomalies.some((x) => x.code === "unusually_high")).toBe(false);

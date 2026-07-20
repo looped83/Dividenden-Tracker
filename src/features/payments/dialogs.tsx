@@ -71,9 +71,9 @@ export function StornoDialog({
         </DialogHeader>
         {summary && <PaymentSummary data={summary} />}
         <p className="text-sm text-muted-foreground">
-          Der Dividendeneingang bleibt erhalten, wird aber aus den
-          Standardauswertungen (Dashboard und Statistik) ausgeschlossen und kann
-          später wieder reaktiviert werden.
+          Der Dividendeneingang bleibt erhalten, wird aber aus den Standardauswertungen
+          (Dashboard und Statistik) ausgeschlossen und kann später wieder reaktiviert
+          werden.
         </p>
         <div className="space-y-1.5">
           <Label htmlFor="storno-reason">Stornogrund (optional)</Label>
@@ -91,7 +91,12 @@ export function StornoDialog({
           </p>
         )}
         <DialogFooter>
-          <Button variant="ghost" onClick={() => { onOpenChange(false); }}>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              onOpenChange(false);
+            }}
+          >
             Abbrechen
           </Button>
           <Button variant="destructive" disabled={isPending} onClick={onConfirm}>
@@ -144,7 +149,12 @@ export function DeleteDialog({
           </p>
         )}
         <DialogFooter>
-          <Button variant="ghost" onClick={() => { onOpenChange(false); }}>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              onOpenChange(false);
+            }}
+          >
             Abbrechen
           </Button>
           <Button variant="destructive" disabled={isPending} onClick={onConfirm}>

@@ -178,7 +178,10 @@ export function NewPaymentPage() {
       </h1>
 
       {conflict && (
-        <p role="alert" className="rounded-md bg-warning/10 p-3 text-sm text-warning-foreground">
+        <p
+          role="alert"
+          className="rounded-md bg-warning/10 p-3 text-sm text-warning-foreground"
+        >
           Dieser Dividendeneingang wurde zwischenzeitlich an anderer Stelle geändert. Die
           aktuellen Werte wurden neu geladen. Bitte prüfe deine Eingaben und speichere
           erneut, um sie zu übernehmen.
