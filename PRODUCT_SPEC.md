@@ -279,3 +279,31 @@ dauerhaft Löschen — mit sichtbarer Auswahl, klarer Unterscheidung
 hohe Wahrscheinlichkeit vs. mögliche Dublette) und regelbasierte Auffälligkeiten
 werden nur *angezeigt* — nie automatisch storniert, gelöscht oder zusammengeführt.
 Legitime Mehrfachzahlungen mit abweichendem Betrag bleiben erhalten.
+
+---
+
+## Phase 7 — Ziele und Fortschritt
+
+Nutzer definieren persönliche Ziele für **tatsächlich erhaltene**
+Dividendeneinnahmen und verfolgen deren Fortschritt. Ein Ziel ist ein
+Vergleichswert, **keine Prognose**.
+
+**Zielarten.** Jahresziel (`annual`) und Monatsziel (`monthly`). Beide werden
+ausschließlich vom Nutzer festgelegt — keine automatische Ableitung, Summierung,
+Verteilung oder Vorschläge.
+
+**Funktionen.** Anlegen, Bearbeiten, dauerhaftes Löschen (mit Bestätigung, ohne
+Veränderung von Dividendeneingängen), Zielübersicht (`/ziele`) mit aktiven,
+bevorstehenden und beendeten Zielen, Detailansicht (`/ziele/:id`) mit Drill-down
+zu den Eingängen des Zeitraums, kompakte Dashboard-Zielsektion.
+
+**Angezeigt** werden: bisher erhaltene Dividenden, Zielbetrag, Zielerreichung in
+Prozent, verbleibender bzw. überschrittener Betrag, Zielstatus (bevorstehend /
+aktiv / erreicht / übertroffen / beendet und nicht erreicht) und der vergangene
+Zeitanteil (rein beschreibend).
+
+**Bewusst nicht Bestandteil:** Prognosen, Hochrechnungen auf das Jahresende,
+erwartete Dividenden, Zielerreichungsdatum, automatische Zielvorschläge oder
+-anpassungen, Anlage-/Sparratenempfehlungen, Gamification, geteilte Ziele.
+Fortschritt basiert ausschließlich auf gültigen, aktiven Eingängen (stornierte
+und gelöschte ausgeschlossen; archivierte Unternehmen/Depots enthalten).

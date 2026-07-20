@@ -136,18 +136,22 @@ IMPORT_SPEC.md.
 | `checksums` | T | jsonb | Kontrollsummen (Σ brutto, Σ netto, Anzahl) |
 | `created_at`, `committed_at`, `rolled_back_at` | T | timestamptz | |
 
-## 6. Ziel (`goals`)
+## 6. Ziel (`goals`) — Phase 7
 
 | Feld | Kl. | Typ | Bedeutung |
 |---|---|---|---|
 | `id`, `user_id` | T | | |
-| `goal_type` | P | enum | `net_year` · `gross_year` · `rolling_12m` · `avg_month_net` · `long_term` |
-| `year` | P bei Jahreszielen | int | Kalenderjahr des Ziels |
-| `target_year` | P bei `long_term` | int | Zieljahr des Langfristziels |
-| `target_amount` | P | numeric(14,2) | Zielbetrag > 0 |
-| `currency` | T (=Basiswährung) | char(3) | |
-| `note` | O | text | |
-| Zielerreichung | A | — | Berechnung in CALCULATION_RULES.md §6.20; nie gespeichert |
+| `goal_type` | P | enum | `annual` (Jahresziel) · `monthly` (Monatsziel) |
+| `year` | P | int | Kalenderjahr des Zielzeitraums (1990–2100) |
+| `month` | P bei Monatszielen | int | Kalendermonat 1–12; bei Jahreszielen `null` |
+| `target_amount` | P | numeric(14,2) | Zielbetrag > 0, decimal-sicher |
+| `currency` | T (=Basiswährung) | char(3) | Default `EUR` |
+| `title` | O | text | eigener Titel (≤ 200 Z.); sonst automatische Bezeichnung |
+| `note` | O | text | Notiz (≤ 2000 Z.) |
+| Zielerreichung / Status / Restbetrag / Zeitfortschritt | A | — | Berechnung in der Goal-Domain-Schicht (`src/lib/goals`, CALCULATION_RULES.md §13); **nie** gespeichert |
+
+Kl. = Klasse: P Pflicht · O optional · T technisch · A abgeleitet.
+Eindeutigkeit: `goals_unique_period (user_id, goal_type, year, coalesce(month,0))`.
 
 ## 7. Profil (`profiles`)
 

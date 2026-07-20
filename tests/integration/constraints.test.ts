@@ -223,19 +223,19 @@ describe("Unique Constraints", () => {
     ).rejects.toThrow(/dp_import_row_key/);
   });
 
-  it("erlaubt keinen zweiten aktiven net_year-Ziel fuer dasselbe Jahr", async () => {
+  it("erlaubt kein zweites Jahresziel fuer dasselbe Jahr (Phase 7)", async () => {
     await asUser(userId, (client) =>
       client.query(
-        "insert into goals (goal_type, year, target_amount) values ('net_year', 2025, 1000.00)",
+        "insert into goals (goal_type, year, target_amount) values ('annual', 2025, 1000.00)",
       ),
     );
     await expect(
       asUser(userId, (client) =>
         client.query(
-          "insert into goals (goal_type, year, target_amount) values ('net_year', 2025, 2000.00)",
+          "insert into goals (goal_type, year, target_amount) values ('annual', 2025, 2000.00)",
         ),
       ),
-    ).rejects.toThrow(/goals_unique_active/);
+    ).rejects.toThrow(/goals_unique_period/);
   });
 });
 

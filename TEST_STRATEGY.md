@@ -274,3 +274,32 @@ fremde Zeilen unlöschbar; atomares Audit (`action='delete'`); Einzellöschung
 importierter Eingänge (Importlauf + übrige Zeilen erhalten, `import_rows`
 entkoppelt); `duplicate_dismissals`-RLS (nur eigene, fremde `user_id` abgewiesen).
 Bestehender „kein aktives Löschen"-Test auf die neue Policy (D-6-1) umgestellt.
+
+---
+
+## Phase 7 — Ziele und Fortschritt
+
+**Unit (`tests/unit/lib/goals`, `tests/unit/features/goals`).** Zielzeiträume
+(Jahr/Monat, Schaltjahr, Februar), Zeitstatus und Zeitfortschritt (inkl. Tag),
+Fortschritt < / = / > 100 %, Rest- und Überschreitungsbetrag, Zielstatus
+(bevorstehend/aktiv/erreicht/übertroffen/beendet-nicht-erreicht), Berechnungs­
+grundlage (nur Zahlungen im Zeitraum, fachliches Datum), keine Hochrechnung,
+stabile Sortierung, Formular-Validierung (Betrag > 0, Jahr-Grenzen, Monat/
+Zielart-Konsistenz), Anzeige-/Drill-down-Beschriftungen. Komponententest der
+`GoalCard` (Progressbar mit `aria-valuenow`/`aria-valuetext`, visuelle
+100 %-Begrenzung, Zustände).
+
+**Integration (`tests/integration/goals.test.ts`).** Anlegen von Jahres-/
+Monatszielen, DB-Constraints (Monat/Zielart-Konsistenz, Betrag > 0, ungültiger
+Monat), Eindeutigkeit (`goals_unique_period`), decimal-sichere Speicherung,
+Bearbeiten, Löschen ohne Veränderung von Dividendeneingängen, RLS-Isolation
+(kein Lesen/Ändern/Löschen fremder Ziele über direkte ID, kein anon-Zugriff,
+user_id nicht fremdsetzbar) und Audit (insert/update/delete). `constraints.test.ts`
+prüft zusätzlich die Eindeutigkeit auf DB-Ebene.
+
+**E2E-Szenarien (Auftrag §39).** Es existiert kein Browser-E2E-Harness
+(Playwright) im Projekt; die geforderten Abläufe (Anlegen, doppeltes Ziel
+verhindern, Bearbeiten, Löschen, Zahlungswirkung, Storno/Reaktivierung/Löschung,
+historisches Ziel, Nutzerisolation) sind auf Unit-/Komponenten- und
+Integrationsebene abgedeckt. Ein echter Browser-Durchlauf bleibt manuell bzw.
+für eine spätere Playwright-Einführung offen (siehe Abschlussbericht).

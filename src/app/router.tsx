@@ -22,6 +22,7 @@ import { CompaniesTab } from "@/features/statistics/CompaniesTab";
 import { DepotsTab } from "@/features/statistics/DepotsTab";
 import { ImportsPage } from "@/features/imports/ImportsPage";
 import { GoalsPage } from "@/features/goals/GoalsPage";
+import { GoalDetailPage } from "@/features/goals/GoalDetailPage";
 import { BackupPage } from "@/features/backup/BackupPage";
 import { SettingsPage } from "@/features/settings/SettingsPage";
 
@@ -66,6 +67,7 @@ export const router = createHashRouter([
       },
       { path: "importe", element: <ImportsPage /> },
       { path: "ziele", element: <GoalsPage /> },
+      { path: "ziele/:id", element: <GoalDetailPage /> },
       { path: "datensicherung", element: <BackupPage /> },
       { path: "einstellungen", element: <SettingsPage /> },
       { path: "mehr", element: <MorePage /> },
