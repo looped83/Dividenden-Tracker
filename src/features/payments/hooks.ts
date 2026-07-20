@@ -63,7 +63,9 @@ export function useCreatePayment() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: DividendPaymentInsert) => createPayment(input),
-    onSuccess: () => { invalidateAll(queryClient); },
+    onSuccess: () => {
+      invalidateAll(queryClient);
+    },
   });
 }
 
@@ -79,7 +81,9 @@ export function useUpdatePayment() {
       input: DividendPaymentUpdate;
       expectedUpdatedAt?: string;
     }) => updatePayment(id, input, expectedUpdatedAt),
-    onSuccess: () => { invalidateAll(queryClient); },
+    onSuccess: () => {
+      invalidateAll(queryClient);
+    },
   });
 }
 
@@ -88,7 +92,9 @@ export function useArchivePayment() {
   return useMutation({
     mutationFn: ({ id, reason }: { id: string; reason?: string | undefined }) =>
       archivePayment(id, reason),
-    onSuccess: () => { invalidateAll(queryClient); },
+    onSuccess: () => {
+      invalidateAll(queryClient);
+    },
   });
 }
 
@@ -96,7 +102,9 @@ export function useUnarchivePayment() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => unarchivePayment(id),
-    onSuccess: () => { invalidateAll(queryClient); },
+    onSuccess: () => {
+      invalidateAll(queryClient);
+    },
   });
 }
 
@@ -104,7 +112,9 @@ export function useDeletePayment() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => deletePayment(id),
-    onSuccess: () => { invalidateAll(queryClient); },
+    onSuccess: () => {
+      invalidateAll(queryClient);
+    },
   });
 }
 

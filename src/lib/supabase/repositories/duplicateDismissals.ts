@@ -11,9 +11,7 @@ import { pairKey } from "@/lib/payments/dataQuality";
  */
 
 export async function fetchDuplicateDismissals(): Promise<string[]> {
-  const { data, error } = await supabase
-    .from("duplicate_dismissals")
-    .select("pair_key");
+  const { data, error } = await supabase.from("duplicate_dismissals").select("pair_key");
   if (error) throw error;
   return data.map((row) => row.pair_key);
 }

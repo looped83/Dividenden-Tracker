@@ -42,15 +42,10 @@ export function parseStatus(value: string | null): StatusFilter {
 }
 
 export function parseSource(value: string | null): SourceFilter {
-  return SOURCE_VALUES.includes(value as SourceFilter)
-    ? (value as SourceFilter)
-    : "all";
+  return SOURCE_VALUES.includes(value as SourceFilter) ? (value as SourceFilter) : "all";
 }
 
-export function parseSort(
-  sort: string | null,
-  direction: string | null,
-): ListSort {
+export function parseSort(sort: string | null, direction: string | null): ListSort {
   const field = SORT_FIELDS.includes(sort as SortField)
     ? (sort as SortField)
     : DEFAULT_SORT.field;

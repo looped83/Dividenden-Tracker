@@ -64,9 +64,7 @@ export function BulkBar({
 
   const ids = selectedRows.map((r) => r.id);
   const activeIds = selectedRows.filter((r) => !r.payment.archived_at).map((r) => r.id);
-  const cancelledIds = selectedRows
-    .filter((r) => r.payment.archived_at)
-    .map((r) => r.id);
+  const cancelledIds = selectedRows.filter((r) => r.payment.archived_at).map((r) => r.id);
 
   const close = () => {
     if (isRunning) return;
@@ -104,28 +102,68 @@ export function BulkBar({
         </Button>
       )}
       <div className="ml-auto flex flex-wrap gap-2">
-        <Button variant="outline" size="sm" onClick={() => { setKind("assign-depot"); }}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setKind("assign-depot");
+          }}
+        >
           <Wallet /> Depot zuweisen
         </Button>
-        <Button variant="outline" size="sm" onClick={() => { setKind("assign-company"); }}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setKind("assign-company");
+          }}
+        >
           <Users /> Unternehmen zuweisen
         </Button>
-        <Button variant="outline" size="sm" onClick={() => { setKind("storno"); }}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setKind("storno");
+          }}
+        >
           <Ban /> Stornieren
         </Button>
-        <Button variant="outline" size="sm" onClick={() => { setKind("reactivate"); }}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setKind("reactivate");
+          }}
+        >
           <RotateCcw /> Reaktivieren
         </Button>
-        <Button variant="outline" size="sm" onClick={() => { setKind("delete"); }}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setKind("delete");
+          }}
+        >
           <Trash2 /> Dauerhaft löschen
         </Button>
-        <Button variant="ghost" size="icon" aria-label="Auswahl aufheben" onClick={onClear}>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Auswahl aufheben"
+          onClick={onClear}
+        >
           <X />
         </Button>
       </div>
 
       {/* Depot zuweisen */}
-      <Dialog open={kind === "assign-depot"} onOpenChange={(o) => { if (!o) close(); }}>
+      <Dialog
+        open={kind === "assign-depot"}
+        onOpenChange={(o) => {
+          if (!o) close();
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Depot zuweisen</DialogTitle>
@@ -140,7 +178,9 @@ export function BulkBar({
             <Select
               id="bulk-depot"
               value={targetDepot}
-              onChange={(e) => { setTargetDepot(e.target.value); }}
+              onChange={(e) => {
+                setTargetDepot(e.target.value);
+              }}
             >
               <option value="">Bitte wählen</option>
               {activeDepots.map((d) => (
@@ -157,9 +197,7 @@ export function BulkBar({
             <Button
               disabled={!targetDepot || isRunning || activeIds.length === 0}
               onClick={() =>
-                void run(activeIds, (id) =>
-                  updatePayment(id, { depot_id: targetDepot }),
-                )
+                void run(activeIds, (id) => updatePayment(id, { depot_id: targetDepot }))
               }
             >
               {isRunning ? "Wird zugewiesen …" : "Zuweisen"}
@@ -169,14 +207,18 @@ export function BulkBar({
       </Dialog>
 
       {/* Unternehmen zuweisen */}
-      <Dialog open={kind === "assign-company"} onOpenChange={(o) => { if (!o) close(); }}>
+      <Dialog
+        open={kind === "assign-company"}
+        onOpenChange={(o) => {
+          if (!o) close();
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Unternehmen zuweisen</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Das gewählte Unternehmen wird {activeIds.length} aktiven Eingängen
-            zugewiesen.
+            Das gewählte Unternehmen wird {activeIds.length} aktiven Eingängen zugewiesen.
             {cancelledIds.length > 0 &&
               ` ${String(cancelledIds.length)} stornierte Eingänge werden übersprungen.`}
           </p>
@@ -185,7 +227,9 @@ export function BulkBar({
             <Select
               id="bulk-company"
               value={targetCompany}
-              onChange={(e) => { setTargetCompany(e.target.value); }}
+              onChange={(e) => {
+                setTargetCompany(e.target.value);
+              }}
             >
               <option value="">Bitte wählen</option>
               {activeSecurities.map((s) => (
@@ -215,7 +259,12 @@ export function BulkBar({
       </Dialog>
 
       {/* Stornieren */}
-      <Dialog open={kind === "storno"} onOpenChange={(o) => { if (!o) close(); }}>
+      <Dialog
+        open={kind === "storno"}
+        onOpenChange={(o) => {
+          if (!o) close();
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{activeIds.length} Eingänge stornieren?</DialogTitle>
@@ -242,7 +291,12 @@ export function BulkBar({
       </Dialog>
 
       {/* Reaktivieren */}
-      <Dialog open={kind === "reactivate"} onOpenChange={(o) => { if (!o) close(); }}>
+      <Dialog
+        open={kind === "reactivate"}
+        onOpenChange={(o) => {
+          if (!o) close();
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{cancelledIds.length} Eingänge reaktivieren?</DialogTitle>
@@ -265,16 +319,21 @@ export function BulkBar({
       </Dialog>
 
       {/* Dauerhaft löschen */}
-      <Dialog open={kind === "delete"} onOpenChange={(o) => { if (!o) close(); }}>
+      <Dialog
+        open={kind === "delete"}
+        onOpenChange={(o) => {
+          if (!o) close();
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{ids.length} Dividendeneingänge dauerhaft löschen?</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Die {ids.length} ausgewählten Dividendeneingänge werden endgültig entfernt
-            und können innerhalb der Anwendung nicht wiederhergestellt werden. Dashboard
-            und Statistik werden anschließend neu berechnet. Nur die ausdrücklich
-            ausgewählten Datensätze werden gelöscht.
+            Die {ids.length} ausgewählten Dividendeneingänge werden endgültig entfernt und
+            können innerhalb der Anwendung nicht wiederhergestellt werden. Dashboard und
+            Statistik werden anschließend neu berechnet. Nur die ausdrücklich ausgewählten
+            Datensätze werden gelöscht.
           </p>
           <DialogFooter>
             <Button variant="ghost" onClick={close}>
@@ -292,7 +351,12 @@ export function BulkBar({
       </Dialog>
 
       {/* Ergebniszusammenfassung */}
-      <Dialog open={result !== null} onOpenChange={(o) => { if (!o) setResult(null); }}>
+      <Dialog
+        open={result !== null}
+        onOpenChange={(o) => {
+          if (!o) setResult(null);
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Ergebnis der Massenaktion</DialogTitle>
@@ -310,7 +374,13 @@ export function BulkBar({
             </div>
           )}
           <DialogFooter>
-            <Button onClick={() => { setResult(null); }}>Schließen</Button>
+            <Button
+              onClick={() => {
+                setResult(null);
+              }}
+            >
+              Schließen
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

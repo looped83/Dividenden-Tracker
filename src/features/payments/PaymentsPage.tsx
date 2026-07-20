@@ -154,10 +154,7 @@ export function PaymentsPage() {
     () => new Map(securities.map((s) => [s.id, s])),
     [securities],
   );
-  const depotById = React.useMemo(
-    () => new Map(depots.map((d) => [d.id, d])),
-    [depots],
-  );
+  const depotById = React.useMemo(() => new Map(depots.map((d) => [d.id, d])), [depots]);
 
   const years = React.useMemo(() => {
     const set = new Set<number>();
@@ -257,8 +254,11 @@ export function PaymentsPage() {
   const selectAllFiltered = () => {
     setSelected(new Set(rows.map((r) => r.id)));
   };
-  const clearSelection = () => { setSelected(new Set()); };
-  const pageAllSelected = pageRows.length > 0 && pageRows.every((r) => selected.has(r.id));
+  const clearSelection = () => {
+    setSelected(new Set());
+  };
+  const pageAllSelected =
+    pageRows.length > 0 && pageRows.every((r) => selected.has(r.id));
   const selectedRows = rows.filter((r) => selected.has(r.id));
 
   // --- Einzelaktionen: Storno / Reaktivieren / Löschen. ---
@@ -295,7 +295,9 @@ export function PaymentsPage() {
       setStornoTarget(null);
       setStornoReason("");
     } catch (error) {
-      setStornoError(getErrorMessage(error, "Der Dividendeneingang konnte nicht storniert werden."));
+      setStornoError(
+        getErrorMessage(error, "Der Dividendeneingang konnte nicht storniert werden."),
+      );
     }
   };
 
@@ -365,7 +367,9 @@ export function PaymentsPage() {
           onChange={(event) => {
             setSearchInput(event.target.value);
           }}
-          onBlur={() => { updateParams({ q: searchInput.trim() || null }); }}
+          onBlur={() => {
+            updateParams({ q: searchInput.trim() || null });
+          }}
         />
       </form>
 
@@ -375,7 +379,9 @@ export function PaymentsPage() {
           id="f-security"
           label="Unternehmen"
           value={securityId}
-          onChange={(value) => { updateParams({ security: value }); }}
+          onChange={(value) => {
+            updateParams({ security: value });
+          }}
         >
           <option value="">Alle Unternehmen</option>
           {securities.map((s) => (
@@ -390,7 +396,9 @@ export function PaymentsPage() {
           id="f-depot"
           label="Depot"
           value={depotId}
-          onChange={(value) => { updateParams({ depot: value }); }}
+          onChange={(value) => {
+            updateParams({ depot: value });
+          }}
         >
           <option value="">Alle Depots</option>
           {depots.map((d) => (
@@ -405,9 +413,9 @@ export function PaymentsPage() {
           id="f-year"
           label="Jahr"
           value={filterYear ? String(filterYear) : ""}
-          onChange={(value) =>
-            { updateParams(value ? { year: value } : { year: null, month: null }); }
-          }
+          onChange={(value) => {
+            updateParams(value ? { year: value } : { year: null, month: null });
+          }}
         >
           <option value="">Alle Jahre</option>
           {years.map((y) => (
@@ -422,7 +430,9 @@ export function PaymentsPage() {
           label="Monat"
           value={filterMonth ? String(filterMonth) : ""}
           disabled={!filterYear}
-          onChange={(value) => { updateParams({ month: value }); }}
+          onChange={(value) => {
+            updateParams({ month: value });
+          }}
         >
           <option value="">Alle Monate</option>
           {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
@@ -436,7 +446,9 @@ export function PaymentsPage() {
           id="f-status"
           label="Status"
           value={status}
-          onChange={(value) => { updateParams({ status: value === "active" ? null : value }); }}
+          onChange={(value) => {
+            updateParams({ status: value === "active" ? null : value });
+          }}
         >
           <option value="active">Aktiv</option>
           <option value="cancelled">Storniert</option>
@@ -447,7 +459,9 @@ export function PaymentsPage() {
           id="f-source"
           label="Datenquelle"
           value={sourceFilter}
-          onChange={(value) => { updateParams({ source: value === "all" ? null : value }); }}
+          onChange={(value) => {
+            updateParams({ source: value === "all" ? null : value });
+          }}
         >
           <option value="all">Alle Quellen</option>
           <option value="manual">Manuell</option>
@@ -482,8 +496,8 @@ export function PaymentsPage() {
 
       {hasActiveFilters && (
         <p className="text-sm text-muted-foreground" aria-live="polite">
-          Aktive Filter aktiv — {rows.length}{" "}
-          {rows.length === 1 ? "Eingang" : "Eingänge"} gefunden.
+          Aktive Filter aktiv — {rows.length} {rows.length === 1 ? "Eingang" : "Eingänge"}{" "}
+          gefunden.
         </p>
       )}
 
@@ -547,7 +561,9 @@ export function PaymentsPage() {
                     key={row.id}
                     row={row}
                     selected={selected.has(row.id)}
-                    onToggle={() => { toggleSelected(row.id); }}
+                    onToggle={() => {
+                      toggleSelected(row.id);
+                    }}
                     listUrl={listUrl}
                     onStorno={() => {
                       setStornoReason("");
@@ -572,7 +588,9 @@ export function PaymentsPage() {
                 key={row.id}
                 row={row}
                 selected={selected.has(row.id)}
-                onToggle={() => { toggleSelected(row.id); }}
+                onToggle={() => {
+                  toggleSelected(row.id);
+                }}
                 listUrl={listUrl}
                 onStorno={() => {
                   setStornoReason("");
@@ -593,7 +611,8 @@ export function PaymentsPage() {
       {!isLoading && rows.length > PAGE_SIZE && (
         <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
           <span aria-live="polite">
-            {pageStart + 1}–{Math.min(pageStart + PAGE_SIZE, rows.length)} von {rows.length}
+            {pageStart + 1}–{Math.min(pageStart + PAGE_SIZE, rows.length)} von{" "}
+            {rows.length}
           </span>
           <div className="flex items-center gap-2">
             <Button
@@ -601,7 +620,9 @@ export function PaymentsPage() {
               variant="outline"
               size="sm"
               disabled={currentPage <= 1}
-              onClick={() => { setPage((v) => Math.max(1, v - 1)); }}
+              onClick={() => {
+                setPage((v) => Math.max(1, v - 1));
+              }}
             >
               Zurück
             </Button>
@@ -613,7 +634,9 @@ export function PaymentsPage() {
               variant="outline"
               size="sm"
               disabled={currentPage >= pageCount}
-              onClick={() => { setPage((v) => Math.min(pageCount, v + 1)); }}
+              onClick={() => {
+                setPage((v) => Math.min(pageCount, v + 1));
+              }}
             >
               Weiter
             </Button>
@@ -672,7 +695,9 @@ function FilterSelect({
         id={id}
         value={value}
         disabled={disabled}
-        onChange={(event) => { onChange(event.target.value); }}
+        onChange={(event) => {
+          onChange(event.target.value);
+        }}
       >
         {children}
       </Select>
@@ -813,10 +838,7 @@ function PaymentCard({
         />
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
-            <Link
-              to={`/eingaenge/${payment.id}`}
-              className="font-medium hover:underline"
-            >
+            <Link to={`/eingaenge/${payment.id}`} className="font-medium hover:underline">
               {companyName || "—"}
             </Link>
             <AmountText amount={Money.fromString(payment.net_amount, currency)} />
