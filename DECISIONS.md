@@ -606,3 +606,21 @@ Auswertungen erhalten; löschbar sind nur archivierte Unternehmen ohne Historie.
 Bearbeiten bleibt bei archivierten Unternehmen weiterhin erlaubt (Nachpflege von
 Stammdaten, D-039) — anders als bei Dividendeneingängen, die im archivierten
 Zustand nur reaktiviert oder gelöscht werden können.
+
+### D-5B-7 — Bearbeiten/Löschen importierter Dividendeneingänge korrigiert
+
+Zwei Fehler verhinderten das Ändern und Löschen **importierter** Eingänge
+(manuelle Eingänge waren nicht betroffen):
+
+- **Bearbeiten:** Das Formular sendete beim Speichern `source: "manual"` mit. Für
+  einen importierten Eingang (`source = 'csv_import'`) löste der Trigger
+  `protect_payment_immutables` (0009) daraufhin „Dieses Feld ist unveraenderlich"
+  aus. Fix: Der Update-Pfad sendet nur noch die fachlich bearbeitbaren Felder;
+  `source` und die Import-Herkunftsfelder werden ausschließlich beim Neuanlegen
+  gesetzt.
+- **Löschen:** Die Herkunftszeile `import_rows.payment_id` verwies mit
+  `ON DELETE NO ACTION` auf die Zahlung; das endgültige Löschen scheiterte am
+  Fremdschlüssel `import_rows_payment_id_fkey`. Fix (Migration 0019): Umstellung
+  auf `ON DELETE SET NULL`. Die Herkunftszeile bleibt als Provenance-Historie
+  erhalten, verliert aber ihren Verweis. Zusätzlich übersetzt `deletePayment`
+  Fremdschlüsselfehler (23503) defensiv in eine verständliche Meldung.

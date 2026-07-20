@@ -202,7 +202,18 @@ export async function deletePayment(id: string): Promise<void> {
     .from("dividend_payments")
     .delete({ count: "exact" })
     .eq("id", id);
-  if (error) throw error;
+  if (error) {
+    // Referenziert noch ein anderer Datensatz die Zahlung (Fremdschluessel),
+    // eine verstaendliche Meldung statt des rohen SQL-Fehlers zeigen. Die
+    // Import-Herkunftszeile (import_rows) wird ab Migration 0019 automatisch
+    // entkoppelt (ON DELETE SET NULL); diese Meldung ist eine Absicherung.
+    if (error.code === "23503") {
+      throw new Error(
+        "Eingang kann nicht gelöscht werden, weil noch andere Datensätze darauf verweisen.",
+      );
+    }
+    throw error;
+  }
   if (count === 0) {
     throw new Error(
       "Eingang konnte nicht geloescht werden (nicht gefunden, nicht archiviert oder keine Berechtigung).",

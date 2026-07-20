@@ -261,6 +261,52 @@ describe("Soft Delete (kein Hard Delete, Grundsatz 3)", () => {
     expect(stillThere.rowCount).toBe(1);
   });
 
+  it("löscht eine archivierte importierte Zahlung und entkoppelt import_rows (ON DELETE SET NULL, 0019)", async () => {
+    const setup = await asUser(userId, async (client) => {
+      const depotId = await seedDepot(client, "Depot Import Delete");
+      const securityId = await seedSecurity(client, { name: "Import Delete AG" });
+      const importResult = await client.query<{ id: string }>(
+        `insert into imports (file_name, file_hash, file_size_bytes, file_type, status)
+         values ('del.csv', repeat('d', 64), 100, 'csv', 'committed') returning id`,
+      );
+      const importId = firstRow(importResult).id;
+      const payment = await seedPayment(client, {
+        securityId,
+        depotId,
+        source: "csv_import",
+        importId,
+        sourceRowNumber: 1,
+        rowFingerprint: "a".repeat(64),
+      });
+      await client.query(
+        `insert into import_rows
+           (import_id, source_row_number, payment_id, classification, raw, normalized)
+         values ($1, 1, $2, 'imported', '{}'::jsonb, '{}'::jsonb)`,
+        [importId, payment.id],
+      );
+      // Endgültiges Löschen ist nur nach Archivierung erlaubt (0013).
+      await client.query(
+        "update dividend_payments set archived_at = now() where id = $1",
+        [payment.id],
+      );
+      return { importId, paymentId: payment.id };
+    });
+
+    const deleteResult = await asUser(userId, (client) =>
+      client.query("delete from dividend_payments where id = $1", [setup.paymentId]),
+    );
+    expect(deleteResult.rowCount).toBe(1);
+
+    // Die Herkunftszeile bleibt als Historie erhalten, ihr Verweis wird genullt.
+    const rows = await asUser(userId, (client) =>
+      client.query<{ payment_id: string | null }>(
+        "select payment_id from import_rows where import_id = $1",
+        [setup.importId],
+      ),
+    );
+    expect(firstRow(rows).payment_id).toBeNull();
+  });
+
   it("verbietet DELETE auf depots (kein Grant)", async () => {
     const depotId = await asUser(userId, (client) => seedDepot(client, "Depot Delete 2"));
 
