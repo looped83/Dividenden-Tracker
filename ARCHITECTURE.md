@@ -194,6 +194,34 @@ INVOKER`, RLS bleibt aktiv):
 
 Client-seitige Mehrfach-Inserts ohne Transaktion sind für diese Fälle verboten.
 
+### 4.4 Dashboard-Datenfluss und Query-Strategie (Phase 5A)
+
+Das Dashboard folgt bewusst dem Prinzip aus §4.1 Punkt 3:
+
+- **Eine Abfrage, alle Kennzahlen.** `fetchDashboardPayments()`
+  (`lib/supabase/repositories/payments.ts`) lädt **einmal** die gesamte aktive Historie
+  (`archived_at is null`), reduziert auf die von der Analytics-Schicht benötigten Spalten
+  (`id, pay_date, net/gross_amount, security_id, depot_id, payment_type, source, created_at`).
+  Keine Übertragung roher Daten je KPI, kein N+1, keine widersprüchlichen Einzelberechnungen.
+  Für den aktuellen Datenumfang (Kontrollwert 1.439 Zeilen; Zielhorizont ≥ 10.000) werden
+  **keine** materialisierten Views eingeführt (DECISIONS.md D-5A-1).
+- **Analytics-Schicht** (`lib/statistics`): geparste `AnalyticsPayment`-Datensätze (Beträge
+  einmalig zu `Money`), rein funktional und decimal-sicher. Einzige Quelle aller
+  Dashboard-Kennzahlen und in Phase 5B für den Statistikbereich wiederverwendbar.
+- **Jahresauswahl clientseitig.** Der ausgewählte Zeitraum (`?year=…`) wird auf den bereits
+  geladenen Datensatz angewandt — ein Jahreswechsel löst **keine** neue Abfrage und keine
+  Seitenneuladung aus (schnelle Umschaltung, memoisierte Aggregate).
+- **Query-Key unter dem `payments`-Namespace:** `['payments','dashboard']`. Dadurch invalidieren
+  alle bestehenden Zahlungs-Mutationen (Anlegen, Bearbeiten, Storno, Reaktivierung) sowie
+  Import-Commit/-Rollback über `invalidateQueries(['payments'])` (Präfix-Match) automatisch auch
+  die Dashboard-Daten. Namen/Archivstatus von Unternehmen und Depots stammen aus
+  `['securities']`/`['depots']` und werden durch deren Mutationen aktualisiert. So zeigt das
+  Dashboard nach Import, Bearbeitung, Storno, Reaktivierung oder Rollback nie veraltete Summen.
+- **URL-Zustand:** Die Jahresauswahl liegt in der URL (`?year=2026` bzw. `?year=all`), bleibt nach
+  Reload erhalten, funktioniert mit Browser-Zurück/-Vorwärts (Push-Historie) und fällt bei
+  ungültigem Parameter sicher auf das aktuelle Jahr zurück. Drill-downs übergeben Filter an die
+  Zahlungsliste (`/eingaenge?year=&month=&security=&depot=`).
+
 ---
 
 ## 5. Import-Pipeline (technische Sicht)

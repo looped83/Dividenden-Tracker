@@ -201,3 +201,30 @@ Läuft gegen eine echte lokale PostgreSQL mit allen Migrationen und die
 
 Ergebnis der Suite: 126 Unit-Tests und 65 Integrationstests grün; die
 GUI-Wizard-Schicht ist eine dünne Hülle über exakt diesen getesteten Funktionen.
+
+## Phase 5A — Dashboard-Tests
+
+**Unit (`tests/unit/lib/statistics`, `tests/unit/features/dashboard`):**
+- `dates.test.ts` — Zeitraumlogik: YTD vs. volles Jahr, gleicher Vorjahreszeitraum,
+  Monatszeiträume, Schaltjahr-Kappung (`29.02.` → `28.02.`).
+- `analytics.test.ts` — Summe/Anzahl, Monats-/Jahres-/Unternehmens-/Depot-Gruppierung,
+  bester Monat (inkl. Gleichstand → aktuellerer Monat), historische Summe, erste/letzte
+  Zahlung, letzte Eingänge (stabile Sortierung), Durchschnitt pro Monat, Vergleichslogik
+  (Prozent / „neu" / „beide 0" / „kein Vergleich"), laufendes vs. abgeschlossenes Jahr,
+  Monatsvergleich, decimal-sichere Summe (0,1 + 0,2 = 0,30).
+- `yearSelection.test.ts` — URL-Parameter: „all", gültige Jahre, sichere Rückfälle bei
+  ungültigem Parameter.
+- `KpiCards.test.tsx` — Render-Smoke mit echter Analytics-Verdrahtung (historische Summe,
+  Ø-pro-Monat nur bei Einzeljahr, ausschüttende Unternehmen).
+
+**Integration (`tests/integration/dashboard.test.ts`, benötigt lokale Postgres-DB):**
+aktive Zahlungen des Nutzers, Ausschluss stornierter/archivierter Zahlungen, Einbeziehung
+historischer Zahlungen archivierter Unternehmen, Summe nur über aktive Beträge,
+Nutzerisolation (RLS).
+
+**Kontroll-Fixture:** Der historische Import (1.439 Eingänge / 49.391,57 € netto) dient als
+Test-Fixture; diese Werte werden **nicht** in der produktiven UI hartkodiert.
+
+**Noch offen (keine Infrastruktur im Repo):** Ein Playwright-E2E-Setup existiert (noch) nicht;
+die in der Phasen-Spezifikation gelisteten E2E-Fälle sind daher nicht als automatisierte Tests
+ausgeführt. Die zugehörige Logik ist über Unit- und Integrationstests abgedeckt.

@@ -293,3 +293,20 @@ Abnahmekriterien. Tests der Phase laufen ab dann dauerhaft in CI.
 
 Bewusst nicht implementiert (außerhalb Phase 4): Kalender-, Prognose- und
 Livekursfunktionen.
+
+## Phase 5A — Dashboard (umgesetzt)
+
+Umgesetzt:
+- Zentrale, decimal-sichere Analytics-Schicht `src/lib/statistics` (Zeitraum-/Vergleichslogik,
+  Gruppierungen, Extremwerte, Historie) — wiederverwendbar für Phase 5B.
+- Dashboard-Datenbasis `fetchDashboardPayments` (eine Abfrage, aktive Eingänge) und Hooks
+  (`useDashboardPayments`, `useDashboardYear`) mit URL-Zustand.
+- Dashboard-UI: Zeitraumsteuerung, bis zu sechs KPI-Karten (§5), Monats-/Jahresdiagramm mit
+  Monats-/Kumuliert-Umschalter und zugänglicher Datentabelle, Top-Unternehmen, Depotverteilung,
+  letzte Eingänge, historische Übersicht, Drill-downs, Lade-/Fehler-/Leerzustände.
+- URL-basierte Filterübergabe an die Zahlungsliste (`/eingaenge?year&month&security&depot`).
+- Tests: Unit (Analytics, Zeitraum/Vergleich, URL, Render-Smoke) + Integration (RLS/Storno/Archiv).
+
+Bewusst **nicht** Teil von 5A (folgt in späteren Phasen): vollständiger Statistikbereich,
+Vergleichs-/Konzentrations-/Saisonanalysen, Exporte/PDF, Kalender, erwartete Dividenden,
+Prognosen, Kurse/Depotwerte/Performance, Yield on Cost, Total Return, Broker-Sync.

@@ -109,6 +109,18 @@ export class Money {
     return this.value;
   }
 
+  /**
+   * Ausschliesslich fuer die visuelle Darstellung (z. B. Balkenhoehen in
+   * Diagrammen), die zwingend eine `number` erfordert. **Nie** fuer Arithmetik
+   * oder angezeigte Betragswerte verwenden — diese laufen ueber Money/Decimal
+   * bzw. formatMoney (CALCULATION_RULES.md §1/§8). Die Umwandlung nutzt
+   * Decimal.toNumber() und kann bei sehr grossen Werten an Praezision verlieren;
+   * das ist fuer Pixelhoehen ohne Belang.
+   */
+  toChartNumber(): number {
+    return this.value.toNumber();
+  }
+
   private assertSameCurrency(other: Money): void {
     if (this.currency !== other.currency) {
       throw new CurrencyMismatchError(this.currency, other.currency);

@@ -206,3 +206,18 @@ Mit **zwei Testnutzern A und B** gegen lokale Supabase-Instanz (Details TEST_STR
 - Ein nicht angemeldeter Nutzer kann keinen Import anlegen (anon revoked).
 - Ein Client kann einen Import nicht selbst als `committed` markieren.
 - Ein manipulierter Erwartungswert bricht den gesamten Import ab (Atomarität).
+
+## Dashboard (Phase 5A)
+
+- Das Dashboard führt **keine neuen RLS-Policies** ein. Der Lesezugriff
+  (`fetchDashboardPayments`) läuft über die bestehende Policy
+  `dividend_payments_select_own` (`user_id = auth.uid()`); die
+  Nutzertrennung ist damit serverseitig identisch zur Zahlungsliste.
+- Der Ausschluss stornierter/zurückgerollter Zahlungen (`archived_at is null`)
+  ist ein fachlicher Filter **innerhalb** der eigenen Daten, kein
+  Sicherheitsmechanismus — die Isolation greift unabhängig davon.
+- Namen und Archivstatus von Unternehmen/Depots stammen aus `securities`/`depots`,
+  die ebenfalls per Owner-Policy nur eigene Zeilen liefern.
+- Integrationstest `tests/integration/dashboard.test.ts` verifiziert die Isolation
+  (Nutzer B sieht keine Dashboard-Daten von A) sowie Storno-Ausschluss und
+  Archiv-Unternehmen-Einbeziehung auf SQL-Ebene.

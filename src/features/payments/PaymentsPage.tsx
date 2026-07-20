@@ -1,6 +1,7 @@
 import * as React from "react";
-import { Link } from "react-router";
-import { Archive as ArchiveIcon, Plus, RotateCcw, Wallet } from "lucide-react";
+import { Link, useSearchParams } from "react-router";
+import { Archive as ArchiveIcon, Plus, RotateCcw, Wallet, X } from "lucide-react";
+import { isoDate, lastDayOfMonth, monthNameDe, yearRange } from "@/lib/statistics";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -44,9 +45,8 @@ export function PaymentsPage() {
   const { data: depots = [] } = useDepots();
   const { data: securities = [] } = useSecurities();
 
+  const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = React.useState("");
-  const [depotId, setDepotId] = React.useState("");
-  const [securityId, setSecurityId] = React.useState("");
   const [includeArchived, setIncludeArchived] = React.useState(false);
   const archivePayment = useArchivePayment();
   const unarchivePayment = useUnarchivePayment();
@@ -54,10 +54,54 @@ export function PaymentsPage() {
   const [archiveReason, setArchiveReason] = React.useState("");
   const [archiveError, setArchiveError] = React.useState<string | null>(null);
 
+  // Filter aus der URL (Drill-down vom Dashboard, §13). Depot, Unternehmen und
+  // Zeitraum sind URL-gesteuert; damit funktionieren Reload und Browser-Zurück.
+  const depotId = searchParams.get("depot") ?? "";
+  const securityId = searchParams.get("security") ?? "";
+  const yearRaw = searchParams.get("year");
+  const monthRaw = searchParams.get("month");
+  const filterYear =
+    yearRaw && /^\d{4}$/.test(yearRaw) ? Number.parseInt(yearRaw, 10) : null;
+  const filterMonth =
+    monthRaw && /^(1[0-2]|[1-9])$/.test(monthRaw) ? Number.parseInt(monthRaw, 10) : null;
+
+  const updateParam = (key: string, value: string) => {
+    setSearchParams((prev) => {
+      const params = new URLSearchParams(prev);
+      if (value) params.set(key, value);
+      else params.delete(key);
+      return params;
+    });
+  };
+  const clearPeriod = () => {
+    setSearchParams((prev) => {
+      const params = new URLSearchParams(prev);
+      params.delete("year");
+      params.delete("month");
+      return params;
+    });
+  };
+
+  let fromDate: string | undefined;
+  let toDate: string | undefined;
+  let periodLabel: string | null = null;
+  if (filterYear && filterMonth) {
+    fromDate = isoDate(filterYear, filterMonth, 1);
+    toDate = isoDate(filterYear, filterMonth, lastDayOfMonth(filterYear, filterMonth));
+    periodLabel = `${monthNameDe(filterMonth)} ${String(filterYear)}`;
+  } else if (filterYear) {
+    const range = yearRange(filterYear);
+    fromDate = range.start;
+    toDate = range.end;
+    periodLabel = String(filterYear);
+  }
+
   const filters: PaymentFilters = {
     searchTerm: searchTerm || undefined,
     depotId: depotId || undefined,
     securityId: securityId || undefined,
+    fromDate,
+    toDate,
     includeArchived,
   };
 
@@ -115,7 +159,7 @@ export function PaymentsPage() {
             id="payments-depot-filter"
             value={depotId}
             onChange={(event) => {
-              setDepotId(event.target.value);
+              updateParam("depot", event.target.value);
             }}
           >
             <option value="">Alle Depots</option>
@@ -137,7 +181,7 @@ export function PaymentsPage() {
             id="payments-security-filter"
             value={securityId}
             onChange={(event) => {
-              setSecurityId(event.target.value);
+              updateParam("security", event.target.value);
             }}
           >
             <option value="">Alle Unternehmen</option>
@@ -160,6 +204,22 @@ export function PaymentsPage() {
           Archivierte anzeigen
         </label>
       </div>
+
+      {periodLabel && (
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-2 rounded-md bg-accent px-2.5 py-1 text-sm text-accent-foreground">
+            Zeitraum: {periodLabel}
+            <button
+              type="button"
+              aria-label="Zeitraumfilter entfernen"
+              className="rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              onClick={clearPeriod}
+            >
+              <X className="size-4" />
+            </button>
+          </span>
+        </div>
+      )}
 
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Wird geladen …</p>
