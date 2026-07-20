@@ -5,11 +5,13 @@ import type { AnalyticsPayment } from "./types";
  * Effektives Zahlungsdatum fuer Auswertungen (CALCULATION_RULES.md §10).
  *
  * Ist fuer ein Unternehmen ein Ausschuettungsplan (`payoutMonths`, Werte 1..12)
- * hinterlegt, wird eine Zahlung dem **naechstliegenden** geplanten Monat
- * zugeordnet — auch ueber den Jahreswechsel hinweg (eine Anfang-Januar-Zahlung
- * fuer eine Dezember-Ausschuettung zaehlt im Dezember des Vorjahres). Bei
- * Gleichstand gewinnt der fruehere Monat (Dividenden treffen eher spaeter als
- * frueher ein). Ohne Plan bleibt das echte Zahlungsdatum unveraendert.
+ * hinterlegt, wird eine Zahlung dem **letzten faelligen geplanten Monat am oder
+ * vor** dem Zahlungsmonat zugeordnet — auch ueber den Jahreswechsel hinweg. So
+ * zaehlt eine spaeter als geplant eingetroffene Dividende zu dem Monat, fuer den
+ * sie faellig war (z. B. Zahlung am 2. April bei Plan Maerz/Juni/September/
+ * Dezember -> Maerz; Anfang-Januar-Zahlung bei Dezember-Plan -> Dezember des
+ * Vorjahres). Faellt der Zahlungsmonat selbst auf einen geplanten Monat, bleibt
+ * dieser. Ohne Plan bleibt das echte Zahlungsdatum unveraendert.
  *
  * Der Tag wird aus dem echten Datum uebernommen und auf die Monatslaenge
  * begrenzt; er dient nur der internen Datumsdarstellung, nicht der Zuordnung.
@@ -27,23 +29,19 @@ export function effectivePayDate(
   const day = Number.parseInt(payDate.slice(8, 10), 10);
   const actualIndex = year * 12 + (month - 1); // absoluter Monatsindex
 
-  let bestIndex: number | null = null;
-  let bestDistance = Number.POSITIVE_INFINITY;
+  // Groesster geplanter Monatsindex, der den Zahlungsmonat nicht ueberschreitet
+  // (der letzte faellige Monat am/vor der Zahlung). Es genuegt, die geplanten
+  // Monate des aktuellen und des Vorjahres zu pruefen.
+  let bestIndex = Number.NEGATIVE_INFINITY;
   for (const planned of months) {
-    for (const yearOffset of [-1, 0, 1]) {
+    for (const yearOffset of [-1, 0]) {
       const candidateIndex = (year + yearOffset) * 12 + (planned - 1);
-      const distance = Math.abs(candidateIndex - actualIndex);
-      if (
-        distance < bestDistance ||
-        // Gleichstand: frueheren Monat bevorzugen (kleinerer Index).
-        (distance === bestDistance && bestIndex !== null && candidateIndex < bestIndex)
-      ) {
-        bestDistance = distance;
+      if (candidateIndex <= actualIndex && candidateIndex > bestIndex) {
         bestIndex = candidateIndex;
       }
     }
   }
-  if (bestIndex === null) return payDate;
+  if (!Number.isFinite(bestIndex)) return payDate;
 
   const effectiveYear = Math.floor(bestIndex / 12);
   const effectiveMonth = (bestIndex % 12) + 1;
