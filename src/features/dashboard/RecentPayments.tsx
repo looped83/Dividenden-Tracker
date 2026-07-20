@@ -49,8 +49,14 @@ export function RecentPayments({ payments, securities, depots }: RecentPaymentsP
                         )}
                       </p>
                       <p className="truncate text-xs text-muted-foreground">
-                        {formatIsoDate(payment.payDate)} · {depot?.name ?? "Unbekannt"} ·{" "}
-                        {describeSource(payment.source)}
+                        {formatIsoDate(payment.payDate)}
+                        {payment.payDate !== payment.actualPayDate && (
+                          <span title="Tatsächliches Zahlungsdatum">
+                            {" "}
+                            (tatsächlich {formatIsoDate(payment.actualPayDate)})
+                          </span>
+                        )}{" "}
+                        · {depot?.name ?? "Unbekannt"} · {describeSource(payment.source)}
                       </p>
                     </div>
                     <AmountText amount={payment.netAmount} className="shrink-0" />

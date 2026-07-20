@@ -8,7 +8,9 @@ import { useSecurities } from "@/features/securities/hooks";
 import { useDepots } from "@/features/depots/hooks";
 import {
   availableYears,
+  normalizePayoutMonths,
   refDateFromDate,
+  withEffectiveDates,
   yearOf,
   type AnalyticsPayment,
 } from "@/lib/statistics";
@@ -67,7 +69,7 @@ export function DashboardPage() {
   const securitiesQuery = useSecurities();
   const depotsQuery = useDepots();
 
-  const payments: AnalyticsPayment[] = paymentsQuery.data ?? [];
+  const rawPayments: AnalyticsPayment[] = paymentsQuery.data ?? [];
 
   const securities = React.useMemo(
     () => buildEntityMap(securitiesQuery.data ?? []),
@@ -76,6 +78,21 @@ export function DashboardPage() {
   const depots = React.useMemo(
     () => buildEntityMap(depotsQuery.data ?? []),
     [depotsQuery.data],
+  );
+
+  // Ausschuettungsplan je Unternehmen → effektiver Monat je Zahlung (§10).
+  // Alle Auswertungen laufen auf `payments` mit effektivem Datum.
+  const payoutBySecurity = React.useMemo(() => {
+    const map = new Map<string, number[]>();
+    for (const security of securitiesQuery.data ?? []) {
+      const months = normalizePayoutMonths(security.payout_months);
+      if (months.length > 0) map.set(security.id, months);
+    }
+    return map;
+  }, [securitiesQuery.data]);
+  const payments = React.useMemo(
+    () => withEffectiveDates(rawPayments, payoutBySecurity),
+    [rawPayments, payoutBySecurity],
   );
 
   const years = React.useMemo(() => availableYears(payments), [payments]);

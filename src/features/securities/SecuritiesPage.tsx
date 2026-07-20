@@ -4,6 +4,8 @@ import { useForm } from "react-hook-form";
 import { Building2, Pencil, Plus, RotateCcw, Archive as ArchiveIcon } from "lucide-react";
 import { emptyToNull } from "@/lib/utils/emptyToNull";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
+import { cn } from "@/lib/utils/cn";
+import { monthNameDeShort, normalizePayoutMonths } from "@/lib/statistics";
 import { SecurityImportButton } from "@/features/securities/SecurityImportDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -65,6 +67,22 @@ function SecurityFormDialog({
   const { data: depots = [] } = useDepots();
   const activeDepots = depots.filter((depot) => !depot.archived_at);
   const [submitError, setSubmitError] = React.useState<string | null>(null);
+  // Ausschuettungsmonate ausserhalb des Zod-Formulars als einfache Auswahl.
+  // Wechselt das bearbeitete Unternehmen, wird die Auswahl waehrend des Renderns
+  // zurueckgesetzt (React-Muster fuer aus Props abgeleiteten Zustand).
+  const [payoutMonths, setPayoutMonths] = React.useState<number[]>(
+    security?.payout_months ?? [],
+  );
+  const [payoutSource, setPayoutSource] = React.useState(security);
+  if (payoutSource !== security) {
+    setPayoutSource(security);
+    setPayoutMonths(security?.payout_months ?? []);
+  }
+  const togglePayoutMonth = (month: number) => {
+    setPayoutMonths((prev) =>
+      prev.includes(month) ? prev.filter((m) => m !== month) : [...prev, month],
+    );
+  };
   const {
     register,
     handleSubmit,
@@ -97,6 +115,7 @@ function SecurityFormDialog({
       currency: emptyToNull(values.currency),
       note: emptyToNull(values.note),
       default_depot_id: emptyToNull(values.defaultDepotId),
+      payout_months: normalizePayoutMonths(payoutMonths),
       // Datenqualitaet spiegelt beim Speichern die Vollstaendigkeit der
       // Stammdaten wider (z. B. ergaenzte ISIN bei einem importierten,
       // archivierten Unternehmen -> „OK"). „needs_review" aus dem Import bleibt
@@ -198,6 +217,41 @@ function SecurityFormDialog({
             </p>
           </div>
           <div className="space-y-1.5">
+            <Label>Ausschüttungsmonate (optional)</Label>
+            <div
+              className="grid grid-cols-6 gap-1.5"
+              role="group"
+              aria-label="Ausschüttungsmonate"
+            >
+              {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => {
+                const active = payoutMonths.includes(month);
+                return (
+                  <button
+                    key={month}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => {
+                      togglePayoutMonth(month);
+                    }}
+                    className={cn(
+                      "h-9 rounded-md border text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                      active
+                        ? "border-transparent bg-primary text-primary-foreground"
+                        : "border-input bg-background hover:bg-accent hover:text-accent-foreground",
+                    )}
+                  >
+                    {monthNameDeShort(month)}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Zahlungen werden in Auswertungen dem nächstgelegenen geplanten Monat
+              zugeordnet (auch über den Jahreswechsel). Leer = tatsächliches
+              Zahlungsdatum.
+            </p>
+          </div>
+          <div className="space-y-1.5">
             <Label htmlFor="security-note">Notiz</Label>
             <Textarea id="security-note" {...register("note")} />
           </div>
@@ -286,6 +340,7 @@ export function SecuritiesPage() {
               <TableHead>ISIN</TableHead>
               <TableHead>Land</TableHead>
               <TableHead>Standard-Depot</TableHead>
+              <TableHead>Ausschüttung</TableHead>
               <TableHead>Datenqualität</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Aktionen</TableHead>
@@ -310,6 +365,13 @@ export function SecuritiesPage() {
                     {security.default_depot_id
                       ? (depotById.get(security.default_depot_id)?.name ?? "—")
                       : "—"}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {normalizePayoutMonths(security.payout_months).length === 0
+                      ? "—"
+                      : normalizePayoutMonths(security.payout_months)
+                          .map((month) => monthNameDeShort(month))
+                          .join(", ")}
                   </TableCell>
                   <TableCell>
                     <Badge variant={quality.variant}>{quality.label}</Badge>

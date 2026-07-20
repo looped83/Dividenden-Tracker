@@ -2,11 +2,11 @@ import * as React from "react";
 import { Link, useSearchParams } from "react-router";
 import { Archive as ArchiveIcon, Plus, RotateCcw, Wallet } from "lucide-react";
 import {
-  availableYears,
-  isoDate,
-  lastDayOfMonth,
+  effectivePayDate,
   monthNameDe,
-  yearRange,
+  monthOf,
+  normalizePayoutMonths,
+  yearOf,
 } from "@/lib/statistics";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,12 +35,10 @@ import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { useDepots } from "@/features/depots/hooks";
 import { useSecurities } from "@/features/securities/hooks";
 import {
+  useAllPayments,
   useArchivePayment,
-  usePayments,
   useUnarchivePayment,
 } from "@/features/payments/hooks";
-import { useDashboardPayments } from "@/features/dashboard/hooks";
-import type { PaymentFilters } from "@/lib/supabase/repositories/payments";
 
 function formatDate(value: string): string {
   return new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" }).format(
@@ -71,10 +69,6 @@ export function PaymentsPage() {
   const filterMonth =
     monthRaw && /^(1[0-2]|[1-9])$/.test(monthRaw) ? Number.parseInt(monthRaw, 10) : null;
 
-  // Verfügbare Jahre aus der aktiven Historie (geteilter Dashboard-Cache).
-  const { data: activeHistory = [] } = useDashboardPayments();
-  const years = availableYears(activeHistory);
-
   const updateParam = (key: string, value: string) => {
     setSearchParams((prev) => {
       const params = new URLSearchParams(prev);
@@ -97,26 +91,52 @@ export function PaymentsPage() {
     });
   };
 
-  let fromDate: string | undefined;
-  let toDate: string | undefined;
-  if (filterYear && filterMonth) {
-    fromDate = isoDate(filterYear, filterMonth, 1);
-    toDate = isoDate(filterYear, filterMonth, lastDayOfMonth(filterYear, filterMonth));
-  } else if (filterYear) {
-    const range = yearRange(filterYear);
-    fromDate = range.start;
-    toDate = range.end;
-  }
+  const { data: allPayments = [], isLoading } = useAllPayments(includeArchived);
 
-  const filters: PaymentFilters = {
-    depotId: depotId || undefined,
-    securityId: securityId || undefined,
-    fromDate,
-    toDate,
-    includeArchived,
-  };
+  // Ausschüttungsplan je Unternehmen → effektiver Monat je Zahlung (§10).
+  // Zeitraumfilter und Sortierung laufen über das effektive Datum.
+  const payoutBySecurity = React.useMemo(() => {
+    const map = new Map<string, number[]>();
+    for (const security of securities) {
+      const months = normalizePayoutMonths(security.payout_months);
+      if (months.length > 0) map.set(security.id, months);
+    }
+    return map;
+  }, [securities]);
+  const effectiveOf = React.useCallback(
+    (payment: { pay_date: string; security_id: string }) =>
+      effectivePayDate(payment.pay_date, payoutBySecurity.get(payment.security_id)),
+    [payoutBySecurity],
+  );
 
-  const { data: payments = [], isLoading } = usePayments(filters);
+  // Auswählbare Jahre aus den effektiven Monaten aller geladenen Zahlungen.
+  const years = React.useMemo(() => {
+    const set = new Set<number>();
+    for (const payment of allPayments) set.add(yearOf(effectiveOf(payment)));
+    return [...set].sort((a, b) => b - a);
+  }, [allPayments, effectiveOf]);
+
+  const rows = React.useMemo(
+    () =>
+      allPayments
+        .map((payment) => ({ payment, effectiveDate: effectiveOf(payment) }))
+        .filter(({ payment, effectiveDate }) => {
+          if (depotId && payment.depot_id !== depotId) return false;
+          if (securityId && payment.security_id !== securityId) return false;
+          if (filterYear && yearOf(effectiveDate) !== filterYear) return false;
+          if (filterMonth && monthOf(effectiveDate) !== filterMonth) return false;
+          return true;
+        })
+        .sort((a, b) => {
+          if (a.effectiveDate !== b.effectiveDate)
+            return a.effectiveDate < b.effectiveDate ? 1 : -1;
+          if (a.payment.created_at !== b.payment.created_at)
+            return a.payment.created_at < b.payment.created_at ? 1 : -1;
+          return a.payment.id < b.payment.id ? 1 : a.payment.id > b.payment.id ? -1 : 0;
+        }),
+    [allPayments, effectiveOf, depotId, securityId, filterYear, filterMonth],
+  );
+
   const depotById = new Map(depots.map((depot) => [depot.id, depot]));
 
   const handleArchive = async () => {
@@ -247,7 +267,7 @@ export function PaymentsPage() {
 
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Wird geladen …</p>
-      ) : payments.length === 0 ? (
+      ) : allPayments.length === 0 ? (
         <EmptyState
           icon={Wallet}
           title="Noch kein Dividendeneingang erfasst"
@@ -258,11 +278,17 @@ export function PaymentsPage() {
             </Button>
           }
         />
+      ) : rows.length === 0 ? (
+        <EmptyState
+          icon={Wallet}
+          title="Keine Eingänge für die aktuelle Auswahl"
+          description="Passe Unternehmen, Zeitraum oder Depot an, um Dividendeneingänge zu sehen."
+        />
       ) : (
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Datum</TableHead>
+              <TableHead>Monat</TableHead>
               <TableHead>Unternehmen</TableHead>
               <TableHead>Depot</TableHead>
               <TableHead className="text-right">Netto</TableHead>
@@ -271,7 +297,7 @@ export function PaymentsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {payments.map((payment) => {
+            {rows.map(({ payment, effectiveDate }) => {
               const security = (
                 payment as unknown as {
                   securities?: { name: string; ticker: string | null };
@@ -279,12 +305,21 @@ export function PaymentsPage() {
               ).securities;
               const depot = depotById.get(payment.depot_id);
               const currency = toCurrencyCode(depot?.base_currency ?? "EUR");
+              const shifted = effectiveDate !== payment.pay_date;
               return (
                 <TableRow key={payment.id}>
                   <TableCell>
                     <Link to={`/eingaenge/${payment.id}`} className="hover:underline">
-                      {formatDate(payment.pay_date)}
+                      {formatDate(effectiveDate)}
                     </Link>
+                    {shifted && (
+                      <span
+                        className="block text-xs text-muted-foreground"
+                        title="Tatsächliches Zahlungsdatum"
+                      >
+                        tatsächlich {formatDate(payment.pay_date)}
+                      </span>
+                    )}
                   </TableCell>
                   <TableCell className="font-medium">
                     {security?.name ?? "—"}

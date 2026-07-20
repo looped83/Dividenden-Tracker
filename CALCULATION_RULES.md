@@ -216,3 +216,42 @@ Differenz stammt aus `Money.subtract` (exakt, R-3).
   Jahren dürfen zahlungsfreie Monate 0 € sein.
 - **Historische Gesamtsumme (§5.3/§12):** immer über die gesamte aktive Historie, unabhängig von
   der Jahresauswahl; als historischer Gesamtwert gekennzeichnet.
+
+---
+
+## 10. Effektiver Ausschüttungsmonat (Ausschüttungsplan je Unternehmen)
+
+Hintergrund: Dividenden treffen manchmal später ein als geplant (z. B. eine für März
+erwartete Quartalsdividende landet am 2. April). Damit die Auswertungen dem geplanten Rhythmus
+folgen, kann je Unternehmen ein **Ausschüttungsplan** hinterlegt werden: die Menge der geplanten
+Zahlungsmonate (`securities.payout_months`, Werte 1..12). Aus diesem Plan und dem echten
+Zahlungsdatum wird ein **effektives Datum** berechnet, das die Datumsdimension **aller**
+Auswertungen bildet.
+
+### 10.1 Zuordnungsregel (implementiert in `lib/statistics/effectiveMonth.ts`)
+
+- **Ohne Plan** (`payout_months` leer): das echte `pay_date` bleibt maßgeblich.
+- **Mit Plan:** die Zahlung wird dem **nächstliegenden** geplanten Monat zugeordnet — gemessen
+  als absoluter Monatsabstand, geprüft über die geplanten Monate der Jahre `J−1`, `J`, `J+1`
+  (des tatsächlichen Jahres `J`). Die Zuordnung **darf das Jahr verschieben**: eine
+  Anfang-Januar-Zahlung für eine Dezember-Ausschüttung zählt im Dezember des Vorjahres; eine
+  Ende-Dezember-Zahlung für eine Januar-Ausschüttung im Januar des Folgejahres.
+- **Gleichstand:** der **frühere** Monat gewinnt (Dividenden treffen eher später als früher ein).
+- Der Tag des effektiven Datums ist der echte Zahltag, begrenzt auf die Länge des Zielmonats
+  (z. B. 31.03. → geplanter Februar → 28./29.02.). Er dient nur der internen Datumsdarstellung,
+  nicht der Zuordnung.
+
+### 10.2 Geltungsbereich
+
+Der effektive Monat ersetzt das echte Datum in **allen** Auswertungen und in der Eingangsliste
+(Filter nach Jahr/Monat, Sortierung, angezeigter Monat). Das echte Zahlungsdatum bleibt
+gespeichert (`pay_date`) und wird dort, wo es abweicht, zusätzlich ausgewiesen
+(„tatsächlich TT.MM.JJJJ"). Die Berechnung ist rein clientseitig; es findet keine
+Gleitkomma-Geldarithmetik statt.
+
+### 10.3 Randfälle
+
+- Mehrere Zahlungen können auf denselben effektiven Monat fallen (Nachzahlung, Korrektur) —
+  sie summieren sich dort erwartungsgemäß.
+- Eine Ende-Dezember-Zahlung eines Januar-Plans kann in ein (aus heutiger Sicht) zukünftiges
+  Jahr rutschen; das ist Folge der bewusst gewählten Jahresverschiebung und kein Prognosewert.

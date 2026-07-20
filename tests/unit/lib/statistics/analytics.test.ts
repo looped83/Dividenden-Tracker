@@ -39,6 +39,7 @@ function p(
   return {
     id: options.id ?? `id-${String(seq)}`,
     payDate,
+    actualPayDate: payDate,
     netAmount: Money.fromString(net, EUR),
     grossAmount: Money.fromString(net, EUR),
     securityId: options.security ?? "sec-a",

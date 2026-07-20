@@ -525,3 +525,20 @@ verbotenen `Number(betrag)` kapselt `Money.toChartNumber()` (via `Decimal.toNumb
 diese rein visuelle Umwandlung. Angezeigte Beträge/Tooltips stammen weiterhin aus
 `formatMoney`, Aggregate aus `Money`/Decimal. Die Ausnahme ist in CALCULATION_RULES.md §8
 dokumentiert.
+
+### D-5A-5 — Effektiver Ausschüttungsmonat je Unternehmen
+
+Auf Wunsch werden Auswertungen nicht am exakten Zahlungsdatum ausgerichtet, sondern
+am geplanten Ausschüttungsmonat (Dividenden treffen mitunter später ein).
+Umsetzung (nicht-destruktiv):
+- Neues Feld `securities.payout_months` (smallint[] 1..12; leer = kein Plan). Das echte
+  `pay_date` der Zahlungen bleibt unverändert.
+- Reine Funktion `effectivePayDate` (`lib/statistics/effectiveMonth.ts`) ordnet jede Zahlung
+  dem **nächstliegenden** geplanten Monat zu, **inkl. Jahresverschiebung**; bei Gleichstand
+  gewinnt der frühere Monat (CALCULATION_RULES.md §10). Ohne Plan bleibt das echte Datum.
+- Der effektive Monat gilt **überall** (Dashboard-Kennzahlen/Diagramme, Eingangsliste:
+  Jahr-/Monatsfilter, Sortierung, angezeigter Monat). Das echte Datum wird bei Abweichung
+  zusätzlich ausgewiesen.
+- Da der Plan clientseitige Stammdaten sind, wird der effektive Monat **clientseitig**
+  berechnet; die Eingangsliste lädt dafür alle Zahlungen (paginiert) und filtert/sortiert lokal
+  statt per serverseitigem Datumsfilter.
