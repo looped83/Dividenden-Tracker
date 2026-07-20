@@ -347,3 +347,27 @@ Monats-Unterbereich mit gesetztem Jahresfilter. Der aktive Statistikfilter (Unte
 wird dabei mit dem konkreten Drill-Kriterium zusammengeführt, sodass die Zielliste dieselbe
 Teilmenge zeigt (Grundsatz 6). `source`/`payment_type` sind in der Zahlungsliste nicht filterbar
 und bleiben beim Drill-down unberücksichtigt.
+
+## Phase 6 – Validierung und Datenqualität
+
+**Zahlungsdatum.** Gültiges Kalenderdatum, ≥ 1970-01-01 und ≤ heute (lokal,
+ohne Zeitzonenverschiebung; entspricht dem DB-CHECK `pay_date <= current_date`).
+Zukünftige Zahlungsdaten werden abgelehnt.
+
+**Nettobetrag.** Decimal-sicher (`lib/money`, keine JS-Float-Arithmetik):
+gültige Zahl, echt > 0, höchstens 2 Nachkommastellen (`numeric(14,2)`), < 10^12.
+Abgelehnt: leer, nicht-numerisch, NaN, Infinity, Exponentialschreibweise, ≤ 0,
+> 2 Nachkommastellen, außerhalb des Bereichs.
+
+**Dublettenerkennung** (`findDuplicatePairs`, rein/ableitend). Gruppierung nach
+Unternehmen + Depot + tatsächlichem Zahlungsdatum (Nutzer implizit via RLS).
+Innerhalb einer Gruppe: identischer Betrag + Währung → *hohe Wahrscheinlichkeit*;
+abweichender Betrag → *mögliche Dublette* (legitime Tranchen bleiben erhalten,
+D-007). Stornierte Zahlungen und als „keine Dublette" markierte Paare
+(`duplicate_dismissals`) entfallen. Keine automatische Aktion.
+
+**Auffälligkeiten** (`detectAnomalies`). Nullbetrag, negativer Betrag,
+Zukunftsdatum, fehlende Zuordnung, importierte Zeile ohne Importreferenz,
+ungewöhnlich hoher Betrag. Letzterer ist **relativ**: > `UNUSUALLY_HIGH_FACTOR`
+(= 5) × Median der übrigen aktiven Zahlungen desselben Unternehmens, erst ab
+3 Vergleichszahlungen — keine starre absolute Schwelle, nur ein Hinweis.

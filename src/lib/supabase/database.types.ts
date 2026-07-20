@@ -456,6 +456,21 @@ export interface Database {
           },
         ];
       };
+      duplicate_dismissals: {
+        Row: {
+          id: string;
+          user_id: string;
+          pair_key: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string;
+          pair_key: string;
+        };
+        Update: never; // unveraenderlich: nur anlegen oder loeschen (Widerruf)
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {

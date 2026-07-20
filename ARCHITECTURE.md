@@ -336,3 +336,17 @@ Details fachlich in IMPORT_SPEC.md; architektonisch:
 | RLS-Lücke durch neue Tabelle | Migration-Checkliste: keine Tabelle ohne RLS + Policies + Tests (SECURITY_MODEL.md §4) |
 | iOS-PWA-Eigenheiten (Speicherräumung, Datei-Import) | Nur-Cache-Prinzip; Dateiimport über `<input type=file>` (Dateien-App), kein reines Drag-and-drop |
 | Supabase-Ausfall/Vendor-Abhängigkeit | Regelmäßige JSON-Vollbackups (Kernfunktion); Schema als portables SQL; kein Supabase-proprietäres Feature außer Auth/RLS |
+
+## Phase 6 – Cache-Invalidierung & Query-Struktur
+
+Alle Zahlungsabfragen liegen im Namespace `["payments"]` (Liste
+`["payments","list",includeArchived]`, Detail `["payments","detail",id]`,
+Dashboard `["payments","dashboard"]`, das die Statistik teilt). Jede
+datenverändernde Mutation (Anlegen, Bearbeiten, Storno, Reaktivierung,
+dauerhaftes Löschen, Massenaktion) ruft `invalidateAll` und invalidiert damit
+`["payments"]` **und** `["duplicate-dismissals"]` — Liste, Detail, Dashboard,
+Statistik und Datenqualitätsansicht aktualisieren gemeinsam. Nach einer Löschung
+zeigt die Detailroute einen kontrollierten Nicht-gefunden-Zustand (kein
+veralteter Cache). Suche/Filter/Sortierung der Liste arbeiten clientseitig auf
+der einmal geladenen, decimal-sicheren Historie (D-6-6), konsistent mit der
+Lade-/Aggregationsstrategie aus Phase 5A.

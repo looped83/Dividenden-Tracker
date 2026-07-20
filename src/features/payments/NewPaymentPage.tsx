@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { toGermanDecimalString } from "@/lib/money";
 import { useDepots } from "@/features/depots/hooks";
@@ -16,13 +17,17 @@ import {
   useUpdatePayment,
 } from "@/features/payments/hooks";
 import { paymentFormSchema, type PaymentFormValues } from "@/features/payments/schemas";
-import type { DividendPaymentInsert } from "@/lib/supabase/repositories/payments";
+import {
+  PaymentConflictError,
+  type DividendPaymentInsert,
+} from "@/lib/supabase/repositories/payments";
 
 const DEFAULT_VALUES: PaymentFormValues = {
   securityId: "",
   depotId: "",
   payDate: new Date().toISOString().slice(0, 10),
   netAmount: "",
+  note: "",
 };
 
 export function NewPaymentPage() {
@@ -30,17 +35,20 @@ export function NewPaymentPage() {
   const isEditMode = Boolean(id);
   const navigate = useNavigate();
   const location = useLocation();
-  // Herkunfts-URL (inkl. Listenfilter), an die nach Speichern/Abbrechen
-  // zurueckgekehrt wird — so bleibt die Vorauswahl der Liste erhalten.
   const backTo = (location.state as { from?: string } | null)?.from ?? "/eingaenge";
 
   const { data: securities = [] } = useSecurities();
   const { data: depots = [] } = useDepots();
-  const { data: existingPayment, isLoading: isLoadingPayment } = usePayment(id);
+  const {
+    data: existingPayment,
+    isLoading: isLoadingPayment,
+    refetch: refetchPayment,
+  } = usePayment(id);
   const createPayment = useCreatePayment();
   const updatePayment = useUpdatePayment();
 
   const [submitError, setSubmitError] = React.useState<string | null>(null);
+  const [conflict, setConflict] = React.useState(false);
 
   const {
     register,
@@ -54,24 +62,25 @@ export function NewPaymentPage() {
     defaultValues: DEFAULT_VALUES,
   });
 
+  // Formular nur einmalig aus dem geladenen Eingang vorbelegen — ein späteres
+  // Neuladen (z. B. nach einem Konflikt, §9) darf die Nutzereingaben nicht
+  // überschreiben.
+  const didInit = React.useRef(false);
   React.useEffect(() => {
-    if (!existingPayment) return;
+    if (!existingPayment || didInit.current) return;
+    didInit.current = true;
     reset({
       securityId: existingPayment.security_id,
       depotId: existingPayment.depot_id,
       payDate: existingPayment.pay_date,
       netAmount: toGermanDecimalString(existingPayment.net_amount),
+      note: existingPayment.note ?? "",
     });
   }, [existingPayment, reset]);
 
   const activeSecurities = securities.filter((security) => !security.archived_at);
   const activeDepots = depots.filter((depot) => !depot.archived_at);
 
-  /**
-   * Vorbelegung nur als Vorschlag (DATA_MODEL.md §1, DECISIONS.md D-006):
-   * ueberschreibt nie ein bereits gewaehltes Depot und greift nur beim
-   * Neuanlegen, nicht beim Bearbeiten eines bestehenden Eingangs.
-   */
   const handleSecurityChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     if (isEditMode || getValues("depotId")) return;
     const security = securities.find((s) => s.id === event.target.value);
@@ -89,11 +98,10 @@ export function NewPaymentPage() {
       return;
     }
 
-    // Fachlich bearbeitbare Felder. `source`, `import_id` und die weiteren
-    // Herkunftsfelder sind unveraenderlich (Trigger protect_payment_immutables,
-    // 0009) und duerfen beim Bearbeiten nicht mitgesendet werden — sonst
-    // scheitert das Speichern eines importierten Eingangs. Sie werden daher nur
-    // beim Neuanlegen ergaenzt (source = "manual").
+    // Nur fachlich bearbeitbare Felder. Herkunftsfelder (source, import_id …)
+    // sind unveränderlich (Trigger protect_payment_immutables, 0009) und werden
+    // beim Bearbeiten nicht mitgesendet — so bleibt die Importherkunft erhalten
+    // und ein importierter Eingang wird nicht in einen manuellen umgewandelt.
     const businessFields = {
       security_id: values.securityId,
       depot_id: values.depotId,
@@ -112,12 +120,18 @@ export function NewPaymentPage() {
       fx_rate: null,
       quantity: null,
       amount_per_share: null,
-      note: null,
+      note: values.note?.trim() ? values.note.trim() : null,
     };
 
     try {
       if (isEditMode && id) {
-        await updatePayment.mutateAsync({ id, input: businessFields });
+        // Optimistic Concurrency (§9, D-6-3): der zuletzt geladene updated_at-Wert.
+        const expected = existingPayment?.updated_at;
+        await updatePayment.mutateAsync(
+          expected
+            ? { id, input: businessFields, expectedUpdatedAt: expected }
+            : { id, input: businessFields },
+        );
       } else {
         const insertPayload: DividendPaymentInsert = {
           ...businessFields,
@@ -127,6 +141,14 @@ export function NewPaymentPage() {
       }
       void navigate(backTo);
     } catch (error) {
+      if (error instanceof PaymentConflictError) {
+        // Konflikt sichtbar machen und aktuelle Daten neu laden; der nächste
+        // Speichervorgang nutzt dann den aktualisierten updated_at-Wert.
+        // Nutzereingaben bleiben im Formular erhalten (§9).
+        setConflict(true);
+        await refetchPayment();
+        return;
+      }
       setSubmitError(getErrorMessage(error, "Speichern fehlgeschlagen."));
     }
   });
@@ -140,8 +162,11 @@ export function NewPaymentPage() {
       <div className="space-y-4">
         <h1 className="text-xl font-semibold tracking-tight">Dividende bearbeiten</h1>
         <p className="text-sm text-muted-foreground">
-          Dieser Eingang ist archiviert und kann nur reaktiviert, nicht bearbeitet werden.
+          Dieser Eingang ist storniert und kann nur reaktiviert, nicht bearbeitet werden.
         </p>
+        <Button variant="ghost" onClick={() => void navigate(backTo)}>
+          Zurück
+        </Button>
       </div>
     );
   }
@@ -151,6 +176,14 @@ export function NewPaymentPage() {
       <h1 className="text-xl font-semibold tracking-tight">
         {isEditMode ? "Dividende bearbeiten" : "Neue Dividende"}
       </h1>
+
+      {conflict && (
+        <p role="alert" className="rounded-md bg-warning/10 p-3 text-sm text-warning-foreground">
+          Dieser Dividendeneingang wurde zwischenzeitlich an anderer Stelle geändert. Die
+          aktuellen Werte wurden neu geladen. Bitte prüfe deine Eingaben und speichere
+          erneut, um sie zu übernehmen.
+        </p>
+      )}
 
       <form onSubmit={(event) => void onSubmit(event)} className="space-y-5" noValidate>
         <div className="space-y-1.5">
@@ -206,6 +239,12 @@ export function NewPaymentPage() {
           {errors.netAmount && (
             <p className="text-sm text-negative">{errors.netAmount.message}</p>
           )}
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="payment-note">Notiz (optional)</Label>
+          <Textarea id="payment-note" rows={3} {...register("note")} />
+          {errors.note && <p className="text-sm text-negative">{errors.note.message}</p>}
         </div>
 
         {submitError && (

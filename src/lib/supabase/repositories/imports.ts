@@ -21,6 +21,37 @@ export async function fetchSecurityAliases(): Promise<SecurityAlias[]> {
   }));
 }
 
+export type ImportRow = Database["public"]["Tables"]["import_rows"]["Row"];
+
+/**
+ * Herkunftszeile (Provenance) eines importierten Eingangs (§6): liefert die
+ * ursprünglichen Roh- und normalisierten Importwerte, damit die Detailansicht
+ * importierten Ursprungswert und aktuellen gespeicherten Wert unterscheiden
+ * kann. Nach einer Einzellöschung bleibt die Zeile bestehen, verweist aber mit
+ * `payment_id = null` (0019) — daher Abfrage über `payment_id`.
+ */
+export async function fetchImportRowForPayment(
+  paymentId: string,
+): Promise<ImportRow | null> {
+  const { data, error } = await supabase
+    .from("import_rows")
+    .select("*")
+    .eq("payment_id", paymentId)
+    .limit(1);
+  if (error) throw error;
+  return data[0] ?? null;
+}
+
+export async function fetchImportById(importId: string): Promise<Import | null> {
+  const { data, error } = await supabase
+    .from("imports")
+    .select("*")
+    .eq("id", importId)
+    .limit(1);
+  if (error) throw error;
+  return data[0] ?? null;
+}
+
 export async function fetchImports(): Promise<Import[]> {
   const { data, error } = await supabase
     .from("imports")

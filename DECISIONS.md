@@ -624,3 +624,103 @@ Zwei Fehler verhinderten das Ändern und Löschen **importierter** Eingänge
   auf `ON DELETE SET NULL`. Die Herkunftszeile bleibt als Provenance-Historie
   erhalten, verliert aber ihren Verweis. Zusätzlich übersetzt `deletePayment`
   Fremdschlüsselfehler (23503) defensiv in eine verständliche Meldung.
+
+## Phase 6 — Dividendeneingänge verwalten und Datenqualität sichern
+
+### D-6-1 — Dauerhaftes Löschen aktiver **und** stornierter Eingänge (hebt die „erst stornieren"-Schranke aus D-034 auf)
+
+**Kontext:** D-034 ließ Hard Delete ausschließlich für bereits stornierte
+(`archived_at is not null`) eigene Zeilen zu; der verpflichtende Stornoschritt
+sollte eine versehentliche Löschung aus dem aktiven Zustand verhindern. Phase 6
+verlangt ausdrücklich, dass sowohl **aktive** als auch **stornierte** Eingänge
+dauerhaft gelöscht werden können (Definition of Done).
+**Entscheidung:** Migration 0020 ersetzt die Policy
+`dividend_payments_delete_archived_own` durch `dividend_payments_delete_own`
+(`user_id = auth.uid()`, ohne Statusbedingung). Die Rolle des Schutzes vor
+versehentlicher Löschung übernimmt jetzt die verpflichtende, eindeutige
+Löschbestätigung in der Oberfläche (§13.1/§13.2): eigene Überschrift
+„Dividendeneingang dauerhaft löschen?", Anzeige von Unternehmen, Zahlungsdatum,
+Depot, Betrag und Datenquelle, Bestätigungsschaltfläche „Dauerhaft löschen" statt
+eines generischen „OK". Stornieren und Löschen bleiben getrennte Aktionen.
+**Konsequenz:** Der frühere „erst stornieren"-Zwang entfällt bewusst und
+dokumentiert. Die Löschung bleibt auf eigene Zeilen beschränkt (RLS) und wird
+über den unveränderten AFTER-DELETE-Trigger atomar im Audit Log protokolliert
+(`action = 'delete'`, Grundsatz 2). Eine gelöschte Zeile bleibt nicht
+wiederherstellbar (nur der Audit-Eintrag bleibt).
+
+### D-6-2 — „Stornieren"/„Reaktivieren" als fachliche Bezeichnung des vorhandenen `archived_at`-Mechanismus
+
+**Kontext:** Das Datenmodell modelliert den reversiblen Ausschluss aus den
+Standardauswertungen über `archived_at`/`archive_reason` (0009, `archive_payment`
+-RPC). Die Oberfläche bezeichnete dies bisher als „Archivieren". Phase 6 verlangt
+eine klare, nicht synonyme Trennung von **Stornieren** (reversibel, Datensatz
+bleibt) und **dauerhaftem Löschen**.
+**Entscheidung:** Kein Schema- oder RPC-Umbau. Die Spalten `archived_at`/
+`archive_reason` und die Audit-Aktionen `archive`/`unarchive` bleiben unverändert;
+ausschließlich die **Beschriftung** in der Oberfläche und im Änderungsverlauf
+wird auf „Storniert"/„Reaktiviert" bzw. „Stornogrund" umgestellt. Der
+Stornodialog nennt Unternehmen, Zahlungsdatum, Betrag und die Wirkung auf
+Dashboard/Statistik und weist ausdrücklich darauf hin, dass der Eingang erhalten
+bleibt und reaktivierbar ist.
+**Konsequenz:** Bestehende Daten, Trigger, Analytics-Ausschlusslogik
+(`archived_at is null`) und Tests bleiben gültig; nur die Terminologie wird
+konsistent.
+
+### D-6-3 — Optimistic Concurrency über `updated_at`
+
+**Kontext:** §9 verlangt Schutz vor stillem Überschreiben paralleler Änderungen.
+**Entscheidung:** Beim Bearbeiten wird der beim Öffnen geladene `updated_at`-Wert
+mitgeführt und im UPDATE als zusätzliche Bedingung (`.eq("updated_at", …)`)
+verwendet. Trifft das UPDATE keine Zeile (die Zahlung wurde zwischenzeitlich
+geändert — der Trigger `set_updated_at` hätte `updated_at` fortgeschrieben),
+liefert PostgREST 0 Zeilen; die Anwendung erkennt den Konflikt, lädt die aktuellen
+Daten neu und zeigt eine verständliche Konfliktmeldung, statt still zu
+überschreiben. Kein zusätzliches Versionsfeld nötig.
+**Konsequenz:** Nutzereingaben bleiben im Formular erhalten; der Nutzer entscheidet
+nach dem Neuladen bewusst über eine erneute Speicherung.
+
+### D-6-4 — Persistente „keine Dublette"-Entscheidung als schmale Tabelle
+
+**Kontext:** §16 verlangt, dass eine bewusst verworfene Dublettenwarnung nicht
+dauerhaft erneut erscheint, ohne automatische Zusammenführung/Löschung.
+**Entscheidung:** Kleinste tragfähige Lösung: Tabelle `duplicate_dismissals`
+(`user_id`, `pair_key`) mit RLS (select/insert/delete own). `pair_key` ist der
+stabile, lexikografisch sortierte Schlüssel der beiden Zahlungs-IDs. Die
+Dublettenansicht blendet als „keine Dublette" markierte Paare aus; die
+Entscheidung ist widerrufbar (DELETE).
+**Konsequenz:** Keine Änderung an `dividend_payments`; die Dublettenerkennung
+selbst bleibt eine reine, jederzeit neu berechenbare Ableitung (kein
+gespeicherter Status am Eingang).
+
+### D-6-5 — Erneuter Import nach Einzellöschung: Herkunftsidentität bleibt maßgeblich
+
+**Kontext:** §13.4 fragt nach dem Verhalten, wenn ein importierter Eingang
+einzeln gelöscht und dieselbe Datei erneut importiert wird.
+**Entscheidung:** Es gilt die bestehende Importlogik unverändert (D-007, D-009).
+Die Import-Dublettenerkennung arbeitet über den `business_fingerprint` (fachliche
+Identität), **nicht** über `(import_id, source_row_number)`. Nach einer
+Einzellöschung existiert der fachliche Fingerprint nicht mehr, daher wird die
+Zeile bei einem erneuten Import wieder als importierbar angeboten (und, falls
+noch andere gleichartige Zahlungen existieren, gemäß bestehender Logik als
+mögliche Dublette markiert). Der übergeordnete Importlauf und die übrigen
+Zeilen desselben Imports bleiben unberührt; die Herkunftszeile der gelöschten
+Zahlung bleibt als Provenance erhalten (`import_rows.payment_id = null`, D-5B-7).
+**Konsequenz:** Kein stiller „bereits verarbeitet"-Ausschluss; der Nutzer
+entscheidet beim erneuten Import bewusst — konsistent mit „Nutzer entscheidet
+unsichere Fälle" (D-007).
+
+### D-6-6 — Suche, Filter und Sortierung der Verwaltungsliste clientseitig über die einmal geladene Historie
+
+**Kontext:** §3 warnt vor rein clientseitiger Suche, die „unnötig viele
+Datensätze" lädt; die bestehende Architektur (D-5A-1) lädt die aktive Historie
+jedoch bereits **einmalig** vollständig und aggregiert clientseitig.
+**Entscheidung:** Die Verwaltungsliste bleibt bei diesem etablierten Muster
+(`fetchAllPayments`, seitenweise über das PostgREST-1000er-Limit) und wendet
+Suche (Unternehmensname/Ticker/Notiz), kombinierbare Filter (Zeitraum/Jahr/Monat,
+Unternehmen, Depot, Status, Datenquelle) und Sortierung auf den bereits geladenen,
+decimal-sicheren Satz an. Keine zweite, abweichende Ladelogik. Serverseitig
+bleibt der Zugriff durch RLS auf eigene Daten begrenzt (keine fremden Daten im
+Client). Status- und Datenquellenfilter sowie die Sortierung werden als
+URL-Parameter geführt und bleiben nach Reload/Zurück/Vorwärts erhalten.
+**Konsequenz:** Kein N+1, konsistent mit Dashboard/Statistik; bei sehr großen
+Historien greift zusätzlich die vorhandene Seitensteuerung der Tabelle.

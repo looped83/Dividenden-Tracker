@@ -11,6 +11,7 @@ import { DashboardPage } from "@/features/dashboard/DashboardPage";
 import { NewPaymentPage } from "@/features/payments/NewPaymentPage";
 import { PaymentsPage } from "@/features/payments/PaymentsPage";
 import { PaymentDetailPage } from "@/features/payments/PaymentDetailPage";
+import { DataQualityPage } from "@/features/payments/DataQualityPage";
 import { SecuritiesPage } from "@/features/securities/SecuritiesPage";
 import { DepotsPage } from "@/features/depots/DepotsPage";
 import { StatisticsPage } from "@/features/statistics/StatisticsPage";
@@ -47,6 +48,7 @@ export const router = createHashRouter([
       { index: true, element: <DashboardPage /> },
       { path: "eingaenge", element: <PaymentsPage /> },
       { path: "eingaenge/neu", element: <NewPaymentPage /> },
+      { path: "eingaenge/datenqualitaet", element: <DataQualityPage /> },
       { path: "eingaenge/:id", element: <PaymentDetailPage /> },
       { path: "eingaenge/:id/bearbeiten", element: <NewPaymentPage /> },
       { path: "unternehmen", element: <SecuritiesPage /> },

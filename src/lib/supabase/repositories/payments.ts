@@ -161,17 +161,43 @@ export async function createPayment(
   return normalizeAmountFields(data);
 }
 
+/**
+ * Signalisiert einen Optimistic-Concurrency-Konflikt (DECISIONS.md D-6-3): die
+ * Zahlung wurde zwischen Öffnen und Speichern von anderer Stelle geändert.
+ */
+export class PaymentConflictError extends Error {
+  constructor() {
+    super(
+      "Der Dividendeneingang wurde zwischenzeitlich geändert. Die aktuellen Daten wurden neu geladen.",
+    );
+    this.name = "PaymentConflictError";
+  }
+}
+
+/**
+ * Aktualisiert eine Zahlung. Wird `expectedUpdatedAt` gesetzt, greift Optimistic
+ * Concurrency (§9, D-6-3): das UPDATE trifft nur, wenn `updated_at` unverändert
+ * ist. Andernfalls (0 Zeilen, PostgREST liefert PGRST116 bei `.single()`) wird
+ * ein `PaymentConflictError` geworfen, statt still zu überschreiben.
+ */
 export async function updatePayment(
   id: string,
   input: DividendPaymentUpdate,
+  expectedUpdatedAt?: string,
 ): Promise<DividendPayment> {
-  const { data, error } = await supabase
-    .from("dividend_payments")
-    .update(input)
-    .eq("id", id)
-    .select()
-    .single();
-  if (error) throw error;
+  let query = supabase.from("dividend_payments").update(input).eq("id", id);
+  if (expectedUpdatedAt) {
+    query = query.eq("updated_at", expectedUpdatedAt);
+  }
+  const { data, error } = await query.select().single();
+  if (error) {
+    // PGRST116: „JSON object requested, multiple (or no) rows returned" —
+    // hier: keine Zeile, weil `updated_at` nicht mehr passt → Konflikt.
+    if (expectedUpdatedAt && error.code === "PGRST116") {
+      throw new PaymentConflictError();
+    }
+    throw error;
+  }
   return normalizeAmountFields(data);
 }
 
@@ -192,10 +218,11 @@ export async function unarchivePayment(id: string): Promise<DividendPayment> {
 }
 
 /**
- * Endgueltiges Loeschen (Grundsatz 3, PRODUCT_SPEC.md §3): die RLS-Policy
- * `dividend_payments_delete_archived_own` (0013) laesst dies ausschliesslich
- * fuer bereits archivierte eigene Zeilen zu; ein Versuch auf eine nicht
- * archivierte oder fremde Zeile betrifft 0 Zeilen statt eines Fehlers.
+ * Endgueltiges Loeschen (§13, DECISIONS.md D-6-1): die RLS-Policy
+ * `dividend_payments_delete_own` (0020) laesst dies fuer eigene Zeilen zu —
+ * aktiv **oder** storniert; ein Versuch auf eine fremde Zeile betrifft 0 Zeilen
+ * statt eines Fehlers (kein Leak). Die Loeschung wird ueber den AFTER-DELETE-
+ * Trigger atomar im Audit Log protokolliert (0013).
  */
 export async function deletePayment(id: string): Promise<void> {
   const { error, count } = await supabase
@@ -209,14 +236,14 @@ export async function deletePayment(id: string): Promise<void> {
     // entkoppelt (ON DELETE SET NULL); diese Meldung ist eine Absicherung.
     if (error.code === "23503") {
       throw new Error(
-        "Eingang kann nicht gelöscht werden, weil noch andere Datensätze darauf verweisen.",
+        "Der Dividendeneingang konnte nicht gelöscht werden, weil noch andere Datensätze darauf verweisen. Die Daten wurden nicht verändert.",
       );
     }
     throw error;
   }
   if (count === 0) {
     throw new Error(
-      "Eingang konnte nicht geloescht werden (nicht gefunden, nicht archiviert oder keine Berechtigung).",
+      "Der Dividendeneingang konnte nicht gelöscht werden (nicht gefunden oder keine Berechtigung). Die Daten wurden nicht verändert.",
     );
   }
 }

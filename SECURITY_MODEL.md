@@ -221,3 +221,22 @@ Mit **zwei Testnutzern A und B** gegen lokale Supabase-Instanz (Details TEST_STR
 - Integrationstest `tests/integration/dashboard.test.ts` verifiziert die Isolation
   (Nutzer B sieht keine Dashboard-Daten von A) sowie Storno-Ausschluss und
   Archiv-Unternehmen-Einbeziehung auf SQL-Ebene.
+
+## Phase 6 – Ergänzungen
+
+**`dividend_payments` DELETE (0020).** Policy `dividend_payments_delete_own`
+(`user_id = auth.uid()`) ersetzt die frühere „nur stornierte"-Bedingung. Ein
+Nutzer kann ausschließlich eigene Eingänge löschen (aktiv oder storniert);
+fremde IDs betreffen 0 Zeilen (kein Fehler-Leak). Die Absicherung ist
+vollständig serverseitig (RLS) — clientseitige Filter sind keine
+Sicherheitsmaßnahme. Die Löschung wird über den security-definer-Audit-Trigger
+atomar protokolliert; UI-Bestätigung ersetzt den früheren „erst stornieren"-
+Zwang als Schutz vor versehentlicher Löschung.
+
+**`duplicate_dismissals` (0020).** RLS: select/insert/delete nur eigene Zeilen,
+kein UPDATE, kein anon-Zugriff (`revoke all`, dann minimale Grants). Der
+`enforce_user_id`-Trigger verhindert das Unterschieben einer fremden `user_id`.
+
+**Massenaktionen** laufen als einzelne, jeweils RLS-geprüfte Schreibzugriffe je
+Datensatz (kein globaler Bypass); fremde Datensätze/Unternehmen/Depots sind damit
+nicht erreichbar.

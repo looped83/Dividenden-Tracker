@@ -243,3 +243,39 @@ Datenexport-Verknüpfung, App-Version und Schemaversion.
 | UX_AND_DESIGN_SYSTEM.md | Designsystem, responsive Layouts |
 | IMPLEMENTATION_PLAN.md | Phasenplan mit Abnahmekriterien |
 | DECISIONS.md | Getroffene Annahmen und Architekturentscheidungen |
+
+## Phase 6 – Dividendeneingänge verwalten und Datenqualität sichern
+
+Die Verwaltungsansicht (`/eingaenge`) erlaubt Suchen, kombinierbare Filter
+(Zeitraum/Jahr/Monat, Unternehmen, Depot, Status, Datenquelle), Sortierung und
+Paginierung; Filter/Suche/Sortierung sind URL-Zustand und bleiben nach Reload
+sowie über Browser-Zurück/-Vorwärts erhalten.
+
+**Statusmodell.** Ein Eingang ist *aktiv* oder *storniert*. Stornieren und
+dauerhaftes Löschen sind zwei klar getrennte Aktionen und werden nie synonym
+verwendet:
+
+- **Stornieren** (technisch `archived_at`/`archive_reason`): Der Datensatz bleibt
+  erhalten, wird aber aus den Standardauswertungen (Dashboard/Statistik)
+  ausgeschlossen und kann später **reaktiviert** werden.
+- **Dauerhaft löschen**: Der Datensatz wird vollständig entfernt, aus allen
+  Aggregationen genommen und kann innerhalb der Anwendung nicht wiederhergestellt
+  werden. Löschbar sind eigene aktive und stornierte Eingänge, manuelle wie
+  importierte (D-6-1). Jede Löschung erfordert eine eindeutige Bestätigung
+  („Dividendeneingang dauerhaft löschen?" mit Unternehmen, Datum, Depot, Betrag,
+  Datenquelle) und wird atomar im Audit Log protokolliert.
+
+**Manuelles Anlegen/Bearbeiten.** Pflichtfelder: Zahlungsdatum, Unternehmen,
+Depot, Nettobetrag; optional Notiz. Zukünftige Zahlungsdaten werden abgelehnt.
+Bearbeitung importierter Eingänge erhält die Importherkunft (Herkunftsfelder
+bleiben unveränderlich). Parallele Änderungen werden über Optimistic Concurrency
+erkannt.
+
+**Massenaktionen.** Depot/Unternehmen zuweisen, Stornieren, Reaktivieren,
+dauerhaft Löschen — mit sichtbarer Auswahl, klarer Unterscheidung
+„Seite/alle gefilterten", Bestätigung und ehrlicher Ergebniszusammenfassung.
+
+**Datenqualität** (`/eingaenge/datenqualitaet`). Mögliche Dubletten (gewichtet:
+hohe Wahrscheinlichkeit vs. mögliche Dublette) und regelbasierte Auffälligkeiten
+werden nur *angezeigt* — nie automatisch storniert, gelöscht oder zusammengeführt.
+Legitime Mehrfachzahlungen mit abweichendem Betrag bleiben erhalten.

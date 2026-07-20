@@ -338,3 +338,14 @@ Umgesetzt:
 Bewusst **nicht** Teil von 5B (Grundsatz 8): Dividendenkalender, Prognosen, erwartete Dividenden,
 Portfolio-Performance/Depotentwicklung, Kurse, Total Return, Kauf-/Verkaufsdaten,
 Renditeberechnung, AI-Empfehlungen.
+
+## Phase 6 – Status: umgesetzt
+
+Verwaltungsliste (Suche/Filter/Sortierung/Pagination als URL-Zustand),
+Detailansicht mit Importherkunft, manuelles Anlegen/Bearbeiten mit Notiz und
+Optimistic Concurrency, Stornieren/Reaktivieren, dauerhaftes Löschen (aktiv und
+storniert, D-6-1) mit atomarem Audit, Massenaktionen, Datenqualitätsansicht
+(Dubletten + Auffälligkeiten, ohne Automatik). Migration 0020 (Löschpolicy +
+`duplicate_dismissals`). Unit-, Integrations- und RLS-Tests ergänzt; Docs
+aktualisiert. Bewusst nicht umgesetzt: alle unter „Nicht Bestandteil dieser
+Phase" genannten Funktionen.

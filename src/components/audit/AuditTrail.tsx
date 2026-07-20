@@ -6,7 +6,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 const ACTION_LABELS: Record<AuditLogRow["action"], string> = {
   insert: "Angelegt",
   update: "Geändert",
-  archive: "Archiviert",
+  archive: "Storniert",
   unarchive: "Reaktiviert",
   delete: "Endgültig gelöscht",
   import_commit: "Import übernommen",
