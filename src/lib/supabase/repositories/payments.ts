@@ -86,14 +86,28 @@ export type DashboardPaymentRow = Pick<
 const DASHBOARD_COLUMNS =
   "id, pay_date, net_amount, gross_amount, security_id, depot_id, payment_type, source, created_at";
 
+// PostgREST begrenzt eine Antwort auf max. `db-max-rows` Zeilen (Supabase-Default
+// 1000). Die gesamte aktive Historie wird daher seitenweise geladen.
+const DASHBOARD_PAGE_SIZE = 1000;
+
 export async function fetchDashboardPayments(): Promise<DashboardPaymentRow[]> {
-  const { data, error } = await supabase
-    .from("dividend_payments")
-    .select(DASHBOARD_COLUMNS)
-    .is("archived_at", null)
-    .order("pay_date", { ascending: false });
-  if (error) throw error;
-  return data;
+  const all: DashboardPaymentRow[] = [];
+  for (let from = 0; ; from += DASHBOARD_PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from("dividend_payments")
+      .select(DASHBOARD_COLUMNS)
+      .is("archived_at", null)
+      // Stabile, eindeutige Sortierung ueber Seitengrenzen hinweg: `pay_date`
+      // ist nicht eindeutig, daher `id` als Tiebreaker (keine doppelten/fehlenden
+      // Zeilen bei der Paginierung).
+      .order("pay_date", { ascending: false })
+      .order("id", { ascending: true })
+      .range(from, from + DASHBOARD_PAGE_SIZE - 1);
+    if (error) throw error;
+    all.push(...data);
+    if (data.length < DASHBOARD_PAGE_SIZE) break;
+  }
+  return all;
 }
 
 export async function fetchPaymentById(id: string): Promise<DividendPayment> {
