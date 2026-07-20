@@ -85,11 +85,16 @@ export function NewPaymentPage() {
       return;
     }
 
-    const payload: DividendPaymentInsert = {
+    // Fachlich bearbeitbare Felder. `source`, `import_id` und die weiteren
+    // Herkunftsfelder sind unveraenderlich (Trigger protect_payment_immutables,
+    // 0009) und duerfen beim Bearbeiten nicht mitgesendet werden — sonst
+    // scheitert das Speichern eines importierten Eingangs. Sie werden daher nur
+    // beim Neuanlegen ergaenzt (source = "manual").
+    const businessFields = {
       security_id: values.securityId,
       depot_id: values.depotId,
       pay_date: values.payDate,
-      payment_type: "regular",
+      payment_type: "regular" as const,
       gross_amount: values.netAmount,
       net_amount: values.netAmount,
       withholding_tax: "0",
@@ -103,15 +108,18 @@ export function NewPaymentPage() {
       fx_rate: null,
       quantity: null,
       amount_per_share: null,
-      source: "manual",
       note: null,
     };
 
     try {
       if (isEditMode && id) {
-        await updatePayment.mutateAsync({ id, input: payload });
+        await updatePayment.mutateAsync({ id, input: businessFields });
       } else {
-        await createPayment.mutateAsync(payload);
+        const insertPayload: DividendPaymentInsert = {
+          ...businessFields,
+          source: "manual",
+        };
+        await createPayment.mutateAsync(insertPayload);
       }
       void navigate("/eingaenge");
     } catch (error) {
