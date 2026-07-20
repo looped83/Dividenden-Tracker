@@ -146,6 +146,28 @@ export function PaymentsPage() {
       </div>
 
       <div className="flex flex-wrap items-end gap-3">
+        <div className="min-w-40 space-y-1.5">
+          <label
+            htmlFor="payments-security-filter"
+            className="text-sm text-muted-foreground"
+          >
+            Unternehmen
+          </label>
+          <Select
+            id="payments-security-filter"
+            value={securityId}
+            onChange={(event) => {
+              updateParam("security", event.target.value);
+            }}
+          >
+            <option value="">Alle Unternehmen</option>
+            {securities.map((security) => (
+              <option key={security.id} value={security.id}>
+                {security.name}
+              </option>
+            ))}
+          </Select>
+        </div>
         <div className="min-w-32 space-y-1.5">
           <label htmlFor="payments-year-filter" className="text-sm text-muted-foreground">
             Jahr
@@ -206,28 +228,6 @@ export function PaymentsPage() {
             {depots.map((depot) => (
               <option key={depot.id} value={depot.id}>
                 {depot.name}
-              </option>
-            ))}
-          </Select>
-        </div>
-        <div className="min-w-40 space-y-1.5">
-          <label
-            htmlFor="payments-security-filter"
-            className="text-sm text-muted-foreground"
-          >
-            Unternehmen
-          </label>
-          <Select
-            id="payments-security-filter"
-            value={securityId}
-            onChange={(event) => {
-              updateParam("security", event.target.value);
-            }}
-          >
-            <option value="">Alle Unternehmen</option>
-            {securities.map((security) => (
-              <option key={security.id} value={security.id}>
-                {security.name}
               </option>
             ))}
           </Select>
