@@ -23,7 +23,7 @@ export interface NavItem {
  */
 export const PRIMARY_NAV_ITEMS: readonly NavItem[] = [
   { to: "/", label: "Übersicht", icon: LayoutDashboard },
-  { to: "/eingaenge", label: "Dividendeneingänge", icon: Wallet },
+  { to: "/eingaenge", label: "Dividenden", icon: Wallet },
   { to: "/unternehmen", label: "Unternehmen", icon: Building2 },
   { to: "/depots", label: "Depots", icon: Landmark },
   { to: "/statistiken", label: "Statistiken", icon: BarChart3 },
