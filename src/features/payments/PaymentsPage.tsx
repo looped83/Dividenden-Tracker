@@ -1,6 +1,16 @@
 import * as React from "react";
 import { Link, useSearchParams } from "react-router";
-import { Ban, Pencil, Plus, RotateCcw, Search, Trash2, Wallet, X } from "lucide-react";
+import {
+  Ban,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Search,
+  ShieldCheck,
+  Trash2,
+  Wallet,
+  X,
+} from "lucide-react";
 import {
   effectivePayDate,
   monthNameDe,
@@ -317,13 +327,20 @@ export function PaymentsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-semibold tracking-tight">Dividenden</h1>
-        <Button asChild>
-          <Link to="/eingaenge/neu" state={{ from: listUrl }}>
-            <Plus /> Neue Dividende
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" asChild>
+            <Link to="/eingaenge/datenqualitaet">
+              <ShieldCheck /> Datenqualität
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link to="/eingaenge/neu" state={{ from: listUrl }}>
+              <Plus /> Neue Dividende
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* Suche */}
