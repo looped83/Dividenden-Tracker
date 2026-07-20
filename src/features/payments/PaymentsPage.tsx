@@ -1,7 +1,13 @@
 import * as React from "react";
 import { Link, useSearchParams } from "react-router";
-import { Archive as ArchiveIcon, Plus, RotateCcw, Wallet, X } from "lucide-react";
-import { isoDate, lastDayOfMonth, monthNameDe, yearRange } from "@/lib/statistics";
+import { Archive as ArchiveIcon, Plus, RotateCcw, Wallet } from "lucide-react";
+import {
+  availableYears,
+  isoDate,
+  lastDayOfMonth,
+  monthNameDe,
+  yearRange,
+} from "@/lib/statistics";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -33,6 +39,7 @@ import {
   usePayments,
   useUnarchivePayment,
 } from "@/features/payments/hooks";
+import { useDashboardPayments } from "@/features/dashboard/hooks";
 import type { PaymentFilters } from "@/lib/supabase/repositories/payments";
 
 function formatDate(value: string): string {
@@ -46,7 +53,6 @@ export function PaymentsPage() {
   const { data: securities = [] } = useSecurities();
 
   const [searchParams, setSearchParams] = useSearchParams();
-  const [searchTerm, setSearchTerm] = React.useState("");
   const [includeArchived, setIncludeArchived] = React.useState(false);
   const archivePayment = useArchivePayment();
   const unarchivePayment = useUnarchivePayment();
@@ -54,8 +60,8 @@ export function PaymentsPage() {
   const [archiveReason, setArchiveReason] = React.useState("");
   const [archiveError, setArchiveError] = React.useState<string | null>(null);
 
-  // Filter aus der URL (Drill-down vom Dashboard, §13). Depot, Unternehmen und
-  // Zeitraum sind URL-gesteuert; damit funktionieren Reload und Browser-Zurück.
+  // Filter aus der URL: Depot, Unternehmen, Jahr und Monat. So funktionieren
+  // Reload, Browser-Zurück und die Drill-downs vom Dashboard (§13).
   const depotId = searchParams.get("depot") ?? "";
   const securityId = searchParams.get("security") ?? "";
   const yearRaw = searchParams.get("year");
@@ -65,6 +71,10 @@ export function PaymentsPage() {
   const filterMonth =
     monthRaw && /^(1[0-2]|[1-9])$/.test(monthRaw) ? Number.parseInt(monthRaw, 10) : null;
 
+  // Verfügbare Jahre aus der aktiven Historie (geteilter Dashboard-Cache).
+  const { data: activeHistory = [] } = useDashboardPayments();
+  const years = availableYears(activeHistory);
+
   const updateParam = (key: string, value: string) => {
     setSearchParams((prev) => {
       const params = new URLSearchParams(prev);
@@ -73,31 +83,32 @@ export function PaymentsPage() {
       return params;
     });
   };
-  const clearPeriod = () => {
+  // Wird das Jahr geleert, entfällt auch der Monatsfilter (Monat braucht ein Jahr).
+  const setYear = (value: string) => {
     setSearchParams((prev) => {
       const params = new URLSearchParams(prev);
-      params.delete("year");
-      params.delete("month");
+      if (value) {
+        params.set("year", value);
+      } else {
+        params.delete("year");
+        params.delete("month");
+      }
       return params;
     });
   };
 
   let fromDate: string | undefined;
   let toDate: string | undefined;
-  let periodLabel: string | null = null;
   if (filterYear && filterMonth) {
     fromDate = isoDate(filterYear, filterMonth, 1);
     toDate = isoDate(filterYear, filterMonth, lastDayOfMonth(filterYear, filterMonth));
-    periodLabel = `${monthNameDe(filterMonth)} ${String(filterYear)}`;
   } else if (filterYear) {
     const range = yearRange(filterYear);
     fromDate = range.start;
     toDate = range.end;
-    periodLabel = String(filterYear);
   }
 
   const filters: PaymentFilters = {
-    searchTerm: searchTerm || undefined,
     depotId: depotId || undefined,
     securityId: securityId || undefined,
     fromDate,
@@ -135,18 +146,47 @@ export function PaymentsPage() {
       </div>
 
       <div className="flex flex-wrap items-end gap-3">
-        <div className="min-w-48 flex-1 space-y-1.5">
-          <label htmlFor="payments-search" className="text-sm text-muted-foreground">
-            Suche (Unternehmen/Ticker)
+        <div className="min-w-32 space-y-1.5">
+          <label htmlFor="payments-year-filter" className="text-sm text-muted-foreground">
+            Jahr
           </label>
-          <Input
-            id="payments-search"
-            value={searchTerm}
+          <Select
+            id="payments-year-filter"
+            value={filterYear ? String(filterYear) : ""}
             onChange={(event) => {
-              setSearchTerm(event.target.value);
+              setYear(event.target.value);
             }}
-            placeholder="z. B. Apple oder AAPL"
-          />
+          >
+            <option value="">Alle Jahre</option>
+            {years.map((year) => (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            ))}
+          </Select>
+        </div>
+        <div className="min-w-32 space-y-1.5">
+          <label
+            htmlFor="payments-month-filter"
+            className="text-sm text-muted-foreground"
+          >
+            Monat
+          </label>
+          <Select
+            id="payments-month-filter"
+            value={filterMonth ? String(filterMonth) : ""}
+            disabled={!filterYear}
+            onChange={(event) => {
+              updateParam("month", event.target.value);
+            }}
+          >
+            <option value="">Alle Monate</option>
+            {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => (
+              <option key={month} value={month}>
+                {monthNameDe(month)}
+              </option>
+            ))}
+          </Select>
         </div>
         <div className="min-w-40 space-y-1.5">
           <label
@@ -204,22 +244,6 @@ export function PaymentsPage() {
           Archivierte anzeigen
         </label>
       </div>
-
-      {periodLabel && (
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-2 rounded-md bg-accent px-2.5 py-1 text-sm text-accent-foreground">
-            Zeitraum: {periodLabel}
-            <button
-              type="button"
-              aria-label="Zeitraumfilter entfernen"
-              className="rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              onClick={clearPeriod}
-            >
-              <X className="size-4" />
-            </button>
-          </span>
-        </div>
-      )}
 
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Wird geladen …</p>
