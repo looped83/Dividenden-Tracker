@@ -3,6 +3,7 @@ import {
   archivePayment,
   createPayment,
   deletePayment,
+  fetchAllPayments,
   fetchPaymentById,
   fetchPayments,
   unarchivePayment,
@@ -18,6 +19,17 @@ export function usePayments(filters: PaymentFilters) {
   return useQuery({
     queryKey: [...PAYMENTS_KEY, filters],
     queryFn: () => fetchPayments(filters),
+  });
+}
+
+/**
+ * Vollstaendige Eingangsliste (alle Zahlungen, optional inkl. archivierter).
+ * Zeitraumfilter/Sortierung erfolgen clientseitig ueber den effektiven Monat.
+ */
+export function useAllPayments(includeArchived: boolean) {
+  return useQuery({
+    queryKey: [...PAYMENTS_KEY, "list", includeArchived],
+    queryFn: () => fetchAllPayments({ includeArchived }),
   });
 }
 

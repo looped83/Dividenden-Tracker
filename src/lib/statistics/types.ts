@@ -11,8 +11,15 @@ import type { PaymentSource, PaymentType } from "@/lib/supabase/database.types";
  */
 export interface AnalyticsPayment {
   id: string;
-  /** Kalenderdatum "YYYY-MM-DD" (Datumsdimension aller Kennzahlen). */
+  /**
+   * Effektives Kalenderdatum "YYYY-MM-DD" — Datumsdimension **aller** Kennzahlen.
+   * Standardmaessig identisch mit {@link actualPayDate}; ist fuer das Unternehmen
+   * ein Ausschuettungsplan hinterlegt, ist dies das dem naechstliegenden geplanten
+   * Monat zugeordnete Datum (CALCULATION_RULES.md §10).
+   */
   payDate: string;
+  /** Tatsaechliches Zahlungsdatum aus der Datenbank (unveraendert, fuer Anzeige). */
+  actualPayDate: string;
   netAmount: Money;
   grossAmount: Money;
   securityId: string;

@@ -12,6 +12,7 @@ function payment(payDate: string, net: string, security = "sec-a"): AnalyticsPay
   return {
     id: `id-${String(seq)}`,
     payDate,
+    actualPayDate: payDate,
     netAmount: Money.fromString(net, EUR),
     grossAmount: Money.fromString(net, EUR),
     securityId: security,

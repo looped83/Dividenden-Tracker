@@ -211,6 +211,12 @@ Das Dashboard folgt bewusst dem Prinzip aus §4.1 Punkt 3:
 - **Analytics-Schicht** (`lib/statistics`): geparste `AnalyticsPayment`-Datensätze (Beträge
   einmalig zu `Money`), rein funktional und decimal-sicher. Einzige Quelle aller
   Dashboard-Kennzahlen und in Phase 5B für den Statistikbereich wiederverwendbar.
+- **Effektiver Ausschüttungsmonat:** Vor der Aggregation wird über `withEffectiveDates` je
+  Zahlung ein effektives Datum aus dem Unternehmensplan (`securities.payout_months`) gesetzt
+  (nächstliegender geplanter Monat inkl. Jahresverschiebung, CALCULATION_RULES.md §10). Alle
+  Auswertungen und die Eingangsliste rechnen auf diesem effektiven Datum; das echte `pay_date`
+  bleibt erhalten. Die Eingangsliste lädt dafür alle Zahlungen paginiert und filtert/sortiert
+  clientseitig (kein serverseitiger Datumsfilter, da der Plan clientseitige Stammdaten sind).
 - **Jahresauswahl clientseitig.** Der ausgewählte Zeitraum (`?year=…`) wird auf den bereits
   geladenen Datensatz angewandt — ein Jahreswechsel löst **keine** neue Abfrage und keine
   Seitenneuladung aus (schnelle Umschaltung, memoisierte Aggregate).

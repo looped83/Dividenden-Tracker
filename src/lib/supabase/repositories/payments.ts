@@ -110,6 +110,35 @@ export async function fetchDashboardPayments(): Promise<DashboardPaymentRow[]> {
   return all;
 }
 
+/**
+ * Vollstaendige Eingangsliste (Phase-5A-Erweiterung): laedt seitenweise **alle**
+ * Zahlungen (optional inkl. archivierter) mit verknuepftem Wertpapiernamen. Die
+ * fachliche Filterung nach Zeitraum erfolgt clientseitig ueber den effektiven
+ * Monat (Ausschuettungsplan je Unternehmen, CALCULATION_RULES.md §10), daher
+ * kein serverseitiger Datumsfilter. Wie beim Dashboard wird ueber das
+ * PostgREST-1000er-Limit hinweg paginiert.
+ */
+export async function fetchAllPayments(opts: {
+  includeArchived: boolean;
+}): Promise<DividendPayment[]> {
+  const PAGE = 1000;
+  const all: DividendPayment[] = [];
+  for (let from = 0; ; from += PAGE) {
+    let query = supabase
+      .from("dividend_payments")
+      .select("*, securities!inner(name, ticker)")
+      .order("pay_date", { ascending: false })
+      .order("id", { ascending: true })
+      .range(from, from + PAGE - 1);
+    if (!opts.includeArchived) query = query.is("archived_at", null);
+    const { data, error } = await query;
+    if (error) throw error;
+    all.push(...data.map(normalizeAmountFields));
+    if (data.length < PAGE) break;
+  }
+  return all;
+}
+
 export async function fetchPaymentById(id: string): Promise<DividendPayment> {
   const { data, error } = await supabase
     .from("dividend_payments")
