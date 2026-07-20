@@ -25,11 +25,11 @@ export function BottomNav() {
 
       <NavLink
         to="/eingaenge/neu"
-        aria-label="Neuen Dividendeneingang erfassen"
-        className="flex flex-1 flex-col items-center justify-center gap-0.5 py-2"
+        aria-label="Neue Dividende erfassen"
+        className="flex flex-1 flex-col items-center justify-center outline-none"
       >
-        <span className="flex size-11 items-center justify-center rounded-full bg-primary text-primary-foreground">
-          <Plus className="size-5" aria-hidden />
+        <span className="-mt-8 flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg ring-4 ring-card">
+          <Plus className="size-6" aria-hidden />
         </span>
       </NavLink>
 

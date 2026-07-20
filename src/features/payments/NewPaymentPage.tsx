@@ -1,7 +1,7 @@
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { useNavigate, useParams } from "react-router";
+import { useLocation, useNavigate, useParams } from "react-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,6 +29,10 @@ export function NewPaymentPage() {
   const { id } = useParams();
   const isEditMode = Boolean(id);
   const navigate = useNavigate();
+  const location = useLocation();
+  // Herkunfts-URL (inkl. Listenfilter), an die nach Speichern/Abbrechen
+  // zurueckgekehrt wird — so bleibt die Vorauswahl der Liste erhalten.
+  const backTo = (location.state as { from?: string } | null)?.from ?? "/eingaenge";
 
   const { data: securities = [] } = useSecurities();
   const { data: depots = [] } = useDepots();
@@ -121,7 +125,7 @@ export function NewPaymentPage() {
         };
         await createPayment.mutateAsync(insertPayload);
       }
-      void navigate("/eingaenge");
+      void navigate(backTo);
     } catch (error) {
       setSubmitError(getErrorMessage(error, "Speichern fehlgeschlagen."));
     }
@@ -134,9 +138,7 @@ export function NewPaymentPage() {
   if (isEditMode && existingPayment?.archived_at) {
     return (
       <div className="space-y-4">
-        <h1 className="text-xl font-semibold tracking-tight">
-          Dividendeneingang bearbeiten
-        </h1>
+        <h1 className="text-xl font-semibold tracking-tight">Dividende bearbeiten</h1>
         <p className="text-sm text-muted-foreground">
           Dieser Eingang ist archiviert und kann nur reaktiviert, nicht bearbeitet werden.
         </p>
@@ -147,7 +149,7 @@ export function NewPaymentPage() {
   return (
     <div className="max-w-2xl space-y-6">
       <h1 className="text-xl font-semibold tracking-tight">
-        {isEditMode ? "Dividendeneingang bearbeiten" : "Neuer Dividendeneingang"}
+        {isEditMode ? "Dividende bearbeiten" : "Neue Dividende"}
       </h1>
 
       <form onSubmit={(event) => void onSubmit(event)} className="space-y-5" noValidate>
@@ -216,11 +218,7 @@ export function NewPaymentPage() {
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? "Wird gespeichert …" : "Speichern"}
           </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => void navigate("/eingaenge")}
-          >
+          <Button type="button" variant="ghost" onClick={() => void navigate(backTo)}>
             Abbrechen
           </Button>
         </div>

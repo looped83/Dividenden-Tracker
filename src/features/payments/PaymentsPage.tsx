@@ -68,6 +68,7 @@ export function PaymentsPage() {
   const [archiveError, setArchiveError] = React.useState<string | null>(null);
   const [deleteTargetId, setDeleteTargetId] = React.useState<string | null>(null);
   const [deleteError, setDeleteError] = React.useState<string | null>(null);
+  const [page, setPage] = React.useState(1);
 
   // Filter aus der URL: Depot, Unternehmen, Jahr und Monat. So funktionieren
   // Reload, Browser-Zurück und die Drill-downs vom Dashboard (§13).
@@ -81,6 +82,7 @@ export function PaymentsPage() {
     monthRaw && /^(1[0-2]|[1-9])$/.test(monthRaw) ? Number.parseInt(monthRaw, 10) : null;
 
   const updateParam = (key: string, value: string) => {
+    setPage(1);
     setSearchParams((prev) => {
       const params = new URLSearchParams(prev);
       if (value) params.set(key, value);
@@ -90,6 +92,7 @@ export function PaymentsPage() {
   };
   // Wird das Jahr geleert, entfällt auch der Monatsfilter (Monat braucht ein Jahr).
   const setYear = (value: string) => {
+    setPage(1);
     setSearchParams((prev) => {
       const params = new URLSearchParams(prev);
       if (value) {
@@ -150,6 +153,21 @@ export function PaymentsPage() {
 
   const depotById = new Map(depots.map((depot) => [depot.id, depot]));
 
+  // Ziel für die Rückkehr aus dem Formular: die Liste inklusive aktueller Filter
+  // (Unternehmen/Jahr/Monat/Depot). So bleibt die Vorauswahl nach Speichern oder
+  // Abbrechen erhalten.
+  const listSearch = searchParams.toString();
+  const listUrl = listSearch ? `/eingaenge?${listSearch}` : "/eingaenge";
+
+  // Clientseitige Paginierung der gefilterten Liste (die gesamte aktive Historie
+  // wird ohnehin einmalig geladen, §18). Begrenzt die Anzahl gleichzeitig
+  // gerenderter Zeilen bei langen Historien.
+  const PAGE_SIZE = 25;
+  const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount);
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const pageRows = rows.slice(pageStart, pageStart + PAGE_SIZE);
+
   const handleArchive = async () => {
     if (!archiveTargetId) return;
     setArchiveError(null);
@@ -179,10 +197,10 @@ export function PaymentsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold tracking-tight">Dividendeneingänge</h1>
+        <h1 className="text-xl font-semibold tracking-tight">Dividenden</h1>
         <Button asChild>
-          <Link to="/eingaenge/neu">
-            <Plus /> Neuer Eingang
+          <Link to="/eingaenge/neu" state={{ from: listUrl }}>
+            <Plus /> Neue Dividende
           </Link>
         </Button>
       </div>
@@ -280,6 +298,7 @@ export function PaymentsPage() {
             className="size-4"
             checked={includeArchived}
             onChange={(event) => {
+              setPage(1);
               setIncludeArchived(event.target.checked);
             }}
           />
@@ -319,7 +338,7 @@ export function PaymentsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.map(({ payment, effectiveDate }) => {
+            {pageRows.map(({ payment, effectiveDate }) => {
               const security = (
                 payment as unknown as {
                   securities?: { name: string; ticker: string | null };
@@ -396,7 +415,10 @@ export function PaymentsPage() {
                             aria-label="Bearbeiten"
                             asChild
                           >
-                            <Link to={`/eingaenge/${payment.id}/bearbeiten`}>
+                            <Link
+                              to={`/eingaenge/${payment.id}/bearbeiten`}
+                              state={{ from: listUrl }}
+                            >
                               <Pencil />
                             </Link>
                           </Button>
@@ -421,6 +443,42 @@ export function PaymentsPage() {
             })}
           </TableBody>
         </Table>
+      )}
+
+      {!isLoading && rows.length > PAGE_SIZE && (
+        <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
+          <span aria-live="polite">
+            {pageStart + 1}–{Math.min(pageStart + PAGE_SIZE, rows.length)} von{" "}
+            {rows.length}
+          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={currentPage <= 1}
+              onClick={() => {
+                setPage((value) => Math.max(1, value - 1));
+              }}
+            >
+              Zurück
+            </Button>
+            <span aria-hidden>
+              Seite {currentPage} / {pageCount}
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={currentPage >= pageCount}
+              onClick={() => {
+                setPage((value) => Math.min(pageCount, value + 1));
+              }}
+            >
+              Weiter
+            </Button>
+          </div>
+        </div>
       )}
 
       <Dialog
