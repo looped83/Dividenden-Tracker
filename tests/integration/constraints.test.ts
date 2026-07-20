@@ -261,23 +261,71 @@ describe("Soft Delete (kein Hard Delete, Grundsatz 3)", () => {
     expect(stillThere.rowCount).toBe(1);
   });
 
-  it("verbietet DELETE auf securities, depots, portfolios, goals", async () => {
-    const securityId = await asUser(userId, (client) =>
-      seedSecurity(client, { name: "Delete AG 2" }),
-    );
+  it("verbietet DELETE auf depots (kein Grant)", async () => {
     const depotId = await asUser(userId, (client) => seedDepot(client, "Depot Delete 2"));
-
-    await expect(
-      asUser(userId, (client) =>
-        client.query("delete from securities where id = $1", [securityId]),
-      ),
-    ).rejects.toThrow(/permission denied/);
 
     await expect(
       asUser(userId, (client) =>
         client.query("delete from depots where id = $1", [depotId]),
       ),
     ).rejects.toThrow(/permission denied/);
+  });
+
+  it("erlaubt DELETE auf securities nur für archivierte eigene ohne Referenzen", async () => {
+    // Aktives Unternehmen: die RLS-Policy (archived_at is not null) schließt die
+    // Zeile aus -> 0 betroffene Zeilen, kein Fehler, keine Löschung (D-5B-6).
+    const activeId = await asUser(userId, (client) =>
+      seedSecurity(client, { name: "Aktiv AG Delete" }),
+    );
+    const activeDelete = await asUser(userId, (client) =>
+      client.query("delete from securities where id = $1", [activeId]),
+    );
+    expect(activeDelete.rowCount).toBe(0);
+    const stillActive = await asUser(userId, (client) =>
+      client.query("select id from securities where id = $1", [activeId]),
+    );
+    expect(stillActive.rowCount).toBe(1);
+
+    // Archiviertes Unternehmen ohne Zahlungen: löschbar.
+    const archivedId = await asUser(userId, (client) =>
+      seedSecurity(client, { name: "Archiv AG Delete" }),
+    );
+    await asUser(userId, (client) =>
+      client.query("update securities set archived_at = now() where id = $1", [
+        archivedId,
+      ]),
+    );
+    const archivedDelete = await asUser(userId, (client) =>
+      client.query("delete from securities where id = $1", [archivedId]),
+    );
+    expect(archivedDelete.rowCount).toBe(1);
+
+    // Archiviertes Unternehmen mit noch vorhandener Zahlung: der Fremdschlüssel
+    // (NO ACTION) verhindert das Löschen (Fehlercode 23503).
+    const referencedId = await asUser(userId, (client) =>
+      seedSecurity(client, { name: "Mit Zahlung AG Delete" }),
+    );
+    const depotForPayment = await asUser(userId, (client) =>
+      seedDepot(client, "Depot FK Delete"),
+    );
+    await asUser(userId, (client) =>
+      seedPayment(client, {
+        securityId: referencedId,
+        depotId: depotForPayment,
+        payDate: "2025-01-10",
+        netAmount: "10.00",
+      }),
+    );
+    await asUser(userId, (client) =>
+      client.query("update securities set archived_at = now() where id = $1", [
+        referencedId,
+      ]),
+    );
+    await expect(
+      asUser(userId, (client) =>
+        client.query("delete from securities where id = $1", [referencedId]),
+      ),
+    ).rejects.toThrow(/foreign key/i);
   });
 
   it("erlaubt DELETE auf imports nur im Entwurfsstatus", async () => {

@@ -590,3 +590,19 @@ Virtualisierung). Paginierung deckt die geforderte Skalierung (≥ 500 Unternehm
 ohne zusätzliche Abhängigkeit ab, ist einfacher zugänglich (klare Fokus-/ARIA-Semantik,
 `aria-sort`) und begrenzt die gleichzeitig gerenderten Zeilen. Virtualisierung bleibt eine
 spätere Option, falls einzelne Seiten sehr groß werden.
+
+### D-5B-6 — Endgültiges Löschen archivierter Unternehmen (analog D-034)
+
+Wie bei Dividendeneingängen (D-034) können Unternehmen (`securities`) endgültig
+gelöscht werden, aber ausschließlich nachdem sie archiviert wurden. Umsetzung
+(Migration 0018): `grant delete` + Policy `securities_delete_archived_own`
+(`user_id = auth.uid() and archived_at is not null`); der Audit-Trigger wird um
+das DELETE-Ereignis erweitert (`action = 'delete'`). Die Fremdschlüssel
+`dividend_payments.security_id` und `security_aliases.security_id` bleiben bei
+`NO ACTION` — dadurch weist die Datenbank das Löschen eines Unternehmens mit noch
+vorhandenen Zahlungen/Aliassen ab (Fehlercode 23503, in eine verständliche Meldung
+übersetzt). So bleiben historische Zahlungen archivierter Unternehmen in allen
+Auswertungen erhalten; löschbar sind nur archivierte Unternehmen ohne Historie.
+Bearbeiten bleibt bei archivierten Unternehmen weiterhin erlaubt (Nachpflege von
+Stammdaten, D-039) — anders als bei Dividendeneingängen, die im archivierten
+Zustand nur reaktiviert oder gelöscht werden können.

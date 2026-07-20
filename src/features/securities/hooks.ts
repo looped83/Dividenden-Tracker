@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   archiveSecurity,
   createSecurity,
+  deleteSecurity,
   fetchSecurities,
   unarchiveSecurity,
   updateSecurity,
@@ -37,6 +38,14 @@ export function useArchiveSecurity() {
   return useMutation({
     mutationFn: ({ id, archived }: { id: string; archived: boolean }) =>
       archived ? unarchiveSecurity(id) : archiveSecurity(id),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: SECURITIES_KEY }),
+  });
+}
+
+export function useDeleteSecurity() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteSecurity(id),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: SECURITIES_KEY }),
   });
 }
