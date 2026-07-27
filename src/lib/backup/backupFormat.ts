@@ -32,17 +32,22 @@ const decimalString = (maxDecimals: number, label?: string) =>
     .string()
     .regex(
       /^-?\d+(\.\d+)?$/,
-      label ? `${label} must be a decimal string (e.g. "123.45")` : "Invalid decimal format"
+      label
+        ? `${label} must be a decimal string (e.g. "123.45")`
+        : "Invalid decimal format",
     )
-    .refine((val) => {
-      try {
-        const d = new Decimal(val);
-        const places = d.decimalPlaces();
-        return places >= 0 && places <= maxDecimals;
-      } catch {
-        return false;
-      }
-    }, `${label || "Amount"} must have at most ${maxDecimals} decimal places`);
+    .refine(
+      (val) => {
+        try {
+          const d = new Decimal(val);
+          const places = d.decimalPlaces();
+          return places >= 0 && places <= maxDecimals;
+        } catch {
+          return false;
+        }
+      },
+      `${label || "Amount"} must have at most ${maxDecimals} decimal places`,
+    );
 
 /**
  * Business date: YYYY-MM-DD format, no timezone
@@ -60,12 +65,17 @@ const businessDate = z
  */
 const isoTimestamp = z
   .string()
-  .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/, "Timestamp must be ISO 8601 with Z");
+  .regex(
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/,
+    "Timestamp must be ISO 8601 with Z",
+  );
 
 /**
  * ISO 4217 currency code (3 uppercase letters)
  */
-const currencyCode = z.string().regex(/^[A-Z]{3}$/, "Currency must be 3-letter ISO 4217 code");
+const currencyCode = z
+  .string()
+  .regex(/^[A-Z]{3}$/, "Currency must be 3-letter ISO 4217 code");
 
 /**
  * UUID v4
@@ -146,7 +156,13 @@ export const importBackupSchema = z.object({
   file_size_bytes: z.number().int().min(0),
   file_type: z.enum(["csv", "xlsx", "xls"]),
   sheet_name: z.string().optional(),
-  status: z.enum(["analyzing", "pending_confirmation", "committed", "rolled_back", "discarded"]),
+  status: z.enum([
+    "analyzing",
+    "pending_confirmation",
+    "committed",
+    "rolled_back",
+    "discarded",
+  ]),
   column_mapping: z.record(z.string(), z.string()).optional(),
   detected_formats: z.record(z.string(), z.any()).optional(),
   row_balance: z.record(z.string(), z.any()).optional(),
@@ -178,7 +194,14 @@ export const dividendPaymentBackupSchema = z.object({
   fx_rate: decimalString(8).optional(),
   quantity: decimalString(6).optional(),
   amount_per_share: decimalString(8).optional(),
-  payment_type: z.enum(["regular", "special", "correction", "cancellation", "refund", "other"]),
+  payment_type: z.enum([
+    "regular",
+    "special",
+    "correction",
+    "cancellation",
+    "refund",
+    "other",
+  ]),
   source: z.enum(["manual", "csv_import", "excel_import", "restore"]),
   source_file_name: z.string().optional(),
   source_row_number: z.number().int().optional(),
@@ -271,8 +294,10 @@ export function parseBackup(input: unknown): BackupRoot {
  * Safely parse backup with error details
  */
 export function parseBackupSafe(
-  input: unknown
-): { success: true; data: BackupRoot } | { success: false; errors: Array<{ path: string; message: string }> } {
+  input: unknown,
+):
+  | { success: true; data: BackupRoot }
+  | { success: false; errors: Array<{ path: string; message: string }> } {
   const result = backupRootSchema.safeParse(input);
 
   if (result.success) {
@@ -324,7 +349,8 @@ export function validateBackupCompleteness(backup: BackupRoot): {
 
   if (!backup.data.profile) missing.push("profile");
   if (!backup.data.depots || backup.data.depots.length === 0) missing.push("depots");
-  if (!backup.data.securities || backup.data.securities.length === 0) missing.push("securities");
+  if (!backup.data.securities || backup.data.securities.length === 0)
+    missing.push("securities");
 
   return {
     valid: missing.length === 0,
@@ -335,9 +361,7 @@ export function validateBackupCompleteness(backup: BackupRoot): {
 /**
  * Check backup record counts against actual data
  */
-export function validateBackupIntegrity(
-  backup: BackupRoot
-): {
+export function validateBackupIntegrity(backup: BackupRoot): {
   valid: boolean;
   mismatches: Array<{ entity: string; expected: number; actual: number }>;
 } {

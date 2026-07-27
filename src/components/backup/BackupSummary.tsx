@@ -37,7 +37,9 @@ export default function BackupSummary({ backup }: BackupSummaryProps) {
             <p className="text-2xl font-bold">{counts.securities}</p>
           </div>
           <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-            <p className="text-sm text-gray-600 dark:text-gray-400">Dividendenzahlungen</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Dividendenzahlungen
+            </p>
             <p className="text-2xl font-bold">{counts.dividends}</p>
           </div>
           <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">

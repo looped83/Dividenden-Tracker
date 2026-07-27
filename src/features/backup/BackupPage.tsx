@@ -26,13 +26,17 @@ export function BackupPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Sicherung & Datenexport</h1>
           <p className="text-gray-600 dark:text-gray-400">
-            Erstellen Sie Sicherungen Ihrer Daten, stellen Sie frühere Versionen wieder her oder exportieren Sie Ihre
-            Dividendendaten.
+            Erstellen Sie Sicherungen Ihrer Daten, stellen Sie frühere Versionen wieder
+            her oder exportieren Sie Ihre Dividendendaten.
           </p>
         </div>
 
         {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabValue)} className="w-full">
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => setActiveTab(v as TabValue)}
+          className="w-full"
+        >
           <TabsList className="grid w-full grid-cols-3 mb-8">
             <TabsTrigger value="backup" className="flex items-center gap-2">
               <span className="hidden sm:inline">Sicherung erstellen</span>

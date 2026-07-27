@@ -7,7 +7,13 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { createBackup, generateBackupSummary } from "@/lib/backup/backupService";
 import type { BackupProgress, BackupResult } from "@/lib/backup/backupService";
@@ -51,8 +57,8 @@ export default function BackupSection() {
         <CardHeader>
           <CardTitle>Sicherung erstellen</CardTitle>
           <CardDescription>
-            Laden Sie eine vollständige Sicherung aller Ihrer Daten herunter, einschließlich Depots, Wertpapiere und
-            Dividendenzahlungen.
+            Laden Sie eine vollständige Sicherung aller Ihrer Daten herunter,
+            einschließlich Depots, Wertpapiere und Dividendenzahlungen.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -105,8 +111,9 @@ export default function BackupSection() {
       <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
         <CardContent className="pt-6">
           <p className="text-sm text-blue-900 dark:text-blue-200">
-            <strong>Datenschutz:</strong> Sicherungen werden nicht automatisch hochgeladen. Sie laden die Dateien manuell
-            herunter und speichern sie sicher. Behandeln Sie Sicherungsdateien wie Passwörter – sie enthalten alle Ihre
+            <strong>Datenschutz:</strong> Sicherungen werden nicht automatisch
+            hochgeladen. Sie laden die Dateien manuell herunter und speichern sie sicher.
+            Behandeln Sie Sicherungsdateien wie Passwörter – sie enthalten alle Ihre
             Daten.
           </p>
         </CardContent>

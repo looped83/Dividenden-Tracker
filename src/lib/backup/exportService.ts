@@ -77,13 +77,14 @@ export const DEFAULT_EXPORT_COLUMNS: ExportColumn[] = [
 /**
  * Fetch and filter dividend payments for export
  */
-async function fetchPaymentsForExport(options: ExportOptions, onProgress?: (p: ExportProgress) => void) {
+async function fetchPaymentsForExport(
+  options: ExportOptions,
+  onProgress?: (p: ExportProgress) => void,
+) {
   onProgress?.({ stage: "fetching_data" });
 
-  let query = supabase
-    .from("dividend_payments")
-    .select(
-      `
+  let query = supabase.from("dividend_payments").select(
+    `
       id,
       pay_date,
       gross_amount,
@@ -100,8 +101,8 @@ async function fetchPaymentsForExport(options: ExportOptions, onProgress?: (p: E
       archived_at,
       security:securities(name, ticker),
       depot:depots(name)
-    `
-    );
+    `,
+  );
 
   // Filter by archive status
   if (!options.includeArchived) {
@@ -177,7 +178,7 @@ function escapeCsvField(value: any): string {
 async function generateCsvExport(
   payments: any[],
   columns: ExportColumn[],
-  onProgress?: (p: ExportProgress) => void
+  onProgress?: (p: ExportProgress) => void,
 ): Promise<Blob> {
   onProgress?.({ stage: "formatting", totalItems: payments.length });
 
@@ -208,11 +209,19 @@ async function generateCsvExport(
     lines.push(row.join(","));
 
     if ((index + 1) % 100 === 0) {
-      onProgress?.({ stage: "formatting", itemsProcessed: index + 1, totalItems: payments.length });
+      onProgress?.({
+        stage: "formatting",
+        itemsProcessed: index + 1,
+        totalItems: payments.length,
+      });
     }
   });
 
-  onProgress?.({ stage: "formatting", itemsProcessed: payments.length, totalItems: payments.length });
+  onProgress?.({
+    stage: "formatting",
+    itemsProcessed: payments.length,
+    totalItems: payments.length,
+  });
 
   return new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
 }
@@ -228,14 +237,16 @@ async function generateCsvExport(
 async function generateXlsxExport(
   payments: any[],
   columns: ExportColumn[],
-  onProgress?: (p: ExportProgress) => void
+  onProgress?: (p: ExportProgress) => void,
 ): Promise<Blob> {
   // For now, return CSV with .xlsx extension
   // TODO: Replace with proper xlsx generation using exceljs or similar
   onProgress?.({ stage: "formatting" });
 
   const csv = await generateCsvExport(payments, columns, onProgress);
-  return new Blob([csv], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  return new Blob([csv], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
 }
 
 // ============================================================================
@@ -248,7 +259,7 @@ async function generateXlsxExport(
 async function generateJsonExport(
   payments: any[],
   columns: ExportColumn[],
-  onProgress?: (p: ExportProgress) => void
+  onProgress?: (p: ExportProgress) => void,
 ): Promise<Blob> {
   onProgress?.({ stage: "formatting" });
 
@@ -272,7 +283,11 @@ async function generateJsonExport(
     return row;
   });
 
-  onProgress?.({ stage: "formatting", itemsProcessed: payments.length, totalItems: payments.length });
+  onProgress?.({
+    stage: "formatting",
+    itemsProcessed: payments.length,
+    totalItems: payments.length,
+  });
 
   const json = {
     metadata: {
@@ -324,7 +339,7 @@ function getTimestampSuffix(): string {
  */
 export async function executeExport(
   options: ExportOptions,
-  onProgress?: (p: ExportProgress) => void
+  onProgress?: (p: ExportProgress) => void,
 ): Promise<ExportResult> {
   try {
     const columns = options.columns || DEFAULT_EXPORT_COLUMNS;
