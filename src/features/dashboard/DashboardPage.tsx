@@ -12,7 +12,6 @@ import {
   refDateFromDate,
   withEffectiveDates,
   yearOf,
-  type AnalyticsPayment,
 } from "@/lib/statistics";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { useDashboardPayments, useDashboardYear } from "./hooks";
@@ -70,8 +69,6 @@ export function DashboardPage() {
   const securitiesQuery = useSecurities();
   const depotsQuery = useDepots();
 
-  const rawPayments: AnalyticsPayment[] = paymentsQuery.data ?? [];
-
   const securities = React.useMemo(
     () => buildEntityMap(securitiesQuery.data ?? []),
     [securitiesQuery.data],
@@ -92,8 +89,8 @@ export function DashboardPage() {
     return map;
   }, [securitiesQuery.data]);
   const payments = React.useMemo(
-    () => withEffectiveDates(rawPayments, payoutBySecurity),
-    [rawPayments, payoutBySecurity],
+    () => withEffectiveDates(paymentsQuery.data ?? [], payoutBySecurity),
+    [paymentsQuery.data, payoutBySecurity],
   );
 
   const years = React.useMemo(() => availableYears(payments), [payments]);

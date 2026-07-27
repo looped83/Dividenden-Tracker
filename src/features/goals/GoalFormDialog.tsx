@@ -111,6 +111,7 @@ export function GoalFormDialog({
     }
   }, [open, goal, reset]);
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const goalType = watch("goalType");
   const watchedYear = Number.parseInt(watch("year"), 10);
   const years = yearOptions(
