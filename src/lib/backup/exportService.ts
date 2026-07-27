@@ -9,7 +9,6 @@
  * - Column selection
  */
 
-import ExcelJS from "exceljs";
 import { supabase } from "@/lib/supabase/client";
 
 // ============================================================================
@@ -250,6 +249,11 @@ async function generateXlsxExport(
 ): Promise<Blob> {
   onProgress?.({ stage: "formatting" });
 
+  // Dynamischer Import: exceljs ist ~950 kB und wird nur beim XLSX-Export
+  // gebraucht. Ein statischer Import zog die Bibliothek in den Haupt-Chunk und
+  // machte die dynamischen Imports in den Workbook-Parsern wirkungslos
+  // (Rolldown-Warnung INEFFECTIVE_DYNAMIC_IMPORT).
+  const { default: ExcelJS } = await import("exceljs");
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet("Dividend Payments");
 

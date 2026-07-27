@@ -1,8 +1,9 @@
 /// <reference types="vitest/config" />
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "node:path";
+import { findMissingEnv, missingEnvMessage } from "./src/lib/config/requiredEnv";
 
 // GitHub Pages liefert Projekt-Seiten unter einem Unterpfad
 // (https://<user>.github.io/<repo>/) statt an der Domainwurzel. Der
@@ -10,19 +11,37 @@ import path from "node:path";
 // (DECISIONS.md D-030); andere Deployments (Vercel u. ae.) bleiben bei "/".
 const base = process.env.GITHUB_PAGES === "true" ? "/Dividenden-Tracker/" : "/";
 
-export default defineConfig({
-  base,
-  plugins: [react(), tailwindcss()],
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
+/**
+ * Bricht den Production-Build ab, wenn Pflicht-Env-Variablen fehlen.
+ * Begruendung siehe `src/lib/config/requiredEnv.ts`.
+ */
+function assertRequiredEnv(mode: string): void {
+  const missing = findMissingEnv(loadEnv(mode, process.cwd(), ""));
+
+  if (missing.length > 0) {
+    throw new Error(missingEnvMessage(missing));
+  }
+}
+
+export default defineConfig(({ command, mode }) => {
+  if (command === "build") {
+    assertRequiredEnv(mode);
+  }
+
+  return {
+    base,
+    plugins: [react(), tailwindcss()],
+    resolve: {
+      alias: {
+        "@": path.resolve(__dirname, "./src"),
+      },
     },
-  },
-  test: {
-    environment: "jsdom",
-    globals: true,
-    setupFiles: ["./tests/setup.ts"],
-    include: ["tests/unit/**/*.test.ts", "tests/unit/**/*.test.tsx"],
-    css: false,
-  },
+    test: {
+      environment: "jsdom",
+      globals: true,
+      setupFiles: ["./tests/setup.ts"],
+      include: ["tests/unit/**/*.test.ts", "tests/unit/**/*.test.tsx"],
+      css: false,
+    },
+  };
 });

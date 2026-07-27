@@ -31,7 +31,16 @@ jobs:
       - name: Unit tests
         run: npm test
 
+      # Platzhalter-Werte: Der Build ersetzt import.meta.env.VITE_* statisch.
+      # Ohne gesetzte Werte faltet der Bundler den Env-Guard in client.ts zu
+      # einem unbedingten Top-Level-throw und entfernt die gesamte App als
+      # nicht erreichbaren Code — der Build waere gruen, pruefte aber ein
+      # Bundle ohne Anwendung. Echte Keys kommen nur im Deploy-Workflow aus
+      # Secrets; hier genuegen syntaktisch gueltige Dummies.
       - name: Build
+        env:
+          VITE_SUPABASE_URL: https://ci-placeholder.supabase.co
+          VITE_SUPABASE_ANON_KEY: ci-placeholder-anon-key
         run: npm run build
 
   db-integration:
