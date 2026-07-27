@@ -46,7 +46,7 @@ export default function ProgressIndicator({ progress }: ProgressIndicatorProps) 
                 />
               </div>
               <span className="text-sm font-medium text-gray-600 dark:text-gray-400 w-12">
-                {percentage}%
+                {String(percentage)}%
               </span>
             </div>
           )}

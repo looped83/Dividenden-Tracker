@@ -54,7 +54,7 @@ export default function ExportSection() {
           setSuccess(false);
         }, 5000);
       } else {
-        setError(result.error || "Export failed");
+        setError(result.error ?? "Export failed");
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error during export");
@@ -132,7 +132,9 @@ export default function ExportSection() {
 
           {/* Export Button */}
           <Button
-            onClick={handleExport}
+            onClick={() => {
+              void handleExport();
+            }}
             disabled={isExporting}
             className="w-full"
             size="lg"

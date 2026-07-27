@@ -80,7 +80,7 @@ export default function ConflictResolver({
               </div>
 
               <Select
-                value={conflict.resolution || "overwrite"}
+                value={conflict.resolution ?? "overwrite"}
                 onChange={(e) => {
                   handleResolution(conflict, e.target.value as "skip" | "overwrite");
                 }}

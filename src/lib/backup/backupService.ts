@@ -98,7 +98,7 @@ function formatBusinessDate(date: Date | string): string {
   if (typeof date === "string") {
     return date; // Already formatted
   }
-  const year = date.getUTCFullYear();
+  const year = String(date.getUTCFullYear());
   const month = String(date.getUTCMonth() + 1).padStart(2, "0");
   const day = String(date.getUTCDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
@@ -127,7 +127,7 @@ function ensureNumberArray(value: unknown): number[] | null {
   if (Array.isArray(value)) {
     return value
       .map((v) => {
-        const n = typeof v === "number" ? v : parseInt(String(v), 10);
+        const n = typeof v === "number" ? v : Number.parseInt(String(v), 10);
         return isNaN(n) ? null : n;
       })
       .filter((n) => n !== null);
@@ -152,12 +152,10 @@ async function fetchProfile(): Promise<ProfileBackup | null> {
     .eq("id", auth.user.id)
     .single();
 
-  if (error) {
+  if (error || !data) {
     console.error("Error fetching profile:", error);
     return null;
   }
-
-  if (!data) return null;
 
   return removeNulls({
     id: data.id,
@@ -185,7 +183,7 @@ async function fetchPortfolios(): Promise<PortfolioBackup[]> {
     return [];
   }
 
-  return (data || []).map(
+  return (data ?? []).map(
     (p) =>
       removeNulls({
         id: p.id,
@@ -213,7 +211,7 @@ async function fetchDepots(): Promise<DepotBackup[]> {
     return [];
   }
 
-  return (data || []).map(
+  return (data ?? []).map(
     (d) =>
       removeNulls({
         id: d.id,
@@ -244,7 +242,7 @@ async function fetchSecurities(): Promise<SecurityBackup[]> {
     return [];
   }
 
-  return (data || []).map(
+  return (data ?? []).map(
     (s) =>
       removeNulls({
         id: s.id,
@@ -281,7 +279,7 @@ async function fetchDividendPayments(): Promise<DividendPaymentBackup[]> {
     return [];
   }
 
-  return (data || []).map(
+  return (data ?? []).map(
     (p) =>
       removeNulls({
         id: p.id,
@@ -290,13 +288,13 @@ async function fetchDividendPayments(): Promise<DividendPaymentBackup[]> {
         depot_id: p.depot_id,
         import_id: p.import_id,
         pay_date: formatBusinessDate(p.pay_date),
-        gross_amount: ensureDecimalString(p.gross_amount, 2) || "0.00",
-        net_amount: ensureDecimalString(p.net_amount, 2) || "0.00",
-        withholding_tax: ensureDecimalString(p.withholding_tax, 2) || "0.00",
-        domestic_tax: ensureDecimalString(p.domestic_tax, 2) || "0.00",
-        solidarity_surcharge: ensureDecimalString(p.solidarity_surcharge, 2) || "0.00",
-        church_tax: ensureDecimalString(p.church_tax, 2) || "0.00",
-        fees: ensureDecimalString(p.fees, 2) || "0.00",
+        gross_amount: ensureDecimalString(p.gross_amount, 2) ?? "0.00",
+        net_amount: ensureDecimalString(p.net_amount, 2) ?? "0.00",
+        withholding_tax: ensureDecimalString(p.withholding_tax, 2) ?? "0.00",
+        domestic_tax: ensureDecimalString(p.domestic_tax, 2) ?? "0.00",
+        solidarity_surcharge: ensureDecimalString(p.solidarity_surcharge, 2) ?? "0.00",
+        church_tax: ensureDecimalString(p.church_tax, 2) ?? "0.00",
+        fees: ensureDecimalString(p.fees, 2) ?? "0.00",
         original_currency: p.original_currency,
         original_gross: ensureDecimalString(p.original_gross, 6),
         original_net: ensureDecimalString(p.original_net, 6),
@@ -332,7 +330,7 @@ async function fetchGoals(): Promise<GoalBackup[]> {
     return [];
   }
 
-  return (data || []).map(
+  return (data ?? []).map(
     (g) =>
       removeNulls({
         id: g.id,
@@ -340,7 +338,7 @@ async function fetchGoals(): Promise<GoalBackup[]> {
         goal_type: g.goal_type,
         year: g.year,
         month: g.month,
-        target_amount: ensureDecimalString(g.target_amount, 2) || "0.00",
+        target_amount: ensureDecimalString(g.target_amount, 2) ?? "0.00",
         currency: g.currency,
         title: g.title,
         note: g.note,
@@ -364,7 +362,7 @@ async function fetchImports(): Promise<ImportBackup[]> {
     return [];
   }
 
-  return (data || []).map(
+  return (data ?? []).map(
     (i) =>
       removeNulls({
         id: i.id,
@@ -405,16 +403,18 @@ async function fetchImports(): Promise<ImportBackup[]> {
  * Serializes with deterministic ordering (by ID)
  */
 async function computeChecksum(data: unknown[]): Promise<string> {
-  const sorted = (data as any[]).sort((a, b) => {
-    const aId = a.id || "";
-    const bId = b.id || "";
-    return aId.localeCompare(bId);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sorted = (data as any[]).sort((a: any, b: any) => {
+    const aId = a.id ?? "";
+    const bId = b.id ?? "";
+    return String(aId).localeCompare(String(bId));
   });
 
   const canonical = JSON.stringify(sorted, (_key, value) => {
     if (typeof value === "object" && value !== null && !Array.isArray(value)) {
       return Object.keys(value)
         .sort()
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .reduce((obj: any, k) => {
           obj[k] = value[k];
           return obj;

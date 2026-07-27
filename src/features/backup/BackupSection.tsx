@@ -42,7 +42,7 @@ export default function BackupSection() {
         const summary = generateBackupSummary(result.backup);
         console.log("Backup created successfully:", summary);
       } else {
-        setError(result.error || "Failed to create backup");
+        setError(result.error ?? "Failed to create backup");
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error creating backup");
@@ -89,7 +89,9 @@ export default function BackupSection() {
 
           {/* Action Button */}
           <Button
-            onClick={handleCreateBackup}
+            onClick={() => {
+              void handleCreateBackup();
+            }}
             disabled={isCreating}
             className="w-full"
             size="lg"

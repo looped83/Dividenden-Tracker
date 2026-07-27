@@ -14,10 +14,10 @@ interface RestorePreviewProps {
 
 export default function RestorePreview({ backup }: RestorePreviewProps) {
   const counts = {
-    depots: backup.data.depots?.length || 0,
-    securities: backup.data.securities?.length || 0,
-    dividends: backup.data.dividend_payments?.length || 0,
-    goals: backup.data.goals?.length || 0,
+    depots: backup.data.depots.length,
+    securities: backup.data.securities.length,
+    dividends: backup.data.dividend_payments.length,
+    goals: backup.data.goals.length,
   };
 
   const exportedDate = new Date(backup.exported_at);

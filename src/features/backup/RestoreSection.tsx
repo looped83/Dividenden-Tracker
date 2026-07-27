@@ -91,7 +91,7 @@ export default function RestoreSection() {
         setResult(result);
         setStep("complete");
       } else {
-        setError(result.error || "Restore failed");
+        setError(result.error ?? "Restore failed");
         setStep("preview");
       }
     } catch (err) {
@@ -214,7 +214,9 @@ export default function RestoreSection() {
                   Abbrechen
                 </Button>
                 <Button
-                  onClick={handleRestore}
+                  onClick={() => {
+                    void handleRestore();
+                  }}
                   disabled={isProcessing}
                   className="flex-1"
                 >
