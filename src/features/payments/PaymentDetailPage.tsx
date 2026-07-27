@@ -275,7 +275,7 @@ export function PaymentDetailPage() {
               <DetailRow label="Importierter Nettobetrag">
                 {toGermanDecimalString(importedNet)}
                 {netChanged && (
-                  <span className="ml-2 text-warning-foreground">
+                  <span className="ml-2 text-warning-strong">
                     (nachträglich geändert)
                   </span>
                 )}
@@ -285,7 +285,7 @@ export function PaymentDetailPage() {
               <DetailRow label="Importiertes Zahlungsdatum">
                 {formatDate(importedPayDate)}
                 {dateChanged && (
-                  <span className="ml-2 text-warning-foreground">
+                  <span className="ml-2 text-warning-strong">
                     (nachträglich geändert)
                   </span>
                 )}

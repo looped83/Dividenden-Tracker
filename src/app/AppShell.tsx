@@ -11,9 +11,20 @@ import { BottomNav } from "@/components/layout/BottomNav";
 export function AppShell() {
   return (
     <div className="flex min-h-dvh flex-col bg-background text-foreground md:flex-row">
+      {/* Sprungmarke (WCAG 2.4.1): erster Tabstopp, ueberspringt die Navigation. */}
+      <a
+        href="#inhalt"
+        className="sr-only z-50 focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
+      >
+        Zum Inhalt springen
+      </a>
       <Sidebar />
       <CompactSidebar />
-      <main className="min-w-0 flex-1 overflow-x-hidden pb-20 md:pb-6">
+      <main
+        id="inhalt"
+        tabIndex={-1}
+        className="min-w-0 flex-1 overflow-x-hidden pb-20 outline-none md:pb-6"
+      >
         <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
           <Outlet />
         </div>

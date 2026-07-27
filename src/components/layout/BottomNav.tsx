@@ -26,7 +26,11 @@ export function BottomNav() {
       <NavLink
         to="/eingaenge/neu"
         aria-label="Neue Dividende erfassen"
-        className="flex flex-1 flex-col items-center justify-center outline-none"
+        className={cn(
+          "flex flex-1 flex-col items-center justify-center rounded-md outline-none",
+          "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+          "ring-offset-card",
+        )}
       >
         <span className="-mt-8 flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg ring-4 ring-card">
           <Plus className="size-6" aria-hidden />

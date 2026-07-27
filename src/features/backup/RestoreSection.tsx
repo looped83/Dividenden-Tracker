@@ -138,9 +138,9 @@ export default function RestoreSection() {
                 className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-blue-500 transition-colors"
                 onClick={() => fileInputRef.current?.click()}
               >
-                <Upload className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                <Upload className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
                 <p className="font-medium mb-1">Sicherungsdatei auswählen</p>
-                <p className="text-sm text-gray-500">oder Datei hier ablegen</p>
+                <p className="text-sm text-muted-foreground">oder Datei hier ablegen</p>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -251,25 +251,25 @@ export default function RestoreSection() {
               {result.recordsRestored && (
                 <div className="grid grid-cols-2 gap-4">
                   <div className="text-sm">
-                    <p className="text-gray-500">Depots</p>
+                    <p className="text-muted-foreground">Depots</p>
                     <p className="text-2xl font-bold">
                       {result.recordsRestored["depot"] ?? 0}
                     </p>
                   </div>
                   <div className="text-sm">
-                    <p className="text-gray-500">Wertpapiere</p>
+                    <p className="text-muted-foreground">Wertpapiere</p>
                     <p className="text-2xl font-bold">
                       {result.recordsRestored["security"] ?? 0}
                     </p>
                   </div>
                   <div className="text-sm">
-                    <p className="text-gray-500">Dividendenzahlungen</p>
+                    <p className="text-muted-foreground">Dividendenzahlungen</p>
                     <p className="text-2xl font-bold">
                       {result.recordsRestored["dividend_payment"] ?? 0}
                     </p>
                   </div>
                   <div className="text-sm">
-                    <p className="text-gray-500">Ziele</p>
+                    <p className="text-muted-foreground">Ziele</p>
                     <p className="text-2xl font-bold">
                       {result.recordsRestored["goal"] ?? 0}
                     </p>
