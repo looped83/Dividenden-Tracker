@@ -347,6 +347,7 @@ export function validateBackupCompleteness(backup: BackupRoot): {
 } {
   const missing: string[] = [];
 
+  if (!backup.data.profile) missing.push("profile");
   if (backup.data.depots.length === 0) missing.push("depots");
   if (backup.data.securities.length === 0) missing.push("securities");
 
