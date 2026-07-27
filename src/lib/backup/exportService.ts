@@ -307,8 +307,9 @@ function toExportNumber(value: unknown): number | null {
 }
 
 /**
- * Generate simple XLSX export (note: uses CSV fallback if xlsx library not available)
- * In production, you'd use a library like xlsx or exceljs
+ * Erzeugt die XLSX-Datei mit exceljs. Es gibt keinen CSV-Fallback: Beträge
+ * werden als echte Zahlen und Datumsangaben als Datumswerte geschrieben,
+ * damit in Excel gerechnet und sortiert werden kann.
  */
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-base-to-string, @typescript-eslint/no-unnecessary-condition */
 async function generateXlsxExport(
