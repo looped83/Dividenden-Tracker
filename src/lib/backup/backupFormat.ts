@@ -377,6 +377,7 @@ export function validateBackupIntegrity(backup: BackupRoot): {
 
   for (const [entity, expected] of Object.entries(expectedCounts)) {
     const actual = actualCounts[entity as keyof typeof actualCounts];
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (actual !== undefined && actual !== expected) {
       mismatches.push({ entity, expected, actual });
     }

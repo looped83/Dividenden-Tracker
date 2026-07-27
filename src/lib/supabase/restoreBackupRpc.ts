@@ -27,6 +27,7 @@ export async function callRestoreBackupRpc(
   mode: "merge" | "replace",
 ): Promise<{ success: boolean; data?: RestoreBackupRpcResult; error?: Error }> {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
     const { data, error } = await (supabase.rpc as any)("restore_backup", {
       p_backup_payload: backup,
       p_mode: mode,
@@ -35,6 +36,7 @@ export async function callRestoreBackupRpc(
     if (error) {
       return {
         success: false,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/restrict-template-expressions
         error: new Error(`Restore RPC failed: ${error.message}`),
       };
     }

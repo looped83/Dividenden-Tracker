@@ -145,7 +145,9 @@ export default function RestoreSection() {
                   ref={fileInputRef}
                   type="file"
                   accept=".json"
-                  onChange={handleFileSelect}
+                  onChange={(e) => {
+                    void handleFileSelect(e);
+                  }}
                   disabled={isProcessing}
                   className="hidden"
                 />

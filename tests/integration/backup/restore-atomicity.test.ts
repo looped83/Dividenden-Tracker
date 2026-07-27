@@ -8,6 +8,7 @@
  * Requires: PostgreSQL with backup RPC and test fixtures
  */
 
+/* eslint-disable @typescript-eslint/require-await */
 import { describe, it, expect } from "vitest";
 
 describe("Backup Restore Atomicity", () => {

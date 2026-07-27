@@ -9,6 +9,7 @@ import { describe, it, expect } from "vitest";
 describe("Export Service", () => {
   describe("CSV Formula Injection Protection", () => {
     // Test helper function (simulating escapeCsvField)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const escapeCsvField = (value: any): string => {
       if (value === null || value === undefined) return "";
 
@@ -102,6 +103,7 @@ describe("Export Service", () => {
       expect(columns).toContainEqual(
         expect.objectContaining({
           field: "pay_date",
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           visible: expect.any(Boolean),
         }),
       );
@@ -111,7 +113,7 @@ describe("Export Service", () => {
   describe("File Naming", () => {
     const getTimestampSuffix = (): string => {
       const now = new Date();
-      const year = now.getFullYear();
+      const year = String(now.getFullYear());
       const month = String(now.getMonth() + 1).padStart(2, "0");
       const day = String(now.getDate()).padStart(2, "0");
       return `${year}-${month}-${day}`;

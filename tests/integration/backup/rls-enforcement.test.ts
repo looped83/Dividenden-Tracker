@@ -8,6 +8,7 @@
  * Requires: PostgreSQL with RLS policies enabled
  */
 
+/* eslint-disable @typescript-eslint/require-await */
 import { describe, it, expect } from "vitest";
 
 describe("Backup RLS Enforcement", () => {
