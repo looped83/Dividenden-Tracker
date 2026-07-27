@@ -1,4 +1,5 @@
 import { Construction } from "lucide-react";
+import * as React from "react";
 import { useNavigate } from "react-router";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,7 @@ import {
 } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { useSession } from "@/app/auth/SessionProvider";
 import { supabase } from "@/lib/supabase/client";
 
@@ -23,10 +25,18 @@ import { supabase } from "@/lib/supabase/client";
 export function SettingsPage() {
   const { session } = useSession();
   const navigate = useNavigate();
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    void navigate("/login", { replace: true });
+    setLoading(true);
+    try {
+      await supabase.auth.signOut();
+      void navigate("/login", { replace: true });
+    } catch (err) {
+      setError(getErrorMessage(err, "Abmeldung fehlgeschlagen"));
+      setLoading(false);
+    }
   };
 
   return (
@@ -38,8 +48,15 @@ export function SettingsPage() {
           <CardTitle>Profil</CardTitle>
           <CardDescription>Angemeldet als {session?.user.email}</CardDescription>
         </CardHeader>
-        <CardContent>
-          <Button variant="outline" onClick={() => void handleLogout()}>
+        <CardContent className="space-y-3">
+          {error && (
+            <p className="text-sm text-destructive">{error}</p>
+          )}
+          <Button
+            variant="outline"
+            onClick={() => void handleLogout()}
+            disabled={loading}
+          >
             Abmelden
           </Button>
         </CardContent>

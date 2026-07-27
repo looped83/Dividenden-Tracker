@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { emptyToNull } from "@/lib/utils/emptyToNull";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
+import { useErrorState } from "@/lib/hooks/useErrorState";
 import { cn } from "@/lib/utils/cn";
 import { monthNameDeShort, normalizePayoutMonths } from "@/lib/statistics";
 import { SecurityImportButton } from "@/features/securities/SecurityImportDialog";
@@ -285,6 +286,7 @@ export function SecuritiesPage() {
   const depotById = new Map(depots.map((depot) => [depot.id, depot]));
   const archiveSecurity = useArchiveSecurity();
   const deleteSecurity = useDeleteSecurity();
+  const { error: deleteError, showError, clearError } = useErrorState();
   const [showArchived, setShowArchived] = React.useState(false);
   const [dialog, setDialog] = React.useState<{
     open: boolean;
@@ -294,18 +296,17 @@ export function SecuritiesPage() {
     security: null,
   });
   const [deleteTarget, setDeleteTarget] = React.useState<Security | null>(null);
-  const [deleteError, setDeleteError] = React.useState<string | null>(null);
 
   const visible = securities.filter((s) => showArchived || !s.archived_at);
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    setDeleteError(null);
+    clearError();
     try {
       await deleteSecurity.mutateAsync(deleteTarget.id);
       setDeleteTarget(null);
     } catch (error) {
-      setDeleteError(getErrorMessage(error, "Löschen fehlgeschlagen."));
+      showError(error, "Löschen fehlgeschlagen.");
     }
   };
 
@@ -440,7 +441,7 @@ export function SecuritiesPage() {
                           size="icon"
                           aria-label={`${security.name} endgültig löschen`}
                           onClick={() => {
-                            setDeleteError(null);
+                            clearError();
                             setDeleteTarget(security);
                           }}
                         >
@@ -467,7 +468,10 @@ export function SecuritiesPage() {
       <Dialog
         open={deleteTarget !== null}
         onOpenChange={(open) => {
-          if (!open) setDeleteTarget(null);
+          if (!open) {
+            setDeleteTarget(null);
+            clearError();
+          }
         }}
       >
         <DialogContent>

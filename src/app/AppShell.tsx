@@ -1,6 +1,7 @@
 import { Outlet } from "react-router";
 import { Sidebar, CompactSidebar } from "@/components/layout/Sidebar";
 import { BottomNav } from "@/components/layout/BottomNav";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 /**
  * Responsive App-Shell (IMPLEMENTATION_PLAN.md Phase 1):
@@ -10,7 +11,7 @@ import { BottomNav } from "@/components/layout/BottomNav";
  */
 export function AppShell() {
   return (
-    <div className="flex min-h-dvh flex-col bg-background text-foreground md:flex-row">
+    <>
       {/* Sprungmarke (WCAG 2.4.1): erster Tabstopp, ueberspringt die Navigation. */}
       <a
         href="#inhalt"
@@ -18,18 +19,22 @@ export function AppShell() {
       >
         Zum Inhalt springen
       </a>
-      <Sidebar />
-      <CompactSidebar />
-      <main
-        id="inhalt"
-        tabIndex={-1}
-        className="min-w-0 flex-1 overflow-x-hidden pb-20 outline-none md:pb-6"
-      >
-        <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-          <Outlet />
+      <ErrorBoundary>
+        <div className="flex min-h-dvh flex-col bg-background text-foreground md:flex-row">
+          <Sidebar />
+          <CompactSidebar />
+          <main
+            id="inhalt"
+            tabIndex={-1}
+            className="min-w-0 flex-1 overflow-x-hidden pb-20 outline-none md:pb-6"
+          >
+            <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+              <Outlet />
+            </div>
+          </main>
+          <BottomNav />
         </div>
-      </main>
-      <BottomNav />
-    </div>
+      </ErrorBoundary>
+    </>
   );
 }

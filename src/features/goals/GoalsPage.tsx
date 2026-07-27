@@ -4,9 +4,10 @@ import { Plus, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { refDateFromDate } from "@/lib/statistics";
 import { computeGoalProgress, sortGoalProgress, type GoalProgress } from "@/lib/goals";
+import { useErrorState } from "@/lib/hooks/useErrorState";
+import { getErrorMessage } from "@/lib/utils/errorMessage";
 import {
   useDeleteGoal,
   useGoalProgressPayments,
@@ -79,11 +80,11 @@ export function GoalsPage() {
   const goalsQuery = useGoals();
   const { payments, isLoading: paymentsLoading } = useGoalProgressPayments();
   const deleteGoal = useDeleteGoal();
+  const { error: deleteError, showError, clearError } = useErrorState();
 
   const [formOpen, setFormOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<GoalWithMeta | null>(null);
   const [deleting, setDeleting] = React.useState<GoalWithMeta | null>(null);
-  const [deleteError, setDeleteError] = React.useState<string | null>(null);
 
   const goals = React.useMemo(() => goalsQuery.data ?? [], [goalsQuery.data]);
   const byId = React.useMemo(() => new Map(goals.map((g) => [g.id, g])), [goals]);
@@ -112,19 +113,19 @@ export function GoalsPage() {
     setFormOpen(true);
   };
   const openDelete = (goalId: string) => {
-    setDeleteError(null);
+    clearError();
     setDeleting(byId.get(goalId) ?? null);
   };
 
   const confirmDelete = () => {
     if (!deleting) return;
-    setDeleteError(null);
+    clearError();
     deleteGoal.mutate(deleting.id, {
       onSuccess: () => {
         setDeleting(null);
       },
       onError: (error) => {
-        setDeleteError(getErrorMessage(error, "Das Ziel konnte nicht gelöscht werden."));
+        showError(error, "Das Ziel konnte nicht gelöscht werden.");
       },
     });
   };
@@ -210,7 +211,10 @@ export function GoalsPage() {
       <DeleteGoalDialog
         open={deleting !== null}
         onOpenChange={(open) => {
-          if (!open) setDeleting(null);
+          if (!open) {
+            setDeleting(null);
+            clearError();
+          }
         }}
         goal={deleting}
         error={deleteError}

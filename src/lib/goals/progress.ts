@@ -12,6 +12,8 @@ const ZERO = Money.zero(EUR);
  * ueber formatPercent (R-4).
  */
 function achievementPercent(actual: Money, target: Money): DecimalInstance {
+  // Compute achievement percentage
+  // Note: target > 0 is guaranteed by DB constraint (goals.target_amount > 0)
   return actual.toDecimal().div(target.toDecimal()).times(100);
 }
 
