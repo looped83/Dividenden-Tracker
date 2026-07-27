@@ -14,7 +14,9 @@ export function useErrorState(): ErrorState {
   return {
     error,
     setError,
-    clearError: () => setError(null),
+    clearError: () => {
+      setError(null);
+    },
     showError: (err: unknown, fallback: string) => {
       setError(getErrorMessage(err, fallback));
     },
