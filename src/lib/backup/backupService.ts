@@ -73,10 +73,12 @@ export interface BackupSummary {
 /**
  * Remove null values from object (convert to undefined for optional fields)
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function removeNulls<T extends Record<string, any>>(obj: T): Partial<T> {
   const result: Partial<T> = {};
   for (const [key, value] of Object.entries(obj)) {
     if (value !== null) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       (result as Record<string, any>)[key] = value;
     }
   }
@@ -97,7 +99,7 @@ function formatBusinessDate(date: Date | string): string {
   if (typeof date === "string") {
     return date; // Already formatted
   }
-  const year = date.getUTCFullYear();
+  const year = String(date.getUTCFullYear());
   const month = String(date.getUTCMonth() + 1).padStart(2, "0");
   const day = String(date.getUTCDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
@@ -106,10 +108,11 @@ function formatBusinessDate(date: Date | string): string {
 /**
  * Convert numeric(14,2) from Supabase (might be string or number) to decimal string
  */
-function ensureDecimalString(value: unknown, maxDecimals: number = 2): string | null {
+function ensureDecimalString(value: unknown, maxDecimals = 2): string | null {
   if (value === null || value === undefined) return null;
 
   try {
+    // eslint-disable-next-line @typescript-eslint/no-base-to-string
     const d = new Decimal(String(value));
     return d.toFixed(maxDecimals);
   } catch {
@@ -126,10 +129,10 @@ function ensureNumberArray(value: unknown): number[] | null {
   if (Array.isArray(value)) {
     return value
       .map((v) => {
-        const n = typeof v === "number" ? v : parseInt(String(v), 10);
+        const n = typeof v === "number" ? v : Number.parseInt(String(v), 10);
         return isNaN(n) ? null : n;
       })
-      .filter((n) => n !== null) as number[];
+      .filter((n) => n !== null);
   }
   return null;
 }
@@ -151,12 +154,10 @@ async function fetchProfile(): Promise<ProfileBackup | null> {
     .eq("id", auth.user.id)
     .single();
 
-  if (error) {
+  if (error || !data) {
     console.error("Error fetching profile:", error);
     return null;
   }
-
-  if (!data) return null;
 
   return removeNulls({
     id: data.id,
@@ -184,6 +185,7 @@ async function fetchPortfolios(): Promise<PortfolioBackup[]> {
     return [];
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   return (data || []).map(
     (p) =>
       removeNulls({
@@ -212,7 +214,8 @@ async function fetchDepots(): Promise<DepotBackup[]> {
     return [];
   }
 
-  return (data || []).map(
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  return (data ?? []).map(
     (d) =>
       removeNulls({
         id: d.id,
@@ -243,7 +246,8 @@ async function fetchSecurities(): Promise<SecurityBackup[]> {
     return [];
   }
 
-  return (data || []).map(
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  return (data ?? []).map(
     (s) =>
       removeNulls({
         id: s.id,
@@ -280,7 +284,8 @@ async function fetchDividendPayments(): Promise<DividendPaymentBackup[]> {
     return [];
   }
 
-  return (data || []).map(
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  return (data ?? []).map(
     (p) =>
       removeNulls({
         id: p.id,
@@ -289,13 +294,13 @@ async function fetchDividendPayments(): Promise<DividendPaymentBackup[]> {
         depot_id: p.depot_id,
         import_id: p.import_id,
         pay_date: formatBusinessDate(p.pay_date),
-        gross_amount: ensureDecimalString(p.gross_amount, 2) || "0.00",
-        net_amount: ensureDecimalString(p.net_amount, 2) || "0.00",
-        withholding_tax: ensureDecimalString(p.withholding_tax, 2) || "0.00",
-        domestic_tax: ensureDecimalString(p.domestic_tax, 2) || "0.00",
-        solidarity_surcharge: ensureDecimalString(p.solidarity_surcharge, 2) || "0.00",
-        church_tax: ensureDecimalString(p.church_tax, 2) || "0.00",
-        fees: ensureDecimalString(p.fees, 2) || "0.00",
+        gross_amount: ensureDecimalString(p.gross_amount, 2) ?? "0.00",
+        net_amount: ensureDecimalString(p.net_amount, 2) ?? "0.00",
+        withholding_tax: ensureDecimalString(p.withholding_tax, 2) ?? "0.00",
+        domestic_tax: ensureDecimalString(p.domestic_tax, 2) ?? "0.00",
+        solidarity_surcharge: ensureDecimalString(p.solidarity_surcharge, 2) ?? "0.00",
+        church_tax: ensureDecimalString(p.church_tax, 2) ?? "0.00",
+        fees: ensureDecimalString(p.fees, 2) ?? "0.00",
         original_currency: p.original_currency,
         original_gross: ensureDecimalString(p.original_gross, 6),
         original_net: ensureDecimalString(p.original_net, 6),
@@ -331,7 +336,8 @@ async function fetchGoals(): Promise<GoalBackup[]> {
     return [];
   }
 
-  return (data || []).map(
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  return (data ?? []).map(
     (g) =>
       removeNulls({
         id: g.id,
@@ -339,7 +345,7 @@ async function fetchGoals(): Promise<GoalBackup[]> {
         goal_type: g.goal_type,
         year: g.year,
         month: g.month,
-        target_amount: ensureDecimalString(g.target_amount, 2) || "0.00",
+        target_amount: ensureDecimalString(g.target_amount, 2) ?? "0.00",
         currency: g.currency,
         title: g.title,
         note: g.note,
@@ -352,6 +358,7 @@ async function fetchGoals(): Promise<GoalBackup[]> {
 /**
  * Fetch all imports (metadata only)
  */
+// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
 async function fetchImports(): Promise<ImportBackup[]> {
   const { data, error } = await supabase
     .from("imports")
@@ -363,7 +370,8 @@ async function fetchImports(): Promise<ImportBackup[]> {
     return [];
   }
 
-  return (data || []).map(
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  return (data ?? []).map(
     (i) =>
       removeNulls({
         id: i.id,
@@ -403,21 +411,26 @@ async function fetchImports(): Promise<ImportBackup[]> {
  * Compute SHA-256 checksum for a data array
  * Serializes with deterministic ordering (by ID)
  */
+// eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
 async function computeChecksum(data: unknown[]): Promise<string> {
-  const sorted = (data as any[]).sort((a, b) => {
-    const aId = a.id || "";
-    const bId = b.id || "";
-    return aId.localeCompare(bId);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sorted = (data as any[]).sort((a: any, b: any) => {
+    const aId = a.id ?? "";
+    const bId = b.id ?? "";
+    return String(aId).localeCompare(String(bId));
   });
 
   const canonical = JSON.stringify(sorted, (_key, value) => {
     if (typeof value === "object" && value !== null && !Array.isArray(value)) {
-      return Object.keys(value)
-        .sort()
-        .reduce((obj: any, k) => {
-          obj[k] = value[k];
-          return obj;
-        }, {});
+      return (
+        Object.keys(value)
+          .sort()
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .reduce((obj: any, k) => {
+            obj[k] = value[k];
+            return obj;
+          }, {})
+      );
     }
     return value;
   });
@@ -434,12 +447,12 @@ async function computeChecksum(data: unknown[]): Promise<string> {
  */
 async function computeIntegrity(data: BackupData): Promise<IntegrityInfo> {
   const record_counts = {
-    portfolio: data["portfolios"].length,
-    depot: data["depots"].length,
-    security: data["securities"].length,
-    dividend_payment: data["dividend_payments"].length,
-    goal: data["goals"].length,
-    import: data["imports"].length,
+    portfolio: data.portfolios.length,
+    depot: data.depots.length,
+    security: data.securities.length,
+    dividend_payment: data.dividend_payments.length,
+    goal: data.goals.length,
+    import: data.imports.length,
   };
 
   // Compute total sums for active payments
@@ -457,23 +470,23 @@ async function computeIntegrity(data: BackupData): Promise<IntegrityInfo> {
   // Compute checksums
   const checksums: Record<string, string> = {};
 
-  if (data["portfolios"].length > 0) {
-    checksums["portfolios"] = await computeChecksum(data["portfolios"]);
+  if (data.portfolios.length > 0) {
+    checksums["portfolios"] = await computeChecksum(data.portfolios);
   }
-  if (data["depots"].length > 0) {
-    checksums["depots"] = await computeChecksum(data["depots"]);
+  if (data.depots.length > 0) {
+    checksums["depots"] = await computeChecksum(data.depots);
   }
-  if (data["securities"].length > 0) {
-    checksums["securities"] = await computeChecksum(data["securities"]);
+  if (data.securities.length > 0) {
+    checksums["securities"] = await computeChecksum(data.securities);
   }
-  if (data["dividend_payments"].length > 0) {
-    checksums["dividend_payments"] = await computeChecksum(data["dividend_payments"]);
+  if (data.dividend_payments.length > 0) {
+    checksums["dividend_payments"] = await computeChecksum(data.dividend_payments);
   }
-  if (data["goals"].length > 0) {
-    checksums["goals"] = await computeChecksum(data["goals"]);
+  if (data.goals.length > 0) {
+    checksums["goals"] = await computeChecksum(data.goals);
   }
-  if (data["imports"].length > 0) {
-    checksums["imports"] = await computeChecksum(data["imports"]);
+  if (data.imports.length > 0) {
+    checksums["imports"] = await computeChecksum(data.imports);
   }
 
   return {
@@ -603,7 +616,7 @@ export function generateBackupSummary(backup: BackupRoot): BackupSummary {
   const json = JSON.stringify(backup);
   const sizeBytes = new Blob([json]).size;
 
-  const counts = backup.integrity.record_counts as Record<string, number>;
+  const counts = backup.integrity.record_counts;
 
   return {
     portfolios: counts["portfolio"] ?? 0,
@@ -625,5 +638,5 @@ function formatBytes(bytes: number): string {
   const k = 1024;
   const sizes = ["B", "KB", "MB", "GB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
+  return `${String(Math.round((bytes / Math.pow(k, i)) * 100) / 100)} ${sizes[i]}`;
 }

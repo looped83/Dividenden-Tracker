@@ -42,7 +42,7 @@ export default function ProgressIndicator({ progress }: ProgressIndicatorProps) 
               <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-blue-500 transition-all duration-300"
-                  style={{ width: `${percentage}%` }}
+                  style={{ width: `${String(percentage)}%` }}
                 />
               </div>
               <span className="text-sm font-medium text-gray-600 dark:text-gray-400 w-12">

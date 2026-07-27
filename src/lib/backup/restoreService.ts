@@ -45,7 +45,7 @@ export interface RestoreResult {
   recordsRestored?: Record<string, number>;
   error?: string;
   errorDetails?: string;
-  validationErrors?: Array<{ path: string; message: string }>;
+  validationErrors?: { path: string; message: string }[];
 }
 
 export interface RestoreProgress {
@@ -74,7 +74,7 @@ export async function parseBackupFile(
     let parsed: unknown;
     try {
       parsed = JSON.parse(text);
-    } catch (e) {
+    } catch {
       return { success: false, error: "Invalid JSON format" };
     }
 
@@ -115,7 +115,7 @@ export function validateBeforeRestore(backup: BackupRoot): {
   // Check format version
   const versionCheck = validateBackupVersion(backup.format_version);
   if (!versionCheck.valid) {
-    errors.push(versionCheck.message || "Unsupported backup format version");
+    errors.push(versionCheck.message ?? "Unsupported backup format version");
   }
 
   // Check completeness (profile, depots, securities required)
@@ -129,7 +129,7 @@ export function validateBeforeRestore(backup: BackupRoot): {
   if (!integrity.valid) {
     integrity.mismatches.forEach((m) => {
       errors.push(
-        `Record count mismatch for ${m.entity}: expected ${m.expected}, got ${m.actual}`,
+        `Record count mismatch for ${m.entity}: expected ${String(m.expected)}, got ${String(m.actual)}`,
       );
     });
   }
@@ -301,6 +301,7 @@ export async function executeRestore(
     // Execute restore via RPC
     onProgress?.({ stage: "restoring" });
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
     const { data, error } = await (supabase.rpc as any)("restore_backup", {
       p_backup_payload: backup,
       p_mode: mode,
@@ -311,6 +312,7 @@ export async function executeRestore(
         success: false,
         mode,
         error: "Restore RPC failed",
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
         errorDetails: error.message,
       };
     }
@@ -322,7 +324,8 @@ export async function executeRestore(
     return {
       success: true,
       mode,
-      recordsRestored: (data as any)?.records_restored || {},
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
+      recordsRestored: data?.records_restored ?? {},
     };
   } catch (error) {
     return {
@@ -352,10 +355,10 @@ export function getReplaceModeSummary(backup: BackupRoot): {
       goals: 0,
     },
     willBeRestored: {
-      depots: backup.data.depots?.length || 0,
-      securities: backup.data.securities?.length || 0,
-      dividend_payments: backup.data.dividend_payments?.length || 0,
-      goals: backup.data.goals?.length || 0,
+      depots: backup.data.depots.length,
+      securities: backup.data.securities.length,
+      dividend_payments: backup.data.dividend_payments.length,
+      goals: backup.data.goals.length,
     },
   };
 }
