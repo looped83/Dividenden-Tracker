@@ -57,7 +57,7 @@ export function YearSelector({ selection, onSelect, availableYears }: YearSelect
       {otherYears.length > 0 && (
         <Select
           aria-label="Weiteres Jahr"
-          className="h-9 w-auto"
+          className="h-9 w-auto pointer-coarse:min-h-11"
           value={
             typeof selection === "number" && otherYears.includes(selection)
               ? String(selection)

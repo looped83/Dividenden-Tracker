@@ -319,11 +319,11 @@ export function PaymentsHeatmap({
                               }
                             },
                             className:
-                              "flex h-9 min-w-9 cursor-pointer items-center justify-center rounded-sm text-[10px] tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                              "relative flex h-9 min-w-9 cursor-pointer items-center justify-center rounded-sm text-[10px] tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring",
                           }
                         : {
                             className:
-                              "flex h-9 min-w-9 items-center justify-center rounded-sm text-[10px] tabular-nums",
+                              "relative flex h-9 min-w-9 items-center justify-center rounded-sm text-[10px] tabular-nums",
                           })}
                       style={style}
                     >

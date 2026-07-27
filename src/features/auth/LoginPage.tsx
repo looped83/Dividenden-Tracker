@@ -75,7 +75,9 @@ export function LoginPage() {
             <Label htmlFor="password">Passwort</Label>
             <Link
               to="/passwort-vergessen"
-              className="text-sm text-muted-foreground underline-offset-4 hover:underline"
+              // Eigenstaendiger Link (nicht im Fliesstext): braucht auf
+              // Touchgeraeten eine ausreichend grosse Trefferflaeche.
+              className="inline-flex items-center text-sm text-muted-foreground underline-offset-4 hover:underline pointer-coarse:min-h-11"
             >
               Passwort vergessen?
             </Link>

@@ -191,9 +191,17 @@ export function GoalDetailPage() {
           <p className="text-sm text-muted-foreground">{timeProgressText(progress)}</p>
 
           <div>
-            <Button asChild variant="outline" size="sm">
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              // Das Label ist zu lang fuer schmale Viewports; Buttons sind
+              // standardmaessig whitespace-nowrap und wuerden sonst ueberstehen.
+              className="h-auto min-h-11 whitespace-normal py-2 text-left"
+            >
               <Link to={drillDownHref(goal)}>
-                <ExternalLink aria-hidden /> Dividendeneingänge des Zeitraums anzeigen
+                <ExternalLink aria-hidden className="shrink-0" /> Dividendeneingänge des
+                Zeitraums anzeigen
               </Link>
             </Button>
           </div>

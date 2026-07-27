@@ -155,7 +155,9 @@ export function StatTable<T>({
                           toggleSort(column.key);
                         }}
                         className={cn(
-                          "inline-flex items-center gap-1 rounded-sm uppercase outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring",
+                          // h-full: die Zelle ist bereits 44px hoch, der Button
+                          // fuellt sie aus und wird so touch-tauglich (WCAG 2.5.5).
+                          "inline-flex h-full min-h-11 items-center gap-1 rounded-sm uppercase outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring",
                           column.align === "right" && "flex-row-reverse",
                         )}
                         aria-label={`Nach ${column.headerLabel ?? column.key} sortieren`}

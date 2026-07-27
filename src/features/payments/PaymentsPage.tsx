@@ -331,7 +331,7 @@ export function PaymentsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-semibold tracking-tight">Dividenden</h1>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" asChild>
             <Link to="/eingaenge/datenqualitaet">
               <ShieldCheck /> Datenqualität
@@ -540,7 +540,7 @@ export function PaymentsPage() {
                   <TableHead className="w-10">
                     <input
                       type="checkbox"
-                      className="size-4"
+                      className="size-4 pointer-coarse:size-6"
                       aria-label="Diese Seite auswählen"
                       checked={pageAllSelected}
                       onChange={selectPage}
@@ -740,7 +740,7 @@ function PaymentRow({
       <TableCell>
         <input
           type="checkbox"
-          className="size-4"
+          className="size-4 pointer-coarse:size-6"
           aria-label={`${companyName} auswählen`}
           checked={selected}
           onChange={onToggle}
@@ -831,7 +831,7 @@ function PaymentCard({
       <div className="flex items-start gap-3">
         <input
           type="checkbox"
-          className="mt-1 size-4"
+          className="mt-1 size-4 pointer-coarse:size-6"
           aria-label={`${companyName} auswählen`}
           checked={selected}
           onChange={onToggle}

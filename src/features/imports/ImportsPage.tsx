@@ -83,8 +83,8 @@ export function ImportsPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-4">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="min-w-0">
           <h1 className="text-xl font-semibold">Importe</h1>
           <p className="text-sm text-muted-foreground">
             Sicherer, nachvollziehbarer und rückrollbarer Import historischer

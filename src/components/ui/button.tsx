@@ -23,7 +23,10 @@ const buttonVariants = cva(
         // Default trifft die Mindest-Touch-Zielgroesse von 44x44pt
         // (UX_AND_DESIGN_SYSTEM.md #7 / TEST_STRATEGY.md #9).
         default: "h-11 px-4 py-2",
-        sm: "h-9 rounded-md px-3",
+        // Auf Touchgeraeten (pointer: coarse) waechst die kompakte Variante auf
+        // 44px, damit sie die Mindest-Touch-Zielgroesse erfuellt. Mit Maus
+        // bleibt die dichtere 36px-Darstellung erhalten.
+        sm: "h-9 pointer-coarse:min-h-11 rounded-md px-3",
         lg: "h-12 rounded-md px-8",
         icon: "size-11",
       },

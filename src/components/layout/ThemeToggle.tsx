@@ -32,6 +32,7 @@ export function ThemeToggle() {
             }}
             className={cn(
               "inline-flex size-9 items-center justify-center rounded-sm outline-none",
+              "pointer-coarse:size-11",
               "focus-visible:ring-2 focus-visible:ring-ring",
               isActive
                 ? "bg-background text-foreground shadow-sm"
