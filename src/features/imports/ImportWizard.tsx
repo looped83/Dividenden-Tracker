@@ -395,7 +395,7 @@ export function ImportWizard({ onFinished }: { onFinished: () => void }) {
           {priorImport && (
             <div className="flex items-start gap-2 rounded-md border border-warning/40 bg-warning/10 p-3 text-sm">
               <AlertTriangle
-                className="mt-0.5 size-4 shrink-0 text-warning"
+                className="mt-0.5 size-4 shrink-0 text-warning-strong"
                 aria-hidden
               />
               <span>

@@ -58,7 +58,7 @@ export default function ConflictResolver({
                   <p className="font-medium text-sm">
                     {typeLabel[conflict.type]}: {conflict.field}
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     ID: {conflict.id.slice(0, 8)}...
                   </p>
                 </div>

@@ -41,6 +41,8 @@
 
   --warning: oklch(0.68 0.15 75);
   --warning-foreground: oklch(0.2 0.02 260);
+  /* Textfarbe auf hellem Warn-Tint (bg-warning/10) — in beiden Themes >= 4.5:1. */
+  --warning-strong: oklch(0.46 0.11 70);
 
   --chart-1: oklch(0.55 0.1 255);
   --chart-2: oklch(0.62 0.11 200);
@@ -79,6 +81,7 @@
 
   --warning: oklch(0.78 0.14 80);
   --warning-foreground: oklch(0.2 0.03 80);
+  --warning-strong: oklch(0.85 0.12 85);
 
   --chart-1: oklch(0.72 0.11 255);
   --chart-2: oklch(0.75 0.1 200);
@@ -109,6 +112,7 @@
   --color-negative-foreground: var(--negative-foreground);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
+  --color-warning-strong: var(--warning-strong);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
