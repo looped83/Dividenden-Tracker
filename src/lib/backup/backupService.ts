@@ -78,7 +78,7 @@ function removeNulls<T extends Record<string, any>>(obj: T): Partial<T> {
   const result: Partial<T> = {};
   for (const [key, value] of Object.entries(obj)) {
     if (value !== null) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
       (result as Record<string, any>)[key] = value;
     }
   }
@@ -154,7 +154,7 @@ async function fetchProfile(): Promise<ProfileBackup | null> {
     .eq("id", auth.user.id)
     .single();
 
-  if (error || !data) {
+  if (error) {
     console.error("Error fetching profile:", error);
     return null;
   }
@@ -214,8 +214,7 @@ async function fetchDepots(): Promise<DepotBackup[]> {
     return [];
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  return (data ?? []).map(
+  return data.map(
     (d) =>
       removeNulls({
         id: d.id,
@@ -246,8 +245,7 @@ async function fetchSecurities(): Promise<SecurityBackup[]> {
     return [];
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  return (data ?? []).map(
+  return data.map(
     (s) =>
       removeNulls({
         id: s.id,
@@ -284,8 +282,7 @@ async function fetchDividendPayments(): Promise<DividendPaymentBackup[]> {
     return [];
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  return (data ?? []).map(
+  return data.map(
     (p) =>
       removeNulls({
         id: p.id,
@@ -336,8 +333,7 @@ async function fetchGoals(): Promise<GoalBackup[]> {
     return [];
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  return (data ?? []).map(
+  return data.map(
     (g) =>
       removeNulls({
         id: g.id,
@@ -358,7 +354,7 @@ async function fetchGoals(): Promise<GoalBackup[]> {
 /**
  * Fetch all imports (metadata only)
  */
-// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 async function fetchImports(): Promise<ImportBackup[]> {
   const { data, error } = await supabase
     .from("imports")
@@ -370,8 +366,7 @@ async function fetchImports(): Promise<ImportBackup[]> {
     return [];
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  return (data ?? []).map(
+  return data.map(
     (i) =>
       removeNulls({
         id: i.id,
@@ -402,6 +397,7 @@ async function fetchImports(): Promise<ImportBackup[]> {
       }) as ImportBackup,
   );
 }
+/* eslint-enable @typescript-eslint/no-unsafe-assignment */
 
 // ============================================================================
 // Checksum Computation
@@ -411,9 +407,8 @@ async function fetchImports(): Promise<ImportBackup[]> {
  * Compute SHA-256 checksum for a data array
  * Serializes with deterministic ordering (by ID)
  */
-// eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
+/* eslint-disable @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument */
 async function computeChecksum(data: unknown[]): Promise<string> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sorted = (data as any[]).sort((a: any, b: any) => {
     const aId = a.id ?? "";
     const bId = b.id ?? "";
@@ -422,15 +417,12 @@ async function computeChecksum(data: unknown[]): Promise<string> {
 
   const canonical = JSON.stringify(sorted, (_key, value) => {
     if (typeof value === "object" && value !== null && !Array.isArray(value)) {
-      return (
-        Object.keys(value)
-          .sort()
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .reduce((obj: any, k) => {
-            obj[k] = value[k];
-            return obj;
-          }, {})
-      );
+      return Object.keys(value)
+        .sort()
+        .reduce<Record<string, any>>((obj, k: string) => {
+          obj[k] = (value as Record<string, any>)[k];
+          return obj;
+        }, {});
     }
     return value;
   });
@@ -441,6 +433,7 @@ async function computeChecksum(data: unknown[]): Promise<string> {
   const hash_array = Array.from(new Uint8Array(hash_buffer));
   return hash_array.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
+/* eslint-enable @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument */
 
 /**
  * Compute integrity information (record counts, totals, checksums)

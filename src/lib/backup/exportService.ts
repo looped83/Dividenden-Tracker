@@ -77,6 +77,7 @@ export const DEFAULT_EXPORT_COLUMNS: ExportColumn[] = [
 /**
  * Fetch and filter dividend payments for export
  */
+/* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unnecessary-condition */
 async function fetchPaymentsForExport(
   options: ExportOptions,
   onProgress?: (p: ExportProgress) => void,
@@ -113,8 +114,7 @@ async function fetchPaymentsForExport(
 
   if (error) throw error;
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  onProgress?.({ stage: "filtering", totalItems: data?.length ?? 0 });
+  onProgress?.({ stage: "filtering", totalItems: data.length });
 
   // Apply client-side filters
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -149,6 +149,7 @@ async function fetchPaymentsForExport(
   // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return filtered;
 }
+/* eslint-enable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unnecessary-condition */
 
 // ============================================================================
 // CSV Export
@@ -179,7 +180,7 @@ function escapeCsvField(value: any): string {
 /**
  * Generate CSV export
  */
-// eslint-disable-next-line @typescript-eslint/require-await, @typescript-eslint/no-explicit-any
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any, @typescript-eslint/require-await */
 async function generateCsvExport(
   payments: any[],
   columns: ExportColumn[],
@@ -196,7 +197,6 @@ async function generateCsvExport(
   // Data rows
   payments.forEach((payment, index) => {
     const row = visibleColumns.map((col) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let value: any;
 
       if (col.field === "security_name") {
@@ -231,6 +231,7 @@ async function generateCsvExport(
 
   return new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
 }
+/* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any, @typescript-eslint/require-await */
 
 // ============================================================================
 // Excel Export (using a simple approach without external library)
@@ -240,7 +241,7 @@ async function generateCsvExport(
  * Generate simple XLSX export (note: uses CSV fallback if xlsx library not available)
  * In production, you'd use a library like xlsx or exceljs
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-base-to-string, @typescript-eslint/no-unnecessary-condition, no-restricted-globals, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return */
 async function generateXlsxExport(
   payments: any[],
   columns: ExportColumn[],
@@ -255,6 +256,7 @@ async function generateXlsxExport(
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   });
 }
+/* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-base-to-string, @typescript-eslint/no-unnecessary-condition, no-restricted-globals, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return */
 
 // ============================================================================
 // JSON Export
@@ -263,7 +265,7 @@ async function generateXlsxExport(
 /**
  * Generate JSON export for analytical use (not restorable)
  */
-// eslint-disable-next-line @typescript-eslint/require-await, @typescript-eslint/no-explicit-any
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any, @typescript-eslint/require-await */
 async function generateJsonExport(
   payments: any[],
   columns: ExportColumn[],
@@ -274,7 +276,6 @@ async function generateJsonExport(
   const visibleColumns = columns.filter((c) => c.visible);
 
   const rows = payments.map((payment) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const row: Record<string, any> = {};
 
     visibleColumns.forEach((col) => {
@@ -309,6 +310,7 @@ async function generateJsonExport(
 
   return new Blob([JSON.stringify(json, null, 2)], { type: "application/json" });
 }
+/* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any, @typescript-eslint/require-await */
 
 // ============================================================================
 // File Download
@@ -333,7 +335,7 @@ function downloadBlob(blob: Blob, fileName: string): void {
  */
 function getTimestampSuffix(): string {
   const now = new Date();
-  const year = now.getFullYear();
+  const year = String(now.getFullYear());
   const month = String(now.getMonth() + 1).padStart(2, "0");
   const day = String(now.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
@@ -351,7 +353,7 @@ export async function executeExport(
   onProgress?: (p: ExportProgress) => void,
 ): Promise<ExportResult> {
   try {
-    const columns = options.columns || DEFAULT_EXPORT_COLUMNS;
+    const columns = options.columns ?? DEFAULT_EXPORT_COLUMNS;
 
     // Fetch and filter payments
     const payments = await fetchPaymentsForExport(options, onProgress);
@@ -396,7 +398,7 @@ export async function executeExport(
           success: false,
           fileName: "",
           mimeType: "",
-          error: `Unsupported export format: ${options.format}`,
+          error: `Unsupported export format: ${String(options.format)}`,
         };
     }
 

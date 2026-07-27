@@ -147,15 +147,16 @@ export function validateBeforeRestore(backup: BackupRoot): {
 /**
  * Detect conflicts between backup and existing data (for merge mode)
  */
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/restrict-template-expressions */
 export async function detectConflicts(backup: BackupRoot): Promise<ConflictDetection> {
   const conflicts: ConflictItem[] = [];
 
   // Check for depot ID collisions
-  if (backup.data.depots && backup.data.depots.length > 0) {
+  if (backup.data.depots.length > 0) {
     const { data: existingDepots } = await supabase.from("depots").select("id, name");
 
     const existingDepotMap = new Map(
-      (existingDepots || []).map((d: any) => [d.id, d.name]),
+      (existingDepots ?? []).map((d: any) => [d.id, d.name]),
     );
 
     for (const backupDepot of backup.data.depots) {
@@ -173,13 +174,13 @@ export async function detectConflicts(backup: BackupRoot): Promise<ConflictDetec
   }
 
   // Check for security ID collisions
-  if (backup.data.securities && backup.data.securities.length > 0) {
+  if (backup.data.securities.length > 0) {
     const { data: existingSecurities } = await supabase
       .from("securities")
       .select("id, name, isin, ticker");
 
     const existingSecurityMap = new Map(
-      (existingSecurities || []).map((s: any) => [s.id, s]),
+      (existingSecurities ?? []).map((s: any) => [s.id, s]),
     );
 
     for (const backupSecurity of backup.data.securities) {
@@ -197,13 +198,13 @@ export async function detectConflicts(backup: BackupRoot): Promise<ConflictDetec
   }
 
   // Check for dividend payment ID collisions (by business fingerprint to detect real duplicates)
-  if (backup.data.dividend_payments && backup.data.dividend_payments.length > 0) {
+  if (backup.data.dividend_payments.length > 0) {
     const { data: existingPayments } = await supabase
       .from("dividend_payments")
       .select("id, business_fingerprint, net_amount, pay_date");
 
     const existingFingerprintMap = new Map(
-      (existingPayments || []).map((p: any) => [p.business_fingerprint, p]),
+      (existingPayments ?? []).map((p: any) => [p.business_fingerprint, p]),
     );
 
     for (const backupPayment of backup.data.dividend_payments) {
@@ -227,6 +228,7 @@ export async function detectConflicts(backup: BackupRoot): Promise<ConflictDetec
     conflicts,
   };
 }
+/* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/restrict-template-expressions */
 
 // ============================================================================
 // Cache Invalidation
@@ -251,10 +253,12 @@ function invalidateBackupAffectedCaches(): void {
   ];
 
   for (const key of keysToInvalidate) {
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     queryClient.invalidateQueries({ queryKey: key });
   }
 
   // Invalidate all queries as a safety net
+  // eslint-disable-next-line @typescript-eslint/no-floating-promises
   queryClient.invalidateQueries();
 }
 
