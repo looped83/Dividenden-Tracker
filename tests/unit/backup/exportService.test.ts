@@ -5,29 +5,46 @@
  */
 
 import { describe, it, expect } from "vitest";
+// Wichtig: die echte Implementierung importieren. Diese Datei enthielt zuvor
+// eine lokale Kopie von escapeCsvField ("simulating escapeCsvField"), sodass
+// die Tests nur den Klon prueften und Fehler im Produktionscode nicht
+// bemerkten — genau so blieb der Quote-Escaping-Fehler unentdeckt.
+import { escapeCsvField } from "@/lib/backup/exportService";
+
+/** Zerlegt eine CSV-Zeile RFC-4180-konform in Felder. */
+function parseCsvRow(line: string): string[] {
+  const fields: string[] = [];
+  let field = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (line[i + 1] === '"') {
+          field += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        field += ch;
+      }
+    } else if (ch === '"') {
+      inQuotes = true;
+    } else if (ch === ",") {
+      fields.push(field);
+      field = "";
+    } else {
+      field += ch;
+    }
+  }
+  fields.push(field);
+  return fields;
+}
 
 describe("Export Service", () => {
   describe("CSV Formula Injection Protection", () => {
-    // Test helper function (simulating escapeCsvField)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const escapeCsvField = (value: any): string => {
-      if (value === null || value === undefined) return "";
-
-      const str = String(value);
-
-      // Prevent formula injection
-      if (/^[\s=+\-@]/.exec(str)) {
-        return `"'${str}"`;
-      }
-
-      // Escape quotes and wrap if needed
-      if (str.includes('"') || str.includes(",") || str.includes("\n")) {
-        return `"${str.replace(/"/g, '""')}"`;
-      }
-
-      return str;
-    };
-
     it("should escape formula starting with =", () => {
       const result = escapeCsvField("=SUM(A1:A10)");
       expect(result).toContain("'=SUM");
@@ -41,6 +58,46 @@ describe("Export Service", () => {
     it("should escape formula starting with -", () => {
       const result = escapeCsvField("-2*3");
       expect(result).toContain("'-2");
+    });
+
+    // --- Regressionstests Phase 9.5 -------------------------------------
+
+    it("maskiert Quotes auch im Formel-Zweig (Ausbruch aus dem Feld)", () => {
+      // Zuvor: `"'=x","y"` — das Feld endete nach `=x` und `y` wurde zu einer
+      // eigenen Spalte. Ein Angreifer konnte so beliebige Spalten einschleusen.
+      const line = escapeCsvField('=x","y');
+      expect(parseCsvRow(line)).toEqual(['\'=x","y']);
+    });
+
+    it("haelt eine Zeile auch bei Formel und Komma einspaltig", () => {
+      const line = escapeCsvField("=SUM(A1,B1)");
+      expect(parseCsvRow(line)).toHaveLength(1);
+    });
+
+    it("neutralisiert Formeln weiterhin mit vorangestelltem Apostroph", () => {
+      for (const attack of ["=1+1", "+1+1", "@SUM(A1)", "-2*3", "\t=1+1"]) {
+        const [field] = parseCsvRow(escapeCsvField(attack));
+        expect(field).toBe(`'${attack}`);
+      }
+    });
+
+    it("exportiert negative Betraege als Zahl, nicht als Text", () => {
+      // `-12.34` beginnt mit `-`, ist aber ein reines Zahlenliteral und damit
+      // keine Formel. Der frueher vorangestellte Apostroph machte jeden
+      // Storno-/Korrekturbetrag in Excel zu nicht rechenbarem Text.
+      for (const amount of ["-12.34", "-1", "12.34", "0.00"]) {
+        expect(escapeCsvField(amount)).toBe(amount);
+      }
+    });
+
+    it("schuetzt weiterhin Werte, die nur wie Zahlen beginnen", () => {
+      for (const attack of ["-2*3", "-1+1", "+1e1*2"]) {
+        expect(escapeCsvField(attack)).toContain("'");
+      }
+    });
+
+    it("maskiert Wagenrueckläufe, die eine Zeile spalten wuerden", () => {
+      expect(parseCsvRow(escapeCsvField("a\r\nb"))).toEqual(["a\r\nb"]);
     });
 
     it("should escape formula starting with @", () => {
