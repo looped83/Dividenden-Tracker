@@ -1,5 +1,5 @@
-import React from 'react';
-import { getErrorMessage } from '@/lib/utils/errorMessage';
+import React from "react";
+import { getErrorMessage } from "@/lib/utils/errorMessage";
 
 interface ErrorState {
   error: string | null;
