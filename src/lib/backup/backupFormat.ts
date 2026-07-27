@@ -348,8 +348,7 @@ export function validateBackupCompleteness(backup: BackupRoot): {
   const missing: string[] = [];
 
   if (backup.data.depots.length === 0) missing.push("depots");
-  if (backup.data.securities.length === 0)
-    missing.push("securities");
+  if (backup.data.securities.length === 0) missing.push("securities");
 
   return {
     valid: missing.length === 0,

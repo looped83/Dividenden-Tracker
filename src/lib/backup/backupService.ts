@@ -412,13 +412,15 @@ async function computeChecksum(data: unknown[]): Promise<string> {
 
   const canonical = JSON.stringify(sorted, (_key, value) => {
     if (typeof value === "object" && value !== null && !Array.isArray(value)) {
-      return Object.keys(value)
-        .sort()
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .reduce((obj: any, k) => {
-          obj[k] = value[k];
-          return obj;
-        }, {});
+      return (
+        Object.keys(value)
+          .sort()
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .reduce((obj: any, k) => {
+            obj[k] = value[k];
+            return obj;
+          }, {})
+      );
     }
     return value;
   });

@@ -155,14 +155,14 @@ describe("Backup Format Validation", () => {
       expect(result.missing).toHaveLength(0);
     });
 
-    it("should detect missing profile", () => {
+    it("should not require profile in backup data", () => {
       const backup = {
         ...minimalBackup,
-        data: { ...minimalBackup.data, profile: undefined },
+        data: { ...minimalBackup.data },
       };
       const result = validateBackupCompleteness(backup);
-      expect(result.valid).toBe(false);
-      expect(result.missing).toContain("profile");
+      // Profile is optional - only depots and securities are required
+      expect(result.missing).not.toContain("profile");
     });
 
     it("should detect missing depots", () => {
