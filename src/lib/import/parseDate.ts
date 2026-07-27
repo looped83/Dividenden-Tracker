@@ -30,8 +30,7 @@ export interface DateParseError {
 }
 
 export type DateParseOutcome =
-  | { ok: true; value: ParsedDate }
-  | { ok: false; error: DateParseError };
+  { ok: true; value: ParsedDate } | { ok: false; error: DateParseError };
 
 function ok(iso: string, hasTimeComponent = false): DateParseOutcome {
   return { ok: true, value: { iso, hasTimeComponent } };

@@ -20,27 +20,13 @@
  */
 
 export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[];
+  string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type PaymentType =
-  | "regular"
-  | "special"
-  | "correction"
-  | "cancellation"
-  | "refund"
-  | "other";
+  "regular" | "special" | "correction" | "cancellation" | "refund" | "other";
 export type PaymentSource = "manual" | "csv_import" | "excel_import" | "restore";
 export type ImportStatus =
-  | "analyzing"
-  | "pending_confirmation"
-  | "committed"
-  | "rolled_back"
-  | "discarded";
+  "analyzing" | "pending_confirmation" | "committed" | "rolled_back" | "discarded";
 export type DataQuality = "ok" | "incomplete" | "needs_review";
 export type GoalType = "annual" | "monthly";
 export type AuditAction =

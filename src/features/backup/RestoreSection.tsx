@@ -29,12 +29,7 @@ import RestorePreview from "@/components/backup/RestorePreview";
 import { AlertCircle, CheckCircle, Upload } from "lucide-react";
 
 type RestoreStep =
-  | "upload"
-  | "validate"
-  | "preview"
-  | "confirm"
-  | "restoring"
-  | "complete";
+  "upload" | "validate" | "preview" | "confirm" | "restoring" | "complete";
 
 export default function RestoreSection() {
   const fileInputRef = useRef<HTMLInputElement>(null);
