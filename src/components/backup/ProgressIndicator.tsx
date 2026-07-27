@@ -28,7 +28,7 @@ const stageLabels: Record<BackupProgress["stage"], string> = {
 
 export default function ProgressIndicator({ progress }: ProgressIndicatorProps) {
   const percentage = progress.totalItems
-    ? Math.round((progress.itemsProcessed || 0) / progress.totalItems * 100)
+    ? Math.round(((progress.itemsProcessed || 0) / progress.totalItems) * 100)
     : undefined;
 
   return (

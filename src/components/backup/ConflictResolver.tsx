@@ -14,7 +14,10 @@ interface ConflictResolverProps {
   onConflictResolved?: (conflict: ConflictItem) => void;
 }
 
-export default function ConflictResolver({ conflicts, onConflictResolved }: ConflictResolverProps) {
+export default function ConflictResolver({
+  conflicts,
+  onConflictResolved,
+}: ConflictResolverProps) {
   if (conflicts.length === 0) {
     return null;
   }
@@ -40,19 +43,24 @@ export default function ConflictResolver({ conflicts, onConflictResolved }: Conf
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-yellow-800 dark:text-yellow-300">
-          Die folgenden Einträge existieren bereits mit unterschiedlichen Daten. Wählen Sie, wie sie behandelt werden
-          sollen.
+          Die folgenden Einträge existieren bereits mit unterschiedlichen Daten. Wählen
+          Sie, wie sie behandelt werden sollen.
         </p>
 
         <div className="space-y-3">
           {conflicts.map((conflict, idx) => (
-            <div key={idx} className="p-3 bg-white dark:bg-gray-900 rounded-lg border border-yellow-200 dark:border-yellow-800">
+            <div
+              key={idx}
+              className="p-3 bg-white dark:bg-gray-900 rounded-lg border border-yellow-200 dark:border-yellow-800"
+            >
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <p className="font-medium text-sm">
                     {typeLabel[conflict.type]}: {conflict.field}
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">ID: {conflict.id.slice(0, 8)}...</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    ID: {conflict.id.slice(0, 8)}...
+                  </p>
                 </div>
               </div>
 
@@ -73,11 +81,15 @@ export default function ConflictResolver({ conflicts, onConflictResolved }: Conf
 
               <Select
                 value={conflict.resolution || "overwrite"}
-                onChange={(e) => handleResolution(conflict, e.target.value as "skip" | "overwrite")}
+                onChange={(e) =>
+                  handleResolution(conflict, e.target.value as "skip" | "overwrite")
+                }
                 className="text-xs"
               >
                 <option value="skip">Überspringen - Aktuellen Wert behalten</option>
-                <option value="overwrite">Überschreiben - Mit Sicherungswert ersetzen</option>
+                <option value="overwrite">
+                  Überschreiben - Mit Sicherungswert ersetzen
+                </option>
               </Select>
             </div>
           ))}

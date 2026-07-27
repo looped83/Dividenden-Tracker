@@ -49,7 +49,12 @@ export interface RestoreResult {
 }
 
 export interface RestoreProgress {
-  stage: "reading_file" | "validating" | "detecting_conflicts" | "restoring" | "invalidating_cache";
+  stage:
+    | "reading_file"
+    | "validating"
+    | "detecting_conflicts"
+    | "restoring"
+    | "invalidating_cache";
   itemsProcessed?: number;
   totalItems?: number;
 }
@@ -61,7 +66,9 @@ export interface RestoreProgress {
 /**
  * Parse backup file from File object
  */
-export async function parseBackupFile(file: File): Promise<{ success: true; data: BackupRoot } | { success: false; error: string }> {
+export async function parseBackupFile(
+  file: File,
+): Promise<{ success: true; data: BackupRoot } | { success: false; error: string }> {
   try {
     const text = await file.text();
     let parsed: unknown;
@@ -73,7 +80,10 @@ export async function parseBackupFile(file: File): Promise<{ success: true; data
 
     const result = parseBackupSafe(parsed);
     if (!result.success) {
-      const errors = result.errors.slice(0, 3).map((e) => `${e.path}: ${e.message}`).join("; ");
+      const errors = result.errors
+        .slice(0, 3)
+        .map((e) => `${e.path}: ${e.message}`)
+        .join("; ");
       return {
         success: false,
         error: `Backup format validation failed: ${errors}${result.errors.length > 3 ? "..." : ""}`,
@@ -118,7 +128,9 @@ export function validateBeforeRestore(backup: BackupRoot): {
   const integrity = validateBackupIntegrity(backup);
   if (!integrity.valid) {
     integrity.mismatches.forEach((m) => {
-      errors.push(`Record count mismatch for ${m.entity}: expected ${m.expected}, got ${m.actual}`);
+      errors.push(
+        `Record count mismatch for ${m.entity}: expected ${m.expected}, got ${m.actual}`,
+      );
     });
   }
 
@@ -143,7 +155,7 @@ export async function detectConflicts(backup: BackupRoot): Promise<ConflictDetec
     const { data: existingDepots } = await supabase.from("depots").select("id, name");
 
     const existingDepotMap = new Map(
-      (existingDepots || []).map((d: any) => [d.id, d.name])
+      (existingDepots || []).map((d: any) => [d.id, d.name]),
     );
 
     for (const backupDepot of backup.data.depots) {
@@ -162,10 +174,12 @@ export async function detectConflicts(backup: BackupRoot): Promise<ConflictDetec
 
   // Check for security ID collisions
   if (backup.data.securities && backup.data.securities.length > 0) {
-    const { data: existingSecurities } = await supabase.from("securities").select("id, name, isin, ticker");
+    const { data: existingSecurities } = await supabase
+      .from("securities")
+      .select("id, name, isin, ticker");
 
     const existingSecurityMap = new Map(
-      (existingSecurities || []).map((s: any) => [s.id, s])
+      (existingSecurities || []).map((s: any) => [s.id, s]),
     );
 
     for (const backupSecurity of backup.data.securities) {
@@ -189,7 +203,7 @@ export async function detectConflicts(backup: BackupRoot): Promise<ConflictDetec
       .select("id, business_fingerprint, net_amount, pay_date");
 
     const existingFingerprintMap = new Map(
-      (existingPayments || []).map((p: any) => [p.business_fingerprint, p])
+      (existingPayments || []).map((p: any) => [p.business_fingerprint, p]),
     );
 
     for (const backupPayment of backup.data.dividend_payments) {
@@ -254,7 +268,7 @@ function invalidateBackupAffectedCaches(): void {
 export async function executeRestore(
   backup: BackupRoot,
   mode: RestoreMode,
-  onProgress?: (progress: RestoreProgress) => void
+  onProgress?: (progress: RestoreProgress) => void,
 ): Promise<RestoreResult> {
   try {
     // Pre-restore validation

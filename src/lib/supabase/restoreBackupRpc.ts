@@ -24,7 +24,7 @@ export interface RestoreBackupRpcResult {
  */
 export async function callRestoreBackupRpc(
   backup: BackupRoot,
-  mode: "merge" | "replace"
+  mode: "merge" | "replace",
 ): Promise<{ success: boolean; data?: RestoreBackupRpcResult; error?: Error }> {
   try {
     const { data, error } = await (supabase.rpc as any)("restore_backup", {
@@ -46,7 +46,10 @@ export async function callRestoreBackupRpc(
   } catch (err) {
     return {
       success: false,
-      error: err instanceof Error ? err : new Error("Unknown error calling restore_backup RPC"),
+      error:
+        err instanceof Error
+          ? err
+          : new Error("Unknown error calling restore_backup RPC"),
     };
   }
 }

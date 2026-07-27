@@ -41,7 +41,9 @@ export default function RestorePreview({ backup }: RestorePreviewProps) {
               <p className="text-2xl font-bold">{counts.securities}</p>
             </div>
             <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-              <p className="text-sm text-gray-600 dark:text-gray-400">Dividendenzahlungen</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Dividendenzahlungen
+              </p>
               <p className="text-2xl font-bold">{counts.dividends}</p>
             </div>
             <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">

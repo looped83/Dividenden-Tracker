@@ -7,18 +7,29 @@
 
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { parseBackupFile, validateBeforeRestore, executeRestore } from "@/lib/backup/restoreService";
+import {
+  parseBackupFile,
+  validateBeforeRestore,
+  executeRestore,
+} from "@/lib/backup/restoreService";
 import type { RestoreMode, RestoreResult } from "@/lib/backup/restoreService";
 import type { BackupRoot } from "@/lib/backup/backupFormat";
 import ProgressIndicator from "@/components/backup/ProgressIndicator";
 import RestorePreview from "@/components/backup/RestorePreview";
 import { AlertCircle, CheckCircle, Upload } from "lucide-react";
 
-type RestoreStep = "upload" | "validate" | "preview" | "confirm" | "restoring" | "complete";
+type RestoreStep =
+  "upload" | "validate" | "preview" | "confirm" | "restoring" | "complete";
 
 export default function RestoreSection() {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -58,7 +69,9 @@ export default function RestoreSection() {
       setBackup(backup);
       setStep("preview");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error processing backup file");
+      setError(
+        err instanceof Error ? err.message : "Unknown error processing backup file",
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -108,7 +121,8 @@ export default function RestoreSection() {
           <CardHeader>
             <CardTitle>Sicherung hochladen</CardTitle>
             <CardDescription>
-              Wählen Sie eine zuvor heruntergeladene Sicherungsdatei aus, um Ihre Daten wiederherzustellen.
+              Wählen Sie eine zuvor heruntergeladene Sicherungsdatei aus, um Ihre Daten
+              wiederherzustellen.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -171,8 +185,13 @@ export default function RestoreSection() {
                   value={mode}
                   onChange={(e) => setMode(e.target.value as RestoreMode)}
                 >
-                  <option value="merge">Zusammenführen - Neue Daten hinzufügen, Duplikate erkennen</option>
-                  <option value="replace">Ersetzen - Bestehende Daten archivieren, Sicherung vollständig wiederherstellen</option>
+                  <option value="merge">
+                    Zusammenführen - Neue Daten hinzufügen, Duplikate erkennen
+                  </option>
+                  <option value="replace">
+                    Ersetzen - Bestehende Daten archivieren, Sicherung vollständig
+                    wiederherstellen
+                  </option>
                 </Select>
               </div>
 
@@ -227,19 +246,27 @@ export default function RestoreSection() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="text-sm">
                     <p className="text-gray-500">Depots</p>
-                    <p className="text-2xl font-bold">{result.recordsRestored["depot"] || 0}</p>
+                    <p className="text-2xl font-bold">
+                      {result.recordsRestored["depot"] || 0}
+                    </p>
                   </div>
                   <div className="text-sm">
                     <p className="text-gray-500">Wertpapiere</p>
-                    <p className="text-2xl font-bold">{result.recordsRestored["security"] || 0}</p>
+                    <p className="text-2xl font-bold">
+                      {result.recordsRestored["security"] || 0}
+                    </p>
                   </div>
                   <div className="text-sm">
                     <p className="text-gray-500">Dividendenzahlungen</p>
-                    <p className="text-2xl font-bold">{result.recordsRestored["dividend_payment"] || 0}</p>
+                    <p className="text-2xl font-bold">
+                      {result.recordsRestored["dividend_payment"] || 0}
+                    </p>
                   </div>
                   <div className="text-sm">
                     <p className="text-gray-500">Ziele</p>
-                    <p className="text-2xl font-bold">{result.recordsRestored["goal"] || 0}</p>
+                    <p className="text-2xl font-bold">
+                      {result.recordsRestored["goal"] || 0}
+                    </p>
                   </div>
                 </div>
               )}

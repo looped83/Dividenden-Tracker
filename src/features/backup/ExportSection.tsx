@@ -7,12 +7,23 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { executeExport, DEFAULT_EXPORT_COLUMNS, type ExportFormat, type ExportOptions } from "@/lib/backup/exportService";
+import {
+  executeExport,
+  DEFAULT_EXPORT_COLUMNS,
+  type ExportFormat,
+  type ExportOptions,
+} from "@/lib/backup/exportService";
 import ProgressIndicator from "@/components/backup/ProgressIndicator";
 import { AlertCircle, CheckCircle, Download } from "lucide-react";
 
@@ -56,7 +67,8 @@ export default function ExportSection() {
         <CardHeader>
           <CardTitle>Daten exportieren</CardTitle>
           <CardDescription>
-            Exportieren Sie Ihre Dividendenzahlungen in verschiedenen Formaten für weitere Analyse oder Archivierung.
+            Exportieren Sie Ihre Dividendenzahlungen in verschiedenen Formaten für weitere
+            Analyse oder Archivierung.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -103,7 +115,9 @@ export default function ExportSection() {
               <Checkbox
                 id="include-archived"
                 checked={includeArchived}
-                onCheckedChange={(checked: boolean | "indeterminate") => setIncludeArchived(typeof checked === "boolean" ? checked : false)}
+                onCheckedChange={(checked: boolean | "indeterminate") =>
+                  setIncludeArchived(typeof checked === "boolean" ? checked : false)
+                }
                 disabled={isExporting}
               />
               <Label htmlFor="include-archived" className="font-normal cursor-pointer">
@@ -141,8 +155,9 @@ export default function ExportSection() {
         <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
           <CardContent className="pt-6">
             <p className="text-sm text-blue-900 dark:text-blue-200">
-              <strong>CSV-Format:</strong> Kann in Excel, Google Sheets oder anderen Tabellenkalkulationsprogrammen
-              geöffnet werden. Formelinjektionen werden automatisch verhindert.
+              <strong>CSV-Format:</strong> Kann in Excel, Google Sheets oder anderen
+              Tabellenkalkulationsprogrammen geöffnet werden. Formelinjektionen werden
+              automatisch verhindert.
             </p>
           </CardContent>
         </Card>
@@ -152,8 +167,8 @@ export default function ExportSection() {
         <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
           <CardContent className="pt-6">
             <p className="text-sm text-blue-900 dark:text-blue-200">
-              <strong>Excel-Format:</strong> Nativ in Microsoft Excel oder Apple Numbers öffbar. Zahlenformate werden
-              korrekt beibehalten.
+              <strong>Excel-Format:</strong> Nativ in Microsoft Excel oder Apple Numbers
+              öffbar. Zahlenformate werden korrekt beibehalten.
             </p>
           </CardContent>
         </Card>
@@ -163,8 +178,9 @@ export default function ExportSection() {
         <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
           <CardContent className="pt-6">
             <p className="text-sm text-blue-900 dark:text-blue-200">
-              <strong>JSON-Format:</strong> Strukturiertes Format für Datenanalyse und Integration mit anderen Tools.
-              Diese Dateien können nicht direkt in die Anwendung importiert werden.
+              <strong>JSON-Format:</strong> Strukturiertes Format für Datenanalyse und
+              Integration mit anderen Tools. Diese Dateien können nicht direkt in die
+              Anwendung importiert werden.
             </p>
           </CardContent>
         </Card>

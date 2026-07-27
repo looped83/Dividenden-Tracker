@@ -156,7 +156,10 @@ describe("Backup Format Validation", () => {
     });
 
     it("should detect missing profile", () => {
-      const backup = { ...minimalBackup, data: { ...minimalBackup.data, profile: undefined } };
+      const backup = {
+        ...minimalBackup,
+        data: { ...minimalBackup.data, profile: undefined },
+      };
       const result = validateBackupCompleteness(backup);
       expect(result.valid).toBe(false);
       expect(result.missing).toContain("profile");
@@ -170,7 +173,10 @@ describe("Backup Format Validation", () => {
     });
 
     it("should detect missing securities", () => {
-      const backup = { ...minimalBackup, data: { ...minimalBackup.data, securities: [] } };
+      const backup = {
+        ...minimalBackup,
+        data: { ...minimalBackup.data, securities: [] },
+      };
       const result = validateBackupCompleteness(backup);
       expect(result.valid).toBe(false);
       expect(result.missing).toContain("securities");
@@ -249,7 +255,7 @@ describe("Backup Format Validation", () => {
           entity: "depot",
           expected: 2,
           actual: 1,
-        })
+        }),
       );
     });
   });

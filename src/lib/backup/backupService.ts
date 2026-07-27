@@ -124,14 +124,15 @@ function ensureDecimalString(value: unknown, maxDecimals: number = 2): string | 
 function ensureNumberArray(value: unknown): number[] | null {
   if (!value) return null;
   if (Array.isArray(value)) {
-    return value.map((v) => {
-      const n = typeof v === "number" ? v : parseInt(String(v), 10);
-      return isNaN(n) ? null : n;
-    }).filter((n) => n !== null) as number[];
+    return value
+      .map((v) => {
+        const n = typeof v === "number" ? v : parseInt(String(v), 10);
+        return isNaN(n) ? null : n;
+      })
+      .filter((n) => n !== null) as number[];
   }
   return null;
 }
-
 
 // ============================================================================
 // Data Fetching
@@ -183,16 +184,17 @@ async function fetchPortfolios(): Promise<PortfolioBackup[]> {
     return [];
   }
 
-  return (data || []).map((p) =>
-    removeNulls({
-      id: p.id,
-      user_id: p.user_id,
-      name: p.name,
-      note: p.note,
-      created_at: p.created_at,
-      updated_at: p.updated_at,
-      archived_at: p.archived_at,
-    }) as PortfolioBackup
+  return (data || []).map(
+    (p) =>
+      removeNulls({
+        id: p.id,
+        user_id: p.user_id,
+        name: p.name,
+        note: p.note,
+        created_at: p.created_at,
+        updated_at: p.updated_at,
+        archived_at: p.archived_at,
+      }) as PortfolioBackup,
   );
 }
 
@@ -210,19 +212,20 @@ async function fetchDepots(): Promise<DepotBackup[]> {
     return [];
   }
 
-  return (data || []).map((d) =>
-    removeNulls({
-      id: d.id,
-      user_id: d.user_id,
-      name: d.name,
-      broker: d.broker,
-      base_currency: d.base_currency,
-      portfolio_id: d.portfolio_id,
-      note: d.note,
-      created_at: d.created_at,
-      updated_at: d.updated_at,
-      archived_at: d.archived_at,
-    }) as DepotBackup
+  return (data || []).map(
+    (d) =>
+      removeNulls({
+        id: d.id,
+        user_id: d.user_id,
+        name: d.name,
+        broker: d.broker,
+        base_currency: d.base_currency,
+        portfolio_id: d.portfolio_id,
+        note: d.note,
+        created_at: d.created_at,
+        updated_at: d.updated_at,
+        archived_at: d.archived_at,
+      }) as DepotBackup,
   );
 }
 
@@ -240,25 +243,26 @@ async function fetchSecurities(): Promise<SecurityBackup[]> {
     return [];
   }
 
-  return (data || []).map((s) =>
-    removeNulls({
-      id: s.id,
-      user_id: s.user_id,
-      name: s.name,
-      ticker: s.ticker,
-      isin: s.isin,
-      wkn: s.wkn,
-      country: s.country,
-      sector: s.sector,
-      currency: s.currency,
-      note: s.note,
-      data_quality: s.data_quality,
-      default_depot_id: s.default_depot_id,
-      payout_months: ensureNumberArray(s.payout_months),
-      created_at: s.created_at,
-      updated_at: s.updated_at,
-      archived_at: s.archived_at,
-    }) as SecurityBackup
+  return (data || []).map(
+    (s) =>
+      removeNulls({
+        id: s.id,
+        user_id: s.user_id,
+        name: s.name,
+        ticker: s.ticker,
+        isin: s.isin,
+        wkn: s.wkn,
+        country: s.country,
+        sector: s.sector,
+        currency: s.currency,
+        note: s.note,
+        data_quality: s.data_quality,
+        default_depot_id: s.default_depot_id,
+        payout_months: ensureNumberArray(s.payout_months),
+        created_at: s.created_at,
+        updated_at: s.updated_at,
+        archived_at: s.archived_at,
+      }) as SecurityBackup,
   );
 }
 
@@ -276,39 +280,40 @@ async function fetchDividendPayments(): Promise<DividendPaymentBackup[]> {
     return [];
   }
 
-  return (data || []).map((p) =>
-    removeNulls({
-      id: p.id,
-      user_id: p.user_id,
-      security_id: p.security_id,
-      depot_id: p.depot_id,
-      import_id: p.import_id,
-      pay_date: formatBusinessDate(p.pay_date),
-      gross_amount: ensureDecimalString(p.gross_amount, 2) || "0.00",
-      net_amount: ensureDecimalString(p.net_amount, 2) || "0.00",
-      withholding_tax: ensureDecimalString(p.withholding_tax, 2) || "0.00",
-      domestic_tax: ensureDecimalString(p.domestic_tax, 2) || "0.00",
-      solidarity_surcharge: ensureDecimalString(p.solidarity_surcharge, 2) || "0.00",
-      church_tax: ensureDecimalString(p.church_tax, 2) || "0.00",
-      fees: ensureDecimalString(p.fees, 2) || "0.00",
-      original_currency: p.original_currency,
-      original_gross: ensureDecimalString(p.original_gross, 6),
-      original_net: ensureDecimalString(p.original_net, 6),
-      fx_rate: ensureDecimalString(p.fx_rate, 8),
-      quantity: ensureDecimalString(p.quantity, 6),
-      amount_per_share: ensureDecimalString(p.amount_per_share, 8),
-      payment_type: p.payment_type,
-      source: p.source,
-      source_file_name: p.source_file_name,
-      source_row_number: p.source_row_number,
-      row_fingerprint: p.row_fingerprint,
-      business_fingerprint: p.business_fingerprint,
-      note: p.note,
-      created_at: p.created_at,
-      updated_at: p.updated_at,
-      archived_at: p.archived_at,
-      archive_reason: p.archive_reason,
-    }) as DividendPaymentBackup
+  return (data || []).map(
+    (p) =>
+      removeNulls({
+        id: p.id,
+        user_id: p.user_id,
+        security_id: p.security_id,
+        depot_id: p.depot_id,
+        import_id: p.import_id,
+        pay_date: formatBusinessDate(p.pay_date),
+        gross_amount: ensureDecimalString(p.gross_amount, 2) || "0.00",
+        net_amount: ensureDecimalString(p.net_amount, 2) || "0.00",
+        withholding_tax: ensureDecimalString(p.withholding_tax, 2) || "0.00",
+        domestic_tax: ensureDecimalString(p.domestic_tax, 2) || "0.00",
+        solidarity_surcharge: ensureDecimalString(p.solidarity_surcharge, 2) || "0.00",
+        church_tax: ensureDecimalString(p.church_tax, 2) || "0.00",
+        fees: ensureDecimalString(p.fees, 2) || "0.00",
+        original_currency: p.original_currency,
+        original_gross: ensureDecimalString(p.original_gross, 6),
+        original_net: ensureDecimalString(p.original_net, 6),
+        fx_rate: ensureDecimalString(p.fx_rate, 8),
+        quantity: ensureDecimalString(p.quantity, 6),
+        amount_per_share: ensureDecimalString(p.amount_per_share, 8),
+        payment_type: p.payment_type,
+        source: p.source,
+        source_file_name: p.source_file_name,
+        source_row_number: p.source_row_number,
+        row_fingerprint: p.row_fingerprint,
+        business_fingerprint: p.business_fingerprint,
+        note: p.note,
+        created_at: p.created_at,
+        updated_at: p.updated_at,
+        archived_at: p.archived_at,
+        archive_reason: p.archive_reason,
+      }) as DividendPaymentBackup,
   );
 }
 
@@ -326,20 +331,21 @@ async function fetchGoals(): Promise<GoalBackup[]> {
     return [];
   }
 
-  return (data || []).map((g) =>
-    removeNulls({
-      id: g.id,
-      user_id: g.user_id,
-      goal_type: g.goal_type,
-      year: g.year,
-      month: g.month,
-      target_amount: ensureDecimalString(g.target_amount, 2) || "0.00",
-      currency: g.currency,
-      title: g.title,
-      note: g.note,
-      created_at: g.created_at,
-      updated_at: g.updated_at,
-    }) as GoalBackup
+  return (data || []).map(
+    (g) =>
+      removeNulls({
+        id: g.id,
+        user_id: g.user_id,
+        goal_type: g.goal_type,
+        year: g.year,
+        month: g.month,
+        target_amount: ensureDecimalString(g.target_amount, 2) || "0.00",
+        currency: g.currency,
+        title: g.title,
+        note: g.note,
+        created_at: g.created_at,
+        updated_at: g.updated_at,
+      }) as GoalBackup,
   );
 }
 
@@ -357,25 +363,35 @@ async function fetchImports(): Promise<ImportBackup[]> {
     return [];
   }
 
-  return (data || []).map((i) =>
-    removeNulls({
-      id: i.id,
-      user_id: i.user_id,
-      file_name: i.file_name,
-      file_hash: i.file_hash,
-      file_size_bytes: i.file_size_bytes,
-      file_type: i.file_type,
-      sheet_name: i.sheet_name,
-      status: i.status,
-      column_mapping: typeof i.column_mapping === "string" ? JSON.parse(i.column_mapping) : i.column_mapping,
-      detected_formats: typeof i.detected_formats === "string" ? JSON.parse(i.detected_formats) : i.detected_formats,
-      row_balance: typeof i.row_balance === "string" ? JSON.parse(i.row_balance) : i.row_balance,
-      row_report: typeof i.row_report === "string" ? JSON.parse(i.row_report) : i.row_report,
-      checksums: typeof i.checksums === "string" ? JSON.parse(i.checksums) : i.checksums,
-      created_at: i.created_at,
-      committed_at: i.committed_at,
-      rolled_back_at: i.rolled_back_at,
-    }) as ImportBackup
+  return (data || []).map(
+    (i) =>
+      removeNulls({
+        id: i.id,
+        user_id: i.user_id,
+        file_name: i.file_name,
+        file_hash: i.file_hash,
+        file_size_bytes: i.file_size_bytes,
+        file_type: i.file_type,
+        sheet_name: i.sheet_name,
+        status: i.status,
+        column_mapping:
+          typeof i.column_mapping === "string"
+            ? JSON.parse(i.column_mapping)
+            : i.column_mapping,
+        detected_formats:
+          typeof i.detected_formats === "string"
+            ? JSON.parse(i.detected_formats)
+            : i.detected_formats,
+        row_balance:
+          typeof i.row_balance === "string" ? JSON.parse(i.row_balance) : i.row_balance,
+        row_report:
+          typeof i.row_report === "string" ? JSON.parse(i.row_report) : i.row_report,
+        checksums:
+          typeof i.checksums === "string" ? JSON.parse(i.checksums) : i.checksums,
+        created_at: i.created_at,
+        committed_at: i.committed_at,
+        rolled_back_at: i.rolled_back_at,
+      }) as ImportBackup,
   );
 }
 
@@ -388,12 +404,11 @@ async function fetchImports(): Promise<ImportBackup[]> {
  * Serializes with deterministic ordering (by ID)
  */
 async function computeChecksum(data: unknown[]): Promise<string> {
-  const sorted = (data as any[])
-    .sort((a, b) => {
-      const aId = a.id || "";
-      const bId = b.id || "";
-      return aId.localeCompare(bId);
-    });
+  const sorted = (data as any[]).sort((a, b) => {
+    const aId = a.id || "";
+    const bId = b.id || "";
+    return aId.localeCompare(bId);
+  });
 
   const canonical = JSON.stringify(sorted, (_key, value) => {
     if (typeof value === "object" && value !== null && !Array.isArray(value)) {
@@ -480,7 +495,7 @@ async function computeIntegrity(data: BackupData): Promise<IntegrityInfo> {
  * @param onProgress Callback for progress updates
  */
 export async function createBackup(
-  onProgress?: (progress: BackupProgress) => void
+  onProgress?: (progress: BackupProgress) => void,
 ): Promise<BackupResult> {
   try {
     // Fetch profile first
@@ -497,14 +512,15 @@ export async function createBackup(
 
     // Fetch all data
     onProgress?.({ stage: "fetching_data" });
-    const [portfolios, depots, securities, dividendPayments, goals, imports] = await Promise.all([
-      fetchPortfolios(),
-      fetchDepots(),
-      fetchSecurities(),
-      fetchDividendPayments(),
-      fetchGoals(),
-      fetchImports(),
-    ]);
+    const [portfolios, depots, securities, dividendPayments, goals, imports] =
+      await Promise.all([
+        fetchPortfolios(),
+        fetchDepots(),
+        fetchSecurities(),
+        fetchDividendPayments(),
+        fetchGoals(),
+        fetchImports(),
+      ]);
 
     // Serialize to backup data structure
     onProgress?.({ stage: "serializing" });

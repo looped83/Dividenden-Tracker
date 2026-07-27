@@ -103,7 +103,7 @@ describe("Export Service", () => {
         expect.objectContaining({
           field: "pay_date",
           visible: expect.any(Boolean),
-        })
+        }),
       );
     });
   });
