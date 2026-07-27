@@ -145,7 +145,7 @@ export function DataQualityPage() {
       </div>
 
       {/* Übersicht (§17) */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
         <OverviewTile label="Mögliche Dubletten" value={overview.duplicates} />
         <OverviewTile label="Auffällige Datensätze" value={overview.anomalies} />
         <OverviewTile label="Stornierte" value={overview.cancelled} />

@@ -101,7 +101,7 @@ export function GoalSection({ payments, selection, today }: GoalSectionProps) {
   return (
     <section className="space-y-3" aria-label="Ziele">
       {heading}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2">
         {selection === "all" ? (
           <Card className="sm:col-span-2">
             <CardContent className="flex flex-wrap items-center justify-between gap-3 p-5">

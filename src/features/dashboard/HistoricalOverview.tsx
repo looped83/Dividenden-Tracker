@@ -35,7 +35,7 @@ export function HistoricalOverview({ payments }: HistoricalOverviewProps) {
         </p>
       </CardHeader>
       <CardContent>
-        <dl className="grid grid-cols-2 gap-x-4 gap-y-4 sm:grid-cols-3 lg:grid-cols-6">
+        <dl className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
           <Item label="Gesamtsumme" value={<AmountText amount={summary.net} />} />
           <Item label="Zahlungen" value={countFormatter.format(summary.count)} />
           <Item
