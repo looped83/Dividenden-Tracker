@@ -1,5 +1,5 @@
-import React from 'react';
-import { Button } from '@/components/ui/button';
+import React from "react";
+import { Button } from "@/components/ui/button";
 
 interface Props {
   children: React.ReactNode;
@@ -21,7 +21,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 
   override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('React Error Boundary caught:', error, errorInfo);
+    console.error("React Error Boundary caught:", error, errorInfo);
   }
 
   override render() {
@@ -41,7 +41,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
           <Button
             onClick={() => {
               this.setState({ hasError: false, error: null });
-              window.location.href = '/';
+              window.location.href = "/";
             }}
           >
             Seite neu laden
