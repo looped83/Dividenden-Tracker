@@ -225,7 +225,16 @@ export function NewPaymentPage() {
 
         <div className="space-y-1.5">
           <Label htmlFor="payment-date">Zahlungsdatum</Label>
-          <Input id="payment-date" type="date" {...register("payDate")} />
+          {/* Ein Datum braucht deutlich weniger Platz als die uebrigen Felder;
+              volle Breite laesst auf dem Smartphone eine grosse leere Flaeche.
+              min-w-0 verhindert zusaetzlich, dass die intrinsische Breite des
+              nativen Date-Inputs (iOS Safari) den Container sprengt. */}
+          <Input
+            id="payment-date"
+            type="date"
+            className="w-full min-w-0 max-w-[11rem]"
+            {...register("payDate")}
+          />
           {errors.payDate && (
             <p className="text-sm text-negative">{errors.payDate.message}</p>
           )}
