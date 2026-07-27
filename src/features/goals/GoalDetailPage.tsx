@@ -205,7 +205,7 @@ export function GoalDetailPage() {
             </div>
           )}
 
-          <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 border-t border-border pt-4 text-xs text-muted-foreground">
+          <dl className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2 border-t border-border pt-4 text-xs text-muted-foreground">
             <div>
               <dt>Erstellt</dt>
               <dd>{formatTimestamp(goal.createdAt)}</dd>

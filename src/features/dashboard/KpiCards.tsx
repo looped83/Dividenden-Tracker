@@ -157,7 +157,7 @@ export function KpiCards({ payments, selection, today }: KpiCardsProps) {
   const currentMonthLabel = formatMonthYear(today.year, today.month);
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {/* 5.1 Dividenden im ausgewaehlten Zeitraum */}
       <KpiCard
         label={`Dividenden ${selectionLabel}`}
