@@ -15,7 +15,7 @@ describe("Export Service", () => {
       const str = String(value);
 
       // Prevent formula injection
-      if (str.match(/^[\s=+\-@]/)) {
+      if (/^[\s=+\-@]/.exec(str)) {
         return `"'${str}"`;
       }
 

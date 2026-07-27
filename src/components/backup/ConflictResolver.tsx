@@ -81,9 +81,9 @@ export default function ConflictResolver({
 
               <Select
                 value={conflict.resolution || "overwrite"}
-                onChange={(e) =>
-                  handleResolution(conflict, e.target.value as "skip" | "overwrite")
-                }
+                onChange={(e) => {
+                  handleResolution(conflict, e.target.value as "skip" | "overwrite");
+                }}
                 className="text-xs"
               >
                 <option value="skip">Überspringen - Aktuellen Wert behalten</option>

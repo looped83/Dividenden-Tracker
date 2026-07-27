@@ -161,7 +161,7 @@ function escapeCsvField(value: any): string {
   const str = String(value);
 
   // Prevent formula injection: prepend single quote if starts with formula characters
-  if (str.match(/^[\s=+\-@]/)) {
+  if (/^[\s=+\-@]/.exec(str)) {
     return `"'${str}"`;
   }
 
@@ -333,8 +333,8 @@ async function generateXlsxExport(
   worksheet.views = [{ state: "frozen", ySplit: 1 }];
 
   // Generate blob
-  const buffer = await workbook.xlsx!.writeBuffer();
-  return new Blob([buffer as ArrayBuffer], {
+  const buffer = await workbook.xlsx.writeBuffer();
+  return new Blob([buffer], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   });
 }

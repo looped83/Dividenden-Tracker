@@ -34,7 +34,9 @@ export function BackupPage() {
         {/* Tabs */}
         <Tabs
           value={activeTab}
-          onValueChange={(v) => setActiveTab(v as TabValue)}
+          onValueChange={(v) => {
+            setActiveTab(v as TabValue);
+          }}
           className="w-full"
         >
           <TabsList className="grid w-full grid-cols-3 mb-8">

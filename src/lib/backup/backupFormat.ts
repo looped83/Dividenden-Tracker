@@ -297,7 +297,7 @@ export function parseBackupSafe(
   input: unknown,
 ):
   | { success: true; data: BackupRoot }
-  | { success: false; errors: Array<{ path: string; message: string }> } {
+  | { success: false; errors: { path: string; message: string }[] } {
   const result = backupRootSchema.safeParse(input);
 
   if (result.success) {
@@ -363,9 +363,9 @@ export function validateBackupCompleteness(backup: BackupRoot): {
  */
 export function validateBackupIntegrity(backup: BackupRoot): {
   valid: boolean;
-  mismatches: Array<{ entity: string; expected: number; actual: number }>;
+  mismatches: { entity: string; expected: number; actual: number }[];
 } {
-  const mismatches: Array<{ entity: string; expected: number; actual: number }> = [];
+  const mismatches: { entity: string; expected: number; actual: number }[] = [];
 
   const expectedCounts = backup.integrity.record_counts;
   const actualCounts = {

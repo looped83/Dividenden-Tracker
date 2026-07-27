@@ -33,7 +33,9 @@ export default function BackupSection() {
     setResult(null);
 
     try {
-      const result = await createBackup((p) => setProgress(p));
+      const result = await createBackup((p) => {
+        setProgress(p);
+      });
 
       if (result.success && result.backup) {
         setResult(result);

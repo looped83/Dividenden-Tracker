@@ -45,7 +45,7 @@ export interface RestoreResult {
   recordsRestored?: Record<string, number>;
   error?: string;
   errorDetails?: string;
-  validationErrors?: Array<{ path: string; message: string }>;
+  validationErrors?: { path: string; message: string }[];
 }
 
 export interface RestoreProgress {
@@ -74,7 +74,7 @@ export async function parseBackupFile(
     let parsed: unknown;
     try {
       parsed = JSON.parse(text);
-    } catch (e) {
+    } catch {
       return { success: false, error: "Invalid JSON format" };
     }
 
@@ -322,7 +322,7 @@ export async function executeRestore(
     return {
       success: true,
       mode,
-      recordsRestored: (data as any)?.records_restored || {},
+      recordsRestored: data?.records_restored || {},
     };
   } catch (error) {
     return {

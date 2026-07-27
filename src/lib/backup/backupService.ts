@@ -73,6 +73,7 @@ export interface BackupSummary {
 /**
  * Remove null values from object (convert to undefined for optional fields)
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function removeNulls<T extends Record<string, any>>(obj: T): Partial<T> {
   const result: Partial<T> = {};
   for (const [key, value] of Object.entries(obj)) {
@@ -106,7 +107,7 @@ function formatBusinessDate(date: Date | string): string {
 /**
  * Convert numeric(14,2) from Supabase (might be string or number) to decimal string
  */
-function ensureDecimalString(value: unknown, maxDecimals: number = 2): string | null {
+function ensureDecimalString(value: unknown, maxDecimals = 2): string | null {
   if (value === null || value === undefined) return null;
 
   try {
@@ -129,7 +130,7 @@ function ensureNumberArray(value: unknown): number[] | null {
         const n = typeof v === "number" ? v : parseInt(String(v), 10);
         return isNaN(n) ? null : n;
       })
-      .filter((n) => n !== null) as number[];
+      .filter((n) => n !== null);
   }
   return null;
 }
@@ -434,12 +435,12 @@ async function computeChecksum(data: unknown[]): Promise<string> {
  */
 async function computeIntegrity(data: BackupData): Promise<IntegrityInfo> {
   const record_counts = {
-    portfolio: data["portfolios"].length,
-    depot: data["depots"].length,
-    security: data["securities"].length,
-    dividend_payment: data["dividend_payments"].length,
-    goal: data["goals"].length,
-    import: data["imports"].length,
+    portfolio: data.portfolios.length,
+    depot: data.depots.length,
+    security: data.securities.length,
+    dividend_payment: data.dividend_payments.length,
+    goal: data.goals.length,
+    import: data.imports.length,
   };
 
   // Compute total sums for active payments
@@ -457,23 +458,23 @@ async function computeIntegrity(data: BackupData): Promise<IntegrityInfo> {
   // Compute checksums
   const checksums: Record<string, string> = {};
 
-  if (data["portfolios"].length > 0) {
-    checksums["portfolios"] = await computeChecksum(data["portfolios"]);
+  if (data.portfolios.length > 0) {
+    checksums["portfolios"] = await computeChecksum(data.portfolios);
   }
-  if (data["depots"].length > 0) {
-    checksums["depots"] = await computeChecksum(data["depots"]);
+  if (data.depots.length > 0) {
+    checksums["depots"] = await computeChecksum(data.depots);
   }
-  if (data["securities"].length > 0) {
-    checksums["securities"] = await computeChecksum(data["securities"]);
+  if (data.securities.length > 0) {
+    checksums["securities"] = await computeChecksum(data.securities);
   }
-  if (data["dividend_payments"].length > 0) {
-    checksums["dividend_payments"] = await computeChecksum(data["dividend_payments"]);
+  if (data.dividend_payments.length > 0) {
+    checksums["dividend_payments"] = await computeChecksum(data.dividend_payments);
   }
-  if (data["goals"].length > 0) {
-    checksums["goals"] = await computeChecksum(data["goals"]);
+  if (data.goals.length > 0) {
+    checksums["goals"] = await computeChecksum(data.goals);
   }
-  if (data["imports"].length > 0) {
-    checksums["imports"] = await computeChecksum(data["imports"]);
+  if (data.imports.length > 0) {
+    checksums["imports"] = await computeChecksum(data.imports);
   }
 
   return {
@@ -603,7 +604,7 @@ export function generateBackupSummary(backup: BackupRoot): BackupSummary {
   const json = JSON.stringify(backup);
   const sizeBytes = new Blob([json]).size;
 
-  const counts = backup.integrity.record_counts as Record<string, number>;
+  const counts = backup.integrity.record_counts;
 
   return {
     portfolios: counts["portfolio"] ?? 0,

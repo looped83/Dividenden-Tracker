@@ -183,7 +183,9 @@ export default function RestoreSection() {
                 <Select
                   id="restore-mode"
                   value={mode}
-                  onChange={(e) => setMode(e.target.value as RestoreMode)}
+                  onChange={(e) => {
+                    setMode(e.target.value as RestoreMode);
+                  }}
                 >
                   <option value="merge">
                     Zusammenführen - Neue Daten hinzufügen, Duplikate erkennen
@@ -247,25 +249,25 @@ export default function RestoreSection() {
                   <div className="text-sm">
                     <p className="text-gray-500">Depots</p>
                     <p className="text-2xl font-bold">
-                      {result.recordsRestored["depot"] || 0}
+                      {result.recordsRestored["depot"] ?? 0}
                     </p>
                   </div>
                   <div className="text-sm">
                     <p className="text-gray-500">Wertpapiere</p>
                     <p className="text-2xl font-bold">
-                      {result.recordsRestored["security"] || 0}
+                      {result.recordsRestored["security"] ?? 0}
                     </p>
                   </div>
                   <div className="text-sm">
                     <p className="text-gray-500">Dividendenzahlungen</p>
                     <p className="text-2xl font-bold">
-                      {result.recordsRestored["dividend_payment"] || 0}
+                      {result.recordsRestored["dividend_payment"] ?? 0}
                     </p>
                   </div>
                   <div className="text-sm">
                     <p className="text-gray-500">Ziele</p>
                     <p className="text-2xl font-bold">
-                      {result.recordsRestored["goal"] || 0}
+                      {result.recordsRestored["goal"] ?? 0}
                     </p>
                   </div>
                 </div>

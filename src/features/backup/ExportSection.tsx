@@ -50,7 +50,9 @@ export default function ExportSection() {
 
       if (result.success) {
         setSuccess(true);
-        setTimeout(() => setSuccess(false), 5000);
+        setTimeout(() => {
+          setSuccess(false);
+        }, 5000);
       } else {
         setError(result.error || "Export failed");
       }
@@ -97,7 +99,9 @@ export default function ExportSection() {
             <Select
               id="format"
               value={format}
-              onChange={(e) => setFormat(e.target.value as ExportFormat)}
+              onChange={(e) => {
+                setFormat(e.target.value as ExportFormat);
+              }}
             >
               <option value="csv">CSV - Kommagetrennte Werte</option>
               <option value="xlsx">Excel - Microsoft Excel Format</option>
@@ -115,9 +119,9 @@ export default function ExportSection() {
               <Checkbox
                 id="include-archived"
                 checked={includeArchived}
-                onCheckedChange={(checked: boolean | "indeterminate") =>
-                  setIncludeArchived(typeof checked === "boolean" ? checked : false)
-                }
+                onCheckedChange={(checked: boolean | "indeterminate") => {
+                  setIncludeArchived(typeof checked === "boolean" ? checked : false);
+                }}
                 disabled={isExporting}
               />
               <Label htmlFor="include-archived" className="font-normal cursor-pointer">
