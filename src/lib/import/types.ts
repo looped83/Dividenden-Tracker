@@ -3,7 +3,12 @@ import type { BrokerMatch } from "./brokerMatch";
 
 /** Zeilenstatus (IMPORT_SPEC.md §8, Task §11). */
 export type RowStatus =
-  "valid" | "valid_warning" | "needs_mapping" | "needs_dedupe" | "invalid" | "excluded";
+  | "valid"
+  | "valid_warning"
+  | "needs_mapping"
+  | "needs_dedupe"
+  | "invalid"
+  | "excluded";
 
 /** Eine normalisierte Quellzeile mit Validierungsergebnis und Herkunft. */
 export interface NormalizedRow {

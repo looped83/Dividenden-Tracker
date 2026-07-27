@@ -29,7 +29,12 @@ import RestorePreview from "@/components/backup/RestorePreview";
 import { AlertCircle, CheckCircle, Upload } from "lucide-react";
 
 type RestoreStep =
-  "upload" | "validate" | "preview" | "confirm" | "restoring" | "complete";
+  | "upload"
+  | "validate"
+  | "preview"
+  | "confirm"
+  | "restoring"
+  | "complete";
 
 export default function RestoreSection() {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -139,8 +144,12 @@ export default function RestoreSection() {
                 onClick={() => fileInputRef.current?.click()}
               >
                 <Upload className="mx-auto mb-2 h-6 sm:h-8 w-6 sm:w-8 text-muted-foreground" />
-                <p className="font-medium mb-1 text-sm sm:text-base">Sicherungsdatei auswählen</p>
-                <p className="text-xs sm:text-sm text-muted-foreground">oder Datei hier ablegen</p>
+                <p className="font-medium mb-1 text-sm sm:text-base">
+                  Sicherungsdatei auswählen
+                </p>
+                <p className="text-xs sm:text-sm text-muted-foreground">
+                  oder Datei hier ablegen
+                </p>
                 <input
                   ref={fileInputRef}
                   type="file"
