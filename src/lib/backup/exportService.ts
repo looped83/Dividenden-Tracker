@@ -9,6 +9,7 @@
  * - Column selection
  */
 
+import ExcelJS from "exceljs";
 import { supabase } from "@/lib/supabase/client";
 
 // ============================================================================
@@ -239,12 +240,101 @@ async function generateXlsxExport(
   columns: ExportColumn[],
   onProgress?: (p: ExportProgress) => void,
 ): Promise<Blob> {
-  // For now, return CSV with .xlsx extension
-  // TODO: Replace with proper xlsx generation using exceljs or similar
   onProgress?.({ stage: "formatting" });
 
-  const csv = await generateCsvExport(payments, columns, onProgress);
-  return new Blob([csv], {
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet("Dividend Payments");
+
+  // Set up column definitions
+  const visibleColumns = columns.filter((c) => c.visible);
+  const columnHeaders = visibleColumns.map((c) => c.label);
+
+  // Add header row
+  const headerRow = worksheet.addRow(columnHeaders);
+  headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
+  headerRow.fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FF4472C4" },
+  };
+  headerRow.alignment = { horizontal: "center", vertical: "middle" };
+
+  // Add data rows with formatting
+  payments.forEach((payment) => {
+    const rowData = visibleColumns.map((col) => {
+      const value = payment[col.field];
+
+      // Format specific field types
+      if (
+        col.field === "pay_date" ||
+        col.field === "created_at" ||
+        col.field === "updated_at"
+      ) {
+        return value ? new Date(value) : null;
+      }
+
+      // Currency/numeric fields
+      if (
+        col.field.includes("amount") ||
+        col.field.includes("price") ||
+        col.field.includes("tax")
+      ) {
+        const num = parseFloat(value);
+        return isNaN(num) ? value : num;
+      }
+
+      return value;
+    });
+
+    const row = worksheet.addRow(rowData);
+
+    // Format cells
+    visibleColumns.forEach((col, idx) => {
+      const cell = row.getCell(idx + 1);
+
+      // Date formatting
+      if (
+        col.field === "pay_date" ||
+        col.field === "created_at" ||
+        col.field === "updated_at"
+      ) {
+        cell.numFmt = "yyyy-mm-dd";
+      }
+
+      // Currency formatting (EUR)
+      if (
+        col.field.includes("amount") ||
+        col.field.includes("price") ||
+        col.field.includes("tax")
+      ) {
+        cell.numFmt = '#,##0.00"€"';
+        cell.alignment = { horizontal: "right" };
+      } else if (col.field === "quantity") {
+        cell.numFmt = "0.0000";
+        cell.alignment = { horizontal: "right" };
+      } else {
+        cell.alignment = { horizontal: "left" };
+      }
+    });
+  });
+
+  // Auto-fit columns
+  worksheet.columns.forEach((column) => {
+    if (!column) return;
+    let maxLength = 0;
+    column.eachCell?.({ includeEmpty: true }, (cell) => {
+      const cellLength = cell.value ? String(cell.value).length : 0;
+      if (cellLength > maxLength) maxLength = cellLength;
+    });
+    column.width = Math.min(maxLength + 2, 50);
+  });
+
+  // Freeze header row
+  worksheet.views = [{ state: "frozen", ySplit: 1 }];
+
+  // Generate blob
+  const buffer = await workbook.xlsx!.writeBuffer();
+  return new Blob([buffer as ArrayBuffer], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   });
 }
