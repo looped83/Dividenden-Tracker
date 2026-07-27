@@ -8,7 +8,7 @@
  * Requires: PostgreSQL with backup RPC and test fixtures
  */
 
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect } from "vitest";
 
 describe("Backup Restore Atomicity", () => {
   // These would connect to a test database instance
