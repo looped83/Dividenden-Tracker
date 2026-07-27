@@ -31,24 +31,24 @@ export default function RestorePreview({ backup }: RestorePreviewProps) {
         {/* Data Summary */}
         <div>
           <h3 className="font-semibold mb-3">Daten in dieser Sicherung</h3>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
             <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
               <p className="text-sm text-gray-600 dark:text-gray-400">Depots</p>
-              <p className="text-2xl font-bold">{counts.depots}</p>
+              <p className="text-lg sm:text-2xl font-bold">{counts.depots}</p>
             </div>
             <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
               <p className="text-sm text-gray-600 dark:text-gray-400">Wertpapiere</p>
-              <p className="text-2xl font-bold">{counts.securities}</p>
+              <p className="text-lg sm:text-2xl font-bold">{counts.securities}</p>
             </div>
             <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 Dividendenzahlungen
               </p>
-              <p className="text-2xl font-bold">{counts.dividends}</p>
+              <p className="text-lg sm:text-2xl font-bold">{counts.dividends}</p>
             </div>
             <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
               <p className="text-sm text-gray-600 dark:text-gray-400">Ziele</p>
-              <p className="text-2xl font-bold">{counts.goals}</p>
+              <p className="text-lg sm:text-2xl font-bold">{counts.goals}</p>
             </div>
           </div>
         </div>

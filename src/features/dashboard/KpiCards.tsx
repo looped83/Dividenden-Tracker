@@ -60,7 +60,7 @@ function KpiCard({
 }: KpiCardProps) {
   const body = (
     <>
-      <div className="text-2xl font-semibold tabular-amount">{value}</div>
+      <div className="text-lg sm:text-2xl font-semibold tabular-amount">{value}</div>
       {caption && <div className="mt-1 text-xs text-muted-foreground">{caption}</div>}
     </>
   );

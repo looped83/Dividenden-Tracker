@@ -28,7 +28,7 @@ export function StatCard({
 }: StatCardProps) {
   const body = (
     <>
-      <div className="text-2xl font-semibold tabular-amount">{value}</div>
+      <div className="text-lg sm:text-2xl font-semibold tabular-amount">{value}</div>
       {comparison !== undefined && (
         <div className="mt-1 text-sm text-muted-foreground">{comparison}</div>
       )}

@@ -95,7 +95,7 @@ export function CategoryBarChart({
 
   return (
     <div className="space-y-4">
-      <div className="h-72 w-full" role="img" aria-label={ariaLabel}>
+      <div className="h-64 sm:h-72 w-full" role="img" aria-label={ariaLabel}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 8, right: 8, bottom: 4, left: 4 }}>
             <CartesianGrid
@@ -265,8 +265,8 @@ export function PaymentsHeatmap({
   };
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[640px] border-separate border-spacing-1 text-sm">
+    <div className="overflow-x-auto rounded-lg border border-border">
+      <table className="w-full border-separate border-spacing-1 text-sm">
         <caption className="sr-only">
           Netto-Dividenden nach Jahr (Zeile) und Monat (Spalte)
         </caption>

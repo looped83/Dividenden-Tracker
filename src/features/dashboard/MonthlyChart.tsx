@@ -193,7 +193,7 @@ export function MonthlyChart({ payments, selection, today }: MonthlyChartProps) 
         ) : (
           <>
             <div
-              className="h-72 w-full"
+              className="h-64 sm:h-72 w-full"
               role="img"
               aria-label={`${title}. ${description}`}
             >

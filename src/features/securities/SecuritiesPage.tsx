@@ -167,7 +167,7 @@ function SecurityFormDialog({
               <p className="text-sm text-negative">{errors.name.message}</p>
             )}
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="security-ticker">Ticker</Label>
               <Input id="security-ticker" {...register("ticker")} />
@@ -183,7 +183,7 @@ function SecurityFormDialog({
               )}
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="space-y-1.5">
               <Label htmlFor="security-wkn">WKN</Label>
               <Input id="security-wkn" {...register("wkn")} />
@@ -228,7 +228,7 @@ function SecurityFormDialog({
           <div className="space-y-1.5">
             <Label>Ausschüttungsmonate (optional)</Label>
             <div
-              className="grid grid-cols-6 gap-1.5"
+              className="grid grid-cols-3 gap-1.5 sm:grid-cols-6"
               role="group"
               aria-label="Ausschüttungsmonate"
             >
