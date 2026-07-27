@@ -42,6 +42,15 @@ export default defineConfig(({ command, mode }) => {
       setupFiles: ["./tests/setup.ts"],
       include: ["tests/unit/**/*.test.ts", "tests/unit/**/*.test.tsx"],
       css: false,
+      // Platzhalter-Zugangsdaten: `supabase/client.ts` wirft ohne diese Werte
+      // beim Import auf Modulebene. Ohne sie liesse sich kein Modul testen,
+      // das den Client (auch nur transitiv) importiert — Tests mussten die
+      // Produktionslogik stattdessen kopieren, was echte Fehler verdeckte.
+      // Es wird keine Verbindung aufgebaut; Netzwerkzugriffe sind gemockt.
+      env: {
+        VITE_SUPABASE_URL: "https://test.supabase.co",
+        VITE_SUPABASE_ANON_KEY: "test-anon-key",
+      },
     },
   };
 });

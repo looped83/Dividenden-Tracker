@@ -10,6 +10,7 @@
  */
 
 import { supabase } from "@/lib/supabase/client";
+import { MoneyDecimal } from "@/lib/money/decimalConfig";
 
 // ============================================================================
 // Types
@@ -156,25 +157,62 @@ async function fetchPaymentsForExport(
 // ============================================================================
 
 /**
- * Escape CSV field value and prevent formula injection
+ * Reine Zahlenliteralen (auch negative und Dezimalwerte). Solche Werte kann
+ * eine Tabellenkalkulation nicht als Formel auswerten, deshalb brauchen sie
+ * keinen Formel-Schutz. Ohne diese Ausnahme wuerde jeder negative Betrag
+ * (Storno, Korrektur) als Text `'-12.34` exportiert und waere in Excel nicht
+ * mehr rechenbar.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function escapeCsvField(value: any): string {
+const NUMERIC_LITERAL = /^-?\d+(?:\.\d+)?$/;
+
+/** Zeichen, die eine Tabellenkalkulation als Formelbeginn interpretiert. */
+const FORMULA_PREFIX = /^[\s=+\-@]/;
+
+/**
+ * Wandelt einen Zellwert in Text um, ohne je "[object Object]" zu erzeugen.
+ * Die Exportspalten liefern Primitive; Objekte/Arrays waeren ein Fehler im
+ * Aufrufer und werden als JSON exportiert, damit die Information erhalten
+ * bleibt und der Fehler in der Datei sichtbar wird.
+ */
+function stringifyCsvValue(value: NonNullable<unknown>): string {
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === "function" || typeof value === "symbol") return "";
+  try {
+    // Wirft bei BigInt und zyklischen Strukturen.
+    return JSON.stringify(value);
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Maskiert einen Wert fuer CSV und verhindert Formula Injection.
+ *
+ * Der Formel-Schutz stellt ein `'` voran; damit behandeln Excel/LibreOffice
+ * den Inhalt als Text statt ihn auszuwerten. Anschliessend wird IMMER regulaer
+ * CSV-maskiert (Quotes verdoppeln), auch im Formel-Zweig — genau das fehlte
+ * zuvor, sodass ein Wert wie `=x","y` das Feld verlassen und zusaetzliche
+ * Spalten/Zeilen einschleusen konnte.
+ */
+export function escapeCsvField(value: unknown): string {
   if (value === null || value === undefined) return "";
 
-  const str = String(value);
+  const raw = stringifyCsvValue(value);
+  const needsFormulaGuard = FORMULA_PREFIX.test(raw) && !NUMERIC_LITERAL.test(raw);
+  const body = needsFormulaGuard ? `'${raw}` : raw;
 
-  // Prevent formula injection: prepend single quote if starts with formula characters
-  if (/^[\s=+\-@]/.exec(str)) {
-    return `"'${str}"`;
-  }
+  const needsQuoting =
+    needsFormulaGuard ||
+    body.includes('"') ||
+    body.includes(",") ||
+    body.includes("\n") ||
+    body.includes("\r");
 
-  // Escape quotes and wrap in quotes if contains comma, newline, or quote
-  if (str.includes('"') || str.includes(",") || str.includes("\n")) {
-    return `"${str.replace(/"/g, '""')}"`;
-  }
-
-  return str;
+  return needsQuoting ? `"${body.replace(/"/g, '""')}"` : body;
 }
 
 /**
@@ -234,14 +272,45 @@ async function generateCsvExport(
 /* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any, @typescript-eslint/require-await */
 
 // ============================================================================
-// Excel Export (using a simple approach without external library)
+// Excel Export
 // ============================================================================
+
+/**
+ * Wandelt einen Transportwert (Supabase liefert `numeric` als String) in eine
+ * Excel-Zahl um.
+ *
+ * Bewusst ueber Decimal statt `parseFloat` (CALCULATION_RULES.md §8, per
+ * ESLint projektweit gesperrt): `parseFloat` liest fuehrende Ziffern und
+ * verwirft den Rest stillschweigend — aus "12.34xyz" wuerde 12.34, aus
+ * "1,234.56" waere es 1. Ein solcher Wert landete dann als plausibel
+ * aussehende, aber falsche Zahl in der Exportdatei. Decimal akzeptiert nur
+ * vollstaendig gueltige Zahlen; alles andere gibt `null` zurueck, sodass der
+ * Rohwert unveraendert als Text exportiert wird und der Fehler sichtbar bleibt.
+ *
+ * Die Umwandlung nach `number` ist an dieser Systemgrenze unvermeidbar: Excel
+ * speichert Zahlen als IEEE-754-Double. Alle Betraege sind zuvor auf maximal
+ * 6 Nachkommastellen gerundet und damit exakt darstellbar.
+ */
+function toExportNumber(value: unknown): number | null {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
+  if (typeof value !== "string" || value.trim() === "") {
+    return null;
+  }
+  try {
+    const decimal = new MoneyDecimal(value.trim());
+    return decimal.isFinite() ? decimal.toNumber() : null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Generate simple XLSX export (note: uses CSV fallback if xlsx library not available)
  * In production, you'd use a library like xlsx or exceljs
  */
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-base-to-string, no-restricted-globals, @typescript-eslint/no-unnecessary-condition */
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-base-to-string, @typescript-eslint/no-unnecessary-condition */
 async function generateXlsxExport(
   payments: any[],
   columns: ExportColumn[],
@@ -291,8 +360,10 @@ async function generateXlsxExport(
         col.field.includes("price") ||
         col.field.includes("tax")
       ) {
-        const num = parseFloat(value);
-        return isNaN(num) ? value : num;
+        // Faellt auf den Rohwert zurueck, wenn der Wert keine gueltige Zahl
+        // ist — so bleibt der Fehler in der Datei sichtbar statt still zu 0
+        // zu werden.
+        return toExportNumber(value) ?? value;
       }
 
       return value;
@@ -350,7 +421,7 @@ async function generateXlsxExport(
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   });
 }
-/* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-base-to-string, no-restricted-globals, @typescript-eslint/no-unnecessary-condition */
+/* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-base-to-string, @typescript-eslint/no-unnecessary-condition */
 
 // ============================================================================
 // JSON Export
