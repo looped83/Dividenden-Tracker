@@ -46,7 +46,7 @@ const decimalString = (maxDecimals: number, label?: string) =>
           return false;
         }
       },
-      `${label || "Amount"} must have at most ${maxDecimals} decimal places`,
+      `${label ?? "Amount"} must have at most ${String(maxDecimals)} decimal places`,
     );
 
 /**
@@ -80,7 +80,7 @@ const currencyCode = z
 /**
  * UUID v4
  */
-const uuidString = z.string().uuid();
+const uuidString = z.uuid();
 
 // ============================================================================
 // Entity Schemas
@@ -297,7 +297,7 @@ export function parseBackupSafe(
   input: unknown,
 ):
   | { success: true; data: BackupRoot }
-  | { success: false; errors: Array<{ path: string; message: string }> } {
+  | { success: false; errors: { path: string; message: string }[] } {
   const result = backupRootSchema.safeParse(input);
 
   if (result.success) {
@@ -327,14 +327,14 @@ export function validateBackupVersion(formatVersion: number): {
   if (formatVersion > BACKUP_FORMAT_VERSION) {
     return {
       valid: false,
-      message: `Backup was created with a newer format version (v${formatVersion}). Please update the application.`,
+      message: `Backup was created with a newer format version (v${String(formatVersion)}). Please update the application.`,
     };
   }
 
   // Older version: could be migrated, but for now reject
   return {
     valid: false,
-    message: `Backup format version v${formatVersion} is not supported.`,
+    message: `Backup format version v${String(formatVersion)} is not supported.`,
   };
 }
 
@@ -348,9 +348,8 @@ export function validateBackupCompleteness(backup: BackupRoot): {
   const missing: string[] = [];
 
   if (!backup.data.profile) missing.push("profile");
-  if (!backup.data.depots || backup.data.depots.length === 0) missing.push("depots");
-  if (!backup.data.securities || backup.data.securities.length === 0)
-    missing.push("securities");
+  if (backup.data.depots.length === 0) missing.push("depots");
+  if (backup.data.securities.length === 0) missing.push("securities");
 
   return {
     valid: missing.length === 0,
@@ -363,9 +362,9 @@ export function validateBackupCompleteness(backup: BackupRoot): {
  */
 export function validateBackupIntegrity(backup: BackupRoot): {
   valid: boolean;
-  mismatches: Array<{ entity: string; expected: number; actual: number }>;
+  mismatches: { entity: string; expected: number; actual: number }[];
 } {
-  const mismatches: Array<{ entity: string; expected: number; actual: number }> = [];
+  const mismatches: { entity: string; expected: number; actual: number }[] = [];
 
   const expectedCounts = backup.integrity.record_counts;
   const actualCounts = {

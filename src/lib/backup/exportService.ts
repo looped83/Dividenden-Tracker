@@ -241,7 +241,7 @@ async function generateCsvExport(
  * Generate simple XLSX export (note: uses CSV fallback if xlsx library not available)
  * In production, you'd use a library like xlsx or exceljs
  */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-base-to-string, @typescript-eslint/no-unnecessary-condition, no-restricted-globals, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 async function generateXlsxExport(
   payments: any[],
   columns: ExportColumn[],
@@ -256,7 +256,7 @@ async function generateXlsxExport(
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   });
 }
-/* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-base-to-string, @typescript-eslint/no-unnecessary-condition, no-restricted-globals, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return */
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 // ============================================================================
 // JSON Export
