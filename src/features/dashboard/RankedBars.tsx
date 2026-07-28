@@ -2,15 +2,12 @@ import { Link } from "react-router";
 import { Badge } from "@/components/ui/badge";
 import { formatMoney, formatPercent, type Money } from "@/lib/money";
 import { shareOfTotal } from "@/lib/statistics";
-import { cn } from "@/lib/utils/cn";
 
 export interface RankedBarItem {
   key: string;
   name: string;
   archived: boolean;
   net: Money;
-  /** Anzahl Zahlungen; ohne Angabe steht nur der Anteil. */
-  count?: number;
   href: string;
 }
 
@@ -73,16 +70,12 @@ export function RankedBars({ items, total, ariaLabel }: RankedBarsProps) {
                     }}
                   />
                 </div>
-                <span
-                  className={cn(
-                    "shrink-0 text-right text-xs text-muted-foreground tabular-nums",
-                    // Breit genug fuer „100,0 %" in einer Zeile.
-                    item.count === undefined ? "w-14 whitespace-nowrap" : "w-28",
-                  )}
-                >
+                {/* Nur der Anteil: Die Zahl der Zahlungen sagt ueber die
+                    Verteilung nichts aus. Wo sie zaehlt, steht sie in der
+                    Tabelle darunter („Zahlungen"). Breite reicht fuer
+                    „100,0 %" in einer Zeile. */}
+                <span className="w-14 shrink-0 whitespace-nowrap text-right text-xs text-muted-foreground tabular-nums">
                   {share ? formatPercent(share) : "—"}
-                  {item.count !== undefined &&
-                    ` · ${item.count === 1 ? "1 Zahlung" : `${String(item.count)} Zahlungen`}`}
                 </span>
               </div>
             </Link>

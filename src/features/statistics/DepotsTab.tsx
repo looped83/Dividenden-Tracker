@@ -37,7 +37,6 @@ export function DepotsTab() {
         name: entityName(depots, stat.depotId),
         archived: entityArchived(depots, stat.depotId),
         net: stat.net,
-        count: stat.count,
         href: statisticsDrillHref(filter, { depotId: stat.depotId }),
       })),
     [stats, depots, filter],
