@@ -1,3 +1,4 @@
+import * as React from "react";
 import { Outlet } from "react-router";
 import { Sidebar, CompactSidebar } from "@/components/layout/Sidebar";
 import { BottomNav } from "@/components/layout/BottomNav";
@@ -29,7 +30,21 @@ export function AppShell() {
             className="min-w-0 flex-1 overflow-x-hidden pb-20 outline-none md:pb-6"
           >
             <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-              <Outlet />
+              {/* Bereiche werden erst beim Aufruf geladen (siehe router.tsx);
+                  der Rahmen der App steht dabei bereits. */}
+              <React.Suspense
+                fallback={
+                  <p
+                    className="text-sm text-muted-foreground"
+                    aria-busy="true"
+                    aria-live="polite"
+                  >
+                    Wird geladen …
+                  </p>
+                }
+              >
+                <Outlet />
+              </React.Suspense>
             </div>
           </main>
           <BottomNav />
