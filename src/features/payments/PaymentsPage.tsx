@@ -893,7 +893,10 @@ function PaymentCard({
                 fuehrt, gewinnt daraus nichts. Die Detailansicht nennt es. */}
             <div className="flex min-w-0 items-center gap-2">
               <p className="flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground">
-                <Calendar className="size-3.5 shrink-0" aria-hidden />
+                {/* Ein Pixel hoeher: Mittig ausgerichtet steht das Symbol
+                    optisch zu tief, weil die Mitte der Ziffern ueber der Mitte
+                    der Zeile liegt (Unterlaengenraum zaehlt mit). */}
+                <Calendar className="size-3.5 shrink-0 -translate-y-px" aria-hidden />
                 <span className="truncate">{formatDate(effectiveDate)}</span>
               </p>
               {cancelled && (
