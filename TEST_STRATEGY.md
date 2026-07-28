@@ -127,6 +127,18 @@ Auth-Nutzern (A, B) über supabase-js:
 
 ## 8. E2E-Tests (Playwright; Chromium + WebKit, Viewports Desktop/iPad/iPhone)
 
+**Stand: Rauchtests umgesetzt** (`tests/e2e/smoke.spec.ts`, `npm run test:e2e`, im CI als
+eigener Auftrag). Sie laufen gegen den **gebauten** Stand — `vite build` + `vite preview` über
+`playwright.config.ts` — und decken die Fehlerklasse ab, die Unit-Tests nicht sehen können:
+weiße Seite nach dem Bauen, kaputtes Nachladen der Bereiche, fehlendes Manifest, ins Startpaket
+gerutschte schwere Abhängigkeit (Größenschwelle). Zwei Projekte: iPhone-Geometrie (im CI mit
+WebKit, lokal mit Chromium) und Desktop-Chromium.
+
+Nicht abgedeckt und bewusst offen: alles, was ein Konto und Daten braucht. Diese Fälle laufen
+über die Integrationstests gegen eine echte Datenbank (§5, §6) bzw. über Unit- und
+Komponententests. Die folgende Liste bleibt der Zielumfang für den Tag, an dem ein
+Auth-Testmodus bereitsteht:
+
 1. Registrierung, E-Mail-Bestätigung (lokaler Auth-Testmodus), An-/Abmeldung
 2. Manueller Dividendeneingang über das vereinfachte Formular (Depot, Unternehmen,
    Zahlungsdatum, Nettobetrag mit deutschem Komma-Format), Archivieren/Reaktivieren sowohl aus
@@ -225,9 +237,9 @@ Nutzerisolation (RLS).
 **Kontroll-Fixture:** Der historische Import (1.439 Eingänge / 49.391,57 € netto) dient als
 Test-Fixture; diese Werte werden **nicht** in der produktiven UI hartkodiert.
 
-**Noch offen (keine Infrastruktur im Repo):** Ein Playwright-E2E-Setup existiert (noch) nicht;
-die in der Phasen-Spezifikation gelisteten E2E-Fälle sind daher nicht als automatisierte Tests
-ausgeführt. Die zugehörige Logik ist über Unit- und Integrationstests abgedeckt.
+**Noch offen:** Das Playwright-Setup steht (§8), deckt aber nur die kontofreien Rauchtests ab.
+Die in der Phasen-Spezifikation gelisteten E2E-Fälle brauchen einen Auth-Testmodus und sind
+weiterhin über Unit- und Integrationstests abgedeckt.
 
 ## Phase 5B — Statistik-Tests
 
@@ -255,10 +267,9 @@ und Depotaggregation per `GROUP BY`, Einbeziehung archivierter Unternehmen/Depot
 Zahlungen, Ausschluss stornierter (archivierter) Zahlungen, Nutzerisolation (RLS). Die
 decimal-genaue Client-Aggregation ist über die Unit-Tests abgedeckt (Statistik-Abgleich §4).
 
-**Noch offen (unverändert):** Es existiert weiterhin kein Playwright-E2E-Setup im Repo; die in
-der Phasen-Spezifikation gelisteten E2E-Fälle (Drill-down-Summengleichheit, axe auf Chartseiten)
-sind daher nicht als automatisierte E2E-Tests ausgeführt. Die zugehörige Logik ist über Unit-
-und Integrationstests abgedeckt.
+**Noch offen:** Die Rauchtests (§8) kommen ohne Konto aus; Drill-down-Summengleichheit und axe
+auf den Diagrammseiten brauchen angemeldete Sitzungen und sind daher weiterhin über Unit- und
+Integrationstests abgedeckt.
 
 ## Phase 6 – Ergänzte Tests
 

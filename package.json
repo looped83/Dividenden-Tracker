@@ -23,7 +23,8 @@
     "test:watch": "vitest",
     "db:test:reset": "bash scripts/db/reset-test-db.sh",
     "test:integration": "npm run db:test:reset && vitest run --config vitest.integration.config.ts",
-    "gen:types": "supabase gen types typescript --db-url \"postgresql://postgres:postgres@127.0.0.1:5432/dividend_tracker_test\" --schema public > src/lib/supabase/database.types.ts"
+    "gen:types": "supabase gen types typescript --db-url \"postgresql://postgres:postgres@127.0.0.1:5432/dividend_tracker_test\" --schema public > src/lib/supabase/database.types.ts",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@hookform/resolvers": "5.4.0",
@@ -47,6 +48,7 @@
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
+    "@playwright/test": "^1.56.1",
     "@tailwindcss/vite": "4.3.3",
     "@testing-library/jest-dom": "6.6.3",
     "@testing-library/react": "16.3.2",

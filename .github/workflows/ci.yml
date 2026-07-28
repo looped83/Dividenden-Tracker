@@ -43,6 +43,29 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ci-placeholder-anon-key
         run: npm run build
 
+  e2e-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Chromium und WebKit: Der iPhone-Lauf soll im CI mit Safaris Motor
+      # laufen, nicht nur mit Chromiums Geometrie.
+      - name: Install browsers
+        run: npx playwright install --with-deps chromium webkit
+
+      # Der Playwright-Server baut selbst und liefert das Ergebnis aus
+      # (playwright.config.ts) — geprueft wird der gebaute Stand.
+      - name: Rauchtests (TEST_STRATEGY.md §7)
+        run: npm run test:e2e
+
   db-integration:
     runs-on: ubuntu-latest
     services:
