@@ -32,24 +32,21 @@ type BulkKind = "assign-depot" | "assign-company" | "storno" | "reactivate" | "d
 
 interface BulkBarProps {
   selectedRows: Row[];
-  totalFiltered: number;
-  onSelectAllFiltered: () => void;
   onClear: () => void;
 }
 
 /**
- * Massenaktionsleiste (§14): sichtbarer Auswahlmodus mit Anzahl, klarer
- * Unterscheidung zwischen „Seite/alle geladenen" und „alle gefilterten"
- * Datensätzen, Bestätigungsdialog je Aktion und ehrlicher Ergebniszusammenfassung
+ * Massenaktionsleiste (§14): sichtbarer Auswahlmodus mit Anzahl,
+ * Bestätigungsdialog je Aktion und ehrlicher Ergebniszusammenfassung
  * (Teilfehler werden ausgewiesen, nicht verschwiegen). Keine automatische
  * Zusammenführung, keine Vereinheitlichung von Beträgen/Daten.
+ *
+ * Es wirkt ausschließlich auf das, was sichtbar angehakt ist: Ein Schalter
+ * „alle gefilterten auswählen" stand hier einmal, hat aber vierstellige
+ * Auswahlen hinter einem Klick versteckt — mit dem Kopfkästchen der Tabelle
+ * wird Seite für Seite gewählt, und die Auswahl bleibt beim Blättern erhalten.
  */
-export function BulkBar({
-  selectedRows,
-  totalFiltered,
-  onSelectAllFiltered,
-  onClear,
-}: BulkBarProps) {
+export function BulkBar({ selectedRows, onClear }: BulkBarProps) {
   const queryClient = useQueryClient();
   const { data: depots = [] } = useDepots();
   const { data: securities = [] } = useSecurities();
@@ -92,16 +89,26 @@ export function BulkBar({
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-lg border border-primary/40 bg-primary/5 p-3">
-      <span className="text-sm font-medium" aria-live="polite">
-        {selectedRows.length} ausgewählt
-      </span>
-      {selectedRows.length < totalFiltered && (
-        <Button type="button" variant="ghost" size="sm" onClick={onSelectAllFiltered}>
-          Alle {totalFiltered} gefilterten auswählen
+    <div className="rounded-lg border border-primary/40 bg-primary/5 p-3">
+      {/* Anzahl und Abbruch bilden die Kopfzeile: Das Schliessen gehoert in die
+          Ecke, nicht ans Ende einer Reihe von Aktionen, wo es auf schmalen
+          Geraeten mal hier, mal dort landete. */}
+      <div className="flex items-start justify-between gap-2">
+        <span className="text-sm font-medium" aria-live="polite">
+          {selectedRows.length} ausgewählt
+        </span>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="-mr-1.5 -mt-1.5 shrink-0"
+          aria-label="Auswahl aufheben"
+          onClick={onClear}
+        >
+          <X />
         </Button>
-      )}
-      <div className="ml-auto flex flex-wrap gap-2">
+      </div>
+
+      <div className="flex flex-wrap gap-2">
         <Button
           variant="outline"
           size="sm"
@@ -146,14 +153,6 @@ export function BulkBar({
           }}
         >
           <Trash2 /> Dauerhaft löschen
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label="Auswahl aufheben"
-          onClick={onClear}
-        >
-          <X />
         </Button>
       </div>
 

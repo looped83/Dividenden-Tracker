@@ -306,9 +306,6 @@ export function PaymentsPage() {
       return next;
     });
   };
-  const selectAllFiltered = () => {
-    setSelected(new Set(rows.map((r) => r.id)));
-  };
   const clearSelection = () => {
     setSelected(new Set());
   };
@@ -545,12 +542,7 @@ export function PaymentsPage() {
 
       {/* Massenaktionsleiste */}
       {selected.size > 0 && (
-        <BulkBar
-          selectedRows={selectedRows}
-          totalFiltered={rows.length}
-          onSelectAllFiltered={selectAllFiltered}
-          onClear={clearSelection}
-        />
+        <BulkBar selectedRows={selectedRows} onClear={clearSelection} />
       )}
 
       {isLoading ? (

@@ -14,3 +14,12 @@ if (typeof window !== "undefined" && typeof window.matchMedia !== "function") {
     dispatchEvent: () => false,
   });
 }
+
+// Ebenso fehlt `scrollIntoView` (TabNav rueckt den aktiven Reiter in Sicht).
+// jsdom kennt kein Layout, es gibt also nichts zu scrollen.
+if (
+  typeof Element !== "undefined" &&
+  typeof Element.prototype.scrollIntoView !== "function"
+) {
+  Element.prototype.scrollIntoView = () => undefined;
+}

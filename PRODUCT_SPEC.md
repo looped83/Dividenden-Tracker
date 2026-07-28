@@ -272,8 +272,9 @@ bleiben unveränderlich). Parallele Änderungen werden über Optimistic Concurre
 erkannt.
 
 **Massenaktionen.** Depot/Unternehmen zuweisen, Stornieren, Reaktivieren,
-dauerhaft Löschen — mit sichtbarer Auswahl, klarer Unterscheidung
-„Seite/alle gefilterten", Bestätigung und ehrlicher Ergebniszusammenfassung.
+dauerhaft Löschen — ausschließlich auf sichtbar angehakten Eingängen (Kästchen
+je Zeile, Kopfkästchen für die Seite; die Auswahl bleibt beim Blättern
+erhalten), mit Bestätigung und ehrlicher Ergebniszusammenfassung.
 
 **Datenqualität** (`/eingaenge/datenqualitaet`). Mögliche Dubletten (gewichtet:
 hohe Wahrscheinlichkeit vs. mögliche Dublette) und regelbasierte Auffälligkeiten
