@@ -130,18 +130,16 @@ export function GoalsPage() {
     });
   };
 
+  // Kopfzeile identisch zu Dividenden und den uebrigen Unterseiten, damit die
+  // Ueberschrift beim Seitenwechsel nicht springt.
   const heading = (
-    <div className="flex flex-wrap items-start justify-between gap-3">
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight">Ziele</h1>
-        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Lege Jahres- und Monatsziele fest und vergleiche sie mit deinen tatsächlich
-          erhaltenen Dividenden. Ziele sind Vergleichswerte – keine Prognose.
-        </p>
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <h1 className="text-xl font-semibold tracking-tight">Ziele</h1>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button onClick={openCreate}>
+          <Plus aria-hidden /> Ziel anlegen
+        </Button>
       </div>
-      <Button onClick={openCreate}>
-        <Plus aria-hidden /> Ziel anlegen
-      </Button>
     </div>
   );
 

@@ -1,7 +1,5 @@
-import { Construction } from "lucide-react";
 import * as React from "react";
 import { useNavigate } from "react-router";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -10,7 +8,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { EmptyState } from "@/components/ui/empty-state";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { useSession } from "@/app/auth/SessionProvider";
@@ -69,18 +66,6 @@ export function GeneralSettingsTab() {
           <ThemeToggle />
         </CardContent>
       </Card>
-
-      <div className="space-y-4">
-        <div className="flex items-center gap-3">
-          <h2 className="text-base font-medium">Basiswährung &amp; Backup</h2>
-          <Badge variant="warning">Platzhalter</Badge>
-        </div>
-        <EmptyState
-          icon={Construction}
-          title="Wird in späteren Phasen umgesetzt"
-          description="Basiswährungs- und Backup-Einstellungen folgen mit Phase 7."
-        />
-      </div>
     </div>
   );
 }

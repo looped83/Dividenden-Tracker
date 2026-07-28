@@ -164,6 +164,68 @@ export function PaymentsPage() {
     [depots],
   );
 
+  // Aktive Filter als einzeln entfernbare Labels. Die Reihenfolge folgt der
+  // Filterleiste, damit Label und Feld zueinander finden.
+  const activeFilterChips = React.useMemo(() => {
+    const chips: { key: string; label: string; remove: () => void }[] = [];
+    if (securityId) {
+      chips.push({
+        key: "security",
+        label: `Unternehmen: ${securityById.get(securityId)?.name ?? "unbekannt"}`,
+        remove: () => {
+          updateParams({ security: null });
+        },
+      });
+    }
+    if (depotId) {
+      chips.push({
+        key: "depot",
+        label: `Depot: ${depotById.get(depotId)?.name ?? "unbekannt"}`,
+        remove: () => {
+          updateParams({ depot: null });
+        },
+      });
+    }
+    if (filterYear !== null) {
+      chips.push({
+        key: "year",
+        // Der Monatsfilter haengt am Jahr — ohne Jahr ist er wirkungslos.
+        label: `Jahr: ${String(filterYear)}`,
+        remove: () => {
+          updateParams({ year: null, month: null });
+        },
+      });
+    }
+    if (filterMonth !== null) {
+      chips.push({
+        key: "month",
+        label: `Monat: ${monthNameDe(filterMonth)}`,
+        remove: () => {
+          updateParams({ month: null });
+        },
+      });
+    }
+    if (status === "all") {
+      chips.push({
+        key: "status",
+        label: "Stornierte sichtbar",
+        remove: () => {
+          updateParams({ status: null });
+        },
+      });
+    }
+    return chips;
+  }, [
+    securityId,
+    depotId,
+    filterYear,
+    filterMonth,
+    status,
+    securityById,
+    depotById,
+    updateParams,
+  ]);
+
   const years = React.useMemo(() => {
     const set = new Set<number>();
     for (const payment of allPayments) set.add(yearOf(effectiveOf(payment)));
@@ -474,7 +536,10 @@ export function PaymentsPage() {
       </FilterBar>
 
       {hasActiveFilters && (
-        <div>
+        <div className="flex flex-wrap items-center gap-2">
+          {activeFilterChips.map((chip) => (
+            <FilterChip key={chip.key} label={chip.label} onRemove={chip.remove} />
+          ))}
           <Button type="button" variant="ghost" size="sm" onClick={resetFilters}>
             <X /> Filter zurücksetzen
           </Button>
@@ -483,8 +548,7 @@ export function PaymentsPage() {
 
       {hasActiveFilters && (
         <p className="text-sm text-muted-foreground" aria-live="polite">
-          Aktive Filter aktiv — {rows.length} {rows.length === 1 ? "Eingang" : "Eingänge"}{" "}
-          gefunden.
+          {rows.length} {rows.length === 1 ? "Eingang" : "Eingänge"} gefunden.
         </p>
       )}
 
@@ -515,7 +579,7 @@ export function PaymentsPage() {
         <EmptyState
           icon={Wallet}
           title="Keine Eingänge für die aktuelle Auswahl"
-          description="Passe Suche, Filter oder Sortierung an, um Dividendeneingänge zu sehen."
+          description="Passe die Filter an, um Dividendeneingänge zu sehen."
         />
       ) : (
         <>
@@ -669,6 +733,23 @@ export function PaymentsPage() {
         onConfirm={() => void handleDelete()}
       />
     </div>
+  );
+}
+
+/** Aktiver Filter als Label mit eigener Entfernen-Schaltflaeche. */
+function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/40 py-1 pl-3 pr-1 text-sm">
+      {label}
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label={`Filter „${label}" entfernen`}
+        className="flex size-6 items-center justify-center rounded-full outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring pointer-coarse:size-8"
+      >
+        <X className="size-3.5" aria-hidden />
+      </button>
+    </span>
   );
 }
 
