@@ -59,6 +59,11 @@ import {
   type PaymentSummaryData,
 } from "@/features/payments/dialogs";
 import { BulkBar } from "@/features/payments/BulkBar";
+import {
+  compareToPreviousYear,
+  type YearOverYearComparison,
+} from "@/features/payments/yearOverYear";
+import { YearOverYearIndicator } from "@/features/payments/YearOverYearIndicator";
 
 type Row = {
   payment: DividendPayment;
@@ -227,6 +232,26 @@ export function PaymentsPage() {
     depotById,
     updateParams,
   ]);
+
+  // Vergleich mit dem Vorjahr ueber den gesamten Bestand — nicht ueber die
+  // gefilterte Liste: Ein Depot- oder Jahresfilter darf den Bezug nicht
+  // verschieben.
+  const yearOverYear = React.useMemo(
+    () =>
+      compareToPreviousYear(
+        allPayments.map((payment) => ({
+          id: payment.id,
+          securityId: payment.security_id,
+          effectiveDate: effectiveOf(payment),
+          amount: Money.fromString(
+            payment.net_amount,
+            toCurrencyCode(depotById.get(payment.depot_id)?.base_currency ?? "EUR"),
+          ),
+          cancelled: Boolean(payment.archived_at),
+        })),
+      ),
+    [allPayments, effectiveOf, depotById],
+  );
 
   const years = React.useMemo(() => {
     const set = new Set<number>();
@@ -591,6 +616,7 @@ export function PaymentsPage() {
                   <PaymentRow
                     key={row.id}
                     row={row}
+                    comparison={yearOverYear.get(row.id)}
                     selected={selected.has(row.id)}
                     onToggle={() => {
                       toggleSelected(row.id);
@@ -618,6 +644,7 @@ export function PaymentsPage() {
               <PaymentCard
                 key={row.id}
                 row={row}
+                comparison={yearOverYear.get(row.id)}
                 selected={selected.has(row.id)}
                 onToggle={() => {
                   toggleSelected(row.id);
@@ -743,6 +770,7 @@ function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }
 
 interface RowActionProps {
   row: Row;
+  comparison: YearOverYearComparison | undefined;
   selected: boolean;
   onToggle: () => void;
   listUrl: string;
@@ -753,6 +781,7 @@ interface RowActionProps {
 
 function PaymentRow({
   row,
+  comparison,
   selected,
   onToggle,
   listUrl,
@@ -802,7 +831,12 @@ function PaymentRow({
       </TableCell>
       <TableCell className="text-muted-foreground">{depotName || "—"}</TableCell>
       <TableCell className="text-right">
-        <AmountText amount={Money.fromString(payment.net_amount, currency)} />
+        {/* Der Indikator steht links des Betrags, damit die Ziffern der Spalte
+            buendig bleiben. */}
+        <span className="inline-flex items-center justify-end gap-1.5">
+          {comparison && <YearOverYearIndicator comparison={comparison} />}
+          <AmountText amount={Money.fromString(payment.net_amount, currency)} />
+        </span>
       </TableCell>
       <TableCell className="text-right">
         <div className="flex justify-end gap-2">
@@ -851,6 +885,7 @@ function PaymentRow({
 
 function PaymentCard({
   row,
+  comparison,
   selected,
   onToggle,
   listUrl,
@@ -883,10 +918,13 @@ function PaymentCard({
             </Link>
             {/* Der Betrag ist die Kernaussage der Karte und traegt deshalb mehr
                 Gewicht als der Name. */}
-            <AmountText
-              amount={Money.fromString(payment.net_amount, currency)}
-              className="shrink-0 text-lg font-semibold"
-            />
+            <span className="flex shrink-0 items-center gap-1.5">
+              {comparison && <YearOverYearIndicator comparison={comparison} />}
+              <AmountText
+                amount={Money.fromString(payment.net_amount, currency)}
+                className="text-lg font-semibold"
+              />
+            </span>
           </div>
           <div className="mt-1 flex items-center justify-between gap-2">
             {/* Ohne Depot: Wer die Liste nach Depot filtert oder nur eines
