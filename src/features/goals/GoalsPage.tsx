@@ -4,6 +4,7 @@ import { Plus, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { refDateFromDate } from "@/lib/statistics";
 import { computeGoalProgress, sortGoalProgress, type GoalProgress } from "@/lib/goals";
 import { useErrorState } from "@/lib/hooks/useErrorState";
@@ -130,17 +131,15 @@ export function GoalsPage() {
     });
   };
 
-  // Kopfzeile identisch zu Dividenden und den uebrigen Unterseiten, damit die
-  // Ueberschrift beim Seitenwechsel nicht springt.
   const heading = (
-    <div className="flex flex-wrap items-center justify-between gap-2">
-      <h1 className="text-xl font-semibold tracking-tight">Ziele</h1>
-      <div className="flex flex-wrap items-center gap-2">
+    <PageHeader
+      title="Ziele"
+      actions={
         <Button onClick={openCreate}>
           <Plus aria-hidden /> Ziel anlegen
         </Button>
-      </div>
-    </div>
+      }
+    />
   );
 
   return (

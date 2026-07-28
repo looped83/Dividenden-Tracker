@@ -1,6 +1,7 @@
 import { NavLink } from "react-router";
 import { ChevronRight } from "lucide-react";
 import { BOTTOM_NAV_MORE_ITEMS } from "@/app/navigation";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 /**
  * "Mehr"-Uebersicht der iPhone Bottom Navigation (UX_AND_DESIGN_SYSTEM.md #4):
@@ -11,7 +12,7 @@ import { BOTTOM_NAV_MORE_ITEMS } from "@/app/navigation";
 export function MorePage() {
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold tracking-tight">Mehr</h1>
+      <PageHeader title="Mehr" />
       <ul className="divide-y divide-border rounded-lg border border-border bg-card">
         {BOTTOM_NAV_MORE_ITEMS.map((item) => (
           <li key={item.to}>

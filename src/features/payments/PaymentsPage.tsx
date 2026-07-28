@@ -5,7 +5,6 @@ import {
   ArrowUp,
   Ban,
   Pencil,
-  Plus,
   RotateCcw,
   ShieldCheck,
   Trash2,
@@ -22,6 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { FilterBar, FilterField } from "@/components/ui/filter-bar";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
@@ -381,19 +381,12 @@ export function PaymentsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-semibold tracking-tight">Dividenden</h1>
-        <Button asChild>
-          <Link to="/eingaenge/neu" state={{ from: listUrl }}>
-            <Plus /> Neue Dividende
-          </Link>
-        </Button>
-      </div>
+      <PageHeader title="Dividenden" />
 
       {/* Filterleiste in der Optik des Statistikbereichs (geteiltes Primitive).
           Sortierrichtung als Symbolschalter statt langer Auswahltexte
           („Zahlungsdatum – neueste zuerst“), damit alles in eine Zeile passt. */}
-      <FilterBar>
+      <FilterBar activeCount={activeFilterChips.length}>
         <FilterField id="f-security" label="Unternehmen">
           <Select
             id="f-security"
@@ -490,7 +483,11 @@ export function PaymentsPage() {
           </Select>
         </FilterField>
 
-        <FilterField id="f-sort" label="Sortierung">
+        {/* Etwas breiter als die uebrigen Felder: Es traegt zusaetzlich den
+            Richtungsschalter. Die Optionen benennen die Sortierung selbst
+            („Nach Datum"), da die Beschriftung nur noch fuer Screenreader
+            existiert. */}
+        <FilterField id="f-sort" label="Sortierung" className="sm:basis-52">
           <div className="flex gap-2">
             <Select
               id="f-sort"
@@ -499,11 +496,11 @@ export function PaymentsPage() {
                 updateParams({ sort: event.target.value, direction: sort.direction });
               }}
             >
-              <option value="payment_date">Datum</option>
-              <option value="amount">Betrag</option>
-              <option value="company">Unternehmen</option>
-              <option value="depot">Depot</option>
-              <option value="updated">Geändert</option>
+              <option value="payment_date">Nach Datum</option>
+              <option value="amount">Nach Betrag</option>
+              <option value="company">Nach Unternehmen</option>
+              <option value="depot">Nach Depot</option>
+              <option value="updated">Nach Änderung</option>
             </Select>
             <Button
               type="button"

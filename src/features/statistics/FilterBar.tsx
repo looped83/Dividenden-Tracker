@@ -55,9 +55,16 @@ export function FilterBar({
   const securityOptions = React.useMemo(() => sortedEntries(securities), [securities]);
   const depotOptions = React.useMemo(() => sortedEntries(depots), [depots]);
   const active = !isEmptyFilter(filter);
+  const activeCount = [
+    filter.year,
+    filter.securityId,
+    filter.depotId,
+    filter.source,
+    filter.paymentType,
+  ].filter((value) => value !== null).length;
 
   return (
-    <FilterBarShell>
+    <FilterBarShell activeCount={activeCount}>
       <FilterField id="stats-filter-year" label="Jahr">
         <Select
           id="stats-filter-year"
