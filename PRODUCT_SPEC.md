@@ -252,9 +252,10 @@ Paginierung; Filter/Suche/Sortierung sind URL-Zustand und bleiben nach Reload
 sowie über Browser-Zurück/-Vorwärts erhalten.
 
 **Vorjahresvergleich.** Jede Zahlung zeigt mit einem Zeichen, wie sie zur Zahlung
-gleicher Reihenfolge im Vorjahr steht: Pfeil hoch (mehr), Pfeil runter (weniger),
-Punkt (centgenau gleich), nichts ohne Gegenstück. Verglichen werden Beträge, nicht
-Dividenden je Aktie — Regeln und Randfälle in CALCULATION_RULES.md §11.10.
+desselben Ausschüttungsmonats im Vorjahr steht: Pfeil hoch (mehr), Pfeil runter
+(weniger), Punkt (centgenau gleich), nichts ohne eindeutige Zuordnung. Verglichen
+werden Beträge, nicht Dividenden je Aktie — Regeln und Randfälle in
+CALCULATION_RULES.md §11.10.
 
 **Statusmodell.** Ein Eingang ist *aktiv* oder *storniert*. Stornieren und
 dauerhaftes Löschen sind zwei klar getrennte Aktionen und werden nie synonym
