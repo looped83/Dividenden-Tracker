@@ -1,9 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_SORT,
-  normalizeSearch,
   parseSort,
-  parseSource,
   parseStatus,
   statusNeedsArchived,
 } from "@/features/payments/listParams";
@@ -18,17 +16,6 @@ describe("parseStatus", () => {
     expect(parseStatus(null)).toBe("active");
     expect(parseStatus("deleted")).toBe("active");
     expect(parseStatus("<script>")).toBe("active");
-  });
-});
-
-describe("parseSource", () => {
-  it("liest gültige Quellen", () => {
-    expect(parseSource("manual")).toBe("manual");
-    expect(parseSource("csv_import")).toBe("csv_import");
-  });
-  it("fällt sicher auf 'all' zurück", () => {
-    expect(parseSource("bogus")).toBe("all");
-    expect(parseSource(null)).toBe("all");
   });
 });
 
@@ -53,12 +40,5 @@ describe("statusNeedsArchived", () => {
     expect(statusNeedsArchived("active")).toBe(false);
     expect(statusNeedsArchived("cancelled")).toBe(true);
     expect(statusNeedsArchived("all")).toBe(true);
-  });
-});
-
-describe("normalizeSearch", () => {
-  it("trimmt und normalisiert Groß/Klein (§3)", () => {
-    expect(normalizeSearch("  Apple  ")).toBe("apple");
-    expect(normalizeSearch(null)).toBe("");
   });
 });

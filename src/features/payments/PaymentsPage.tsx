@@ -1,11 +1,12 @@
 import * as React from "react";
 import { Link, useSearchParams } from "react-router";
 import {
+  ArrowDown,
+  ArrowUp,
   Ban,
   Pencil,
   Plus,
   RotateCcw,
-  Search,
   ShieldCheck,
   Trash2,
   Wallet,
@@ -19,8 +20,8 @@ import {
   yearOf,
 } from "@/lib/statistics";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { FilterBar, FilterField } from "@/components/ui/filter-bar";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
@@ -44,9 +45,7 @@ import {
 } from "@/features/payments/hooks";
 import type { DividendPayment } from "@/lib/supabase/repositories/payments";
 import {
-  normalizeSearch,
   parseSort,
-  parseSource,
   parseStatus,
   statusNeedsArchived,
 } from "@/features/payments/listParams";
@@ -73,7 +72,6 @@ export function PaymentsPage() {
 
   const [searchParams, setSearchParams] = useSearchParams();
   const [page, setPage] = React.useState(1);
-  const [searchInput, setSearchInput] = React.useState(searchParams.get("q") ?? "");
   // Mehrfachauswahl (§14): früh deklariert, damit Filteränderungen die Auswahl
   // zurücksetzen können.
   const [selected, setSelected] = React.useState<Set<string>>(new Set());
@@ -85,9 +83,7 @@ export function PaymentsPage() {
   const yearRaw = searchParams.get("year");
   const monthRaw = searchParams.get("month");
   const status = parseStatus(searchParams.get("status"));
-  const sourceFilter = parseSource(searchParams.get("source"));
   const sort = parseSort(searchParams.get("sort"), searchParams.get("direction"));
-  const searchTerm = normalizeSearch(searchParams.get("q"));
   const filterYear =
     yearRaw && /^\d{4}$/.test(yearRaw) ? Number.parseInt(yearRaw, 10) : null;
   const filterMonth =
@@ -114,20 +110,15 @@ export function PaymentsPage() {
     securityId !== "" ||
     filterYear !== null ||
     filterMonth !== null ||
-    searchTerm !== "" ||
-    status !== "active" ||
-    sourceFilter !== "all";
+    status !== "active";
 
   const resetFilters = () => {
-    setSearchInput("");
     updateParams({
       depot: null,
       security: null,
       year: null,
       month: null,
       status: null,
-      source: null,
-      q: null,
     });
   };
 
@@ -172,7 +163,6 @@ export function PaymentsPage() {
 
       if (depotId && payment.depot_id !== depotId) continue;
       if (securityId && payment.security_id !== securityId) continue;
-      if (sourceFilter !== "all" && payment.source !== sourceFilter) continue;
 
       const effectiveDate = effectiveOf(payment);
       if (filterYear && yearOf(effectiveDate) !== filterYear) continue;
@@ -184,19 +174,6 @@ export function PaymentsPage() {
       const companyName = rel?.name ?? securityById.get(payment.security_id)?.name ?? "";
       const depot = depotById.get(payment.depot_id);
       const depotName = depot?.name ?? "";
-
-      if (searchTerm) {
-        const haystack = [
-          companyName,
-          rel?.ticker ?? "",
-          payment.note ?? "",
-          depotName,
-          payment.source_file_name ?? "",
-        ]
-          .join(" ")
-          .toLowerCase();
-        if (!haystack.includes(searchTerm)) continue;
-      }
 
       mapped.push({
         payment,
@@ -216,10 +193,8 @@ export function PaymentsPage() {
     status,
     depotId,
     securityId,
-    sourceFilter,
     filterYear,
     filterMonth,
-    searchTerm,
     effectiveOf,
     securityById,
     depotById,
@@ -325,8 +300,6 @@ export function PaymentsPage() {
   const listSearch = searchParams.toString();
   const listUrl = listSearch ? `/eingaenge?${listSearch}` : "/eingaenge";
 
-  const sortValue = `${sort.field}:${sort.direction}`;
-
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -345,147 +318,134 @@ export function PaymentsPage() {
         </div>
       </div>
 
-      {/* Suche */}
-      <form
-        role="search"
-        onSubmit={(event) => {
-          event.preventDefault();
-          updateParams({ q: searchInput.trim() || null });
-        }}
-        className="relative"
-      >
-        <Search
-          className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-          aria-hidden
-        />
-        <Input
-          type="search"
-          className="pl-9"
-          placeholder="Unternehmen, Depot, Notiz oder Importdatei suchen …"
-          aria-label="Dividendeneingänge durchsuchen"
-          value={searchInput}
-          onChange={(event) => {
-            setSearchInput(event.target.value);
-          }}
-          onBlur={() => {
-            updateParams({ q: searchInput.trim() || null });
-          }}
-        />
-      </form>
+      {/* Filterleiste in der Optik des Statistikbereichs (geteiltes Primitive).
+          Sortierrichtung als Symbolschalter statt langer Auswahltexte
+          („Zahlungsdatum – neueste zuerst“), damit alles in eine Zeile passt. */}
+      <FilterBar>
+        <FilterField id="f-security" label="Unternehmen">
+          <Select
+            id="f-security"
+            value={securityId}
+            onChange={(event) => {
+              updateParams({ security: event.target.value });
+            }}
+          >
+            <option value="">Alle Unternehmen</option>
+            {securities.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+                {s.archived_at ? " (archiviert)" : ""}
+              </option>
+            ))}
+          </Select>
+        </FilterField>
 
-      {/* Filter- und Sortierleiste */}
-      <div className="flex flex-wrap items-end gap-3">
-        <FilterSelect
-          id="f-security"
-          label="Unternehmen"
-          value={securityId}
-          onChange={(value) => {
-            updateParams({ security: value });
-          }}
-        >
-          <option value="">Alle Unternehmen</option>
-          {securities.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-              {s.archived_at ? " (archiviert)" : ""}
-            </option>
-          ))}
-        </FilterSelect>
+        <FilterField id="f-depot" label="Depot">
+          <Select
+            id="f-depot"
+            value={depotId}
+            onChange={(event) => {
+              updateParams({ depot: event.target.value });
+            }}
+          >
+            <option value="">Alle Depots</option>
+            {depots.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.name}
+                {d.archived_at ? " (archiviert)" : ""}
+              </option>
+            ))}
+          </Select>
+        </FilterField>
 
-        <FilterSelect
-          id="f-depot"
-          label="Depot"
-          value={depotId}
-          onChange={(value) => {
-            updateParams({ depot: value });
-          }}
-        >
-          <option value="">Alle Depots</option>
-          {depots.map((d) => (
-            <option key={d.id} value={d.id}>
-              {d.name}
-              {d.archived_at ? " (archiviert)" : ""}
-            </option>
-          ))}
-        </FilterSelect>
+        <FilterField id="f-year" label="Jahr">
+          <Select
+            id="f-year"
+            value={filterYear ? String(filterYear) : ""}
+            onChange={(event) => {
+              const value = event.target.value;
+              updateParams(value ? { year: value } : { year: null, month: null });
+            }}
+          >
+            <option value="">Alle Jahre</option>
+            {years.map((y) => (
+              <option key={y} value={y}>
+                {y}
+              </option>
+            ))}
+          </Select>
+        </FilterField>
 
-        <FilterSelect
-          id="f-year"
-          label="Jahr"
-          value={filterYear ? String(filterYear) : ""}
-          onChange={(value) => {
-            updateParams(value ? { year: value } : { year: null, month: null });
-          }}
-        >
-          <option value="">Alle Jahre</option>
-          {years.map((y) => (
-            <option key={y} value={y}>
-              {y}
-            </option>
-          ))}
-        </FilterSelect>
+        <FilterField id="f-month" label="Monat">
+          <Select
+            id="f-month"
+            value={filterMonth ? String(filterMonth) : ""}
+            disabled={!filterYear}
+            onChange={(event) => {
+              updateParams({ month: event.target.value });
+            }}
+          >
+            <option value="">Alle Monate</option>
+            {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+              <option key={m} value={m}>
+                {monthNameDe(m)}
+              </option>
+            ))}
+          </Select>
+        </FilterField>
 
-        <FilterSelect
-          id="f-month"
-          label="Monat"
-          value={filterMonth ? String(filterMonth) : ""}
-          disabled={!filterYear}
-          onChange={(value) => {
-            updateParams({ month: value });
-          }}
-        >
-          <option value="">Alle Monate</option>
-          {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-            <option key={m} value={m}>
-              {monthNameDe(m)}
-            </option>
-          ))}
-        </FilterSelect>
+        <FilterField id="f-sort" label="Sortierung">
+          <div className="flex gap-2">
+            <Select
+              id="f-sort"
+              value={sort.field}
+              onChange={(event) => {
+                updateParams({ sort: event.target.value, direction: sort.direction });
+              }}
+            >
+              <option value="payment_date">Datum</option>
+              <option value="amount">Betrag</option>
+              <option value="company">Unternehmen</option>
+              <option value="depot">Depot</option>
+              <option value="updated">Geändert</option>
+            </Select>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="shrink-0"
+              aria-label={
+                sort.direction === "desc"
+                  ? "Absteigend sortiert — zu aufsteigend wechseln"
+                  : "Aufsteigend sortiert — zu absteigend wechseln"
+              }
+              onClick={() => {
+                updateParams({
+                  sort: sort.field,
+                  direction: sort.direction === "desc" ? "asc" : "desc",
+                });
+              }}
+            >
+              {sort.direction === "desc" ? <ArrowDown /> : <ArrowUp />}
+            </Button>
+          </div>
+        </FilterField>
+      </FilterBar>
 
-        <FilterSelect
-          id="f-status"
-          label="Status"
-          value={status}
-          onChange={(value) => {
-            updateParams({ status: value === "active" ? null : value });
-          }}
-        >
-          <option value="active">Aktiv</option>
-          <option value="cancelled">Storniert</option>
-          <option value="all">Alle</option>
-        </FilterSelect>
-
-        <FilterSelect
-          id="f-source"
-          label="Datenquelle"
-          value={sourceFilter}
-          onChange={(value) => {
-            updateParams({ source: value === "all" ? null : value });
-          }}
-        >
-          <option value="all">Alle Quellen</option>
-          <option value="manual">Manuell</option>
-          <option value="csv_import">CSV-Import</option>
-          <option value="excel_import">Excel-Import</option>
-        </FilterSelect>
-
-        <FilterSelect
-          id="f-sort"
-          label="Sortierung"
-          value={sortValue}
-          onChange={(value) => {
-            const [field, direction] = value.split(":");
-            updateParams({ sort: field, direction });
-          }}
-        >
-          <option value="payment_date:desc">Zahlungsdatum – neueste zuerst</option>
-          <option value="payment_date:asc">Zahlungsdatum – älteste zuerst</option>
-          <option value="amount:desc">Betrag – höchste zuerst</option>
-          <option value="amount:asc">Betrag – niedrigste zuerst</option>
-          <option value="company:asc">Unternehmen A–Z</option>
-          <option value="depot:asc">Depot A–Z</option>
-          <option value="updated:desc">Zuletzt geändert</option>
-        </FilterSelect>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        {/* Stornierte sind sonst nirgends auffindbar: Reaktivieren geht nur aus
+            dieser Liste oder per Direktlink. */}
+        <label className="flex min-h-11 items-center gap-2 text-sm text-muted-foreground">
+          <input
+            type="checkbox"
+            className="size-4 pointer-coarse:size-6"
+            checked={status === "all"}
+            onChange={(event) => {
+              updateParams({ status: event.target.checked ? "all" : null });
+            }}
+          />
+          Stornierte anzeigen
+        </label>
 
         {hasActiveFilters && (
           <Button type="button" variant="ghost" size="sm" onClick={resetFilters}>
@@ -667,40 +627,6 @@ export function PaymentsPage() {
         isPending={deletePayment.isPending}
         onConfirm={() => void handleDelete()}
       />
-    </div>
-  );
-}
-
-function FilterSelect({
-  id,
-  label,
-  value,
-  onChange,
-  disabled,
-  children,
-}: {
-  id: string;
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  disabled?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="min-w-36 space-y-1.5">
-      <label htmlFor={id} className="text-sm text-muted-foreground">
-        {label}
-      </label>
-      <Select
-        id={id}
-        value={value}
-        disabled={disabled}
-        onChange={(event) => {
-          onChange(event.target.value);
-        }}
-      >
-        {children}
-      </Select>
     </div>
   );
 }

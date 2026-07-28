@@ -1,6 +1,7 @@
 import * as React from "react";
 import { X } from "lucide-react";
 import { Select } from "@/components/ui/select";
+import { FilterBar as FilterBarShell, FilterField } from "@/components/ui/filter-bar";
 import { Button } from "@/components/ui/button";
 import {
   isEmptyFilter,
@@ -37,25 +38,6 @@ function sortedEntries(map: Map<string, EntityInfo>): OptionEntry[] {
     .sort((a, b) => a.name.localeCompare(b.name, "de"));
 }
 
-function Field({
-  id,
-  label,
-  children,
-}: {
-  id: string;
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="min-w-40 flex-1 space-y-1.5">
-      <label htmlFor={id} className="text-sm text-muted-foreground">
-        {label}
-      </label>
-      {children}
-    </div>
-  );
-}
-
 /**
  * Globale, kombinierbare Statistikfilter (§11): Jahr, Unternehmen, Depot,
  * Datenquelle und Zahlungsstatus. Der Filter ist URL-gestuetzt (siehe
@@ -75,8 +57,8 @@ export function FilterBar({
   const active = !isEmptyFilter(filter);
 
   return (
-    <div className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-card p-4">
-      <Field id="stats-filter-year" label="Jahr">
+    <FilterBarShell>
+      <FilterField id="stats-filter-year" label="Jahr">
         <Select
           id="stats-filter-year"
           value={filter.year !== null ? String(filter.year) : ""}
@@ -92,9 +74,9 @@ export function FilterBar({
             </option>
           ))}
         </Select>
-      </Field>
+      </FilterField>
 
-      <Field id="stats-filter-security" label="Unternehmen">
+      <FilterField id="stats-filter-security" label="Unternehmen">
         <Select
           id="stats-filter-security"
           value={filter.securityId ?? ""}
@@ -110,9 +92,9 @@ export function FilterBar({
             </option>
           ))}
         </Select>
-      </Field>
+      </FilterField>
 
-      <Field id="stats-filter-depot" label="Depot">
+      <FilterField id="stats-filter-depot" label="Depot">
         <Select
           id="stats-filter-depot"
           value={filter.depotId ?? ""}
@@ -128,9 +110,9 @@ export function FilterBar({
             </option>
           ))}
         </Select>
-      </Field>
+      </FilterField>
 
-      <Field id="stats-filter-source" label="Datenquelle">
+      <FilterField id="stats-filter-source" label="Datenquelle">
         <Select
           id="stats-filter-source"
           value={filter.source ?? ""}
@@ -148,9 +130,9 @@ export function FilterBar({
             </option>
           ))}
         </Select>
-      </Field>
+      </FilterField>
 
-      <Field id="stats-filter-type" label="Zahlungsart">
+      <FilterField id="stats-filter-type" label="Zahlungsart">
         <Select
           id="stats-filter-type"
           value={filter.paymentType ?? ""}
@@ -168,7 +150,7 @@ export function FilterBar({
             </option>
           ))}
         </Select>
-      </Field>
+      </FilterField>
 
       {active && (
         <Button
@@ -183,6 +165,6 @@ export function FilterBar({
           <X /> Filter zurücksetzen
         </Button>
       )}
-    </div>
+    </FilterBarShell>
   );
 }
