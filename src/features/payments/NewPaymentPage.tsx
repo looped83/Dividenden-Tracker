@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils/cn";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { toGermanDecimalString } from "@/lib/money";
 import { useDepots } from "@/features/depots/hooks";
@@ -189,20 +190,47 @@ export function NewPaymentPage() {
       )}
 
       <form onSubmit={(event) => void onSubmit(event)} className="space-y-5" noValidate>
-        <div className="space-y-1.5">
-          <Label htmlFor="payment-depot">Depot</Label>
-          <Select id="payment-depot" {...register("depotId")}>
-            <option value="">Bitte wählen</option>
-            {activeDepots.map((depot) => (
-              <option key={depot.id} value={depot.id}>
-                {depot.name} ({depot.base_currency})
-              </option>
-            ))}
-          </Select>
+        {/* Depotauswahl als Kacheln: ein Tipp statt Auswahlliste oeffnen und
+            scrollen. Native Radios darunter, damit Tastaturbedienung (Pfeiltasten
+            innerhalb der Gruppe) und Screenreader-Ausgabe unveraendert bleiben.
+            Das sr-only-Input liegt in einem `relative` Label, sonst wuerde es als
+            absolut positioniertes Element den Container sprengen. */}
+        <fieldset className="space-y-1.5">
+          <legend className="mb-1.5 text-sm font-medium leading-none">Depot</legend>
+          {activeDepots.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Noch kein Depot vorhanden — bitte zuerst unter „Depots" eines anlegen.
+            </p>
+          ) : (
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {activeDepots.map((depot) => (
+                <label
+                  key={depot.id}
+                  className={cn(
+                    "relative flex min-h-16 cursor-pointer flex-col justify-center gap-0.5",
+                    "rounded-md border border-input bg-background px-3 py-2",
+                    "has-[:checked]:border-primary has-[:checked]:bg-primary/10",
+                    "has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
+                  )}
+                >
+                  <input
+                    type="radio"
+                    value={depot.id}
+                    className="sr-only"
+                    {...register("depotId")}
+                  />
+                  <span className="truncate text-sm font-medium">{depot.name}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {depot.base_currency}
+                  </span>
+                </label>
+              ))}
+            </div>
+          )}
           {errors.depotId && (
             <p className="text-sm text-negative">{errors.depotId.message}</p>
           )}
-        </div>
+        </fieldset>
 
         <div className="space-y-1.5">
           <Label htmlFor="payment-security">Unternehmen</Label>
@@ -223,25 +251,31 @@ export function NewPaymentPage() {
           )}
         </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="payment-date">Zahlungsdatum</Label>
-          <Input id="payment-date" type="date" {...register("payDate")} />
-          {errors.payDate && (
-            <p className="text-sm text-negative">{errors.payDate.message}</p>
-          )}
-        </div>
+        {/* Datum und Betrag sind beide kurz und gehoeren fachlich zusammen —
+            nebeneinander spart eine Bildschirmzeile. Unter 360px reicht die
+            halbe Breite dem Datumsfeld nicht: Das Kalendersymbol wird dann
+            abgeschnitten, deshalb dort untereinander. */}
+        <div className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="payment-date">Zahlungsdatum</Label>
+            <Input id="payment-date" type="date" {...register("payDate")} />
+            {errors.payDate && (
+              <p className="text-sm text-negative">{errors.payDate.message}</p>
+            )}
+          </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="payment-net">Nettobetrag</Label>
-          <Input
-            id="payment-net"
-            inputMode="decimal"
-            placeholder="z. B. 73,63"
-            {...register("netAmount")}
-          />
-          {errors.netAmount && (
-            <p className="text-sm text-negative">{errors.netAmount.message}</p>
-          )}
+          <div className="space-y-1.5">
+            <Label htmlFor="payment-net">Nettobetrag</Label>
+            <Input
+              id="payment-net"
+              inputMode="decimal"
+              placeholder="z. B. 73,63"
+              {...register("netAmount")}
+            />
+            {errors.netAmount && (
+              <p className="text-sm text-negative">{errors.netAmount.message}</p>
+            )}
+          </div>
         </div>
 
         <div className="space-y-1.5">
