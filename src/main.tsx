@@ -4,6 +4,7 @@ import { RouterProvider } from "react-router";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
+import { ToastProvider } from "@/components/ui/toast";
 import { SessionProvider } from "@/app/auth/SessionProvider";
 import { router } from "@/app/router";
 import "@/styles/index.css";
@@ -18,7 +19,9 @@ createRoot(rootElement).render(
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
         <SessionProvider>
-          <RouterProvider router={router} />
+          <ToastProvider>
+            <RouterProvider router={router} />
+          </ToastProvider>
         </SessionProvider>
       </QueryClientProvider>
     </ThemeProvider>

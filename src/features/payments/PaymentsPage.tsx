@@ -37,6 +37,7 @@ import { AmountText } from "@/components/money/AmountText";
 import { DateText } from "@/components/DateText";
 import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
 import { MD_BREAKPOINT_QUERY, useMediaQuery } from "@/lib/hooks/useMediaQuery";
+import { useToast } from "@/components/ui/toast";
 import { Money, toCurrencyCode } from "@/lib/money";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { useDepots } from "@/features/depots/hooks";
@@ -76,6 +77,7 @@ type Row = {
 const PAGE_SIZE = 25;
 
 export function PaymentsPage() {
+  const { notify } = useToast();
   const { data: depots = [] } = useDepots();
   const { data: securities = [] } = useSecurities();
 
@@ -347,6 +349,19 @@ export function PaymentsPage() {
   const archivePayment = useArchivePayment();
   const unarchivePayment = useUnarchivePayment();
   const deletePayment = useDeletePayment();
+  // Reaktivieren laeuft ohne Bestaetigungsdialog — ohne Rueckmeldung bliebe
+  // offen, ob es geklappt hat; ein Fehler ginge sogar voellig unter.
+  const reactivate = async (id: string) => {
+    try {
+      await unarchivePayment.mutateAsync(id);
+      notify("Dividendeneingang reaktiviert.");
+    } catch (error) {
+      notify(
+        getErrorMessage(error, "Der Eingang konnte nicht reaktiviert werden."),
+        "negative",
+      );
+    }
+  };
   const [stornoTarget, setStornoTarget] = React.useState<Row | null>(null);
   const [stornoReason, setStornoReason] = React.useState("");
   const [stornoError, setStornoError] = React.useState<string | null>(null);
@@ -376,6 +391,7 @@ export function PaymentsPage() {
       });
       setStornoTarget(null);
       setStornoReason("");
+      notify("Dividendeneingang storniert.");
     } catch (error) {
       setStornoError(
         getErrorMessage(error, "Der Dividendeneingang konnte nicht storniert werden."),
@@ -394,6 +410,7 @@ export function PaymentsPage() {
         return next;
       });
       setDeleteTarget(null);
+      notify("Dividendeneingang dauerhaft gelöscht.");
     } catch (error) {
       setDeleteError(
         getErrorMessage(
@@ -635,9 +652,7 @@ export function PaymentsPage() {
                         setStornoError(null);
                         setStornoTarget(row);
                       }}
-                      onReactivate={() =>
-                        void unarchivePayment.mutateAsync(row.payment.id)
-                      }
+                      onReactivate={() => void reactivate(row.payment.id)}
                       onDelete={() => {
                         setDeleteError(null);
                         setDeleteTarget(row);
@@ -664,7 +679,7 @@ export function PaymentsPage() {
                     setStornoError(null);
                     setStornoTarget(row);
                   }}
-                  onReactivate={() => void unarchivePayment.mutateAsync(row.payment.id)}
+                  onReactivate={() => void reactivate(row.payment.id)}
                   onDelete={() => {
                     setDeleteError(null);
                     setDeleteTarget(row);

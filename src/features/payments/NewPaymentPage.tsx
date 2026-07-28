@@ -10,6 +10,7 @@ import { Combobox } from "@/components/ui/combobox";
 import { Textarea } from "@/components/ui/textarea";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { currencySymbol, toGermanDecimalString } from "@/lib/money";
+import { useToast } from "@/components/ui/toast";
 import { useDepots } from "@/features/depots/hooks";
 import { useSecurities } from "@/features/securities/hooks";
 import {
@@ -47,6 +48,7 @@ export function NewPaymentPage() {
   } = usePayment(id);
   const createPayment = useCreatePayment();
   const updatePayment = useUpdatePayment();
+  const { notify } = useToast();
 
   const [submitError, setSubmitError] = React.useState<string | null>(null);
   const [conflict, setConflict] = React.useState(false);
@@ -164,6 +166,7 @@ export function NewPaymentPage() {
         };
         await createPayment.mutateAsync(insertPayload);
       }
+      notify(isEditMode ? "Dividende gespeichert." : "Dividende erfasst.");
       void navigate(backTo);
     } catch (error) {
       if (error instanceof PaymentConflictError) {

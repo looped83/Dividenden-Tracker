@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BulkBar } from "@/features/payments/BulkBar";
+import { ToastProvider } from "@/components/ui/toast";
 import type { Database } from "@/lib/supabase/database.types";
 
 type DividendPayment = Database["public"]["Tables"]["dividend_payments"]["Row"];
@@ -58,7 +59,9 @@ function renderBar(rows: ReturnType<typeof row>[]) {
   });
   return render(
     <QueryClientProvider client={client}>
-      <BulkBar selectedRows={rows} onClear={() => undefined} />
+      <ToastProvider>
+        <BulkBar selectedRows={rows} onClear={() => undefined} />
+      </ToastProvider>
     </QueryClientProvider>,
   );
 }

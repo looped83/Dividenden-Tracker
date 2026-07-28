@@ -76,6 +76,7 @@ Eigene zusammengesetzte Komponenten (fachlich):
 | `ErrorState` / `WarningBanner` | Fehler-/Warnmuster mit konkreter Ursache und Aktion |
 | `ChartPanel` | Recharts-Wrapper: Titel, Zeitraum, Umschalter Diagramm ↔ Datentabelle (Accessibility), Drill-down bei Klick auf Segment |
 | `GoalProgress` | Zielfortschritt: Balken, „X von Y (Z %)", Kappung 100 % visuell |
+| `ToastProvider` / `useToast` | Kurze Rückmeldung nach abgeschlossenen Aktionen (Speichern, Storno, Reaktivieren, Massenaktionen): `role="status"`, `aria-live="polite"`, 4 s sichtbar, von Hand schließbar, über der Bottom-Navigation. Nur Bestätigungen und beiläufige Fehler — alles Entscheidungspflichtige bleibt Dialog oder Feldfehler |
 
 ## 3. Diagramm-Richtlinien
 
