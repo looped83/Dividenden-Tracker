@@ -188,8 +188,11 @@ und Datenquelle, weist auf die dauerhafte Wirkung hin und nennt die Aktion
 „Dauerhaft löschen" (kein generisches „OK"); Alternative „Abbrechen".
 
 **Responsive.** Desktop: tabellarische Liste mit Filterleiste, sortierbaren
-Optionen und Mehrfachauswahl. Mobile: kompakte Karten statt gequetschter Tabelle,
-Aktionen als klar beschriftete Schaltflächen; Filter/Sortierung als Selects.
+Optionen und Mehrfachauswahl. Mobile: kompakte Karten statt gequetschter Tabelle
+— Betrag als hervorgehobene Kernaussage, Aktionen als Symbolschaltflächen mit
+denselben Symbolen und Namen wie in der Tabelle (`aria-label`, 44-px-Ziel);
+Filter/Sortierung als Selects. Drei beschriftete Schaltflächen verlängerten die
+Karte um zwei Zeilen, ohne mehr auszusagen.
 
 **Massenaktionsleiste.** Erscheint bei Auswahl, zeigt die Anzahl, bietet „alle
 gefilterten auswählen", Bestätigungsdialoge und eine Ergebniszusammenfassung mit

@@ -24,6 +24,7 @@ import { FilterBar, FilterField } from "@/components/ui/filter-bar";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useDepots } from "@/features/depots/hooks";
 import {
@@ -593,13 +594,11 @@ export function SecuritiesPage() {
           soll den oberen Bereich bestimmen. */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border pt-4">
         <label className="flex min-h-11 items-center gap-2 text-sm text-muted-foreground">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={showArchived}
             onChange={(event) => {
               setShowArchived(event.target.checked);
             }}
-            className="size-4 pointer-coarse:size-6"
           />
           Archivierte anzeigen
         </label>
