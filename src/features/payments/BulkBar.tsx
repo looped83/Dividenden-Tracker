@@ -35,6 +35,17 @@ interface BulkBarProps {
   onClear: () => void;
 }
 
+/** Kurzform auf schmalen Geraeten, voller Name ab `sm` (der `aria-label` der
+ *  Schaltflaeche nennt ihn ohnehin immer). */
+function BulkLabel({ short, full }: { short: string; full: string }) {
+  return (
+    <>
+      <span className="sm:hidden">{short}</span>
+      <span className="hidden sm:inline">{full}</span>
+    </>
+  );
+}
+
 /**
  * Massenaktionsleiste (§14): sichtbarer Auswahlmodus mit Anzahl,
  * Bestätigungsdialog je Aktion und ehrlicher Ergebniszusammenfassung
@@ -108,24 +119,32 @@ export function BulkBar({ selectedRows, onClear }: BulkBarProps) {
         </Button>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      {/* Zwei Spalten statt einer Umbruchreihe: Fuenf verschieden breite
+          Schaltflaechen brachen auf dem iPhone ueber vier Zeilen. Die
+          Beschriftungen sind dort kuerzer; den vollen Namen tragen der
+          `aria-label` und der Bestaetigungsdialog, der ohnehin sagt, was
+          genau mit wie vielen Eingaengen geschieht. Unter 360px bleibt es
+          einspaltig — sonst passte „Unternehmen" nicht mehr ins Feld. */}
+      <div className="grid grid-cols-1 gap-2 min-[360px]:grid-cols-2 sm:flex sm:flex-wrap">
         <Button
           variant="outline"
           size="sm"
+          aria-label="Depot zuweisen"
           onClick={() => {
             setKind("assign-depot");
           }}
         >
-          <Wallet /> Depot zuweisen
+          <Wallet /> <BulkLabel short="Depot" full="Depot zuweisen" />
         </Button>
         <Button
           variant="outline"
           size="sm"
+          aria-label="Unternehmen zuweisen"
           onClick={() => {
             setKind("assign-company");
           }}
         >
-          <Users /> Unternehmen zuweisen
+          <Users /> <BulkLabel short="Unternehmen" full="Unternehmen zuweisen" />
         </Button>
         <Button
           variant="outline"
@@ -148,11 +167,12 @@ export function BulkBar({ selectedRows, onClear }: BulkBarProps) {
         <Button
           variant="outline"
           size="sm"
+          aria-label="Dauerhaft löschen"
           onClick={() => {
             setKind("delete");
           }}
         >
-          <Trash2 /> Dauerhaft löschen
+          <Trash2 /> <BulkLabel short="Löschen" full="Dauerhaft löschen" />
         </Button>
       </div>
 
