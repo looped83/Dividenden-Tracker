@@ -141,6 +141,25 @@
   .tabular-amount {
     font-variant-numeric: tabular-nums;
   }
+
+  /* iOS Safari gibt input[type="date"] eine eigene intrinsische Groesse: Das
+     Feld wird hoeher als die uebrigen Formularfelder und laeuft auf schmalen
+     Viewports rechts aus dem Container. Ursache ist die native Darstellung
+     zusammen mit den Standardabstaenden des Wert-Pseudoelements. Beides wird
+     hier zurueckgesetzt, damit das Feld exakt der Hoehe und Breite der
+     uebrigen Eingabefelder folgt. */
+  input[type="date"] {
+    -webkit-appearance: none;
+    appearance: none;
+    min-width: 0;
+  }
+  input[type="date"]::-webkit-date-and-time-value {
+    margin: 0;
+    padding: 0;
+    min-height: 0;
+    line-height: normal;
+    text-align: left;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

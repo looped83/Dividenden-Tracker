@@ -93,6 +93,29 @@ Buttons sind global `whitespace-nowrap`; „Dividendeneingänge des
 Zeitraums anzeigen" stand deshalb über. *Fix:* Für diesen Button
 Umbruch erlaubt bei erhaltener Mindesthöhe von 44 px.
 
+### 5. Datumsfeld auf iOS höher und breiter als die übrigen Felder
+
+Nachgetragen nach einem Screenshot von echter iOS-Hardware. In Chromium
+maßen alle Felder des Formulars „Neue Dividende" exakt gleich
+(358 × 44 px bei 390 px Viewport); **auf iOS Safari war das Datumsfeld
+sichtbar höher und lief rechts aus dem Container.**
+
+Ursache ist die native Darstellung von `input[type="date"]`: iOS leitet
+eine eigene intrinsische Größe ab, und das Wert-Pseudoelement
+`::-webkit-date-and-time-value` bringt eigene Abstände und Zeilenhöhe
+mit. `width: 100%` allein greift dagegen nicht.
+
+*Fix:* global im Base-Layer `appearance: none` plus Zurücksetzen des
+Wert-Pseudoelements (`margin`, `padding`, `min-height`, `line-height`).
+In Chromium unverändert 358 × 44 px inklusive Kalendersymbol, hell und
+dunkel geprüft.
+
+**Lehre für dieses Harness:** Chromium unter Linux findet keine
+Engine-spezifischen Defekte von iOS Safari. Formularfelder mit nativer
+Darstellung — `date`, `time`, `select`, `file` — sind der wahrscheinlichste
+Ort für weitere solche Abweichungen und sollten auf echter Hardware
+gegengeprüft werden.
+
 ## Bekannte, bewusst offene Punkte
 
 Die verbleibenden 57 Touch-Befunde liegen alle bei **24–36 px**. Sie
@@ -115,7 +138,9 @@ Weiterhin offen, nicht in diesem Durchgang angefasst:
 - **Dunkelmodus** wurde nicht separat gemessen.
 - **Kein Test auf echter Hardware** — Chromium unter Linux, nicht iOS
   Safari. Die eingesetzten Mechanismen (`pointer: coarse`,
-  Safe-Area-Insets) sollten dort greifen, gemessen ist es nicht.
+  Safe-Area-Insets) sollten dort greifen, gemessen ist es nicht. Wie
+  Defekt 5 zeigt, ist diese Lücke nicht theoretisch: Sie hat einen real
+  sichtbaren Fehler durchgelassen.
 
 ## Reproduktion
 
