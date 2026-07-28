@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Card,
   CardContent,
@@ -349,13 +350,11 @@ export function DepotsPage() {
               <Plus /> Neues Depot
             </Button>
             <label className="flex min-h-11 items-center gap-2 text-sm text-muted-foreground">
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={showArchived}
                 onChange={(event) => {
                   setShowArchived(event.target.checked);
                 }}
-                className="size-4 pointer-coarse:size-6"
               />
               Archivierte anzeigen
             </label>

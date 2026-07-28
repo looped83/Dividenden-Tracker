@@ -2,6 +2,7 @@ import * as React from "react";
 import { UploadCloud, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -469,9 +470,8 @@ export function ImportWizard({ onFinished }: { onFinished: () => void }) {
           </div>
 
           <label className="flex items-start gap-2 rounded-md border border-input p-3 text-sm">
-            <input
-              type="checkbox"
-              className="mt-1"
+            <Checkbox
+              className="mt-0.5"
               checked={eurConfirmed}
               onChange={(e) => {
                 setEurConfirmed(e.target.checked);

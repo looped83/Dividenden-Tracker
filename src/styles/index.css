@@ -130,8 +130,16 @@
   * {
     @apply border-border outline-ring/50;
   }
+  /* Native Bestandteile (Auswahllisten, Datumsauswahl, Bildlaufleisten) folgen
+     `color-scheme`. Mit dem Wert `light dark` richteten sie sich nach dem
+     System, waehrend die App ihrem eigenen Theme folgt — wer „hell" waehlt,
+     bekam auf einem dunklen System dunkle Auswahlfelder in heller Oberflaeche.
+     Deshalb je Theme ein fester Wert; `.dark` setzt der ThemeProvider. */
   html {
-    color-scheme: light dark;
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
   }
   body {
     @apply bg-background text-foreground;

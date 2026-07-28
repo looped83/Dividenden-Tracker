@@ -23,6 +23,7 @@ import { Select } from "@/components/ui/select";
 import { FilterBar, FilterField } from "@/components/ui/filter-bar";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
   Table,
@@ -579,9 +580,7 @@ export function PaymentsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-10">
-                    <input
-                      type="checkbox"
-                      className="size-4 pointer-coarse:size-6"
+                    <Checkbox
                       aria-label="Diese Seite auswählen"
                       checked={pageAllSelected}
                       onChange={selectPage}
@@ -690,9 +689,7 @@ export function PaymentsPage() {
           Direktlink. */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border pt-4">
         <label className="flex min-h-11 items-center gap-2 text-sm text-muted-foreground">
-          <input
-            type="checkbox"
-            className="size-4 pointer-coarse:size-6"
+          <Checkbox
             checked={status === "all"}
             onChange={(event) => {
               updateParams({ status: event.target.checked ? "all" : null });
@@ -776,9 +773,7 @@ function PaymentRow({
   return (
     <TableRow data-state={selected ? "selected" : undefined}>
       <TableCell>
-        <input
-          type="checkbox"
-          className="size-4 pointer-coarse:size-6"
+        <Checkbox
           aria-label={`${companyName} auswählen`}
           checked={selected}
           onChange={onToggle}
@@ -870,56 +865,91 @@ function PaymentCard({
   onReactivate,
   onDelete,
 }: RowActionProps) {
-  const { payment, effectiveDate, companyName, depotName, currency } = row;
+  const { payment, effectiveDate, companyName, currency } = row;
   const cancelled = Boolean(payment.archived_at);
   return (
-    <li className="rounded-lg border border-border p-4">
+    <li className="rounded-lg border border-border p-3">
       <div className="flex items-start gap-3">
-        <input
-          type="checkbox"
-          className="mt-1 size-4 pointer-coarse:size-6"
+        <Checkbox
+          className="mt-0.5"
           aria-label={`${companyName} auswählen`}
           checked={selected}
           onChange={onToggle}
         />
+        {/* Zwei Zeilen statt vier: Betrag neben dem Namen, Aktionen neben dem
+            Datum. Die Aktionen tragen dieselben Symbole und Namen wie in der
+            Tabelle — beschriftet nur fuer Hilfsmittel, da drei
+            Wortschaltflaechen die Karte um eine ganze Zeile verlaengerten. */}
         <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <Link to={`/eingaenge/${payment.id}`} className="font-medium hover:underline">
+          <div className="flex items-baseline justify-between gap-3">
+            <Link
+              to={`/eingaenge/${payment.id}`}
+              className="truncate rounded-sm font-medium outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+            >
               {companyName || "—"}
             </Link>
-            <AmountText amount={Money.fromString(payment.net_amount, currency)} />
+            {/* Der Betrag ist die Kernaussage der Karte und traegt deshalb mehr
+                Gewicht als der Name. */}
+            <AmountText
+              amount={Money.fromString(payment.net_amount, currency)}
+              className="shrink-0 text-lg font-semibold"
+            />
           </div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {formatDate(effectiveDate)} · {depotName || "—"}
-          </p>
-          {cancelled && (
-            <div className="mt-2">
-              <Badge variant="warning">Storniert</Badge>
+          <div className="mt-1 flex items-center justify-between gap-2">
+            {/* Ohne Depot: Wer die Liste nach Depot filtert oder nur eines
+                fuehrt, gewinnt daraus nichts. Die Detailansicht nennt es. */}
+            <div className="flex min-w-0 items-center gap-2">
+              <p className="truncate text-sm text-muted-foreground">
+                {formatDate(effectiveDate)}
+              </p>
+              {cancelled && (
+                <Badge variant="warning" className="shrink-0">
+                  Storniert
+                </Badge>
+              )}
             </div>
-          )}
-          <div className="mt-3 flex flex-wrap gap-2">
-            {cancelled ? (
-              <Button variant="outline" size="sm" onClick={onReactivate}>
-                <RotateCcw /> Reaktivieren
-              </Button>
-            ) : (
-              <>
-                <Button variant="outline" size="sm" asChild>
-                  <Link
-                    to={`/eingaenge/${payment.id}/bearbeiten`}
-                    state={{ from: listUrl }}
+            {/* Der negative Rand holt die Luft zurueck, die in den Symbol-
+                schaltflaechen ohnehin steckt — optisch buendig, mehr Platz
+                fuer Datum und Depot. */}
+            <div className="-mr-1.5 flex shrink-0 items-center gap-0.5">
+              {cancelled ? (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Reaktivieren"
+                  onClick={onReactivate}
+                >
+                  <RotateCcw />
+                </Button>
+              ) : (
+                <>
+                  <Button variant="ghost" size="icon" aria-label="Bearbeiten" asChild>
+                    <Link
+                      to={`/eingaenge/${payment.id}/bearbeiten`}
+                      state={{ from: listUrl }}
+                    >
+                      <Pencil />
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Stornieren"
+                    onClick={onStorno}
                   >
-                    <Pencil /> Bearbeiten
-                  </Link>
-                </Button>
-                <Button variant="outline" size="sm" onClick={onStorno}>
-                  <Ban /> Stornieren
-                </Button>
-              </>
-            )}
-            <Button variant="outline" size="sm" onClick={onDelete}>
-              <Trash2 /> Löschen
-            </Button>
+                    <Ban />
+                  </Button>
+                </>
+              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Dauerhaft löschen"
+                onClick={onDelete}
+              >
+                <Trash2 />
+              </Button>
+            </div>
           </div>
         </div>
       </div>
