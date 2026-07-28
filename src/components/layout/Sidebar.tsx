@@ -1,6 +1,5 @@
 import { NavLink } from "react-router";
 import { PRIMARY_NAV_ITEMS } from "@/app/navigation";
-import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { cn } from "@/lib/utils/cn";
 
 /**
@@ -37,9 +36,6 @@ export function Sidebar() {
           </NavLink>
         ))}
       </nav>
-      <div className="border-t border-border p-3">
-        <ThemeToggle />
-      </div>
     </aside>
   );
 }

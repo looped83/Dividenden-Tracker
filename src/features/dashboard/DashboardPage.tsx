@@ -102,14 +102,18 @@ export function DashboardPage() {
     [payments, selection],
   );
 
+  // Kopfbereich bewusst identisch zur Dividendenliste (gleiche Abstaende,
+  // gleicher Primaerbutton), damit beide Seiten gleich wirken.
   const heading = (
-    <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="flex flex-wrap items-center justify-between gap-2">
       <h1 className="text-xl font-semibold tracking-tight">Übersicht</h1>
-      <Button asChild variant="outline" size="sm">
-        <Link to="/eingaenge/neu">
-          <Plus /> Neuer Eingang
-        </Link>
-      </Button>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button asChild>
+          <Link to="/eingaenge/neu">
+            <Plus /> Neue Dividende
+          </Link>
+        </Button>
+      </div>
     </div>
   );
 
