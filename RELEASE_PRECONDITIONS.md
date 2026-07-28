@@ -443,5 +443,5 @@ Then merge `claude/phase-9-audit-release-c2fqo5` to main and deploy to productio
 
 ---
 
-**Questions?** See PHASE_9_RELEASE_READINESS.md for full context, or INTEGRATION_TEST_GUIDE.md for PostgreSQL setup details.
+**Questions?** See docs/history/PHASE_9_RELEASE_READINESS.md for full context, or INTEGRATION_TEST_GUIDE.md for PostgreSQL setup details.
 

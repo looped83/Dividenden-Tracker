@@ -148,7 +148,7 @@ Performance Testing:
 
 ## Success Criteria (Definition of Done)
 
-✅ All 12 success criteria in `PHASE_8_SUMMARY.md`
+✅ All 12 success criteria in `docs/history/PHASE_8_SUMMARY.md`
 
 When all below are met, Phase 8 is **complete**:
 
@@ -168,8 +168,8 @@ When all below are met, Phase 8 is **complete**:
 ## Key Files Reference
 
 ### Configuration & Docs
-- `PHASE_8_STATUS.md` — Detailed progress tracking
-- `PHASE_8_SUMMARY.md` — Complete overview
+- `docs/history/PHASE_8_STATUS.md` — Detailed progress tracking
+- `docs/history/PHASE_8_SUMMARY.md` — Complete overview
 - `docs/DEPLOYMENT_GUIDE.md` — Deployment instructions
 - `docs/ACCESSIBILITY_AUDIT.md` — WCAG 2.1 AA checklist
 - `docs/BACKUP_FORMAT.md` — JSON schema specification
@@ -260,7 +260,7 @@ When all below are met, Phase 8 is **complete**:
 ## Contact / Questions
 
 See `DEPLOYMENT_GUIDE.md` for detailed deployment instructions.
-See `PHASE_8_SUMMARY.md` for complete implementation overview.
+See `docs/history/PHASE_8_SUMMARY.md` for complete implementation overview.
 See `docs/BACKUP_USER_GUIDE.md` for user-facing documentation.
 
 ---
