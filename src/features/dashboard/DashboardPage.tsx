@@ -166,7 +166,7 @@ export function DashboardPage() {
                 </Link>
               </Button>
               <Button asChild variant="outline">
-                <Link to="/importe">
+                <Link to="/einstellungen/importe">
                   <Upload /> Historie importieren
                 </Link>
               </Button>

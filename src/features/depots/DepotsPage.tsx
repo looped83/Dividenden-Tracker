@@ -257,7 +257,7 @@ export function DepotsPage() {
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-semibold tracking-tight">Depots</h1>
+        <h2 className="text-xl font-semibold tracking-tight">Depots</h2>
         <div className="flex flex-wrap items-center gap-2">
           <label className="flex min-h-11 items-center gap-2 text-sm text-muted-foreground">
             <input

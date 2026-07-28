@@ -1,4 +1,4 @@
-import { createHashRouter } from "react-router";
+import { createHashRouter, Navigate } from "react-router";
 import { AppShell } from "@/app/AppShell";
 import { MorePage } from "@/app/MorePage";
 import { NotFoundPage } from "@/app/NotFoundPage";
@@ -25,6 +25,7 @@ import { GoalsPage } from "@/features/goals/GoalsPage";
 import { GoalDetailPage } from "@/features/goals/GoalDetailPage";
 import { BackupPage } from "@/features/backup/BackupPage";
 import { SettingsPage } from "@/features/settings/SettingsPage";
+import { GeneralSettingsTab } from "@/features/settings/GeneralSettingsTab";
 
 /**
  * Routing (PRODUCT_SPEC.md §4): neun Hauptbereiche, kein Kalenderbereich.
@@ -53,7 +54,6 @@ export const router = createHashRouter([
       { path: "eingaenge/:id", element: <PaymentDetailPage /> },
       { path: "eingaenge/:id/bearbeiten", element: <NewPaymentPage /> },
       { path: "unternehmen", element: <SecuritiesPage /> },
-      { path: "depots", element: <DepotsPage /> },
       {
         path: "statistiken",
         element: <StatisticsPage />,
@@ -65,11 +65,27 @@ export const router = createHashRouter([
           { path: "depots", element: <DepotsTab /> },
         ],
       },
-      { path: "importe", element: <ImportsPage /> },
       { path: "ziele", element: <GoalsPage /> },
       { path: "ziele/:id", element: <GoalDetailPage /> },
-      { path: "datensicherung", element: <BackupPage /> },
-      { path: "einstellungen", element: <SettingsPage /> },
+      {
+        path: "einstellungen",
+        element: <SettingsPage />,
+        children: [
+          { index: true, element: <GeneralSettingsTab /> },
+          { path: "depots", element: <DepotsPage /> },
+          { path: "importe", element: <ImportsPage /> },
+          { path: "datensicherung", element: <BackupPage /> },
+        ],
+      },
+      // Die drei Bereiche sind in die Einstellungen verschoben. Die alten
+      // Pfade bleiben als dauerhafte Weiterleitung bestehen, damit bestehende
+      // Links, Lesezeichen und der Verlauf weiter funktionieren.
+      { path: "depots", element: <Navigate to="/einstellungen/depots" replace /> },
+      { path: "importe", element: <Navigate to="/einstellungen/importe" replace /> },
+      {
+        path: "datensicherung",
+        element: <Navigate to="/einstellungen/datensicherung" replace />,
+      },
       { path: "mehr", element: <MorePage /> },
       { path: "*", element: <NotFoundPage /> },
     ],

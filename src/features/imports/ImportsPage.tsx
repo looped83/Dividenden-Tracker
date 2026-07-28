@@ -67,7 +67,7 @@ export function ImportsPage() {
     return (
       <div className="mx-auto max-w-4xl space-y-6 p-4">
         <div>
-          <h1 className="text-xl font-semibold">Import-Assistent</h1>
+          <h2 className="text-xl font-semibold">Import-Assistent</h2>
           <p className="text-sm text-muted-foreground">
             CSV-/Excel-Import historischer Dividendeneingänge (IMPORT_SPEC.md).
           </p>
@@ -85,7 +85,7 @@ export function ImportsPage() {
     <div className="mx-auto max-w-4xl space-y-6 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0">
-          <h1 className="text-xl font-semibold">Importe</h1>
+          <h2 className="text-xl font-semibold">Importe</h2>
           <p className="text-sm text-muted-foreground">
             Sicherer, nachvollziehbarer und rückrollbarer Import historischer
             Dividendendaten.

@@ -1,11 +1,8 @@
 import {
   BarChart3,
   Building2,
-  FileUp,
-  Landmark,
   LayoutDashboard,
   Settings,
-  ShieldCheck,
   Target,
   Wallet,
   type LucideIcon,
@@ -18,18 +15,19 @@ export interface NavItem {
 }
 
 /**
- * Hauptnavigation (PRODUCT_SPEC.md §4) — neun Bereiche, kein Kalenderbereich.
- * Einzige Quelle der Navigationsstruktur fuer Sidebar und Bottom-Navigation.
+ * Hauptnavigation (PRODUCT_SPEC.md §4). Einzige Quelle der
+ * Navigationsstruktur fuer Sidebar und Bottom-Navigation.
+ *
+ * Depots, Importe und Datensicherung stehen nicht mehr hier, sondern als
+ * Unterbereiche der Einstellungen (siehe SETTINGS_TABS) — es sind
+ * Verwaltungsaufgaben, keine taeglichen Arbeitsbereiche.
  */
 export const PRIMARY_NAV_ITEMS: readonly NavItem[] = [
   { to: "/", label: "Übersicht", icon: LayoutDashboard },
   { to: "/eingaenge", label: "Dividenden", icon: Wallet },
   { to: "/unternehmen", label: "Unternehmen", icon: Building2 },
-  { to: "/depots", label: "Depots", icon: Landmark },
   { to: "/statistiken", label: "Statistiken", icon: BarChart3 },
-  { to: "/importe", label: "Importe", icon: FileUp },
   { to: "/ziele", label: "Ziele", icon: Target },
-  { to: "/datensicherung", label: "Datensicherung", icon: ShieldCheck },
   { to: "/einstellungen", label: "Einstellungen", icon: Settings },
 ];
 
@@ -51,9 +49,18 @@ export const BOTTOM_NAV_PRIMARY_ITEMS: readonly NavItem[] = [
 /** Hinter "Mehr" zusammengefasste Bereiche der Bottom Navigation. */
 export const BOTTOM_NAV_MORE_ITEMS: readonly NavItem[] = [
   findNavItem("/unternehmen"),
-  findNavItem("/depots"),
-  findNavItem("/importe"),
   findNavItem("/ziele"),
-  findNavItem("/datensicherung"),
   findNavItem("/einstellungen"),
+];
+
+/**
+ * Unterbereiche der Einstellungen. Die drei Verwaltungsbereiche sind hierher
+ * verschoben worden; ihre alten Pfade leiten dauerhaft hierauf um (router.tsx),
+ * damit bestehende Links und Lesezeichen weiter funktionieren.
+ */
+export const SETTINGS_TABS: readonly { to: string; label: string; end?: boolean }[] = [
+  { to: "/einstellungen", label: "Allgemein", end: true },
+  { to: "/einstellungen/depots", label: "Depots" },
+  { to: "/einstellungen/importe", label: "Importe" },
+  { to: "/einstellungen/datensicherung", label: "Datensicherung" },
 ];

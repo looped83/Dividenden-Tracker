@@ -23,7 +23,7 @@ export function BackupPage() {
     <div className="mx-auto max-w-4xl">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-xl font-semibold tracking-tight">Sicherung & Datenexport</h1>
+        <h2 className="text-xl font-semibold tracking-tight">Sicherung & Datenexport</h2>
         <p className="mt-2 max-w-prose text-sm text-muted-foreground">
           Erstellen Sie Sicherungen Ihrer Daten, stellen Sie frühere Versionen wieder her
           oder exportieren Sie Ihre Dividendendaten.
