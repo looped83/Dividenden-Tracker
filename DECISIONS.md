@@ -74,7 +74,45 @@ List only meaningful alternatives and briefly explain why they were not chosen.
 
 # Active Decisions
 
-Add accepted decisions here.
+## ADR-001: Historie vollständig im Client, Schwelle bei 10.000 Zahlungen
+
+**Status:** Accepted  
+**Scope:** Performance
+
+### Decision
+
+Dividendenliste, Übersicht und Statistik laden die **gesamte** aktive Historie einmal in den
+Client (`fetchAllPayments` bzw. `fetchDashboardPayments`, jeweils in 1.000er-Seiten) und
+filtern, sortieren, aggregieren und blättern dort. Das bleibt so, solange ein Konto weniger als
+**10.000 Zahlungen** führt.
+
+### Rationale
+
+Die Auswertungen sind decimal-genau und laufen über `lib/money`/`lib/statistics`; sie im Client
+zu halten hält Zahl und Wahrheit an einer Stelle (ARCHITECTURE.md §4.4/§4.5) und macht
+Jahreswechsel, Filter und Drill-downs ohne Netzrunde möglich. Bei 1.439 Zahlungen (heutige
+Kontrollmenge) ist das unmerklich.
+
+### Trade-offs
+
+- Übertragung und Verarbeitung wachsen linear mit der Historie; jede Zahlung wird beim Laden zu
+  einem `Money`-Objekt.
+- Liste und Auswertungen holen die Historie unter zwei Query-Keys getrennt (vollständige Zeilen
+  bzw. schlanke Projektion) — bei einem Wechsel zwischen den Bereichen also zweimal.
+
+### Guardrails
+
+- Kein serverseitiges Filtern/Paginieren einführen, solange die Schwelle nicht erreicht ist —
+  es zerteilte die Auswertungen ohne Not.
+- Bei Überschreiten in dieser Reihenfolge vorgehen: (1) beide Abfragen auf **eine** schlanke
+  Projektion vereinheitlichen, (2) Aggregate serverseitig vorrechnen (RPC), (3) erst danach
+  Liste serverseitig filtern und blättern.
+
+### Revisit When
+
+- Ein Konto überschreitet 10.000 aktive Zahlungen, **oder**
+- das Laden der Liste dauert auf einem iPhone spürbar länger als eine Sekunde, **oder**
+- die Übertragung je Aufruf überschreitet rund 2 MB.
 
 ---
 

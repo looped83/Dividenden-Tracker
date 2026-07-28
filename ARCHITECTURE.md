@@ -336,6 +336,12 @@ Details fachlich in IMPORT_SPEC.md; architektonisch:
 
 ---
 
+### 4.6 Datenmenge im Client (Schwelle)
+
+Die gesamte aktive Historie liegt im Client (§4.4/§4.5). Ab **10.000 Zahlungen** ist zuerst die
+doppelte Abfrage zu vereinheitlichen, danach zu aggregieren, erst zuletzt serverseitig zu
+filtern — Begründung, Abwägung und Auslöser in DECISIONS.md ADR-001.
+
 ## 9. Architektur-Risiken und Gegenmaßnahmen
 
 | Risiko | Gegenmaßnahme |
