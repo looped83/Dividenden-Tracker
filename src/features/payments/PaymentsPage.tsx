@@ -36,6 +36,8 @@ import {
 import { AmountText } from "@/components/money/AmountText";
 import { DateText } from "@/components/DateText";
 import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
+import { MD_BREAKPOINT_QUERY, useMediaQuery } from "@/lib/hooks/useMediaQuery";
+import { useToast } from "@/components/ui/toast";
 import { Money, toCurrencyCode } from "@/lib/money";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { useDepots } from "@/features/depots/hooks";
@@ -75,6 +77,7 @@ type Row = {
 const PAGE_SIZE = 25;
 
 export function PaymentsPage() {
+  const { notify } = useToast();
   const { data: depots = [] } = useDepots();
   const { data: securities = [] } = useSecurities();
 
@@ -129,6 +132,8 @@ export function PaymentsPage() {
       status: null,
     });
   };
+
+  const isWide = useMediaQuery(MD_BREAKPOINT_QUERY);
 
   const { data: allPayments = [], isLoading } = useAllPayments(
     statusNeedsArchived(status),
@@ -344,6 +349,19 @@ export function PaymentsPage() {
   const archivePayment = useArchivePayment();
   const unarchivePayment = useUnarchivePayment();
   const deletePayment = useDeletePayment();
+  // Reaktivieren laeuft ohne Bestaetigungsdialog — ohne Rueckmeldung bliebe
+  // offen, ob es geklappt hat; ein Fehler ginge sogar voellig unter.
+  const reactivate = async (id: string) => {
+    try {
+      await unarchivePayment.mutateAsync(id);
+      notify("Dividendeneingang reaktiviert.");
+    } catch (error) {
+      notify(
+        getErrorMessage(error, "Der Eingang konnte nicht reaktiviert werden."),
+        "negative",
+      );
+    }
+  };
   const [stornoTarget, setStornoTarget] = React.useState<Row | null>(null);
   const [stornoReason, setStornoReason] = React.useState("");
   const [stornoError, setStornoError] = React.useState<string | null>(null);
@@ -373,6 +391,7 @@ export function PaymentsPage() {
       });
       setStornoTarget(null);
       setStornoReason("");
+      notify("Dividendeneingang storniert.");
     } catch (error) {
       setStornoError(
         getErrorMessage(error, "Der Dividendeneingang konnte nicht storniert werden."),
@@ -391,6 +410,7 @@ export function PaymentsPage() {
         return next;
       });
       setDeleteTarget(null);
+      notify("Dividendeneingang dauerhaft gelöscht.");
     } catch (error) {
       setDeleteError(
         getErrorMessage(
@@ -593,77 +613,81 @@ export function PaymentsPage() {
         />
       ) : (
         <>
-          {/* Desktop-Tabelle */}
-          <div className="hidden md:block">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-10">
-                    <Checkbox
-                      aria-label="Diese Seite auswählen"
-                      checked={pageAllSelected}
-                      onChange={selectPage}
+          {/* Eine Darstellung statt zweier per CSS versteckter: Tabelle und
+              Karten zeigen dieselben Zeilen, standen aber beide im DOM — jede
+              Zeile wurde doppelt gerendert, samt doppelt gebauter
+              Money-Objekte. */}
+          {isWide ? (
+            <div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-10">
+                      <Checkbox
+                        aria-label="Diese Seite auswählen"
+                        checked={pageAllSelected}
+                        onChange={selectPage}
+                      />
+                    </TableHead>
+                    <TableHead>Zahlungsdatum</TableHead>
+                    <TableHead>Unternehmen</TableHead>
+                    <TableHead>Depot</TableHead>
+                    <TableHead className="text-right">Netto</TableHead>
+                    <TableHead className="text-right">Aktion</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {pageRows.map((row) => (
+                    <PaymentRow
+                      key={row.id}
+                      row={row}
+                      comparison={yearOverYear.get(row.id)}
+                      selected={selected.has(row.id)}
+                      onToggle={() => {
+                        toggleSelected(row.id);
+                      }}
+                      listUrl={listUrl}
+                      onStorno={() => {
+                        setStornoReason("");
+                        setStornoError(null);
+                        setStornoTarget(row);
+                      }}
+                      onReactivate={() => void reactivate(row.payment.id)}
+                      onDelete={() => {
+                        setDeleteError(null);
+                        setDeleteTarget(row);
+                      }}
                     />
-                  </TableHead>
-                  <TableHead>Zahlungsdatum</TableHead>
-                  <TableHead>Unternehmen</TableHead>
-                  <TableHead>Depot</TableHead>
-                  <TableHead className="text-right">Netto</TableHead>
-                  <TableHead className="text-right">Aktion</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {pageRows.map((row) => (
-                  <PaymentRow
-                    key={row.id}
-                    row={row}
-                    comparison={yearOverYear.get(row.id)}
-                    selected={selected.has(row.id)}
-                    onToggle={() => {
-                      toggleSelected(row.id);
-                    }}
-                    listUrl={listUrl}
-                    onStorno={() => {
-                      setStornoReason("");
-                      setStornoError(null);
-                      setStornoTarget(row);
-                    }}
-                    onReactivate={() => void unarchivePayment.mutateAsync(row.payment.id)}
-                    onDelete={() => {
-                      setDeleteError(null);
-                      setDeleteTarget(row);
-                    }}
-                  />
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-
-          {/* Mobile Karten */}
-          <ul className="space-y-3 md:hidden">
-            {pageRows.map((row) => (
-              <PaymentCard
-                key={row.id}
-                row={row}
-                comparison={yearOverYear.get(row.id)}
-                selected={selected.has(row.id)}
-                onToggle={() => {
-                  toggleSelected(row.id);
-                }}
-                listUrl={listUrl}
-                onStorno={() => {
-                  setStornoReason("");
-                  setStornoError(null);
-                  setStornoTarget(row);
-                }}
-                onReactivate={() => void unarchivePayment.mutateAsync(row.payment.id)}
-                onDelete={() => {
-                  setDeleteError(null);
-                  setDeleteTarget(row);
-                }}
-              />
-            ))}
-          </ul>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <ul className="space-y-3">
+              {pageRows.map((row) => (
+                <PaymentCard
+                  key={row.id}
+                  row={row}
+                  comparison={yearOverYear.get(row.id)}
+                  selected={selected.has(row.id)}
+                  onToggle={() => {
+                    toggleSelected(row.id);
+                  }}
+                  listUrl={listUrl}
+                  onStorno={() => {
+                    setStornoReason("");
+                    setStornoError(null);
+                    setStornoTarget(row);
+                  }}
+                  onReactivate={() => void reactivate(row.payment.id)}
+                  onDelete={() => {
+                    setDeleteError(null);
+                    setDeleteTarget(row);
+                  }}
+                />
+              ))}
+            </ul>
+          )}
         </>
       )}
 

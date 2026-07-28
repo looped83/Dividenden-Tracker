@@ -126,6 +126,14 @@ Strict-Transport-Security: max-age=63072000; includeSubDomains
 
 Keine externen CDNs, Fonts oder Skripte (Grundsatz 15) — alles wird gebundelt.
 
+### 7.1 Service-Worker-Cache
+
+Der Service Worker (`public/sw.js`) speichert ausschließlich **eigene statische Dateien**
+(Dokument, JS, CSS, Icons). Anfragen an fremde Herkünfte — insbesondere die Supabase-API und
+alles Auth-Bezogene — werden nicht abgefangen und damit nie zwischengespeichert. Finanzdaten
+und Sitzungen überleben so kein geteiltes Gerät im Cache. Der Cache trägt eine Version im
+Namen; beim Aktivieren einer neuen Fassung werden alte Bestände gelöscht.
+
 ## 8. Audit Log
 
 Auditiert werden Änderungen an: Dividendeneingängen, Unternehmen, Depots, Portfolios, Zielen,

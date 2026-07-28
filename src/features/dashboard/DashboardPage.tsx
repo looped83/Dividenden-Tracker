@@ -18,7 +18,11 @@ import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { useDashboardPayments, useDashboardYear } from "./hooks";
 import { YearSelector } from "./YearSelector";
 import { KpiCards } from "./KpiCards";
-import { MonthlyChart } from "./MonthlyChart";
+// Recharts wiegt gepackt rund 108 kB und wird nur fuer die Diagramme
+// gebraucht; nachgeladen faellt es aus dem Startpaket heraus.
+const MonthlyChart = React.lazy(async () => ({
+  default: (await import("./MonthlyChart")).MonthlyChart,
+}));
 import { TopCompanies, DepotDistribution } from "./Distributions";
 import { RecentPayments } from "./RecentPayments";
 import { HistoricalOverview } from "./HistoricalOverview";
@@ -194,7 +198,11 @@ export function DashboardPage() {
 
       <GoalSection payments={payments} selection={selection} today={today} />
 
-      <MonthlyChart payments={payments} selection={selection} today={today} />
+      <React.Suspense
+        fallback={<div className="h-72 animate-pulse rounded-lg border border-border" />}
+      >
+        <MonthlyChart payments={payments} selection={selection} today={today} />
+      </React.Suspense>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <TopCompanies

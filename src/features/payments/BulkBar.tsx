@@ -22,7 +22,8 @@ import {
 import type { DividendPayment } from "@/lib/supabase/repositories/payments";
 import { DUPLICATE_DISMISSALS_KEY, PAYMENTS_KEY } from "@/features/payments/hooks";
 import { runBulk, type BulkResult } from "@/features/payments/bulk";
-import { formatCountNumber } from "@/lib/utils/formatNumber";
+import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
+import { useToast } from "@/components/ui/toast";
 
 interface Row {
   id: string;
@@ -60,6 +61,7 @@ function BulkLabel({ short, full }: { short: string; full: string }) {
  */
 export function BulkBar({ selectedRows, onClear }: BulkBarProps) {
   const queryClient = useQueryClient();
+  const { notify } = useToast();
   const { data: depots = [] } = useDepots();
   const { data: securities = [] } = useSecurities();
   const activeDepots = depots.filter((d) => !d.archived_at);
@@ -101,9 +103,15 @@ export function BulkBar({ selectedRows, onClear }: BulkBarProps) {
     try {
       const res = await runBulk(targetIds, action);
       invalidate();
-      setResult(res);
       setKind(null);
-      if (res.failed.length === 0) onClear();
+      if (res.failed.length === 0) {
+        // Ohne Teilfehler genuegt die kurze Bestaetigung; der Dialog mit der
+        // Aufschluesselung erscheint nur, wenn etwas schiefging.
+        onClear();
+        notify(`${formatCountNoun(res.succeeded, "Eingang", "Eingänge")} verarbeitet.`);
+      } else {
+        setResult(res);
+      }
     } finally {
       setIsRunning(false);
     }
