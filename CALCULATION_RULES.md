@@ -98,7 +98,7 @@ ergibt denselben Fingerprint erst auf Stufe 3, nicht notwendig auf Stufe 2).
 | Rundung | R-3/R-4: Summen exakt, Durchschnitte/Prozente erst zur Anzeige |
 | Nullwerte | Monate/Jahre ohne Zahlungen zählen als 0 (werden in Zeitreihen ausgewiesen, nicht ausgelassen); Division durch 0 → Kennzahl „—" (nicht 0, nicht ∞) |
 | Negative Korrekturen | Fließen vorzeichenrichtig ein; eine Monats-/Jahressumme kann negativ sein und wird so angezeigt |
-| Teiljahre | Kein Hochrechnen. YTD-Werte sind als „bis TT.MM." gekennzeichnet; Durchschnitte über Monate zählen nur Monate ≤ aktueller Monat (laufendes Jahr) bzw. alle 12 (abgeschlossene Jahre) |
+| Teiljahre | Kein Hochrechnen. Laufende Zeiträume sind über die Beschriftung der Kennzahl erkennbar (z. B. „Aktueller Monat (Juli 2026)", „Dividenden 2026"); Durchschnitte über Monate zählen nur Monate ≤ aktueller Monat (laufendes Jahr) bzw. alle 12 (abgeschlossene Jahre) |
 | Fehlende Vorjahresdaten | Vergleichswert „—", prozentuale Veränderung „—" (nie 0 % oder ∞); Hinweis „keine Vorjahresdaten" |
 
 ### Einzeldefinitionen
@@ -190,6 +190,11 @@ ausschließlich diese Schicht auf; keine Aggregation in React-Komponenten.
   Vorjahresmonat weniger Tage, wird auf den letzten gültigen Kalendertag gekappt.
 
 ### 9.4 Prozentuale Veränderung (§6.4)
+
+Die Vergleichszeile der Kennzahlkacheln nennt absolute und prozentuale Veränderung und ist mit
+„ggü. Vorjahr" beschriftet — worauf sich das Vorjahr bezieht, sagt die Beschriftung der Kachel
+(Jahr bzw. aktueller Monat); der vollständige Satz steht im Titel der Zeile („Gegenüber dem
+gleichen Zeitraum des Vorjahres"). Die Kurzform hält die Zeile auf dem iPhone einzeilig.
 
 `(aktuell − vergleich) ÷ vergleich × 100`, nur wenn `vergleich > 0`. Sonst:
 

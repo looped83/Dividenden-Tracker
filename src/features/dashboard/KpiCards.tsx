@@ -45,6 +45,8 @@ interface KpiCardProps {
   caption?: string | undefined;
   footnote?: React.ReactNode | undefined;
   comparison?: { text: string; tone: ComparisonTone } | undefined;
+  /** Genaue Bedeutung des Vergleichs (Titel der Vergleichszeile). */
+  comparisonHint?: string | undefined;
   to?: string | undefined;
   drillLabel?: string | undefined;
 }
@@ -55,6 +57,7 @@ function KpiCard({
   caption,
   footnote,
   comparison,
+  comparisonHint,
   to,
   drillLabel,
 }: KpiCardProps) {
@@ -83,8 +86,16 @@ function KpiCard({
           <div>{body}</div>
         )}
         <div className="space-y-0.5">
+          {/* Meta-Groesse und kurzes „ggue. Vorjahr": So bleibt die Zeile auf
+              dem iPhone einzeilig. Worauf sich das Vorjahr genau bezieht, sagt
+              die Beschriftung der Kachel — und im Titel der volle Satz. */}
           {comparison && (
-            <p className={cn("text-sm", toneClass[comparison.tone])}>{comparison.text}</p>
+            <p
+              className={cn("text-xs", toneClass[comparison.tone])}
+              title={comparisonHint}
+            >
+              {comparison.text}
+            </p>
           )}
           {footnote && <div className="text-xs text-muted-foreground">{footnote}</div>}
         </div>
@@ -109,19 +120,19 @@ export function KpiCards({ payments, selection, today }: KpiCardsProps) {
     // 5.1 Ausgewaehlter Zeitraum
     const selectedAgg = selectedPeriodAggregate(payments, selection);
     const { current, prior } = selectedYearComparison(payments, selection, ref);
-    const contextLabel = isCurrentYear
-      ? "ggü. gleichem Vorjahreszeitraum"
-      : "ggü. Vorjahr";
     const selectedComparison = isAll
       ? undefined
-      : describeComparison(comparePeriods(current, prior), contextLabel);
+      : describeComparison(comparePeriods(current, prior), "ggü. Vorjahr");
+    const selectedComparisonHint = isCurrentYear
+      ? "Gegenüber dem gleichen Zeitraum des Vorjahres"
+      : "Gegenüber dem Vorjahr";
 
     // 5.2 Aktueller Monat (immer, unabhaengig von der Jahresauswahl)
     const monthAgg = currentMonthAggregate(payments, ref);
     const monthCompare = currentMonthComparison(payments, ref);
     const monthComparison = describeComparison(
       comparePeriods(monthCompare.current, monthCompare.prior),
-      "ggü. gleichem Vorjahreszeitraum",
+      "ggü. Vorjahr",
     );
 
     // 5.3 Historische Gesamtsumme (immer alle aktiven Eingaenge)
@@ -144,6 +155,7 @@ export function KpiCards({ payments, selection, today }: KpiCardsProps) {
       isCurrentYear,
       selectedAgg,
       selectedComparison,
+      selectedComparisonHint,
       monthAgg,
       monthComparison,
       history,
@@ -163,6 +175,7 @@ export function KpiCards({ payments, selection, today }: KpiCardsProps) {
         label={`Dividenden ${selectionLabel}`}
         value={<AmountText amount={cards.selectedAgg.net} />}
         comparison={cards.selectedComparison}
+        comparisonHint={cards.selectedComparisonHint}
         to={paymentsListHref({ year: selection })}
         drillLabel={`Zahlungen ${selectionLabel} anzeigen`}
       />
@@ -171,8 +184,8 @@ export function KpiCards({ payments, selection, today }: KpiCardsProps) {
       <KpiCard
         label={`Aktueller Monat (${currentMonthLabel})`}
         value={<AmountText amount={cards.monthAgg.net} />}
-        caption={`bis zum ${String(today.day)}.`}
         comparison={cards.monthComparison}
+        comparisonHint={`Gegenüber dem gleichen Zeitraum des Vorjahresmonats (1. bis ${String(today.day)}.)`}
         to={paymentsListHref({ year: today.year, month: today.month })}
         drillLabel="Zahlungen des aktuellen Monats anzeigen"
       />
