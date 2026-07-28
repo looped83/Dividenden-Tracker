@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AmountText } from "@/components/money/AmountText";
 import { recentPayments, type AnalyticsPayment } from "@/lib/statistics";
-import { describeSource, formatIsoDate, type EntityInfo } from "./format";
+import { formatIsoDate, type EntityInfo } from "./format";
 
 interface RecentPaymentsProps {
   /** Gesamte aktive Historie (die letzten Eingaenge, unabhaengig vom Jahr, §11). */
@@ -56,7 +56,7 @@ export function RecentPayments({ payments, securities, depots }: RecentPaymentsP
                             (tatsächlich {formatIsoDate(payment.actualPayDate)})
                           </span>
                         )}{" "}
-                        · {depot?.name ?? "Unbekannt"} · {describeSource(payment.source)}
+                        · {depot?.name ?? "Unbekannt"}
                       </p>
                     </div>
                     <AmountText amount={payment.netAmount} className="shrink-0" />
