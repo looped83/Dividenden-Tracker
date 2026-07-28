@@ -274,7 +274,10 @@ erkannt.
 **Massenaktionen.** Depot/Unternehmen zuweisen, Stornieren, Reaktivieren,
 dauerhaft Löschen — ausschließlich auf sichtbar angehakten Eingängen (Kästchen
 je Zeile, Kopfkästchen für die Seite; die Auswahl bleibt beim Blättern
-erhalten), mit Bestätigung und ehrlicher Ergebniszusammenfassung.
+erhalten), mit Bestätigung und ehrlicher Ergebniszusammenfassung. Angeboten
+wird nur, was die Auswahl hergibt: Zuweisen und Stornieren bei aktiven,
+Reaktivieren bei stornierten Eingängen, Löschen immer; bei gemischter Auswahl
+wirkt jede Aktion auf ihren Teil und der Dialog nennt die übersprungenen.
 
 **Datenqualität** (`/eingaenge/datenqualitaet`). Mögliche Dubletten (gewichtet:
 hohe Wahrscheinlichkeit vs. mögliche Dublette) und regelbasierte Auffälligkeiten

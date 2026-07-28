@@ -74,6 +74,15 @@ export function BulkBar({ selectedRows, onClear }: BulkBarProps) {
   const activeIds = selectedRows.filter((r) => !r.payment.archived_at).map((r) => r.id);
   const cancelledIds = selectedRows.filter((r) => r.payment.archived_at).map((r) => r.id);
 
+  // Angeboten wird nur, was die Auswahl auch hergibt — wie in der Tabellen-
+  // zeile, die entweder stornieren oder reaktivieren anbietet, nie beides.
+  // Zuweisen und Stornieren ueberspringen stornierte Eingaenge; ohne aktive
+  // waeren es Schaltflaechen, die nichts tun. Reaktivieren umgekehrt. Bei
+  // gemischter Auswahl steht beides da und wirkt je auf seinen Teil (die
+  // Dialoge nennen die uebersprungenen Eingaenge).
+  const hasActive = activeIds.length > 0;
+  const hasCancelled = cancelledIds.length > 0;
+
   const close = () => {
     if (isRunning) return;
     setKind(null);
@@ -126,44 +135,50 @@ export function BulkBar({ selectedRows, onClear }: BulkBarProps) {
           genau mit wie vielen Eingaengen geschieht. Unter 360px bleibt es
           einspaltig — sonst passte „Unternehmen" nicht mehr ins Feld. */}
       <div className="grid grid-cols-1 gap-2 min-[360px]:grid-cols-2 sm:flex sm:flex-wrap">
-        <Button
-          variant="outline"
-          size="sm"
-          aria-label="Depot zuweisen"
-          onClick={() => {
-            setKind("assign-depot");
-          }}
-        >
-          <Wallet /> <BulkLabel short="Depot" full="Depot zuweisen" />
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          aria-label="Unternehmen zuweisen"
-          onClick={() => {
-            setKind("assign-company");
-          }}
-        >
-          <Users /> <BulkLabel short="Unternehmen" full="Unternehmen zuweisen" />
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            setKind("storno");
-          }}
-        >
-          <Ban /> Stornieren
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            setKind("reactivate");
-          }}
-        >
-          <RotateCcw /> Reaktivieren
-        </Button>
+        {hasActive && (
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              aria-label="Depot zuweisen"
+              onClick={() => {
+                setKind("assign-depot");
+              }}
+            >
+              <Wallet /> <BulkLabel short="Depot" full="Depot zuweisen" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              aria-label="Unternehmen zuweisen"
+              onClick={() => {
+                setKind("assign-company");
+              }}
+            >
+              <Users /> <BulkLabel short="Unternehmen" full="Unternehmen zuweisen" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setKind("storno");
+              }}
+            >
+              <Ban /> Stornieren
+            </Button>
+          </>
+        )}
+        {hasCancelled && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setKind("reactivate");
+            }}
+          >
+            <RotateCcw /> Reaktivieren
+          </Button>
+        )}
         <Button
           variant="outline"
           size="sm"
