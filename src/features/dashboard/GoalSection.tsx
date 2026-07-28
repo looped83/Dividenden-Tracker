@@ -6,8 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import type { AnalyticsPayment, RefDate, YearSelection } from "@/lib/statistics";
 import { computeGoalProgress, type GoalProgress } from "@/lib/goals";
 import { useGoals } from "@/features/goals/hooks";
+import { GoalProgressBar } from "@/features/goals/GoalProgressBar";
 import {
-  achievementText,
   goalDisplayTitle,
   money,
   periodLabel,
@@ -43,9 +43,12 @@ function CompactGoalCard({ progress }: { progress: GoalProgress }) {
         <div className="flex items-baseline justify-between text-sm">
           <span className="tabular-nums font-medium">{money(progress.actual)}</span>
           <span className="text-xs text-muted-foreground">
-            von {money(progress.target)} · {achievementText(progress.percent)}
+            von {money(progress.target)}
           </span>
         </div>
+        {/* Der Balken nennt den Prozentwert selbst — deshalb steht er oben
+            nicht mehr zusaetzlich hinter dem Zielbetrag. */}
+        <GoalProgressBar progress={progress} />
         <p className="text-xs text-muted-foreground">{remainderText(progress)}</p>
       </CardContent>
     </Card>

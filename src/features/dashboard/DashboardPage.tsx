@@ -108,6 +108,11 @@ export function DashboardPage() {
     <div className="flex flex-wrap items-center justify-between gap-2">
       <h1 className="text-xl font-semibold tracking-tight">Übersicht</h1>
       <div className="flex flex-wrap items-center gap-2">
+        <YearSelector
+          selection={selection}
+          onSelect={setSelection}
+          availableYears={years}
+        />
         <Button asChild>
           <Link to="/eingaenge/neu">
             <Plus /> Neue Dividende
@@ -177,12 +182,6 @@ export function DashboardPage() {
   return (
     <div className="space-y-6">
       {heading}
-
-      <YearSelector
-        selection={selection}
-        onSelect={setSelection}
-        availableYears={years}
-      />
 
       {emptyYear && (
         <p
