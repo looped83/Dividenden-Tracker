@@ -315,18 +315,6 @@ export function SecuritiesPage() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-semibold tracking-tight">Unternehmen</h1>
         <div className="flex flex-wrap items-center gap-2">
-          <label className="flex min-h-11 items-center gap-2 text-sm text-muted-foreground">
-            <input
-              type="checkbox"
-              checked={showArchived}
-              onChange={(event) => {
-                setShowArchived(event.target.checked);
-              }}
-              className="size-4"
-            />
-            Archivierte anzeigen
-          </label>
-          <SecurityImportButton />
           <Button
             onClick={() => {
               setDialog({ open: true, security: null });
@@ -456,6 +444,23 @@ export function SecuritiesPage() {
           </TableBody>
         </Table>
       )}
+
+      {/* Seltener gebrauchte Nebenaktionen am Seitenende: die Liste selbst
+          soll den oberen Bereich bestimmen. */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border pt-4">
+        <label className="flex min-h-11 items-center gap-2 text-sm text-muted-foreground">
+          <input
+            type="checkbox"
+            checked={showArchived}
+            onChange={(event) => {
+              setShowArchived(event.target.checked);
+            }}
+            className="size-4 pointer-coarse:size-6"
+          />
+          Archivierte anzeigen
+        </label>
+        <SecurityImportButton />
+      </div>
 
       <SecurityFormDialog
         security={dialog.security}

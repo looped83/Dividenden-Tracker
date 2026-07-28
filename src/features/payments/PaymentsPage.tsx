@@ -432,27 +432,13 @@ export function PaymentsPage() {
         </FilterField>
       </FilterBar>
 
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        {/* Stornierte sind sonst nirgends auffindbar: Reaktivieren geht nur aus
-            dieser Liste oder per Direktlink. */}
-        <label className="flex min-h-11 items-center gap-2 text-sm text-muted-foreground">
-          <input
-            type="checkbox"
-            className="size-4 pointer-coarse:size-6"
-            checked={status === "all"}
-            onChange={(event) => {
-              updateParams({ status: event.target.checked ? "all" : null });
-            }}
-          />
-          Stornierte anzeigen
-        </label>
-
-        {hasActiveFilters && (
+      {hasActiveFilters && (
+        <div>
           <Button type="button" variant="ghost" size="sm" onClick={resetFilters}>
             <X /> Filter zurücksetzen
           </Button>
-        )}
-      </div>
+        </div>
+      )}
 
       {hasActiveFilters && (
         <p className="text-sm text-muted-foreground" aria-live="polite">
@@ -604,6 +590,22 @@ export function PaymentsPage() {
         </div>
       )}
 
+      {/* Am Seitenende: eine selten gebrauchte Umschaltung, die den oberen
+          Bereich nicht belasten soll. Stornierte sind sonst nirgends
+          auffindbar — Reaktivieren geht nur aus dieser Liste oder per
+          Direktlink. */}
+      <label className="flex min-h-11 w-fit items-center gap-2 text-sm text-muted-foreground">
+        <input
+          type="checkbox"
+          className="size-4 pointer-coarse:size-6"
+          checked={status === "all"}
+          onChange={(event) => {
+            updateParams({ status: event.target.checked ? "all" : null });
+          }}
+        />
+        Stornierte anzeigen
+      </label>
+
       <StornoDialog
         open={stornoTarget !== null}
         onOpenChange={(open) => {
@@ -673,9 +675,7 @@ function PaymentRow({
         />
       </TableCell>
       <TableCell>
-        <Link to={`/eingaenge/${payment.id}`} className="hover:underline">
-          {formatDate(effectiveDate)}
-        </Link>
+        {formatDate(effectiveDate)}
         {shifted && (
           <span
             className="block text-xs text-muted-foreground"
@@ -685,7 +685,16 @@ function PaymentRow({
           </span>
         )}
       </TableCell>
-      <TableCell className="font-medium">{companyName || "—"}</TableCell>
+      <TableCell className="font-medium">
+        {/* Das Unternehmen fuehrt zur Detailansicht — es benennt den Eingang,
+            das Datum tut das nicht. */}
+        <Link
+          to={`/eingaenge/${payment.id}`}
+          className="rounded-sm outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          {companyName || "—"}
+        </Link>
+      </TableCell>
       <TableCell className="text-muted-foreground">{depotName || "—"}</TableCell>
       <TableCell className="text-right">
         <AmountText amount={Money.fromString(payment.net_amount, currency)} />
