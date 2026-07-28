@@ -8,7 +8,6 @@ export interface RankedBarItem {
   name: string;
   archived: boolean;
   net: Money;
-  count: number;
   href: string;
 }
 
@@ -71,9 +70,12 @@ export function RankedBars({ items, total, ariaLabel }: RankedBarsProps) {
                     }}
                   />
                 </div>
-                <span className="w-28 shrink-0 text-right text-xs text-muted-foreground tabular-nums">
-                  {share ? formatPercent(share) : "—"} ·{" "}
-                  {item.count === 1 ? "1 Zahlung" : `${String(item.count)} Zahlungen`}
+                {/* Nur der Anteil: Die Zahl der Zahlungen sagt ueber die
+                    Verteilung nichts aus. Wo sie zaehlt, steht sie in der
+                    Tabelle darunter („Zahlungen"). Breite reicht fuer
+                    „100,0 %" in einer Zeile. */}
+                <span className="w-14 shrink-0 whitespace-nowrap text-right text-xs text-muted-foreground tabular-nums">
+                  {share ? formatPercent(share) : "—"}
                 </span>
               </div>
             </Link>

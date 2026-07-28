@@ -54,7 +54,6 @@ export function CompaniesTab() {
           name: entityName(securities, stat.securityId),
           archived: entityArchived(securities, stat.securityId),
           net: stat.net,
-          count: stat.count,
           href: statisticsDrillHref(filter, { securityId: stat.securityId }),
         })),
     [stats, labelOf, securities, filter],

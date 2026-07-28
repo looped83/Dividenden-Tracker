@@ -4,6 +4,7 @@ import {
   ArrowDown,
   ArrowUp,
   Ban,
+  Calendar,
   Pencil,
   RotateCcw,
   ShieldCheck,
@@ -891,8 +892,12 @@ function PaymentCard({
             {/* Ohne Depot: Wer die Liste nach Depot filtert oder nur eines
                 fuehrt, gewinnt daraus nichts. Die Detailansicht nennt es. */}
             <div className="flex min-w-0 items-center gap-2">
-              <p className="truncate text-sm text-muted-foreground">
-                {formatDate(effectiveDate)}
+              <p className="flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground">
+                {/* Ein Pixel hoeher: Mittig ausgerichtet steht das Symbol
+                    optisch zu tief, weil die Mitte der Ziffern ueber der Mitte
+                    der Zeile liegt (Unterlaengenraum zaehlt mit). */}
+                <Calendar className="size-3.5 shrink-0 -translate-y-px" aria-hidden />
+                <span className="truncate">{formatDate(effectiveDate)}</span>
               </p>
               {cancelled && (
                 <Badge variant="warning" className="shrink-0">

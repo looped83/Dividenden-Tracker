@@ -43,7 +43,6 @@ export function TopCompanies({
       name: info?.name ?? "Unbekannt",
       archived: info?.archived ?? false,
       net: bucket.net,
-      count: bucket.count,
       href: paymentsListHref({ year: selection, securityId: bucket.key }),
     };
   });
@@ -86,7 +85,6 @@ export function DepotDistribution({
       name: info?.name ?? "Unbekannt",
       archived: info?.archived ?? false,
       net: bucket.net,
-      count: bucket.count,
       href: paymentsListHref({ year: selection, depotId: bucket.key }),
     };
   });

@@ -295,13 +295,6 @@ export function MonthlyChart({ payments, selection, today }: MonthlyChartProps) 
               </ResponsiveContainer>
             </div>
 
-            {!isAll && monthData.some((row) => row.isFuture) && (
-              <p className="text-xs text-muted-foreground">
-                Monate ohne Balken im laufenden Jahr haben noch nicht begonnen; es werden
-                keine Werte prognostiziert.
-              </p>
-            )}
-
             <details className="text-sm">
               <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
                 Datentabelle anzeigen
