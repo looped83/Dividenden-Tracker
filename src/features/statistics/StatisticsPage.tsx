@@ -1,24 +1,18 @@
 import * as React from "react";
-import { NavLink, Outlet } from "react-router";
+import { Outlet } from "react-router";
 import { BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { TabNav, type TabNavItem } from "@/components/layout/TabNav";
 import { availableYears, filterPayments } from "@/lib/statistics";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
-import { cn } from "@/lib/utils/cn";
 import { FilterBar } from "./FilterBar";
 import { useStatisticsData, useStatisticsFilter, type StatisticsContext } from "./hooks";
 
-interface StatTab {
-  to: string;
-  label: string;
-  end?: boolean;
-}
-
 /** Unterbereiche der Statistik (§11): Übersicht, Jahre, Monate, Unternehmen, Depots. */
-const STAT_TABS: readonly StatTab[] = [
+const STAT_TABS: readonly TabNavItem[] = [
   { to: "/statistiken", label: "Übersicht", end: true },
   { to: "/statistiken/jahre", label: "Jahre" },
   { to: "/statistiken/monate", label: "Monate" },
@@ -110,28 +104,7 @@ export function StatisticsPage() {
     <div className="space-y-6">
       {heading}
 
-      <nav aria-label="Statistikbereiche" className="border-b border-border">
-        <ul className="-mb-px flex flex-wrap gap-1">
-          {STAT_TABS.map((tab) => (
-            <li key={tab.to}>
-              <NavLink
-                to={tab.to}
-                end={tab.end ?? false}
-                className={({ isActive }) =>
-                  cn(
-                    "inline-flex items-center rounded-t-md border-b-2 px-3 py-2 text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                    isActive
-                      ? "border-primary text-foreground"
-                      : "border-transparent text-muted-foreground hover:text-foreground",
-                  )
-                }
-              >
-                {tab.label}
-              </NavLink>
-            </li>
-          ))}
-        </ul>
-      </nav>
+      <TabNav label="Statistikbereiche" tabs={STAT_TABS} />
 
       <FilterBar
         filter={filter}
