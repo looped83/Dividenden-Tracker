@@ -25,6 +25,22 @@ export function formatMoney(money: Money, locale = "de-DE"): string {
 }
 
 /**
+ * Waehrungszeichen eines ISO-Codes in der Anzeigesprache — „€" fuer EUR,
+ * „$" fuer USD. Faellt die Laufzeit auf den Code zurueck (unbekannte oder
+ * zeichenlose Waehrung), steht eben dieser da; erfunden wird nichts.
+ *
+ * Fuer Beschriftungen an Eingabefeldern; formatierte Betraege bringen ihr
+ * Zeichen ueber `formatMoney` mit.
+ */
+export function currencySymbol(currency: string, locale = "de-DE"): string {
+  const parts = new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency,
+  }).formatToParts(0);
+  return parts.find((part) => part.type === "currency")?.value ?? currency;
+}
+
+/**
  * R-4: Prozentwerte werden ausschliesslich hier, am Ende der Berechnung,
  * kaufmaennisch auf `fractionDigits` Nachkommastellen gerundet. `value` ist
  * bereits in Prozentpunkten skaliert (z. B. 12.3 fuer "12,3 Prozent"),

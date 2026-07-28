@@ -44,7 +44,7 @@ export function GeneralSettingsTab() {
           <CardDescription>Angemeldet als {session?.user.email}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {error && <p className="text-sm text-negative">{error}</p>}
           <Button
             variant="outline"
             onClick={() => void handleLogout()}
@@ -59,7 +59,7 @@ export function GeneralSettingsTab() {
         <CardHeader>
           <CardTitle>Darstellung</CardTitle>
           <CardDescription>
-            Hell, dunkel oder passend zum Systemzustand (UX_AND_DESIGN_SYSTEM.md #8).
+            Hell, dunkel oder passend zur Einstellung des Systems.
           </CardDescription>
         </CardHeader>
         <CardContent>

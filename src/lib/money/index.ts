@@ -16,5 +16,5 @@ export {
   PER_SHARE_SCALE,
   InvalidPerShareAmountError,
 } from "./perShareAmount";
-export { formatMoney, formatPercent, NOT_AVAILABLE } from "./format";
+export { formatMoney, formatPercent, currencySymbol, NOT_AVAILABLE } from "./format";
 export { normalizeGermanDecimalInput, toGermanDecimalString } from "./germanDecimalInput";

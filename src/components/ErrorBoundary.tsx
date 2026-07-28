@@ -28,7 +28,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
     if (this.state.hasError) {
       return (
         <div className="flex flex-col items-center justify-center min-h-screen gap-4 p-4">
-          <h1 className="text-2xl font-bold text-destructive">Fehler in der Anwendung</h1>
+          <h1 className="text-2xl font-bold text-negative">Fehler in der Anwendung</h1>
           <p className="text-muted-foreground max-w-md text-center">
             Die Anwendung ist auf einen unerwarteten Fehler gestoßen.
           </p>
