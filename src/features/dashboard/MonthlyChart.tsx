@@ -24,6 +24,7 @@ import {
   type RefDate,
 } from "@/lib/statistics";
 import { describeComparison, paymentsListHref } from "./format";
+import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
 
 function useReducedMotion(): boolean {
   const [reduced, setReduced] = React.useState(false);
@@ -366,7 +367,7 @@ function YearTooltip({ active, payload }: TooltipInput<YearRow>) {
       <p className="font-medium">{row.year}</p>
       <p>{formatMoney(row.money)}</p>
       <p className="text-muted-foreground">
-        {row.count === 1 ? "1 Zahlung" : `${String(row.count)} Zahlungen`}
+        {formatCountNoun(row.count, "Zahlung", "Zahlungen")}
       </p>
     </div>
   );
@@ -453,7 +454,9 @@ function YearTable({ rows }: { rows: YearRow[] }) {
               <td className="py-1 pr-4 text-right tabular-nums">
                 {formatMoney(row.money)}
               </td>
-              <td className="py-1 text-right tabular-nums">{row.count}</td>
+              <td className="py-1 text-right tabular-nums">
+                {formatCountNumber(row.count)}
+              </td>
             </tr>
           ))}
         </tbody>

@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { AmountText } from "@/components/money/AmountText";
 import { DateText } from "@/components/DateText";
+import { formatCountNumber } from "@/lib/utils/formatNumber";
 import { Money, toCurrencyCode } from "@/lib/money";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { useDepots } from "@/features/depots/hooks";
@@ -271,7 +272,7 @@ function OverviewTile({ label, value }: { label: string; value: number }) {
   return (
     <Card>
       <CardContent className="p-4">
-        <p className="text-2xl font-semibold tabular-nums">{value}</p>
+        <p className="text-2xl font-semibold tabular-nums">{formatCountNumber(value)}</p>
         <p className="text-xs text-muted-foreground">{label}</p>
       </CardContent>
     </Card>

@@ -1,4 +1,5 @@
 import type { EntityInfo } from "@/features/dashboard/format";
+import { formatCountNoun } from "@/lib/utils/formatNumber";
 import { paymentsListHref } from "@/features/dashboard/format";
 import type { PaymentSource, PaymentType, StatisticsFilter } from "@/lib/statistics";
 import { applyStatisticsFilter } from "./filterParams";
@@ -63,16 +64,9 @@ export function statisticsTabHref(
   return query ? `${path}?${query}` : path;
 }
 
-const countFormatter = new Intl.NumberFormat("de-DE");
-
-/** Ganzzahl in deutscher Schreibweise (Tausenderpunkt). */
-export function formatCountNumber(count: number): string {
-  return countFormatter.format(count);
-}
-
-/** „1 Zahlung" / „12 Zahlungen". */
+/** „1 Zahlung" / „1.439 Zahlungen". */
 export function formatPayments(count: number): string {
-  return `${countFormatter.format(count)} ${count === 1 ? "Zahlung" : "Zahlungen"}`;
+  return formatCountNoun(count, "Zahlung", "Zahlungen");
 }
 
 /** Anzeigename eines Unternehmens/Depots; „Unbekannt", wenn nicht auflösbar. */
@@ -113,3 +107,5 @@ export const PAYMENT_TYPE_VALUES: readonly PaymentType[] = [
   "refund",
   "other",
 ];
+
+export { formatCountNumber } from "@/lib/utils/formatNumber";

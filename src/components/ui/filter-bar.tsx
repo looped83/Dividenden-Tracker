@@ -1,6 +1,7 @@
 import * as React from "react";
 import { ChevronDown, SlidersHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
+import { formatCountNumber } from "@/lib/utils/formatNumber";
 
 /**
  * Gemeinsame Filterleiste (Statistik, Dividendenliste, Unternehmen). Bewusst
@@ -48,7 +49,7 @@ export function FilterBar({
           Filter
           {activeCount > 0 && (
             <span className="rounded-full bg-accent px-2 py-0.5 text-xs text-accent-foreground">
-              {activeCount} aktiv
+              {formatCountNumber(activeCount)} aktiv
             </span>
           )}
         </span>

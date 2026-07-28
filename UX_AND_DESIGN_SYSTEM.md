@@ -40,6 +40,10 @@ alle Text-/Hintergrund-Paare ≥ WCAG AA (4,5:1; große Zahlen 3:1).
   Apple-Geräten, keine externen Fonts (CSP).
 - **Beträge immer in Tabellenziffern** (`font-variant-numeric: tabular-nums`), rechtsbündig
   in Tabellen; Minuswerte mit echtem Minuszeichen und `--negative`.
+- **Jede angezeigte Zahl in deutscher Schreibweise mit Tausenderpunkt** (1.439 Zahlungen,
+  1.234,56 €) — Beträge und Prozentwerte über `formatMoney`/`formatPercent`, Anzahlen,
+  Seiten- und Zeilenangaben über `formatCountNumber`/`formatCountNoun`
+  (`lib/utils/formatNumber.ts`). Ausgenommen sind Jahreszahlen (2026, nicht 2.026).
 - Skala: 12 (Meta) · 14 (Body/Tabellen) · 16 (Formulare mobil, verhindert iOS-Zoom) ·
   18/20 (Abschnittstitel) · 28/32 (Kennzahlwerte). Zeilenhöhe 1,5 für Fließtext.
 

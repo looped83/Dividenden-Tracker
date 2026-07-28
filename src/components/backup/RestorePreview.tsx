@@ -6,6 +6,7 @@
  */
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatCountNumber } from "@/lib/utils/formatNumber";
 import { type BackupRoot } from "@/lib/backup/backupFormat";
 
 interface RestorePreviewProps {
@@ -34,21 +35,29 @@ export default function RestorePreview({ backup }: RestorePreviewProps) {
           <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
             <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
               <p className="text-sm text-gray-600 dark:text-gray-400">Depots</p>
-              <p className="text-lg sm:text-2xl font-bold">{counts.depots}</p>
+              <p className="text-lg sm:text-2xl font-bold">
+                {formatCountNumber(counts.depots)}
+              </p>
             </div>
             <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
               <p className="text-sm text-gray-600 dark:text-gray-400">Wertpapiere</p>
-              <p className="text-lg sm:text-2xl font-bold">{counts.securities}</p>
+              <p className="text-lg sm:text-2xl font-bold">
+                {formatCountNumber(counts.securities)}
+              </p>
             </div>
             <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 Dividendenzahlungen
               </p>
-              <p className="text-lg sm:text-2xl font-bold">{counts.dividends}</p>
+              <p className="text-lg sm:text-2xl font-bold">
+                {formatCountNumber(counts.dividends)}
+              </p>
             </div>
             <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
               <p className="text-sm text-gray-600 dark:text-gray-400">Ziele</p>
-              <p className="text-lg sm:text-2xl font-bold">{counts.goals}</p>
+              <p className="text-lg sm:text-2xl font-bold">
+                {formatCountNumber(counts.goals)}
+              </p>
             </div>
           </div>
         </div>

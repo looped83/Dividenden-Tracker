@@ -3,6 +3,7 @@ import { UploadCloud, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
 import { Select } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -419,7 +420,8 @@ export function ImportWizard({ onFinished }: { onFinished: () => void }) {
               >
                 {data.sheets.map((s) => (
                   <option key={s.name} value={s.name} disabled={s.hidden}>
-                    {s.name} {s.hidden ? "(verborgen)" : ""} — {s.rowCount} Zeilen
+                    {s.name} {s.hidden ? "(verborgen)" : ""} —{" "}
+                    {formatCountNoun(s.rowCount, "Zeile", "Zeilen")}
                     {s.hasMergedCells ? " · verbundene Zellen!" : ""}
                   </option>
                 ))}
@@ -481,7 +483,7 @@ export function ImportWizard({ onFinished }: { onFinished: () => void }) {
               Die Beträge sind <strong>Netto-Dividenden in Euro (EUR)</strong>. Da die
               Datei keine Brutto-/Steuerangaben enthält, wird{" "}
               <strong>brutto = netto</strong> gesetzt und Steuern = 0 (keine erfundenen
-              Werte). Betroffene Zeilen: {data.rows.length - 1}.
+              Werte). Betroffene Zeilen: {formatCountNumber(data.rows.length - 1)}.
             </span>
           </label>
 
@@ -504,8 +506,8 @@ export function ImportWizard({ onFinished }: { onFinished: () => void }) {
           <Card>
             <CardHeader>
               <CardTitle className="text-base">
-                Unternehmen ({companyGroups.length}) — {newCompanyCount} werden neu
-                (archiviert) angelegt
+                Unternehmen ({formatCountNumber(companyGroups.length)}) —{" "}
+                {formatCountNumber(newCompanyCount)} werden neu (archiviert) angelegt
               </CardTitle>
             </CardHeader>
             <CardContent className="max-h-96 overflow-y-auto p-0">
@@ -540,8 +542,8 @@ export function ImportWizard({ onFinished }: { onFinished: () => void }) {
           <Card>
             <CardHeader>
               <CardTitle className="text-base">
-                Broker / Depots ({brokerGroups.length}) — {newDepotCount} werden neu
-                angelegt
+                Broker / Depots ({formatCountNumber(brokerGroups.length)}) —{" "}
+                {formatCountNumber(newDepotCount)} werden neu angelegt
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
@@ -596,7 +598,7 @@ export function ImportWizard({ onFinished }: { onFinished: () => void }) {
       {phase === "preview" && data && (
         <div className="space-y-6">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Stat label="Gültige Zeilen" value={String(importable.length)} />
+            <Stat label="Gültige Zeilen" value={formatCountNumber(importable.length)} />
             <Stat label="Gesamtsumme" value={eur(checksums.totalNet)} />
             <Stat
               label="Zeitraum"
@@ -604,7 +606,7 @@ export function ImportWizard({ onFinished }: { onFinished: () => void }) {
             />
             <Stat
               label="Fehler / Duplikate"
-              value={`${String(invalidCount)} / ${String(dedupeCount)}`}
+              value={`${formatCountNumber(invalidCount)} / ${formatCountNumber(dedupeCount)}`}
               variant={invalidCount > 0 ? "negative" : "neutral"}
             />
           </div>
@@ -626,7 +628,9 @@ export function ImportWizard({ onFinished }: { onFinished: () => void }) {
                   {Object.entries(checksums.byYear).map(([year, bucket]) => (
                     <TableRow key={year}>
                       <TableCell>{year}</TableCell>
-                      <TableCell className="text-right">{bucket.count}</TableCell>
+                      <TableCell className="text-right">
+                        {formatCountNumber(bucket.count)}
+                      </TableCell>
                       <TableCell className="text-right tabular-nums">
                         {eur(bucket.sum)}
                       </TableCell>
@@ -650,7 +654,8 @@ export function ImportWizard({ onFinished }: { onFinished: () => void }) {
                 }}
               />
               <p className="text-xs text-muted-foreground">
-                Zeigt max. {REVIEW_ROW_LIMIT} von {rows.length} Zeilen (gefiltert).
+                Zeigt max. {formatCountNumber(REVIEW_ROW_LIMIT)} von{" "}
+                {formatCountNumber(rows.length)} Zeilen (gefiltert).
               </p>
               <div className="max-h-96 overflow-auto">
                 <Table>
@@ -690,8 +695,8 @@ export function ImportWizard({ onFinished }: { onFinished: () => void }) {
           {invalidCount > 0 && (
             <p className="flex items-start gap-2 text-sm text-negative">
               <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />
-              {invalidCount} fehlerhafte Zeile(n) verhindern die Freigabe. Bitte die
-              Quelldatei korrigieren.
+              {formatCountNumber(invalidCount)} fehlerhafte Zeile(n) verhindern die
+              Freigabe. Bitte die Quelldatei korrigieren.
             </p>
           )}
 
@@ -708,7 +713,7 @@ export function ImportWizard({ onFinished }: { onFinished: () => void }) {
               onClick={() => void handleCommit()}
               disabled={invalidCount > 0 || importable.length === 0}
             >
-              {importable.length} Eingänge endgültig importieren
+              {formatCountNumber(importable.length)} Eingänge endgültig importieren
             </Button>
           </div>
         </div>
@@ -725,7 +730,7 @@ export function ImportWizard({ onFinished }: { onFinished: () => void }) {
           <p className="flex items-center gap-2 text-sm">
             <CheckCircle2 className="size-5 text-positive" aria-hidden />
             <span>
-              Import abgeschlossen: {importable.length} Eingänge über{" "}
+              Import abgeschlossen: {formatCountNumber(importable.length)} Eingänge über{" "}
               {eur(checksums.totalNet)} gespeichert und serverseitig verifiziert.
             </span>
           </p>
@@ -830,7 +835,7 @@ function CompanyRow({
   return (
     <TableRow>
       <TableCell className="font-medium">{group.sourceName}</TableCell>
-      <TableCell className="text-right">{group.count}</TableCell>
+      <TableCell className="text-right">{formatCountNumber(group.count)}</TableCell>
       <TableCell className="text-right tabular-nums">{eur(group.sum)}</TableCell>
       <TableCell className="text-xs text-muted-foreground">{suggestionLabel}</TableCell>
       <TableCell>
@@ -883,7 +888,7 @@ function BrokerRow({
   return (
     <TableRow>
       <TableCell className="font-medium">{group.sourceName}</TableCell>
-      <TableCell className="text-right">{group.count}</TableCell>
+      <TableCell className="text-right">{formatCountNumber(group.count)}</TableCell>
       <TableCell className="text-xs text-muted-foreground">
         {group.match.reason === "none"
           ? "Kein Depot gefunden"

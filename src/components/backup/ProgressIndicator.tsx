@@ -6,6 +6,7 @@
  */
 
 import { Card, CardContent } from "@/components/ui/card";
+import { formatCountNumber } from "@/lib/utils/formatNumber";
 import type { BackupProgress } from "@/lib/backup/backupService";
 
 interface ProgressIndicatorProps {
@@ -62,7 +63,8 @@ export default function ProgressIndicator({ progress }: ProgressIndicatorProps) 
 
           {progress.itemsProcessed !== undefined && progress.totalItems !== undefined && (
             <p className="text-xs text-muted-foreground">
-              {progress.itemsProcessed} von {progress.totalItems} Elementen verarbeitet
+              {formatCountNumber(progress.itemsProcessed)} von{" "}
+              {formatCountNumber(progress.totalItems)} Elementen verarbeitet
             </p>
           )}
         </div>
