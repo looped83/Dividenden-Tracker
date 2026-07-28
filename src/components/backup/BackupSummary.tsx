@@ -8,6 +8,7 @@
  */
 
 import { type BackupRoot } from "@/lib/backup/backupFormat";
+import { formatCountNumber } from "@/lib/utils/formatNumber";
 
 interface BackupSummaryProps {
   backup: BackupRoot;
@@ -30,21 +31,29 @@ export default function BackupSummary({ backup }: BackupSummaryProps) {
         <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
           <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
             <p className="text-sm text-gray-600 dark:text-gray-400">Depots</p>
-            <p className="text-lg sm:text-2xl font-bold">{counts.depots}</p>
+            <p className="text-lg sm:text-2xl font-bold">
+              {formatCountNumber(counts.depots)}
+            </p>
           </div>
           <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
             <p className="text-sm text-gray-600 dark:text-gray-400">Wertpapiere</p>
-            <p className="text-lg sm:text-2xl font-bold">{counts.securities}</p>
+            <p className="text-lg sm:text-2xl font-bold">
+              {formatCountNumber(counts.securities)}
+            </p>
           </div>
           <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
             <p className="text-sm text-gray-600 dark:text-gray-400">
               Dividendenzahlungen
             </p>
-            <p className="text-lg sm:text-2xl font-bold">{counts.dividends}</p>
+            <p className="text-lg sm:text-2xl font-bold">
+              {formatCountNumber(counts.dividends)}
+            </p>
           </div>
           <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
             <p className="text-sm text-gray-600 dark:text-gray-400">Ziele</p>
-            <p className="text-lg sm:text-2xl font-bold">{counts.goals}</p>
+            <p className="text-lg sm:text-2xl font-bold">
+              {formatCountNumber(counts.goals)}
+            </p>
           </div>
         </div>
       </div>

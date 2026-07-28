@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/table";
 import { AmountText } from "@/components/money/AmountText";
 import { DateText } from "@/components/DateText";
+import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
 import { Money, toCurrencyCode } from "@/lib/money";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { useDepots } from "@/features/depots/hooks";
@@ -562,7 +563,7 @@ export function PaymentsPage() {
 
       {hasActiveFilters && (
         <p className="text-sm text-muted-foreground" aria-live="polite">
-          {rows.length} {rows.length === 1 ? "Eingang" : "Eingänge"} gefunden.
+          {formatCountNoun(rows.length, "Eingang", "Eingänge")} gefunden.
         </p>
       )}
 
@@ -669,8 +670,9 @@ export function PaymentsPage() {
       {!isLoading && rows.length > PAGE_SIZE && (
         <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
           <span aria-live="polite">
-            {pageStart + 1}–{Math.min(pageStart + PAGE_SIZE, rows.length)} von{" "}
-            {rows.length}
+            {formatCountNumber(pageStart + 1)}–
+            {formatCountNumber(Math.min(pageStart + PAGE_SIZE, rows.length))} von{" "}
+            {formatCountNumber(rows.length)}
           </span>
           <div className="flex items-center gap-2">
             <Button
@@ -685,7 +687,7 @@ export function PaymentsPage() {
               Zurück
             </Button>
             <span aria-hidden>
-              Seite {currentPage} / {pageCount}
+              Seite {formatCountNumber(currentPage)} / {formatCountNumber(pageCount)}
             </span>
             <Button
               type="button"

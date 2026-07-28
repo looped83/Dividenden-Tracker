@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { AmountText } from "@/components/money/AmountText";
 import { cn } from "@/lib/utils/cn";
+import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
 import type { AnalyticsPayment, YearSelection } from "@/lib/statistics";
 import {
   averagePerMonth,
@@ -27,11 +28,6 @@ import {
   paymentsListHref,
   type ComparisonTone,
 } from "./format";
-
-const countFormatter = new Intl.NumberFormat("de-DE");
-function formatCount(count: number, noun: string, pluralNoun = `${noun}en`): string {
-  return `${countFormatter.format(count)} ${count === 1 ? noun : pluralNoun}`;
-}
 
 const toneClass: Record<ComparisonTone, string> = {
   positive: "text-positive",
@@ -240,8 +236,8 @@ export function KpiCards({ payments, selection, today }: KpiCardsProps) {
       {/* 5.6 Ausschuettende Unternehmen */}
       <KpiCard
         label="Ausschüttende Unternehmen"
-        value={countFormatter.format(cards.companies)}
-        caption={formatCount(cards.depots, "Depot", "Depots")}
+        value={formatCountNumber(cards.companies)}
+        caption={formatCountNoun(cards.depots, "Depot", "Depots")}
       />
     </div>
   );

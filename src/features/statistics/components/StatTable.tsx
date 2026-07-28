@@ -3,6 +3,7 @@ import { ArrowDown, ArrowUp, ArrowUpDown, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
+import { formatCountNumber } from "@/lib/utils/formatNumber";
 
 export type SortDirection = "asc" | "desc";
 
@@ -238,7 +239,9 @@ export function StatTable<T>({
       {sorted.length > pageSize && (
         <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
           <span aria-live="polite">
-            {start + 1}–{Math.min(start + pageSize, sorted.length)} von {sorted.length}
+            {formatCountNumber(start + 1)}–
+            {formatCountNumber(Math.min(start + pageSize, sorted.length))} von{" "}
+            {formatCountNumber(sorted.length)}
           </span>
           <div className="flex items-center gap-2">
             <Button
@@ -253,7 +256,7 @@ export function StatTable<T>({
               Zurück
             </Button>
             <span aria-hidden>
-              Seite {currentPage} / {pageCount}
+              Seite {formatCountNumber(currentPage)} / {formatCountNumber(pageCount)}
             </span>
             <Button
               type="button"

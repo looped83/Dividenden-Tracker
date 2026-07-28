@@ -8,6 +8,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select } from "@/components/ui/select";
 import { type ConflictItem } from "@/lib/backup/restoreService";
+import { formatCountNumber } from "@/lib/utils/formatNumber";
 
 interface ConflictResolverProps {
   conflicts: ConflictItem[];
@@ -38,7 +39,8 @@ export default function ConflictResolver({
     <Card className="border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/20">
       <CardHeader>
         <CardTitle className="text-yellow-900 dark:text-yellow-200">
-          {conflicts.length} Konflikt{conflicts.length !== 1 ? "e" : ""} erkannt
+          {formatCountNumber(conflicts.length)} Konflikt
+          {conflicts.length !== 1 ? "e" : ""} erkannt
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">

@@ -11,6 +11,7 @@ import {
 } from "recharts";
 import { formatMoney, type Money } from "@/lib/money";
 import { formatPayments } from "../format";
+import { formatCountNumber } from "@/lib/utils/formatNumber";
 
 function useReducedMotion(): boolean {
   const [reduced, setReduced] = React.useState(false);
@@ -160,7 +161,9 @@ export function CategoryBarChart({
                   <td className="py-1 pr-4 text-right tabular-nums">
                     {formatMoney(row.money)}
                   </td>
-                  <td className="py-1 text-right tabular-nums">{row.count}</td>
+                  <td className="py-1 text-right tabular-nums">
+                    {formatCountNumber(row.count)}
+                  </td>
                 </tr>
               ))}
             </tbody>

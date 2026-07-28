@@ -22,6 +22,7 @@ import { Money } from "@/lib/money/money";
 import { EUR } from "@/lib/money/currency";
 import { formatMoney } from "@/lib/money/format";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
+import { formatCountNumber } from "@/lib/utils/formatNumber";
 import { ImportWizard } from "@/features/imports/ImportWizard";
 import { useImports, useRollbackImport } from "@/features/imports/hooks";
 import type { Import } from "@/lib/supabase/repositories/imports";
@@ -52,10 +53,13 @@ export function ImportsPage() {
 
   async function handleRollback(imp: Import) {
     const checksums = imp.checksums as { row_count?: number } | null;
-    const rows = checksums?.row_count ?? "alle";
+    const rows =
+      checksums?.row_count === undefined
+        ? "alle"
+        : formatCountNumber(checksums.row_count);
     if (
       !window.confirm(
-        `Diesen Import vollständig zurückrollen? ${String(rows)} importierte Eingänge werden archiviert. ` +
+        `Diesen Import vollständig zurückrollen? ${rows} importierte Eingänge werden archiviert. ` +
           "Der Vorgang ist auditiert und der Importdatensatz bleibt als Historie erhalten.",
       )
     ) {

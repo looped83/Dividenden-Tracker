@@ -25,6 +25,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { formatCountNumber } from "@/lib/utils/formatNumber";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useDepots } from "@/features/depots/hooks";
 import {
@@ -465,7 +466,7 @@ export function SecuritiesPage() {
             <X /> Filter zurücksetzen
           </Button>
           <p className="text-sm text-muted-foreground" aria-live="polite">
-            {visible.length} Unternehmen gefunden.
+            {formatCountNumber(visible.length)} Unternehmen gefunden.
           </p>
         </div>
       )}

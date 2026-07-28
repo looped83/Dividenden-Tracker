@@ -22,6 +22,7 @@ import {
 import type { DividendPayment } from "@/lib/supabase/repositories/payments";
 import { DUPLICATE_DISMISSALS_KEY, PAYMENTS_KEY } from "@/features/payments/hooks";
 import { runBulk, type BulkResult } from "@/features/payments/bulk";
+import { formatCountNumber } from "@/lib/utils/formatNumber";
 
 interface Row {
   id: string;
@@ -116,7 +117,7 @@ export function BulkBar({ selectedRows, onClear }: BulkBarProps) {
           die Schaltflaeche ist hoeher als der Text und stuende sonst tiefer. */}
       <div className="flex items-center justify-between gap-2">
         <span className="text-sm font-medium" aria-live="polite">
-          {selectedRows.length} ausgewählt
+          {formatCountNumber(selectedRows.length)} ausgewählt
         </span>
         <Button
           variant="ghost"
@@ -204,9 +205,10 @@ export function BulkBar({ selectedRows, onClear }: BulkBarProps) {
             <DialogTitle>Depot zuweisen</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Das gewählte Depot wird {activeIds.length} aktiven Eingängen zugewiesen.
+            Das gewählte Depot wird {formatCountNumber(activeIds.length)} aktiven
+            Eingängen zugewiesen.
             {cancelledIds.length > 0 &&
-              ` ${String(cancelledIds.length)} stornierte Eingänge werden übersprungen.`}
+              ` ${formatCountNumber(cancelledIds.length)} stornierte Eingänge werden übersprungen.`}
           </p>
           <div className="space-y-1.5">
             <Label htmlFor="bulk-depot">Depot</Label>
@@ -253,9 +255,10 @@ export function BulkBar({ selectedRows, onClear }: BulkBarProps) {
             <DialogTitle>Unternehmen zuweisen</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Das gewählte Unternehmen wird {activeIds.length} aktiven Eingängen zugewiesen.
+            Das gewählte Unternehmen wird {formatCountNumber(activeIds.length)} aktiven
+            Eingängen zugewiesen.
             {cancelledIds.length > 0 &&
-              ` ${String(cancelledIds.length)} stornierte Eingänge werden übersprungen.`}
+              ` ${formatCountNumber(cancelledIds.length)} stornierte Eingänge werden übersprungen.`}
           </p>
           <div className="space-y-1.5">
             <Label htmlFor="bulk-company">Unternehmen</Label>
@@ -302,13 +305,15 @@ export function BulkBar({ selectedRows, onClear }: BulkBarProps) {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{activeIds.length} Eingänge stornieren?</DialogTitle>
+            <DialogTitle>
+              {formatCountNumber(activeIds.length)} Eingänge stornieren?
+            </DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
             Die Eingänge bleiben erhalten, werden aber aus Dashboard und Statistik
             ausgeschlossen und können später reaktiviert werden.
             {cancelledIds.length > 0 &&
-              ` ${String(cancelledIds.length)} bereits stornierte Eingänge werden übersprungen.`}
+              ` ${formatCountNumber(cancelledIds.length)} bereits stornierte Eingänge werden übersprungen.`}
           </p>
           <DialogFooter>
             <Button variant="ghost" onClick={close}>
@@ -334,7 +339,9 @@ export function BulkBar({ selectedRows, onClear }: BulkBarProps) {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{cancelledIds.length} Eingänge reaktivieren?</DialogTitle>
+            <DialogTitle>
+              {formatCountNumber(cancelledIds.length)} Eingänge reaktivieren?
+            </DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
             Die Eingänge werden wieder in Dashboard und Statistik einbezogen.
@@ -362,13 +369,15 @@ export function BulkBar({ selectedRows, onClear }: BulkBarProps) {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{ids.length} Dividendeneingänge dauerhaft löschen?</DialogTitle>
+            <DialogTitle>
+              {formatCountNumber(ids.length)} Dividendeneingänge dauerhaft löschen?
+            </DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Die {ids.length} ausgewählten Dividendeneingänge werden endgültig entfernt und
-            können innerhalb der Anwendung nicht wiederhergestellt werden. Dashboard und
-            Statistik werden anschließend neu berechnet. Nur die ausdrücklich ausgewählten
-            Datensätze werden gelöscht.
+            Die {formatCountNumber(ids.length)} ausgewählten Dividendeneingänge werden
+            endgültig entfernt und können innerhalb der Anwendung nicht wiederhergestellt
+            werden. Dashboard und Statistik werden anschließend neu berechnet. Nur die
+            ausdrücklich ausgewählten Datensätze werden gelöscht.
           </p>
           <DialogFooter>
             <Button variant="ghost" onClick={close}>
@@ -398,10 +407,13 @@ export function BulkBar({ selectedRows, onClear }: BulkBarProps) {
           </DialogHeader>
           {result && (
             <div className="space-y-2 text-sm">
-              <p>{result.succeeded} Datensätze erfolgreich verarbeitet.</p>
+              <p>
+                {formatCountNumber(result.succeeded)} Datensätze erfolgreich verarbeitet.
+              </p>
               {result.failed.length > 0 ? (
                 <p className="text-negative">
-                  {result.failed.length} Datensätze konnten nicht verarbeitet werden.
+                  {formatCountNumber(result.failed.length)} Datensätze konnten nicht
+                  verarbeitet werden.
                 </p>
               ) : (
                 <p className="text-muted-foreground">Keine Fehler.</p>

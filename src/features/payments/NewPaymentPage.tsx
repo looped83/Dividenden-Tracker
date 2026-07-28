@@ -9,7 +9,7 @@ import { Select } from "@/components/ui/select";
 import { Combobox } from "@/components/ui/combobox";
 import { Textarea } from "@/components/ui/textarea";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
-import { toGermanDecimalString } from "@/lib/money";
+import { currencySymbol, toGermanDecimalString } from "@/lib/money";
 import { useDepots } from "@/features/depots/hooks";
 import { useSecurities } from "@/features/securities/hooks";
 import {
@@ -87,6 +87,12 @@ export function NewPaymentPage() {
   // Wert beobachtet und per setValue gesetzt. shouldValidate raeumt eine
   // bereits angezeigte Fehlermeldung sofort wieder ab.
   const watchedSecurityId = useWatch({ control, name: "securityId" });
+  // Das Zeichen im Betragsfeld folgt dem gewaehlten Depot — Depots koennen
+  // verschiedene Basiswaehrungen fuehren. Vor der Wahl steht der Standardfall.
+  const watchedDepotId = useWatch({ control, name: "depotId" });
+  const amountCurrency = currencySymbol(
+    depots.find((depot) => depot.id === watchedDepotId)?.base_currency ?? "EUR",
+  );
   const securityOptions = React.useMemo(
     () =>
       activeSecurities.map((security) => ({
@@ -255,12 +261,21 @@ export function NewPaymentPage() {
 
           <div className="space-y-1.5">
             <Label htmlFor="payment-net">Nettobetrag</Label>
-            <Input
-              id="payment-net"
-              inputMode="decimal"
-              placeholder="z. B. 73,63"
-              {...register("netAmount")}
-            />
+            <div className="relative">
+              <Input
+                id="payment-net"
+                inputMode="decimal"
+                className="pr-9"
+                aria-describedby="payment-net-currency"
+                {...register("netAmount")}
+              />
+              <span
+                id="payment-net-currency"
+                className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground"
+              >
+                {amountCurrency}
+              </span>
+            </div>
             {errors.netAmount && (
               <p className="text-sm text-negative">{errors.netAmount.message}</p>
             )}

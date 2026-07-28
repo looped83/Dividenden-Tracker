@@ -1,6 +1,7 @@
 import * as React from "react";
 import { FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { formatCountNumber } from "@/lib/utils/formatNumber";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -178,9 +179,10 @@ export function SecurityImportDialog({
         {state.step === "preview" && (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              {state.rows.length} gültige Zeile(n) erkannt, {state.invalidCount} ungültig
-              (kein Name) übersprungen, {state.rows.filter((r) => r.isDuplicate).length}{" "}
-              bereits vorhanden.
+              {formatCountNumber(state.rows.length)} gültige Zeile(n) erkannt,{" "}
+              {formatCountNumber(state.invalidCount)} ungültig (kein Name) übersprungen,{" "}
+              {formatCountNumber(state.rows.filter((r) => r.isDuplicate).length)} bereits
+              vorhanden.
             </p>
             <div className="max-h-80 overflow-y-auto">
               <Table>
@@ -229,7 +231,8 @@ export function SecurityImportDialog({
 
         {state.step === "importing" && (
           <p className="text-sm text-muted-foreground">
-            Wird importiert … ({state.done} / {state.total})
+            Wird importiert … ({formatCountNumber(state.done)} /{" "}
+            {formatCountNumber(state.total)})
           </p>
         )}
 
@@ -256,7 +259,8 @@ export function SecurityImportDialog({
               onClick={() => void handleImport()}
               disabled={state.rows.every((row) => row.isDuplicate)}
             >
-              {state.rows.filter((r) => !r.isDuplicate).length} Unternehmen importieren
+              {formatCountNumber(state.rows.filter((r) => !r.isDuplicate).length)}{" "}
+              Unternehmen importieren
             </Button>
           )}
           {state.step === "done" && (
