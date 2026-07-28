@@ -7,6 +7,7 @@ import {
   Plus,
   RotateCcw,
   Trash2,
+  X,
   Archive as ArchiveIcon,
 } from "lucide-react";
 import { emptyToNull } from "@/lib/utils/emptyToNull";
@@ -19,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { FilterBar, FilterField } from "@/components/ui/filter-bar";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -167,7 +169,8 @@ function SecurityFormDialog({
               <p className="text-sm text-negative">{errors.name.message}</p>
             )}
           </div>
-          <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2">
+          {/* Kennungen in einer Zeile, darunter die Einordnung. */}
+          <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-3">
             <div className="space-y-1.5">
               <Label htmlFor="security-ticker">Ticker</Label>
               <Input id="security-ticker" {...register("ticker")} />
@@ -182,14 +185,18 @@ function SecurityFormDialog({
                 <p className="text-sm text-negative">{errors.isin.message}</p>
               )}
             </div>
-          </div>
-          <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-3">
             <div className="space-y-1.5">
               <Label htmlFor="security-wkn">WKN</Label>
               <Input id="security-wkn" {...register("wkn")} />
               {errors.wkn && (
                 <p className="text-sm text-negative">{errors.wkn.message}</p>
               )}
+            </div>
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="security-sector">Branche</Label>
+              <Input id="security-sector" {...register("sector")} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="security-country">Land</Label>
@@ -206,11 +213,8 @@ function SecurityFormDialog({
               )}
             </div>
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="security-sector">Branche</Label>
-            <Input id="security-sector" {...register("sector")} />
-          </div>
-          <div className="space-y-1.5">
+          {/* Halbe Breite: ein Depotname braucht nicht die ganze Zeile. */}
+          <div className="space-y-1.5 sm:w-1/2 sm:pr-2">
             <Label htmlFor="security-default-depot">Standard-Depot</Label>
             <Select id="security-default-depot" {...register("defaultDepotId")}>
               <option value="">Kein Standard-Depot</option>
@@ -220,10 +224,6 @@ function SecurityFormDialog({
                 </option>
               ))}
             </Select>
-            <p className="text-sm text-muted-foreground">
-              Wird beim Anlegen eines Dividendeneingangs vorausgewählt, kann dort aber
-              jederzeit geändert werden.
-            </p>
           </div>
           <div className="space-y-1.5">
             <Label>Ausschüttungsmonate (optional)</Label>
@@ -254,11 +254,6 @@ function SecurityFormDialog({
                 );
               })}
             </div>
-            <p className="text-sm text-muted-foreground">
-              Zahlungen werden in Auswertungen dem nächstgelegenen geplanten Monat
-              zugeordnet (auch über den Jahreswechsel). Leer = tatsächliches
-              Zahlungsdatum.
-            </p>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="security-note">Notiz</Label>
@@ -288,6 +283,10 @@ export function SecuritiesPage() {
   const deleteSecurity = useDeleteSecurity();
   const { error: deleteError, showError, clearError } = useErrorState();
   const [showArchived, setShowArchived] = React.useState(false);
+  const [sectorFilter, setSectorFilter] = React.useState("");
+  const [currencyFilter, setCurrencyFilter] = React.useState("");
+  const [depotFilter, setDepotFilter] = React.useState("");
+  const [qualityFilter, setQualityFilter] = React.useState("");
   const [dialog, setDialog] = React.useState<{
     open: boolean;
     security: Security | null;
@@ -297,7 +296,53 @@ export function SecuritiesPage() {
   });
   const [deleteTarget, setDeleteTarget] = React.useState<Security | null>(null);
 
-  const visible = securities.filter((s) => showArchived || !s.archived_at);
+  // Auswahlwerte aus dem Bestand ableiten: nur was vorkommt, ist waehlbar.
+  // Basis sind stets alle Unternehmen, damit die Auswahl nicht springt, wenn
+  // "Archivierte anzeigen" umgeschaltet wird.
+  const depotGroups = React.useMemo(
+    () => ({
+      active: depots.filter((d) => !d.archived_at),
+      archived: depots.filter((d) => d.archived_at),
+    }),
+    [depots],
+  );
+
+  const options = React.useMemo(() => {
+    const uniqueSorted = (values: (string | null)[]) =>
+      [...new Set(values.filter((v): v is string => Boolean(v)))].sort((a, b) =>
+        a.localeCompare(b, "de"),
+      );
+    return {
+      sectors: uniqueSorted(securities.map((s) => s.sector)),
+      currencies: uniqueSorted(securities.map((s) => s.currency)),
+    };
+  }, [securities]);
+
+  const visible = React.useMemo(
+    () =>
+      securities.filter((s) => {
+        if (!showArchived && s.archived_at) return false;
+        if (sectorFilter && s.sector !== sectorFilter) return false;
+        if (currencyFilter && s.currency !== currencyFilter) return false;
+        if (depotFilter && s.default_depot_id !== depotFilter) return false;
+        if (qualityFilter && s.data_quality !== qualityFilter) return false;
+        return true;
+      }),
+    [securities, showArchived, sectorFilter, currencyFilter, depotFilter, qualityFilter],
+  );
+
+  const hasActiveFilters =
+    sectorFilter !== "" ||
+    currencyFilter !== "" ||
+    depotFilter !== "" ||
+    qualityFilter !== "";
+
+  const resetFilters = () => {
+    setSectorFilter("");
+    setCurrencyFilter("");
+    setDepotFilter("");
+    setQualityFilter("");
+  };
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
@@ -324,6 +369,102 @@ export function SecuritiesPage() {
           </Button>
         </div>
       </div>
+
+      {/* Filterleiste in derselben Optik wie Dividenden und Statistik. Die
+          Auswahlwerte stammen aus dem Bestand — leere Listen entfallen. */}
+      <FilterBar>
+        <FilterField id="sec-sector" label="Branche">
+          <Select
+            id="sec-sector"
+            value={sectorFilter}
+            onChange={(event) => {
+              setSectorFilter(event.target.value);
+            }}
+          >
+            <option value="">Alle Branchen</option>
+            {options.sectors.map((sector) => (
+              <option key={sector} value={sector}>
+                {sector}
+              </option>
+            ))}
+          </Select>
+        </FilterField>
+
+        <FilterField id="sec-currency" label="Währung">
+          <Select
+            id="sec-currency"
+            value={currencyFilter}
+            onChange={(event) => {
+              setCurrencyFilter(event.target.value);
+            }}
+          >
+            <option value="">Alle Währungen</option>
+            {options.currencies.map((currency) => (
+              <option key={currency} value={currency}>
+                {currency}
+              </option>
+            ))}
+          </Select>
+        </FilterField>
+
+        <FilterField id="sec-depot" label="Standard-Depot">
+          <Select
+            id="sec-depot"
+            value={depotFilter}
+            onChange={(event) => {
+              setDepotFilter(event.target.value);
+            }}
+          >
+            <option value="">Alle Depots</option>
+            {depotGroups.active.length > 0 && (
+              <optgroup label="Aktiv">
+                {depotGroups.active.map((depot) => (
+                  <option key={depot.id} value={depot.id}>
+                    {depot.name}
+                  </option>
+                ))}
+              </optgroup>
+            )}
+            {depotGroups.archived.length > 0 && (
+              <optgroup label="Archiviert">
+                {depotGroups.archived.map((depot) => (
+                  <option key={depot.id} value={depot.id}>
+                    {depot.name}
+                  </option>
+                ))}
+              </optgroup>
+            )}
+          </Select>
+        </FilterField>
+
+        <FilterField id="sec-quality" label="Datenqualität">
+          <Select
+            id="sec-quality"
+            value={qualityFilter}
+            onChange={(event) => {
+              setQualityFilter(event.target.value);
+            }}
+          >
+            <option value="">Alle</option>
+            {(Object.keys(DATA_QUALITY_LABELS) as DataQuality[]).map((key) => (
+              <option key={key} value={key}>
+                {DATA_QUALITY_LABELS[key].label}
+              </option>
+            ))}
+          </Select>
+        </FilterField>
+      </FilterBar>
+
+      {hasActiveFilters && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <Button type="button" variant="ghost" size="sm" onClick={resetFilters}>
+            <X /> Filter zurücksetzen
+          </Button>
+          <p className="text-sm text-muted-foreground" aria-live="polite">
+            {visible.length} Unternehmen gefunden.
+          </p>
+        </div>
+      )}
 
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Wird geladen …</p>
