@@ -496,8 +496,6 @@ export function PaymentsPage() {
                   <TableHead>Unternehmen</TableHead>
                   <TableHead>Depot</TableHead>
                   <TableHead className="text-right">Netto</TableHead>
-                  <TableHead>Quelle</TableHead>
-                  <TableHead>Status</TableHead>
                   <TableHead className="text-right">Aktion</TableHead>
                 </TableRow>
               </TableHeader>
@@ -633,14 +631,6 @@ export function PaymentsPage() {
   );
 }
 
-function StatusBadge({ cancelled }: { cancelled: boolean }) {
-  return cancelled ? (
-    <Badge variant="warning">Storniert</Badge>
-  ) : (
-    <Badge variant="positive">Aktiv</Badge>
-  );
-}
-
 interface RowActionProps {
   row: Row;
   selected: boolean;
@@ -694,16 +684,17 @@ function PaymentRow({
         >
           {companyName || "—"}
         </Link>
+        {/* Ohne die Statusspalte waeren stornierte Zeilen sonst nicht mehr von
+            aktiven zu unterscheiden, sobald „Stornierte anzeigen" aktiv ist. */}
+        {cancelled && (
+          <Badge variant="warning" className="ml-2 align-middle">
+            Storniert
+          </Badge>
+        )}
       </TableCell>
       <TableCell className="text-muted-foreground">{depotName || "—"}</TableCell>
       <TableCell className="text-right">
         <AmountText amount={Money.fromString(payment.net_amount, currency)} />
-      </TableCell>
-      <TableCell className="text-muted-foreground text-sm">
-        {sourceLabel(payment.source)}
-      </TableCell>
-      <TableCell>
-        <StatusBadge cancelled={cancelled} />
       </TableCell>
       <TableCell className="text-right">
         <div className="flex justify-end gap-2">
@@ -781,10 +772,11 @@ function PaymentCard({
           <p className="mt-1 text-sm text-muted-foreground">
             {formatDate(effectiveDate)} · {depotName || "—"}
           </p>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <StatusBadge cancelled={cancelled} />
-            <Badge variant="neutral">{sourceLabel(payment.source)}</Badge>
-          </div>
+          {cancelled && (
+            <div className="mt-2">
+              <Badge variant="warning">Storniert</Badge>
+            </div>
+          )}
           <div className="mt-3 flex flex-wrap gap-2">
             {cancelled ? (
               <Button variant="outline" size="sm" onClick={onReactivate}>
