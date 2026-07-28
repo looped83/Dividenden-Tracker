@@ -147,6 +147,23 @@ export function PaymentsPage() {
   );
   const depotById = React.useMemo(() => new Map(depots.map((d) => [d.id, d])), [depots]);
 
+  // Aktive zuerst, Archivierte darunter — als native Gruppen, damit die
+  // Trennung auch auf mobilen Auswahlraedern und im Screenreader ankommt.
+  const securityGroups = React.useMemo(
+    () => ({
+      active: securities.filter((s) => !s.archived_at),
+      archived: securities.filter((s) => s.archived_at),
+    }),
+    [securities],
+  );
+  const depotGroups = React.useMemo(
+    () => ({
+      active: depots.filter((d) => !d.archived_at),
+      archived: depots.filter((d) => d.archived_at),
+    }),
+    [depots],
+  );
+
   const years = React.useMemo(() => {
     const set = new Set<number>();
     for (const payment of allPayments) set.add(yearOf(effectiveOf(payment)));
@@ -331,12 +348,24 @@ export function PaymentsPage() {
             }}
           >
             <option value="">Alle Unternehmen</option>
-            {securities.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-                {s.archived_at ? " (archiviert)" : ""}
-              </option>
-            ))}
+            {securityGroups.active.length > 0 && (
+              <optgroup label="Aktiv">
+                {securityGroups.active.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </optgroup>
+            )}
+            {securityGroups.archived.length > 0 && (
+              <optgroup label="Archiviert">
+                {securityGroups.archived.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </optgroup>
+            )}
           </Select>
         </FilterField>
 
@@ -349,12 +378,24 @@ export function PaymentsPage() {
             }}
           >
             <option value="">Alle Depots</option>
-            {depots.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.name}
-                {d.archived_at ? " (archiviert)" : ""}
-              </option>
-            ))}
+            {depotGroups.active.length > 0 && (
+              <optgroup label="Aktiv">
+                {depotGroups.active.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.name}
+                  </option>
+                ))}
+              </optgroup>
+            )}
+            {depotGroups.archived.length > 0 && (
+              <optgroup label="Archiviert">
+                {depotGroups.archived.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.name}
+                  </option>
+                ))}
+              </optgroup>
+            )}
           </Select>
         </FilterField>
 
