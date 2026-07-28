@@ -194,9 +194,11 @@ denselben Symbolen und Namen wie in der Tabelle (`aria-label`, 44-px-Ziel);
 Filter/Sortierung als Selects. Drei beschriftete Schaltflächen verlängerten die
 Karte um zwei Zeilen, ohne mehr auszusagen.
 
-**Massenaktionsleiste.** Erscheint bei Auswahl, zeigt die Anzahl, bietet „alle
-gefilterten auswählen", Bestätigungsdialoge und eine Ergebniszusammenfassung mit
-ausgewiesenen Teilfehlern.
+**Massenaktionsleiste.** Erscheint bei Auswahl, zeigt die Anzahl (Abbruch als
+Symbol in der Ecke), darunter die Aktionen mit Bestätigungsdialogen und einer
+Ergebniszusammenfassung mit ausgewiesenen Teilfehlern. Sie wirkt nur auf
+sichtbar Angehaktes; „alle gefilterten auswählen" gibt es bewusst nicht mehr —
+vierstellige Auswahlen hinter einem Klick sind kein sichtbarer Auswahlmodus.
 
 **Datenqualitätsansicht.** Übersichtszahlen, Dublettenvergleich (nebeneinander,
 mit Kategorie-Badge) und Auffälligkeitsliste; Aktion „Keine Dublette" wird
