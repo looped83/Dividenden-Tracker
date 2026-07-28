@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { FilterBar, FilterField } from "@/components/ui/filter-bar";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -331,11 +332,13 @@ export function SecuritiesPage() {
     [securities, showArchived, sectorFilter, currencyFilter, depotFilter, qualityFilter],
   );
 
-  const hasActiveFilters =
-    sectorFilter !== "" ||
-    currencyFilter !== "" ||
-    depotFilter !== "" ||
-    qualityFilter !== "";
+  const activeFilterCount = [
+    sectorFilter,
+    currencyFilter,
+    depotFilter,
+    qualityFilter,
+  ].filter((value) => value !== "").length;
+  const hasActiveFilters = activeFilterCount > 0;
 
   const resetFilters = () => {
     setSectorFilter("");
@@ -357,9 +360,9 @@ export function SecuritiesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-semibold tracking-tight">Unternehmen</h1>
-        <div className="flex flex-wrap items-center gap-2">
+      <PageHeader
+        title="Unternehmen"
+        actions={
           <Button
             onClick={() => {
               setDialog({ open: true, security: null });
@@ -367,12 +370,12 @@ export function SecuritiesPage() {
           >
             <Plus /> Neues Unternehmen
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Filterleiste in derselben Optik wie Dividenden und Statistik. Die
           Auswahlwerte stammen aus dem Bestand — leere Listen entfallen. */}
-      <FilterBar>
+      <FilterBar activeCount={activeFilterCount}>
         <FilterField id="sec-sector" label="Branche">
           <Select
             id="sec-sector"
@@ -445,7 +448,7 @@ export function SecuritiesPage() {
               setQualityFilter(event.target.value);
             }}
           >
-            <option value="">Alle</option>
+            <option value="">Alle Datenqualitäten</option>
             {(Object.keys(DATA_QUALITY_LABELS) as DataQuality[]).map((key) => (
               <option key={key} value={key}>
                 {DATA_QUALITY_LABELS[key].label}

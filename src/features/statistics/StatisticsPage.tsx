@@ -4,6 +4,7 @@ import { BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { availableYears, filterPayments } from "@/lib/statistics";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { cn } from "@/lib/utils/cn";
@@ -64,7 +65,7 @@ export function StatisticsPage() {
     [filteredPayments, data.payments, data.securities, data.depots, filter],
   );
 
-  const heading = <h1 className="text-xl font-semibold tracking-tight">Statistik</h1>;
+  const heading = <PageHeader title="Statistik" />;
 
   if (data.isLoading) {
     return (

@@ -1,6 +1,7 @@
 import { NavLink, Outlet } from "react-router";
 import { SETTINGS_TABS } from "@/app/navigation";
 import { cn } from "@/lib/utils/cn";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 /**
  * Rahmen der Einstellungen mit Unterbereichs-Navigation, analog zum
@@ -11,7 +12,7 @@ import { cn } from "@/lib/utils/cn";
 export function SettingsPage() {
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold tracking-tight">Einstellungen</h1>
+      <PageHeader title="Einstellungen" />
 
       <nav aria-label="Einstellungsbereiche" className="border-b border-border">
         <ul className="-mb-px flex flex-wrap gap-1">

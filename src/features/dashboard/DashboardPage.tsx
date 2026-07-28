@@ -4,6 +4,7 @@ import { LayoutDashboard, Upload, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { useSecurities } from "@/features/securities/hooks";
 import { useDepots } from "@/features/depots/hooks";
 import {
@@ -102,24 +103,20 @@ export function DashboardPage() {
     [payments, selection],
   );
 
-  // Kopfbereich bewusst identisch zur Dividendenliste (gleiche Abstaende,
-  // gleicher Primaerbutton), damit beide Seiten gleich wirken.
+  // Das Erfassen liegt in der Navigation (Sidebar bzw. Bottom-Nav) und damit
+  // auf jeder Seite an derselben Stelle — die Kopfzeile traegt hier nur den
+  // Zeitraum, der ausschliesslich diese Seite betrifft.
   const heading = (
-    <div className="flex flex-wrap items-center justify-between gap-2">
-      <h1 className="text-xl font-semibold tracking-tight">Übersicht</h1>
-      <div className="flex flex-wrap items-center gap-2">
+    <PageHeader
+      title="Übersicht"
+      actions={
         <YearSelector
           selection={selection}
           onSelect={setSelection}
           availableYears={years}
         />
-        <Button asChild>
-          <Link to="/eingaenge/neu">
-            <Plus /> Neue Dividende
-          </Link>
-        </Button>
-      </div>
-    </div>
+      }
+    />
   );
 
   if (paymentsQuery.isLoading) {

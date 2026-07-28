@@ -1,5 +1,7 @@
-import { NavLink } from "react-router";
+import { Link, NavLink } from "react-router";
+import { Plus } from "lucide-react";
 import { PRIMARY_NAV_ITEMS } from "@/app/navigation";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
 
 /**
@@ -14,6 +16,17 @@ export function Sidebar() {
     <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-card lg:flex">
       <div className="flex h-16 items-center px-6">
         <span className="text-base font-semibold">Dividend Tracker</span>
+      </div>
+      {/* Erfassen ist die haeufigste Aktion und steht deshalb — wie die
+          hervorgehobene Schaltflaeche der Bottom-Navigation auf dem iPhone — in
+          der Navigation statt im Kopf einzelner Seiten: eine Stelle, ueberall
+          erreichbar. */}
+      <div className="px-3 pb-3">
+        <Button asChild className="w-full">
+          <Link to="/eingaenge/neu">
+            <Plus aria-hidden /> Neue Dividende
+          </Link>
+        </Button>
       </div>
       <nav aria-label="Hauptnavigation" className="flex-1 space-y-1 px-3">
         {PRIMARY_NAV_ITEMS.map((item) => (
@@ -47,6 +60,16 @@ export function Sidebar() {
 export function CompactSidebar() {
   return (
     <aside className="hidden w-16 shrink-0 flex-col items-center border-r border-border bg-card py-4 md:flex lg:hidden">
+      {/* Gegenstueck zur hervorgehobenen Erfassen-Aktion der Bottom-Navigation. */}
+      <Button asChild size="icon" className="mb-3 rounded-full">
+        <Link
+          to="/eingaenge/neu"
+          title="Neue Dividende"
+          aria-label="Neue Dividende erfassen"
+        >
+          <Plus className="size-5" aria-hidden />
+        </Link>
+      </Button>
       <nav
         aria-label="Hauptnavigation"
         className="flex flex-1 flex-col items-center gap-1"
