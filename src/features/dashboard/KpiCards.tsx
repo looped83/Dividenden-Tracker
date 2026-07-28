@@ -162,7 +162,6 @@ export function KpiCards({ payments, selection, today }: KpiCardsProps) {
       <KpiCard
         label={`Dividenden ${selectionLabel}`}
         value={<AmountText amount={cards.selectedAgg.net} />}
-        caption={formatCount(cards.selectedAgg.count, "Zahlung", "Zahlungen")}
         comparison={cards.selectedComparison}
         to={paymentsListHref({ year: selection })}
         drillLabel={`Zahlungen ${selectionLabel} anzeigen`}
@@ -172,7 +171,7 @@ export function KpiCards({ payments, selection, today }: KpiCardsProps) {
       <KpiCard
         label={`Aktueller Monat (${currentMonthLabel})`}
         value={<AmountText amount={cards.monthAgg.net} />}
-        caption={`${formatCount(cards.monthAgg.count, "Zahlung", "Zahlungen")} · bis ${String(today.day)}.`}
+        caption={`bis zum ${String(today.day)}.`}
         comparison={cards.monthComparison}
         to={paymentsListHref({ year: today.year, month: today.month })}
         drillLabel="Zahlungen des aktuellen Monats anzeigen"
@@ -182,7 +181,6 @@ export function KpiCards({ payments, selection, today }: KpiCardsProps) {
       <KpiCard
         label="Historisch erhaltene Dividenden"
         value={<AmountText amount={cards.history.net} />}
-        caption={formatCount(cards.history.count, "Zahlung", "Zahlungen")}
         footnote={
           cards.history.firstPayDate && cards.history.lastPayDate
             ? `${formatIsoDate(cards.history.firstPayDate)} – ${formatIsoDate(cards.history.lastPayDate)}`
