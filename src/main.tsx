@@ -14,6 +14,17 @@ if (!rootElement) {
   throw new Error("Root-Element #root wurde nicht gefunden.");
 }
 
+// Service Worker nur im gebauten Stand: In der Entwicklung wuerde er die
+// Modulauslieferung von Vite ueberlagern. Er speichert ausschliesslich die
+// App-Huelle, keine Daten (siehe public/sw.js).
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    void navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`, {
+      scope: import.meta.env.BASE_URL,
+    });
+  });
+}
+
 createRoot(rootElement).render(
   <StrictMode>
     <ThemeProvider>

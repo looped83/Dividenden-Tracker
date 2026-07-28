@@ -281,20 +281,30 @@ Details fachlich in IMPORT_SPEC.md; architektonisch:
 
 ## 6. PWA und Offline-Verhalten
 
-- `vite-plugin-pwa` mit Workbox: Precaching der App-Shell (HTML/JS/CSS/Fonts/Icons),
-  `registerType: 'prompt'` — Updates werden angezeigt und vom Nutzer bestätigt (keine stillen
-  Versionswechsel bei einer Finanz-App).
-- Manifest: Name „Dividend Tracker", `display: standalone`, Theme-Farben hell/dunkel, maskierbare
-  Icons, iOS-Meta-Tags (Splash, Statusbar) für Add-to-Home-Screen auf iPhone/iPad.
-- Laufzeit-Caching: **keine** Workbox-Runtime-Caches für Supabase-API-Antworten (Auth-gebundene
-  Daten gehören nicht in den SW-Cache). Offline-Lesen läuft über den TanStack-Query-Persist-
-  Cache in IndexedDB, der an die Nutzersession gebunden ist und bei Logout gelöscht wird.
-- Offline-Zustand: klarer Banner „Offline — Daten evtl. nicht aktuell"; Schreibaktionen sind
-  deaktiviert mit Erklärung (D-011).
-- iOS-Besonderheiten: Speicher kann vom System geräumt werden → unkritisch, da nur Cache;
-  Session-Persistenz über `localStorage` (supabase-js Standard) mit PKCE.
+**Umgesetzt:**
 
----
+- `public/manifest.webmanifest` (Name, `display: standalone`, Theme-Farbe, Icons 192/512 plus
+  maskierbares Icon) und die iOS-Angaben in `index.html`, die Safari statt des Manifests
+  auswertet (`apple-touch-icon`, `apple-mobile-web-app-*`). Damit landet die App mit Icon und
+  eigenem Fenster auf dem Home-Bildschirm.
+- Eigener Service Worker (`public/sw.js`, rund 70 Zeilen) **ohne** zusätzliche Abhängigkeit —
+  `vite-plugin-pwa` samt Workbox wäre für diesen Umfang unverhältnismäßig. Registriert wird er
+  nur im Produktionsbuild (`import.meta.env.PROD`), mit `BASE_URL` als Geltungsbereich, damit er
+  unter dem Pages-Unterpfad ebenso greift.
+- Strategien: Navigation **Netz zuerst, Cache als Rückfall** (neue Fassungen kommen sofort an,
+  offline erscheint trotzdem die Hülle); statische Dateien **Cache zuerst** — ihre Namen tragen
+  einen Hash, veraltete Antworten kann es also nicht geben. Versionierter Cache-Name, alte
+  Bestände werden beim Aktivieren entfernt.
+- **Nichts von Supabase wird zwischengespeichert:** Anfragen an eine fremde Herkunft rührt der
+  Service Worker nicht an (SECURITY_MODEL.md §7).
+
+**Bewusst nicht umgesetzt:**
+
+- Kein Offline-Lesen von Finanzdaten (kein IndexedDB-Persist von TanStack Query). Offline zeigt
+  die App ihre Hülle und die Fehlerzustände der Abfragen — kein stiller Blick auf veraltete
+  Beträge.
+- Kein Offline-Banner und keine Aktualisierungsaufforderung. Beides gehört zu einem
+  ausgebauten Offline-Modus und wäre ohne ihn Zierde.
 
 ## 7. Umgebungen, Konfiguration, Migrationen
 

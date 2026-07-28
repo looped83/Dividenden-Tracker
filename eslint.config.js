@@ -36,7 +36,12 @@ const moneyBanRules = {
 
 export default tseslint.config(
   {
-    ignores: ["dist", "coverage", "node_modules", "**/*.config.js"],
+    // `public/` enthaelt Dateien, die unveraendert ausgeliefert werden und
+    // ausserhalb des TypeScript-Projekts stehen (Service Worker im eigenen
+    // Gueltigkeitsbereich). Sie werden formatiert, aber nicht typgestuetzt
+    // geprueft — die typisierten Regeln brauchen ein Projekt, das es hier
+    // nicht gibt.
+    ignores: ["dist", "coverage", "node_modules", "public", "**/*.config.js"],
   },
   js.configs.recommended,
   ...tseslint.configs.strictTypeChecked,

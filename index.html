@@ -13,6 +13,14 @@
       rel="icon"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%23274972'/%3E%3Ctext x='12' y='17' font-size='13' font-family='sans-serif' font-weight='700' fill='%23ffffff' text-anchor='middle'%3E€%3C/text%3E%3C/svg%3E"
     />
+    <!-- Installierbar auf dem Home-Bildschirm (PWA): Manifest, Icons und die
+         Angaben, die iOS statt des Manifests auswertet. -->
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Dividenden" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>Dividend Tracker</title>
   </head>
   <body>
