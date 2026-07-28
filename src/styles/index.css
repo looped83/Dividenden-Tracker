@@ -162,6 +162,22 @@
   }
 }
 
+/* iOS Safari zoomt beim Fokus in ein Formularfeld, dessen Schrift kleiner als
+   16px ist — die Seite bleibt danach vergroessert zurueck. Auf Zeigegeraeten
+   ohne feine Steuerung (Touch) tragen Eingabefelder deshalb 16px; auf Maus-
+   Geraeten bleibt die kompaktere Groesse des Design-Systems (14px).
+
+   Bewusst ausserhalb aller Cascade-Layer: Tailwind-Utilities (`text-sm`) liegen
+   in der utilities-Layer, ungeschichtete Regeln stehen in der Kaskade darueber
+   und gewinnen ohne !important. */
+@media (pointer: coarse) {
+  input:not([type="checkbox"], [type="radio"]),
+  select,
+  textarea {
+    font-size: 1rem;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

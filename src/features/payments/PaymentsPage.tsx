@@ -383,18 +383,11 @@ export function PaymentsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-semibold tracking-tight">Dividenden</h1>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" asChild>
-            <Link to="/eingaenge/datenqualitaet">
-              <ShieldCheck /> Datenqualität
-            </Link>
-          </Button>
-          <Button asChild>
-            <Link to="/eingaenge/neu" state={{ from: listUrl }}>
-              <Plus /> Neue Dividende
-            </Link>
-          </Button>
-        </div>
+        <Button asChild>
+          <Link to="/eingaenge/neu" state={{ from: listUrl }}>
+            <Plus /> Neue Dividende
+          </Link>
+        </Button>
       </div>
 
       {/* Filterleiste in der Optik des Statistikbereichs (geteiltes Primitive).
@@ -693,21 +686,29 @@ export function PaymentsPage() {
         </div>
       )}
 
-      {/* Am Seitenende: eine selten gebrauchte Umschaltung, die den oberen
-          Bereich nicht belasten soll. Stornierte sind sonst nirgends
-          auffindbar — Reaktivieren geht nur aus dieser Liste oder per
+      {/* Seltener gebrauchte Nebenaktionen am Seitenende, abgesetzt durch eine
+          Trennlinie (gleiches Muster wie bei den Unternehmen): oben bleibt die
+          Primaeraktion, die Liste bestimmt den Rest. Stornierte sind sonst
+          nirgends auffindbar — Reaktivieren geht nur aus dieser Liste oder per
           Direktlink. */}
-      <label className="flex min-h-11 w-fit items-center gap-2 text-sm text-muted-foreground">
-        <input
-          type="checkbox"
-          className="size-4 pointer-coarse:size-6"
-          checked={status === "all"}
-          onChange={(event) => {
-            updateParams({ status: event.target.checked ? "all" : null });
-          }}
-        />
-        Stornierte anzeigen
-      </label>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border pt-4">
+        <label className="flex min-h-11 items-center gap-2 text-sm text-muted-foreground">
+          <input
+            type="checkbox"
+            className="size-4 pointer-coarse:size-6"
+            checked={status === "all"}
+            onChange={(event) => {
+              updateParams({ status: event.target.checked ? "all" : null });
+            }}
+          />
+          Stornierte anzeigen
+        </label>
+        <Button variant="outline" asChild>
+          <Link to="/eingaenge/datenqualitaet">
+            <ShieldCheck /> Datenqualität
+          </Link>
+        </Button>
+      </div>
 
       <StornoDialog
         open={stornoTarget !== null}
