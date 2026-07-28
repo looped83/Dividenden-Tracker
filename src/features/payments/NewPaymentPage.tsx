@@ -1,13 +1,13 @@
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { useLocation, useNavigate, useParams } from "react-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils/cn";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { toGermanDecimalString } from "@/lib/money";
 import { useDepots } from "@/features/depots/hooks";
@@ -55,6 +55,7 @@ export function NewPaymentPage() {
     register,
     handleSubmit,
     reset,
+    control,
     getValues,
     setValue,
     formState: { errors, isSubmitting },
@@ -82,9 +83,26 @@ export function NewPaymentPage() {
   const activeSecurities = securities.filter((security) => !security.archived_at);
   const activeDepots = depots.filter((depot) => !depot.archived_at);
 
-  const handleSecurityChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+  // Die Combobox liegt ausserhalb der register()-Anbindung, deshalb wird der
+  // Wert beobachtet und per setValue gesetzt. shouldValidate raeumt eine
+  // bereits angezeigte Fehlermeldung sofort wieder ab.
+  const watchedSecurityId = useWatch({ control, name: "securityId" });
+  const securityOptions = React.useMemo(
+    () =>
+      activeSecurities.map((security) => ({
+        value: security.id,
+        label: security.name,
+        hint: security.ticker ?? undefined,
+      })),
+    [activeSecurities],
+  );
+
+  const selectSecurity = (securityId: string) => {
+    setValue("securityId", securityId, { shouldValidate: true, shouldDirty: true });
+    // Beim Neuanlegen das Standard-Depot des Unternehmens vorbelegen, solange
+    // noch keines gewaehlt ist.
     if (isEditMode || getValues("depotId")) return;
-    const security = securities.find((s) => s.id === event.target.value);
+    const security = securities.find((s) => s.id === securityId);
     if (security?.default_depot_id) {
       setValue("depotId", security.default_depot_id);
     }
@@ -190,64 +208,35 @@ export function NewPaymentPage() {
       )}
 
       <form onSubmit={(event) => void onSubmit(event)} className="space-y-5" noValidate>
-        {/* Depotauswahl als Kacheln: ein Tipp statt Auswahlliste oeffnen und
-            scrollen. Native Radios darunter, damit Tastaturbedienung (Pfeiltasten
-            innerhalb der Gruppe) und Screenreader-Ausgabe unveraendert bleiben.
-            Das sr-only-Input liegt in einem `relative` Label, sonst wuerde es als
-            absolut positioniertes Element den Container sprengen. */}
-        <fieldset className="space-y-1.5">
-          <legend className="mb-1.5 text-sm font-medium leading-none">Depot</legend>
-          {activeDepots.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Noch kein Depot vorhanden — bitte zuerst unter „Depots" eines anlegen.
-            </p>
-          ) : (
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {activeDepots.map((depot) => (
-                <label
-                  key={depot.id}
-                  className={cn(
-                    "relative flex min-h-16 cursor-pointer flex-col justify-center gap-0.5",
-                    "rounded-md border border-input bg-background px-3 py-2",
-                    "has-[:checked]:border-primary has-[:checked]:bg-primary/10",
-                    "has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
-                  )}
-                >
-                  <input
-                    type="radio"
-                    value={depot.id}
-                    className="sr-only"
-                    {...register("depotId")}
-                  />
-                  <span className="truncate text-sm font-medium">{depot.name}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {depot.base_currency}
-                  </span>
-                </label>
-              ))}
-            </div>
-          )}
-          {errors.depotId && (
-            <p className="text-sm text-negative">{errors.depotId.message}</p>
-          )}
-        </fieldset>
-
+        {/* Unternehmen zuerst: die Auswahl belegt das Depot aus dem
+            Standard-Depot des Unternehmens vor (siehe selectSecurity). */}
         <div className="space-y-1.5">
           <Label htmlFor="payment-security">Unternehmen</Label>
-          <Select
+          <Combobox
             id="payment-security"
-            {...register("securityId", { onChange: handleSecurityChange })}
-          >
+            options={securityOptions}
+            value={watchedSecurityId}
+            onChange={selectSecurity}
+            placeholder="Name oder Ticker suchen …"
+            emptyMessage="Kein Unternehmen gefunden"
+          />
+          {errors.securityId && (
+            <p className="text-sm text-negative">{errors.securityId.message}</p>
+          )}
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="payment-depot">Depot</Label>
+          <Select id="payment-depot" {...register("depotId")}>
             <option value="">Bitte wählen</option>
-            {activeSecurities.map((security) => (
-              <option key={security.id} value={security.id}>
-                {security.name}
-                {security.ticker ? ` (${security.ticker})` : ""}
+            {activeDepots.map((depot) => (
+              <option key={depot.id} value={depot.id}>
+                {depot.name} ({depot.base_currency})
               </option>
             ))}
           </Select>
-          {errors.securityId && (
-            <p className="text-sm text-negative">{errors.securityId.message}</p>
+          {errors.depotId && (
+            <p className="text-sm text-negative">{errors.depotId.message}</p>
           )}
         </div>
 
