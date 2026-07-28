@@ -4,6 +4,7 @@ import {
   ArrowDown,
   ArrowUp,
   Ban,
+  Calendar,
   Pencil,
   RotateCcw,
   ShieldCheck,
@@ -891,8 +892,9 @@ function PaymentCard({
             {/* Ohne Depot: Wer die Liste nach Depot filtert oder nur eines
                 fuehrt, gewinnt daraus nichts. Die Detailansicht nennt es. */}
             <div className="flex min-w-0 items-center gap-2">
-              <p className="truncate text-sm text-muted-foreground">
-                {formatDate(effectiveDate)}
+              <p className="flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground">
+                <Calendar className="size-3.5 shrink-0" aria-hidden />
+                <span className="truncate">{formatDate(effectiveDate)}</span>
               </p>
               {cancelled && (
                 <Badge variant="warning" className="shrink-0">
