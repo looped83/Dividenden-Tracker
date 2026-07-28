@@ -112,15 +112,16 @@ export function BulkBar({ selectedRows, onClear }: BulkBarProps) {
     <div className="rounded-lg border border-primary/40 bg-primary/5 p-3">
       {/* Anzahl und Abbruch bilden die Kopfzeile: Das Schliessen gehoert in die
           Ecke, nicht ans Ende einer Reihe von Aktionen, wo es auf schmalen
-          Geraeten mal hier, mal dort landete. */}
-      <div className="flex items-start justify-between gap-2">
+          Geraeten mal hier, mal dort landete. Beide mittig in derselben Zeile —
+          die Schaltflaeche ist hoeher als der Text und stuende sonst tiefer. */}
+      <div className="flex items-center justify-between gap-2">
         <span className="text-sm font-medium" aria-live="polite">
           {selectedRows.length} ausgewählt
         </span>
         <Button
           variant="ghost"
           size="icon"
-          className="-mr-1.5 -mt-1.5 shrink-0"
+          className="-mr-1.5 shrink-0"
           aria-label="Auswahl aufheben"
           onClick={onClear}
         >

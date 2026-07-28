@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { AmountText } from "@/components/money/AmountText";
+import { DateText } from "@/components/DateText";
 import { Money, toCurrencyCode } from "@/lib/money";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { useDepots } from "@/features/depots/hooks";
@@ -310,7 +311,7 @@ function DuplicateCard({
             {[pair.a, pair.b].map((p) => (
               <div key={p.id} className="rounded-md border border-border p-3 text-sm">
                 <div className="flex items-center justify-between">
-                  <span className="font-medium">{formatDate(p.pay_date)}</span>
+                  <DateText className="font-medium">{formatDate(p.pay_date)}</DateText>
                   <AmountText
                     amount={Money.fromString(p.net_amount, currencyOf(p.depot_id))}
                   />

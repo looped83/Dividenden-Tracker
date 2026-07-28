@@ -2,6 +2,7 @@ import { Link } from "react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AmountText } from "@/components/money/AmountText";
+import { DateText } from "@/components/DateText";
 import { recentPayments, type AnalyticsPayment } from "@/lib/statistics";
 import { formatIsoDate, type EntityInfo } from "./format";
 
@@ -48,15 +49,17 @@ export function RecentPayments({ payments, securities, depots }: RecentPaymentsP
                           </Badge>
                         )}
                       </p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {formatIsoDate(payment.payDate)}
-                        {payment.payDate !== payment.actualPayDate && (
-                          <span title="Tatsächliches Zahlungsdatum">
-                            {" "}
-                            (tatsächlich {formatIsoDate(payment.actualPayDate)})
-                          </span>
-                        )}{" "}
-                        · {depot?.name ?? "Unbekannt"}
+                      <p className="flex min-w-0 items-center gap-1 truncate text-xs text-muted-foreground">
+                        <DateText className="shrink-0">
+                          {formatIsoDate(payment.payDate)}
+                          {payment.payDate !== payment.actualPayDate && (
+                            <span title="Tatsächliches Zahlungsdatum">
+                              {" "}
+                              (tatsächlich {formatIsoDate(payment.actualPayDate)})
+                            </span>
+                          )}
+                        </DateText>
+                        <span className="truncate">· {depot?.name ?? "Unbekannt"}</span>
                       </p>
                     </div>
                     <AmountText amount={payment.netAmount} className="shrink-0" />

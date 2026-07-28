@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { AmountText } from "@/components/money/AmountText";
+import { DateText } from "@/components/DateText";
 import { AuditTrail } from "@/components/audit/AuditTrail";
 import { Money, toCurrencyCode, toGermanDecimalString } from "@/lib/money";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
@@ -157,7 +158,9 @@ export function PaymentDetailPage() {
           <h1 className="text-xl font-semibold tracking-tight">
             {security?.name ?? "Dividendeneingang"}
           </h1>
-          <p className="text-sm text-muted-foreground">{formatDate(payment.pay_date)}</p>
+          <DateText className="text-sm text-muted-foreground">
+            {formatDate(payment.pay_date)}
+          </DateText>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {cancelled ? (
