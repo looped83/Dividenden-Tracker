@@ -22,12 +22,12 @@ function entry(
 }
 
 describe("compareToPreviousYear", () => {
-  it("vergleicht die n-te Zahlung eines Jahres mit der n-ten des Vorjahres", () => {
+  it("vergleicht mit der Zahlung desselben Monats im Vorjahr", () => {
     const result = compareToPreviousYear([
       entry("p1", "2025-03-10", "50.00"),
       entry("p2", "2025-09-10", "50.00"),
-      entry("p3", "2026-03-10", "60.00"),
-      entry("p4", "2026-09-10", "40.00"),
+      entry("p3", "2026-03-12", "60.00"),
+      entry("p4", "2026-09-08", "40.00"),
     ]);
 
     expect(result.get("p3")?.direction).toBe("up");
@@ -39,10 +39,28 @@ describe("compareToPreviousYear", () => {
     expect(result.get("p4")?.difference.toStringValue()).toBe("-10.00");
   });
 
+  it("laesst eine ausgefallene Zahlung die uebrigen Vergleiche nicht verschieben", () => {
+    // Kernfall: 2026 faellt das Maerzquartal aus. Ueber die Reihenfolge im Jahr
+    // waeren Juni/September/Dezember allesamt falsch zugeordnet.
+    const result = compareToPreviousYear([
+      entry("a1", "2025-03-10", "10.00"),
+      entry("a2", "2025-06-10", "20.00"),
+      entry("a3", "2025-09-10", "30.00"),
+      entry("a4", "2025-12-10", "40.00"),
+      entry("b2", "2026-06-10", "22.00"),
+      entry("b3", "2026-09-10", "33.00"),
+      entry("b4", "2026-12-10", "44.00"),
+    ]);
+
+    expect(result.get("b2")?.previousAmount.toStringValue()).toBe("20.00");
+    expect(result.get("b3")?.previousAmount.toStringValue()).toBe("30.00");
+    expect(result.get("b4")?.previousAmount.toStringValue()).toBe("40.00");
+  });
+
   it("meldet centgenaue Gleichheit als unveraendert", () => {
     const result = compareToPreviousYear([
       entry("p1", "2025-05-02", "73.63"),
-      entry("p2", "2026-05-02", "73.63"),
+      entry("p2", "2026-05-20", "73.63"),
     ]);
     expect(result.get("p2")?.direction).toBe("same");
   });
@@ -55,13 +73,15 @@ describe("compareToPreviousYear", () => {
     expect(result.get("p2")?.direction).toBe("up");
   });
 
-  it("vergleicht unabhaengig vom Zahlungsmonat — die Reihenfolge zaehlt", () => {
-    // Jahreszahler mit verschobenem Termin: April im einen, Mai im anderen Jahr.
+  it("vergleicht nicht ueber Monatsgrenzen hinweg", () => {
+    // Ohne gepflegten Ausschuettungsplan bleibt das echte Datum massgeblich;
+    // ein verschobener Termin findet dann kein Gegenstueck. Lieber kein Pfeil
+    // als ein geratener.
     const result = compareToPreviousYear([
       entry("p1", "2025-04-28", "100.00"),
       entry("p2", "2026-05-06", "110.00"),
     ]);
-    expect(result.get("p2")?.direction).toBe("up");
+    expect(result.has("p2")).toBe(false);
   });
 
   it("vergleicht depotuebergreifend, aber nur innerhalb eines Unternehmens", () => {
@@ -76,19 +96,17 @@ describe("compareToPreviousYear", () => {
     expect(result.get("q2")?.previousAmount.toStringValue()).toBe("10.00");
   });
 
-  it("laesst Zahlungen ohne Gegenstueck im Vorjahr unbewertet", () => {
+  it("bewertet nichts, wenn im Vorjahresmonat nichts steht", () => {
     const result = compareToPreviousYear([
       entry("p1", "2025-03-10", "50.00"),
       entry("p2", "2026-03-10", "60.00"),
-      // Zweite Zahlung 2026, im Vorjahr gab es nur eine.
       entry("p3", "2026-09-10", "20.00"),
-      // Erstes Jahr ueberhaupt.
       entry("x1", "2026-02-01", "12.00", { securityId: "neu" }),
     ]);
     expect(result.has("p2")).toBe(true);
     expect(result.has("p3")).toBe(false);
     expect(result.has("x1")).toBe(false);
-    // Auch das Vorjahr selbst hat keinen Bezug.
+    // Das Vorjahr selbst hat keinen Bezug.
     expect(result.has("p1")).toBe(false);
   });
 
@@ -100,14 +118,34 @@ describe("compareToPreviousYear", () => {
     expect(result.has("p2")).toBe(false);
   });
 
+  it("bewertet nichts, wenn ein Monat mehrere Zahlungen enthaelt", () => {
+    const result = compareToPreviousYear([
+      entry("p1", "2025-03-10", "50.00"),
+      // Nachzahlung im selben Monat: welche zu welcher gehoert, ist offen.
+      entry("p2", "2026-03-10", "60.00"),
+      entry("p3", "2026-03-24", "5.00"),
+    ]);
+    expect(result.has("p2")).toBe(false);
+    expect(result.has("p3")).toBe(false);
+  });
+
+  it("bewertet nichts, wenn der Vorjahresmonat mehrere Zahlungen enthaelt", () => {
+    const result = compareToPreviousYear([
+      entry("p1", "2025-03-10", "50.00"),
+      entry("p2", "2025-03-24", "5.00"),
+      entry("p3", "2026-03-10", "60.00"),
+    ]);
+    expect(result.has("p3")).toBe(false);
+  });
+
   it("uebergeht stornierte Zahlungen als Bezug und als Ziel", () => {
     const result = compareToPreviousYear([
-      entry("storniert", "2025-03-10", "999.00", { cancelled: true }),
+      // Storniert: macht den Vorjahresmonat nicht mehrdeutig.
+      entry("storniert", "2025-03-05", "999.00", { cancelled: true }),
       entry("p1", "2025-03-11", "50.00"),
       entry("p2", "2026-03-10", "60.00"),
-      entry("p3", "2026-03-11", "70.00", { cancelled: true }),
+      entry("p3", "2026-06-11", "70.00", { cancelled: true }),
     ]);
-    // p2 ist die erste aktive Zahlung 2026 und trifft auf die erste aktive 2025.
     expect(result.get("p2")?.previousAmount.toStringValue()).toBe("50.00");
     expect(result.has("p3")).toBe(false);
   });
@@ -120,17 +158,5 @@ describe("compareToPreviousYear", () => {
       entry("p2", "2026-03-10", "60.00"),
     ]);
     expect(result.has("p2")).toBe(false);
-  });
-
-  it("ordnet Zahlungen desselben Tages stabil nach Kennung", () => {
-    const result = compareToPreviousYear([
-      entry("b", "2025-03-10", "20.00"),
-      entry("a", "2025-03-10", "10.00"),
-      entry("d", "2026-03-10", "30.00"),
-      entry("c", "2026-03-10", "15.00"),
-    ]);
-    // Sortiert: 2025 [a, b], 2026 [c, d] → c↔a, d↔b.
-    expect(result.get("c")?.previousAmount.toStringValue()).toBe("10.00");
-    expect(result.get("d")?.previousAmount.toStringValue()).toBe("20.00");
   });
 });

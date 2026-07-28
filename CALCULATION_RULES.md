@@ -98,7 +98,7 @@ ergibt denselben Fingerprint erst auf Stufe 3, nicht notwendig auf Stufe 2).
 | Rundung | R-3/R-4: Summen exakt, Durchschnitte/Prozente erst zur Anzeige |
 | Nullwerte | Monate/Jahre ohne Zahlungen zählen als 0 (werden in Zeitreihen ausgewiesen, nicht ausgelassen); Division durch 0 → Kennzahl „—" (nicht 0, nicht ∞) |
 | Negative Korrekturen | Fließen vorzeichenrichtig ein; eine Monats-/Jahressumme kann negativ sein und wird so angezeigt |
-| Teiljahre | Kein Hochrechnen. YTD-Werte sind als „bis TT.MM." gekennzeichnet; Durchschnitte über Monate zählen nur Monate ≤ aktueller Monat (laufendes Jahr) bzw. alle 12 (abgeschlossene Jahre) |
+| Teiljahre | Kein Hochrechnen. Laufende Zeiträume sind über die Beschriftung der Kennzahl erkennbar (z. B. „Aktueller Monat (Juli 2026)", „Dividenden 2026"); Durchschnitte über Monate zählen nur Monate ≤ aktueller Monat (laufendes Jahr) bzw. alle 12 (abgeschlossene Jahre) |
 | Fehlende Vorjahresdaten | Vergleichswert „—", prozentuale Veränderung „—" (nie 0 % oder ∞); Hinweis „keine Vorjahresdaten" |
 
 ### Einzeldefinitionen
@@ -190,6 +190,11 @@ ausschließlich diese Schicht auf; keine Aggregation in React-Komponenten.
   Vorjahresmonat weniger Tage, wird auf den letzten gültigen Kalendertag gekappt.
 
 ### 9.4 Prozentuale Veränderung (§6.4)
+
+Die Vergleichszeile der Kennzahlkacheln nennt absolute und prozentuale Veränderung und ist mit
+„ggü. Vorjahr" beschriftet — worauf sich das Vorjahr bezieht, sagt die Beschriftung der Kachel
+(Jahr bzw. aktueller Monat); der vollständige Satz steht im Titel der Zeile („Gegenüber dem
+gleichen Zeitraum des Vorjahres"). Die Kurzform hält die Zeile auf dem iPhone einzeilig.
 
 `(aktuell − vergleich) ÷ vergleich × 100`, nur wenn `vergleich > 0`. Sonst:
 
@@ -350,26 +355,36 @@ und bleiben beim Drill-down unberücksichtigt.
 
 ## 11.10 Vorjahresvergleich je Zahlung (Dividendenliste)
 
-Jede Zahlung in `/eingaenge` trägt einen Indikator, wie sie zur Zahlung **gleicher Reihenfolge
-im Vorjahr** steht (implementiert in `features/payments/yearOverYear.ts`):
+Jede Zahlung in `/eingaenge` trägt einen Indikator, wie sie zur Zahlung desselben
+**effektiven Ausschüttungsmonats** im Vorjahr steht (implementiert in
+`features/payments/yearOverYear.ts`):
 
-- **Bezug:** je Unternehmen, **depotübergreifend**; innerhalb eines Kalenderjahres des
-  *effektiven* Zahlungsdatums (§10) werden die Zahlungen aufsteigend sortiert (bei gleichem
-  Datum nach `id`, damit die Reihenfolge stabil ist) und durchnummeriert. Die n-te Zahlung
-  eines Jahres wird mit der n-ten des unmittelbaren Vorjahres verglichen. Der Kalendermonat
-  ist bewusst **kein** Kriterium: Zahlungstermine verschieben sich (Hauptversammlung,
-  Feiertage, Wertstellung).
+- **Bezug:** je Unternehmen, **depotübergreifend**. Verglichen wird die Zahlung im Monat
+  `(Jahr − 1, gleicher Monat)` des effektiven Zahlungsdatums (§10). Der effektive Monat ist
+  kein bloßer Kalendermonat: Bei hinterlegtem Ausschüttungsplan zählt die Zahlung zu ihrem
+  *geplanten* Monat, auch über den Jahreswechsel — der Monat ist damit der Ausschüttungs-Slot
+  und über Jahre stabil.
+- **Warum nicht die Reihenfolge im Jahr:** Fällt eine Zahlung aus, verschöbe sie jeden
+  folgenden Vergleich des Jahres (aus einem ausgesetzten Märzquartal würden drei falsche
+  Vergleiche). Über den Monat bleibt der Fehler an der einen Zahlung.
 - **Vergleichswert:** `net_amount` beider Zahlungen — der Betrag, den die Liste zeigt. Kein
   Vergleich je Aktie: `quantity`/`amount_per_share` sind bei manuell erfassten Eingängen leer,
   ein Zukauf hebt den Betrag also ohne Dividendenerhöhung.
 - **Bewertung:** größer → „mehr", kleiner → „weniger", **centgenau gleich** → „unverändert".
   Keine Toleranzschwelle.
-- **Kein Indikator**, wenn es kein Gegenstück gibt: erstes Jahr, Lücke im Vorjahr (2024 → 2026
-  wird nicht verglichen), weniger Zahlungen im Vorjahr, oder unterschiedliche Währungen der
-  beteiligten Depots (ohne Kurs zum Zahlungszeitpunkt wäre jeder Vergleich geraten, R-2).
-- **Stornierte Zahlungen** (§9.1) zählen weder als Bezug noch erhalten sie einen Indikator.
+- **Kein Indikator**, wenn keine eindeutige Zuordnung möglich ist:
+  - im Vorjahresmonat steht keine Zahlung (erstes Jahr, neue Position, ausgesetzte Dividende,
+    oder verschobener Termin ohne gepflegten Ausschüttungsplan),
+  - auf einer der beiden Seiten fallen mehrere Zahlungen in denselben Monat (Nachzahlung,
+    Sonderdividende — §10.3),
+  - die Währungen der beteiligten Depots unterscheiden sich (ohne Kurs zum Zahlungszeitpunkt
+    wäre jeder Vergleich geraten, R-2).
+- **Stornierte Zahlungen** (§9.1) zählen weder als Bezug noch erhalten sie einen Indikator;
+  sie machen einen Monat auch nicht mehrdeutig.
 - Filter der Liste (Depot, Jahr, Monat) verändern den Bezug **nicht** — gerechnet wird stets
   über den gesamten aktiven Bestand.
+- Der Indikator nennt in Titel und Screenreader-Text Differenz, Betrag **und Datum** der
+  Vergleichszahlung; damit bleibt nachprüfbar, worauf er sich stützt.
 
 ## Phase 6 – Validierung und Datenqualität
 
