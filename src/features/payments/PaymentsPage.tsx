@@ -865,7 +865,7 @@ function PaymentCard({
   onReactivate,
   onDelete,
 }: RowActionProps) {
-  const { payment, effectiveDate, companyName, depotName, currency } = row;
+  const { payment, effectiveDate, companyName, currency } = row;
   const cancelled = Boolean(payment.archived_at);
   return (
     <li className="rounded-lg border border-border p-3">
@@ -876,9 +876,9 @@ function PaymentCard({
           checked={selected}
           onChange={onToggle}
         />
-        {/* Zwei Zeilen statt vier: Betrag neben dem Namen, Aktionen neben der
-            Zeile mit Datum und Depot. Die Aktionen tragen dieselben Symbole und
-            Namen wie in der Tabelle — beschriftet nur fuer Hilfsmittel, da drei
+        {/* Zwei Zeilen statt vier: Betrag neben dem Namen, Aktionen neben dem
+            Datum. Die Aktionen tragen dieselben Symbole und Namen wie in der
+            Tabelle — beschriftet nur fuer Hilfsmittel, da drei
             Wortschaltflaechen die Karte um eine ganze Zeile verlaengerten. */}
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline justify-between gap-3">
@@ -896,12 +896,11 @@ function PaymentCard({
             />
           </div>
           <div className="mt-1 flex items-center justify-between gap-2">
+            {/* Ohne Depot: Wer die Liste nach Depot filtert oder nur eines
+                fuehrt, gewinnt daraus nichts. Die Detailansicht nennt es. */}
             <div className="flex min-w-0 items-center gap-2">
-              {/* Der Depotname weicht auf schmalen Geraeten zurueck; das
-                  Storno-Kennzeichen darf dabei nicht mit abgeschnitten
-                  werden und steht deshalb ausserhalb des Textes. */}
               <p className="truncate text-sm text-muted-foreground">
-                {formatDate(effectiveDate)} · {depotName || "—"}
+                {formatDate(effectiveDate)}
               </p>
               {cancelled && (
                 <Badge variant="warning" className="shrink-0">
