@@ -136,7 +136,6 @@ export default function ExportSection() {
               void handleExport();
             }}
             disabled={isExporting}
-            className="w-full"
             size="lg"
           >
             {isExporting ? (

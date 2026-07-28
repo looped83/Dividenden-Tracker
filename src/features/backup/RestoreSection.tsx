@@ -160,7 +160,6 @@ export default function RestoreSection() {
               <Button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isProcessing}
-                className="w-full"
               >
                 Datei durchsuchen
               </Button>
@@ -281,9 +280,7 @@ export default function RestoreSection() {
                 </div>
               )}
 
-              <Button onClick={handleReset} className="w-full">
-                Weitere Sicherung hochladen
-              </Button>
+              <Button onClick={handleReset}>Weitere Sicherung hochladen</Button>
             </CardContent>
           </Card>
         </div>

@@ -10,6 +10,13 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
   Dialog,
@@ -255,184 +262,191 @@ export function DepotsPage() {
   const portfolioNameById = new Map(portfolios.map((p) => [p.id, p.name]));
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-xl font-semibold tracking-tight">Depots</h2>
-        <div className="flex flex-wrap items-center gap-2">
-          <label className="flex min-h-11 items-center gap-2 text-sm text-muted-foreground">
-            <input
-              type="checkbox"
-              checked={showArchived}
-              onChange={(event) => {
-                setShowArchived(event.target.checked);
-              }}
-              className="size-4"
-            />
-            Archivierte anzeigen
-          </label>
-          <Button
-            onClick={() => {
-              setDepotDialog({ open: true, depot: null });
-            }}
-          >
-            <Plus /> Neues Depot
-          </Button>
-        </div>
-      </div>
-
-      <section className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-sm font-medium text-muted-foreground">Portfolios</h2>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Portfolios</CardTitle>
+          <CardDescription>
+            Optional. Portfolios gruppieren mehrere Depots, etwa nach Anlagezweck.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
           <Button
             variant="outline"
-            size="sm"
             onClick={() => {
               setPortfolioDialog({ open: true, portfolio: null });
             }}
           >
             <Plus /> Neues Portfolio
           </Button>
-        </div>
-        {visiblePortfolios.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Noch keine Portfolios angelegt. Portfolios sind optional und gruppieren
-            mehrere Depots.
-          </p>
-        ) : (
-          <ul className="flex flex-wrap gap-2">
-            {visiblePortfolios.map((portfolio) => (
-              <li key={portfolio.id}>
-                <Badge
-                  variant={portfolio.archived_at ? "neutral" : "primary"}
-                  className="gap-1.5 py-1 pl-2.5 pr-1.5"
-                >
-                  {portfolio.name}
-                  <button
-                    type="button"
-                    aria-label={`Portfolio ${portfolio.name} bearbeiten`}
-                    onClick={() => {
-                      setPortfolioDialog({ open: true, portfolio });
-                    }}
-                    className="rounded p-0.5 hover:bg-black/10"
+          {visiblePortfolios.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Noch keine Portfolios angelegt.
+            </p>
+          ) : (
+            <ul className="flex flex-wrap gap-2">
+              {visiblePortfolios.map((portfolio) => (
+                <li key={portfolio.id}>
+                  <Badge
+                    variant={portfolio.archived_at ? "neutral" : "primary"}
+                    className="gap-1.5 py-1 pl-2.5 pr-1.5"
                   >
-                    <Pencil className="size-3" />
-                  </button>
-                  <button
-                    type="button"
-                    aria-label={
-                      portfolio.archived_at
-                        ? `Portfolio ${portfolio.name} reaktivieren`
-                        : `Portfolio ${portfolio.name} archivieren`
-                    }
-                    onClick={() =>
-                      void archivePortfolio.mutateAsync({
-                        id: portfolio.id,
-                        archived: Boolean(portfolio.archived_at),
-                      })
-                    }
-                    className="rounded p-0.5 hover:bg-black/10"
-                  >
-                    {portfolio.archived_at ? (
-                      <RotateCcw className="size-3" />
-                    ) : (
-                      <ArchiveIcon className="size-3" />
-                    )}
-                  </button>
-                </Badge>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section className="space-y-3">
-        <h2 className="text-sm font-medium text-muted-foreground">Depots</h2>
-        {isLoading ? (
-          <p className="text-sm text-muted-foreground">Wird geladen …</p>
-        ) : visibleDepots.length === 0 ? (
-          <EmptyState
-            icon={Landmark}
-            title="Noch kein Depot angelegt"
-            description="Lege dein erstes Depot an, um Dividendeneingänge zu erfassen."
-            action={
-              <Button
-                onClick={() => {
-                  setDepotDialog({ open: true, depot: null });
-                }}
-              >
-                Erstes Depot anlegen
-              </Button>
-            }
-          />
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Portfolio</TableHead>
-                <TableHead>Broker</TableHead>
-                <TableHead>Basiswährung</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Aktionen</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {visibleDepots.map((depot) => (
-                <TableRow key={depot.id}>
-                  <TableCell className="font-medium">{depot.name}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {depot.portfolio_id
-                      ? (portfolioNameById.get(depot.portfolio_id) ?? "—")
-                      : "—"}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {depot.broker ?? "—"}
-                  </TableCell>
-                  <TableCell className="tabular-nums">{depot.base_currency}</TableCell>
-                  <TableCell>
-                    {depot.archived_at ? (
-                      <Badge variant="neutral">Archiviert</Badge>
-                    ) : (
-                      <Badge variant="positive">Aktiv</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label={`Depot ${depot.name} bearbeiten`}
-                        onClick={() => {
-                          setDepotDialog({ open: true, depot });
-                        }}
-                      >
-                        <Pencil />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label={
-                          depot.archived_at
-                            ? `Depot ${depot.name} reaktivieren`
-                            : `Depot ${depot.name} archivieren`
-                        }
-                        onClick={() =>
-                          void archiveDepot.mutateAsync({
-                            id: depot.id,
-                            archived: Boolean(depot.archived_at),
-                          })
-                        }
-                      >
-                        {depot.archived_at ? <RotateCcw /> : <ArchiveIcon />}
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
+                    {portfolio.name}
+                    <button
+                      type="button"
+                      aria-label={`Portfolio ${portfolio.name} bearbeiten`}
+                      onClick={() => {
+                        setPortfolioDialog({ open: true, portfolio });
+                      }}
+                      className="rounded p-0.5 hover:bg-black/10"
+                    >
+                      <Pencil className="size-3" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={
+                        portfolio.archived_at
+                          ? `Portfolio ${portfolio.name} reaktivieren`
+                          : `Portfolio ${portfolio.name} archivieren`
+                      }
+                      onClick={() =>
+                        void archivePortfolio.mutateAsync({
+                          id: portfolio.id,
+                          archived: Boolean(portfolio.archived_at),
+                        })
+                      }
+                      className="rounded p-0.5 hover:bg-black/10"
+                    >
+                      {portfolio.archived_at ? (
+                        <RotateCcw className="size-3" />
+                      ) : (
+                        <ArchiveIcon className="size-3" />
+                      )}
+                    </button>
+                  </Badge>
+                </li>
               ))}
-            </TableBody>
-          </Table>
-        )}
-      </section>
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Depots</CardTitle>
+          <CardDescription>
+            Konten, auf denen Dividenden eingehen. Jeder Eingang gehört zu genau einem
+            Depot.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              onClick={() => {
+                setDepotDialog({ open: true, depot: null });
+              }}
+            >
+              <Plus /> Neues Depot
+            </Button>
+            <label className="flex min-h-11 items-center gap-2 text-sm text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={showArchived}
+                onChange={(event) => {
+                  setShowArchived(event.target.checked);
+                }}
+                className="size-4 pointer-coarse:size-6"
+              />
+              Archivierte anzeigen
+            </label>
+          </div>
+          {isLoading ? (
+            <p className="text-sm text-muted-foreground">Wird geladen …</p>
+          ) : visibleDepots.length === 0 ? (
+            <EmptyState
+              icon={Landmark}
+              title="Noch kein Depot angelegt"
+              description="Lege dein erstes Depot an, um Dividendeneingänge zu erfassen."
+              action={
+                <Button
+                  onClick={() => {
+                    setDepotDialog({ open: true, depot: null });
+                  }}
+                >
+                  Erstes Depot anlegen
+                </Button>
+              }
+            />
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Portfolio</TableHead>
+                  <TableHead>Broker</TableHead>
+                  <TableHead>Basiswährung</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Aktionen</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {visibleDepots.map((depot) => (
+                  <TableRow key={depot.id}>
+                    <TableCell className="font-medium">{depot.name}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {depot.portfolio_id
+                        ? (portfolioNameById.get(depot.portfolio_id) ?? "—")
+                        : "—"}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {depot.broker ?? "—"}
+                    </TableCell>
+                    <TableCell className="tabular-nums">{depot.base_currency}</TableCell>
+                    <TableCell>
+                      {depot.archived_at ? (
+                        <Badge variant="neutral">Archiviert</Badge>
+                      ) : (
+                        <Badge variant="positive">Aktiv</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Depot ${depot.name} bearbeiten`}
+                          onClick={() => {
+                            setDepotDialog({ open: true, depot });
+                          }}
+                        >
+                          <Pencil />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label={
+                            depot.archived_at
+                              ? `Depot ${depot.name} reaktivieren`
+                              : `Depot ${depot.name} archivieren`
+                          }
+                          onClick={() =>
+                            void archiveDepot.mutateAsync({
+                              id: depot.id,
+                              archived: Boolean(depot.archived_at),
+                            })
+                          }
+                        >
+                          {depot.archived_at ? <RotateCcw /> : <ArchiveIcon />}
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
 
       <DepotFormDialog
         depot={depotDialog.depot}

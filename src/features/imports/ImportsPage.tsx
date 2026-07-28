@@ -2,7 +2,13 @@ import * as React from "react";
 import { Plus, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -65,7 +71,7 @@ export function ImportsPage() {
 
   if (wizardOpen) {
     return (
-      <div className="mx-auto max-w-4xl space-y-6 p-4">
+      <div className="space-y-6">
         <div>
           <h2 className="text-xl font-semibold">Import-Assistent</h2>
           <p className="text-sm text-muted-foreground">
@@ -82,43 +88,38 @@ export function ImportsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="min-w-0">
-          <h2 className="text-xl font-semibold">Importe</h2>
-          <p className="text-sm text-muted-foreground">
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Importe</CardTitle>
+          <CardDescription>
             Sicherer, nachvollziehbarer und rückrollbarer Import historischer
             Dividendendaten.
-          </p>
-        </div>
-        <Button
-          onClick={() => {
-            setWizardOpen(true);
-          }}
-        >
-          <Plus /> Neuer Import
-        </Button>
-      </div>
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Button
+            onClick={() => {
+              setWizardOpen(true);
+            }}
+          >
+            <Plus /> Neuer Import
+          </Button>
 
-      {rollbackError && (
-        <p role="alert" className="text-sm text-negative">
-          {rollbackError}
-        </p>
-      )}
+          {rollbackError && (
+            <p role="alert" className="text-sm text-negative">
+              {rollbackError}
+            </p>
+          )}
 
-      {isLoading ? (
-        <p className="text-sm text-muted-foreground">Wird geladen …</p>
-      ) : imports.length === 0 ? (
-        <EmptyState
-          title="Noch keine Importe"
-          description="Starte einen Import, um historische Dividendeneingänge aus einer CSV- oder Excel-Datei zu übernehmen."
-        />
-      ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Importhistorie</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
+          {isLoading ? (
+            <p className="text-sm text-muted-foreground">Wird geladen …</p>
+          ) : imports.length === 0 ? (
+            <EmptyState
+              title="Noch keine Importe"
+              description="Starte einen Import, um historische Dividendeneingänge aus einer CSV- oder Excel-Datei zu übernehmen."
+            />
+          ) : (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -162,9 +163,9 @@ export function ImportsPage() {
                 ))}
               </TableBody>
             </Table>
-          </CardContent>
-        </Card>
-      )}
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

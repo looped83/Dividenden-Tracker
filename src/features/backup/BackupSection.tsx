@@ -93,7 +93,6 @@ export default function BackupSection() {
               void handleCreateBackup();
             }}
             disabled={isCreating}
-            className="w-full"
             size="lg"
           >
             {isCreating ? (
