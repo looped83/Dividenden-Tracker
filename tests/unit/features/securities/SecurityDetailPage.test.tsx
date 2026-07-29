@@ -146,4 +146,26 @@ describe("SecurityDetailPage", () => {
     renderPage("gibt-es-nicht");
     expect(screen.getByText("Unternehmen nicht gefunden")).toBeInTheDocument();
   });
+
+  describe("Rueckweg", () => {
+    /**
+     * Die Seite wird aus drei Richtungen erreicht (Unternehmensliste,
+     * Statistik, Zahlungsdetail) und laesst sich per Lesezeichen direkt
+     * oeffnen. Sie braucht deshalb einen eigenen Rueckweg — und zwar in jedem
+     * Zustand: Ein Zurueck, das erst nach dem Laden erscheint, fehlt genau
+     * dann, wenn man es braucht.
+     */
+    it("fuehrt zurueck zu den Unternehmen", () => {
+      renderPage();
+      const back = screen.getByRole("link", { name: /Zu den Unternehmen/ });
+      expect(back).toHaveAttribute("href", "/unternehmen");
+    });
+
+    it("steht auch bereit, wenn das Unternehmen nicht existiert", () => {
+      renderPage("gibt-es-nicht");
+      expect(
+        screen.getByRole("link", { name: /Zu den Unternehmen/ }),
+      ).toBeInTheDocument();
+    });
+  });
 });
