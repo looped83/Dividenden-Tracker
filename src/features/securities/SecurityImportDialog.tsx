@@ -20,6 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { parseFirstWorksheet } from "@/lib/xlsx/parseWorkbook";
+import { checkImportFile } from "@/lib/import/fileLimits";
 import {
   mapWorksheetToSecurities,
   type ImportedSecurityRow,
@@ -76,6 +77,13 @@ export function SecurityImportDialog({
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    const rejection = checkImportFile(file);
+    if (rejection) {
+      setState({ step: "error", message: rejection });
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
 
     try {
       const table = await parseFirstWorksheet(file);

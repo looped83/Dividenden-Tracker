@@ -8,3 +8,10 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+/**
+ * Anwendungsversion aus `package.json`, zur Bauzeit eingesetzt
+ * (`vite.config.ts`, `define`). Wird in Sicherungsdateien und in den
+ * Einstellungen angezeigt.
+ */
+declare const __APP_VERSION__: string;

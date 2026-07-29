@@ -1,11 +1,5 @@
-/**
- * Backup Section
- *
- * Allows users to create and download complete data backups.
- * Shows backup summary and progress during creation.
- */
-
-import { useState } from "react";
+import * as React from "react";
+import { Download, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -15,37 +9,56 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { createBackup, generateBackupSummary } from "@/lib/backup/backupService";
-import type { BackupProgress, BackupResult } from "@/lib/backup/backupService";
-import BackupSummary from "@/components/backup/BackupSummary";
+import { useToast } from "@/components/ui/toast";
+import { BackupContents } from "@/components/backup/BackupContents";
 import ProgressIndicator from "@/components/backup/ProgressIndicator";
-import { AlertCircle, CheckCircle, Download } from "lucide-react";
+import {
+  createBackup,
+  downloadBackup,
+  markBackupCompleted,
+} from "@/lib/backup/backupService";
+import type { BackupProgress } from "@/lib/backup/backupService";
+import type { BackupRoot } from "@/lib/backup/backupFormat";
+import { useLastBackup } from "./hooks";
 
+/**
+ * Sicherung erstellen.
+ *
+ * Der Ablauf ist bewusst in dieser Reihenfolge: Daten laden → Datei anbieten →
+ * **erst dann** Erfolg melden und den Sicherungszeitpunkt festhalten. Zuvor
+ * meldete dieser Bereich „erfolgreich erstellt und heruntergeladen", ohne dass
+ * je eine Datei entstand — die Erfolgsmeldung hing am Erzeugen der Daten, nicht
+ * am Ergebnis. Bei einem Sicherheitsnetz ist genau das der teuerste Fehler:
+ * Man bemerkt ihn erst, wenn man es braucht.
+ */
 export default function BackupSection() {
-  const [isCreating, setIsCreating] = useState(false);
-  const [result, setResult] = useState<BackupResult | null>(null);
-  const [progress, setProgress] = useState<BackupProgress | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { notify } = useToast();
+  const lastBackup = useLastBackup();
+  const [isCreating, setIsCreating] = React.useState(false);
+  const [backup, setBackup] = React.useState<BackupRoot | null>(null);
+  const [progress, setProgress] = React.useState<BackupProgress | null>(null);
+  const [error, setError] = React.useState<string | null>(null);
 
   const handleCreateBackup = async () => {
     setIsCreating(true);
     setError(null);
-    setResult(null);
+    setBackup(null);
 
     try {
-      const result = await createBackup((p) => {
-        setProgress(p);
-      });
+      const result = await createBackup(setProgress);
 
-      if (result.success && result.backup) {
-        setResult(result);
-        const summary = generateBackupSummary(result.backup);
-        console.log("Backup created successfully:", summary);
-      } else {
-        setError(result.error ?? "Failed to create backup");
+      if (!result.success || !result.backup || !result.fileName) {
+        setError(result.errorDetails ?? result.error ?? "Unbekannter Fehler.");
+        return;
       }
+
+      downloadBackup(result.backup, result.fileName);
+      setBackup(result.backup);
+      await markBackupCompleted();
+      lastBackup.refetch();
+      notify("Sicherung erstellt und heruntergeladen.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error creating backup");
+      setError(err instanceof Error ? err.message : "Unbekannter Fehler.");
     } finally {
       setIsCreating(false);
       setProgress(null);
@@ -53,74 +66,48 @@ export default function BackupSection() {
   };
 
   return (
-    <div className="space-y-4">
-      {/* Info Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Sicherung erstellen</CardTitle>
-          <CardDescription>
-            Laden Sie eine vollständige Sicherung aller Ihrer Daten herunter,
-            einschließlich Depots, Wertpapiere und Dividendenzahlungen.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Status Alert */}
-          {error && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
+    <Card>
+      <CardHeader>
+        <CardTitle>Sicherung erstellen</CardTitle>
+        <CardDescription>
+          Lädt alle Daten als eine Datei herunter: Depots, Unternehmen, sämtliche
+          Dividendeneingänge einschließlich der stornierten, Ziele und Importvorgänge.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-muted-foreground" aria-live="polite">
+          {lastBackup.label}
+        </p>
 
-          {result?.success && (
-            <Alert className="border-green-200 bg-green-50 dark:bg-green-900/20">
-              <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
-              <AlertDescription className="text-green-800 dark:text-green-200">
-                Sicherung erfolgreich erstellt und heruntergeladen!
-              </AlertDescription>
-            </Alert>
-          )}
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
-          {/* Progress */}
-          {isCreating && progress && <ProgressIndicator progress={progress} />}
+        {isCreating && progress && <ProgressIndicator progress={progress} />}
 
-          {/* Summary */}
-          {result?.backup && <BackupSummary backup={result.backup} />}
+        <Button onClick={() => void handleCreateBackup()} disabled={isCreating}>
+          <Download />
+          {isCreating ? "Wird erstellt …" : "Sicherung jetzt erstellen"}
+        </Button>
 
-          {/* Action Button */}
-          <Button
-            onClick={() => {
-              void handleCreateBackup();
-            }}
-            disabled={isCreating}
-            size="lg"
-          >
-            {isCreating ? (
-              <>
-                <span className="animate-spin mr-2">⏳</span>
-                Wird erstellt...
-              </>
-            ) : (
-              <>
-                <Download className="mr-2 h-4 w-4" />
-                Sicherung jetzt erstellen
-              </>
-            )}
-          </Button>
-        </CardContent>
-      </Card>
+        {backup && (
+          <div className="space-y-3 border-t border-border pt-4">
+            <h3 className="font-medium">Inhalt der heruntergeladenen Datei</h3>
+            <BackupContents backup={backup} />
+          </div>
+        )}
 
-      {/* Security Notice */}
-      <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
-        <CardContent className="pt-6">
-          <p className="text-sm text-blue-900 dark:text-blue-200">
-            <strong>Datenschutz:</strong> Sicherungen werden nicht automatisch
-            hochgeladen. Sie laden die Dateien manuell herunter und speichern sie sicher.
-            Behandeln Sie Sicherungsdateien wie Passwörter – sie enthalten alle Ihre
-            Daten.
-          </p>
-        </CardContent>
-      </Card>
-    </div>
+        <p className="flex gap-2 border-t border-border pt-4 text-sm text-muted-foreground">
+          <ShieldCheck className="mt-0.5 size-4 shrink-0" aria-hidden />
+          <span>
+            Die Datei wird nirgendwohin hochgeladen — sie liegt nur auf deinem Gerät. Sie
+            enthält deine vollständigen Finanzdaten; bewahre sie so sorgfältig auf wie ein
+            Passwort.
+          </span>
+        </p>
+      </CardContent>
+    </Card>
   );
 }

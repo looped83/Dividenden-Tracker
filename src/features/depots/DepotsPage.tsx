@@ -211,12 +211,25 @@ function DepotFormDialog({
               <Label htmlFor="depot-broker">Broker</Label>
               <Input id="depot-broker" {...register("broker")} />
             </div>
+            {/* Die Basiswaehrung ist keine Wahl, sondern eine Folge: Alle
+                Betraege werden in Basiswaehrung gespeichert und ausgewertet
+                (D-002). Als freies Feld liess sich hier „USD" eintragen — die
+                Eingangsliste zeigte dann „$", Uebersicht und Statistik „€",
+                und beide Betraege wurden miteinander verrechnet. Der Wert
+                steht jetzt als Angabe da; der Trigger aus Migration 0023
+                sichert dieselbe Regel in der Datenbank ab. */}
             <div className="space-y-1.5">
               <Label htmlFor="depot-currency">Basiswährung</Label>
-              <Input id="depot-currency" maxLength={3} {...register("baseCurrency")} />
-              {errors.baseCurrency && (
-                <p className="text-sm text-negative">{errors.baseCurrency.message}</p>
-              )}
+              <Input
+                id="depot-currency"
+                readOnly
+                aria-describedby="depot-currency-hint"
+                className="bg-muted/50"
+                {...register("baseCurrency")}
+              />
+              <p id="depot-currency-hint" className="text-sm text-muted-foreground">
+                Entspricht der Währung deines Kontos.
+              </p>
             </div>
           </div>
           <div className="space-y-1.5">
