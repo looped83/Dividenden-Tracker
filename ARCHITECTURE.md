@@ -298,13 +298,18 @@ Details fachlich in IMPORT_SPEC.md; architektonisch:
 - **Nichts von Supabase wird zwischengespeichert:** Anfragen an eine fremde Herkunft rührt der
   Service Worker nicht an (SECURITY_MODEL.md §7).
 
+- **Aktualisierungshinweis statt stillem Wechsel:** Eine neue Fassung wartet (`skipWaiting`
+  greift nur bei der Erstinstallation, wo es nichts zu unterbrechen gibt); die Oberfläche weist
+  darauf hin (`UpdatePrompt`), und erst auf Klick übernimmt der neue Service Worker und die
+  Seite lädt neu. Eine Finanzanwendung soll nicht mitten in einer Erfassung die Fassung
+  wechseln.
+
 **Bewusst nicht umgesetzt:**
 
 - Kein Offline-Lesen von Finanzdaten (kein IndexedDB-Persist von TanStack Query). Offline zeigt
   die App ihre Hülle und die Fehlerzustände der Abfragen — kein stiller Blick auf veraltete
   Beträge.
-- Kein Offline-Banner und keine Aktualisierungsaufforderung. Beides gehört zu einem
-  ausgebauten Offline-Modus und wäre ohne ihn Zierde.
+- Kein Offline-Banner. Er gehört zu einem ausgebauten Offline-Modus und wäre ohne ihn Zierde.
 
 ## 7. Umgebungen, Konfiguration, Migrationen
 
