@@ -239,6 +239,28 @@ beforeEach(() => {
       committed_at: PG_UPDATED,
       rolled_back_at: null,
     },
+    // Zweiter Vorgang mit leeren Metadaten. `removeNulls` schreibt solche
+    // Felder gar nicht erst in die Datei — die Schluessel **fehlen** dann.
+    // Genau dieser Fall fehlte in den Fixtures und liess unbemerkt, dass
+    // `z.unknown()` in Zod 4 ein Pflichtfeld ist.
+    {
+      id: uuid("00000005", 2),
+      user_id: USER_ID,
+      file_name: "Nachtrag.csv",
+      file_hash: "b".repeat(64),
+      file_size_bytes: 128,
+      file_type: "csv",
+      sheet_name: null,
+      status: "committed",
+      column_mapping: null,
+      detected_formats: null,
+      row_balance: null,
+      row_report: null,
+      checksums: null,
+      created_at: PG_CREATED,
+      committed_at: PG_UPDATED,
+      rolled_back_at: null,
+    },
   ];
 });
 
@@ -276,7 +298,7 @@ describe("createBackup — Integritaetsblock", () => {
     expect(counts?.["depot"]).toBe(1);
     expect(counts?.["portfolio"]).toBe(0);
     expect(counts?.["goal"]).toBe(0);
-    expect(counts?.["import"]).toBe(1);
+    expect(counts?.["import"]).toBe(2);
   });
 
   it("summiert nur die aktiven Zahlungen in den Gesamtbetraegen", async () => {
@@ -358,6 +380,159 @@ describe("createBackup — Zeitstempel", () => {
     // Gleiche Zeit, andere Schreibweise — nicht etwa auf Sekunden gerundet
     // oder um den Versatz verschoben.
     expect(new Date(created ?? "").getTime()).toBe(new Date(PG_CREATED).getTime());
+  });
+});
+
+describe("createBackup — leere Felder", () => {
+  /**
+   * Jede in der Datenbank nullbare Spalte steht hier auf `null`. `removeNulls`
+   * laesst solche Felder aus der Datei weg, der Schluessel **fehlt** also
+   * vollstaendig.
+   *
+   * Diesen Fall deckte keine Fixture ab — und genau daran scheiterte das
+   * Einlesen dreimal hintereinander in der Praxis. Ein einzelner Test mit
+   * durchweg leeren Feldern erreicht alle diese Pfade gleichzeitig und
+   * ersetzt das Suchen nach dem jeweils naechsten Feld.
+   */
+  it("erzeugt eine einlesbare Datei, wenn jedes optionale Feld leer ist", async () => {
+    tables["profiles"] = [
+      {
+        id: USER_ID,
+        base_currency: "EUR",
+        locale: "de-DE",
+        theme: "system",
+        backup_reminder_days: 30,
+        last_backup_at: null,
+        created_at: PG_CREATED,
+        updated_at: PG_UPDATED,
+      },
+    ];
+    tables["portfolios"] = [
+      {
+        id: uuid("00000006", 1),
+        user_id: USER_ID,
+        name: "Leer",
+        note: null,
+        created_at: PG_CREATED,
+        updated_at: PG_UPDATED,
+        archived_at: null,
+      },
+    ];
+    tables["depots"] = [
+      {
+        id: DEPOT_ID,
+        user_id: USER_ID,
+        name: "Leer",
+        broker: null,
+        base_currency: "EUR",
+        portfolio_id: null,
+        note: null,
+        created_at: PG_CREATED,
+        updated_at: PG_UPDATED,
+        archived_at: null,
+      },
+    ];
+    tables["securities"] = [
+      {
+        id: SECURITY_ID,
+        user_id: USER_ID,
+        name: "Leer AG",
+        ticker: null,
+        isin: null,
+        wkn: null,
+        country: null,
+        sector: null,
+        currency: null,
+        note: null,
+        data_quality: "ok",
+        default_depot_id: null,
+        payout_months: [],
+        created_at: PG_CREATED,
+        updated_at: PG_UPDATED,
+        archived_at: null,
+      },
+    ];
+    tables["goals"] = [
+      {
+        id: uuid("00000007", 1),
+        user_id: USER_ID,
+        goal_type: "annual",
+        year: 2026,
+        month: null,
+        target_amount: "1000.00",
+        currency: "EUR",
+        title: null,
+        note: null,
+        created_at: PG_CREATED,
+        updated_at: PG_UPDATED,
+      },
+    ];
+    tables["imports"] = [
+      {
+        id: uuid("00000005", 3),
+        user_id: USER_ID,
+        file_name: "leer.csv",
+        file_hash: "c".repeat(64),
+        file_size_bytes: 1,
+        file_type: "csv",
+        sheet_name: null,
+        status: "committed",
+        column_mapping: null,
+        detected_formats: null,
+        row_balance: null,
+        row_report: null,
+        checksums: null,
+        created_at: PG_CREATED,
+        committed_at: null,
+        rolled_back_at: null,
+      },
+    ];
+    tables["dividend_payments"] = [
+      {
+        id: uuid("00000004", 1),
+        user_id: USER_ID,
+        security_id: SECURITY_ID,
+        depot_id: DEPOT_ID,
+        import_id: null,
+        pay_date: "2025-06-15",
+        gross_amount: "100.00",
+        net_amount: "100.00",
+        withholding_tax: "0.00",
+        domestic_tax: "0.00",
+        solidarity_surcharge: null,
+        church_tax: null,
+        fees: null,
+        original_currency: "EUR",
+        original_gross: null,
+        original_net: null,
+        fx_rate: null,
+        quantity: null,
+        amount_per_share: null,
+        payment_type: "regular",
+        source: "manual",
+        source_file_name: null,
+        source_row_number: null,
+        row_fingerprint: null,
+        business_fingerprint: null,
+        note: null,
+        created_at: PG_CREATED,
+        updated_at: PG_UPDATED,
+        archived_at: null,
+        archive_reason: null,
+      },
+    ];
+
+    const backup = (await createBackup()).backup;
+    const parsed = parseBackupSafe(JSON.parse(JSON.stringify(backup)));
+
+    if (!parsed.success) {
+      throw new Error(
+        `Die erzeugte Sicherung ist nicht einlesbar: ${parsed.errors
+          .map((e) => `${e.path}: ${e.message}`)
+          .join("; ")}`,
+      );
+    }
+    expect(parsed.data.data.dividend_payments).toHaveLength(1);
   });
 });
 

@@ -120,14 +120,21 @@ const isoTimestamp = z.string().transform((value, ctx) => {
 });
 
 /**
- * Beliebiger JSON-Wert.
+ * Beliebiger JSON-Wert, auch fehlend.
  *
  * Für Felder, die als `jsonb` gespeichert und beim Wiederherstellen
  * unverändert zurückgeschrieben werden. Sie sind für die Sicherung
  * durchzureichende Fracht — die Struktur zu prüfen brächte keine Sicherheit
  * und hat bereits zweimal dazu geführt, dass gültige Dateien abgelehnt wurden.
+ *
+ * **`.optional()` ist hier zwingend.** In Zod 4 ist `z.unknown()` innerhalb
+ * eines Objekts ein *Pflichtfeld*: Ein fehlender Schlüssel scheitert mit
+ * „expected nonoptional, received undefined" (in Zod 3 war er optional). Da
+ * `removeNulls` leere Felder gar nicht erst in die Datei schreibt, fehlen
+ * genau die Schlüssel, die in der Datenbank `null` sind — und die Datei wäre
+ * ohne `.optional()` nicht einlesbar.
  */
-const jsonValue = z.unknown();
+const jsonValue = z.unknown().optional();
 
 /**
  * ISO 4217 currency code (3 uppercase letters)
