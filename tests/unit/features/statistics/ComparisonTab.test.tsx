@@ -224,3 +224,67 @@ describe("ComparisonTab — Auswahl", () => {
     expect(screen.getAllByText("100,00 €").length).toBeGreaterThan(0);
   });
 });
+
+describe("ComparisonTab — Monat gegen Monat", () => {
+  it("stellt denselben Kalendermonat zweier Jahre gegenueber", () => {
+    renderTab("?modus=monate&monat=3&basis=2026&referenz=2025");
+    expect(screen.getByText("Mär 2026")).toBeInTheDocument();
+    expect(screen.getByText("Mär 2025")).toBeInTheDocument();
+    expect(screen.getAllByText("120,00 €").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("100,00 €").length).toBeGreaterThan(0);
+  });
+
+  it("schluesselt nach Unternehmen auf statt nach Monaten", () => {
+    renderTab("?modus=monate&monat=5&basis=2026&referenz=2025");
+    expect(screen.getByText("Nach Unternehmen")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Beta SE" })).toHaveAttribute(
+      "href",
+      "/unternehmen/sec-b",
+    );
+    expect(screen.queryByText("Monat für Monat")).not.toBeInTheDocument();
+  });
+
+  it("fuehrt von einem Unternehmen in dessen Zahlungen dieses Monats", () => {
+    renderTab("?modus=monate&monat=5&basis=2026&referenz=2025");
+    const zeile = screen.getByRole("row", { name: /Beta SE/ });
+    const link = within(zeile).getByRole("link", { name: /Mai 2026/ });
+    expect(link).toHaveAttribute("href", "/eingaenge?year=2026&month=5&security=sec-b");
+  });
+
+  it("kappt den laufenden Monat auf beiden Seiten und sagt es", () => {
+    renderTab("?modus=monate&monat=7&basis=2026&referenz=2025");
+    expect(screen.getByText(/Der Monat läuft noch/)).toBeInTheDocument();
+    expect(screen.getByText("29.07.2026")).toBeInTheDocument();
+    // Ohne Kappung stuenden hier die vollen Juli-Summen beider Jahre.
+    expect(screen.getByText(/01\.07\.2026 – 29\.07\.2026/)).toBeInTheDocument();
+    expect(screen.getByText(/01\.07\.2025 – 29\.07\.2025/)).toBeInTheDocument();
+  });
+
+  it("bietet im laufenden Jahr keinen Monat an, der noch nicht begonnen hat", () => {
+    renderTab("?modus=monate&basis=2026");
+    const monate = within(screen.getByLabelText("Monat")).getAllByRole("option");
+    expect(monate.map((option) => option.textContent)).toEqual([
+      "Januar",
+      "Februar",
+      "März",
+      "April",
+      "Mai",
+      "Juni",
+      "Juli",
+    ]);
+  });
+
+  it("verzichtet auf den kumulierten Verlauf", () => {
+    // Eine Kurve ueber die Tage eines Monats mit zwei, drei Zahlungen sagt
+    // nichts, was die Zahlen daneben nicht schon sagen.
+    renderTab("?modus=monate&monat=3");
+    expect(screen.queryByText("Kumulierter Verlauf")).not.toBeInTheDocument();
+  });
+
+  it("meldet einen Monat ohne Zahlungen, statt eine leere Tabelle zu zeigen", () => {
+    renderTab("?modus=monate&monat=2&basis=2026&referenz=2025");
+    expect(
+      screen.getByText(/In keinem der beiden Monate gab es Dividendeneingänge/),
+    ).toBeInTheDocument();
+  });
+});

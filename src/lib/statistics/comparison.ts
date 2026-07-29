@@ -67,11 +67,11 @@ export interface ComparisonMonth {
   reference: ComparisonMonthSide;
 }
 
-export interface PeriodComparison {
+/** Was jeder Vergleich gemeinsam hat, unabhängig von der Aufschlüsselung. */
+export interface ComparisonBase {
   current: ComparisonSide;
   reference: ComparisonSide;
   change: ComparisonResult;
-  months: ComparisonMonth[];
   /**
    * Wahr, wenn beide Seiten am Referenztag gekappt wurden. Die Oberfläche muss
    * das benennen — eine Zahl, die „2026" heißt, aber nur bis Juli reicht,
@@ -80,6 +80,11 @@ export interface PeriodComparison {
   truncated: boolean;
   /** Letzter berücksichtigter Tag der aktuellen Seite (ISO). */
   cutoff: string;
+}
+
+/** Vergleich zweier Zeiträume, aufgeschlüsselt nach Monaten. */
+export interface PeriodComparison extends ComparisonBase {
+  months: ComparisonMonth[];
 }
 
 /** Summe und Anzahl innerhalb eines Bereichs. */
@@ -292,4 +297,130 @@ function rollingRange(ref: RefDate, monthsBack: number): DateRange {
     start: isoDate(start.year, start.month, 1),
     end: isoDate(end.year, end.month, endDay),
   };
+}
+
+// ============================================================================
+// Monatsvergleich
+// ============================================================================
+
+/** Ein Unternehmen in der Gegenüberstellung zweier Monate. */
+export interface SecurityComparison {
+  securityId: string;
+  current: Money;
+  reference: Money;
+  /** Differenz `current − reference`; vorab gerechnet, damit die Anzeige nichts rechnet. */
+  difference: Money;
+}
+
+/** Vergleich zweier Monate, aufgeschlüsselt nach Unternehmen. */
+export interface MonthComparison extends ComparisonBase {
+  /** Der verglichene Kalendermonat (1..12) — auf beiden Seiten derselbe. */
+  month: number;
+  /**
+   * Alle Unternehmen, die auf **einer** der beiden Seiten gezahlt haben,
+   * absteigend nach aktuellem Betrag. Wer nur im Vergleichsmonat vorkommt,
+   * steht ebenfalls hier — ein Ausfall ist der wichtigste Teil der Antwort.
+   */
+  securities: SecurityComparison[];
+}
+
+/**
+ * Stellt denselben Kalendermonat zweier Jahre gegenüber.
+ *
+ * **Warum derselbe Monat und nicht der Vormonat:** Dividenden sind saisonal.
+ * Ein März gegen einen April gestellt vergliche Ausschüttungstermine, nicht
+ * Entwicklung — die Zahl wäre beliebig. Derselbe Monat zweier Jahre beantwortet
+ * dagegen genau die Frage, die sich stellt: „Kam diesmal weniger als damals?"
+ *
+ * **Die Kappungsregel gilt unverändert:** Läuft der Monat noch, enden beide
+ * Seiten am Referenztag. Ein angefangener Monat gegen einen vollen wäre
+ * derselbe systematische Fehler wie beim Jahresvergleich.
+ *
+ * Aufgeschlüsselt wird nach Unternehmen: Ein Monat lässt sich nicht in Monate
+ * zerlegen, und die nächstkleinere Einheit, die die Zahlungsliste ebenfalls
+ * filtern kann, ist das Unternehmen.
+ */
+export function compareMonths(
+  payments: readonly AnalyticsPayment[],
+  currentYear: number,
+  referenceYear: number,
+  month: number,
+  ref: RefDate,
+): MonthComparison {
+  const running = currentYear === ref.year && month === ref.month;
+  const currentRange = monthRange(currentYear, month, running ? ref.day : undefined);
+  const referenceRange = monthRange(referenceYear, month, running ? ref.day : undefined);
+
+  const currentTotals = within(payments, currentRange);
+  const referenceTotals = within(payments, referenceRange);
+
+  return {
+    current: {
+      label: `${monthNameDeShort(month)} ${String(currentYear)}`,
+      range: currentRange,
+      net: currentTotals.net,
+      count: currentTotals.count,
+    },
+    reference: {
+      label: `${monthNameDeShort(month)} ${String(referenceYear)}`,
+      range: referenceRange,
+      net: referenceTotals.net,
+      count: referenceTotals.count,
+    },
+    change: comparePeriods(currentTotals.net, referenceTotals.net),
+    month,
+    securities: bySecurity(payments, currentRange, referenceRange),
+    truncated: running,
+    cutoff: currentRange.end,
+  };
+}
+
+/** Ein Kalendermonat, wahlweise am `cutoffDay` gekappt. */
+function monthRange(year: number, month: number, cutoffDay?: number): DateRange {
+  const last = lastDayOfMonth(year, month);
+  const day = cutoffDay === undefined ? last : Math.min(cutoffDay, last);
+  return { start: isoDate(year, month, 1), end: isoDate(year, month, day) };
+}
+
+/** Nettosummen je Unternehmen über beide Bereiche, absteigend nach aktuellem Betrag. */
+function bySecurity(
+  payments: readonly AnalyticsPayment[],
+  currentRange: DateRange,
+  referenceRange: DateRange,
+): SecurityComparison[] {
+  const totals = new Map<string, { current: Money; reference: Money }>();
+  const entry = (id: string) => {
+    const existing = totals.get(id);
+    if (existing) return existing;
+    const created = { current: Money.zero(EUR), reference: Money.zero(EUR) };
+    totals.set(id, created);
+    return created;
+  };
+
+  for (const payment of payments) {
+    if (payment.payDate >= currentRange.start && payment.payDate <= currentRange.end) {
+      const row = entry(payment.securityId);
+      row.current = row.current.add(payment.netAmount);
+    } else if (
+      payment.payDate >= referenceRange.start &&
+      payment.payDate <= referenceRange.end
+    ) {
+      const row = entry(payment.securityId);
+      row.reference = row.reference.add(payment.netAmount);
+    }
+  }
+
+  return [...totals.entries()]
+    .map(([securityId, row]) => ({
+      securityId,
+      current: row.current,
+      reference: row.reference,
+      difference: row.current.subtract(row.reference),
+    }))
+    .sort(
+      (a, b) =>
+        b.current.compareTo(a.current) ||
+        b.reference.compareTo(a.reference) ||
+        a.securityId.localeCompare(b.securityId),
+    );
 }

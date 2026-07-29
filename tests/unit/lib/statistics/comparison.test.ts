@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { EUR, Money } from "@/lib/money";
-import { compareRollingTwelveMonths, compareYears } from "@/lib/statistics/comparison";
+import {
+  compareMonths,
+  compareRollingTwelveMonths,
+  compareYears,
+} from "@/lib/statistics/comparison";
 import type { AnalyticsPayment, RefDate } from "@/lib/statistics";
 
 /**
@@ -286,5 +290,97 @@ describe("compareRollingTwelveMonths", () => {
 
     expect(result.current.range).toEqual({ start: "2025-02-01", end: "2026-01-05" });
     expect(result.current.net.equals(euro("50.00"))).toBe(true);
+  });
+});
+
+describe("compareMonths", () => {
+  const payments = [
+    // Maerz 2026 — abgeschlossener Monat.
+    payment("2026-03-05", "100.00"),
+    payment("2026-03-20", "50.00"),
+    // Maerz 2025.
+    payment("2025-03-05", "80.00"),
+    payment("2025-03-28", "40.00"),
+    // Anderer Monat, darf nie mitzaehlen.
+    payment("2026-04-05", "999.00"),
+  ];
+
+  it("summiert denselben Kalendermonat beider Jahre", () => {
+    const result = compareMonths(payments, 2026, 2025, 3, REF);
+    expect(result.current.net.equals(euro("150.00"))).toBe(true);
+    expect(result.reference.net.equals(euro("120.00"))).toBe(true);
+    expect(result.current.count).toBe(2);
+  });
+
+  it("laesst einen abgeschlossenen Monat ungekappt", () => {
+    const result = compareMonths(payments, 2026, 2025, 3, REF);
+    expect(result.truncated).toBe(false);
+    expect(result.current.range).toEqual({ start: "2026-03-01", end: "2026-03-31" });
+    expect(result.reference.range).toEqual({ start: "2025-03-01", end: "2025-03-31" });
+  });
+
+  it("kappt beide Seiten, wenn der Monat noch laeuft", () => {
+    // Juli 2026 laeuft am 29. — der Vergleichsjuli endet am selben Tag.
+    const result = compareMonths([], 2026, 2025, 7, REF);
+    expect(result.truncated).toBe(true);
+    expect(result.current.range).toEqual({ start: "2026-07-01", end: "2026-07-29" });
+    expect(result.reference.range).toEqual({ start: "2025-07-01", end: "2025-07-29" });
+  });
+
+  it("laesst im laufenden Monat aus, was nach dem Stichtag liegt", () => {
+    const spaet = [payment("2025-07-31", "500.00"), payment("2025-07-02", "20.00")];
+    const result = compareMonths(spaet, 2026, 2025, 7, REF);
+    expect(result.reference.net.equals(euro("20.00"))).toBe(true);
+  });
+
+  it("bildet den Stichtag auf den letzten Monatstag ab, wenn der Monat kuerzer ist", () => {
+    // 31. Maerz gegen Februar: Der Februar hat keinen 31.
+    const spaeterRef: RefDate = { year: 2026, month: 2, day: 31 };
+    const result = compareMonths([], 2026, 2025, 2, spaeterRef);
+    expect(result.current.range.end).toBe("2026-02-28");
+  });
+
+  it("schluesselt nach Unternehmen auf, absteigend nach aktuellem Betrag", () => {
+    const gemischt = [
+      payment("2026-03-05", "100.00"),
+      { ...payment("2026-03-06", "300.00"), securityId: "sec-b" },
+      { ...payment("2025-03-06", "250.00"), securityId: "sec-b" },
+    ];
+    const result = compareMonths(gemischt, 2026, 2025, 3, REF);
+    expect(result.securities.map((row) => row.securityId)).toEqual(["sec-b", "sec-a"]);
+    expect(result.securities[0].difference.equals(euro("50.00"))).toBe(true);
+  });
+
+  it("nennt ein Unternehmen auch dann, wenn es diesmal gar nicht gezahlt hat", () => {
+    // Der Ausfall ist der wichtigste Teil der Antwort — er darf nicht fehlen.
+    const ausfall = [
+      payment("2026-03-05", "100.00"),
+      { ...payment("2025-03-06", "250.00"), securityId: "sec-b" },
+    ];
+    const result = compareMonths(ausfall, 2026, 2025, 3, REF);
+    const fehlend = result.securities.find((row) => row.securityId === "sec-b");
+    expect(fehlend?.current.isZero()).toBe(true);
+    expect(fehlend?.difference.equals(euro("-250.00"))).toBe(true);
+  });
+
+  it("haelt die Summe der Unternehmenszeilen gleich der Monatssumme", () => {
+    const result = compareMonths(payments, 2026, 2025, 3, REF);
+    const summe = result.securities.reduce(
+      (acc, row) => acc.add(row.current),
+      Money.zero(EUR),
+    );
+    expect(summe.equals(result.current.net)).toBe(true);
+  });
+
+  it("beschriftet beide Seiten mit Monat und Jahr", () => {
+    const result = compareMonths(payments, 2026, 2025, 3, REF);
+    expect(result.current.label).toBe("Mär 2026");
+    expect(result.reference.label).toBe("Mär 2025");
+  });
+
+  it("meldet beide-null fuer einen Monat ohne Zahlungen", () => {
+    const result = compareMonths(payments, 2026, 2025, 11, REF);
+    expect(result.change.kind).toBe("both-zero");
+    expect(result.securities).toHaveLength(0);
   });
 });
