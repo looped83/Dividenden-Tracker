@@ -1,24 +1,17 @@
 import * as React from "react";
 import { Outlet } from "react-router";
 import { BarChart3 } from "lucide-react";
+import { STATISTICS_TABS } from "@/app/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { TabNav, type TabNavItem } from "@/components/layout/TabNav";
+import { PageSkeleton } from "@/components/layout/PageSkeleton";
+import { TabNav } from "@/components/layout/TabNav";
 import { availableYears, filterPayments } from "@/lib/statistics";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { FilterBar } from "./FilterBar";
 import { useStatisticsData, useStatisticsFilter, type StatisticsContext } from "./hooks";
-
-/** Unterbereiche der Statistik (§11): Übersicht, Jahre, Monate, Unternehmen, Depots. */
-const STAT_TABS: readonly TabNavItem[] = [
-  { to: "/statistiken", label: "Übersicht", end: true },
-  { to: "/statistiken/jahre", label: "Jahre" },
-  { to: "/statistiken/monate", label: "Monate" },
-  { to: "/statistiken/unternehmen", label: "Unternehmen" },
-  { to: "/statistiken/depots", label: "Depots" },
-];
 
 function StatisticsSkeleton() {
   return (
@@ -104,7 +97,7 @@ export function StatisticsPage() {
     <div className="space-y-6">
       {heading}
 
-      <TabNav label="Statistikbereiche" tabs={STAT_TABS} />
+      <TabNav label="Statistikbereiche" tabs={STATISTICS_TABS} />
 
       <FilterBar
         filter={filter}
@@ -114,7 +107,11 @@ export function StatisticsPage() {
         depots={data.depots}
       />
 
-      <Outlet context={context} />
+      {/* Eigener Ladezustand: Beim Reiterwechsel bleiben Kopfzeile, Reiter und
+          Filter stehen, nur der Inhalt darunter wartet. */}
+      <React.Suspense fallback={<PageSkeleton header={false} />}>
+        <Outlet context={context} />
+      </React.Suspense>
     </div>
   );
 }

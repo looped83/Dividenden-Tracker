@@ -53,6 +53,15 @@ export const BOTTOM_NAV_MORE_ITEMS: readonly NavItem[] = [
   findNavItem("/einstellungen"),
 ];
 
+/** Unterbereiche der Statistik (PRODUCT_SPEC.md §11). */
+export const STATISTICS_TABS: readonly { to: string; label: string; end?: boolean }[] = [
+  { to: "/statistiken", label: "Übersicht", end: true },
+  { to: "/statistiken/jahre", label: "Jahre" },
+  { to: "/statistiken/monate", label: "Monate" },
+  { to: "/statistiken/unternehmen", label: "Unternehmen" },
+  { to: "/statistiken/depots", label: "Depots" },
+];
+
 /**
  * Unterbereiche der Einstellungen. Die drei Verwaltungsbereiche sind hierher
  * verschoben worden; ihre alten Pfade leiten dauerhaft hierauf um (router.tsx),

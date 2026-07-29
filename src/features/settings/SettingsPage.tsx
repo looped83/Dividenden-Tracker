@@ -1,6 +1,8 @@
+import * as React from "react";
 import { Outlet } from "react-router";
 import { SETTINGS_TABS } from "@/app/navigation";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { PageSkeleton } from "@/components/layout/PageSkeleton";
 import { TabNav } from "@/components/layout/TabNav";
 
 /**
@@ -16,7 +18,11 @@ export function SettingsPage() {
 
       <TabNav label="Einstellungsbereiche" tabs={SETTINGS_TABS} />
 
-      <Outlet />
+      {/* Eigener Ladezustand: Beim Reiterwechsel bleiben Kopfzeile und Reiter
+          stehen, nur der Inhalt darunter wartet. */}
+      <React.Suspense fallback={<PageSkeleton header={false} />}>
+        <Outlet />
+      </React.Suspense>
     </div>
   );
 }

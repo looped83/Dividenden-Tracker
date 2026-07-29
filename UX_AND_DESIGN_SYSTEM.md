@@ -126,7 +126,7 @@ Eigene zusammengesetzte Komponenten (fachlich):
 | Zustand | Muster |
 |---|---|
 | Leer (neues Konto) | Onboarding-EmptyState: „Eingang erfassen" oder „Aus Numbers importieren" (Verweis Migration) |
-| Laden | Skeletons in Karten-/Tabellenform; keine Spinner-Vollflächen |
+| Laden | Skeletons in Karten-/Tabellenform; keine Spinner-Vollflächen. Auch der Bereichswechsel: `PageSkeleton` statt einer Textzeile, Kopfzeilenhöhe vorweggenommen, damit nichts springt. Beim Reiterwechsel bleiben Kopfzeile und Reiter stehen (`header={false}`). Navigationspunkte laden ihren Bereich schon beim Zeigen vor, sodass der Zustand meist gar nicht erscheint (ARCHITECTURE.md §6.1) |
 | Fehler | ErrorState mit Ursache + Aktion („Erneut versuchen"); Formularfehler feldnah + Zusammenfassung oben |
 | Offline | Persistenter, dezenter Banner; Schreibaktionen deaktiviert mit Begründung |
 | Warnung (Duplikate, Invariante) | WarningBanner bernstein, niemals blockierend ohne Erklärung, immer mit Detail-Link |
