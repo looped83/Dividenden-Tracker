@@ -44,12 +44,16 @@
   /* Textfarbe auf hellem Warn-Tint (bg-warning/10) — in beiden Themes >= 4.5:1. */
   --warning-strong: oklch(0.46 0.11 70);
 
-  --chart-1: oklch(0.55 0.1 255);
-  --chart-2: oklch(0.62 0.11 200);
-  --chart-3: oklch(0.5 0.1 300);
-  --chart-4: oklch(0.68 0.12 155);
-  --chart-5: oklch(0.7 0.13 75);
-  --chart-6: oklch(0.55 0.03 260);
+  /* Diagrammfarben (kategorial, feste Reihenfolge — siehe .dark unten und
+     UX_AND_DESIGN_SYSTEM.md #1a). Werte gemessen, nicht geschätzt: alle sechs
+     liegen im Helligkeitsband, über der Chroma-Untergrenze, halten benachbart
+     den CVD-Abstand und erreichen >= 3:1 gegen die Kartenfläche. */
+  --chart-1: oklch(0.52 0.15 255); /* blau     #1f68bc */
+  --chart-2: oklch(0.62 0.14 60); /* orange   #c26e12 */
+  --chart-3: oklch(0.65 0.105 185); /* türkis   #28a497 */
+  --chart-4: oklch(0.52 0.17 345); /* magenta  #a8347f */
+  --chart-5: oklch(0.6 0.14 150); /* grün     #319751 */
+  --chart-6: oklch(0.46 0.16 300); /* violett  #673ba2 */
 }
 
 /* Design-Tokens dunkel — kein reines Schwarz, gleichwertiges Theme. */
@@ -83,12 +87,16 @@
   --warning-foreground: oklch(0.2 0.03 80);
   --warning-strong: oklch(0.85 0.12 85);
 
-  --chart-1: oklch(0.72 0.11 255);
-  --chart-2: oklch(0.75 0.1 200);
-  --chart-3: oklch(0.72 0.11 300);
-  --chart-4: oklch(0.76 0.12 155);
-  --chart-5: oklch(0.78 0.13 75);
-  --chart-6: oklch(0.7 0.02 260);
+  /* Dieselben sechs Farbtöne, für die dunkle Fläche neu gesetzt — keine
+     automatische Umkehrung. Das dunkle Band liegt tiefer als das helle
+     (L 0.48–0.67): Marken, die heller sind, blenden auf dunklem Grund und
+     verlieren zugleich Sättigung. */
+  --chart-1: oklch(0.6 0.15 255); /* blau     #3a81d7 */
+  --chart-2: oklch(0.66 0.14 60); /* orange   #cf7b26 */
+  --chart-3: oklch(0.66 0.107 185); /* türkis   #29a79b */
+  --chart-4: oklch(0.55 0.17 345); /* magenta  #b23e88 */
+  --chart-5: oklch(0.64 0.14 150); /* grün     #40a35c */
+  --chart-6: oklch(0.55 0.17 300); /* violett  #8254c4 */
 }
 
 /* Tokens fuer Tailwind-Utilities verfuegbar machen (bg-background, text-foreground, ...). */

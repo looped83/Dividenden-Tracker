@@ -29,10 +29,45 @@ Umsetzung als CSS-Variablen (Tailwind-4-`@theme`), Hell- und Dunkelmodus über
 | `--positive` | Zuwächse, Eingänge | gedecktes Grün | angepasst, Kontrast AA |
 | `--negative` | Korrekturen, Rückgänge, Fehler | gedecktes Rot | angepasst |
 | `--warning` | Warnungen, mögliche Duplikate | Bernstein | angepasst |
-| `--chart-1…6` | Diagrammserien | zurückhaltende, unterscheidbare Reihe (blau-basiert mit klaren Abstufungen; farbfehlsicht-tauglich) | eigene Dunkel-Varianten |
+| `--chart-1…6` | Diagrammserien | sechs Farbtöne in fester Reihenfolge (siehe unten) | eigene Dunkel-Stufen, keine Umkehrung |
 
 Regeln: Bedeutung nie durch Farbe allein (immer Text/Symbol dazu, z. B. Vorzeichen);
 alle Text-/Hintergrund-Paare ≥ WCAG AA (4,5:1; große Zahlen 3:1).
+
+#### 1a Diagrammpalette (kategorial)
+
+Die Reihenfolge ist verbindlich: Slot 1 zuerst, dann 2, dann 3 — **nie** durchrotieren,
+nie eine siebte Farbe erzeugen. Braucht eine Auswertung mehr als sechs Reihen, wird
+zusammengefasst („Sonstige") oder in kleine Einzeldiagramme aufgeteilt.
+
+| Slot | Farbton | Hell | Dunkel |
+|---|---|---|---|
+| 1 | Blau | `oklch(0.52 0.15 255)` `#1f68bc` | `oklch(0.60 0.15 255)` `#3a81d7` |
+| 2 | Orange | `oklch(0.62 0.14 60)` `#c26e12` | `oklch(0.66 0.14 60)` `#cf7b26` |
+| 3 | Türkis | `oklch(0.65 0.105 185)` `#28a497` | `oklch(0.66 0.107 185)` `#29a79b` |
+| 4 | Magenta | `oklch(0.52 0.17 345)` `#a8347f` | `oklch(0.55 0.17 345)` `#b23e88` |
+| 5 | Grün | `oklch(0.60 0.14 150)` `#319751` | `oklch(0.64 0.14 150)` `#40a35c` |
+| 6 | Violett | `oklch(0.46 0.16 300)` `#673ba2` | `oklch(0.55 0.17 300)` `#8254c4` |
+
+**Gemessen, nicht geschätzt.** Beide Sätze bestehen alle rechnerischen Prüfungen gegen
+die Kartenfläche (`#ffffff` hell, `#181d24` dunkel): Helligkeitsband, Chroma-Untergrenze,
+CVD-Abstand benachbarter Slots (schlechtestes Paar ΔE 12,1 hell / 10,3 dunkel bei einer
+Schwelle von 8), Normalsicht-Abstand (20,8 hell / 21,9 dunkel bei einer Schwelle von 15)
+und ≥ 3:1 Kontrast. Die ersten **drei** Slots halten die Schwellen zusätzlich über *alle*
+Paare — Darstellungen ohne feste Nachbarschaft (Streudiagramme, Landkarten) sind damit
+auf drei Reihen begrenzt.
+
+**Zwei Reihen (aktuell ↔ Referenz)** verwenden immer Slot 1 und Slot 2 — Blau gegen
+Orange, gegenüberliegende Farbtöne, ΔE 25,1 hell / 25,3 dunkel bei Protanopie. Die
+Referenzreihe ist zusätzlich gestrichelt oder benannt; Farbe allein trägt die Identität
+nie.
+
+**Der Dunkelsatz ist eigens gewählt, keine Aufhellung des hellen.** Sein Band liegt
+tiefer (L 0,48–0,67 gegenüber 0,43–0,77): Marken oberhalb davon blenden auf dunklem
+Grund und verlieren gleichzeitig Sättigung.
+
+Die Statusfarben (`--positive`, `--negative`, `--warning`) sind reserviert und werden nie
+als Serienfarbe benutzt — auch dann nicht, wenn ein Farbton ähnlich aussieht.
 
 ### Typografie
 

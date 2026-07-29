@@ -10,7 +10,7 @@ reines PostgreSQL 16 für Integrations-, RLS- und Restore-Tests (DECISIONS.md D-
 | Stufe | Umfang | Läuft in CI |
 |---|---|---|
 | Lint + Typecheck + Format | ESLint inkl. Geld-Verbotsliste, `tsc --noEmit` strict | ✅ Job `quality` |
-| Unit (Vitest) | 516 Tests / 59 Dateien | ✅ Job `quality` |
+| Unit (Vitest) | 519 Tests / 60 Dateien | ✅ Job `quality` |
 | Integration (PostgreSQL 16) | 98 Tests: Constraints, Trigger, RLS, Import, Statistik, Ziele, Restore | ✅ Job `db-integration` |
 | E2E (Playwright) | 26 Tests: Rauchtests + axe, Chromium und WebKit | ✅ Job `e2e-smoke` |
 
@@ -295,6 +295,9 @@ weiterhin über Unit- und Integrationstests abgedeckt.
 - `OverviewTab.test.tsx` — Render-Smoke des Übersichts-Unterbereichs mit echter
   Analytics-Verdrahtung über den Outlet-Kontext (historische Summe, Kernkennzahlen,
   Diagramm-Datentabelle).
+- `PaymentsHeatmap.test.tsx` — Heatmap-Zellen: Ein Monat **ohne** Zahlungen nennt seinen Wert
+  als Text (er stand zuvor in einem `aria-label` auf einem `div` und wurde dort nicht
+  vorgelesen), ein Monat **mit** Zahlungen ist bedienbar und benannt, und nur er.
 - `comparison.test.ts` — Zeitraumvergleich (CALCULATION_RULES.md §11.10). Schwerpunkt
   **Teiljahr**, weil dort der teuerste Fehler dieser Auswertungsart sitzt: Kappung in beide
   Richtungen (laufendes Jahr im Vordergrund **und** als Vergleichsseite), 250 € gegen 200 €

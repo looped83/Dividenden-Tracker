@@ -419,6 +419,39 @@ sie auf. Lieber kein Link mit Begründung als ein Link mit Abweichung.
 
 ---
 
+## D-7-3: Die Diagrammpalette wird gemessen, nicht ausgesucht
+
+**Status:** Accepted · **Scope:** Designsystem / Barrierefreiheit
+
+`--chart-1…6` sind in beiden Themes gegen die Kartenfläche durchgerechnet
+(Helligkeitsband, Chroma-Untergrenze, CVD-Abstand benachbarter Slots,
+Normalsicht-Abstand, Kontrast) und werden nur mit einem bestandenen Lauf
+geändert. Die Reihenfolge ist fest; eine siebte Serienfarbe entsteht nie.
+
+### Why
+
+Die vorherige Palette war nach Augenmaß gesetzt und fiel in **beiden** Themes
+durch: im Dunkelmodus lagen alle sechs Töne über dem Helligkeitsband, zwei unter
+der Chroma-Untergrenze, und benachbarte Slots trennten mit ΔE 5,9 statt 8. Im
+Hellmodus lagen Blau und Türkis bei ΔE 11,9 — auch mit vollem Farbsehen kaum
+auseinanderzuhalten. `--chart-6` war mit einer Chroma von 0,02 praktisch Grau
+und wurde trotzdem als Serienfarbe neben Blau eingesetzt (Vorjahresbalken im
+Dashboard).
+
+Die Werte sahen plausibel aus. Genau das ist der Punkt: Farbabstand ist
+rechenbar, also wird er gerechnet.
+
+### Guardrails
+
+- Zwei Reihen (aktuell ↔ Referenz) sind immer Slot 1 gegen Slot 2.
+- Statusfarben (`--positive`, `--negative`, `--warning`) sind reserviert.
+- Identität hängt nie an der Farbe allein: Legende, Strichart und Datentabelle
+  tragen dieselbe Aussage.
+
+*Beleg:* `src/styles/index.css`, UX_AND_DESIGN_SYSTEM.md #1a.
+
+---
+
 ## ADR-001: Historie vollständig im Client, Schwelle bei 10.000 Zahlungen
 
 **Status:** Accepted  
