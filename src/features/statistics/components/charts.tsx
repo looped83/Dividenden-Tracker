@@ -324,9 +324,13 @@ export function PaymentsHeatmap({
                 };
                 return (
                   <td key={cell.month} className="p-0">
+                    {/* Die Beschriftung steht als echter, versteckter Text in
+                        der Zelle — nicht als `aria-label`. Auf einem schlichten
+                        `div` (Rolle `generic`) ist `aria-label` unzulaessig und
+                        wird schlicht nicht vorgelesen: Monate ohne Drill-down
+                        waren damit fuer Screenreader stumm. */}
                     <div
                       title={label}
-                      aria-label={label}
                       {...(href
                         ? {
                             role: "button",
@@ -347,9 +351,7 @@ export function PaymentsHeatmap({
                           })}
                       style={style}
                     >
-                      {alpha > 0.55 && (
-                        <span className="sr-only">{formatMoney(cell.net)}</span>
-                      )}
+                      <span className="sr-only">{label}</span>
                     </div>
                   </td>
                 );
@@ -392,11 +394,11 @@ interface ComparisonLineChartProps {
  * auf einen Blick; nebeneinanderstehende Balken muesste man Paar fuer Paar
  * lesen.
  *
- * **Farbwahl geprueft, nicht geschaetzt:** `--chart-1` (blau) gegen `--chart-5`
- * (bernstein) — gegenueberliegende Farbtoene. Der Palettenvalidator meldet fuer
- * dieses Paar einen Abstand von ΔE 23,6 bei Protanopie und 26,3 bei
- * Tritanopie; die Schwelle liegt bei 8. Zwei benachbarte Blautoene
- * (`--chart-1`/`--chart-2`) haetten hier deutlich schlechter getrennt, und
+ * **Farbwahl gemessen, nicht geschaetzt:** `--chart-1` (blau) gegen `--chart-2`
+ * (orange) — die ersten beiden Plaetze der kategorialen Palette und zugleich
+ * gegenueberliegende Farbtoene. Der Palettenvalidator meldet fuer dieses Paar
+ * ΔE 25,1 (hell) bzw. 25,3 (dunkel) bei Protanopie; die Schwelle liegt bei 8.
+ * Zwei benachbarte Blautoene haetten hier deutlich schlechter getrennt, und
  * genau das Auseinanderhalten ist der Zweck dieses Diagramms.
  *
  * **Identitaet haengt nicht an der Farbe allein:** Die Vergleichsreihe ist
@@ -455,7 +457,7 @@ export function ComparisonLineChart({
               type="monotone"
               dataKey="reference"
               name={referenceLabel}
-              stroke="var(--chart-5)"
+              stroke="var(--chart-2)"
               strokeWidth={2}
               strokeDasharray="6 4"
               dot={false}
@@ -492,7 +494,7 @@ export function ComparisonLineChart({
             className="h-0.5 w-6 shrink-0 rounded-full"
             style={{
               backgroundImage:
-                "repeating-linear-gradient(to right, var(--chart-5) 0 6px, transparent 6px 10px)",
+                "repeating-linear-gradient(to right, var(--chart-2) 0 6px, transparent 6px 10px)",
             }}
           />
           {referenceLabel}

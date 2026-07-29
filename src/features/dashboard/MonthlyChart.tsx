@@ -271,7 +271,7 @@ export function MonthlyChart({ payments, selection, today }: MonthlyChartProps) 
                     <Bar
                       dataKey="prior"
                       name={priorYearLabel}
-                      fill="var(--chart-6)"
+                      fill="var(--chart-2)"
                       radius={[4, 4, 0, 0]}
                       isAnimationActive={!reducedMotion}
                     />
