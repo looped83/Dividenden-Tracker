@@ -10,6 +10,7 @@ import {
   validateBackupVersion,
   validateBackupCompleteness,
   validateBackupIntegrity,
+  toIsoTimestamp,
   type BackupRoot,
 } from "@/lib/backup/backupFormat";
 
@@ -362,5 +363,51 @@ describe("Backup Format Validation", () => {
       const result = parseBackupSafe(backup);
       expect(result.success).toBe(false);
     });
+  });
+});
+
+describe("Zeitstempel beim Einlesen", () => {
+  /**
+   * Der Fall, an dem die erste echte Wiederherstellung scheiterte: Die
+   * Formatpruefung verlangte starr `Z` und hoechstens drei Nachkommastellen,
+   * PostgREST liefert aber Zeitzonenversatz und Mikrosekunden. Die App konnte
+   * ihre eigene Sicherungsdatei nicht einlesen.
+   *
+   * Diese Faelle muessen dauerhaft lesbar bleiben — auch Dateien, die vor der
+   * Korrektur entstanden sind.
+   */
+  const akzeptiert = [
+    [
+      "Zeitzonenversatz und Mikrosekunden (PostgREST)",
+      "2025-06-15T10:30:00.123456+00:00",
+    ],
+    ["Zeitzonenversatz ohne Nachkommastellen", "2025-06-15T10:30:00+00:00"],
+    ["Versatz ohne Doppelpunkt", "2025-06-15T10:30:00+0000"],
+    ["anderer Zeitzonenversatz", "2025-06-15T12:30:00+02:00"],
+    ["kanonische Form mit Z", "2025-06-15T10:30:00.123Z"],
+    ["Z ohne Nachkommastellen", "2025-06-15T10:30:00Z"],
+    ["Leerzeichen statt T (psql-Ausgabe)", "2025-06-15 10:30:00+00"],
+  ] as const;
+
+  for (const [name, value] of akzeptiert) {
+    it(`akzeptiert ${name}`, () => {
+      expect(toIsoTimestamp(value)).not.toBeNull();
+    });
+  }
+
+  it("normalisiert auf die kanonische Form", () => {
+    expect(toIsoTimestamp("2025-06-15T10:30:00.123456+00:00")).toBe(
+      "2025-06-15T10:30:00.123Z",
+    );
+  });
+
+  it("rechnet einen Zeitzonenversatz korrekt um", () => {
+    expect(toIsoTimestamp("2025-06-15T12:30:00+02:00")).toBe("2025-06-15T10:30:00.000Z");
+  });
+
+  it("weist unbrauchbare Werte ab", () => {
+    for (const value of ["", "gestern", "2025-06-15", "2025-13-45T99:99:99Z"]) {
+      expect(toIsoTimestamp(value)).toBeNull();
+    }
   });
 });
