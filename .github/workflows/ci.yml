@@ -58,8 +58,34 @@ jobs:
 
       # Chromium und WebKit: Der iPhone-Lauf soll im CI mit Safaris Motor
       # laufen, nicht nur mit Chromiums Geometrie.
-      - name: Install browsers
+      #
+      # Beide Browser wurden zuvor bei **jedem** Lauf neu geladen — rund
+      # 150 MB Download plus `apt-get` fuer die Systembibliotheken. Der Schritt
+      # dauerte damit laenger als alle Tests zusammen (gemessen: `quality`
+      # 1:29, `db-integration` 0:50, `e2e-smoke` ueber 7 Minuten, davon fast
+      # alles hier).
+      #
+      # Der Cache haengt am Lockfile: Er wird verworfen, sobald sich die
+      # Playwright-Version aendert, und kann deshalb nie zu einem veralteten
+      # Browser fuehren.
+      - name: Playwright-Browser aus dem Cache
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      # Nur beim Cache-Fehlschlag: Browser laden **und** Systempakete setzen.
+      - name: Browser installieren
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium webkit
+
+      # Bei einem Treffer liegen die Browser bereits vor; die Systembibliotheken
+      # gehoeren dem Runner und nicht dem Cache, muessen also weiterhin gesetzt
+      # werden — das ist reines `apt` ohne Download.
+      - name: Systembibliotheken sicherstellen
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium webkit
 
       # Der Playwright-Server baut selbst und liefert das Ergebnis aus
       # (playwright.config.ts) — geprueft wird der gebaute Stand.
