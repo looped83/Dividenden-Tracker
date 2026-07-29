@@ -182,8 +182,8 @@ Keine zukünftigen Zahlungen, keine erwarteten Dividenden, keine Kurse.
 
 Sechs Unterbereiche: Übersicht, Jahre, Monate, **Vergleich**, Unternehmen, Depots.
 
-Der Vergleich stellt zwei Zeiträume gegenüber (Jahr gegen Jahr, letzte 12 Monate gegen die 12
-davor). Ist eines der Jahre das laufende, endet der Vergleich auf **beiden** Seiten am selben
+Der Vergleich stellt zwei Zeiträume gegenüber: Jahr gegen Jahr, Monat gegen denselben Monat des
+Vorjahres (aufgeschlüsselt nach Unternehmen) oder die letzten 12 Monate gegen die 12 davor. Ist eines der Jahre das laufende, endet der Vergleich auf **beiden** Seiten am selben
 Kalendertag, und die Seite benennt diesen Stichtag — alles andere wäre eine systematische
 Untertreibung des laufenden Jahres (CALCULATION_RULES.md §11.10, DECISIONS.md D-7-1). Es wird
 nichts hochgerechnet (Grundsatz 8).

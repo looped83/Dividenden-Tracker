@@ -5,26 +5,35 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select } from "@/components/ui/select";
 import { StatCard } from "@/components/domain/StatCard";
 import { AmountText } from "@/components/money/AmountText";
+import { cn } from "@/lib/utils/cn";
+import type { Money } from "@/lib/money";
 import {
   availableYears,
+  compareMonths,
   compareRollingTwelveMonths,
   compareYears,
   filterPayments,
   monthNameDe,
   refDateFromDate,
+  type ComparisonBase,
   type ComparisonMonthSide,
+  type MonthComparison,
   type PeriodComparison,
   type StatisticsFilter,
 } from "@/lib/statistics";
 import { useStatisticsContext } from "./context";
+import type { EntityInfo } from "@/features/dashboard/format";
 import {
   describeComparison,
+  entityArchived,
+  entityName,
   formatIsoDate,
   formatPayments,
   statisticsDrillHref,
 } from "./format";
 import {
   applyComparisonSelection,
+  comparisonMonthOptions,
   comparisonYearOptions,
   parseComparisonSelection,
   type ComparisonMode,
@@ -45,7 +54,7 @@ import { ComparisonLineChart, type ComparisonPoint } from "./components/charts";
  * waere. Unternehmens-, Depot-, Quellen- und Artfilter wirken dagegen weiter.
  */
 export function ComparisonTab() {
-  const { allPayments, filter } = useStatisticsContext();
+  const { allPayments, filter, securities } = useStatisticsContext();
   const [searchParams, setSearchParams] = useSearchParams();
   const today = React.useMemo(() => refDateFromDate(), []);
 
@@ -71,23 +80,44 @@ export function ComparisonTab() {
     [setSearchParams],
   );
 
-  const comparison = React.useMemo<PeriodComparison>(
-    () =>
-      selection.mode === "rollierend"
-        ? compareRollingTwelveMonths(payments, today)
-        : compareYears(payments, selection.currentYear, selection.referenceYear, today),
-    [payments, selection.mode, selection.currentYear, selection.referenceYear, today],
+  const monthOptions = React.useMemo(
+    () => comparisonMonthOptions(selection.currentYear, today),
+    [selection.currentYear, today],
   );
+
+  const comparison = React.useMemo<PeriodComparison | MonthComparison>(() => {
+    if (selection.mode === "rollierend")
+      return compareRollingTwelveMonths(payments, today);
+    if (selection.mode === "monate") {
+      return compareMonths(
+        payments,
+        selection.currentYear,
+        selection.referenceYear,
+        selection.month,
+        today,
+      );
+    }
+    return compareYears(payments, selection.currentYear, selection.referenceYear, today);
+  }, [
+    payments,
+    selection.mode,
+    selection.currentYear,
+    selection.referenceYear,
+    selection.month,
+    today,
+  ]);
 
   const points = React.useMemo<ComparisonPoint[]>(
     () =>
-      comparison.months.map((month) => ({
-        label: month.label,
-        current: month.current.cumulative.toChartNumber(),
-        reference: month.reference.cumulative.toChartNumber(),
-        currentMoney: month.current.cumulative,
-        referenceMoney: month.reference.cumulative,
-      })),
+      "months" in comparison
+        ? comparison.months.map((month) => ({
+            label: month.label,
+            current: month.current.cumulative.toChartNumber(),
+            reference: month.reference.cumulative.toChartNumber(),
+            currentMoney: month.current.cumulative,
+            referenceMoney: month.reference.cumulative,
+          }))
+        : [],
     [comparison],
   );
 
@@ -98,6 +128,10 @@ export function ComparisonTab() {
     selection.mode === "rollierend"
       ? "gegenüber den 12 Monaten davor"
       : `gegenüber ${comparison.reference.label}`;
+  const truncationNote =
+    selection.mode === "monate"
+      ? "Der Monat läuft noch. Beide Seiten enden deshalb am"
+      : "Ein laufendes Jahr ist beteiligt. Beide Seiten enden deshalb am";
   const changeTone =
     change.tone === "positive"
       ? "text-positive"
@@ -115,7 +149,12 @@ export function ComparisonTab() {
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div
+            className={cn(
+              "grid grid-cols-1 gap-4",
+              selection.mode === "monate" ? "sm:grid-cols-4" : "sm:grid-cols-3",
+            )}
+          >
             <label className="space-y-1.5">
               <span className="text-sm font-medium">Vergleichsart</span>
               <Select
@@ -128,11 +167,33 @@ export function ComparisonTab() {
                 }}
               >
                 <option value="jahre">Jahr gegen Jahr</option>
+                <option value="monate">Monat gegen Monat</option>
                 <option value="rollierend">Letzte 12 Monate</option>
               </Select>
             </label>
 
-            {selection.mode === "jahre" && (
+            {selection.mode === "monate" && (
+              <label className="space-y-1.5">
+                <span className="text-sm font-medium">Monat</span>
+                <Select
+                  value={String(selection.month)}
+                  onChange={(event) => {
+                    setSelection({
+                      ...selection,
+                      month: Number.parseInt(event.target.value, 10),
+                    });
+                  }}
+                >
+                  {monthOptions.map((month) => (
+                    <option key={month} value={month}>
+                      {monthNameDe(month)}
+                    </option>
+                  ))}
+                </Select>
+              </label>
+            )}
+
+            {selection.mode !== "rollierend" && (
               <>
                 <label className="space-y-1.5">
                   <span className="text-sm font-medium">Jahr</span>
@@ -149,6 +210,12 @@ export function ComparisonTab() {
                           selection.referenceYear === currentYear
                             ? currentYear - 1
                             : selection.referenceYear,
+                        // Im laufenden Jahr gibt es den gewaehlten Monat
+                        // moeglicherweise noch nicht.
+                        month: Math.min(
+                          selection.month,
+                          comparisonMonthOptions(currentYear, today).length,
+                        ),
                       });
                     }}
                   >
@@ -188,12 +255,12 @@ export function ComparisonTab() {
             <p className="flex items-start gap-2 rounded-md bg-muted/50 p-3 text-sm text-muted-foreground">
               <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
               <span>
-                Ein laufendes Jahr ist beteiligt. Beide Seiten enden deshalb am{" "}
+                {truncationNote}{" "}
                 <strong className="font-medium text-foreground">
                   {formatIsoDate(comparison.cutoff)}
                 </strong>{" "}
-                bzw. am selben Tag des Vergleichsjahres — sonst stünde ein angefangenes
-                Jahr gegen ein volles.
+                bzw. am selben Tag des Vergleichszeitraums — sonst stünde ein angefangener
+                Zeitraum gegen einen vollen.
               </span>
             </p>
           )}
@@ -233,43 +300,65 @@ export function ComparisonTab() {
         />
       </div>
 
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle>Kumulierter Verlauf</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Aufsummiert vom Beginn des Zeitraums. Der Abstand der Linien ist der Vorsprung
-            bzw. Rückstand zum jeweiligen Zeitpunkt.
-          </p>
-        </CardHeader>
-        <CardContent>
-          <ComparisonLineChart
-            points={points}
-            currentLabel={comparison.current.label}
-            referenceLabel={comparison.reference.label}
-            ariaLabel={`Kumulierte Netto-Dividenden: ${comparison.current.label} gegenüber ${comparison.reference.label}`}
-          />
-        </CardContent>
-      </Card>
+      {"months" in comparison ? (
+        <>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle>Kumulierter Verlauf</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Aufsummiert vom Beginn des Zeitraums. Der Abstand der Linien ist der
+                Vorsprung bzw. Rückstand zum jeweiligen Zeitpunkt.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <ComparisonLineChart
+                points={points}
+                currentLabel={comparison.current.label}
+                referenceLabel={comparison.reference.label}
+                ariaLabel={`Kumulierte Netto-Dividenden: ${comparison.current.label} gegenüber ${comparison.reference.label}`}
+              />
+            </CardContent>
+          </Card>
 
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle>Monat für Monat</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Einzelne Monate, nicht aufsummiert. Ein Betrag öffnet die zugehörigen
-            Dividendeneingänge.
-          </p>
-        </CardHeader>
-        <CardContent>
-          <MonthlyComparisonTable comparison={comparison} filter={filter} />
-        </CardContent>
-      </Card>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle>Monat für Monat</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Einzelne Monate, nicht aufsummiert. Ein Betrag öffnet die zugehörigen
+                Dividendeneingänge.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <MonthlyComparisonTable comparison={comparison} filter={filter} />
+            </CardContent>
+          </Card>
+        </>
+      ) : (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle>Nach Unternehmen</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Ein Monat lässt sich nicht in Monate zerlegen — die Aufschlüsselung erfolgt
+              deshalb nach Unternehmen. Wer nur auf einer Seite steht, hat diesmal oder
+              damals nicht gezahlt.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <SecurityComparisonTable
+              comparison={comparison}
+              filter={filter}
+              securities={securities}
+            />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
 
 /** „01.01.2026 – 29.07.2026". */
 function describeRange(
-  comparison: PeriodComparison,
+  comparison: ComparisonBase,
   side: "current" | "reference",
 ): string {
   const { range } = comparison[side];
@@ -395,6 +484,192 @@ function MonthCell({
         <span className="sr-only">
           {" "}
           — Zahlungen im {monthNameDe(side.month)} {side.year} anzeigen
+        </span>
+      </Link>
+    </td>
+  );
+}
+
+interface SecurityComparisonTableProps {
+  comparison: MonthComparison;
+  filter: StatisticsFilter;
+  securities: Map<string, EntityInfo>;
+}
+
+/**
+ * Monatsvergleich, aufgeschluesselt nach Unternehmen.
+ *
+ * Die Zeilen beantworten die Anschlussfrage: Der Monat war schwaecher — bei
+ * wem? Ein Unternehmen, das nur auf einer Seite steht, bleibt sichtbar; ein
+ * Ausfall ist der wichtigste Teil der Antwort und darf nicht stillschweigend
+ * verschwinden.
+ *
+ * Verlinkt wird nur bei vollstaendigen Monaten (DECISIONS.md D-7-2): Die
+ * Zahlungsliste filtert auf Jahr und Monat, nicht auf einen Tag.
+ */
+function SecurityComparisonTable({
+  comparison,
+  filter,
+  securities,
+}: SecurityComparisonTableProps) {
+  const { current, reference, month } = comparison;
+
+  if (comparison.securities.length === 0) {
+    return (
+      <p className="py-8 text-center text-sm text-muted-foreground">
+        In keinem der beiden Monate gab es Dividendeneingänge.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="w-full overflow-x-auto rounded-lg border border-border">
+        <table className="w-full caption-bottom text-sm">
+          <caption className="sr-only">
+            Netto-Dividenden je Unternehmen: {current.label} gegenüber {reference.label}
+          </caption>
+          <thead className="bg-muted/50">
+            <tr className="border-b border-border">
+              <th scope="col" className="px-2 py-3 text-left font-medium sm:px-4">
+                Unternehmen
+              </th>
+              {/* Nur das Jahr: Welcher Monat verglichen wird, steht in der
+                  Ueberschrift, in den Kennzahlkarten und in der Tabellen-
+                  beschriftung. Auf schmalen Geraeten entscheidet die Ersparnis
+                  darueber, ob die Differenzspalte noch ins Bild passt. */}
+              <th
+                scope="col"
+                className="whitespace-nowrap px-2 py-3 text-right font-medium sm:px-4"
+              >
+                {parseYearOf(current.range.start)}
+              </th>
+              <th
+                scope="col"
+                className="whitespace-nowrap px-2 py-3 text-right font-medium sm:px-4"
+              >
+                {parseYearOf(reference.range.start)}
+              </th>
+              <th
+                scope="col"
+                className="whitespace-nowrap px-2 py-3 text-right font-medium sm:px-4"
+              >
+                {/* Auf schmalen Geraeten das Zeichen, sonst das Wort — vier
+                    Spalten mit Firmennamen sind bei 390 px sonst nicht zu
+                    halten. Vorgelesen wird in beiden Faellen „Differenz". */}
+                <span aria-hidden className="sm:hidden">
+                  Δ
+                </span>
+                <span className="sr-only sm:not-sr-only">Differenz</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody className="[&_tr:last-child]:border-0">
+            {comparison.securities.map((row) => (
+              <tr key={row.securityId} className="border-b border-border">
+                <th scope="row" className="px-2 py-3 text-left font-medium sm:px-4">
+                  <Link
+                    to={`/unternehmen/${row.securityId}`}
+                    className="rounded-sm underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    {entityName(securities, row.securityId)}
+                  </Link>
+                  {entityArchived(securities, row.securityId) && (
+                    <span className="ml-1 text-xs font-normal text-muted-foreground">
+                      (archiviert)
+                    </span>
+                  )}
+                </th>
+                <SecurityCell
+                  amount={row.current}
+                  year={parseYearOf(current.range.start)}
+                  month={month}
+                  securityId={row.securityId}
+                  complete={!comparison.truncated}
+                  filter={filter}
+                />
+                <SecurityCell
+                  amount={row.reference}
+                  year={parseYearOf(reference.range.start)}
+                  month={month}
+                  securityId={row.securityId}
+                  complete={!comparison.truncated}
+                  filter={filter}
+                />
+                <td className="whitespace-nowrap px-2 py-3 text-right sm:px-4">
+                  {row.difference.isZero() ? (
+                    <span className="text-muted-foreground">—</span>
+                  ) : (
+                    <AmountText amount={row.difference} showSign />
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {comparison.truncated && (
+        <p className="text-sm text-muted-foreground">
+          <span aria-hidden>*</span> Angeschnittener Monat: nur bis zum Stichtag
+          gerechnet. Diese Beträge führen nicht in die Zahlungsliste, weil sie dort nur
+          als ganzer Monat darstellbar wären.
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** Jahr aus einem ISO-Datum — die Bereichsgrenzen tragen es bereits. */
+function parseYearOf(iso: string): number {
+  return Number.parseInt(iso.slice(0, 4), 10);
+}
+
+function SecurityCell({
+  amount,
+  year,
+  month,
+  securityId,
+  complete,
+  filter,
+}: {
+  amount: Money;
+  year: number;
+  month: number;
+  securityId: string;
+  complete: boolean;
+  filter: StatisticsFilter;
+}) {
+  if (!complete) {
+    return (
+      <td className="whitespace-nowrap px-2 py-3 text-right sm:px-4">
+        <span title="Angeschnittener Monat — bis zum Stichtag gerechnet">
+          <AmountText amount={amount} /> <span aria-hidden>*</span>
+          <span className="sr-only">(nur bis zum Stichtag)</span>
+        </span>
+      </td>
+    );
+  }
+
+  if (amount.isZero()) {
+    return (
+      <td className="whitespace-nowrap px-2 py-3 text-right text-muted-foreground sm:px-4">
+        <span aria-hidden>—</span>
+        <span className="sr-only">Keine Zahlungen</span>
+      </td>
+    );
+  }
+
+  return (
+    <td className="whitespace-nowrap px-2 py-3 text-right sm:px-4">
+      <Link
+        to={statisticsDrillHref(filter, { year, month, securityId })}
+        className="rounded-sm underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <AmountText amount={amount} />
+        <span className="sr-only">
+          {" "}
+          — Zahlungen im {monthNameDe(month)} {year} anzeigen
         </span>
       </Link>
     </td>

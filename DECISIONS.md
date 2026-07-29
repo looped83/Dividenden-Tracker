@@ -396,6 +396,9 @@ hier und nicht nur im Code.
 Die Oberfläche **benennt** den Stichtag, statt ihn nur anzuwenden: Eine Zahl mit
 der Überschrift „2026", die bis Juli reicht, führt sonst in die Irre.
 
+Dasselbe gilt für den Monatsvergleich (laufender Monat) und für die Auswahl
+selbst: Ein Monat, der noch nicht begonnen hat, wird gar nicht erst angeboten.
+
 *Beleg:* `lib/statistics/comparison.ts`, `tests/unit/lib/statistics/comparison.test.ts`
 (25 Fälle), CALCULATION_RULES.md §11.10.
 

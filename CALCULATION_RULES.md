@@ -371,6 +371,15 @@ Gegenüberstellung zweier Zeiträume im Unterbereich `/statistiken/vergleich`.
   Fenster sind exakt zwölf Monate lang und enden am selben Kalendertag (`1.8.2025–29.7.2026`
   gegen `1.8.2024–29.7.2025`). Er hängt nicht am Jahreswechsel, an dem ein Jahresvergleich fast
   nichts mehr aussagt.
+- **Monatsvergleich** (`compareMonths`). Derselbe Kalendermonat zweier Jahre (`Mai 2026` gegen
+  `Mai 2025`) — **nicht** der Vormonat: Dividenden sind saisonal, ein März gegen einen April
+  verglichen ergäbe eine beliebige Zahl. Läuft der Monat noch, enden **beide** Seiten am
+  Referenztag; ist er abgeschlossen, zählen beide Monate vollständig. Ein Monat, der noch nicht
+  begonnen hat, ist nicht wählbar — „0 € gegen 280 €" wäre kein Rückgang, sondern eine
+  Falschaussage. Aufgeschlüsselt wird **nach Unternehmen** (ein Monat lässt sich nicht in Monate
+  zerlegen): alle Unternehmen mit Zahlungen auf einer der beiden Seiten, absteigend nach
+  aktuellem Betrag. Wer nur im Vergleichsmonat vorkommt, bleibt sichtbar — ein Ausfall ist der
+  wichtigste Teil der Antwort.
 - **Kennzahlen.** Je Seite Nettosumme (§9.1, effektiver Monat §10) und Anzahl Zahlungen; die
   Veränderung über `comparePeriods` (§6.4). Je Monat beide Monatswerte, ihre Differenz und die
   laufende Summe seit Beginn des Zeitraums. Die letzte laufende Summe entspricht per Konstruktion
@@ -384,9 +393,11 @@ Gegenüberstellung zweier Zeiträume im Unterbereich `/statistiken/vergleich`.
   der mehr zeigt als die Zahl daneben, beschädigt das Vertrauen in beide.
 - **Filter.** Unternehmen, Depot, Datenquelle und Zahlungsart wirken wie überall; der
   **Jahresfilter** wirkt in diesem Unterbereich nicht (er reduzierte die Datenbasis auf ein Jahr
-  und ließe die Vergleichsseite grundsätzlich leer). Die beiden Zeiträume werden hier gewählt und
-  liegen unter eigenen URL-Schlüsseln (`?modus=&basis=&referenz=`); die Oberfläche benennt das,
-  solange ein Jahresfilter gesetzt ist.
+  und ließe die Vergleichsseite grundsätzlich leer). Sein Regler wird deshalb hier ausgeblendet:
+  Ein Bedienelement ohne Wirkung ist schlimmer als keines. Ein aus einem anderen Unterbereich
+  mitgebrachter Jahresfilter bleibt in der URL, wird aber benannt und lässt sich über „Filter
+  zurücksetzen" räumen. Die verglichenen Zeiträume liegen unter eigenen URL-Schlüsseln
+  (`?modus=&basis=&referenz=&monat=`).
 
 ## 11.11 Vorjahresvergleich je Zahlung (Dividendenliste)
 

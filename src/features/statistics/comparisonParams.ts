@@ -11,7 +11,7 @@ import type { RefDate } from "@/lib/statistics";
  * Bereich unwirksam (die Oberflaeche sagt das ausdruecklich).
  */
 
-export type ComparisonMode = "jahre" | "rollierend";
+export type ComparisonMode = "jahre" | "rollierend" | "monate";
 
 export interface ComparisonSelection {
   mode: ComparisonMode;
@@ -19,10 +19,32 @@ export interface ComparisonSelection {
   currentYear: number;
   /** Die Seite, gegen die verglichen wird. */
   referenceYear: number;
+  /** Verglichener Kalendermonat (1..12) — nur im Modus „monate" wirksam. */
+  month: number;
 }
 
+const MODES: readonly ComparisonMode[] = ["jahre", "rollierend", "monate"];
+
 function parseMode(raw: string | null): ComparisonMode {
-  return raw === "rollierend" ? "rollierend" : "jahre";
+  return raw !== null && MODES.includes(raw as ComparisonMode)
+    ? (raw as ComparisonMode)
+    : "jahre";
+}
+
+/**
+ * Waehlbare Monate. Im laufenden Jahr endet die Liste beim laufenden Monat:
+ * Ein Monat, der noch nicht begonnen hat, ergaebe „0 € gegen 280 € — minus
+ * 100 %". Das waere kein Rueckgang, sondern eine Falschaussage.
+ */
+export function comparisonMonthOptions(year: number, today: RefDate): number[] {
+  const last = year === today.year ? today.month : 12;
+  return Array.from({ length: last }, (_, index) => index + 1);
+}
+
+function parseMonth(raw: string | null, allowed: readonly number[]): number | null {
+  if (raw === null || !/^\d{1,2}$/.test(raw)) return null;
+  const month = Number.parseInt(raw, 10);
+  return allowed.includes(month) ? month : null;
 }
 
 function parseYear(raw: string | null, allowed: readonly number[]): number | null {
@@ -71,13 +93,20 @@ export function parseComparisonSelection(
       ? parsedReference
       : fallbackReference;
 
-  return { mode: parseMode(params.get("modus")), currentYear, referenceYear };
+  // Vorgabe ist der laufende Monat; im laufenden Jahr wird er gekappt, sodass
+  // nie ein Monat ausgewaehlt sein kann, der noch nicht begonnen hat.
+  const monthOptions = comparisonMonthOptions(currentYear, today);
+  const fallbackMonth = Math.min(today.month, monthOptions.length);
+  const month = parseMonth(params.get("monat"), monthOptions) ?? fallbackMonth;
+
+  return { mode: parseMode(params.get("modus")), currentYear, referenceYear, month };
 }
 
 /**
- * Schreibt die Auswahl in die URL. Im rollierenden Modus haben die Jahre keine
- * Bedeutung — sie werden entfernt, damit die Adresse nur traegt, was auch
- * wirkt.
+ * Schreibt die Auswahl in die URL. Geschrieben wird nur, was im jeweiligen
+ * Modus auch wirkt: Im rollierenden Modus haben weder Jahre noch Monat eine
+ * Bedeutung, im Jahresvergleich der Monat nicht. Eine Adresse soll nichts
+ * tragen, das nichts bewirkt.
  */
 export function applyComparisonSelection(
   params: URLSearchParams,
@@ -88,10 +117,18 @@ export function applyComparisonSelection(
     next.set("modus", "rollierend");
     next.delete("basis");
     next.delete("referenz");
+    next.delete("monat");
     return next;
   }
-  next.delete("modus");
+
+  if (selection.mode === "monate") next.set("modus", "monate");
+  else next.delete("modus");
+
   next.set("basis", String(selection.currentYear));
   next.set("referenz", String(selection.referenceYear));
+
+  if (selection.mode === "monate") next.set("monat", String(selection.month));
+  else next.delete("monat");
+
   return next;
 }

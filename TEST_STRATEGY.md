@@ -10,7 +10,7 @@ reines PostgreSQL 16 für Integrations-, RLS- und Restore-Tests (DECISIONS.md D-
 | Stufe | Umfang | Läuft in CI |
 |---|---|---|
 | Lint + Typecheck + Format | ESLint inkl. Geld-Verbotsliste, `tsc --noEmit` strict | ✅ Job `quality` |
-| Unit (Vitest) | 519 Tests / 60 Dateien | ✅ Job `quality` |
+| Unit (Vitest) | 544 Tests / 60 Dateien | ✅ Job `quality` |
 | Integration (PostgreSQL 16) | 98 Tests: Constraints, Trigger, RLS, Import, Statistik, Ziele, Restore | ✅ Job `db-integration` |
 | E2E (Playwright) | 26 Tests: Rauchtests + axe, Chromium und WebKit | ✅ Job `e2e-smoke` |
 
@@ -305,12 +305,19 @@ weiterhin über Unit- und Integrationstests abgedeckt.
   Zahlung genau am Stichtag bzw. einen Tag danach, Nullmonate, negative Korrekturen,
   Summengleichheit von Monatswerten und kumuliertem Verlauf zur Periodensumme, rollierende
   Zwölfmonatsfenster über den Jahreswechsel, sowie die Kennzeichnung angeschnittener Monate.
+  Für den **Monatsvergleich** zusätzlich: Kappung des laufenden Monats auf beiden Seiten,
+  Stichtag jenseits der Monatslänge (31. im Februar), Aufschlüsselung nach Unternehmen inklusive
+  eines Unternehmens, das nur auf einer Seite zahlt, und Summengleichheit der Zeilen zur
+  Monatssumme.
 - `comparisonParams.test.ts` — URL-Zustand des Vergleichs (`?modus=&basis=&referenz=`):
   Vorgaben, Verwerfen nicht wählbarer Jahre, kein Jahr gegen sich selbst, Round-Trip.
 - `ComparisonTab.test.tsx` — Oberfläche des Vergleichs bei festgesetztem Systemdatum: benannter
   Stichtag, Zeiträume je Seite, Drill-down nur für vollständige Monate (der angeschnittene
   Monat trägt **keinen** Link, DECISIONS.md D-7-2), Übernahme des Unternehmensfilters ins
-  Drill-down-Ziel, Moduswechsel und der Hinweis, dass der Jahresfilter hier nicht wirkt.
+  Drill-down-Ziel, Moduswechsel und der Hinweis, dass der Jahresfilter hier nicht wirkt. Für den
+  Monatsvergleich: Aufschlüsselung nach Unternehmen statt nach Monaten, Drill-down auf
+  Unternehmen + Jahr + Monat, benannte Kappung des laufenden Monats, und dass ein noch nicht
+  begonnener Monat gar nicht erst zur Auswahl steht.
 
 **Integration (`tests/integration/statistics.test.ts`, benötigt lokale Postgres-DB):** SQL-Ebene
 der Statistik-Datenbasis (identische Query wie `fetchDashboardPayments`): Jahres-, Unternehmens-
