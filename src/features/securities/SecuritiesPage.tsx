@@ -1,4 +1,5 @@
 import * as React from "react";
+import { Link } from "react-router";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import {
@@ -508,7 +509,17 @@ export function SecuritiesPage() {
               const quality = DATA_QUALITY_LABELS[security.data_quality];
               return (
                 <TableRow key={security.id}>
-                  <TableCell className="font-medium">{security.name}</TableCell>
+                  <TableCell className="font-medium">
+                    {/* Der Name fuehrt zur Detailseite — sie beantwortet die
+                        Frage nach der Entwicklung dieser Position, die diese
+                        Verwaltungsliste bewusst nicht stellt. */}
+                    <Link
+                      to={`/unternehmen/${security.id}`}
+                      className="rounded-sm outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      {security.name}
+                    </Link>
+                  </TableCell>
                   <TableCell className="text-muted-foreground">
                     {security.ticker ?? "—"}
                   </TableCell>
