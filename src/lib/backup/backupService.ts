@@ -46,7 +46,7 @@ import {
  * nachziehen — `validateBackupVersion` entscheidet daran, ob eine aeltere
  * Sicherung noch eingespielt werden darf.
  */
-const SCHEMA_VERSION = "0023";
+const SCHEMA_VERSION = "0024";
 
 /**
  * Version der Anwendung, zur Bauzeit aus `package.json` eingesetzt
