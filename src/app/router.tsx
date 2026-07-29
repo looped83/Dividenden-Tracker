@@ -53,6 +53,9 @@ const YearsTab = React.lazy(async () => ({
 const MonthsTab = React.lazy(async () => ({
   default: (await import("@/features/statistics/MonthsTab")).MonthsTab,
 }));
+const ComparisonTab = React.lazy(async () => ({
+  default: (await import("@/features/statistics/ComparisonTab")).ComparisonTab,
+}));
 const CompaniesTab = React.lazy(async () => ({
   default: (await import("@/features/statistics/CompaniesTab")).CompaniesTab,
 }));
@@ -136,6 +139,7 @@ export const router = createHashRouter([
           { index: true, element: <OverviewTab /> },
           { path: "jahre", element: <YearsTab /> },
           { path: "monate", element: <MonthsTab /> },
+          { path: "vergleich", element: <ComparisonTab /> },
           { path: "unternehmen", element: <CompaniesTab /> },
           { path: "depots", element: <DepotsTab /> },
         ],

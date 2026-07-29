@@ -7,3 +7,4 @@ export {
   normalizePayoutMonths,
 } from "./effectiveMonth";
 export { mapAnalyticsPayment, type RawAnalyticsRow } from "./mapPayment";
+export * from "./comparison";

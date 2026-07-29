@@ -375,8 +375,9 @@ Umgesetzt:
   `depotStatistics`, `calendarMonthBuckets`, `heatmapByYearMonth`, `averagePayment`,
   `averagePerActiveMonth`, `largestPayment`, `activeMonthCount`, `worstMonthInYear`, `bestYear`
   (CALCULATION_RULES.md §11). Keine parallele Logik, keine Berechnung in Komponenten.
-- Statistikbereich `src/features/statistics` mit eigener Navigation und fünf Unterbereichen
-  (Übersicht, Jahre, Monate, Unternehmen, Depots) als verschachtelte Routen unter `/statistiken`.
+- Statistikbereich `src/features/statistics` mit eigener Navigation und sechs Unterbereichen
+  (Übersicht, Jahre, Monate, Vergleich, Unternehmen, Depots) als verschachtelte Routen unter
+  `/statistiken`.
 - Geteilter Datenfluss mit dem Dashboard (`useStatisticsData` nutzt den Query-Key
   `['payments','dashboard']`); Outlet-Kontext (`context.ts`) reicht den **einmal** gefilterten
   Datensatz an alle Unterbereiche weiter (ARCHITECTURE.md §4.5).

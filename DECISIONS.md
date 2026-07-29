@@ -382,6 +382,43 @@ die Schwelle.
 
 ---
 
+## D-7-1: Zeitraumvergleiche kappen immer beide Seiten
+
+**Status:** Accepted · **Scope:** Fachlogik / Vertrauen in die Zahlen
+
+Ist eines der beiden verglichenen Kalenderjahre das **laufende**, endet der
+Vergleich auf **beiden** Seiten am selben Kalendertag. Ein laufendes Jahr gegen
+ein volles Vorjahr zu stellen ist kein Vergleich, sondern eine systematische
+Untertreibung — im Juli fehlen der einen Seite fünf Monate. Der Fehler fällt
+nicht auf, weil das Ergebnis plausibel aussieht; genau deshalb steht die Regel
+hier und nicht nur im Code.
+
+Die Oberfläche **benennt** den Stichtag, statt ihn nur anzuwenden: Eine Zahl mit
+der Überschrift „2026", die bis Juli reicht, führt sonst in die Irre.
+
+*Beleg:* `lib/statistics/comparison.ts`, `tests/unit/lib/statistics/comparison.test.ts`
+(25 Fälle), CALCULATION_RULES.md §11.10.
+
+---
+
+## D-7-2: Drill-down nur, wo die Zielliste die Zahl exakt wiedergibt
+
+**Status:** Accepted · **Scope:** Grundsatz 6 (Drill-down-Garantie)
+
+Die Zahlungsliste filtert auf Jahr und Monat, nicht auf einen Tag. Ein am
+Stichtag angeschnittener Monat wird deshalb **nicht** verlinkt, sondern als
+angeschnitten gekennzeichnet und erklärt.
+
+*Warum nicht trotzdem verlinken:* Ein Link, der mehr zeigt als die Zahl daneben,
+beschädigt das Vertrauen in beide. Die Garantie lautet „jede Kennzahl führt auf
+**genau** ihre Zahlungen" — eine Ausnahme, die stillschweigend mehr zeigt, hebt
+sie auf. Lieber kein Link mit Begründung als ein Link mit Abweichung.
+
+*Beleg:* `features/statistics/ComparisonTab.tsx` (`MonthCell`),
+`tests/unit/features/statistics/ComparisonTab.test.tsx`.
+
+---
+
 ## ADR-001: Historie vollständig im Client, Schwelle bei 10.000 Zahlungen
 
 **Status:** Accepted  

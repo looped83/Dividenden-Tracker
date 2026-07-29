@@ -247,8 +247,11 @@ eigene Query oder Berechnung ein:
 - **Layout mit geteiltem, gefiltertem Datensatz.** Die Layoutseite (`StatisticsPage`) lädt die
   Daten, wendet den URL-Filter **einmal** an (`filterPayments`, memoisiert) und reicht die
   gefilterten Zahlungen samt Namensauflösung über den React-Router-`Outlet`-Kontext an die
-  Unterbereiche (Übersicht, Jahre, Monate, Unternehmen, Depots) weiter. Der Kontext ist bewusst
-  frei von Supabase-Abhängigkeiten (`context.ts`), damit Unterbereiche isoliert testbar bleiben.
+  Unterbereiche (Übersicht, Jahre, Monate, Vergleich, Unternehmen, Depots) weiter. Der Kontext
+  ist bewusst frei von Supabase-Abhängigkeiten (`context.ts`), damit Unterbereiche isoliert
+  testbar bleiben. Neben den gefilterten Zahlungen liegt der **ungefilterte** Bestand im Kontext:
+  Der Vergleichsbereich braucht ihn, weil der Jahresfilter dort nicht greifen darf
+  (CALCULATION_RULES.md §11.10).
 - **URL-Filter.** Jahr, Unternehmen, Depot, Datenquelle und Zahlungsart liegen in der URL
   (`?year=&security=&depot=&source=&type=`), sind kombinierbar, bleiben nach Reload erhalten und
   funktionieren mit Browser-Zurück/-Vorwärts. Parsing/Serialisierung sind als reine, isoliert
