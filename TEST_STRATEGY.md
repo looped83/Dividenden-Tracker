@@ -160,16 +160,24 @@ Auth-Testmodus bereitsteht:
 
 ## 9. Accessibility-Tests
 
-- Automatisiert: axe-core in Playwright auf allen Hauptrouten (hell + dunkel), Fail bei
-  Verstößen gegen WCAG-AA-Regeln (Kontrast, Labels, Landmarks)
+**Stand: umgesetzt für die kontofreien Routen** (`tests/e2e/accessibility.spec.ts`):
+axe-core über `@axe-core/playwright` auf Anmelden, Registrieren und Passwort-vergessen, jeweils
+**hell und dunkel** (Kontraste stammen je Theme aus eigenen Tokens), geprüft gegen WCAG 2.0/2.1
+Stufe A und AA. Ein Fund nennt Regel, Beschreibung und betroffenes Element.
+
+Nicht automatisiert und weiterhin Sache der Checkliste: Tastaturbedienung über ganze Abläufe,
+Screenreader-Ausgabe, 200-%-Zoom, Reduced Motion — und alle angemeldeten Ansichten, solange kein
+Auth-Testmodus bereitsteht (§8).
+
+**Manuelle Prüfliste je Release:**
+
 - Tastaturbedienung: komplette Kernflüsse (Erfassung, Import, Filter) ohne Maus; sichtbarer
-  Fokus; Fokus-Reihenfolge in Dialogen/Assistent
-- Screenreader-Bezeichnungen: aria-labels für Icons, Tabellen-Header-Zuordnung,
-  Formularbeschriftungen (jedes Feld mit `<label>`), Fehlermeldungen mit `aria-describedby`
-  und Live-Region
+  Fokus auf jedem Bedienelement
+- Screenreader: aria-labels für Symbole, Tabellen-Header-Zuordnung, Ansage des Bereichswechsels
+  (`RouteAnnouncer`) und Fokus im Inhalt nach dem Navigieren
 - Diagrammalternativen: jede Grafik mit Datentabelle-Umschalter/textueller Zusammenfassung
 - Reduced Motion: `prefers-reduced-motion` deaktiviert Übergänge/Chart-Animationen
-- Zoom 200 % ohne Funktionsverlust; Touch-Ziele ≥ 44×44 pt (Prüfliste je Release)
+- Zoom 200 % ohne Funktionsverlust; Touch-Ziele ≥ 44×44 pt
 
 ## 10. Testdaten
 

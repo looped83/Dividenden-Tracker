@@ -3,6 +3,7 @@ import { Outlet } from "react-router";
 import { Sidebar, CompactSidebar } from "@/components/layout/Sidebar";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { RouteAnnouncer } from "@/components/layout/RouteAnnouncer";
 
 /**
  * Responsive App-Shell (IMPLEMENTATION_PLAN.md Phase 1):
@@ -20,6 +21,7 @@ export function AppShell() {
       >
         Zum Inhalt springen
       </a>
+      <RouteAnnouncer contentId="inhalt" />
       <ErrorBoundary>
         <div className="flex min-h-dvh flex-col bg-background text-foreground md:flex-row">
           <Sidebar />

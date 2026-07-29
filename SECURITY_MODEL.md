@@ -124,6 +124,20 @@ Permissions-Policy: camera=(), microphone=(), geolocation=()
 Strict-Transport-Security: max-age=63072000; includeSubDomains
 ```
 
+**Stand der Umsetzung.** Ausgeliefert wird über GitHub Pages, das **keine eigenen Kopfzeilen**
+zulässt. Die Richtlinie steht deshalb als `<meta http-equiv="Content-Security-Policy">` in
+`index.html`; die Supabase-Adresse für `connect-src` setzt der Build aus `%VITE_SUPABASE_URL%`
+ein. Als Meta-Element wirksam sind `default-src`, `script-src`, `style-src`, `img-src`,
+`font-src`, `connect-src`, `worker-src`, `manifest-src`, `base-uri`, `form-action` und
+`object-src`; die Referrer-Regel steht als `<meta name="referrer">` daneben.
+
+**Nicht abbildbar und offen:** `frame-ancestors`, `Strict-Transport-Security`,
+`X-Content-Type-Options` und `Permissions-Policy` wirken ausschließlich als echte Kopfzeile.
+Sie bleiben offen, solange über GitHub Pages ausgeliefert wird — mit einem Hosting, das Header
+setzen kann (Cloudflare Pages, Netlify, eigener Server), sind sie ohne Codeänderung nachzurüsten.
+Ein Rauchtest prüft, dass die Richtlinie ankommt, der Platzhalter ersetzt ist und beim Laden der
+Anwendung nichts dagegen verstößt (`tests/e2e/smoke.spec.ts`).
+
 Keine externen CDNs, Fonts oder Skripte (Grundsatz 15) — alles wird gebundelt.
 
 ### 7.1 Service-Worker-Cache

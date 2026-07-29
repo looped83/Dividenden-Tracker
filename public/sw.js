@@ -24,7 +24,13 @@ self.addEventListener("install", (event) => {
       // Das Dokument reicht als Grundstock; die uebrigen Dateien tragen sich
       // beim ersten Aufruf selbst ein.
       await cache.add(new Request("./", { cache: "reload" }));
-      await self.skipWaiting();
+      // Kein `skipWaiting()` an dieser Stelle: Eine neue Fassung waehrend einer
+      // laufenden Erfassung unterzuschieben, ist bei einer Finanzanwendung die
+      // falsche Entscheidung. Sie wartet, die Oberflaeche weist darauf hin
+      // (UpdatePrompt), und erst auf Wunsch wird gewechselt. Nur wenn noch
+      // keine Fassung laeuft, uebernimmt sie sofort — da gibt es nichts zu
+      // unterbrechen.
+      if (!self.registration.active) await self.skipWaiting();
     })(),
   );
 });
@@ -39,6 +45,11 @@ self.addEventListener("activate", (event) => {
       await self.clients.claim();
     })(),
   );
+});
+
+// Der Wechsel auf die neue Fassung wird von der Oberflaeche ausgeloest.
+self.addEventListener("message", (event) => {
+  if (event.data === "SKIP_WAITING") void self.skipWaiting();
 });
 
 self.addEventListener("fetch", (event) => {

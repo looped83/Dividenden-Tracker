@@ -19,7 +19,7 @@ import {
   useDismissDuplicate,
   useDuplicateDismissals,
 } from "@/features/payments/hooks";
-import type { DividendPayment } from "@/lib/supabase/repositories/payments";
+import type { PaymentListRow } from "@/lib/supabase/repositories/payments";
 import {
   detectAnomalies,
   findDuplicatePairs,
@@ -86,13 +86,13 @@ export function DataQualityPage() {
   }, [payments, securities, depots, duplicatePairs.length, anomalies.length]);
 
   // Aktionsziele für die geteilten Dialoge.
-  const [stornoTarget, setStornoTarget] = React.useState<DividendPayment | null>(null);
+  const [stornoTarget, setStornoTarget] = React.useState<PaymentListRow | null>(null);
   const [stornoReason, setStornoReason] = React.useState("");
   const [stornoError, setStornoError] = React.useState<string | null>(null);
-  const [deleteTarget, setDeleteTarget] = React.useState<DividendPayment | null>(null);
+  const [deleteTarget, setDeleteTarget] = React.useState<PaymentListRow | null>(null);
   const [deleteError, setDeleteError] = React.useState<string | null>(null);
 
-  const summaryOf = (p: DividendPayment): PaymentSummaryData => ({
+  const summaryOf = (p: PaymentListRow): PaymentSummaryData => ({
     company: securityName(p.security_id),
     depot: depotName(p.depot_id),
     payDate: p.pay_date,
@@ -280,13 +280,13 @@ function OverviewTile({ label, value }: { label: string; value: number }) {
 }
 
 interface DuplicateCardProps {
-  pair: DuplicatePair<DividendPayment>;
+  pair: DuplicatePair<PaymentListRow>;
   securityName: (id: string) => string;
   depotName: (id: string) => string;
   currencyOf: (id: string) => ReturnType<typeof toCurrencyCode>;
   onDismiss: () => void;
-  onStorno: (payment: DividendPayment) => void;
-  onDelete: (payment: DividendPayment) => void;
+  onStorno: (payment: PaymentListRow) => void;
+  onDelete: (payment: PaymentListRow) => void;
 }
 
 function DuplicateCard({

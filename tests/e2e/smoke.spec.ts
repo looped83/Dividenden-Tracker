@@ -61,6 +61,32 @@ test.describe("Rauchtest", () => {
     expect(total).toBeLessThan(1_200_000);
   });
 
+  test("die Sicherheitsrichtlinie wird ausgeliefert und nichts verstoesst dagegen", async ({
+    page,
+  }) => {
+    const verstoesse: string[] = [];
+    page.on("console", (message) => {
+      if (/Content Security Policy|Refused to/i.test(message.text())) {
+        verstoesse.push(message.text());
+      }
+    });
+
+    await page.goto("/#/login");
+    await expect(page.getByRole("heading", { name: "Anmelden" })).toBeVisible();
+
+    const policy = await page
+      .locator('meta[http-equiv="Content-Security-Policy"]')
+      .getAttribute("content");
+    expect(policy).toContain("default-src 'self'");
+    expect(policy).toContain("object-src 'none'");
+    // Der Platzhalter muss beim Bauen ersetzt worden sein, sonst stuende in
+    // `connect-src` kein Ziel.
+    expect(policy).not.toContain("%VITE_");
+    expect(policy).toMatch(/connect-src [^;]*https:\/\//);
+
+    expect(verstoesse).toEqual([]);
+  });
+
   test("die Anwendung meldet sich mit Titel und Sprache", async ({ page }) => {
     await page.goto("/#/login");
     await expect(page).toHaveTitle(/Dividend Tracker/);
