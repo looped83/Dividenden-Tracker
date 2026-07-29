@@ -14,7 +14,7 @@ Alle Funktionsbereiche sind umgesetzt und unter GitHub Pages im Einsatz:
 | Dividendeneingänge: erfassen, bearbeiten, stornieren, löschen, Massenaktionen | in Betrieb |
 | Datenqualität (Dubletten, Auffälligkeiten) | in Betrieb |
 | CSV-/Excel-Import mit Bilanz, Duplikatprüfung und Rollback | in Betrieb |
-| Übersicht und Statistikbereich (fünf Unterbereiche, Drill-down) | in Betrieb |
+| Übersicht und Statistikbereich (sechs Unterbereiche, Drill-down) | in Betrieb |
 | Ziele (Jahr und Monat) mit Fortschritt | in Betrieb |
 | Datensicherung, Wiederherstellung und Export | in Betrieb seit 2026-07-29; Restore-Probe am realen Bestand bestanden |
 | PWA (installierbar, App-Hülle offline, Aktualisierungshinweis) | in Betrieb |

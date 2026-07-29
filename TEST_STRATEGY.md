@@ -10,7 +10,7 @@ reines PostgreSQL 16 für Integrations-, RLS- und Restore-Tests (DECISIONS.md D-
 | Stufe | Umfang | Läuft in CI |
 |---|---|---|
 | Lint + Typecheck + Format | ESLint inkl. Geld-Verbotsliste, `tsc --noEmit` strict | ✅ Job `quality` |
-| Unit (Vitest) | 432 Tests / 54 Dateien | ✅ Job `quality` |
+| Unit (Vitest) | 516 Tests / 59 Dateien | ✅ Job `quality` |
 | Integration (PostgreSQL 16) | 98 Tests: Constraints, Trigger, RLS, Import, Statistik, Ziele, Restore | ✅ Job `db-integration` |
 | E2E (Playwright) | 26 Tests: Rauchtests + axe, Chromium und WebKit | ✅ Job `e2e-smoke` |
 
@@ -295,6 +295,19 @@ weiterhin über Unit- und Integrationstests abgedeckt.
 - `OverviewTab.test.tsx` — Render-Smoke des Übersichts-Unterbereichs mit echter
   Analytics-Verdrahtung über den Outlet-Kontext (historische Summe, Kernkennzahlen,
   Diagramm-Datentabelle).
+- `comparison.test.ts` — Zeitraumvergleich (CALCULATION_RULES.md §11.10). Schwerpunkt
+  **Teiljahr**, weil dort der teuerste Fehler dieser Auswertungsart sitzt: Kappung in beide
+  Richtungen (laufendes Jahr im Vordergrund **und** als Vergleichsseite), 250 € gegen 200 €
+  statt gegen die vollen 400 €, volle Jahre ungekappt, 29.02. gegen ein Nicht-Schaltjahr,
+  Zahlung genau am Stichtag bzw. einen Tag danach, Nullmonate, negative Korrekturen,
+  Summengleichheit von Monatswerten und kumuliertem Verlauf zur Periodensumme, rollierende
+  Zwölfmonatsfenster über den Jahreswechsel, sowie die Kennzeichnung angeschnittener Monate.
+- `comparisonParams.test.ts` — URL-Zustand des Vergleichs (`?modus=&basis=&referenz=`):
+  Vorgaben, Verwerfen nicht wählbarer Jahre, kein Jahr gegen sich selbst, Round-Trip.
+- `ComparisonTab.test.tsx` — Oberfläche des Vergleichs bei festgesetztem Systemdatum: benannter
+  Stichtag, Zeiträume je Seite, Drill-down nur für vollständige Monate (der angeschnittene
+  Monat trägt **keinen** Link, DECISIONS.md D-7-2), Übernahme des Unternehmensfilters ins
+  Drill-down-Ziel, Moduswechsel und der Hinweis, dass der Jahresfilter hier nicht wirkt.
 
 **Integration (`tests/integration/statistics.test.ts`, benötigt lokale Postgres-DB):** SQL-Ebene
 der Statistik-Datenbasis (identische Query wie `fetchDashboardPayments`): Jahres-, Unternehmens-

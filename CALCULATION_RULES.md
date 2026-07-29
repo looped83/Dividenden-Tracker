@@ -353,7 +353,42 @@ wird dabei mit dem konkreten Drill-Kriterium zusammengeführt, sodass die Zielli
 Teilmenge zeigt (Grundsatz 6). `source`/`payment_type` sind in der Zahlungsliste nicht filterbar
 und bleiben beim Drill-down unberücksichtigt.
 
-## 11.10 Vorjahresvergleich je Zahlung (Dividendenliste)
+### 11.10 Zeitraumvergleich (`compareYears`, `compareRollingTwelveMonths`)
+
+Gegenüberstellung zweier Zeiträume im Unterbereich `/statistiken/vergleich`.
+
+- **Gleicher Ausschnitt auf beiden Seiten — die tragende Regel.** Ist eines der beiden
+  Kalenderjahre das **laufende**, werden **beide** Seiten am Referenztag gekappt: `1.1.` bis
+  heute gegen `1.1.` bis zum selben Tag des anderen Jahres. Auch der umgekehrte Fall zählt (ein
+  abgeschlossenes Jahr als Vordergrund, das laufende als Vergleich). Sind beide Jahre
+  abgeschlossen, zählt jeweils das volle Jahr. Ohne diese Kappung stünde ein angefangenes gegen
+  ein volles Jahr — eine systematische Untertreibung, die plausibel aussieht und deshalb nicht
+  auffällt.
+- **Schaltjahr.** Hat der Referenzmonat im Zieljahr weniger Tage (29.02. gegen ein
+  Nicht-Schaltjahr), wird auf dessen letzten Tag abgebildet (28.02.), nie auf ein ungültiges
+  Datum.
+- **Rollierender Zwölfmonatsvergleich.** Die letzten zwölf Monate gegen die zwölf davor. Beide
+  Fenster sind exakt zwölf Monate lang und enden am selben Kalendertag (`1.8.2025–29.7.2026`
+  gegen `1.8.2024–29.7.2025`). Er hängt nicht am Jahreswechsel, an dem ein Jahresvergleich fast
+  nichts mehr aussagt.
+- **Kennzahlen.** Je Seite Nettosumme (§9.1, effektiver Monat §10) und Anzahl Zahlungen; die
+  Veränderung über `comparePeriods` (§6.4). Je Monat beide Monatswerte, ihre Differenz und die
+  laufende Summe seit Beginn des Zeitraums. Die letzte laufende Summe entspricht per Konstruktion
+  der Periodensumme, und die Summe der Monatswerte ebenfalls — die Kurve kann der Kennzahl
+  darüber nicht widersprechen.
+- **Keine Prognose, keine Hochrechnung** (PRODUCT_SPEC.md Grundsatz 8): Es werden ausschließlich
+  vorhandene Zahlungen summiert; ein Teiljahr wird nicht auf ein volles Jahr skaliert.
+- **Drill-down (§11.9) nur, wo er trägt.** Die Zahlungsliste filtert auf Jahr und Monat, nicht
+  auf einen Tag. Der am Stichtag **angeschnittene** Monat wird deshalb nicht verlinkt und in der
+  Tabelle als solcher gekennzeichnet; alle vollständigen Monate verlinken wie gewohnt. Ein Link,
+  der mehr zeigt als die Zahl daneben, beschädigt das Vertrauen in beide.
+- **Filter.** Unternehmen, Depot, Datenquelle und Zahlungsart wirken wie überall; der
+  **Jahresfilter** wirkt in diesem Unterbereich nicht (er reduzierte die Datenbasis auf ein Jahr
+  und ließe die Vergleichsseite grundsätzlich leer). Die beiden Zeiträume werden hier gewählt und
+  liegen unter eigenen URL-Schlüsseln (`?modus=&basis=&referenz=`); die Oberfläche benennt das,
+  solange ein Jahresfilter gesetzt ist.
+
+## 11.11 Vorjahresvergleich je Zahlung (Dividendenliste)
 
 Jede Zahlung in `/eingaenge` trägt einen Indikator, wie sie zur Zahlung desselben
 **effektiven Ausschüttungsmonats** im Vorjahr steht (implementiert in

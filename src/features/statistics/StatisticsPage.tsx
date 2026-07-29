@@ -11,11 +11,17 @@ import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { FilterBar } from "./FilterBar";
 import { useStatisticsData, useStatisticsFilter, type StatisticsContext } from "./hooks";
 
-/** Unterbereiche der Statistik (§11): Übersicht, Jahre, Monate, Unternehmen, Depots. */
+/**
+ * Unterbereiche der Statistik (§11): Übersicht, Jahre, Monate, Vergleich,
+ * Unternehmen, Depots. Der Vergleich steht bewusst hinter „Monate": Er beantwortet
+ * die zeitliche Frage („laufe ich besser als im Vorjahr?") und gehört damit zu den
+ * beiden Zeitbereichen, nicht zu den Aufschlüsselungen danach.
+ */
 const STAT_TABS: readonly TabNavItem[] = [
   { to: "/statistiken", label: "Übersicht", end: true },
   { to: "/statistiken/jahre", label: "Jahre" },
   { to: "/statistiken/monate", label: "Monate" },
+  { to: "/statistiken/vergleich", label: "Vergleich" },
   { to: "/statistiken/unternehmen", label: "Unternehmen" },
   { to: "/statistiken/depots", label: "Depots" },
 ];

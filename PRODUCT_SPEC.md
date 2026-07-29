@@ -180,6 +180,14 @@ Keine zukünftigen Zahlungen, keine erwarteten Dividenden, keine Kurse.
 
 ### 5.5 Statistiken
 
+Sechs Unterbereiche: Übersicht, Jahre, Monate, **Vergleich**, Unternehmen, Depots.
+
+Der Vergleich stellt zwei Zeiträume gegenüber (Jahr gegen Jahr, letzte 12 Monate gegen die 12
+davor). Ist eines der Jahre das laufende, endet der Vergleich auf **beiden** Seiten am selben
+Kalendertag, und die Seite benennt diesen Stichtag — alles andere wäre eine systematische
+Untertreibung des laufenden Jahres (CALCULATION_RULES.md §11.10, DECISIONS.md D-7-1). Es wird
+nichts hochgerechnet (Grundsatz 8).
+
 Vollständige Kennzahlenliste mit verbindlichen Definitionen: CALCULATION_RULES.md §6.
 Umfasst mindestens: Netto/Brutto pro Monat und Jahr, Vorjahresvergleich (absolut/prozentual),
 rollierende 12-Monats-Summe, monatlicher Durchschnitt (gesamt und je Jahr), bestes Jahr,
@@ -255,7 +263,7 @@ sowie über Browser-Zurück/-Vorwärts erhalten.
 desselben Ausschüttungsmonats im Vorjahr steht: Pfeil hoch (mehr), Pfeil runter
 (weniger), Punkt (centgenau gleich), nichts ohne eindeutige Zuordnung. Verglichen
 werden Beträge, nicht Dividenden je Aktie — Regeln und Randfälle in
-CALCULATION_RULES.md §11.10.
+CALCULATION_RULES.md §11.11.
 
 **Statusmodell.** Ein Eingang ist *aktiv* oder *storniert*. Stornieren und
 dauerhaftes Löschen sind zwei klar getrennte Aktionen und werden nie synonym
