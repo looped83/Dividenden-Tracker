@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Ban, Pencil, RotateCcw, Trash2 } from "lucide-react";
+import { ArrowLeft, Ban, Pencil, RotateCcw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -73,8 +73,25 @@ export function PaymentDetailPage() {
     enabled: Boolean(payment?.import_id),
   });
 
+  // Der Rueckweg steht oben, nicht am Seitenende: Auf einer langen Detailseite
+  // ist ein Zurueck unter dem letzten Abschnitt praktisch unauffindbar, und die
+  // Ziel- und Unternehmensseiten fuehren ihn ohnehin oben. Eine Anordnung fuer
+  // dieselbe Handlung statt dreier.
+  const backLink = (
+    <Button asChild variant="ghost" size="sm" className="-ml-2 w-fit">
+      <Link to="/eingaenge">
+        <ArrowLeft aria-hidden /> Zu den Dividenden
+      </Link>
+    </Button>
+  );
+
   if (isLoading) {
-    return <p className="text-sm text-muted-foreground">Wird geladen …</p>;
+    return (
+      <div className="space-y-4">
+        {backLink}
+        <p className="text-sm text-muted-foreground">Wird geladen …</p>
+      </div>
+    );
   }
 
   // Kontrollierter Nicht-gefunden-Zustand (§6): auch nach dauerhafter Löschung
@@ -82,6 +99,7 @@ export function PaymentDetailPage() {
   if (isError || !payment) {
     return (
       <div className="max-w-2xl space-y-6">
+        {backLink}
         <EmptyState
           icon={Trash2}
           title="Dividendeneingang nicht gefunden"
@@ -345,10 +363,6 @@ export function PaymentDetailPage() {
         isPending={deletePayment.isPending}
         onConfirm={() => void handleDelete()}
       />
-
-      <Button variant="ghost" onClick={() => void navigate("/eingaenge")}>
-        Zurück zur Übersicht
-      </Button>
     </div>
   );
 }

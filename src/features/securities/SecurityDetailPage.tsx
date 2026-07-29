@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Link, useParams } from "react-router";
-import { Building2, ChevronRight, ShieldAlert } from "lucide-react";
+import { ArrowLeft, Building2, ChevronRight, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -113,13 +113,34 @@ export function SecurityDetailPage() {
     [depots],
   );
 
+  // Der Rueckweg steht oben und in **jedem** Zustand — auch waehrend des Ladens
+  // und wenn das Unternehmen nicht existiert. Ein Zurueck, das erst nach dem
+  // Laden erscheint, ist genau dann nicht da, wenn man es braucht.
+  //
+  // Ziel ist die Unternehmensliste statt `history.back()`: Die Seite wird auch
+  // aus der Statistik und von Zahlungen aus erreicht, und ein per Lesezeichen
+  // geoeffneter Aufruf haette keine Vorgeschichte.
+  const backLink = (
+    <Button asChild variant="ghost" size="sm" className="-ml-2 w-fit">
+      <Link to="/unternehmen">
+        <ArrowLeft aria-hidden /> Zu den Unternehmen
+      </Link>
+    </Button>
+  );
+
   if (isLoading || securitiesLoading) {
-    return <p className="text-sm text-muted-foreground">Wird geladen …</p>;
+    return (
+      <div className="space-y-4">
+        {backLink}
+        <p className="text-sm text-muted-foreground">Wird geladen …</p>
+      </div>
+    );
   }
 
   if (!security) {
     return (
-      <div className="max-w-2xl">
+      <div className="max-w-2xl space-y-4">
+        {backLink}
         <EmptyState
           icon={Building2}
           title="Unternehmen nicht gefunden"
@@ -140,6 +161,7 @@ export function SecurityDetailPage() {
 
   return (
     <div className="space-y-6">
+      {backLink}
       <PageHeader
         title={
           <span className="flex flex-wrap items-center gap-2">
