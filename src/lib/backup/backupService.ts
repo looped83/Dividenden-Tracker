@@ -23,6 +23,7 @@ import type { Database } from "@/lib/supabase/database.types";
 import {
   BACKUP_FORMAT,
   BACKUP_FORMAT_VERSION,
+  toIsoTimestamp,
   type BackupRoot,
   type BackupData,
   type DividendPaymentBackup,
@@ -122,6 +123,23 @@ function removeNulls<T extends Record<string, any>>(obj: T): Partial<T> {
  */
 function getCurrentTimestamp(): string {
   return new Date().toISOString();
+}
+
+/**
+ * Zeitstempel aus der Datenbank in die kanonische Form der Sicherungsdatei.
+ *
+ * PostgREST liefert `timestamptz` als `2025-06-15T10:30:00.123456+00:00` —
+ * Zeitzonenversatz statt `Z`, Mikrosekunden statt Millisekunden. Ungeprueft
+ * uebernommen entstand eine Datei, die die eigene Formatpruefung nicht
+ * bestand und sich damit nicht wiederherstellen liess.
+ */
+function ts(value: unknown): string | null {
+  if (typeof value !== "string" || value === "") return null;
+  const normalized = toIsoTimestamp(value);
+  if (normalized === null) {
+    throw new Error(`Unlesbarer Zeitstempel in den Daten: "${value}".`);
+  }
+  return normalized;
 }
 
 /**
@@ -227,9 +245,9 @@ async function fetchProfile(): Promise<ProfileBackup | null> {
     locale: data.locale,
     theme: data.theme,
     backup_reminder_days: data.backup_reminder_days,
-    last_backup_at: data.last_backup_at,
-    created_at: data.created_at,
-    updated_at: data.updated_at,
+    last_backup_at: ts(data.last_backup_at),
+    created_at: ts(data.created_at),
+    updated_at: ts(data.updated_at),
   }) as ProfileBackup;
 }
 
@@ -253,9 +271,9 @@ async function fetchPortfolios(): Promise<PortfolioBackup[]> {
         user_id: p.user_id,
         name: p.name,
         note: p.note,
-        created_at: p.created_at,
-        updated_at: p.updated_at,
-        archived_at: p.archived_at,
+        created_at: ts(p.created_at),
+        updated_at: ts(p.updated_at),
+        archived_at: ts(p.archived_at),
       }) as PortfolioBackup,
   );
 }
@@ -283,9 +301,9 @@ async function fetchDepots(): Promise<DepotBackup[]> {
         base_currency: d.base_currency,
         portfolio_id: d.portfolio_id,
         note: d.note,
-        created_at: d.created_at,
-        updated_at: d.updated_at,
-        archived_at: d.archived_at,
+        created_at: ts(d.created_at),
+        updated_at: ts(d.updated_at),
+        archived_at: ts(d.archived_at),
       }) as DepotBackup,
   );
 }
@@ -323,9 +341,9 @@ async function fetchSecurities(): Promise<SecurityBackup[]> {
         data_quality: s.data_quality,
         default_depot_id: s.default_depot_id,
         payout_months: ensureNumberArray(s.payout_months),
-        created_at: s.created_at,
-        updated_at: s.updated_at,
-        archived_at: s.archived_at,
+        created_at: ts(s.created_at),
+        updated_at: ts(s.updated_at),
+        archived_at: ts(s.archived_at),
       }) as SecurityBackup,
   );
 }
@@ -380,9 +398,9 @@ async function fetchDividendPayments(): Promise<DividendPaymentBackup[]> {
         row_fingerprint: p.row_fingerprint,
         business_fingerprint: p.business_fingerprint,
         note: p.note,
-        created_at: p.created_at,
-        updated_at: p.updated_at,
-        archived_at: p.archived_at,
+        created_at: ts(p.created_at),
+        updated_at: ts(p.updated_at),
+        archived_at: ts(p.archived_at),
         archive_reason: p.archive_reason,
       }) as DividendPaymentBackup,
   );
@@ -413,8 +431,8 @@ async function fetchGoals(): Promise<GoalBackup[]> {
         currency: g.currency,
         title: g.title,
         note: g.note,
-        created_at: g.created_at,
-        updated_at: g.updated_at,
+        created_at: ts(g.created_at),
+        updated_at: ts(g.updated_at),
       }) as GoalBackup,
   );
 }
@@ -458,9 +476,9 @@ async function fetchImports(): Promise<ImportBackup[]> {
           typeof i.row_report === "string" ? JSON.parse(i.row_report) : i.row_report,
         checksums:
           typeof i.checksums === "string" ? JSON.parse(i.checksums) : i.checksums,
-        created_at: i.created_at,
-        committed_at: i.committed_at,
-        rolled_back_at: i.rolled_back_at,
+        created_at: ts(i.created_at),
+        committed_at: ts(i.committed_at),
+        rolled_back_at: ts(i.rolled_back_at),
       }) as ImportBackup,
   );
 }

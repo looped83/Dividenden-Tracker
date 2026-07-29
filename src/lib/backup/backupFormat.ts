@@ -61,14 +61,63 @@ const businessDate = z
   }, "Invalid date");
 
 /**
- * ISO 8601 timestamp with Z suffix
+ * Zeitstempel in der Sicherungsdatei.
+ *
+ * Geschrieben wird die kanonische Form mit `Z` ({@link toIsoTimestamp}).
+ * **Gelesen** wird jede gültige ISO-8601-Schreibweise: PostgREST liefert
+ * Zeitstempel als `2025-06-15T10:30:00.123456+00:00` — also mit Zeitzonen-
+ * versatz statt `Z` und mit Mikrosekunden statt Millisekunden.
+ *
+ * Die frühere Fassung verlangte beim Lesen starr `Z` und höchstens drei
+ * Nachkommastellen. Damit konnte die App **ihre eigene Sicherungsdatei nicht
+ * einlesen**: Jede Wiederherstellung scheiterte an der Formatprüfung, bevor
+ * sie begann. Ein Prüfausdruck, der die eigenen Dateien ablehnt, schützt vor
+ * nichts — er verhindert nur die Rettung.
+ *
+ * Beim Lesen wird zusätzlich normalisiert, sodass alte und neue Dateien
+ * intern dieselbe Form haben.
  */
-const isoTimestamp = z
-  .string()
-  .regex(
-    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/,
-    "Timestamp must be ISO 8601 with Z",
-  );
+const ISO_TIMESTAMP =
+  /^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?)(Z|[+-]\d{2}(?::?\d{2})?)?$/;
+
+/**
+ * Bringt einen Zeitstempel auf die kanonische Form `YYYY-MM-DDTHH:MM:SS.sssZ`.
+ * Liefert `null`, wenn der Wert kein gültiger Zeitstempel ist.
+ */
+export function toIsoTimestamp(value: string): string | null {
+  const match = ISO_TIMESTAMP.exec(value);
+  if (!match) return null;
+
+  const [, date, time, zone] = match;
+
+  // Ohne Zeitzonenangabe gilt UTC: Alle Zeitstempelspalten dieses Projekts
+  // sind `timestamptz`, und Postgres gibt sie in UTC aus.
+  //
+  // `+00` (psql-Textausgabe) auf `+00:00` erweitern und `+0000` mit
+  // Doppelpunkt versehen — beides akzeptiert `new Date()` sonst nicht,
+  // obwohl es gültiges ISO 8601 ist.
+  let offset = "Z";
+  if (zone && zone !== "Z") {
+    const sign = zone.slice(0, 1);
+    const digits = zone.slice(1).replace(":", "");
+    const hours = digits.slice(0, 2);
+    const minutes = digits.length > 2 ? digits.slice(2, 4) : "00";
+    offset = `${sign}${hours}:${minutes}`;
+  }
+
+  const parsed = new Date(`${date}T${time}${offset}`);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString();
+}
+
+const isoTimestamp = z.string().transform((value, ctx) => {
+  const normalized = toIsoTimestamp(value);
+  if (normalized === null) {
+    ctx.addIssue({ code: "custom", message: `Kein gültiger Zeitstempel: "${value}"` });
+    return z.NEVER;
+  }
+  return normalized;
+});
 
 /**
  * ISO 4217 currency code (3 uppercase letters)

@@ -10,6 +10,18 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
  * der die gekappte Menge als korrekt bestaetigte.
  */
 
+/**
+ * Zeitstempel **so, wie PostgREST sie liefert**: mit Zeitzonenversatz statt
+ * `Z` und mit Mikrosekunden. Die frueheren Fixtures schrieben hier
+ * `"2025-06-15T00:00:00Z"` — eine Form, die in der Produktion nie vorkommt.
+ * Dadurch bestand der Formattest, waehrend die echte Sicherungsdatei von der
+ * eigenen Formatpruefung abgelehnt wurde und sich nicht wiederherstellen
+ * liess. Fixtures muessen das liefern, was der Server liefert.
+ */
+const PG_CREATED = "2025-01-01T08:15:30.123456+00:00";
+const PG_UPDATED = "2025-06-15T10:30:00.654321+00:00";
+const PG_ARCHIVED = "2025-07-01T12:00:00+00:00";
+
 /** Erzeugt eine gueltige UUID aus einer laufenden Nummer. */
 function uuid(prefix: string, index: number): string {
   const tail = String(index).padStart(12, "0");
@@ -49,11 +61,11 @@ function paymentRows(count: number) {
     row_fingerprint: null,
     business_fingerprint: `fp-${String(index)}`,
     note: null,
-    created_at: "2025-06-15T00:00:00Z",
-    updated_at: "2025-06-15T00:00:00Z",
+    created_at: PG_CREATED,
+    updated_at: PG_UPDATED,
     // Zwei Zeilen sind storniert. Eine Sicherung muss sie enthalten — sonst
     // ginge beim Wiederherstellen die Storno-Historie verloren.
-    archived_at: index < 2 ? "2025-07-01T00:00:00Z" : null,
+    archived_at: index < 2 ? PG_ARCHIVED : null,
     archive_reason: index < 2 ? "Testfall" : null,
   }));
 }
@@ -149,9 +161,9 @@ beforeEach(() => {
       locale: "de-DE",
       theme: "system",
       backup_reminder_days: 30,
-      last_backup_at: null,
-      created_at: "2025-01-01T00:00:00Z",
-      updated_at: "2025-01-01T00:00:00Z",
+      last_backup_at: PG_UPDATED,
+      created_at: PG_CREATED,
+      updated_at: PG_UPDATED,
     },
   ];
   tables["portfolios"] = [];
@@ -164,8 +176,8 @@ beforeEach(() => {
       base_currency: "EUR",
       portfolio_id: null,
       note: null,
-      created_at: "2025-01-01T00:00:00Z",
-      updated_at: "2025-01-01T00:00:00Z",
+      created_at: PG_CREATED,
+      updated_at: PG_UPDATED,
       archived_at: null,
     },
   ];
@@ -184,8 +196,8 @@ beforeEach(() => {
       data_quality: "ok",
       default_depot_id: null,
       payout_months: [],
-      created_at: "2025-01-01T00:00:00Z",
-      updated_at: "2025-01-01T00:00:00Z",
+      created_at: PG_CREATED,
+      updated_at: PG_UPDATED,
       archived_at: null,
     },
   ];
@@ -269,6 +281,46 @@ describe("createBackup — Formatgueltigkeit", () => {
       );
     }
     expect(parsed.data.data.dividend_payments).toHaveLength(5);
+  });
+});
+
+describe("createBackup — Zeitstempel", () => {
+  it("schreibt kanonische Zeitstempel mit Z, nicht die Rohform der Datenbank", async () => {
+    tables["dividend_payments"] = paymentRows(3);
+
+    const backup = (await createBackup()).backup;
+    if (!backup) throw new Error("Es wurde keine Sicherung erzeugt.");
+
+    // Alle Zeitstempel der Datei einsammeln — auch die verschachtelten.
+    const stamps: string[] = [];
+    JSON.stringify(backup, (key, value) => {
+      if (
+        typeof value === "string" &&
+        key.endsWith("_at") &&
+        /^\d{4}-\d{2}-\d{2}[T ]\d{2}:/.test(value)
+      ) {
+        stamps.push(value);
+      }
+      return value as unknown;
+    });
+
+    expect(stamps.length).toBeGreaterThan(5);
+    for (const stamp of stamps) {
+      // Der Zeitzonenversatz der Datenbank darf es nicht in die Datei
+      // schaffen: Die Datei ist ein Langzeitartefakt und soll eine Form haben.
+      expect(stamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+    }
+  });
+
+  it("erhält den Zeitpunkt beim Normalisieren", async () => {
+    tables["dividend_payments"] = paymentRows(1);
+
+    const backup = (await createBackup()).backup;
+    const created = backup?.data.dividend_payments[0]?.created_at;
+
+    // Gleiche Zeit, andere Schreibweise — nicht etwa auf Sekunden gerundet
+    // oder um den Versatz verschoben.
+    expect(new Date(created ?? "").getTime()).toBe(new Date(PG_CREATED).getTime());
   });
 });
 
