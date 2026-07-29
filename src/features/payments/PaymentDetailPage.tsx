@@ -102,6 +102,8 @@ export function PaymentDetailPage() {
   const cancelled = Boolean(payment.archived_at);
 
   const summary: PaymentSummaryData = {
+    // Bewusst reiner Text: `summary` speist die Bestaetigungsdialoge, und ein
+    // Link, der aus einem Bestaetigungsdialog herausfuehrt, ist eine Falle.
     company: security?.name ?? "—",
     depot: depot?.name ?? "—",
     payDate: payment.pay_date,
@@ -221,8 +223,19 @@ export function PaymentDetailPage() {
         <CardContent>
           <DetailRow label="Zahlungsdatum">{formatDate(payment.pay_date)}</DetailRow>
           <DetailRow label="Unternehmen">
-            {security?.name ?? "—"}
-            {security?.archived_at ? " (archiviert)" : ""}
+            {/* Von einer einzelnen Zahlung zur Entwicklung der ganzen
+                Position — die Detailseite des Unternehmens. */}
+            {security ? (
+              <Link
+                to={`/unternehmen/${security.id}`}
+                className="rounded-sm outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {security.name}
+                {security.archived_at ? " (archiviert)" : ""}
+              </Link>
+            ) : (
+              "—"
+            )}
           </DetailRow>
           <DetailRow label="Depot">
             {depot?.name ?? "—"}

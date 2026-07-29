@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { BarChart3 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AmountText } from "@/components/money/AmountText";
@@ -80,9 +80,16 @@ export function CompaniesTab() {
           labelOf(a.securityId).localeCompare(labelOf(b.securityId), "de"),
         render: (row) => (
           <span className="flex min-w-0 items-center gap-1.5">
-            <span className="truncate font-medium">
+            {/* Der Name fuehrt auf die Detailseite des Unternehmens; die
+                uebrigen Zellen bleiben Drill-downs in die Zahlungsliste. Die
+                Zeile beantwortet damit beide Fragen: „welche Zahlungen?" und
+                „wie hat sich diese Position entwickelt?" */}
+            <Link
+              to={`/unternehmen/${row.securityId}`}
+              className="truncate rounded-sm font-medium outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+            >
               {entityName(securities, row.securityId)}
-            </span>
+            </Link>
             {entityArchived(securities, row.securityId) && (
               <Badge variant="neutral" className="shrink-0">
                 Archiviert

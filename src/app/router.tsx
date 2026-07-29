@@ -38,6 +38,9 @@ const DataQualityPage = React.lazy(async () => ({
 const SecuritiesPage = React.lazy(async () => ({
   default: (await import("@/features/securities/SecuritiesPage")).SecuritiesPage,
 }));
+const SecurityDetailPage = React.lazy(async () => ({
+  default: (await import("@/features/securities/SecurityDetailPage")).SecurityDetailPage,
+}));
 const StatisticsPage = React.lazy(async () => ({
   default: (await import("@/features/statistics/StatisticsPage")).StatisticsPage,
 }));
@@ -125,6 +128,7 @@ export const router = createHashRouter([
       { path: "eingaenge/:id", element: <PaymentDetailPage /> },
       { path: "eingaenge/:id/bearbeiten", element: <NewPaymentPage /> },
       { path: "unternehmen", element: <SecuritiesPage /> },
+      { path: "unternehmen/:id", element: <SecurityDetailPage /> },
       {
         path: "statistiken",
         element: <StatisticsPage />,

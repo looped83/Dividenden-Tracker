@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import {
   Bar,
   BarChart,
@@ -155,8 +155,23 @@ export function CategoryBarChart({
             <tbody>
               {data.map((row) => (
                 <tr key={row.key} className="border-t border-border">
+                  {/* Der Drill-down lag zuvor ausschliesslich auf dem Balken —
+                      als `onClick`. Damit war er per Maus erreichbar und sonst
+                      gar nicht: Tastatur und Screenreader kamen nicht zu den
+                      Zahlen hinter einer Kennzahl. Die Datentabelle ist der
+                      zugaengliche Zwilling des Diagramms und traegt das Ziel
+                      deshalb als echten Link. */}
                   <th scope="row" className="py-1 pr-4 font-normal">
-                    {row.label}
+                    {row.href ? (
+                      <Link
+                        to={row.href}
+                        className="rounded-sm outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        {row.label}
+                      </Link>
+                    ) : (
+                      row.label
+                    )}
                   </th>
                   <td className="py-1 pr-4 text-right tabular-nums">
                     {formatMoney(row.money)}
