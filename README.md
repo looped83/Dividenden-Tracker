@@ -16,11 +16,13 @@ Alle Funktionsbereiche sind umgesetzt und unter GitHub Pages im Einsatz:
 | CSV-/Excel-Import mit Bilanz, Duplikatprüfung und Rollback | in Betrieb |
 | Übersicht und Statistikbereich (fünf Unterbereiche, Drill-down) | in Betrieb |
 | Ziele (Jahr und Monat) mit Fortschritt | in Betrieb |
-| Datensicherung, Wiederherstellung und Export | in Betrieb seit 2026-07-29; Sicherung am realen Bestand nachgewiesen |
+| Datensicherung, Wiederherstellung und Export | in Betrieb seit 2026-07-29; Restore-Probe am realen Bestand bestanden |
 | PWA (installierbar, App-Hülle offline, Aktualisierungshinweis) | in Betrieb |
 
 Die Numbers-Migration (Übernahme der historischen Daten nach
-[MIGRATION_PLAN.md](MIGRATION_PLAN.md)) ist der verbleibende Betriebsschritt.
+[MIGRATION_PLAN.md](MIGRATION_PLAN.md)) ist der verbleibende Betriebsschritt. Ihre
+Voraussetzung — eine geprüfte, funktionierende Datensicherung — ist seit dem 2026-07-29
+erfüllt (siehe Audit, Abschnitt 4.3).
 
 Was als Nächstes sinnvoll ist und warum, steht in
 [docs/AUDIT_2026-07-29.md](docs/AUDIT_2026-07-29.md) — eine belegte
