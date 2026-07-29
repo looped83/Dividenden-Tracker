@@ -172,7 +172,7 @@ export function PaymentDetailPage() {
   };
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">
@@ -234,115 +234,128 @@ export function PaymentDetailPage() {
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Details</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <DetailRow label="Zahlungsdatum">{formatDate(payment.pay_date)}</DetailRow>
-          <DetailRow label="Unternehmen">
-            {/* Von einer einzelnen Zahlung zur Entwicklung der ganzen
-                Position — die Detailseite des Unternehmens. */}
-            {security ? (
-              <Link
-                to={`/unternehmen/${security.id}`}
-                className="rounded-sm outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                {security.name}
-                {security.archived_at ? " (archiviert)" : ""}
-              </Link>
-            ) : (
-              "—"
-            )}
-          </DetailRow>
-          <DetailRow label="Depot">
-            {depot?.name ?? "—"}
-            {depot?.archived_at ? " (archiviert)" : ""}
-          </DetailRow>
-          <DetailRow label="Nettobetrag">
-            <AmountText amount={Money.fromString(payment.net_amount, currency)} />
-          </DetailRow>
-          <DetailRow label="Währung">{payment.original_currency}</DetailRow>
-          <DetailRow label="Status">{cancelled ? "Storniert" : "Aktiv"}</DetailRow>
-          <DetailRow label="Datenquelle">{sourceLabel(payment.source)}</DetailRow>
-          {payment.note && <DetailRow label="Notiz">{payment.note}</DetailRow>}
-          <DetailRow label="Erstellt">{formatDateTime(payment.created_at)}</DetailRow>
-          <DetailRow label="Zuletzt geändert">
-            {formatDateTime(payment.updated_at)}
-          </DetailRow>
-          {cancelled && payment.archived_at && (
-            <DetailRow label="Storniert am">
-              {formatDateTime(payment.archived_at)}
-            </DetailRow>
-          )}
-          {cancelled && payment.archive_reason && (
-            <DetailRow label="Stornogrund">{payment.archive_reason}</DetailRow>
-          )}
-        </CardContent>
-      </Card>
+      {/* Zwei Spalten ab `lg` statt einer schmalen Saeule: Die Seite war als
+          einzige auf `max-w-2xl` begrenzt und wirkte neben den uebrigen
+          Bereichen wie ein Fremdkoerper. Sie schlicht breitzuziehen haette
+          aber nur sehr lange Beschriftungszeilen erzeugt — nebeneinander
+          fuellen die Karten die Breite und bleiben lesbar.
 
-      {imported && (
+          Welche Karte wo landet, haengt davon ab, ob es eine Importherkunft
+          gibt: Mit ihr stehen Details und Herkunft nebeneinander und der
+          Verlauf darunter ueber beide Spalten; ohne sie ruecken Details und
+          Verlauf nebeneinander. So bleibt in keinem Fall eine halbe Seite
+          leer. */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Importherkunft</CardTitle>
+            <CardTitle>Details</CardTitle>
           </CardHeader>
           <CardContent>
-            <DetailRow label="Importdatei">
-              {payment.source_file_name ?? importRun?.file_name ?? "—"}
+            <DetailRow label="Zahlungsdatum">{formatDate(payment.pay_date)}</DetailRow>
+            <DetailRow label="Unternehmen">
+              {/* Von einer einzelnen Zahlung zur Entwicklung der ganzen
+                Position — die Detailseite des Unternehmens. */}
+              {security ? (
+                <Link
+                  to={`/unternehmen/${security.id}`}
+                  className="rounded-sm outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  {security.name}
+                  {security.archived_at ? " (archiviert)" : ""}
+                </Link>
+              ) : (
+                "—"
+              )}
             </DetailRow>
-            {payment.import_id && (
-              <DetailRow label="Import-ID">
-                <span className="font-mono text-xs">{payment.import_id}</span>
+            <DetailRow label="Depot">
+              {depot?.name ?? "—"}
+              {depot?.archived_at ? " (archiviert)" : ""}
+            </DetailRow>
+            <DetailRow label="Nettobetrag">
+              <AmountText amount={Money.fromString(payment.net_amount, currency)} />
+            </DetailRow>
+            <DetailRow label="Währung">{payment.original_currency}</DetailRow>
+            <DetailRow label="Status">{cancelled ? "Storniert" : "Aktiv"}</DetailRow>
+            <DetailRow label="Datenquelle">{sourceLabel(payment.source)}</DetailRow>
+            {payment.note && <DetailRow label="Notiz">{payment.note}</DetailRow>}
+            <DetailRow label="Erstellt">{formatDateTime(payment.created_at)}</DetailRow>
+            <DetailRow label="Zuletzt geändert">
+              {formatDateTime(payment.updated_at)}
+            </DetailRow>
+            {cancelled && payment.archived_at && (
+              <DetailRow label="Storniert am">
+                {formatDateTime(payment.archived_at)}
               </DetailRow>
             )}
-            {importRun?.committed_at && (
-              <DetailRow label="Importiert am">
-                {formatDateTime(importRun.committed_at)}
-              </DetailRow>
-            )}
-            {payment.source_row_number !== null && (
-              <DetailRow label="Ursprüngliche Zeile">
-                {payment.source_row_number}
-              </DetailRow>
-            )}
-            {importedNet !== null && (
-              <DetailRow label="Importierter Nettobetrag">
-                {toGermanDecimalString(importedNet)}
-                {netChanged && (
-                  <span className="ml-2 text-warning-strong">
-                    (nachträglich geändert)
-                  </span>
-                )}
-              </DetailRow>
-            )}
-            {importedPayDate !== null && (
-              <DetailRow label="Importiertes Zahlungsdatum">
-                {formatDate(importedPayDate)}
-                {dateChanged && (
-                  <span className="ml-2 text-warning-strong">
-                    (nachträglich geändert)
-                  </span>
-                )}
-              </DetailRow>
-            )}
-            {(netChanged || dateChanged) && (
-              <p className="pt-2 text-sm text-muted-foreground">
-                Dieser importierte Eingang wurde nach dem Import manuell angepasst. Die
-                Importherkunft bleibt dennoch erhalten.
-              </p>
+            {cancelled && payment.archive_reason && (
+              <DetailRow label="Stornogrund">{payment.archive_reason}</DetailRow>
             )}
           </CardContent>
         </Card>
-      )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Änderungsverlauf</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <AuditTrail entityType="dividend_payment" entityId={payment.id} />
-        </CardContent>
-      </Card>
+        {imported && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Importherkunft</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <DetailRow label="Importdatei">
+                {payment.source_file_name ?? importRun?.file_name ?? "—"}
+              </DetailRow>
+              {payment.import_id && (
+                <DetailRow label="Import-ID">
+                  <span className="font-mono text-xs">{payment.import_id}</span>
+                </DetailRow>
+              )}
+              {importRun?.committed_at && (
+                <DetailRow label="Importiert am">
+                  {formatDateTime(importRun.committed_at)}
+                </DetailRow>
+              )}
+              {payment.source_row_number !== null && (
+                <DetailRow label="Ursprüngliche Zeile">
+                  {payment.source_row_number}
+                </DetailRow>
+              )}
+              {importedNet !== null && (
+                <DetailRow label="Importierter Nettobetrag">
+                  {toGermanDecimalString(importedNet)}
+                  {netChanged && (
+                    <span className="ml-2 text-warning-strong">
+                      (nachträglich geändert)
+                    </span>
+                  )}
+                </DetailRow>
+              )}
+              {importedPayDate !== null && (
+                <DetailRow label="Importiertes Zahlungsdatum">
+                  {formatDate(importedPayDate)}
+                  {dateChanged && (
+                    <span className="ml-2 text-warning-strong">
+                      (nachträglich geändert)
+                    </span>
+                  )}
+                </DetailRow>
+              )}
+              {(netChanged || dateChanged) && (
+                <p className="pt-2 text-sm text-muted-foreground">
+                  Dieser importierte Eingang wurde nach dem Import manuell angepasst. Die
+                  Importherkunft bleibt dennoch erhalten.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        <Card className={imported ? "lg:col-span-2" : undefined}>
+          <CardHeader>
+            <CardTitle>Änderungsverlauf</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <AuditTrail entityType="dividend_payment" entityId={payment.id} />
+          </CardContent>
+        </Card>
+      </div>
 
       <StornoDialog
         open={stornoOpen}
