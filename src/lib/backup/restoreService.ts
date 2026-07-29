@@ -157,6 +157,26 @@ function invalidateBackupAffectedCaches(): void {
   queryClient.invalidateQueries();
 }
 
+/**
+ * Macht aus einem Datenbankfehler einen lesbaren Satz.
+ *
+ * PostgreSQL trennt `message`, `detail` und `hint`; supabase-js reicht sie als
+ * `message`, `details` und `hint` durch. Angezeigt wurde bisher nur `message` —
+ * bei den Fehlern dieser RPC ist das ein blosser Schluesselbegriff wie
+ * `foreign_id_conflict`. Die eigentliche Erklaerung und der Loesungshinweis
+ * stehen in den beiden anderen Feldern und blieben unsichtbar.
+ */
+function describePostgresError(error: {
+  message: string;
+  details?: string | null;
+  hint?: string | null;
+}): string {
+  return [error.details, error.hint, error.message]
+    .map((part) => part?.trim())
+    .filter((part): part is string => Boolean(part))
+    .join(" ");
+}
+
 // ============================================================================
 // Restore Orchestration
 // ============================================================================
@@ -196,7 +216,7 @@ export async function executeRestore(
         success: false,
         mode,
         error: "Die Wiederherstellung ist fehlgeschlagen.",
-        errorDetails: error.message,
+        errorDetails: describePostgresError(error),
       };
     }
 

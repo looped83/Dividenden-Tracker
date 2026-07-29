@@ -561,3 +561,97 @@ describe("restore_backup — Zahlungen mit Importherkunft", () => {
     ).rejects.toThrow(/missing_import_reference/);
   });
 });
+
+describe("restore_backup — Sicherung aus einem anderen Konto desselben Projekts", () => {
+  /**
+   * Eine Sicherung bewahrt die Original-UUIDs; nur so ueberstehen die Verweise
+   * Zahlung → Import → Unternehmen → Depot die Wiederherstellung. Liegt im
+   * selben Projekt bereits ein anderes Konto mit genau diesen Kennungen, kann
+   * das nicht gelingen: `on conflict (id) do nothing` ueberspringt die
+   * Stammdaten, RLS verbirgt die fremden Zeilen, und die Zahlung findet ihr
+   * Unternehmen nicht.
+   *
+   * Der Fall trat beim vierten echten Wiederherstellungsversuch auf und
+   * meldete `security_id ... nicht gefunden` — eine Meldung aus dem
+   * Fingerprint-Trigger, die den Grund verschweigt und nach einer
+   * unvollstaendigen Datei aussieht. Migration 0025 benennt die Lage.
+   */
+  it("bricht mit einer erklärenden Meldung ab statt mit „nicht gefunden“", async () => {
+    const source = await createTestUser("foreign-source@example.test");
+    const target = await createTestUser("foreign-target@example.test");
+
+    const { depotId, securityId } = await asUser(source, async (client) => {
+      const depot = await seedDepot(client, "Fremd");
+      const security = await seedSecurity(client, { name: "Fremd AG" });
+      return { depotId: depot, securityId: security };
+    });
+
+    const payload = backupPayload(source, {
+      securities: [{ id: securityId, name: "Fremd AG" }],
+      depots: [{ id: depotId, name: "Fremd", base_currency: "EUR" }],
+      dividend_payments: [
+        {
+          id: "aaaaaaaa-3333-4333-8333-333333333333",
+          security_id: securityId,
+          depot_id: depotId,
+          pay_date: "2025-11-15",
+          gross_amount: "90.00",
+          net_amount: "90.00",
+        },
+      ],
+    });
+
+    await expect(
+      asUser(target, (client) =>
+        client.query("select restore_backup($1::jsonb, $2)", [
+          JSON.stringify(payload),
+          "merge",
+        ]),
+      ),
+    ).rejects.toThrow(/foreign_id_conflict/);
+  });
+
+  it("laesst den Bestand des fremden Kontos unangetastet", async () => {
+    const source = await createTestUser("foreign-source-2@example.test");
+    const target = await createTestUser("foreign-target-2@example.test");
+
+    const { depotId, securityId } = await asUser(source, async (client) => {
+      const depot = await seedDepot(client, "Unberuehrt");
+      const security = await seedSecurity(client, { name: "Unberuehrt AG" });
+      await seedPayment(client, { securityId: security, depotId: depot });
+      return { depotId: depot, securityId: security };
+    });
+
+    const before = await asUser(source, async (client) => {
+      const rows = await client.query<{ count: string }>(
+        "select count(*)::text as count from dividend_payments",
+      );
+      return Number(firstRow(rows).count);
+    });
+
+    await asUser(target, (client) =>
+      client.query("select restore_backup($1::jsonb, $2)", [
+        JSON.stringify(
+          backupPayload(source, {
+            securities: [{ id: securityId, name: "Umbenannt" }],
+            depots: [{ id: depotId, name: "Umbenannt", base_currency: "EUR" }],
+          }),
+        ),
+        "replace",
+      ]),
+    ).catch(() => undefined);
+
+    const after = await asUser(source, async (client) => {
+      const rows = await client.query<{ count: string; name: string }>(
+        `select (select count(*)::text from dividend_payments) as count,
+                (select name from securities where id = $1) as name`,
+        [securityId],
+      );
+      return firstRow(rows);
+    });
+
+    expect(Number(after.count)).toBe(before);
+    // Auch der Modus "replace" darf fremde Stammdaten nicht umbenennen.
+    expect(after.name).toBe("Unberuehrt AG");
+  });
+});
