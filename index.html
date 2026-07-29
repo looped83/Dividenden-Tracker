@@ -6,6 +6,18 @@
       name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
+    <!-- Content-Security-Policy als Meta-Element: GitHub Pages laesst keine
+         eigenen Kopfzeilen zu (SECURITY_MODEL.md §7). `connect-src` nimmt die
+         Supabase-Adresse aus der Bauzeit-Variablen auf; ohne sie stuende hier
+         eine Erlaubnis fuer irgendeinen Server. Nicht abbildbar sind
+         `frame-ancestors`, HSTS und `X-Content-Type-Options` — die gehen nur
+         als echte Kopfzeile und bleiben offen, solange auf Pages geliefert
+         wird. -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' %VITE_SUPABASE_URL% wss://*.supabase.co; worker-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
+    />
+    <meta name="referrer" content="no-referrer" />
     <meta name="color-scheme" content="light dark" />
     <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#0b1220" media="(prefers-color-scheme: dark)" />
