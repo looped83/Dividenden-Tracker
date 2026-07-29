@@ -447,3 +447,117 @@ describe("restore_backup — Ergebnis und Nebenwirkungen", () => {
     expect(count).toBeGreaterThan(0);
   });
 });
+
+describe("restore_backup — Zahlungen mit Importherkunft", () => {
+  /**
+   * Der Fall, an dem die erste echte Wiederherstellung scheiterte:
+   * `validate_backup_references` las die ID der **Zahlung** statt ihrer
+   * `import_id` und lehnte damit jede Sicherung ab, die auch nur eine
+   * importierte Zahlung enthielt — also praktisch jede Sicherung dieses
+   * Projekts (Migration 0024).
+   *
+   * Alle bisherigen Testnutzlasten kamen ohne `import_id` aus. Ein Feld, das
+   * kein Test setzt, kann kein Test schuetzen.
+   */
+  async function seedImport(userId: string, fileName: string): Promise<string> {
+    return asUser(userId, async (client) => {
+      const result = await client.query<{ id: string }>(
+        `insert into imports (file_name, file_hash, file_size_bytes, file_type, status)
+         values ($1, $2, $3, 'xlsx', 'committed') returning id`,
+        [fileName, "d".repeat(64), 4096],
+      );
+      return firstRow(result).id;
+    });
+  }
+
+  it("spielt eine Zahlung mit Importherkunft ein", async () => {
+    const user = await createTestUser("restore-import-ok@example.test");
+    const importId = await seedImport(user, "Historie.xlsx");
+    const { depotId, securityId } = await asUser(user, async (client) => {
+      const depot = await seedDepot(client, "Importdepot");
+      const security = await seedSecurity(client, { name: "Import AG" });
+      return { depotId: depot, securityId: security };
+    });
+
+    const paymentId = "77777777-7777-4777-8777-777777777777";
+    const payload = backupPayload(user, {
+      securities: [{ id: securityId, name: "Import AG" }],
+      depots: [{ id: depotId, name: "Importdepot", base_currency: "EUR" }],
+      imports: [
+        {
+          id: importId,
+          file_name: "Historie.xlsx",
+          file_hash: "d".repeat(64),
+          file_size_bytes: 4096,
+          file_type: "xlsx",
+          status: "committed",
+          // Spaltenzuordnung enthaelt Zahlen, nicht Text — genau die Stelle,
+          // an der das Sicherungsformat zuvor danebenlag.
+          column_mapping: { pay_date: 0, security: 1, net_amount: 2 },
+        },
+      ],
+      dividend_payments: [
+        {
+          id: paymentId,
+          security_id: securityId,
+          depot_id: depotId,
+          import_id: importId,
+          pay_date: "2025-09-15",
+          gross_amount: "70.00",
+          net_amount: "70.00",
+          source: "excel_import",
+        },
+      ],
+    });
+
+    const result = await restore(user, payload, "merge");
+    expect(result.success).toBe(true);
+
+    const stored = await asUser(user, async (client) => {
+      const rows = await client.query<{ import_id: string | null; source: string }>(
+        "select import_id, source from dividend_payments where id = $1",
+        [paymentId],
+      );
+      return rows.rows[0] ?? null;
+    });
+    // Die Herkunft muss die Wiederherstellung ueberstehen — sonst waere nach
+    // einem Restore nicht mehr nachvollziehbar, woher eine Zahlung stammt.
+    expect(stored?.import_id).toBe(importId);
+  });
+
+  it("weist eine Zahlung ab, deren Importvorgang in der Sicherung fehlt", async () => {
+    // Die Pruefung ist richtig gemeint — sie soll nur den echten Fall treffen.
+    const user = await createTestUser("restore-import-missing@example.test");
+    const { depotId, securityId } = await asUser(user, async (client) => {
+      const depot = await seedDepot(client, "Ohne Import");
+      const security = await seedSecurity(client, { name: "Ohne AG" });
+      return { depotId: depot, securityId: security };
+    });
+
+    const payload = backupPayload(user, {
+      securities: [{ id: securityId, name: "Ohne AG" }],
+      depots: [{ id: depotId, name: "Ohne Import", base_currency: "EUR" }],
+      imports: [],
+      dividend_payments: [
+        {
+          id: "88888888-8888-4888-8888-888888888888",
+          security_id: securityId,
+          depot_id: depotId,
+          import_id: "99999999-9999-4999-8999-999999999999",
+          pay_date: "2025-10-15",
+          gross_amount: "80.00",
+          net_amount: "80.00",
+        },
+      ],
+    });
+
+    await expect(
+      asUser(user, (client) =>
+        client.query("select restore_backup($1::jsonb, $2)", [
+          JSON.stringify(payload),
+          "merge",
+        ]),
+      ),
+    ).rejects.toThrow(/missing_import_reference/);
+  });
+});
