@@ -202,7 +202,44 @@ beforeEach(() => {
     },
   ];
   tables["goals"] = [];
-  tables["imports"] = [];
+  // Eine Importzeile **so, wie die Pipeline sie schreibt** (buildCommitPayload,
+  // checksums.ts). Zuvor war diese Tabelle in den Tests immer leer — deshalb
+  // fiel nicht auf, dass das Schema `column_mapping` als Record<string,string>
+  // beschrieb, obwohl dort Spaltenindizes (Zahlen) stehen. Jede Sicherung mit
+  // Importhistorie wurde dadurch beim Einlesen abgelehnt.
+  tables["imports"] = [
+    {
+      id: uuid("00000005", 1),
+      user_id: USER_ID,
+      file_name: "Details-Dividenden.xlsx",
+      file_hash: "a".repeat(64),
+      file_size_bytes: 48412,
+      file_type: "xlsx",
+      sheet_name: "Tabelle1",
+      status: "committed",
+      column_mapping: { pay_date: 0, security: 1, net_amount: 2, broker: 3 },
+      detected_formats: { date: "de", decimal: "comma" },
+      row_balance: {
+        analyzed: 1439,
+        imported: 1439,
+        invalid: 0,
+        excluded: 0,
+        needs_dedupe: 0,
+      },
+      row_report: [{ row: 1, status: "imported" }],
+      checksums: {
+        rowCount: 1439,
+        totalNet: "49391.57",
+        minDate: "2012-05-15",
+        maxDate: "2026-07-15",
+        byYear: { "2012": { count: 2, sum: "13.80" } },
+        byBroker: { Musterbank: { count: 2, sum: "13.80" } },
+      },
+      created_at: PG_CREATED,
+      committed_at: PG_UPDATED,
+      rolled_back_at: null,
+    },
+  ];
 });
 
 describe("createBackup — Vollstaendigkeit", () => {
@@ -239,7 +276,7 @@ describe("createBackup — Integritaetsblock", () => {
     expect(counts?.["depot"]).toBe(1);
     expect(counts?.["portfolio"]).toBe(0);
     expect(counts?.["goal"]).toBe(0);
-    expect(counts?.["import"]).toBe(0);
+    expect(counts?.["import"]).toBe(1);
   });
 
   it("summiert nur die aktiven Zahlungen in den Gesamtbetraegen", async () => {

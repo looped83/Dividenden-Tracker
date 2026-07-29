@@ -120,6 +120,16 @@ const isoTimestamp = z.string().transform((value, ctx) => {
 });
 
 /**
+ * Beliebiger JSON-Wert.
+ *
+ * Für Felder, die als `jsonb` gespeichert und beim Wiederherstellen
+ * unverändert zurückgeschrieben werden. Sie sind für die Sicherung
+ * durchzureichende Fracht — die Struktur zu prüfen brächte keine Sicherheit
+ * und hat bereits zweimal dazu geführt, dass gültige Dateien abgelehnt wurden.
+ */
+const jsonValue = z.unknown();
+
+/**
  * ISO 4217 currency code (3 uppercase letters)
  */
 const currencyCode = z
@@ -212,11 +222,24 @@ export const importBackupSchema = z.object({
     "rolled_back",
     "discarded",
   ]),
-  column_mapping: z.record(z.string(), z.string()).optional(),
-  detected_formats: z.record(z.string(), z.any()).optional(),
-  row_balance: z.record(z.string(), z.any()).optional(),
-  row_report: z.array(z.any()).optional(),
-  checksums: z.record(z.string(), z.any()).optional(),
+  // Importmetadaten: in der Datenbank `jsonb`, beim Wiederherstellen
+  // unverändert zurückgeschrieben. Ihre innere Struktur wird bewusst **nicht**
+  // geprüft.
+  //
+  // Die frühere Fassung tat es und lag daneben: `column_mapping` wurde als
+  // `Record<string, string>` beschrieben, enthält aber Spaltenindizes, also
+  // Zahlen (`{ pay_date: 0, security: 1 }`). Jede Sicherung mit
+  // Importhistorie wurde dadurch beim Einlesen abgelehnt.
+  //
+  // Diese Blöcke sind Herkunftsnachweise, keine fachlichen Daten. Ihre Form
+  // folgt der Importpipeline und ändert sich mit ihr; sie hier ein zweites
+  // Mal zu beschreiben schafft keine Sicherheit, sondern nur eine Kopie, die
+  // auseinanderläuft. Was zählt, ist dass sie den Weg unverändert überstehen.
+  column_mapping: jsonValue,
+  detected_formats: jsonValue,
+  row_balance: jsonValue,
+  row_report: jsonValue,
+  checksums: jsonValue,
   created_at: isoTimestamp,
   committed_at: isoTimestamp.optional(),
   rolled_back_at: isoTimestamp.optional(),
