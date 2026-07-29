@@ -1,15 +1,18 @@
 /**
- * Export Service
+ * Datenexport: CSV, Excel und JSON.
  *
- * Client-side service for exporting dividend data:
- * - CSV export with formula injection protection
- * - Excel (.xlsx) export with proper data types
- * - JSON export for analytical use
- * - Configurable filtering (year, month, security, depot)
- * - Column selection
+ * Abgrenzung zur Sicherung: Ein Export ist eine **Auswahl** zum
+ * Weiterverarbeiten und laesst sich nicht wieder einspielen; die Sicherung ist
+ * der vollstaendige Bestand (backupService.ts). Beides in einer Datei zu
+ * vermischen waere der sicherste Weg, im Ernstfall die falsche zu greifen.
+ *
+ * Textfelder werden gegen Formula Injection geschuetzt (`escapeCsvField`) —
+ * eine Exportdatei wird in einer Tabellenkalkulation geoeffnet, und ein Wert,
+ * der dort ausgefuehrt wird, ist eine Sicherheitsluecke.
  */
 
 import { supabase } from "@/lib/supabase/client";
+import { fetchAllPages } from "@/lib/supabase/fetchAllPages";
 import { MoneyDecimal } from "@/lib/money/decimalConfig";
 
 // ============================================================================
@@ -21,11 +24,15 @@ export type ExportFormat = "csv" | "xlsx" | "json";
 export interface ExportOptions {
   format: ExportFormat;
   includeArchived?: boolean;
+  /**
+   * Zeitraumeingrenzung. `securityIds`/`depotIds` gab es hier ebenfalls als
+   * Feld — ohne Wirkung: Die Auswahl liest die IDs gar nicht mit, die
+   * Filterzweige waren leer. Ein Aufrufer haette ungefilterte Daten erhalten
+   * und es fuer eine Auswahl gehalten.
+   */
   filters?: {
     yearFrom?: number;
     yearTo?: number;
-    securityIds?: string[];
-    depotIds?: string[];
   };
   columns?: ExportColumn[];
 }
@@ -78,15 +85,21 @@ export const DEFAULT_EXPORT_COLUMNS: ExportColumn[] = [
 /**
  * Fetch and filter dividend payments for export
  */
-/* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unnecessary-condition */
+/* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access */
 async function fetchPaymentsForExport(
   options: ExportOptions,
   onProgress?: (p: ExportProgress) => void,
 ) {
   onProgress?.({ stage: "fetching_data" });
 
-  let query = supabase.from("dividend_payments").select(
-    `
+  // Seitenweise (siehe fetchAllPages): Ohne Paginierung endete der Export
+  // stillschweigend nach 1.000 Zeilen — bei vierstelliger Historie fehlte damit
+  // ein knappes Drittel der Daten in jeder Exportdatei.
+  const data = await fetchAllPages((from, to) => {
+    const query = supabase
+      .from("dividend_payments")
+      .select(
+        `
       id,
       pay_date,
       gross_amount,
@@ -104,22 +117,19 @@ async function fetchPaymentsForExport(
       security:securities(name, ticker),
       depot:depots(name)
     `,
-  );
-
-  // Filter by archive status
-  if (!options.includeArchived) {
-    query = query.is("archived_at", null);
-  }
-
-  const { data, error } = await query.order("pay_date", { ascending: false });
-
-  if (error) throw error;
+      )
+      // `id` als Tiebreaker: `pay_date` allein ist nicht eindeutig.
+      .order("pay_date", { ascending: false })
+      .order("id", { ascending: true })
+      .range(from, to);
+    return options.includeArchived ? query : query.is("archived_at", null);
+  });
 
   onProgress?.({ stage: "filtering", totalItems: data.length });
 
   // Apply client-side filters
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let filtered = (data ?? []) as any[];
+  let filtered = data as any[];
 
   if (options.filters?.yearFrom || options.filters?.yearTo) {
     const yearFrom = options.filters.yearFrom ?? 0;
@@ -131,16 +141,6 @@ async function fetchPaymentsForExport(
     });
   }
 
-  if (options.filters?.securityIds && options.filters.securityIds.length > 0) {
-    // This would require the security_id to be included in the select
-    // For now, we'll note this limitation
-  }
-
-  if (options.filters?.depotIds && options.filters.depotIds.length > 0) {
-    // This would require the depot_id to be included in the select
-    // For now, we'll note this limitation
-  }
-
   onProgress?.({
     stage: "filtering",
     itemsProcessed: filtered.length,
@@ -150,7 +150,7 @@ async function fetchPaymentsForExport(
   // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return filtered;
 }
-/* eslint-enable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unnecessary-condition */
+/* eslint-enable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access */
 
 // ============================================================================
 // CSV Export

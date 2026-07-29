@@ -1,9 +1,36 @@
 # TEST_STRATEGY.md — Dividend Tracker
 
-Stand: 2026-07-19 · Status: Verbindliche Teststrategie (Planungsphase)
+Stand: 2026-07-29 · Status: Verbindliche Teststrategie
 
-Werkzeuge: Vitest 4 (+ React Testing Library 16) · Playwright 1.61 (Chromium + WebKit) ·
-lokale Supabase-Instanz (CLI/Docker) für Integrations-, RLS- und Backup-Tests.
+Werkzeuge: Vitest 4 (+ React Testing Library 16) · Playwright 1.56 (Chromium + WebKit) ·
+reines PostgreSQL 16 für Integrations-, RLS- und Restore-Tests (DECISIONS.md D-027).
+
+## 0. Tatsächlicher Stand (2026-07-29)
+
+| Stufe | Umfang | Läuft in CI |
+|---|---|---|
+| Lint + Typecheck + Format | ESLint inkl. Geld-Verbotsliste, `tsc --noEmit` strict | ✅ Job `quality` |
+| Unit (Vitest) | 432 Tests / 54 Dateien | ✅ Job `quality` |
+| Integration (PostgreSQL 16) | 98 Tests: Constraints, Trigger, RLS, Import, Statistik, Ziele, Restore | ✅ Job `db-integration` |
+| E2E (Playwright) | 26 Tests: Rauchtests + axe, Chromium und WebKit | ✅ Job `e2e-smoke` |
+
+**Bekannte Lücken** — bewusst benannt statt stillschweigend hingenommen:
+
+1. **Kein E2E hinter der Anmeldung.** Rauch- und Accessibility-Tests decken nur
+   die drei öffentlichen Routen ab (Anmelden, Registrieren, Passwort vergessen).
+   Erfassen, Liste, Statistik, Import und Sicherung sind im Browser ungetestet;
+   axe prüft folglich keine offenen Dialoge, Filter, Toasts oder Fehlerzustände.
+2. **Der Realdaten-Importtest läuft nicht in CI.** Die Datei enthält echte
+   Finanzdaten und ist zu Recht nicht eingecheckt (`.gitignore`); die Suite
+   überspringt sich selbst, wenn sie fehlt (12 Tests). Die Jahreskontrollwerte
+   2012–2026 werden damit nie automatisch geprüft. Abhilfe wäre eine
+   anonymisierte Fixture mit derselben Struktur.
+3. **Keine dokumentierte Restore-Probe** aus einer echten Sicherung auf ein
+   frisches Konto (Abnahmekriterium der Auditphase).
+
+Priorisierung siehe `docs/AUDIT_2026-07-29.md`, Abschnitt F.4.
+
+---
 
 Grundsatz: Die Finanz- und Importlogik liegt in reinen Funktionen (`lib/money`, `lib/parsing`,
 `lib/fingerprint`, `lib/statistics`, `lib/export`) und wird nahezu vollständig unit-getestet.

@@ -489,6 +489,19 @@ export interface Database {
         Args: { p_import_id: string };
         Returns: Database["public"]["Tables"]["imports"]["Row"];
       };
+      /**
+       * Spielt eine Sicherung in **einer** Transaktion ein (Migration 0022,
+       * `search_path` nachgezogen in 0023). `p_mode`: "merge" ergaenzt,
+       * "replace" archiviert den bestehenden Bestand zuvor.
+       */
+      restore_backup: {
+        Args: { p_backup_payload: Json; p_mode: "merge" | "replace" };
+        Returns: {
+          success: boolean;
+          mode: "merge" | "replace";
+          records_restored: Record<string, number>;
+        };
+      };
     };
     Enums: {
       payment_type: PaymentType;

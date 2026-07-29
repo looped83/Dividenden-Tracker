@@ -34,6 +34,7 @@ import {
   type SheetInfo,
   type ImportCellValue,
 } from "@/lib/import/parseWorkbook";
+import { checkImportFile } from "@/lib/import/fileLimits";
 import { parseCsv } from "@/lib/import/parseCsv";
 import { hashFile } from "@/lib/import/fingerprint";
 import {
@@ -118,6 +119,14 @@ export function ImportWizard({ onFinished }: { onFinished: () => void }) {
 
   // ---- Phase A: Datei auswaehlen und analysieren -------------------------
   async function handleFile(file: File) {
+    // Vor dem Einlesen pruefen: Danach liegt die Datei bereits vollstaendig im
+    // Speicher und der Parser laeuft im Hauptthread.
+    const rejection = checkImportFile(file);
+    if (rejection) {
+      fail(rejection);
+      return;
+    }
+
     setPhase("analyzing");
     setError("");
     try {

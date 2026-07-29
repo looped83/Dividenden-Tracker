@@ -1,64 +1,13 @@
 import { supabase } from "@/lib/supabase/client";
-import type { Database, PaymentType } from "@/lib/supabase/database.types";
+import type { Database } from "@/lib/supabase/database.types";
 import { normalizeAmountFields } from "@/lib/supabase/repositories/normalizeAmountFields";
+import { fetchAllPages } from "@/lib/supabase/fetchAllPages";
 
 export type DividendPayment = Database["public"]["Tables"]["dividend_payments"]["Row"];
 export type DividendPaymentInsert =
   Database["public"]["Tables"]["dividend_payments"]["Insert"];
 export type DividendPaymentUpdate =
   Database["public"]["Tables"]["dividend_payments"]["Update"];
-
-export interface PaymentFilters {
-  depotId?: string | undefined;
-  securityId?: string | undefined;
-  paymentType?: PaymentType | undefined;
-  fromDate?: string | undefined;
-  toDate?: string | undefined;
-  includeArchived?: boolean | undefined;
-  searchTerm?: string | undefined;
-}
-
-/**
- * Suche wirkt auf den verknuepften Wertpapiernamen (PostgREST-Filter ueber
- * die FK-Relation), da die Zahlungstabelle selbst keinen Namen speichert.
- */
-export async function fetchPayments(
-  filters: PaymentFilters = {},
-): Promise<DividendPayment[]> {
-  let query = supabase
-    .from("dividend_payments")
-    .select("*, securities!inner(name, ticker)")
-    .order("pay_date", { ascending: false });
-
-  if (!filters.includeArchived) {
-    query = query.is("archived_at", null);
-  }
-  if (filters.depotId) {
-    query = query.eq("depot_id", filters.depotId);
-  }
-  if (filters.securityId) {
-    query = query.eq("security_id", filters.securityId);
-  }
-  if (filters.paymentType) {
-    query = query.eq("payment_type", filters.paymentType);
-  }
-  if (filters.fromDate) {
-    query = query.gte("pay_date", filters.fromDate);
-  }
-  if (filters.toDate) {
-    query = query.lte("pay_date", filters.toDate);
-  }
-  if (filters.searchTerm) {
-    query = query.or(
-      `name.ilike.%${filters.searchTerm}%,ticker.ilike.%${filters.searchTerm}%`,
-      { referencedTable: "securities" },
-    );
-  }
-
-  const { data, error } = await query;
-  if (error) throw error;
-  return data.map(normalizeAmountFields);
-}
 
 /**
  * Schlanke Datenbasis fuer das Dashboard (Phase 5A): ausschliesslich aktive
@@ -86,14 +35,9 @@ export type DashboardPaymentRow = Pick<
 const DASHBOARD_COLUMNS =
   "id, pay_date, net_amount, gross_amount, security_id, depot_id, payment_type, source, created_at";
 
-// PostgREST begrenzt eine Antwort auf max. `db-max-rows` Zeilen (Supabase-Default
-// 1000). Die gesamte aktive Historie wird daher seitenweise geladen.
-const DASHBOARD_PAGE_SIZE = 1000;
-
 export async function fetchDashboardPayments(): Promise<DashboardPaymentRow[]> {
-  const all: DashboardPaymentRow[] = [];
-  for (let from = 0; ; from += DASHBOARD_PAGE_SIZE) {
-    const { data, error } = await supabase
+  return fetchAllPages<DashboardPaymentRow>((from, to) =>
+    supabase
       .from("dividend_payments")
       .select(DASHBOARD_COLUMNS)
       .is("archived_at", null)
@@ -102,12 +46,8 @@ export async function fetchDashboardPayments(): Promise<DashboardPaymentRow[]> {
       // Zeilen bei der Paginierung).
       .order("pay_date", { ascending: false })
       .order("id", { ascending: true })
-      .range(from, from + DASHBOARD_PAGE_SIZE - 1);
-    if (error) throw error;
-    all.push(...data);
-    if (data.length < DASHBOARD_PAGE_SIZE) break;
-  }
-  return all;
+      .range(from, to),
+  );
 }
 
 /**
@@ -155,22 +95,16 @@ export type PaymentListRow = Pick<
 export async function fetchAllPayments(opts: {
   includeArchived: boolean;
 }): Promise<PaymentListRow[]> {
-  const PAGE = 1000;
-  const all: PaymentListRow[] = [];
-  for (let from = 0; ; from += PAGE) {
-    let query = supabase
+  const rows = await fetchAllPages<PaymentListRow>((from, to) => {
+    const query = supabase
       .from("dividend_payments")
       .select(LIST_COLUMNS)
       .order("pay_date", { ascending: false })
       .order("id", { ascending: true })
-      .range(from, from + PAGE - 1);
-    if (!opts.includeArchived) query = query.is("archived_at", null);
-    const { data, error } = await query;
-    if (error) throw error;
-    all.push(...data.map(normalizeAmountFields));
-    if (data.length < PAGE) break;
-  }
-  return all;
+      .range(from, to);
+    return opts.includeArchived ? query : query.is("archived_at", null);
+  });
+  return rows.map(normalizeAmountFields);
 }
 
 export async function fetchPaymentById(id: string): Promise<DividendPayment> {
