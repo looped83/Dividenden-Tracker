@@ -19,7 +19,7 @@ import {
   unarchivePayment,
   updatePayment,
 } from "@/lib/supabase/repositories/payments";
-import type { DividendPayment } from "@/lib/supabase/repositories/payments";
+import type { PaymentListRow } from "@/lib/supabase/repositories/payments";
 import { DUPLICATE_DISMISSALS_KEY, PAYMENTS_KEY } from "@/features/payments/hooks";
 import { runBulk, type BulkResult } from "@/features/payments/bulk";
 import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
@@ -27,7 +27,7 @@ import { useToast } from "@/components/ui/toast";
 
 interface Row {
   id: string;
-  payment: DividendPayment;
+  payment: PaymentListRow;
 }
 
 type BulkKind = "assign-depot" | "assign-company" | "storno" | "reactivate" | "delete";

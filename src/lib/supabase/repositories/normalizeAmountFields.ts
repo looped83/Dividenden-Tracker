@@ -24,7 +24,12 @@ const NUMERIC_FIELDS = [
  * §1, Money.fromString). Normalisiert alle Betragsfelder direkt hinter der
  * Datenzugriffsschicht, statt jeden Aufrufer defensiv programmieren zu lassen.
  */
-export function normalizeAmountFields<T extends DividendPaymentRow>(row: T): T {
+export function normalizeAmountFields<
+  // Auch fuer Projektionen brauchbar (die Liste laedt nur einen Teil der
+  // Spalten): verlangt wird lediglich, dass die vorhandenen Betragsfelder zur
+  // Tabelle passen — nicht die vollstaendige Zeile.
+  T extends Partial<Pick<DividendPaymentRow, (typeof NUMERIC_FIELDS)[number]>>,
+>(row: T): T {
   const normalized: T = { ...row };
   for (const field of NUMERIC_FIELDS) {
     const value = normalized[field];

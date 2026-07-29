@@ -48,7 +48,7 @@ import {
   useDeletePayment,
   useUnarchivePayment,
 } from "@/features/payments/hooks";
-import type { DividendPayment } from "@/lib/supabase/repositories/payments";
+import type { PaymentListRow } from "@/lib/supabase/repositories/payments";
 import {
   parseSort,
   parseStatus,
@@ -69,7 +69,7 @@ import {
 import { YearOverYearIndicator } from "@/features/payments/YearOverYearIndicator";
 
 type Row = {
-  payment: DividendPayment;
+  payment: PaymentListRow;
   effectiveDate: string;
   currency: ReturnType<typeof toCurrencyCode>;
 } & SortableRow;
