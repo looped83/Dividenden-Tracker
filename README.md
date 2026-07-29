@@ -16,7 +16,7 @@ Alle Funktionsbereiche sind umgesetzt und unter GitHub Pages im Einsatz:
 | CSV-/Excel-Import mit Bilanz, Duplikatprüfung und Rollback | in Betrieb |
 | Übersicht und Statistikbereich (fünf Unterbereiche, Drill-down) | in Betrieb |
 | Ziele (Jahr und Monat) mit Fortschritt | in Betrieb |
-| Datensicherung, Wiederherstellung und Export | in Betrieb seit 2026-07-29 |
+| Datensicherung, Wiederherstellung und Export | in Betrieb seit 2026-07-29; Sicherung am realen Bestand nachgewiesen |
 | PWA (installierbar, App-Hülle offline, Aktualisierungshinweis) | in Betrieb |
 
 Die Numbers-Migration (Übernahme der historischen Daten nach
