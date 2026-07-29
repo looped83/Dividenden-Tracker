@@ -43,15 +43,24 @@ export default defineConfig({
     { name: "Desktop", use: { ...devices["Desktop Chrome"] } },
   ],
   webServer: {
-    // Platzhalter-Zugangsdaten wie im CI-Build: Ohne sie faltet der Bundler
-    // die gesamte App als nicht erreichbaren Code weg (siehe ci.yml).
-    command: `npm run build && npx vite preview --port ${String(PORT)} --strictPort`,
-    url: `http://127.0.0.1:${String(PORT)}`,
+    // `--host 127.0.0.1` ist wesentlich: Ohne die Angabe bindet die Vorschau an
+    // `localhost`, was auf GitHub-Runnern zuerst zu `::1` aufgeloest wird —
+    // Playwright fragt aber `127.0.0.1` ab und lief in den Timeout. Lokal fiel
+    // das nicht auf, weil `localhost` hier auf IPv4 zeigt.
+    command: `npm run build && npx vite preview --host 127.0.0.1 --port ${String(PORT)} --strictPort`,
+    url: `http://127.0.0.1:${String(PORT)}/`,
     reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
+    // Bauen und Starten zusammen; auf einem ausgelasteten Runner darf das
+    // dauern, ohne den Lauf zu verlieren.
+    timeout: 180_000,
     env: {
+      // Platzhalter-Zugangsdaten wie im CI-Build: Ohne sie faltet der Bundler
+      // die gesamte App als nicht erreichbaren Code weg (siehe ci.yml).
       VITE_SUPABASE_URL: "https://example.supabase.co",
       VITE_SUPABASE_ANON_KEY: "platzhalter-anon-key",
+      // Der Pages-Build liegt unter einem Unterpfad; die Rauchtests laufen
+      // gegen die Wurzel, damit die Adressen der Tests stimmen.
+      GITHUB_PAGES: "false",
     },
   },
 });

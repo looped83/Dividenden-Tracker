@@ -50,7 +50,10 @@ test.describe("Rauchtest", () => {
       }
     });
 
-    await page.goto("/#/login", { waitUntil: "networkidle" });
+    // Kein `networkidle`: Der Zustand ist in WebKit unzuverlaessig und kann
+    // haengen. Sichtbare Anmeldemaske heisst, dass das Startpaket geladen ist.
+    await page.goto("/#/login");
+    await expect(page.getByRole("heading", { name: "Anmelden" })).toBeVisible();
 
     const total = [...bytes.values()].reduce((sum, value) => sum + value, 0);
     // Ungepackt gemessen; die Grenze haelt Abstand zum heutigen Stand und
