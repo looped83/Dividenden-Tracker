@@ -1,10 +1,65 @@
 # IMPLEMENTATION_PLAN.md — Dividend Tracker
 
-Stand: 2026-07-19 · Status: Verbindlicher Phasenplan (Planungsphase)
+Stand: 2026-07-29 · Status: Phasen 1–10 umgesetzt (Numbers-Migration als Betriebsschritt offen)
 
 Regeln: Jede Phase ist klein, einzeln überprüfbar und endet mit erfüllten Abnahmekriterien,
 bevor die nächste beginnt. Die 15 Produktgrundsätze (PRODUCT_SPEC.md §3) gelten als ständige
 Abnahmekriterien. Tests der Phase laufen ab dann dauerhaft in CI.
+
+> **Zur Nummerierung.** Dieses Dokument führte zwei unvereinbare Zählungen: den
+> ursprünglichen Plan (unten, Phase 1–10) und die nachgetragenen Statusabschnitte, in denen
+> „Phase 6" die Zahlungsverwaltung und „Phase 7" die Ziele bezeichnete. „Phase 7" meinte damit
+> zwei verschiedene Dinge.
+>
+> **Verbindlich ist die Planzählung unten.** Die Zuordnung der Statusabschnitte:
+>
+> | Statusabschnitt | Planphase |
+> |---|---|
+> | „Phase 4 — Status: umgesetzt" | Phase 4 (Import) |
+> | „Phase 5A — Dashboard", „Phase 5B — Statistik" | Phase 5 |
+> | „Phase 6 – Status: umgesetzt" (Zahlungsverwaltung, Datenqualität) | Nachtrag zu Phase 3 |
+> | „Phase 7 — Ziele und Fortschritt" | Phase 6 (Ziele) |
+> | Backup/Restore/Export | Phase 7 |
+> | PWA, Mobile | Phase 9 |
+> | Accessibility, Performance, Audit | Phase 10 |
+>
+> Neue Arbeiten werden nicht mehr als „Phase N" geführt, sondern folgen dem Phasenplan in
+> `docs/AUDIT_2026-07-29.md` (Abschnitt H).
+
+## Stand je Planphase (2026-07-29)
+
+| Phase | Stand |
+|---|---|
+| 1 Projektgrundlage und Designsystem | ✅ umgesetzt |
+| 2 Supabase, Auth und Datenbank | ✅ umgesetzt |
+| 3 Stammdaten und manuelle Eingänge | ✅ umgesetzt (inkl. Nachtrag Zahlungsverwaltung/Datenqualität) |
+| 4 CSV- und Excel-Import | ✅ umgesetzt |
+| 5 Dashboard und Statistiken | ✅ umgesetzt |
+| 6 Ziele | ✅ umgesetzt |
+| 7 Backup, Export und Restore | ✅ umgesetzt — funktionsfähig **erst seit 2026-07-29**, siehe unten |
+| 8 Kontrollierte Numbers-Migration | ⏳ offen (Betriebsschritt, keine Entwicklung) |
+| 9 PWA und mobile Optimierung | ✅ umgesetzt |
+| 10 Accessibility, Performance, Produktionsaudit | ✅ umgesetzt — Audit (`docs/AUDIT_2026-07-29.md`), Restore-Probe (§4.3) und E2E hinter der Anmeldung inkl. axe (§4.1, CI-Job `e2e-app`) |
+
+### Nachtrag zu Phase 7 (2026-07-29)
+
+Die Phase galt als abgeschlossen, war es aber nicht. Der Audit wies nach:
+
+- `downloadBackup()` wurde nirgends aufgerufen — es entstand nie eine Datei, während die
+  Oberfläche „erfolgreich erstellt und heruntergeladen" meldete.
+- Sicherung, Export und Konflikterkennung luden ohne Paginierung und kappten still bei
+  1.000 Zeilen (bei 1.439 Zahlungen fehlten rund 439).
+- Ladefehler wurden zu leeren Listen; eine „erfolgreiche" Sicherung konnte 0 Eingänge enthalten.
+- `restore_backup()` war gegen das tatsächliche Schema **nie lauffähig** (Spalten
+  `archive_reason` auf `depots`/`securities`/`portfolios`, `archived_at` auf `goals`, direkter
+  Schreibzugriff auf `audit_log` ohne Berechtigung). Im Modus „replace" hätte die Funktion,
+  wäre sie lauffähig gewesen, den gesamten Bestand storniert und nichts zurückgeschrieben.
+- Beide Integrationstestdateien bestanden aus 63 Assertions `expect(true).toBe(true)`.
+- `profiles.last_backup_at` wurde nie geschrieben.
+
+Behoben in Migration 0023 und `src/lib/backup/*`; abgesichert durch 11 echte
+Integrationstests (`tests/integration/backup/restore-backup-rpc.test.ts`) und Unit-Tests für
+Paginierung und Sicherungsstand. Festgehalten in ADR-002 und ADR-003.
 
 ---
 
@@ -320,8 +375,9 @@ Umgesetzt:
   `depotStatistics`, `calendarMonthBuckets`, `heatmapByYearMonth`, `averagePayment`,
   `averagePerActiveMonth`, `largestPayment`, `activeMonthCount`, `worstMonthInYear`, `bestYear`
   (CALCULATION_RULES.md §11). Keine parallele Logik, keine Berechnung in Komponenten.
-- Statistikbereich `src/features/statistics` mit eigener Navigation und fünf Unterbereichen
-  (Übersicht, Jahre, Monate, Unternehmen, Depots) als verschachtelte Routen unter `/statistiken`.
+- Statistikbereich `src/features/statistics` mit eigener Navigation und sechs Unterbereichen
+  (Übersicht, Jahre, Monate, Vergleich, Unternehmen, Depots) als verschachtelte Routen unter
+  `/statistiken`.
 - Geteilter Datenfluss mit dem Dashboard (`useStatisticsData` nutzt den Query-Key
   `['payments','dashboard']`); Outlet-Kontext (`context.ts`) reicht den **einmal** gefilterten
   Datensatz an alle Unterbereiche weiter (ARCHITECTURE.md §4.5).

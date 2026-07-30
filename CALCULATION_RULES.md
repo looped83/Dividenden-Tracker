@@ -210,15 +210,17 @@ Differenz stammt aus `Money.subtract` (exakt, R-3).
 ### 9.5 Weitere Dashboard-Kennzahlen
 
 - **Durchschnitt pro Monat (§5.4):** laufendes Jahr `YTD ÷ begonnene Monate` (inkl. aktuellem);
-  abgeschlossenes Jahr `Jahressumme ÷ 12`; bei „Alle Jahre" nicht ausgewiesen.
+  abgeschlossenes Jahr `Jahressumme ÷ 12`; bei „Alle Jahre" nicht ausgewiesen. Als begonnen zählt
+  außerdem jeder Monat, dem bereits eine Zahlung zugeordnet ist (vorgezogene Zahlung, §10.3).
 - **Bester Monat (§5.5):** Kalendermonat mit maximaler Nettosumme im Zeitraum; bei Gleichstand
   gewinnt der **aktuellere** Monat.
 - **Top-Unternehmen / Depotverteilung (§9/§10):** `Σ net` je Wertpapier/Depot; Anteil
   `= Teilsumme ÷ Zeitraum-Gesamtsumme`, „—" wenn Gesamtsumme ≤ 0. Sortierung: Nettosumme ↓,
   dann Anzahl ↓, dann Name alphabetisch (de).
-- **Monatszeitreihe (§7):** zwölf Monate; zukünftige Monate des laufenden Jahres werden **nicht**
-  als 0 dargestellt, sondern als Lücke „noch nicht begonnen" (keine Prognose). In abgeschlossenen
-  Jahren dürfen zahlungsfreie Monate 0 € sein.
+- **Monatszeitreihe (§7):** zwölf Monate; zukünftige **zahlungsfreie** Monate des laufenden Jahres
+  werden **nicht** als 0 dargestellt, sondern als Lücke „noch nicht begonnen" (keine Prognose).
+  Enthält ein künftiger Monat bereits Zahlungen (vorgezogene Ausschüttung, §10.3), wird er normal
+  dargestellt. In abgeschlossenen Jahren dürfen zahlungsfreie Monate 0 € sein.
 - **Historische Gesamtsumme (§5.3/§12):** immer über die gesamte aktive Historie, unabhängig von
   der Jahresauswahl; als historischer Gesamtwert gekennzeichnet.
 
@@ -236,19 +238,27 @@ Auswertungen bildet.
 ### 10.1 Zuordnungsregel (implementiert in `lib/statistics/effectiveMonth.ts`)
 
 - **Ohne Plan** (`payout_months` leer): das echte `pay_date` bleibt maßgeblich.
-- **Mit Plan:** die Zahlung wird dem **letzten fälligen geplanten Monat am oder vor** dem
-  Zahlungsmonat zugeordnet (größter geplanter Monatsindex ≤ Zahlungsmonat), geprüft über die
-  geplanten Monate der Jahre `J−1` und `J`. Die geplanten Monate sind damit **maßgebend**: eine
-  später als geplant eingetroffene Dividende zählt zu dem Monat, für den sie fällig war — nicht
-  zum bloß nächstgelegenen. Beispiel Quartalsplan Mär/Jun/Sep/Dez: Zahlung 2. April → März;
-  Zahlung 28. Mai → ebenfalls März (nicht Juni).
-- **Jahreswechsel:** die Zuordnung darf das Jahr zurück verschieben. Eine Zahlung vor dem ersten
-  geplanten Monat des Jahres zählt zum letzten geplanten Monat des Vorjahres (z. B. Februar bei
-  Plan Mär/Jun/Sep/Dez → Dezember des Vorjahres; Januar bei Dezember-Plan → Dezember des Vorjahres).
-- Fällt der Zahlungsmonat selbst auf einen geplanten Monat, bleibt dieser.
+- **Zahlungsmonat selbst geplant:** dieser Monat bleibt (Normalfall).
+- **Verspätete Zahlung (Regelfall):** die Zahlung wird dem **letzten fälligen geplanten Monat am
+  oder vor** dem Zahlungsmonat zugeordnet (größter geplanter Monatsindex ≤ Zahlungsmonat). Die
+  geplanten Monate sind damit **maßgebend**: eine später als geplant eingetroffene Dividende zählt
+  zu dem Monat, für den sie fällig war. Beispiel Quartalsplan Mär/Jun/Sep/Dez: Zahlung 2. April
+  → März.
+- **Vorgezogene Zahlung:** liegt der letzte fällige geplante Monat **mehr als einen Monat** zurück
+  und ist der **unmittelbar folgende** Monat geplant, zählt die Zahlung zu diesem geplanten Monat.
+  Beispiel Plan Jan/Apr/Jul/Okt: Zahlung im Juni → Juli (nicht April). Beispiel Plan Mär/Jun:
+  Zahlung 28. Mai → Juni. Weiter als einen Monat wird **nicht** vorgezogen (Plan Jul, Zahlung im
+  Mai → Juli des Vorjahres), denn Zahlungen treffen häufiger spät als früh ein.
+- **Gleichstand:** sind der fällige und der folgende geplante Monat gleich weit entfernt, gewinnt
+  der frühere (fällige) Monat. Beispiel Plan Mär/Mai: Zahlung im April → März.
+- **Jahreswechsel:** die Zuordnung darf das Jahr in beide Richtungen verschieben; geprüft werden
+  die geplanten Monate der Jahre `J−1`, `J` und `J+1`. Beispiele: Januar bei Dezember-Plan →
+  Dezember des Vorjahres; Dezember bei Plan Jan/Apr/Jul/Okt → Januar des Folgejahres.
 - Der Tag des effektiven Datums ist der echte Zahltag, begrenzt auf die Länge des Zielmonats
-  (z. B. 31.03. → geplanter Februar → 28./29.02.). Er dient nur der internen Datumsdarstellung,
-  nicht der Zuordnung.
+  (z. B. 31.03. → geplanter Februar → 28./29.02.). Bei einer **vorgezogenen** Zahlung ist es der
+  **1. des geplanten Monats**, damit bereits erhaltenes Geld in Zeiträumen „bis heute" (Monat bzw.
+  Jahr bis heute, §5.2/§6) ab Monatsbeginn zählt und nicht erst am Zahltag auftaucht. Der Tag dient
+  nur der internen Datumsdarstellung, nicht der Zuordnung.
 
 ### 10.2 Geltungsbereich
 
@@ -262,9 +272,16 @@ Gleitkomma-Geldarithmetik statt.
 
 - Mehrere Zahlungen können auf denselben effektiven Monat fallen (Nachzahlung, Korrektur) —
   sie summieren sich dort erwartungsgemäß.
-- Eine ausnahmsweise **vor** dem geplanten Monat eingetroffene Zahlung wird dem vorherigen
-  geplanten Monat zugerechnet (die Regel geht von „später als geplant" aus). Kein Vorziehen in
-  einen künftigen geplanten Monat.
+- Der effektive Monat kann **einen Monat in der Zukunft** liegen (vorgezogene Zahlung im
+  laufenden Monat für den kommenden geplanten Monat). Auswertungen behandeln einen solchen Monat
+  deshalb **nicht** als „noch nicht begonnen": im Monatsdiagramm (§7) gilt ein künftiger Monat nur
+  ohne Zahlungen als Lücke, und der Ø pro Monat (§5.4) teilt durch die begonnenen Monate
+  **mindestens bis zum letzten Monat mit Zahlungen**. Der ausgewählte Zeitraum (§5.1) und der
+  Jahresvergleich (§6) folgen dagegen unverändert dem effektiven Datum: Geld, das laut Plan erst
+  im kommenden Monat fällig ist, zählt auch erst dort — das ist die gewollte Folge einer
+  Auswertung nach Ausschüttungsplan statt nach Kalender.
+- Eine mehr als einen Monat zu früh eingetroffene Zahlung wird weiterhin dem vorherigen fälligen
+  geplanten Monat zugerechnet (kein Vorziehen über mehr als einen Monat).
 
 ---
 
@@ -353,7 +370,57 @@ wird dabei mit dem konkreten Drill-Kriterium zusammengeführt, sodass die Zielli
 Teilmenge zeigt (Grundsatz 6). `source`/`payment_type` sind in der Zahlungsliste nicht filterbar
 und bleiben beim Drill-down unberücksichtigt.
 
-## 11.10 Vorjahresvergleich je Zahlung (Dividendenliste)
+### 11.10 Zeitraumvergleich (`compareYears`, `compareRollingTwelveMonths`)
+
+Gegenüberstellung zweier Zeiträume im Unterbereich `/statistiken/vergleich`.
+
+- **Gleicher Ausschnitt auf beiden Seiten — die tragende Regel.** Ist eines der beiden
+  Kalenderjahre das **laufende**, werden **beide** Seiten am Referenztag gekappt: `1.1.` bis
+  heute gegen `1.1.` bis zum selben Tag des anderen Jahres. Auch der umgekehrte Fall zählt (ein
+  abgeschlossenes Jahr als Vordergrund, das laufende als Vergleich). Sind beide Jahre
+  abgeschlossen, zählt jeweils das volle Jahr. Ohne diese Kappung stünde ein angefangenes gegen
+  ein volles Jahr — eine systematische Untertreibung, die plausibel aussieht und deshalb nicht
+  auffällt.
+- **Schaltjahr.** Hat der Referenzmonat im Zieljahr weniger Tage (29.02. gegen ein
+  Nicht-Schaltjahr), wird auf dessen letzten Tag abgebildet (28.02.), nie auf ein ungültiges
+  Datum.
+- **Rollierender Zwölfmonatsvergleich.** Die letzten zwölf Monate gegen die zwölf davor. Beide
+  Fenster sind exakt zwölf Monate lang und enden am selben Kalendertag (`1.8.2025–29.7.2026`
+  gegen `1.8.2024–29.7.2025`). Er hängt nicht am Jahreswechsel, an dem ein Jahresvergleich fast
+  nichts mehr aussagt.
+- **Monatsvergleich** (`compareMonths`). Derselbe Kalendermonat zweier Jahre (`Mai 2026` gegen
+  `Mai 2025`) — **nicht** der Vormonat: Dividenden sind saisonal, ein März gegen einen April
+  verglichen ergäbe eine beliebige Zahl. Läuft der Monat noch, enden **beide** Seiten am
+  Referenztag; ist er abgeschlossen, zählen beide Monate vollständig. Ein Monat, der noch nicht
+  begonnen hat, ist nicht wählbar — „0 € gegen 280 €" wäre kein Rückgang, sondern eine
+  Falschaussage. Aufgeschlüsselt wird **nach Unternehmen** (ein Monat lässt sich nicht in Monate
+  zerlegen): alle Unternehmen mit Zahlungen auf einer der beiden Seiten, absteigend nach
+  aktuellem Betrag. Wer nur im Vergleichsmonat vorkommt, bleibt sichtbar — ein Ausfall ist der
+  wichtigste Teil der Antwort.
+- **Kennzahlen.** Je Seite Nettosumme (§9.1, effektiver Monat §10) und Anzahl Zahlungen; die
+  Veränderung über `comparePeriods` (§6.4). Je Monat beide Monatswerte, ihre Differenz und die
+  laufende Summe seit Beginn des Zeitraums. Die letzte laufende Summe entspricht per Konstruktion
+  der Periodensumme, und die Summe der Monatswerte ebenfalls — die Kurve kann der Kennzahl
+  darüber nicht widersprechen.
+- **Keine Prognose, keine Hochrechnung** (PRODUCT_SPEC.md Grundsatz 8): Es werden ausschließlich
+  vorhandene Zahlungen summiert; ein Teiljahr wird nicht auf ein volles Jahr skaliert.
+- **Darstellung.** Die Aufschlüsselung (Monate bzw. Unternehmen) ist ab `md` eine Tabelle,
+  darunter eine Liste mit denselben Zahlen untereinander. Monate ohne Zahlungen auf beiden
+  Seiten stehen dort einzeilig als „keine Zahlungen" — drei Zeilen Gedankenstriche wären
+  Rauschen.
+- **Drill-down (§11.9) nur, wo er trägt.** Die Zahlungsliste filtert auf Jahr und Monat, nicht
+  auf einen Tag. Der am Stichtag **angeschnittene** Monat wird deshalb nicht verlinkt und in der
+  Tabelle als solcher gekennzeichnet; alle vollständigen Monate verlinken wie gewohnt. Ein Link,
+  der mehr zeigt als die Zahl daneben, beschädigt das Vertrauen in beide.
+- **Filter.** Unternehmen, Depot, Datenquelle und Zahlungsart wirken wie überall; der
+  **Jahresfilter** wirkt in diesem Unterbereich nicht (er reduzierte die Datenbasis auf ein Jahr
+  und ließe die Vergleichsseite grundsätzlich leer). Sein Regler wird deshalb hier ausgeblendet:
+  Ein Bedienelement ohne Wirkung ist schlimmer als keines. Ein aus einem anderen Unterbereich
+  mitgebrachter Jahresfilter bleibt in der URL, wird aber benannt und lässt sich über „Filter
+  zurücksetzen" räumen. Die verglichenen Zeiträume liegen unter eigenen URL-Schlüsseln
+  (`?modus=&basis=&referenz=&monat=`).
+
+## 11.11 Vorjahresvergleich je Zahlung (Dividendenliste)
 
 Jede Zahlung in `/eingaenge` trägt einen Indikator, wie sie zur Zahlung desselben
 **effektiven Ausschüttungsmonats** im Vorjahr steht (implementiert in

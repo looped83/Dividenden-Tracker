@@ -16,6 +16,10 @@ const PORT = 4173;
 
 export default defineConfig({
   testDir: "./tests/e2e",
+  // Die angemeldeten Ablaeufe haben eine eigene Konfiguration
+  // (playwright.app.config.ts): eigener Build gegen die Testbruecke, eigener
+  // Port, eigene Datenbank. Hier wuerden sie gegen die falsche Adresse laufen.
+  testIgnore: "app/**",
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,

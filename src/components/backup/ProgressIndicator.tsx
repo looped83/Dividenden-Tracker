@@ -1,8 +1,8 @@
 /**
- * Progress Indicator Component
+ * Fortschritt beim Sichern, Wiederherstellen und Exportieren.
  *
- * Shows progress during backup creation, restoration, or export operations.
- * Displays current stage and item counts when available.
+ * Die Beschriftungen benennen, was gerade geschieht — nicht die technischen
+ * Stufennamen. Wo eine Gesamtzahl bekannt ist, kommt ein Balken dazu.
  */
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,17 +14,16 @@ interface ProgressIndicatorProps {
 }
 
 const stageLabels: Record<BackupProgress["stage"], string> = {
-  fetching_profiles: "Profil wird geladen...",
-  fetching_data: "Daten werden geladen...",
-  serializing: "Daten werden serialisiert...",
-  generating: "Datei wird generiert...",
-  reading_file: "Datei wird gelesen...",
-  validating: "Sicherung wird validiert...",
-  detecting_conflicts: "Konflikte werden erkannt...",
-  restoring: "Daten werden wiederhergestellt...",
-  invalidating_cache: "Cache wird aktualisiert...",
-  filtering: "Daten werden gefiltert...",
-  formatting: "Daten werden formatiert...",
+  fetching_profiles: "Profil wird geladen …",
+  fetching_data: "Daten werden geladen …",
+  serializing: "Daten werden aufbereitet …",
+  generating: "Datei wird erstellt …",
+  reading_file: "Datei wird gelesen …",
+  validating: "Sicherung wird geprüft …",
+  restoring: "Daten werden wiederhergestellt …",
+  invalidating_cache: "Ansichten werden aktualisiert …",
+  filtering: "Daten werden gefiltert …",
+  formatting: "Datei wird geschrieben …",
 };
 
 export default function ProgressIndicator({ progress }: ProgressIndicatorProps) {

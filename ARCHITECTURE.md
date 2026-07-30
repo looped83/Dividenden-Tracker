@@ -21,11 +21,11 @@ Truth**. Es gibt kein eigenes Backend; die Geschäftslogik verteilt sich auf:
 │  ├─ Formulare: React Hook Form + Zod                                              │
 │  ├─ Server-State: TanStack Query  ──────────────┐                                 │
 │  ├─ Finanzlogik: Decimal.js (kein Float)        │                                 │
-│  ├─ Import-Worker (Web Worker):                 │                                 │
-│  │    Papa Parse (CSV) · SheetJS (XLSX/XLS)     │                                 │
+│  ├─ Import (Hauptthread, kein Worker):          │                                 │
+│  │    eigener CSV-Parser · exceljs (XLSX/XLS)   │                                 │
 │  │    Normalisierung · Validierung · Fingerprints                                 │
-│  └─ Service Worker (vite-plugin-pwa/Workbox):   │                                 │
-│       App-Shell-Cache + Offline-Lesecache       │                                 │
+│  └─ Service Worker (eigener, ~70 Zeilen):       │                                 │
+│       nur App-Huellen-Cache, niemals Daten      │                                 │
 └─────────────────────────────────────────────────┼─────────────────────────────────┘
                                                   │ HTTPS (supabase-js, PKCE-Auth)
 ┌─────────────────────────────────────────────────▼─────────────────────────────────┐
@@ -67,18 +67,21 @@ manuelle Review (persönliches Projekt, Nachvollziehbarkeit vor Bequemlichkeit).
 | Styling | `tailwindcss` | 4.3.3 | CSS-first-Konfiguration (v4) |
 | Komponenten | shadcn/ui (CLI `shadcn` 4.13.x) | — | Kein Laufzeitpaket; generierte Quellen im Repo |
 | Routing | `react-router` | 8.2.0 | Library/Data Mode, kein Framework-Mode — K-2 |
-| Server-State | `@tanstack/react-query` | 5.101.2 | + `@tanstack/react-query-persist-client` für Offline-Lesecache |
-| Formulare | `react-hook-form` | 7.82.0 | |
-| Validierung | `zod` | 4.4.3 | + `@hookform/resolvers` 5.4.0 (Zod-4-kompatibel) — K-3 |
-| CSV | `papaparse` | 5.5.4 | Streaming-Parser, Worker-tauglich |
-| Excel | `xlsx` (SheetJS CE) | **0.20.x von cdn.sheetjs.com** | npm-Version 0.18.5 ist veraltet/verwundbar — K-4 |
+| Server-State | `@tanstack/react-query` | 5.101.4 | Kein Persist-Cache — Finanzdaten werden nicht zwischengespeichert (D-011) |
+| Formulare | `react-hook-form` | 7.83.0 | |
+| Validierung | `zod` | 4.4.3 | + `@hookform/resolvers` 5.5.7 (Zod-4-kompatibel) — K-3 |
+| CSV | eigener Parser | — | `src/lib/import/parseCsv.ts`; Papa Parse waere fuer den Umfang eine Abhaengigkeit zu viel |
+| Excel | `exceljs` | ^4.4.0 | Dynamisch nachgeladen (~930 kB, eigener Chunk); loest SheetJS ab — K-4 |
 | Dezimalarithmetik | `decimal.js` | 10.6.0 | Konfiguration in CALCULATION_RULES.md §2 |
-| Diagramme | `recharts` | 3.9.2 | React-19-kompatibel |
+| Diagramme | `recharts` | 3.10.1 | React-19-kompatibel; nachgeladen (~103 kB gzip) |
 | Unit-Tests | `vitest` | 4.1.10 | + `@testing-library/react` 16.3.2 |
-| E2E-Tests | `@playwright/test` | 1.61.1 | Chromium/WebKit (WebKit ≈ iOS Safari) |
-| Backend-SDK | `@supabase/supabase-js` | 2.110.7 | PKCE-Flow |
-| PWA | `vite-plugin-pwa` | 1.3.0 | Workbox 7.x |
+| E2E-Tests | `@playwright/test` | 1.56.1 | Chromium/WebKit (WebKit ≈ iOS Safari) |
+| Backend-SDK | `@supabase/supabase-js` | 2.111.0 | PKCE-Flow |
+| PWA | eigener Service Worker | — | `public/sw.js`; `vite-plugin-pwa` samt Workbox waere unverhaeltnismaessig (§6) |
 | Supabase CLI | `supabase` | aktuell (≥ 2.x) | Lokale DB, Migrationen, Typen-Generierung |
+
+> Die Versionen entsprechen `package.json` (Stand 2026-07-29). Sie sind exakt
+> gepinnt; Abweichungen zwischen dieser Tabelle und `package.json` sind ein Fehler.
 
 ### Kompatibilitätsentscheidungen
 
@@ -99,11 +102,10 @@ manuelle Review (persönliches Projekt, Nachvollziehbarkeit vor Bequemlichkeit).
   SPA hinter Auth; SSR brächte Komplexität ohne Nutzen und kollidiert mit dem PWA-Modell.
 - **K-3 Zod 4 + @hookform/resolvers ≥ 5:** Resolver-Version 5.x ist die erste mit stabiler
   Zod-4-Unterstützung; ältere Anleitungen (Zod 3) sind nicht 1:1 übertragbar.
-- **K-4 SheetJS aus der offiziellen SheetJS-Registry:** Das npm-Paket `xlsx` ist bei 0.18.5
-  eingefroren und enthält bekannte Schwachstellen (u. a. Prototype Pollution, ReDoS). Bezogen
-  wird 0.20.x als Tarball von `https://cdn.sheetjs.com` und mit Integritäts-Hash im Lockfile
-  gepinnt. (CDN war aus der Planungsumgebung nicht erreichbar; exakte Patch-Version wird beim
-  Projektsetup dokumentiert.) XLS-Altformat wird darüber mitunterstützt.
+- **K-4 `exceljs` statt SheetJS:** Das npm-Paket `xlsx` ist bei 0.18.5 eingefroren und enthält
+  bekannte Schwachstellen; die gepflegten Fassungen liegen nur unter `cdn.sheetjs.com`, das aus
+  der Implementierungsumgebung nicht erreichbar war (DECISIONS.md D-015/D-026). Verwendet wird
+  deshalb `exceljs` aus npm, dynamisch nachgeladen. XLS-Altformat wird best effort unterstützt.
 - **K-5 Tailwind 4 + shadcn/ui:** shadcn-CLI ≥ 4 generiert Tailwind-4-kompatible Komponenten
   (CSS-Variablen, `@theme`). Keine `tailwind.config.js`-Altlasten.
 - **K-6 Recharts 3:** Nur SVG-Rendering, funktioniert ohne Canvas-Abhängigkeiten in WebKit;
@@ -143,15 +145,12 @@ manuelle Review (persönliches Projekt, Nachvollziehbarkeit vor Bequemlichkeit).
 │   │   ├── fingerprint/      # SHA-256-Fingerprints (Datei, Zeile, fachlich)
 │   │   ├── statistics/       # Kennzahlfunktionen (pure functions, voll getestet)
 │   │   ├── supabase/         # Client, generierte DB-Typen, typed RPC-Wrapper
-│   │   └── export/           # JSON/CSV/XLSX-Exportformatierung inkl. Injection-Schutz
-│   ├── workers/
-│   │   └── import.worker.ts  # Datei-Analyse off-main-thread
+│   │   └── backup/           # Sicherung, Wiederherstellung, Export inkl. Injection-Schutz
 │   └── styles/
 ├── tests/
-│   ├── unit/                 # Vitest (lib/, statistics/, parsing/)
-│   ├── integration/          # Vitest gegen lokale Supabase (RLS, RPC, Trigger)
-│   ├── e2e/                  # Playwright
-│   └── fixtures/             # Beispiel-CSV/XLSX/XLS, defekte Dateien, Backups
+│   ├── unit/                 # Vitest (lib/, features/, components/)
+│   ├── integration/          # Vitest gegen echtes PostgreSQL (RLS, RPC, Trigger, Restore)
+│   └── e2e/                  # Playwright (Rauch- und Accessibility-Tests)
 └── package.json
 ```
 
@@ -221,7 +220,8 @@ Das Dashboard folgt bewusst dem Prinzip aus §4.1 Punkt 3:
   Dashboard-Kennzahlen und in Phase 5B für den Statistikbereich wiederverwendbar.
 - **Effektiver Ausschüttungsmonat:** Vor der Aggregation wird über `withEffectiveDates` je
   Zahlung ein effektives Datum aus dem Unternehmensplan (`securities.payout_months`) gesetzt
-  (nächstliegender geplanter Monat inkl. Jahresverschiebung, CALCULATION_RULES.md §10). Alle
+  (fälliger geplanter Monat, ein Monat Vorlauf für vorgezogene Zahlungen, inkl.
+  Jahresverschiebung — CALCULATION_RULES.md §10). Alle
   Auswertungen und die Eingangsliste rechnen auf diesem effektiven Datum; das echte `pay_date`
   bleibt erhalten. Die Eingangsliste lädt dafür alle Zahlungen paginiert und filtert/sortiert
   clientseitig (kein serverseitiger Datumsfilter, da der Plan clientseitige Stammdaten sind).
@@ -256,8 +256,11 @@ eigene Query oder Berechnung ein:
 - **Layout mit geteiltem, gefiltertem Datensatz.** Die Layoutseite (`StatisticsPage`) lädt die
   Daten, wendet den URL-Filter **einmal** an (`filterPayments`, memoisiert) und reicht die
   gefilterten Zahlungen samt Namensauflösung über den React-Router-`Outlet`-Kontext an die
-  Unterbereiche (Übersicht, Jahre, Monate, Unternehmen, Depots) weiter. Der Kontext ist bewusst
-  frei von Supabase-Abhängigkeiten (`context.ts`), damit Unterbereiche isoliert testbar bleiben.
+  Unterbereiche (Übersicht, Jahre, Monate, Vergleich, Unternehmen, Depots) weiter. Der Kontext
+  ist bewusst frei von Supabase-Abhängigkeiten (`context.ts`), damit Unterbereiche isoliert
+  testbar bleiben. Neben den gefilterten Zahlungen liegt der **ungefilterte** Bestand im Kontext:
+  Der Vergleichsbereich braucht ihn, weil der Jahresfilter dort nicht greifen darf
+  (CALCULATION_RULES.md §11.10).
 - **URL-Filter.** Jahr, Unternehmen, Depot, Datenquelle und Zahlungsart liegen in der URL
   (`?year=&security=&depot=&source=&type=`), sind kombinierbar, bleiben nach Reload erhalten und
   funktionieren mit Browser-Zurück/-Vorwärts. Parsing/Serialisierung sind als reine, isoliert
@@ -275,9 +278,15 @@ Details fachlich in IMPORT_SPEC.md; architektonisch:
 
 1. Datei bleibt im Browser; sie wird **nie** an einen Server hochgeladen (Datenschutz,
    Größe). Nur die geprüften, normalisierten Zeilen gehen an Postgres.
-2. `import.worker.ts` (Web Worker) übernimmt: Hashing (Web Crypto SHA-256), Encoding-Erkennung,
-   Parsing (Papa Parse streaming / SheetJS), Normalisierung, Zod-Validierung, Fingerprints.
-   Ergebnis: strukturierte `AnalyzedImport`-Datenstruktur mit vollständiger Zeilenbilanz.
+2. `src/lib/import/*` übernimmt: Hashing (Web Crypto SHA-256), Parsing (eigener CSV-Parser bzw.
+   `exceljs`), Normalisierung, Zod-Validierung, Fingerprints. Ergebnis ist eine strukturierte
+   Datenstruktur mit vollständiger Zeilenbilanz.
+
+   **Abweichung von der Planung:** Dies läuft im Hauptthread, nicht in einem Web Worker. Für die
+   tatsächliche Nutzung (jährliche Nachträge, Dateien im zweistelligen Kilobyte-Bereich) genügt
+   das. Vorgeschaltet ist eine Größen- und Formatprüfung (`lib/import/fileLimits.ts`, 25 MB),
+   damit ein Fehlgriff eine verständliche Meldung erzeugt statt die Oberfläche einzufrieren.
+   Ein Worker bleibt die Option, sobald reale Dateien das erfordern.
 3. Duplikatabgleich Stufe 3/4 (fachlich) erfolgt gegen die Server-Daten per Fingerprint-Query
    (indexierte Spalte), nicht durch Vollabzug aller Zahlungen.
 4. Commit ausschließlich über `commit_import`-RPC in einer Transaktion; die Serverfunktion
@@ -381,8 +390,9 @@ filtern — Begründung, Abwägung und Auslöser in DECISIONS.md ADR-001.
 | Risiko | Gegenmaßnahme |
 |---|---|
 | Clientseitige Statistik weicht von SQL-View ab | Eine Codequelle für Drill-down + Kennzahl; Abgleichtests View ↔ lib/statistics |
-| SheetJS-Version veraltet (npm-Falle) | Bezug über SheetJS-Registry, Version + Hash gepinnt, im Setup dokumentiert (K-4) |
-| Große Importe blockieren UI | Web Worker + Streaming; Limits (IMPORT_SPEC.md §3) |
+| Vollständige Tabelle wird still bei 1.000 Zeilen gekappt | Jede solche Abfrage über `lib/supabase/fetchAllPages`; Sicherung/Export prüfen zusätzlich gegen `count` (ADR-002) |
+| SheetJS-Version veraltet (npm-Falle) | `exceljs` statt `xlsx`; gepinnte Version, `npm audit` in CI (K-4) |
+| Große Importe blockieren UI | Größen-/Formatprüfung vor dem Einlesen (25 MB, `lib/import/fileLimits.ts`); Web Worker als Option bei Bedarf |
 | RLS-Lücke durch neue Tabelle | Migration-Checkliste: keine Tabelle ohne RLS + Policies + Tests (SECURITY_MODEL.md §4) |
 | iOS-PWA-Eigenheiten (Speicherräumung, Datei-Import) | Nur-Cache-Prinzip; Dateiimport über `<input type=file>` (Dateien-App), kein reines Drag-and-drop |
 | Supabase-Ausfall/Vendor-Abhängigkeit | Regelmäßige JSON-Vollbackups (Kernfunktion); Schema als portables SQL; kein Supabase-proprietäres Feature außer Auth/RLS |

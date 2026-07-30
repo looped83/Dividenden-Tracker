@@ -1,9 +1,39 @@
 # TEST_STRATEGY.md — Dividend Tracker
 
-Stand: 2026-07-19 · Status: Verbindliche Teststrategie (Planungsphase)
+Stand: 2026-07-29 · Status: Verbindliche Teststrategie
 
-Werkzeuge: Vitest 4 (+ React Testing Library 16) · Playwright 1.61 (Chromium + WebKit) ·
-lokale Supabase-Instanz (CLI/Docker) für Integrations-, RLS- und Backup-Tests.
+Werkzeuge: Vitest 4 (+ React Testing Library 16) · Playwright 1.56 (Chromium + WebKit) ·
+reines PostgreSQL 16 für Integrations-, RLS- und Restore-Tests (DECISIONS.md D-027).
+
+## 0. Tatsächlicher Stand (2026-07-29)
+
+| Stufe | Umfang | Läuft in CI |
+|---|---|---|
+| Lint + Typecheck + Format | ESLint inkl. Geld-Verbotsliste, `tsc --noEmit` strict | ✅ Job `quality` |
+| Unit (Vitest) | 555 Tests / 61 Dateien | ✅ Job `quality` |
+| Integration (PostgreSQL 16) | 98 Tests: Constraints, Trigger, RLS, Import, Statistik, Ziele, Restore | ✅ Job `db-integration` |
+| E2E öffentlich (Playwright) | 33 Tests: Rauchtests, axe und Telefonverhalten (Schriftgröße der Felder, kein seitlicher Überlauf, Pinch-Zoom bleibt erlaubt) | ✅ Job `e2e-smoke` |
+| E2E angemeldet (Playwright + PostgreSQL) | 38 Tests je Projekt (Desktop + iPhone): die fünf Kernabläufe und axe auf allen Routen hinter der Anmeldung | ✅ Job `e2e-app` |
+
+**Bekannte Lücken** — bewusst benannt statt stillschweigend hingenommen:
+
+1. **Der Realdaten-Importtest läuft nicht in CI.** Die Datei enthält echte
+   Finanzdaten und ist zu Recht nicht eingecheckt (`.gitignore`); die Suite
+   überspringt sich selbst, wenn sie fehlt (12 Tests). Die Jahreskontrollwerte
+   2012–2026 werden damit nie automatisch geprüft. Abhilfe wäre eine
+   anonymisierte Fixture mit derselben Struktur. Der Importweg selbst ist seit
+   Phase A im Browser abgedeckt (CSV-Assistent inkl. Commit und Rollback, §8.1),
+   die **Kontrollsummen der echten Historie** sind es nicht.
+2. **Registrierung und Passwortweg** laufen über echtes GoTrue (Bestätigungs-
+   mails, PKCE-Links) und bleiben deshalb außerhalb der automatisierten Läufe;
+   die Formulare selbst deckt der öffentliche Rauchtest ab.
+
+Erledigt seit dem Audit: E2E hinter der Anmeldung (§8.1) und die dokumentierte
+Restore-Probe (`docs/AUDIT_2026-07-29.md` §4.3).
+
+Priorisierung siehe `docs/AUDIT_2026-07-29.md`, Abschnitt F.4.
+
+---
 
 Grundsatz: Die Finanz- und Importlogik liegt in reinen Funktionen (`lib/money`, `lib/parsing`,
 `lib/fingerprint`, `lib/statistics`, `lib/export`) und wird nahezu vollständig unit-getestet.
@@ -134,29 +164,52 @@ weiße Seite nach dem Bauen, kaputtes Nachladen der Bereiche, fehlendes Manifest
 gerutschte schwere Abhängigkeit (Größenschwelle). Zwei Projekte: iPhone-Geometrie (im CI mit
 WebKit, lokal mit Chromium) und Desktop-Chromium.
 
-Nicht abgedeckt und bewusst offen: alles, was ein Konto und Daten braucht. Diese Fälle laufen
-über die Integrationstests gegen eine echte Datenbank (§5, §6) bzw. über Unit- und
-Komponententests. Die folgende Liste bleibt der Zielumfang für den Tag, an dem ein
-Auth-Testmodus bereitsteht:
+Alles, was ein Konto und Daten braucht, liegt seit Phase A in einer eigenen Suite (§8.1). Die
+folgende Liste bleibt der Zielumfang; abgehakt ist, was dort tatsächlich läuft:
 
-1. Registrierung, E-Mail-Bestätigung (lokaler Auth-Testmodus), An-/Abmeldung
-2. Manueller Dividendeneingang über das vereinfachte Formular (Depot, Unternehmen,
-   Zahlungsdatum, Nettobetrag mit deutschem Komma-Format), Archivieren/Reaktivieren sowohl aus
-   der Listenansicht als auch der Detailseite, endgültiges Löschen eines bereits archivierten
-   Eingangs (D-034)
-3. Dateiimport CSV (deutsches Format) über alle Assistentenschritte
-4. Duplikatprüfung: zweiter Import derselben Datei → Stufe-1-Warnung, Stufe-2/3-Klassifikation,
+1. ✅ An-/Abmeldung inkl. abgewiesener Anmeldung — Registrierung und E-Mail-Bestätigung
+   brauchen echtes GoTrue und bleiben offen
+2. ✅ Manueller Dividendeneingang über das Formular (Depot, Unternehmen, Zahlungsdatum,
+   Nettobetrag mit deutschem Komma-Format), Bearbeiten, Stornieren mit Grund, Reaktivieren —
+   offen: endgültiges Löschen (D-034), Storno aus der Listenansicht
+3. ✅ Dateiimport CSV (deutsches Format) über alle Assistentenschritte
+4. ⬜ Duplikatprüfung: zweiter Import derselben Datei → Stufe-1-Warnung, Stufe-2/3-Klassifikation,
    Stufe-4-Einzelentscheidung
-5. Importbestätigung mit Bilanzanzeige; Importbericht in Historie
-6. Import-Rollback inkl. Bearbeitet-Warnung
-7. Filter/Suche/Sortierung der Zahlungsliste; mobile Kartenansicht
-8. Dashboard-Drill-down: Kennzahl → vorgefilterte Liste, Summengleichheit
-9. Export (JSON/CSV/XLSX) und Restore mit Vorschau
-10. Ziele anlegen, Zielfortschritt
-11. Mobile Darstellung: Bottom-Nav, Touch-Ziele, Formulareingabe iPhone-Viewport
-12. PWA: Installierbarkeit (Manifest-Check), Offline-Banner, Lesecache nach Reload offline
-13. Excel-Import Unternehmen: Name/Ticker/ISIN/WKN sowie optionale Depot-/Broker-Spalte →
+5. ✅ Importbestätigung mit Bilanzanzeige; Importbericht in Historie
+6. ✅ Import-Rollback — offen: Bearbeitet-Warnung
+7. ⬜ Filter/Suche/Sortierung der Zahlungsliste; mobile Kartenansicht (Filter bisher nur als
+   axe-Zustand geprüft, nicht fachlich)
+8. ⬜ Dashboard-Drill-down: Kennzahl → vorgefilterte Liste, Summengleichheit
+9. ✅ Sicherung erstellen (Datei, Vollständigkeit, Integritätsblock, Sicherungsstand) —
+   offen: Export CSV/XLSX und Restore mit Vorschau
+10. ⬜ Ziele anlegen, Zielfortschritt
+11. ✅ Beide Suiten laufen im iPhone-Projekt (im CI mit WebKit); Touch-Ziele und
+    Formulareingabe deckt zusätzlich `tests/e2e/mobile.spec.ts` ab
+12. ⬜ PWA: Offline-Banner, Lesecache nach Reload offline (Manifest-Check läuft)
+13. ⬜ Excel-Import Unternehmen: Name/Ticker/ISIN/WKN sowie optionale Depot-/Broker-Spalte →
     Standard-Depot per Namensabgleich (D-035)
+
+### 8.1 Angemeldete Abläufe gegen eine echte Datenbank
+
+**Stand: umgesetzt** (`tests/e2e/app/`, `playwright.app.config.ts`, `npm run test:e2e:app`,
+im CI als Job `e2e-app`). 38 Tests je Projekt, Desktop-Chromium und iPhone (im CI WebKit).
+
+Aufbau — bewusst ohne Attrappen:
+
+- **Datenbank:** dieselbe Testdatenbank wie die Integrationstests, aufgebaut aus
+  `supabase/migrations` (`npm run db:test:reset`).
+- **Brücke:** `tests/e2e/support/bridge.ts` übersetzt die HTTP-Aufrufe von supabase-js in SQL
+  und führt sie mit `set local role authenticated` plus JWT-Claims aus — wie PostgREST. RLS,
+  Constraints, Trigger und die RPCs (`archive_payment`, `commit_import`, `rollback_import`)
+  laufen damit echt. Was die Brücke nicht kennt, beantwortet sie mit **501**, statt einen
+  Filter stillschweigend zu ignorieren (D-8-2).
+- **Konto je Test:** jeder Test legt sein eigenes Konto samt Depot und Unternehmen an; die
+  echte RLS trennt die Tests, sodass sie parallel laufen können.
+- **Sitzung:** wird als fertiges supabase-js-Sitzungsobjekt im `localStorage` hinterlegt; nur
+  `anmeldung.spec.ts` geht durch das Formular.
+
+Abgedeckte Abläufe: Erfassen, Bearbeiten, Stornieren/Reaktivieren, CSV-Import mit Rollback,
+Sicherung erstellen — dazu An-/Abmeldung und axe (§9).
 
 ## 9. Accessibility-Tests
 
@@ -165,9 +218,14 @@ axe-core über `@axe-core/playwright` auf Anmelden, Registrieren und Passwort-ve
 **hell und dunkel** (Kontraste stammen je Theme aus eigenen Tokens), geprüft gegen WCAG 2.0/2.1
 Stufe A und AA. Ein Fund nennt Regel, Beschreibung und betroffenes Element.
 
+**Hinter der Anmeldung ebenfalls umgesetzt** (`tests/e2e/app/barrierefreiheit.spec.ts`): alle
+dreizehn angemeldeten Routen in hell und dunkel, dazu die Zustände, in denen Barrierefreiheit
+erfahrungsgemäß bricht — geöffneter Dialog, gesetzte Filter, eingeblendete Rückmeldung und der
+Fehlerzustand „nicht gefunden". Die Filterprüfung weist zuerst nach, dass die Filter greifen,
+bevor sie misst; sonst prüfte sie eine Liste, die sie gar nicht gemeint hat.
+
 Nicht automatisiert und weiterhin Sache der Checkliste: Tastaturbedienung über ganze Abläufe,
-Screenreader-Ausgabe, 200-%-Zoom, Reduced Motion — und alle angemeldeten Ansichten, solange kein
-Auth-Testmodus bereitsteht (§8).
+Screenreader-Ausgabe, 200-%-Zoom, Reduced Motion.
 
 **Manuelle Prüfliste je Release:**
 
@@ -268,6 +326,29 @@ weiterhin über Unit- und Integrationstests abgedeckt.
 - `OverviewTab.test.tsx` — Render-Smoke des Übersichts-Unterbereichs mit echter
   Analytics-Verdrahtung über den Outlet-Kontext (historische Summe, Kernkennzahlen,
   Diagramm-Datentabelle).
+- `PaymentsHeatmap.test.tsx` — Heatmap-Zellen: Ein Monat **ohne** Zahlungen nennt seinen Wert
+  als Text (er stand zuvor in einem `aria-label` auf einem `div` und wurde dort nicht
+  vorgelesen), ein Monat **mit** Zahlungen ist bedienbar und benannt, und nur er.
+- `comparison.test.ts` — Zeitraumvergleich (CALCULATION_RULES.md §11.10). Schwerpunkt
+  **Teiljahr**, weil dort der teuerste Fehler dieser Auswertungsart sitzt: Kappung in beide
+  Richtungen (laufendes Jahr im Vordergrund **und** als Vergleichsseite), 250 € gegen 200 €
+  statt gegen die vollen 400 €, volle Jahre ungekappt, 29.02. gegen ein Nicht-Schaltjahr,
+  Zahlung genau am Stichtag bzw. einen Tag danach, Nullmonate, negative Korrekturen,
+  Summengleichheit von Monatswerten und kumuliertem Verlauf zur Periodensumme, rollierende
+  Zwölfmonatsfenster über den Jahreswechsel, sowie die Kennzeichnung angeschnittener Monate.
+  Für den **Monatsvergleich** zusätzlich: Kappung des laufenden Monats auf beiden Seiten,
+  Stichtag jenseits der Monatslänge (31. im Februar), Aufschlüsselung nach Unternehmen inklusive
+  eines Unternehmens, das nur auf einer Seite zahlt, und Summengleichheit der Zeilen zur
+  Monatssumme.
+- `comparisonParams.test.ts` — URL-Zustand des Vergleichs (`?modus=&basis=&referenz=`):
+  Vorgaben, Verwerfen nicht wählbarer Jahre, kein Jahr gegen sich selbst, Round-Trip.
+- `ComparisonTab.test.tsx` — Oberfläche des Vergleichs bei festgesetztem Systemdatum: benannter
+  Stichtag, Zeiträume je Seite, Drill-down nur für vollständige Monate (der angeschnittene
+  Monat trägt **keinen** Link, DECISIONS.md D-7-2), Übernahme des Unternehmensfilters ins
+  Drill-down-Ziel, Moduswechsel und der Hinweis, dass der Jahresfilter hier nicht wirkt. Für den
+  Monatsvergleich: Aufschlüsselung nach Unternehmen statt nach Monaten, Drill-down auf
+  Unternehmen + Jahr + Monat, benannte Kappung des laufenden Monats, und dass ein noch nicht
+  begonnener Monat gar nicht erst zur Auswahl steht.
 
 **Integration (`tests/integration/statistics.test.ts`, benötigt lokale Postgres-DB):** SQL-Ebene
 der Statistik-Datenbasis (identische Query wie `fetchDashboardPayments`): Jahres-, Unternehmens-

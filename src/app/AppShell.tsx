@@ -27,10 +27,15 @@ export function AppShell() {
         <div className="flex min-h-dvh flex-col bg-background text-foreground md:flex-row">
           <Sidebar />
           <CompactSidebar />
+          {/* Der untere Abstand traegt die Bottom-Navigation **plus** die
+              sichere Flaeche des Geraets. Mit festem `pb-20` (5rem) lagen auf
+              iPhones mit Home-Indikator die letzten Pixel der Seite unter der
+              Leiste: Die Leiste ist rund 3,75rem hoch und waechst um
+              `safe-area-inset-bottom`. */}
           <main
             id="inhalt"
             tabIndex={-1}
-            className="min-w-0 flex-1 overflow-x-hidden pb-20 outline-none md:pb-6"
+            className="min-w-0 flex-1 overflow-x-hidden pb-[calc(5rem+env(safe-area-inset-bottom))] outline-none md:pb-6"
           >
             <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
               {/* Bereiche werden erst beim Aufruf geladen (siehe router.tsx);

@@ -256,6 +256,15 @@ describe("averagePerMonth", () => {
       "100.00",
     );
   });
+
+  it("zaehlt einen Monat mit vorgezogener Zahlung als begonnen (§10.3)", () => {
+    // Referenz Juli, eine Zahlung steht per Ausschuettungsplan bereits im
+    // August -> acht begonnene Monate, nicht sieben.
+    const payments = [p("2026-03-10", "300"), p("2026-08-01", "500")];
+    expect(averagePerMonth(payments, 2026, REF_2026_JUL20).toStringValue()).toBe(
+      "100.00",
+    );
+  });
 });
 
 describe("comparePeriods (§6.4)", () => {

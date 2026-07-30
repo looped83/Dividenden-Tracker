@@ -61,14 +61,80 @@ const businessDate = z
   }, "Invalid date");
 
 /**
- * ISO 8601 timestamp with Z suffix
+ * Zeitstempel in der Sicherungsdatei.
+ *
+ * Geschrieben wird die kanonische Form mit `Z` ({@link toIsoTimestamp}).
+ * **Gelesen** wird jede gültige ISO-8601-Schreibweise: PostgREST liefert
+ * Zeitstempel als `2025-06-15T10:30:00.123456+00:00` — also mit Zeitzonen-
+ * versatz statt `Z` und mit Mikrosekunden statt Millisekunden.
+ *
+ * Die frühere Fassung verlangte beim Lesen starr `Z` und höchstens drei
+ * Nachkommastellen. Damit konnte die App **ihre eigene Sicherungsdatei nicht
+ * einlesen**: Jede Wiederherstellung scheiterte an der Formatprüfung, bevor
+ * sie begann. Ein Prüfausdruck, der die eigenen Dateien ablehnt, schützt vor
+ * nichts — er verhindert nur die Rettung.
+ *
+ * Beim Lesen wird zusätzlich normalisiert, sodass alte und neue Dateien
+ * intern dieselbe Form haben.
  */
-const isoTimestamp = z
-  .string()
-  .regex(
-    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/,
-    "Timestamp must be ISO 8601 with Z",
-  );
+const ISO_TIMESTAMP =
+  /^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?)(Z|[+-]\d{2}(?::?\d{2})?)?$/;
+
+/**
+ * Bringt einen Zeitstempel auf die kanonische Form `YYYY-MM-DDTHH:MM:SS.sssZ`.
+ * Liefert `null`, wenn der Wert kein gültiger Zeitstempel ist.
+ */
+export function toIsoTimestamp(value: string): string | null {
+  const match = ISO_TIMESTAMP.exec(value);
+  if (!match) return null;
+
+  const [, date, time, zone] = match;
+
+  // Ohne Zeitzonenangabe gilt UTC: Alle Zeitstempelspalten dieses Projekts
+  // sind `timestamptz`, und Postgres gibt sie in UTC aus.
+  //
+  // `+00` (psql-Textausgabe) auf `+00:00` erweitern und `+0000` mit
+  // Doppelpunkt versehen — beides akzeptiert `new Date()` sonst nicht,
+  // obwohl es gültiges ISO 8601 ist.
+  let offset = "Z";
+  if (zone && zone !== "Z") {
+    const sign = zone.slice(0, 1);
+    const digits = zone.slice(1).replace(":", "");
+    const hours = digits.slice(0, 2);
+    const minutes = digits.length > 2 ? digits.slice(2, 4) : "00";
+    offset = `${sign}${hours}:${minutes}`;
+  }
+
+  const parsed = new Date(`${date}T${time}${offset}`);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString();
+}
+
+const isoTimestamp = z.string().transform((value, ctx) => {
+  const normalized = toIsoTimestamp(value);
+  if (normalized === null) {
+    ctx.addIssue({ code: "custom", message: `Kein gültiger Zeitstempel: "${value}"` });
+    return z.NEVER;
+  }
+  return normalized;
+});
+
+/**
+ * Beliebiger JSON-Wert, auch fehlend.
+ *
+ * Für Felder, die als `jsonb` gespeichert und beim Wiederherstellen
+ * unverändert zurückgeschrieben werden. Sie sind für die Sicherung
+ * durchzureichende Fracht — die Struktur zu prüfen brächte keine Sicherheit
+ * und hat bereits zweimal dazu geführt, dass gültige Dateien abgelehnt wurden.
+ *
+ * **`.optional()` ist hier zwingend.** In Zod 4 ist `z.unknown()` innerhalb
+ * eines Objekts ein *Pflichtfeld*: Ein fehlender Schlüssel scheitert mit
+ * „expected nonoptional, received undefined" (in Zod 3 war er optional). Da
+ * `removeNulls` leere Felder gar nicht erst in die Datei schreibt, fehlen
+ * genau die Schlüssel, die in der Datenbank `null` sind — und die Datei wäre
+ * ohne `.optional()` nicht einlesbar.
+ */
+const jsonValue = z.unknown().optional();
 
 /**
  * ISO 4217 currency code (3 uppercase letters)
@@ -163,11 +229,24 @@ export const importBackupSchema = z.object({
     "rolled_back",
     "discarded",
   ]),
-  column_mapping: z.record(z.string(), z.string()).optional(),
-  detected_formats: z.record(z.string(), z.any()).optional(),
-  row_balance: z.record(z.string(), z.any()).optional(),
-  row_report: z.array(z.any()).optional(),
-  checksums: z.record(z.string(), z.any()).optional(),
+  // Importmetadaten: in der Datenbank `jsonb`, beim Wiederherstellen
+  // unverändert zurückgeschrieben. Ihre innere Struktur wird bewusst **nicht**
+  // geprüft.
+  //
+  // Die frühere Fassung tat es und lag daneben: `column_mapping` wurde als
+  // `Record<string, string>` beschrieben, enthält aber Spaltenindizes, also
+  // Zahlen (`{ pay_date: 0, security: 1 }`). Jede Sicherung mit
+  // Importhistorie wurde dadurch beim Einlesen abgelehnt.
+  //
+  // Diese Blöcke sind Herkunftsnachweise, keine fachlichen Daten. Ihre Form
+  // folgt der Importpipeline und ändert sich mit ihr; sie hier ein zweites
+  // Mal zu beschreiben schafft keine Sicherheit, sondern nur eine Kopie, die
+  // auseinanderläuft. Was zählt, ist dass sie den Weg unverändert überstehen.
+  column_mapping: jsonValue,
+  detected_formats: jsonValue,
+  row_balance: jsonValue,
+  row_report: jsonValue,
+  checksums: jsonValue,
   created_at: isoTimestamp,
   committed_at: isoTimestamp.optional(),
   rolled_back_at: isoTimestamp.optional(),

@@ -5,12 +5,10 @@ import {
   deletePayment,
   fetchAllPayments,
   fetchPaymentById,
-  fetchPayments,
   unarchivePayment,
   updatePayment,
   type DividendPaymentInsert,
   type DividendPaymentUpdate,
-  type PaymentFilters,
 } from "@/lib/supabase/repositories/payments";
 import {
   dismissDuplicate,
@@ -31,13 +29,6 @@ export const DUPLICATE_DISMISSALS_KEY = ["duplicate-dismissals"] as const;
 function invalidateAll(queryClient: ReturnType<typeof useQueryClient>) {
   void queryClient.invalidateQueries({ queryKey: PAYMENTS_KEY });
   void queryClient.invalidateQueries({ queryKey: DUPLICATE_DISMISSALS_KEY });
-}
-
-export function usePayments(filters: PaymentFilters) {
-  return useQuery({
-    queryKey: [...PAYMENTS_KEY, filters],
-    queryFn: () => fetchPayments(filters),
-  });
 }
 
 /**

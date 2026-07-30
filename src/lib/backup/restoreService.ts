@@ -1,12 +1,12 @@
 /**
- * Restore Service
+ * Wiederherstellung: liest eine Sicherungsdatei, prueft sie und uebergibt sie
+ * der Datenbank.
  *
- * Client-side service for restoring backups:
- * - Parses backup files (JSON)
- * - Validates backup format and schema
- * - Detects conflicts in merge mode
- * - Orchestrates RPC call to restore_backup
- * - Handles cache invalidation after restore
+ * Der eigentliche Vorgang laeuft **vollstaendig** in der RPC `restore_backup`
+ * (Migration 0022/0023) und damit in einer einzigen Transaktion. Hier wird
+ * bewusst nichts zusammengefuehrt, verglichen oder teilweise geschrieben: Ein
+ * clientseitiger Abgleich koennte einen halb fertigen Zustand hinterlassen,
+ * den niemand zurueckdrehen kann.
  */
 
 import {
@@ -17,6 +17,7 @@ import {
   type BackupRoot,
 } from "./backupFormat";
 import { supabase } from "@/lib/supabase/client";
+import type { Json } from "@/lib/supabase/database.types";
 import { queryClient } from "@/lib/queryClient";
 
 // ============================================================================
@@ -24,20 +25,6 @@ import { queryClient } from "@/lib/queryClient";
 // ============================================================================
 
 export type RestoreMode = "merge" | "replace";
-
-export interface ConflictDetection {
-  hasConflicts: boolean;
-  conflicts: ConflictItem[];
-}
-
-export interface ConflictItem {
-  type: "depot" | "security" | "dividend_payment" | "goal";
-  id: string;
-  field: string;
-  backupValue: string;
-  existingValue: string;
-  resolution?: "skip" | "overwrite";
-}
 
 export interface RestoreResult {
   success: boolean;
@@ -49,12 +36,7 @@ export interface RestoreResult {
 }
 
 export interface RestoreProgress {
-  stage:
-    | "reading_file"
-    | "validating"
-    | "detecting_conflicts"
-    | "restoring"
-    | "invalidating_cache";
+  stage: "reading_file" | "validating" | "restoring" | "invalidating_cache";
   itemsProcessed?: number;
   totalItems?: number;
 }
@@ -63,9 +45,7 @@ export interface RestoreProgress {
 // File Parsing
 // ============================================================================
 
-/**
- * Parse backup file from File object
- */
+/** Liest eine Sicherungsdatei ein und prueft sie gegen das Format-Schema. */
 export async function parseBackupFile(
   file: File,
 ): Promise<{ success: true; data: BackupRoot } | { success: false; error: string }> {
@@ -75,7 +55,10 @@ export async function parseBackupFile(
     try {
       parsed = JSON.parse(text);
     } catch {
-      return { success: false, error: "Invalid JSON format" };
+      return {
+        success: false,
+        error: "Die Datei ist kein gültiges JSON.",
+      };
     }
 
     const result = parseBackupSafe(parsed);
@@ -86,7 +69,7 @@ export async function parseBackupFile(
         .join("; ");
       return {
         success: false,
-        error: `Backup format validation failed: ${errors}${result.errors.length > 3 ? "..." : ""}`,
+        error: `Die Datei entspricht nicht dem Sicherungsformat: ${errors}${result.errors.length > 3 ? " …" : ""}`,
       };
     }
 
@@ -94,7 +77,8 @@ export async function parseBackupFile(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Unknown error reading file",
+      error:
+        error instanceof Error ? error.message : "Die Datei konnte nicht gelesen werden.",
     };
   }
 }
@@ -104,7 +88,8 @@ export async function parseBackupFile(
 // ============================================================================
 
 /**
- * Comprehensive pre-restore validation
+ * Vollstaendige Pruefung vor dem Einspielen: Formatversion, Vollstaendigkeit
+ * und der Integritaetsblock der Datei (Mengen gegen die tatsaechlichen Daten).
  */
 export function validateBeforeRestore(backup: BackupRoot): {
   valid: boolean;
@@ -115,13 +100,15 @@ export function validateBeforeRestore(backup: BackupRoot): {
   // Check format version
   const versionCheck = validateBackupVersion(backup.format_version);
   if (!versionCheck.valid) {
-    errors.push(versionCheck.message ?? "Unsupported backup format version");
+    errors.push(
+      versionCheck.message ?? "Die Version des Sicherungsformats wird nicht unterstützt.",
+    );
   }
 
   // Check completeness (profile, depots, securities required)
   const completeness = validateBackupCompleteness(backup);
   if (!completeness.valid) {
-    errors.push(`Missing required data: ${completeness.missing.join(", ")}`);
+    errors.push(`Es fehlen Pflichtangaben: ${completeness.missing.join(", ")}.`);
   }
 
   // Check integrity
@@ -129,7 +116,7 @@ export function validateBeforeRestore(backup: BackupRoot): {
   if (!integrity.valid) {
     integrity.mismatches.forEach((m) => {
       errors.push(
-        `Record count mismatch for ${m.entity}: expected ${String(m.expected)}, got ${String(m.actual)}`,
+        `Die Datei ist beschädigt: Für ${m.entity} sind ${String(m.expected)} Datensätze angekündigt, enthalten sind ${String(m.actual)}.`,
       );
     });
   }
@@ -141,104 +128,11 @@ export function validateBeforeRestore(backup: BackupRoot): {
 }
 
 // ============================================================================
-// Conflict Detection (Merge Mode)
-// ============================================================================
-
-/**
- * Detect conflicts between backup and existing data (for merge mode)
- */
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/restrict-template-expressions */
-export async function detectConflicts(backup: BackupRoot): Promise<ConflictDetection> {
-  const conflicts: ConflictItem[] = [];
-
-  // Check for depot ID collisions
-  if (backup.data.depots.length > 0) {
-    const { data: existingDepots } = await supabase.from("depots").select("id, name");
-
-    const existingDepotMap = new Map(
-      (existingDepots ?? []).map((d: any) => [d.id, d.name]),
-    );
-
-    for (const backupDepot of backup.data.depots) {
-      const existingName = existingDepotMap.get(backupDepot.id);
-      if (existingName && existingName !== backupDepot.name) {
-        conflicts.push({
-          type: "depot",
-          id: backupDepot.id,
-          field: "name",
-          backupValue: backupDepot.name,
-          existingValue: existingName,
-        });
-      }
-    }
-  }
-
-  // Check for security ID collisions
-  if (backup.data.securities.length > 0) {
-    const { data: existingSecurities } = await supabase
-      .from("securities")
-      .select("id, name, isin, ticker");
-
-    const existingSecurityMap = new Map(
-      (existingSecurities ?? []).map((s: any) => [s.id, s]),
-    );
-
-    for (const backupSecurity of backup.data.securities) {
-      const existing = existingSecurityMap.get(backupSecurity.id);
-      if (existing && existing.name !== backupSecurity.name) {
-        conflicts.push({
-          type: "security",
-          id: backupSecurity.id,
-          field: "name",
-          backupValue: backupSecurity.name,
-          existingValue: existing.name,
-        });
-      }
-    }
-  }
-
-  // Check for dividend payment ID collisions (by business fingerprint to detect real duplicates)
-  if (backup.data.dividend_payments.length > 0) {
-    const { data: existingPayments } = await supabase
-      .from("dividend_payments")
-      .select("id, business_fingerprint, net_amount, pay_date");
-
-    const existingFingerprintMap = new Map(
-      (existingPayments ?? []).map((p: any) => [p.business_fingerprint, p]),
-    );
-
-    for (const backupPayment of backup.data.dividend_payments) {
-      if (backupPayment.business_fingerprint) {
-        const existing = existingFingerprintMap.get(backupPayment.business_fingerprint);
-        if (existing && existing.id !== backupPayment.id) {
-          conflicts.push({
-            type: "dividend_payment",
-            id: backupPayment.id,
-            field: "business_fingerprint",
-            backupValue: `${backupPayment.pay_date} ${backupPayment.net_amount}`,
-            existingValue: `${existing.pay_date} ${existing.net_amount}`,
-          });
-        }
-      }
-    }
-  }
-
-  return {
-    hasConflicts: conflicts.length > 0,
-    conflicts,
-  };
-}
-/* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/restrict-template-expressions */
-
-// ============================================================================
 // Cache Invalidation
 // ============================================================================
 
-/**
- * Invalidate all cache keys that might be affected by restore
- */
+/** Laedt nach dem Einspielen alle Ansichten neu. */
 function invalidateBackupAffectedCaches(): void {
-  // Query key patterns that should be invalidated
   const keysToInvalidate = [
     ["portfolios"],
     ["depots"],
@@ -257,25 +151,43 @@ function invalidateBackupAffectedCaches(): void {
     queryClient.invalidateQueries({ queryKey: key });
   }
 
-  // Invalidate all queries as a safety net
+  // Sicherheitsnetz: Nach einem Restore ist jede zwischengespeicherte Antwort
+  // veraltet — auch die, die oben nicht namentlich steht.
   // eslint-disable-next-line @typescript-eslint/no-floating-promises
   queryClient.invalidateQueries();
+}
+
+/**
+ * Macht aus einem Datenbankfehler einen lesbaren Satz.
+ *
+ * PostgreSQL trennt `message`, `detail` und `hint`; supabase-js reicht sie als
+ * `message`, `details` und `hint` durch. Angezeigt wurde bisher nur `message` —
+ * bei den Fehlern dieser RPC ist das ein blosser Schluesselbegriff wie
+ * `foreign_id_conflict`. Die eigentliche Erklaerung und der Loesungshinweis
+ * stehen in den beiden anderen Feldern und blieben unsichtbar.
+ */
+function describePostgresError(error: {
+  message: string;
+  details?: string | null;
+  hint?: string | null;
+}): string {
+  return [error.details, error.hint, error.message]
+    .map((part) => part?.trim())
+    .filter((part): part is string => Boolean(part))
+    .join(" ");
 }
 
 // ============================================================================
 // Restore Orchestration
 // ============================================================================
 
-/**
- * Execute backup restoration via RPC
- */
+/** Spielt die Sicherung ueber die RPC ein (eine Transaktion, alles oder nichts). */
 export async function executeRestore(
   backup: BackupRoot,
   mode: RestoreMode,
   onProgress?: (progress: RestoreProgress) => void,
 ): Promise<RestoreResult> {
   try {
-    // Pre-restore validation
     onProgress?.({ stage: "validating" });
 
     const validation = validateBeforeRestore(backup);
@@ -283,31 +195,19 @@ export async function executeRestore(
       return {
         success: false,
         mode,
-        error: "Backup validation failed",
+        error: "Die Sicherung konnte nicht geprüft werden.",
         errorDetails: validation.errors.join("; "),
       };
     }
 
-    // Detect conflicts in merge mode
-    if (mode === "merge") {
-      onProgress?.({ stage: "detecting_conflicts" });
-
-      const conflicts = await detectConflicts(backup);
-      if (conflicts.hasConflicts) {
-        // In a real app, this would return conflicts for user resolution
-        // For now, we'll use a default resolution strategy
-        for (const conflict of conflicts.conflicts) {
-          conflict.resolution = "overwrite";
-        }
-      }
-    }
-
-    // Execute restore via RPC
+    // Die eigentliche Wiederherstellung laeuft vollstaendig in **einer**
+    // Transaktion in der Datenbank (RPC `restore_backup`, Migration 0022/0023):
+    // entweder alles oder nichts. Ein clientseitiges Zusammenfuehren gaebe es
+    // keinen Weg, halb fertige Zustaende zurueckzunehmen.
     onProgress?.({ stage: "restoring" });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
-    const { data, error } = await (supabase.rpc as any)("restore_backup", {
-      p_backup_payload: backup,
+    const { data, error } = await supabase.rpc("restore_backup", {
+      p_backup_payload: backup as unknown as Json,
       p_mode: mode,
     });
 
@@ -315,54 +215,42 @@ export async function executeRestore(
       return {
         success: false,
         mode,
-        error: "Restore RPC failed",
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
-        errorDetails: error.message,
+        error: "Die Wiederherstellung ist fehlgeschlagen.",
+        errorDetails: describePostgresError(error),
       };
     }
 
-    // Invalidate cache after successful restore
     onProgress?.({ stage: "invalidating_cache" });
     invalidateBackupAffectedCaches();
 
     return {
       success: true,
       mode,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
-      recordsRestored: data?.records_restored ?? {},
+      recordsRestored: data.records_restored,
     };
   } catch (error) {
     return {
       success: false,
       mode,
-      error: error instanceof Error ? error.message : "Unknown error during restore",
+      error:
+        error instanceof Error
+          ? error.message
+          : "Unbekannter Fehler bei der Wiederherstellung.",
     };
   }
 }
 
-// ============================================================================
-// User Confirmation Helpers
-// ============================================================================
-
 /**
- * Summary for replace mode confirmation dialog
+ * Mengen fuer den Bestaetigungsdialog: was die Sicherung mitbringt. Wie viele
+ * bestehende Datensaetze im Modus „Ersetzen" archiviert werden, weiss nur die
+ * Datenbank — der Dialog nennt deshalb den bestehenden Bestand aus dem
+ * laufenden Betrieb, nicht eine hier geratene Zahl.
  */
-export function getReplaceModeSummary(backup: BackupRoot): {
-  willBeArchived: Record<string, number>;
-  willBeRestored: Record<string, number>;
-} {
+export function getBackupContents(backup: BackupRoot): Record<string, number> {
   return {
-    willBeArchived: {
-      depots: 0, // Will be computed by RPC
-      securities: 0,
-      dividend_payments: 0,
-      goals: 0,
-    },
-    willBeRestored: {
-      depots: backup.data.depots.length,
-      securities: backup.data.securities.length,
-      dividend_payments: backup.data.dividend_payments.length,
-      goals: backup.data.goals.length,
-    },
+    depots: backup.data.depots.length,
+    securities: backup.data.securities.length,
+    dividend_payments: backup.data.dividend_payments.length,
+    goals: backup.data.goals.length,
   };
 }

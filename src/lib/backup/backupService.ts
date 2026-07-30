@@ -1,19 +1,29 @@
 /**
- * Backup Service
+ * Sicherung: laedt den vollstaendigen Datenbestand des angemeldeten Nutzers,
+ * schreibt ihn in das Sicherungsformat (BACKUP_AND_RESTORE.md), berechnet den
+ * Integritaetsblock und liefert die Datei zum Herunterladen.
  *
- * Client-side service for creating complete backups:
- * - Fetches all user data from Supabase
- * - Serializes to backup format v1
- * - Computes integrity checksums
- * - Generates downloadable JSON file
- * - Updates last_backup_at on profile
+ * Zwei Regeln bestimmen den Aufbau, beide aus derselben Erfahrung:
+ *
+ * 1. **Vollstaendig oder gar nicht.** Jede Abfrage laeuft ueber
+ *    {@link fetchAllPages}; ein Fehler wird weitergereicht statt zu einer
+ *    leeren Liste zu werden. Zusaetzlich wird die geladene Zeilenzahl gegen
+ *    `count` der Datenbank geprueft. Eine fehlende Sicherung ist harmlos,
+ *    eine unvollstaendige nicht — und man sieht ihr nichts an.
+ * 2. **Erfolg heisst: Datei liegt vor.** `createBackup` erzeugt nur die
+ *    Daten; erst {@link downloadBackup} macht sie zur Sicherung. Die
+ *    Oberflaeche meldet Erfolg deshalb erst nach dem Herunterladen und
+ *    schreibt erst dann `profiles.last_backup_at`.
  */
 
 import Decimal from "decimal.js";
 import { supabase } from "@/lib/supabase/client";
+import { fetchAllPages } from "@/lib/supabase/fetchAllPages";
+import type { Database } from "@/lib/supabase/database.types";
 import {
   BACKUP_FORMAT,
   BACKUP_FORMAT_VERSION,
+  toIsoTimestamp,
   type BackupRoot,
   type BackupData,
   type DividendPaymentBackup,
@@ -30,6 +40,30 @@ import {
 // Types
 // ============================================================================
 
+/**
+ * Hoechste Migrationsnummer, gegen die dieses Format geprueft wurde. Beim
+ * Anlegen einer Migration, die eine gesicherte Tabelle veraendert, hier
+ * nachziehen — `validateBackupVersion` entscheidet daran, ob eine aeltere
+ * Sicherung noch eingespielt werden darf.
+ */
+const SCHEMA_VERSION = "0026";
+
+/**
+ * Version der Anwendung, zur Bauzeit aus `package.json` eingesetzt
+ * (`vite.config.ts`). Sie steht in jeder Sicherungsdatei und beantwortet
+ * spaeter die Frage, welcher Stand sie geschrieben hat.
+ */
+const APP_VERSION = __APP_VERSION__;
+
+/** Tabellenzeilen, wie sie aus der Datenbank kommen (vor der Abbildung aufs Format). */
+type Tables = Database["public"]["Tables"];
+type PortfolioRow = Tables["portfolios"]["Row"];
+type DepotRow = Tables["depots"]["Row"];
+type SecurityRow = Tables["securities"]["Row"];
+type DividendPaymentRow = Tables["dividend_payments"]["Row"];
+type GoalRow = Tables["goals"]["Row"];
+type ImportRow = Tables["imports"]["Row"];
+
 export interface BackupProgress {
   stage:
     | "fetching_profiles"
@@ -38,7 +72,6 @@ export interface BackupProgress {
     | "generating"
     | "reading_file"
     | "validating"
-    | "detecting_conflicts"
     | "restoring"
     | "invalidating_cache"
     | "filtering"
@@ -93,6 +126,23 @@ function getCurrentTimestamp(): string {
 }
 
 /**
+ * Zeitstempel aus der Datenbank in die kanonische Form der Sicherungsdatei.
+ *
+ * PostgREST liefert `timestamptz` als `2025-06-15T10:30:00.123456+00:00` —
+ * Zeitzonenversatz statt `Z`, Mikrosekunden statt Millisekunden. Ungeprueft
+ * uebernommen entstand eine Datei, die die eigene Formatpruefung nicht
+ * bestand und sich damit nicht wiederherstellen liess.
+ */
+function ts(value: unknown): string | null {
+  if (typeof value !== "string" || value === "") return null;
+  const normalized = toIsoTimestamp(value);
+  if (normalized === null) {
+    throw new Error(`Unlesbarer Zeitstempel in den Daten: "${value}".`);
+  }
+  return normalized;
+}
+
+/**
  * Format date as YYYY-MM-DD (business date, no timezone)
  */
 function formatBusinessDate(date: Date | string): string {
@@ -111,13 +161,15 @@ function formatBusinessDate(date: Date | string): string {
 function ensureDecimalString(value: unknown, maxDecimals = 2): string | null {
   if (value === null || value === undefined) return null;
 
+  // Ein unlesbarer Betrag bricht die Sicherung ab, statt still als `null` in
+  // der Datei zu landen: Bei einem Geldwert ist „fehlt" schlimmer als „Fehler".
   try {
     // eslint-disable-next-line @typescript-eslint/no-base-to-string
     const d = new Decimal(String(value));
     return d.toFixed(maxDecimals);
   } catch {
-    console.error("Failed to convert to decimal:", value);
-    return null;
+    // eslint-disable-next-line @typescript-eslint/no-base-to-string
+    throw new Error(`Unlesbarer Betrag in den Daten: "${String(value)}".`);
   }
 }
 
@@ -142,7 +194,38 @@ function ensureNumberArray(value: unknown): number[] | null {
 // ============================================================================
 
 /**
- * Fetch user's profile
+ * Zaehlt die Zeilen einer Tabelle serverseitig (nur Kopf, keine Daten). Dient
+ * ausschliesslich der Gegenprobe zur geladenen Menge — siehe {@link assertComplete}.
+ */
+async function countRows(table: "dividend_payments" | "securities"): Promise<number> {
+  const { count, error } = await supabase
+    .from(table)
+    .select("id", { count: "exact", head: true });
+  if (error) throw new Error(error.message);
+  return count ?? 0;
+}
+
+/**
+ * Bricht ab, wenn weniger geladen wurde als die Datenbank fuehrt.
+ *
+ * Die Paginierung in {@link fetchAllPages} macht eine Kappung bereits
+ * unmoeglich; diese zweite Kontrolle faengt alles ab, was dahinter liegt
+ * (geaenderte Serverlimits, ein Fehler, der kuenftig doch verschluckt wird,
+ * gleichzeitige Aenderungen waehrend des Ladens). Eine Sicherung ist der
+ * einzige Ort, an dem sich dieser Aufwand immer lohnt: Man merkt eine Luecke
+ * erst, wenn man die Sicherung braucht.
+ */
+function assertComplete(loaded: number, expected: number, label: string): void {
+  if (loaded < expected) {
+    throw new Error(
+      `Die Sicherung wurde abgebrochen: Es wurden ${String(loaded)} von ${String(expected)} ${label} geladen. ` +
+        "Es wurde nichts gespeichert. Bitte erneut versuchen.",
+    );
+  }
+}
+
+/**
+ * Laedt das Profil des angemeldeten Nutzers.
  */
 async function fetchProfile(): Promise<ProfileBackup | null> {
   const { data: auth } = await supabase.auth.getUser();
@@ -154,10 +237,7 @@ async function fetchProfile(): Promise<ProfileBackup | null> {
     .eq("id", auth.user.id)
     .single();
 
-  if (error) {
-    console.error("Error fetching profile:", error);
-    return null;
-  }
+  if (error) throw new Error(error.message);
 
   return removeNulls({
     id: data.id,
@@ -165,54 +245,51 @@ async function fetchProfile(): Promise<ProfileBackup | null> {
     locale: data.locale,
     theme: data.theme,
     backup_reminder_days: data.backup_reminder_days,
-    last_backup_at: data.last_backup_at,
-    created_at: data.created_at,
-    updated_at: data.updated_at,
+    last_backup_at: ts(data.last_backup_at),
+    created_at: ts(data.created_at),
+    updated_at: ts(data.updated_at),
   }) as ProfileBackup;
 }
 
 /**
- * Fetch all portfolios
+ * Laedt alle Portfolios.
  */
 async function fetchPortfolios(): Promise<PortfolioBackup[]> {
-  const { data, error } = await supabase
-    .from("portfolios")
-    .select("*")
-    .order("created_at", { ascending: true });
+  const data = await fetchAllPages<PortfolioRow>((from, to) =>
+    supabase
+      .from("portfolios")
+      .select("*")
+      .order("created_at", { ascending: true })
+      .order("id", { ascending: true })
+      .range(from, to),
+  );
 
-  if (error) {
-    console.error("Error fetching portfolios:", error);
-    return [];
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  return (data || []).map(
+  return data.map(
     (p) =>
       removeNulls({
         id: p.id,
         user_id: p.user_id,
         name: p.name,
         note: p.note,
-        created_at: p.created_at,
-        updated_at: p.updated_at,
-        archived_at: p.archived_at,
+        created_at: ts(p.created_at),
+        updated_at: ts(p.updated_at),
+        archived_at: ts(p.archived_at),
       }) as PortfolioBackup,
   );
 }
 
 /**
- * Fetch all depots
+ * Laedt alle Depots.
  */
 async function fetchDepots(): Promise<DepotBackup[]> {
-  const { data, error } = await supabase
-    .from("depots")
-    .select("*")
-    .order("created_at", { ascending: true });
-
-  if (error) {
-    console.error("Error fetching depots:", error);
-    return [];
-  }
+  const data = await fetchAllPages<DepotRow>((from, to) =>
+    supabase
+      .from("depots")
+      .select("*")
+      .order("created_at", { ascending: true })
+      .order("id", { ascending: true })
+      .range(from, to),
+  );
 
   return data.map(
     (d) =>
@@ -224,26 +301,29 @@ async function fetchDepots(): Promise<DepotBackup[]> {
         base_currency: d.base_currency,
         portfolio_id: d.portfolio_id,
         note: d.note,
-        created_at: d.created_at,
-        updated_at: d.updated_at,
-        archived_at: d.archived_at,
+        created_at: ts(d.created_at),
+        updated_at: ts(d.updated_at),
+        archived_at: ts(d.archived_at),
       }) as DepotBackup,
   );
 }
 
 /**
- * Fetch all securities
+ * Laedt alle Unternehmen und prueft die Menge gegen die Datenbank.
  */
 async function fetchSecurities(): Promise<SecurityBackup[]> {
-  const { data, error } = await supabase
-    .from("securities")
-    .select("*")
-    .order("created_at", { ascending: true });
-
-  if (error) {
-    console.error("Error fetching securities:", error);
-    return [];
-  }
+  const [expected, data] = await Promise.all([
+    countRows("securities"),
+    fetchAllPages<SecurityRow>((from, to) =>
+      supabase
+        .from("securities")
+        .select("*")
+        .order("created_at", { ascending: true })
+        .order("id", { ascending: true })
+        .range(from, to),
+    ),
+  ]);
+  assertComplete(data.length, expected, "Unternehmen");
 
   return data.map(
     (s) =>
@@ -261,26 +341,33 @@ async function fetchSecurities(): Promise<SecurityBackup[]> {
         data_quality: s.data_quality,
         default_depot_id: s.default_depot_id,
         payout_months: ensureNumberArray(s.payout_months),
-        created_at: s.created_at,
-        updated_at: s.updated_at,
-        archived_at: s.archived_at,
+        created_at: ts(s.created_at),
+        updated_at: ts(s.updated_at),
+        archived_at: ts(s.archived_at),
       }) as SecurityBackup,
   );
 }
 
 /**
- * Fetch all dividend payments (including archived)
+ * Laedt **alle** Dividendeneingaenge einschliesslich der stornierten und prueft
+ * die Menge gegen die Datenbank. Dies ist der Datensatz, dessen Verlust nicht
+ * wiedergutzumachen waere — deshalb hier die strengste Kontrolle.
  */
 async function fetchDividendPayments(): Promise<DividendPaymentBackup[]> {
-  const { data, error } = await supabase
-    .from("dividend_payments")
-    .select("*")
-    .order("pay_date", { ascending: true });
-
-  if (error) {
-    console.error("Error fetching dividend payments:", error);
-    return [];
-  }
+  const [expected, data] = await Promise.all([
+    countRows("dividend_payments"),
+    fetchAllPages<DividendPaymentRow>((from, to) =>
+      supabase
+        .from("dividend_payments")
+        .select("*")
+        // `pay_date` ist nicht eindeutig — `id` als Tiebreaker, sonst kann eine
+        // Zeile ueber die Seitengrenze hinweg doppelt oder gar nicht erscheinen.
+        .order("pay_date", { ascending: true })
+        .order("id", { ascending: true })
+        .range(from, to),
+    ),
+  ]);
+  assertComplete(data.length, expected, "Dividendeneingänge");
 
   return data.map(
     (p) =>
@@ -311,27 +398,26 @@ async function fetchDividendPayments(): Promise<DividendPaymentBackup[]> {
         row_fingerprint: p.row_fingerprint,
         business_fingerprint: p.business_fingerprint,
         note: p.note,
-        created_at: p.created_at,
-        updated_at: p.updated_at,
-        archived_at: p.archived_at,
+        created_at: ts(p.created_at),
+        updated_at: ts(p.updated_at),
+        archived_at: ts(p.archived_at),
         archive_reason: p.archive_reason,
       }) as DividendPaymentBackup,
   );
 }
 
 /**
- * Fetch all goals
+ * Laedt alle Ziele.
  */
 async function fetchGoals(): Promise<GoalBackup[]> {
-  const { data, error } = await supabase
-    .from("goals")
-    .select("*")
-    .order("year", { ascending: true });
-
-  if (error) {
-    console.error("Error fetching goals:", error);
-    return [];
-  }
+  const data = await fetchAllPages<GoalRow>((from, to) =>
+    supabase
+      .from("goals")
+      .select("*")
+      .order("year", { ascending: true })
+      .order("id", { ascending: true })
+      .range(from, to),
+  );
 
   return data.map(
     (g) =>
@@ -345,26 +431,25 @@ async function fetchGoals(): Promise<GoalBackup[]> {
         currency: g.currency,
         title: g.title,
         note: g.note,
-        created_at: g.created_at,
-        updated_at: g.updated_at,
+        created_at: ts(g.created_at),
+        updated_at: ts(g.updated_at),
       }) as GoalBackup,
   );
 }
 
 /**
- * Fetch all imports (metadata only)
+ * Laedt die Importvorgaenge (nur die Metadaten, nicht die Rohzeilen).
  */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 async function fetchImports(): Promise<ImportBackup[]> {
-  const { data, error } = await supabase
-    .from("imports")
-    .select("*")
-    .order("created_at", { ascending: true });
-
-  if (error) {
-    console.error("Error fetching imports:", error);
-    return [];
-  }
+  const data = await fetchAllPages<ImportRow>((from, to) =>
+    supabase
+      .from("imports")
+      .select("*")
+      .order("created_at", { ascending: true })
+      .order("id", { ascending: true })
+      .range(from, to),
+  );
 
   return data.map(
     (i) =>
@@ -391,9 +476,9 @@ async function fetchImports(): Promise<ImportBackup[]> {
           typeof i.row_report === "string" ? JSON.parse(i.row_report) : i.row_report,
         checksums:
           typeof i.checksums === "string" ? JSON.parse(i.checksums) : i.checksums,
-        created_at: i.created_at,
-        committed_at: i.committed_at,
-        rolled_back_at: i.rolled_back_at,
+        created_at: ts(i.created_at),
+        committed_at: ts(i.committed_at),
+        rolled_back_at: ts(i.rolled_back_at),
       }) as ImportBackup,
   );
 }
@@ -511,8 +596,9 @@ export async function createBackup(
     if (!profile) {
       return {
         success: false,
-        error: "User profile not found",
-        errorDetails: "Unable to load user profile. Please ensure you are authenticated.",
+        error: "Es ist keine Anmeldung aktiv.",
+        errorDetails:
+          "Das Profil konnte nicht geladen werden. Bitte melde dich erneut an.",
       };
     }
 
@@ -548,8 +634,8 @@ export async function createBackup(
     const backup: BackupRoot = {
       format: BACKUP_FORMAT,
       format_version: BACKUP_FORMAT_VERSION,
-      schema_version: "0022", // Update when schema changes
-      app_version: "1.0.0", // TODO: derive from package.json
+      schema_version: SCHEMA_VERSION,
+      app_version: APP_VERSION,
       exported_at: getCurrentTimestamp(),
       base_currency: profile.base_currency,
       data,
@@ -567,21 +653,25 @@ export async function createBackup(
       fileName,
     };
   } catch (error) {
-    console.error("Backup creation failed:", error);
     return {
       success: false,
-      error: "Backup creation failed",
+      error: "Die Sicherung konnte nicht erstellt werden.",
       errorDetails: error instanceof Error ? error.message : String(error),
     };
   }
 }
 
 // ============================================================================
-// File Download
+// Herunterladen und Sicherungszeitpunkt
 // ============================================================================
 
 /**
- * Download backup as JSON file
+ * Bietet die Sicherung als Datei zum Herunterladen an.
+ *
+ * `URL.revokeObjectURL` folgt bewusst erst im naechsten Makrotask: Safari auf
+ * iOS und iPadOS bricht den Download ab, wenn die Objekt-URL noch im selben
+ * Durchlauf wie der Klick freigegeben wird. Auf genau diesen Geraeten soll die
+ * Sicherung funktionieren.
  */
 export function downloadBackup(backup: BackupRoot, fileName: string): void {
   const json = JSON.stringify(backup, null, 2);
@@ -593,9 +683,48 @@ export function downloadBackup(backup: BackupRoot, fileName: string): void {
   a.download = fileName;
   document.body.appendChild(a);
   a.click();
+  a.remove();
 
-  URL.revokeObjectURL(url);
-  document.body.removeChild(a);
+  window.setTimeout(() => {
+    URL.revokeObjectURL(url);
+  }, 0);
+}
+
+/**
+ * Haelt den Zeitpunkt der letzten Sicherung fest (`profiles.last_backup_at`,
+ * BACKUP_AND_RESTORE.md §4). Wird **nur** nach dem tatsaechlichen Herunterladen
+ * aufgerufen — ein erzeugter, aber nie gespeicherter Datensatz ist keine
+ * Sicherung.
+ *
+ * Ein Fehler hierbei bleibt folgenlos fuer die Sicherung selbst: Die Datei
+ * liegt bereits vor. Er wird deshalb gemeldet, aber nicht als Fehlschlag
+ * behandelt.
+ */
+export async function markBackupCompleted(): Promise<{ at: string } | null> {
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) return null;
+
+  const at = getCurrentTimestamp();
+  const { error } = await supabase
+    .from("profiles")
+    .update({ last_backup_at: at })
+    .eq("id", auth.user.id);
+  if (error) return null;
+  return { at };
+}
+
+/** Liest den Zeitpunkt der letzten Sicherung fuer die Anzeige im Bereich. */
+export async function fetchLastBackupAt(): Promise<string | null> {
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) return null;
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("last_backup_at")
+    .eq("id", auth.user.id)
+    .single();
+  if (error) throw new Error(error.message);
+  return data.last_backup_at;
 }
 
 // ============================================================================

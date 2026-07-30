@@ -58,6 +58,10 @@ export const STATISTICS_TABS: readonly { to: string; label: string; end?: boolea
   { to: "/statistiken", label: "Übersicht", end: true },
   { to: "/statistiken/jahre", label: "Jahre" },
   { to: "/statistiken/monate", label: "Monate" },
+  // Der Vergleich steht bewusst hinter „Monate": Er beantwortet die zeitliche
+  // Frage („laufe ich besser als im Vorjahr?") und gehoert damit zu den beiden
+  // Zeitbereichen, nicht zu den Aufschluesselungen danach.
+  { to: "/statistiken/vergleich", label: "Vergleich" },
   { to: "/statistiken/unternehmen", label: "Unternehmen" },
   { to: "/statistiken/depots", label: "Depots" },
 ];

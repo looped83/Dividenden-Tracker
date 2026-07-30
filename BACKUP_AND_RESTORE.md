@@ -57,12 +57,21 @@ SECURITY_MODEL.md §9. Beträge im JSON als Strings (Skalenerhalt, CALCULATION_R
 
 ## 3. Backup-Erinnerung und Status
 
-- Bereich „Datensicherung" zeigt: letztes erfolgreiches Backup (`profiles.last_backup_at`),
-  Anzahl seither geänderter/neuer Datensätze (aus `audit_log` ableitbar), Empfehlung.
-- Erinnerung: nicht-blockierender Hinweis in der App, wenn `now() − last_backup_at >
-  backup_reminder_days` (Default 30 Tage) **oder** seit dem letzten Backup ein Import lief.
-- `last_backup_at` wird nur nach vollständig erzeugtem und heruntergeladenem JSON-Export
-  gesetzt.
+- `last_backup_at` wird **nur** nach vollständig erzeugtem und heruntergeladenem JSON-Export
+  gesetzt (`markBackupCompleted` in `src/lib/backup/backupService.ts`). Eine Wiederherstellung
+  setzt den Wert ausdrücklich nicht — sie ist keine Sicherung (ADR-003).
+- Der Bereich „Datensicherung" und die Einstellungen zeigen den Stand als Satz
+  („Zuletzt gesichert: vor 12 Tagen (17.7.2026)"), abgeleitet in
+  `src/features/backup/hooks.ts`.
+
+**Umgesetzt seit 2026-07-29.** Zuvor war `last_backup_at` seit Migration 0004 vorhanden und
+wurde nie geschrieben; die Frage „wann habe ich zuletzt gesichert?" war nicht zu beantworten.
+
+**Noch nicht umgesetzt** (bewusst benannt, nicht stillschweigend übergangen):
+
+- Aktive Erinnerung nach Ablauf von `backup_reminder_days` (Standard 30). Das Feld besteht,
+  die Auswertung fehlt.
+- Anzahl der seit der letzten Sicherung geänderten Datensätze.
 
 ## 4. Validierung eines Backups (vor jeder Wiederherstellung)
 
@@ -80,40 +89,45 @@ Reihenfolge, Abbruch beim ersten harten Fehler:
 
 ## 5. Wiederherstellung
 
-Zwei Modi, beide über `restore_backup(payload, mode)`-RPC in **einer Transaktion**, beide mit
-Pflicht-Vorschau vor Ausführung:
+Zwei Modi, beide über die RPC `restore_backup(payload, mode)` in **einer Transaktion**, beide
+mit Pflicht-Vorschau und ausdrücklicher Bestätigung. Verbindlich ist ADR-003.
 
 ### 5.1 Vorschau (immer, ohne Schreiben)
 
-Zeigt: Backup-Datum, Versionen, Zeilenzahlen je Entität, Kontrollsummen, sowie im
-Merge-Modus die Konfliktanalyse (wie viele Zahlungen neu / bereits vorhanden / abweichend).
+Zeigt Zeilenzahlen je Entität, Erstellungsdatum, Basiswährung, Schema- und App-Version
+(`BackupContents`). Anschließend wählt der Nutzer den Modus; die Ausführung verlangt eine
+Bestätigung im Dialog, die die Folgen benennt.
 
-### 5.2 Voll-Restore (`mode='full'`)
+### 5.2 `mode='replace'` — Zustand der Sicherung herstellen
 
-- Nur zulässig, wenn der Datenbestand leer ist **oder** der Nutzer der vorherigen
-  Komplett-Archivierung ausdrücklich zustimmt („Bestehende N Datensätze werden archiviert und
-  durch das Backup ersetzt" — kein Hard Delete, Grundsatz 3).
-- Stellt alle Entitäten mit Original-IDs, Herkunft, Fingerprints, Importhistorie wieder her;
-  `audit_log`-Einträge des Backups werden als historische Einträge übernommen, zusätzlich
-  entsteht ein neuer Audit-Eintrag `action='restore'` mit Backup-Metadaten.
-- Wiederhergestellte Zahlungen behalten `source` aus dem Backup; das Restore-Ereignis selbst
-  ist über den Audit-Eintrag und `imports`-Historie nachvollziehbar.
+- Zeilen aus der Datei gewinnen (`on conflict … do update`).
+- Alles Übrige wird **storniert**, nie gelöscht (`archive_reason = 'Durch Wiederherstellung
+  einer Sicherung ersetzt'`) — Grundsatz 6, D-034.
+- Die eigene Sicherung einzuspielen stellt den Bestand vollständig wieder her. Das ist durch
+  einen Regressionstest abgesichert: Die ursprüngliche Fassung archivierte zuerst alles und
+  fügte anschließend nichts ein, weil die IDs bereits existierten.
 
-### 5.3 Merge-Restore (`mode='merge'`)
+### 5.3 `mode='merge'` — ergänzen
 
-- Ergänzt fehlende Datensätze; vorhandene bleiben unangetastet.
-- Duplikatprüfung beim Restore: primär über `id` (identisch → überspringen), sekundär über
-  `business_fingerprint` (gleicher Fingerprint, andere ID → als „möglicher Konflikt" in der
-  Vorschau, Standard überspringen, einzeln übersteuerbar — analog Import Stufe 3/4).
-- Abweichende Datensätze (gleiche `id`, unterschiedlicher Inhalt) werden **nie**
-  überschrieben: Konfliktliste in der Vorschau, Entscheidung je Datensatz (behalten /
-  Backup-Stand als Korrektur übernehmen → auditierter UPDATE).
-- Ergebnisbericht analog Importbilanz: `gesamt = neu + übersprungen + Konflikte(entschieden)`.
+- Fügt fehlende Datensätze hinzu; vorhandene bleiben unangetastet (`on conflict … do nothing`).
+- Idempotent: dieselbe Datei zweimal einspielen erzeugt keine Duplikate (ID-basiert).
 
-### 5.4 Mehrfacher Restore
+### 5.4 Was bewusst **nicht** umgesetzt ist
 
-Restore ist idempotent: dasselbe Backup zweimal einspielen (merge) erzeugt keine Duplikate
-(id-basiert). Voll-Restore nach Voll-Restore archiviert den ersten Stand nachvollziehbar.
+Die ursprüngliche Spezifikation sah eine Konfliktauflösung je Datensatz vor (abweichende
+Inhalte bei gleicher `id` einzeln entscheiden, sekundärer Abgleich über
+`business_fingerprint`). Das ist **nicht** gebaut. Der Code enthielt eine Konflikterkennung,
+deren Ergebnis verworfen wurde, bevor es die RPC erreichte, sowie eine nie eingebundene
+Oberfläche dafür; beides wurde entfernt (Audit 2026-07-29).
+
+Die beiden Modi decken die realen Fälle ab — „ich habe etwas verloren" (merge) und „ich will
+den Stand von damals" (replace). Eine feldweise Konfliktauflösung bliebe eine Funktion, die
+man einmal im Leben braucht und deren Fehlbedienung teuer ist.
+
+### 5.5 Fingerprints beim Einspielen
+
+`business_fingerprint` wird vom Trigger neu berechnet, nie aus der Datei übernommen. Ein
+veralteter Wert verfälschte die Dublettenerkennung dauerhaft.
 
 ## 6. Fehlerfälle
 
@@ -125,6 +139,8 @@ Restore ist idempotent: dasselbe Backup zweimal einspielen (merge) erzeugt keine
 | Neuere Formatversion | Abbruch mit Hinweis auf App-Update |
 | Abbruch mitten im Restore | Transaktion rollt vollständig zurück; kein Teilzustand |
 | Speicher-/Netzfehler beim Export | Export gilt als fehlgeschlagen; `last_backup_at` bleibt unverändert |
+| Weniger Zeilen geladen als die Datenbank führt | Sicherung bricht ab, es entsteht **keine** Datei (`assertComplete`, ADR-002) |
+| Unlesbarer Betrag in den Daten | Sicherung bricht ab, statt den Wert als `null` in die Datei zu schreiben |
 
 ## 7. Tests (Verweis)
 

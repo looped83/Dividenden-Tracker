@@ -3,7 +3,16 @@ import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "node:path";
+import { createRequire } from "node:module";
 import { findMissingEnv, missingEnvMessage } from "./src/lib/config/requiredEnv";
+
+// Die Anwendungsversion steht an genau einer Stelle (package.json) und wird zur
+// Bauzeit eingesetzt. Sie landet in jeder Sicherungsdatei und in den
+// Einstellungen; eine zweite, handgepflegte Kopie im Quelltext liefe
+// unweigerlich auseinander.
+const { version: appVersion } = createRequire(import.meta.url)("./package.json") as {
+  version: string;
+};
 
 // GitHub Pages liefert Projekt-Seiten unter einem Unterpfad
 // (https://<user>.github.io/<repo>/) statt an der Domainwurzel. Der
@@ -30,6 +39,9 @@ export default defineConfig(({ command, mode }) => {
 
   return {
     base,
+    define: {
+      __APP_VERSION__: JSON.stringify(appVersion),
+    },
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {

@@ -95,7 +95,12 @@ export function MonthlyChart({ payments, selection, today }: MonthlyChartProps) 
     let cumulativePrior = Money.zero(EUR);
     return selectedBuckets.map((bucket, index) => {
       const month = index + 1;
-      const isFuture = selection === today.year && month > today.month;
+      // „Noch nicht begonnen" gilt nur fuer Monate ohne Zahlungen: durch den
+      // Ausschuettungsplan (§10) kann eine frueh eingetroffene Zahlung bereits
+      // im kommenden Monat stehen — dieses Geld darf nicht als Luecke
+      // verschwinden.
+      const isFuture =
+        selection === today.year && month > today.month && bucket.count === 0;
       const priorNet = priorBuckets[index]?.net ?? Money.zero(EUR);
       cumulativePrior = cumulativePrior.add(priorNet);
 
@@ -271,7 +276,7 @@ export function MonthlyChart({ payments, selection, today }: MonthlyChartProps) 
                     <Bar
                       dataKey="prior"
                       name={priorYearLabel}
-                      fill="var(--chart-6)"
+                      fill="var(--chart-2)"
                       radius={[4, 4, 0, 0]}
                       isAnimationActive={!reducedMotion}
                     />

@@ -1,11 +1,5 @@
-/**
- * Export Section
- *
- * Allows users to export dividend data in various formats (CSV, Excel, JSON).
- * Provides options for filtering and column selection.
- */
-
-import { useState } from "react";
+import * as React from "react";
+import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -18,178 +12,107 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { useToast } from "@/components/ui/toast";
+import ProgressIndicator from "@/components/backup/ProgressIndicator";
 import {
   executeExport,
   DEFAULT_EXPORT_COLUMNS,
   type ExportFormat,
-  type ExportOptions,
 } from "@/lib/backup/exportService";
-import ProgressIndicator from "@/components/backup/ProgressIndicator";
-import { AlertCircle, CheckCircle, Download } from "lucide-react";
+
+/**
+ * Datenexport (CSV, Excel, JSON) — bewusst getrennt von der Sicherung:
+ * Ein Export ist eine **Auswahl** zum Weiterverarbeiten, eine Sicherung ist der
+ * vollstaendige Bestand zum Wiedereinspielen. Ein Export kann eine Sicherung
+ * nicht ersetzen; darauf weist der Bereich ausdruecklich hin.
+ */
+const FORMAT_HINTS: Record<ExportFormat, string> = {
+  csv: "Öffnet sich in Numbers, Excel und Google Tabellen. Formeln in Textfeldern werden entschärft, damit sich beim Öffnen nichts ausführen kann.",
+  xlsx: "Öffnet sich direkt in Numbers und Excel. Beträge sind echte Zahlen und Datumsangaben echte Datumswerte — man kann damit rechnen.",
+  json: "Für eigene Auswertungen. Diese Datei lässt sich **nicht** wieder einspielen — dafür ist die Sicherung da.",
+};
 
 export default function ExportSection() {
-  const [format, setFormat] = useState<ExportFormat>("csv");
-  const [includeArchived, setIncludeArchived] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { notify } = useToast();
+  const [format, setFormat] = React.useState<ExportFormat>("csv");
+  const [includeArchived, setIncludeArchived] = React.useState(false);
+  const [isExporting, setIsExporting] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
 
   const handleExport = async () => {
     setIsExporting(true);
     setError(null);
-    setSuccess(false);
 
     try {
-      const options: ExportOptions = {
+      const result = await executeExport({
         format,
         includeArchived,
         columns: DEFAULT_EXPORT_COLUMNS,
-      };
-
-      const result = await executeExport(options);
+      });
 
       if (result.success) {
-        setSuccess(true);
-        setTimeout(() => {
-          setSuccess(false);
-        }, 5000);
+        notify(`Export erstellt: ${result.fileName}`);
       } else {
-        setError(result.error ?? "Export failed");
+        setError(result.error ?? "Der Export ist fehlgeschlagen.");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error during export");
+      setError(err instanceof Error ? err.message : "Der Export ist fehlgeschlagen.");
     } finally {
       setIsExporting(false);
     }
   };
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Daten exportieren</CardTitle>
-          <CardDescription>
-            Exportieren Sie Ihre Dividendenzahlungen in verschiedenen Formaten für weitere
-            Analyse oder Archivierung.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Status Alerts */}
-          {error && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
+    <Card>
+      <CardHeader>
+        <CardTitle>Daten exportieren</CardTitle>
+        <CardDescription>
+          Lädt die Dividendeneingänge als Tabelle herunter — zum Auswerten, Weitergeben
+          oder Ablegen. Für die Wiederherstellung ist die Sicherung zuständig, nicht der
+          Export.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
-          {success && (
-            <Alert className="border-green-200 bg-green-50 dark:bg-green-900/20">
-              <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
-              <AlertDescription className="text-green-800 dark:text-green-200">
-                Daten erfolgreich exportiert!
-              </AlertDescription>
-            </Alert>
-          )}
+        <div className="space-y-1.5">
+          <Label htmlFor="export-format">Format</Label>
+          <Select
+            id="export-format"
+            value={format}
+            onChange={(event) => {
+              setFormat(event.target.value as ExportFormat);
+            }}
+          >
+            <option value="csv">CSV</option>
+            <option value="xlsx">Excel (XLSX)</option>
+            <option value="json">JSON</option>
+          </Select>
+          <p className="text-sm text-muted-foreground">{FORMAT_HINTS[format]}</p>
+        </div>
 
-          {/* Format Selection */}
-          <div className="space-y-3">
-            <Label htmlFor="format" className="text-base font-semibold">
-              Exportformat
-            </Label>
-            <Select
-              id="format"
-              value={format}
-              onChange={(e) => {
-                setFormat(e.target.value as ExportFormat);
-              }}
-            >
-              <option value="csv">CSV - Kommagetrennte Werte</option>
-              <option value="xlsx">Excel - Microsoft Excel Format</option>
-              <option value="json">JSON - Strukturiertes Format</option>
-            </Select>
-          </div>
-
-          {/* Progress */}
-          {isExporting && <ProgressIndicator progress={{ stage: "formatting" }} />}
-
-          {/* Options */}
-          <div className="space-y-3">
-            <Label className="text-base font-semibold">Optionen</Label>
-            <div className="flex items-center space-x-3">
-              <Checkbox
-                id="include-archived"
-                checked={includeArchived}
-                onCheckedChange={(checked: boolean | "indeterminate") => {
-                  setIncludeArchived(typeof checked === "boolean" ? checked : false);
-                }}
-                disabled={isExporting}
-              />
-              <Label htmlFor="include-archived" className="font-normal cursor-pointer">
-                Auch archivierte Zahlungen einschließen
-              </Label>
-            </div>
-          </div>
-
-          {/* Export Button */}
-          <Button
-            onClick={() => {
-              void handleExport();
+        <label className="flex min-h-11 items-center gap-2 text-sm">
+          <Checkbox
+            checked={includeArchived}
+            onChange={(event) => {
+              setIncludeArchived(event.target.checked);
             }}
             disabled={isExporting}
-            size="lg"
-          >
-            {isExporting ? (
-              <>
-                <span className="animate-spin mr-2">⏳</span>
-                Wird exportiert...
-              </>
-            ) : (
-              <>
-                <Download className="mr-2 h-4 w-4" />
-                {format === "csv" && "Als CSV exportieren"}
-                {format === "xlsx" && "Als Excel exportieren"}
-                {format === "json" && "Als JSON exportieren"}
-              </>
-            )}
-          </Button>
-        </CardContent>
-      </Card>
+          />
+          Stornierte Eingänge einschließen
+        </label>
 
-      {/* Format Information */}
-      {format === "csv" && (
-        <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
-          <CardContent className="pt-6">
-            <p className="text-sm text-blue-900 dark:text-blue-200">
-              <strong>CSV-Format:</strong> Kann in Excel, Google Sheets oder anderen
-              Tabellenkalkulationsprogrammen geöffnet werden. Formelinjektionen werden
-              automatisch verhindert.
-            </p>
-          </CardContent>
-        </Card>
-      )}
+        {isExporting && <ProgressIndicator progress={{ stage: "formatting" }} />}
 
-      {format === "xlsx" && (
-        <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
-          <CardContent className="pt-6">
-            <p className="text-sm text-blue-900 dark:text-blue-200">
-              <strong>Excel-Format:</strong> Nativ in Microsoft Excel oder Apple Numbers
-              öffbar. Zahlenformate werden korrekt beibehalten.
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {format === "json" && (
-        <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
-          <CardContent className="pt-6">
-            <p className="text-sm text-blue-900 dark:text-blue-200">
-              <strong>JSON-Format:</strong> Strukturiertes Format für Datenanalyse und
-              Integration mit anderen Tools. Diese Dateien können nicht direkt in die
-              Anwendung importiert werden.
-            </p>
-          </CardContent>
-        </Card>
-      )}
-    </div>
+        <Button onClick={() => void handleExport()} disabled={isExporting}>
+          <Download />
+          {isExporting ? "Wird erstellt …" : "Export herunterladen"}
+        </Button>
+      </CardContent>
+    </Card>
   );
 }

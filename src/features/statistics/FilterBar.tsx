@@ -1,6 +1,7 @@
 import * as React from "react";
 import { X } from "lucide-react";
 import { Select } from "@/components/ui/select";
+import { EntitySelect, type EntityOption } from "@/components/domain/EntitySelect";
 import { FilterBar as FilterBarShell, FilterField } from "@/components/ui/filter-bar";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,26 +25,27 @@ interface FilterBarProps {
   years: number[];
   securities: Map<string, EntityInfo>;
   depots: Map<string, EntityInfo>;
+  /**
+   * Jahresauswahl anzeigen. Der Vergleichsbereich waehlt seine Zeitraeume
+   * selbst; dort waere dieser Regler wirkungslos und damit irrefuehrend.
+   */
+  showYear?: boolean;
 }
 
-interface OptionEntry {
-  id: string;
-  name: string;
-  archived: boolean;
-}
-
-function sortedEntries(map: Map<string, EntityInfo>): OptionEntry[] {
-  return [...map.entries()]
-    .map(([id, info]) => ({ id, name: info.name, archived: info.archived }))
-    .sort((a, b) => a.name.localeCompare(b.name, "de"));
+function toOptions(map: Map<string, EntityInfo>): EntityOption[] {
+  return [...map.entries()].map(([id, info]) => ({
+    id,
+    name: info.name,
+    archived: info.archived,
+  }));
 }
 
 /**
  * Globale, kombinierbare Statistikfilter (§11): Jahr, Unternehmen, Depot,
  * Datenquelle und Zahlungsstatus. Der Filter ist URL-gestuetzt (siehe
  * `useStatisticsFilter`) und wirkt auf alle Unterbereiche. Archivierte
- * Unternehmen/Depots bleiben waehlbar (sie werden als „(archiviert)"
- * gekennzeichnet, aber nie ausgeschlossen).
+ * Unternehmen/Depots bleiben waehlbar (gesondert gruppiert, aber nie
+ * ausgeschlossen — {@link EntitySelect}).
  */
 export function FilterBar({
   filter,
@@ -51,12 +53,13 @@ export function FilterBar({
   years,
   securities,
   depots,
+  showYear = true,
 }: FilterBarProps) {
-  const securityOptions = React.useMemo(() => sortedEntries(securities), [securities]);
-  const depotOptions = React.useMemo(() => sortedEntries(depots), [depots]);
+  const securityOptions = React.useMemo(() => toOptions(securities), [securities]);
+  const depotOptions = React.useMemo(() => toOptions(depots), [depots]);
   const active = !isEmptyFilter(filter);
   const activeCount = [
-    filter.year,
+    showYear ? filter.year : null,
     filter.securityId,
     filter.depotId,
     filter.source,
@@ -65,58 +68,48 @@ export function FilterBar({
 
   return (
     <FilterBarShell activeCount={activeCount}>
-      <FilterField id="stats-filter-year" label="Jahr">
-        <Select
-          id="stats-filter-year"
-          value={filter.year !== null ? String(filter.year) : ""}
-          onChange={(event) => {
-            const value = event.target.value;
-            setFilter({ ...filter, year: value ? Number.parseInt(value, 10) : null });
-          }}
-        >
-          <option value="">Alle Jahre</option>
-          {years.map((year) => (
-            <option key={year} value={year}>
-              {year}
-            </option>
-          ))}
-        </Select>
-      </FilterField>
+      {showYear && (
+        <FilterField id="stats-filter-year" label="Jahr">
+          <Select
+            id="stats-filter-year"
+            value={filter.year !== null ? String(filter.year) : ""}
+            onChange={(event) => {
+              const value = event.target.value;
+              setFilter({ ...filter, year: value ? Number.parseInt(value, 10) : null });
+            }}
+          >
+            <option value="">Alle Jahre</option>
+            {years.map((year) => (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            ))}
+          </Select>
+        </FilterField>
+      )}
 
       <FilterField id="stats-filter-security" label="Unternehmen">
-        <Select
+        <EntitySelect
           id="stats-filter-security"
+          options={securityOptions}
           value={filter.securityId ?? ""}
-          onChange={(event) => {
-            setFilter({ ...filter, securityId: event.target.value || null });
+          onChange={(value) => {
+            setFilter({ ...filter, securityId: value || null });
           }}
-        >
-          <option value="">Alle Unternehmen</option>
-          {securityOptions.map((option) => (
-            <option key={option.id} value={option.id}>
-              {option.name}
-              {option.archived ? " (archiviert)" : ""}
-            </option>
-          ))}
-        </Select>
+          allLabel="Alle Unternehmen"
+        />
       </FilterField>
 
       <FilterField id="stats-filter-depot" label="Depot">
-        <Select
+        <EntitySelect
           id="stats-filter-depot"
+          options={depotOptions}
           value={filter.depotId ?? ""}
-          onChange={(event) => {
-            setFilter({ ...filter, depotId: event.target.value || null });
+          onChange={(value) => {
+            setFilter({ ...filter, depotId: value || null });
           }}
-        >
-          <option value="">Alle Depots</option>
-          {depotOptions.map((option) => (
-            <option key={option.id} value={option.id}>
-              {option.name}
-              {option.archived ? " (archiviert)" : ""}
-            </option>
-          ))}
-        </Select>
+          allLabel="Alle Depots"
+        />
       </FilterField>
 
       <FilterField id="stats-filter-source" label="Datenquelle">

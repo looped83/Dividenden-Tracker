@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Outlet } from "react-router";
+import { Outlet, useMatch } from "react-router";
 import { BarChart3 } from "lucide-react";
 import { STATISTICS_TABS } from "@/app/navigation";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,10 @@ function StatisticsSkeleton() {
 export function StatisticsPage() {
   const data = useStatisticsData();
   const { filter, setFilter } = useStatisticsFilter();
+  // Der Vergleichsbereich waehlt seine Zeitraeume selbst; ein Jahresregler
+  // daneben waere dort wirkungslos (CALCULATION_RULES.md §11.10). Die uebrigen
+  // Filter — Unternehmen, Depot, Quelle, Art — wirken auch dort.
+  const isComparison = useMatch("/statistiken/vergleich") !== null;
 
   const years = React.useMemo(() => availableYears(data.payments), [data.payments]);
   const filteredPayments = React.useMemo(
@@ -105,6 +109,7 @@ export function StatisticsPage() {
         years={years}
         securities={data.securities}
         depots={data.depots}
+        showYear={!isComparison}
       />
 
       {/* Eigener Ladezustand: Beim Reiterwechsel bleiben Kopfzeile, Reiter und
