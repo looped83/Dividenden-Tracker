@@ -77,6 +77,6 @@ export const STATISTICS_TABS: readonly { to: string; label: string; end?: boolea
 export const SETTINGS_TABS: readonly { to: string; label: string; end?: boolean }[] = [
   { to: "/einstellungen", label: "Allgemein", end: true },
   { to: "/einstellungen/depots", label: "Depots" },
-  { to: "/einstellungen/importe", label: "Importe" },
-  { to: "/einstellungen/datensicherung", label: "Datensicherung" },
+  { to: "/einstellungen/importe", label: "Import" },
+  { to: "/einstellungen/datensicherung", label: "Sicherung" },
 ];

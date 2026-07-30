@@ -1,13 +1,7 @@
 import * as React from "react";
 import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -64,13 +58,8 @@ export default function ExportSection() {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="pb-5">
         <CardTitle>Daten exportieren</CardTitle>
-        <CardDescription>
-          Lädt die Dividendeneingänge als Tabelle herunter — zum Auswerten, Weitergeben
-          oder Ablegen. Für die Wiederherstellung ist die Sicherung zuständig, nicht der
-          Export.
-        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {error && (

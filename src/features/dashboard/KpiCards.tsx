@@ -58,10 +58,7 @@ function KpiCard({
   drillLabel,
 }: KpiCardProps) {
   const body = (
-    <>
-      <div className="text-lg sm:text-2xl font-semibold tabular-amount">{value}</div>
-      {caption && <div className="mt-1 text-xs text-muted-foreground">{caption}</div>}
-    </>
+    <div className="text-lg sm:text-2xl font-semibold tabular-amount">{value}</div>
   );
 
   return (
@@ -79,12 +76,15 @@ function KpiCard({
             {body}
           </Link>
         ) : (
-          <div>{body}</div>
+          body
         )}
+        {/* **Alle Zusatzzeilen stehen unten**, gleich welcher Art — Vergleich,
+            Zeitraum oder Erlaeuterung. Stuende die eine unter dem Betrag und
+            die andere am Kachelboden, saessen die dritten Zeilen der sechs
+            Kacheln auf verschiedenen Hoehen; nebeneinander faellt das sofort
+            auf. Meta-Groesse und kurzes „ggue. Vorjahr" halten die Zeile auf
+            dem iPhone einzeilig; der volle Satz steht im Titel. */}
         <div className="space-y-0.5">
-          {/* Meta-Groesse und kurzes „ggue. Vorjahr": So bleibt die Zeile auf
-              dem iPhone einzeilig. Worauf sich das Vorjahr genau bezieht, sagt
-              die Beschriftung der Kachel — und im Titel der volle Satz. */}
           {comparison && (
             <p
               className={cn("text-xs", toneClass[comparison.tone])}
@@ -93,6 +93,7 @@ function KpiCard({
               {comparison.text}
             </p>
           )}
+          {caption && <p className="text-xs text-muted-foreground">{caption}</p>}
           {footnote && <div className="text-xs text-muted-foreground">{footnote}</div>}
         </div>
       </CardContent>

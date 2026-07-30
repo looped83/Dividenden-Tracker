@@ -1,11 +1,13 @@
 /**
- * Unterbereich "Datensicherung" der Einstellungen: Sicherung erstellen,
+ * Unterbereich „Sicherung" der Einstellungen: Sicherung erstellen,
  * wiederherstellen und Daten exportieren.
  *
- * Die drei Abschnitte stehen untereinander statt in einer eigenen Reiterleiste.
- * Die Einstellungen bringen bereits eine Reiterebene mit — eine zweite darunter
- * waere doppelt. Jeder Abschnitt bringt seine eigene Karte mit Titel und
- * Beschreibung mit, wie die uebrigen Einstellungsbereiche.
+ * Keine eigene Reiterleiste — die Einstellungen bringen bereits eine mit, eine
+ * zweite darunter waere doppelt. Stattdessen stehen die beiden Haelften
+ * derselben Sache ab `lg` nebeneinander: Eine Sicherung erstellt man, um sie
+ * spaeter wieder einzuspielen; untereinander lag zwischen beiden ein
+ * Bildschirmdrittel. Der Export verfolgt einen anderen Zweck (Auswerten,
+ * Weitergeben) und steht deshalb fuer sich darunter.
  */
 
 import BackupSection from "./BackupSection";
@@ -15,8 +17,10 @@ import ExportSection from "./ExportSection";
 export function BackupPage() {
   return (
     <div className="space-y-6">
-      <BackupSection />
-      <RestoreSection />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start">
+        <BackupSection />
+        <RestoreSection />
+      </div>
       <ExportSection />
     </div>
   );

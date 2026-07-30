@@ -2,13 +2,7 @@ import * as React from "react";
 import { Plus, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -27,6 +21,7 @@ import { ImportWizard } from "@/features/imports/ImportWizard";
 import { useImports, useRollbackImport } from "@/features/imports/hooks";
 import type { Import } from "@/lib/supabase/repositories/imports";
 import type { ImportStatus } from "@/lib/supabase/database.types";
+import { formatTimestampDate } from "@/lib/utils/formatDate";
 
 const STATUS_LABELS: Record<
   ImportStatus,
@@ -94,22 +89,18 @@ export function ImportsPage() {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader>
-          <CardTitle>Importe</CardTitle>
-          <CardDescription>
-            Sicherer, nachvollziehbarer und rückrollbarer Import historischer
-            Dividendendaten.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
+        <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0 pb-5">
+          <CardTitle>Import</CardTitle>
           <Button
+            size="sm"
             onClick={() => {
               setWizardOpen(true);
             }}
           >
             <Plus /> Neuer Import
           </Button>
-
+        </CardHeader>
+        <CardContent className="space-y-3">
           {rollbackError && (
             <p role="alert" className="text-sm text-negative">
               {rollbackError}
@@ -139,9 +130,7 @@ export function ImportsPage() {
                   <TableRow key={imp.id}>
                     <TableCell className="font-medium">{imp.file_name}</TableCell>
                     <TableCell className="text-muted-foreground">
-                      {new Date(imp.committed_at ?? imp.created_at).toLocaleDateString(
-                        "de-DE",
-                      )}
+                      {formatTimestampDate(imp.committed_at ?? imp.created_at)}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
                       {checksumTotal(imp) ?? "—"}

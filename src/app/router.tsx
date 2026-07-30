@@ -73,6 +73,9 @@ const DepotsTab = React.lazy(async () => ({
 const GoalsPage = React.lazy(async () => ({
   default: (await routeChunks.goals()).GoalsPage,
 }));
+const GoalsTab = React.lazy(async () => ({
+  default: (await routeChunks.goalsTab()).GoalsTab,
+}));
 const GoalDetailPage = React.lazy(async () => ({
   default: (await routeChunks.goalDetail()).GoalDetailPage,
 }));
@@ -142,7 +145,17 @@ export const router = createHashRouter([
           { path: "depots", element: <DepotsTab /> },
         ],
       },
-      { path: "ziele", element: <GoalsPage /> },
+      {
+        path: "ziele",
+        element: <GoalsPage />,
+        children: [
+          { index: true, element: <GoalsTab status="current" /> },
+          { path: "bevorstehend", element: <GoalsTab status="upcoming" /> },
+          { path: "beendet", element: <GoalsTab status="ended" /> },
+        ],
+      },
+      // Statische Reiterpfade ranken vor dem dynamischen Segment; ein Ziel mit
+      // der Kennung „beendet" gibt es nicht (UUIDs).
       { path: "ziele/:id", element: <GoalDetailPage /> },
       {
         path: "einstellungen",

@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchLastBackupAt } from "@/lib/backup/backupService";
+import { formatTimestampDate } from "@/lib/utils/formatDate";
 
 export const LAST_BACKUP_KEY = ["profile", "last-backup"] as const;
 
@@ -39,7 +40,7 @@ export function describeLastBackup(
   if (!lastBackupAt) return "Noch keine Sicherung erstellt.";
 
   const days = daysSince(lastBackupAt, now);
-  const date = new Date(lastBackupAt).toLocaleDateString("de-DE");
+  const date = formatTimestampDate(lastBackupAt);
   if (days <= 0) return `Zuletzt gesichert: heute (${date}).`;
   if (days === 1) return `Zuletzt gesichert: gestern (${date}).`;
   return `Zuletzt gesichert: vor ${String(days)} Tagen (${date}).`;

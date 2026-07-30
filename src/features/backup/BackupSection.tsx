@@ -1,13 +1,7 @@
 import * as React from "react";
 import { Download, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/toast";
 import { BackupContents } from "@/components/backup/BackupContents";
@@ -67,12 +61,8 @@ export default function BackupSection() {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="pb-5">
         <CardTitle>Sicherung erstellen</CardTitle>
-        <CardDescription>
-          Lädt alle Daten als eine Datei herunter: Depots, Unternehmen, sämtliche
-          Dividendeneingänge einschließlich der stornierten, Ziele und Importvorgänge.
-        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground" aria-live="polite">

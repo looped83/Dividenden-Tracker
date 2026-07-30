@@ -1,12 +1,13 @@
 import * as React from "react";
-import { useNavigate } from "react-router";
+import { Outlet, useNavigate } from "react-router";
 import { Plus, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { TabNav } from "@/components/layout/TabNav";
 import { refDateFromDate } from "@/lib/statistics";
-import { computeGoalProgress, sortGoalProgress, type GoalProgress } from "@/lib/goals";
+import { computeGoalProgress, sortGoalProgress } from "@/lib/goals";
 import { useErrorState } from "@/lib/hooks/useErrorState";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import {
@@ -15,45 +16,9 @@ import {
   useGoals,
   type GoalWithMeta,
 } from "./hooks";
-import { GoalCard } from "./GoalCard";
 import { GoalFormDialog } from "./GoalFormDialog";
+import type { GoalsContext } from "./context";
 import { DeleteGoalDialog } from "./DeleteGoalDialog";
-
-function Section({
-  title,
-  description,
-  items,
-  onEdit,
-  onDelete,
-}: {
-  title: string;
-  description?: string;
-  items: GoalProgress[];
-  onEdit: (goalId: string) => void;
-  onDelete: (goalId: string) => void;
-}) {
-  if (items.length === 0) return null;
-  return (
-    <section className="space-y-3" aria-labelledby={`goals-${title}`}>
-      <div>
-        <h2 id={`goals-${title}`} className="text-lg font-semibold tracking-tight">
-          {title}
-        </h2>
-        {description && <p className="text-sm text-muted-foreground">{description}</p>}
-      </div>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {items.map((progress) => (
-          <GoalCard
-            key={progress.goal.id}
-            progress={progress}
-            onEdit={onEdit}
-            onDelete={onDelete}
-          />
-        ))}
-      </div>
-    </section>
-  );
-}
 
 function GoalsSkeleton() {
   return (
@@ -95,14 +60,15 @@ export function GoalsPage() {
     [goals, payments, today],
   );
 
-  const active = sortGoalProgress(
-    progressList.filter((p) => p.time.status === "current"),
-  );
-  const upcoming = sortGoalProgress(
-    progressList.filter((p) => p.time.status === "upcoming"),
-  );
-  const historical = sortGoalProgress(
-    progressList.filter((p) => p.time.status === "ended"),
+  const byStatus = React.useMemo(
+    () => ({
+      current: sortGoalProgress(progressList.filter((p) => p.time.status === "current")),
+      upcoming: sortGoalProgress(
+        progressList.filter((p) => p.time.status === "upcoming"),
+      ),
+      ended: sortGoalProgress(progressList.filter((p) => p.time.status === "ended")),
+    }),
+    [progressList],
   );
 
   const openCreate = () => {
@@ -130,6 +96,24 @@ export function GoalsPage() {
       },
     });
   };
+
+  const context: GoalsContext = React.useMemo(
+    () => ({ byStatus, onEdit: openEdit, onDelete: openDelete }),
+    // `openEdit`/`openDelete` haengen nur an stabilen Werten; sie hier zu
+    // memoisieren waere Aufwand ohne Wirkung.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [byStatus],
+  );
+
+  // Die Zahl in der Beschriftung erspart den Klick in einen leeren Reiter.
+  const tabs = [
+    { to: "/ziele", label: `Aktiv (${String(byStatus.current.length)})`, end: true },
+    {
+      to: "/ziele/bevorstehend",
+      label: `Bevorstehend (${String(byStatus.upcoming.length)})`,
+    },
+    { to: "/ziele/beendet", label: `Beendet (${String(byStatus.ended.length)})` },
+  ];
 
   const heading = (
     <PageHeader
@@ -172,28 +156,9 @@ export function GoalsPage() {
           }
         />
       ) : (
-        <div className="space-y-8">
-          <Section
-            title="Aktive Ziele"
-            description="Ziele, deren Zeitraum gerade läuft."
-            items={active}
-            onEdit={openEdit}
-            onDelete={openDelete}
-          />
-          <Section
-            title="Bevorstehende Ziele"
-            description="Ziele, deren Zeitraum noch nicht begonnen hat."
-            items={upcoming}
-            onEdit={openEdit}
-            onDelete={openDelete}
-          />
-          <Section
-            title="Beendete Ziele"
-            description="Abgeschlossene Zeiträume – erreicht, übertroffen oder nicht erreicht."
-            items={historical}
-            onEdit={openEdit}
-            onDelete={openDelete}
-          />
+        <div className="space-y-6">
+          <TabNav label="Zielgruppen" tabs={tabs} />
+          <Outlet context={context} />
         </div>
       )}
 

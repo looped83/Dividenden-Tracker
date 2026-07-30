@@ -172,67 +172,14 @@ export function PaymentsPage() {
     [depots],
   );
 
-  // Aktive Filter als einzeln entfernbare Labels. Die Reihenfolge folgt der
-  // Filterleiste, damit Label und Feld zueinander finden.
-  const activeFilterChips = React.useMemo(() => {
-    const chips: { key: string; label: string; remove: () => void }[] = [];
-    if (securityId) {
-      chips.push({
-        key: "security",
-        label: `Unternehmen: ${securityById.get(securityId)?.name ?? "unbekannt"}`,
-        remove: () => {
-          updateParams({ security: null });
-        },
-      });
-    }
-    if (depotId) {
-      chips.push({
-        key: "depot",
-        label: `Depot: ${depotById.get(depotId)?.name ?? "unbekannt"}`,
-        remove: () => {
-          updateParams({ depot: null });
-        },
-      });
-    }
-    if (filterYear !== null) {
-      chips.push({
-        key: "year",
-        // Der Monatsfilter haengt am Jahr — ohne Jahr ist er wirkungslos.
-        label: `Jahr: ${String(filterYear)}`,
-        remove: () => {
-          updateParams({ year: null, month: null });
-        },
-      });
-    }
-    if (filterMonth !== null) {
-      chips.push({
-        key: "month",
-        label: `Monat: ${monthNameDe(filterMonth)}`,
-        remove: () => {
-          updateParams({ month: null });
-        },
-      });
-    }
-    if (status === "all") {
-      chips.push({
-        key: "status",
-        label: "Stornierte sichtbar",
-        remove: () => {
-          updateParams({ status: null });
-        },
-      });
-    }
-    return chips;
-  }, [
+  // Wie viele Filter greifen — die Leiste zeigt es auch eingeklappt an.
+  const activeFilterCount = [
     securityId,
     depotId,
     filterYear,
     filterMonth,
-    status,
-    securityById,
-    depotById,
-    updateParams,
-  ]);
+    status === "all" ? "status" : null,
+  ].filter((value) => value !== null && value !== "").length;
 
   // Vergleich mit dem Vorjahr ueber den gesamten Bestand — nicht ueber die
   // gefilterte Liste: Ein Depot- oder Jahresfilter darf den Bezug nicht
@@ -426,7 +373,7 @@ export function PaymentsPage() {
       {/* Filterleiste in der Optik des Statistikbereichs (geteiltes Primitive).
           Sortierrichtung als Symbolschalter statt langer Auswahltexte
           („Zahlungsdatum – neueste zuerst“), damit alles in eine Zeile passt. */}
-      <FilterBar activeCount={activeFilterChips.length}>
+      <FilterBar activeCount={activeFilterCount}>
         <FilterField id="f-security" label="Unternehmen">
           <EntitySelect
             id="f-security"
@@ -527,18 +474,21 @@ export function PaymentsPage() {
             </Button>
           </div>
         </FilterField>
-      </FilterBar>
 
-      {hasActiveFilters && (
-        <div className="flex flex-wrap items-center gap-2">
-          {activeFilterChips.map((chip) => (
-            <FilterChip key={chip.key} label={chip.label} onRemove={chip.remove} />
-          ))}
-          <Button type="button" variant="ghost" size="sm" onClick={resetFilters}>
+        {/* Zuruecksetzen steht wie im Statistikbereich **in** der Leiste, nicht
+            darunter: Es gehoert zu den Filtern, nicht zur Liste. */}
+        {hasActiveFilters && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-11"
+            onClick={resetFilters}
+          >
             <X /> Filter zurücksetzen
           </Button>
-        </div>
-      )}
+        )}
+      </FilterBar>
 
       {hasActiveFilters && (
         <p className="text-sm text-muted-foreground" aria-live="polite">
@@ -737,21 +687,6 @@ export function PaymentsPage() {
 }
 
 /** Aktiver Filter als Label mit eigener Entfernen-Schaltflaeche. */
-function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
-  return (
-    <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/40 py-1 pl-3 pr-1 text-sm">
-      {label}
-      <button
-        type="button"
-        onClick={onRemove}
-        aria-label={`Filter „${label}" entfernen`}
-        className="flex size-6 items-center justify-center rounded-full outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring pointer-coarse:size-8"
-      >
-        <X className="size-3.5" aria-hidden />
-      </button>
-    </span>
-  );
-}
 
 interface RowActionProps {
   row: Row;

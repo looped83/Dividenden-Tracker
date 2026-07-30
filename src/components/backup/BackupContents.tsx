@@ -1,5 +1,6 @@
 import { formatCountNumber } from "@/lib/utils/formatNumber";
 import { type BackupRoot } from "@/lib/backup/backupFormat";
+import { formatTimestamp } from "@/lib/utils/formatDate";
 
 /**
  * Inhalt einer Sicherung in Zahlen, plus die Angaben, die sie einordnen.
@@ -36,9 +37,7 @@ export function BackupContents({ backup }: { backup: BackupRoot }) {
 
       <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
         <dt className="text-muted-foreground">Erstellt</dt>
-        <dd className="text-right">
-          {new Date(backup.exported_at).toLocaleString("de-DE")}
-        </dd>
+        <dd className="text-right">{formatTimestamp(backup.exported_at)}</dd>
         <dt className="text-muted-foreground">Basiswährung</dt>
         <dd className="text-right">{backup.base_currency}</dd>
         <dt className="text-muted-foreground">Schemaversion</dt>
