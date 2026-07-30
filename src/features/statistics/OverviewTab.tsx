@@ -11,6 +11,7 @@ import {
 } from "@/lib/statistics";
 import { useStatisticsContext } from "./context";
 import {
+  formatCountNoun,
   formatCountNumber,
   formatIsoDate,
   formatMonthYear,
@@ -121,29 +122,25 @@ export function OverviewTab() {
             : {})}
         />
         <StatCard
-          label="Unternehmen · Depots"
-          value={`${formatCountNumber(stats.distinctSecurities)} · ${formatCountNumber(stats.distinctDepots)}`}
-          comparison="ausschüttende Unternehmen und Depots"
+          label="Zeitraum"
+          value={
+            stats.firstPayDate && stats.lastPayDate ? (
+              // Zwei Daten sind fuer eine Kennzahl viel Text: kleiner gesetzt,
+              // damit die Kachel neben den Betraegen ruhig bleibt.
+              <span className="text-xl">
+                {formatIsoDate(stats.firstPayDate)} – {formatIsoDate(stats.lastPayDate)}
+              </span>
+            ) : (
+              <span className="text-muted-foreground">—</span>
+            )
+          }
+          comparison={`${formatCountNoun(stats.distinctSecurities, "Unternehmen", "Unternehmen")} · ${formatCountNoun(stats.distinctDepots, "Depot", "Depots")}`}
         />
       </div>
 
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle>Zeitraum</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            {stats.firstPayDate && stats.lastPayDate
-              ? `${formatIsoDate(stats.firstPayDate)} – ${formatIsoDate(stats.lastPayDate)}`
-              : "Keine Dividendeneingänge im gewählten Filter."}
-          </p>
-        </CardHeader>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-3">
           <CardTitle>Jährliche Entwicklung</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Netto-Dividendensumme je Kalenderjahr, chronologisch.
-          </p>
         </CardHeader>
         <CardContent>
           <CategoryBarChart
@@ -157,10 +154,6 @@ export function OverviewTab() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle>Zahlungs-Heatmap</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Netto-Dividenden nach Jahr und Monat. Dunklere Felder stehen für höhere
-            Summen.
-          </p>
         </CardHeader>
         <CardContent>
           <PaymentsHeatmap

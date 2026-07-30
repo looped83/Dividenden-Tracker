@@ -108,4 +108,4 @@ export const PAYMENT_TYPE_VALUES: readonly PaymentType[] = [
   "other",
 ];
 
-export { formatCountNumber } from "@/lib/utils/formatNumber";
+export { formatCountNumber, formatCountNoun } from "@/lib/utils/formatNumber";

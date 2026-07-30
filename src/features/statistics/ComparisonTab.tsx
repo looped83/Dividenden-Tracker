@@ -129,10 +129,6 @@ export function ComparisonTab() {
     selection.mode === "rollierend"
       ? "gegenüber den 12 Monaten davor"
       : `gegenüber ${comparison.reference.label}`;
-  const truncationNote =
-    selection.mode === "monate"
-      ? "Der Monat läuft noch. Beide Seiten enden deshalb am"
-      : "Ein laufendes Jahr ist beteiligt. Beide Seiten enden deshalb am";
   const changeTone =
     change.tone === "positive"
       ? "text-positive"
@@ -145,9 +141,6 @@ export function ComparisonTab() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle>Zeitraumvergleich</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Zwei Zeiträume nebeneinander — immer über denselben Ausschnitt.
-          </p>
         </CardHeader>
         <CardContent className="space-y-4">
           <div
@@ -252,20 +245,6 @@ export function ComparisonTab() {
             )}
           </div>
 
-          {comparison.truncated && (
-            <p className="flex items-start gap-2 rounded-md bg-muted/50 p-3 text-sm text-muted-foreground">
-              <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
-              <span>
-                {truncationNote}{" "}
-                <strong className="font-medium text-foreground">
-                  {formatIsoDate(comparison.cutoff)}
-                </strong>{" "}
-                bzw. am selben Tag des Vergleichszeitraums — sonst stünde ein angefangener
-                Zeitraum gegen einen vollen.
-              </span>
-            </p>
-          )}
-
           {filter.year !== null && (
             <p className="flex items-start gap-2 rounded-md bg-muted/50 p-3 text-sm text-muted-foreground">
               <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
@@ -306,10 +285,6 @@ export function ComparisonTab() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle>Kumulierter Verlauf</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Aufsummiert vom Beginn des Zeitraums. Der Abstand der Linien ist der
-                Vorsprung bzw. Rückstand zum jeweiligen Zeitpunkt.
-              </p>
             </CardHeader>
             <CardContent>
               <ComparisonLineChart
@@ -324,10 +299,6 @@ export function ComparisonTab() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle>Monat für Monat</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Einzelne Monate, nicht aufsummiert. Ein Betrag öffnet die zugehörigen
-                Dividendeneingänge.
-              </p>
             </CardHeader>
             <CardContent>
               <ComparisonBreakdown
@@ -347,11 +318,6 @@ export function ComparisonTab() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle>Nach Unternehmen</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Ein Monat lässt sich nicht in Monate zerlegen — die Aufschlüsselung erfolgt
-              deshalb nach Unternehmen. Wer nur auf einer Seite steht, hat diesmal oder
-              damals nicht gezahlt.
-            </p>
           </CardHeader>
           <CardContent>
             {comparison.securities.length === 0 ? (
