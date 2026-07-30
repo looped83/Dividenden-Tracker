@@ -61,8 +61,15 @@ Entwicklung; die Integrationstests selbst benötigen nur reines PostgreSQL (DECI
 Sie laufen bei jedem Push im CI-Job `db-integration`.
 
 ```bash
-npm run test:e2e     # Playwright (Chromium + WebKit), baut und liefert selbst aus
+npm run test:e2e      # öffentliche Routen: Rauchtests, axe, Telefonverhalten
+npm run test:e2e:app  # die fünf Kernabläufe hinter der Anmeldung
 ```
+
+Beide bauen die Anwendung selbst und liefern sie aus (Chromium + WebKit).
+`test:e2e:app` setzt zusätzlich die Testdatenbank neu auf und startet die
+Testbrücke (`tests/e2e/support/bridge.ts`), damit die angemeldeten Abläufe
+gegen echte Migrationen, echte RLS und die echten RPCs laufen — Aufbau und
+Grenzen in TEST_STRATEGY.md §8.1.
 
 ## Spezifikation
 

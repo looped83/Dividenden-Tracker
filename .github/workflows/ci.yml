@@ -92,6 +92,70 @@ jobs:
       - name: Rauchtests (TEST_STRATEGY.md §7)
         run: npm run test:e2e
 
+  # Die fuenf Kernablaeufe hinter der Anmeldung, gegen eine echte Datenbank
+  # (TEST_STRATEGY.md §8, docs/AUDIT_2026-07-29.md §4.1). Eigener Job, weil er
+  # als einziger E2E-Lauf PostgreSQL braucht — faellt er aus, bleiben die
+  # oeffentlichen Rauchtests trotzdem aussagekraeftig.
+  e2e-app:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install PostgreSQL client (psql)
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Playwright-Browser aus dem Cache
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Browser installieren
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium webkit
+
+      - name: Systembibliotheken sicherstellen
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium webkit
+
+      # Baut die Testdatenbank aus supabase/migrations auf und faehrt danach
+      # Bruecke, Build und Browsertests (siehe package.json).
+      - name: Angemeldete Ablaeufe (TEST_STRATEGY.md §8)
+        run: npm run test:e2e:app
+
+      - name: Testartefakte sichern
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-e2e-app
+          path: |
+            playwright-report
+            test-results
+          retention-days: 7
+
   db-integration:
     runs-on: ubuntu-latest
     services:

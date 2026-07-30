@@ -525,6 +525,43 @@ in keinem „bis heute"-Zeitraum sichtbar.
 
 ---
 
+## D-8-2: Angemeldete Browsertests laufen gegen die echte Datenbank, nicht gegen Attrappen
+
+**Status:** Accepted · **Scope:** Tooling / Testbarkeit
+
+Die Tests hinter der Anmeldung brauchen einen Server. Statt Supabase-Antworten
+im Browser zu fälschen, läuft die Suite gegen dieselbe PostgreSQL-Testdatenbank
+wie die Integrationstests: `tests/e2e/support/bridge.ts` übersetzt die
+HTTP-Aufrufe von supabase-js in SQL und führt sie mit `set local role
+authenticated` plus JWT-Claim-GUC aus — genau wie PostgREST. RLS, Constraints,
+Trigger und die RPCs sind damit im Browsertest real; nachgebaut ist nur der
+Transportweg.
+
+*Warum nicht abgefangene Antworten:* Der teuerste Fehler dieses Projekts war
+`restore_backup()`, das gegen das echte Schema **nie lauffähig** war, während 63
+Attrappen grünes Licht gaben (Audit §3.4/§3.5). Eine Fixture-Antwort hätte genau
+diese Fehlerklasse wieder unsichtbar gemacht.
+
+*Warum nicht echtes PostgREST/GoTrue:* Beide brauchen Docker im Testlauf. D-027
+hat diese Abhängigkeit bereits für die Integrationstests verworfen; die Brücke
+hält die Testumgebung bei „PostgreSQL und sonst nichts".
+
+*Die Leitplanke, die das trägt:* Was die Brücke nicht kennt — ein Filteroperator,
+ein Parameter, eine eingebettete Beziehung — beantwortet sie mit **501**. Ein
+Test wird dadurch rot statt auf ungefilterten Daten grün. Ohne diese Regel wäre
+die Brücke selbst die nächste Attrappe. Die Formate folgen PostgREST bewusst bis
+ins Detail (`to_jsonb`: `date` als Zeichenkette, `numeric` als JSON-Zahl) — sonst
+liefe der Test auf Daten, die es in der Anwendung nie gibt.
+
+*Grenze:* Passwörter prüft die Brücke nicht (die emulierte `auth.users` speichert
+keine); Registrierung und Passwort-Zurücksetzen bleiben deshalb außerhalb der
+automatisierten Läufe.
+
+*Beleg:* `tests/e2e/support/bridge.ts`, `playwright.app.config.ts`,
+TEST_STRATEGY.md §8.1, CI-Job `e2e-app`.
+
+---
+
 ## ADR-001: Historie vollständig im Client, Schwelle bei 10.000 Zahlungen
 
 **Status:** Accepted  
