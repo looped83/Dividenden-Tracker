@@ -62,7 +62,6 @@ import {
   StornoDialog,
   type PaymentSummaryData,
 } from "@/features/payments/dialogs";
-import { BulkBar } from "@/features/payments/BulkBar";
 import {
   compareToPreviousYear,
   type YearOverYearComparison,
@@ -86,7 +85,6 @@ export function PaymentsPage() {
   const [page, setPage] = React.useState(1);
   // Mehrfachauswahl (§14): früh deklariert, damit Filteränderungen die Auswahl
   // zurücksetzen können.
-  const [selected, setSelected] = React.useState<Set<string>>(new Set());
 
   // --- URL-Zustand (§2/§4): Filter, Suche und Sortierung bleiben nach Reload,
   // Browser-Zurück/-Vorwärts erhalten. ---
@@ -104,7 +102,6 @@ export function PaymentsPage() {
   const updateParams = React.useCallback(
     (updates: Record<string, string | null>) => {
       setPage(1);
-      setSelected(new Set());
       setSearchParams((prev) => {
         const params = new URLSearchParams(prev);
         for (const [key, value] of Object.entries(updates)) {
@@ -260,33 +257,6 @@ export function PaymentsPage() {
   const pageStart = (currentPage - 1) * PAGE_SIZE;
   const pageRows = rows.slice(pageStart, pageStart + PAGE_SIZE);
 
-  // --- Mehrfachauswahl (§14). ---
-  const toggleSelected = (id: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-  const selectPage = () => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      const allOnPage = pageRows.every((r) => next.has(r.id));
-      for (const r of pageRows) {
-        if (allOnPage) next.delete(r.id);
-        else next.add(r.id);
-      }
-      return next;
-    });
-  };
-  const clearSelection = () => {
-    setSelected(new Set());
-  };
-  const pageAllSelected =
-    pageRows.length > 0 && pageRows.every((r) => selected.has(r.id));
-  const selectedRows = rows.filter((r) => selected.has(r.id));
-
   // --- Einzelaktionen: Storno / Reaktivieren / Löschen. ---
   const archivePayment = useArchivePayment();
   const unarchivePayment = useUnarchivePayment();
@@ -346,11 +316,6 @@ export function PaymentsPage() {
     setDeleteError(null);
     try {
       await deletePayment.mutateAsync(deleteTarget.payment.id);
-      setSelected((prev) => {
-        const next = new Set(prev);
-        next.delete(deleteTarget.payment.id);
-        return next;
-      });
       setDeleteTarget(null);
       notify("Dividendeneingang dauerhaft gelöscht.");
     } catch (error) {
@@ -496,11 +461,6 @@ export function PaymentsPage() {
         </p>
       )}
 
-      {/* Massenaktionsleiste */}
-      {selected.size > 0 && (
-        <BulkBar selectedRows={selectedRows} onClear={clearSelection} />
-      )}
-
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Wird geladen …</p>
       ) : allPayments.length === 0 && !hasActiveFilters ? (
@@ -531,13 +491,6 @@ export function PaymentsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-10">
-                      <Checkbox
-                        aria-label="Diese Seite auswählen"
-                        checked={pageAllSelected}
-                        onChange={selectPage}
-                      />
-                    </TableHead>
                     <TableHead>Zahlungsdatum</TableHead>
                     <TableHead>Unternehmen</TableHead>
                     <TableHead>Depot</TableHead>
@@ -551,10 +504,6 @@ export function PaymentsPage() {
                       key={row.id}
                       row={row}
                       comparison={yearOverYear.get(row.id)}
-                      selected={selected.has(row.id)}
-                      onToggle={() => {
-                        toggleSelected(row.id);
-                      }}
                       listUrl={listUrl}
                       onStorno={() => {
                         setStornoReason("");
@@ -578,10 +527,6 @@ export function PaymentsPage() {
                   key={row.id}
                   row={row}
                   comparison={yearOverYear.get(row.id)}
-                  selected={selected.has(row.id)}
-                  onToggle={() => {
-                    toggleSelected(row.id);
-                  }}
                   listUrl={listUrl}
                   onStorno={() => {
                     setStornoReason("");
@@ -691,8 +636,6 @@ export function PaymentsPage() {
 interface RowActionProps {
   row: Row;
   comparison: YearOverYearComparison | undefined;
-  selected: boolean;
-  onToggle: () => void;
   listUrl: string;
   onStorno: () => void;
   onReactivate: () => void;
@@ -702,8 +645,6 @@ interface RowActionProps {
 function PaymentRow({
   row,
   comparison,
-  selected,
-  onToggle,
   listUrl,
   onStorno,
   onReactivate,
@@ -713,14 +654,7 @@ function PaymentRow({
   const shifted = effectiveDate !== payment.pay_date;
   const cancelled = Boolean(payment.archived_at);
   return (
-    <TableRow data-state={selected ? "selected" : undefined}>
-      <TableCell>
-        <Checkbox
-          aria-label={`${companyName} auswählen`}
-          checked={selected}
-          onChange={onToggle}
-        />
-      </TableCell>
+    <TableRow>
       <TableCell>
         {formatDate(effectiveDate)}
         {shifted && (
@@ -806,8 +740,6 @@ function PaymentRow({
 function PaymentCard({
   row,
   comparison,
-  selected,
-  onToggle,
   listUrl,
   onStorno,
   onReactivate,
@@ -818,12 +750,6 @@ function PaymentCard({
   return (
     <li className="rounded-lg border border-border p-3">
       <div className="flex items-start gap-3">
-        <Checkbox
-          className="mt-0.5"
-          aria-label={`${companyName} auswählen`}
-          checked={selected}
-          onChange={onToggle}
-        />
         {/* Zwei Zeilen statt vier: Betrag neben dem Namen, Aktionen neben dem
             Datum. Die Aktionen tragen dieselben Symbole und Namen wie in der
             Tabelle — beschriftet nur fuer Hilfsmittel, da drei

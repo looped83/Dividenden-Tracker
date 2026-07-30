@@ -157,18 +157,15 @@ describe("PaymentsPage", () => {
     expect(screen.getByText(/26–30 von 30/)).toBeInTheDocument();
   });
 
-  it("zeigt die Massenaktionen erst mit einer Auswahl", async () => {
-    const user = userEvent.setup();
+  it("bietet je Zeile Bearbeiten, Stornieren und Löschen — ohne Auswahl", () => {
     renderList([zahlung({ id: "a" })]);
 
-    expect(screen.queryByText(/ausgewählt/)).not.toBeInTheDocument();
-
-    await user.click(screen.getByLabelText("Apple Inc. auswählen"));
-
-    expect(screen.getByText("1 ausgewählt")).toBeInTheDocument();
-    // „Depot zuweisen" gibt es nur in der Massenaktionsleiste; „Dauerhaft
-    // loeschen" traegt auch die Karte.
-    expect(screen.getByRole("button", { name: "Depot zuweisen" })).toBeInTheDocument();
+    // Die Liste kennt keine Mehrfachauswahl mehr: Was zu tun ist, steht an
+    // der Zeile selbst.
+    expect(screen.queryByLabelText(/auswählen/)).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Bearbeiten" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Stornieren" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Dauerhaft löschen" })).toBeInTheDocument();
   });
 
   it("erklaert den leeren Zustand ohne Eingaenge", () => {

@@ -404,7 +404,7 @@ Alle Zahlungsabfragen liegen im Namespace `["payments"]` (Liste
 `["payments","list",includeArchived]`, Detail `["payments","detail",id]`,
 Dashboard `["payments","dashboard"]`, das die Statistik teilt). Jede
 datenverändernde Mutation (Anlegen, Bearbeiten, Storno, Reaktivierung,
-dauerhaftes Löschen, Massenaktion) ruft `invalidateAll` und invalidiert damit
+dauerhaftes Löschen) ruft `invalidateAll` und invalidiert damit
 `["payments"]` **und** `["duplicate-dismissals"]` — Liste, Detail, Dashboard,
 Statistik und Datenqualitätsansicht aktualisieren gemeinsam. Nach einer Löschung
 zeigt die Detailroute einen kontrollierten Nicht-gefunden-Zustand (kein

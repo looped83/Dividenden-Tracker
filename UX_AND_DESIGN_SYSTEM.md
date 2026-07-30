@@ -119,7 +119,7 @@ Eigene zusammengesetzte Komponenten (fachlich):
 | `ErrorState` / `WarningBanner` | Fehler-/Warnmuster mit konkreter Ursache und Aktion |
 | `ChartPanel` | Recharts-Wrapper: Titel, Zeitraum, Umschalter Diagramm ↔ Datentabelle (Accessibility), Drill-down bei Klick auf Segment |
 | `GoalProgress` | Zielfortschritt: Balken, „X von Y (Z %)", Kappung 100 % visuell |
-| `ToastProvider` / `useToast` | Kurze Rückmeldung nach abgeschlossenen Aktionen (Speichern, Storno, Reaktivieren, Massenaktionen): `role="status"`, `aria-live="polite"`, 4 s sichtbar, von Hand schließbar, über der Bottom-Navigation. Nur Bestätigungen und beiläufige Fehler — alles Entscheidungspflichtige bleibt Dialog oder Feldfehler |
+| `ToastProvider` / `useToast` | Kurze Rückmeldung nach abgeschlossenen Aktionen (Speichern, Storno, Reaktivieren): `role="status"`, `aria-live="polite"`, 4 s sichtbar, von Hand schließbar, über der Bottom-Navigation. Nur Bestätigungen und beiläufige Fehler — alles Entscheidungspflichtige bleibt Dialog oder Feldfehler |
 
 ## 3. Diagramm-Richtlinien
 
@@ -235,18 +235,17 @@ und den Ausschluss aus den Standardauswertungen. Der Löschdialog
 und Datenquelle, weist auf die dauerhafte Wirkung hin und nennt die Aktion
 „Dauerhaft löschen" (kein generisches „OK"); Alternative „Abbrechen".
 
-**Responsive.** Desktop: tabellarische Liste mit Filterleiste, sortierbaren
-Optionen und Mehrfachauswahl. Mobile: kompakte Karten statt gequetschter Tabelle
+**Responsive.** Desktop: tabellarische Liste mit Filterleiste und sortierbaren
+Optionen. Mobile: kompakte Karten statt gequetschter Tabelle
 — Betrag als hervorgehobene Kernaussage, Aktionen als Symbolschaltflächen mit
 denselben Symbolen und Namen wie in der Tabelle (`aria-label`, 44-px-Ziel);
 Filter/Sortierung als Selects. Drei beschriftete Schaltflächen verlängerten die
 Karte um zwei Zeilen, ohne mehr auszusagen.
 
-**Massenaktionsleiste.** Erscheint bei Auswahl, zeigt die Anzahl (Abbruch als
-Symbol in der Ecke), darunter die Aktionen mit Bestätigungsdialogen und einer
-Ergebniszusammenfassung mit ausgewiesenen Teilfehlern. Sie wirkt nur auf
-sichtbar Angehaktes; „alle gefilterten auswählen" gibt es bewusst nicht mehr —
-vierstellige Auswahlen hinter einem Klick sind kein sichtbarer Auswahlmodus.
+**Keine Mehrfachauswahl.** Die Liste hat weder Kästchen noch Aktionsleiste.
+Jede Zeile trägt ihre Aktionen selbst (Bearbeiten, Stornieren/Reaktivieren,
+Löschen) — das deckt den tatsächlichen Bedarf ab, ohne dass jede Zeile eine
+Spalte und jeder Klick einen Modus mitschleppt.
 
 **Datenqualitätsansicht.** Übersichtszahlen, Dublettenvergleich (nebeneinander,
 mit Kategorie-Badge) und Auffälligkeitsliste; Aktion „Keine Dublette" wird

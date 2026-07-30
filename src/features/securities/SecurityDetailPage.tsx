@@ -49,8 +49,8 @@ const RECENT_LIMIT = 10;
  * effektiven Datum (CALCULATION_RULES.md §10).
  *
  * Die vollstaendige Zahlungsliste wird **nicht** nachgebaut. Sie existiert
- * bereits unter `/eingaenge?security=…` samt Filtern, Sortierung, Storno und
- * Massenaktionen; hier stehen die juengsten Eingaenge und ein Verweis dorthin.
+ * bereits unter `/eingaenge?security=…` samt Filtern, Sortierung und Storno;
+ * hier stehen die juengsten Eingaenge und ein Verweis dorthin.
  */
 export function SecurityDetailPage() {
   const { id = "" } = useParams();
