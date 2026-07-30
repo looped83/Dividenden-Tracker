@@ -11,6 +11,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { ChartLegend } from "@/components/charts/ChartLegend";
 import { formatMoney, type Money } from "@/lib/money";
 import { formatPayments } from "../format";
 import { formatCountNumber } from "@/lib/utils/formatNumber";
@@ -434,28 +435,12 @@ export function ComparisonLineChart({
         </ResponsiveContainer>
       </div>
 
-      {/* Legende als Text mit Farbmarke — nicht als Farbe allein. */}
-      <ul className="flex flex-wrap gap-4 text-sm">
-        <li className="flex items-center gap-2">
-          <span
-            aria-hidden
-            className="h-0.5 w-6 shrink-0 rounded-full"
-            style={{ backgroundColor: "var(--chart-1)" }}
-          />
-          {currentLabel}
-        </li>
-        <li className="flex items-center gap-2">
-          <span
-            aria-hidden
-            className="h-0.5 w-6 shrink-0 rounded-full"
-            style={{
-              backgroundImage:
-                "repeating-linear-gradient(to right, var(--chart-2) 0 6px, transparent 6px 10px)",
-            }}
-          />
-          {referenceLabel}
-        </li>
-      </ul>
+      <ChartLegend
+        items={[
+          { label: currentLabel, color: "var(--chart-1)" },
+          { label: referenceLabel, color: "var(--chart-2)", dashed: true },
+        ]}
+      />
 
       <details className="text-sm">
         <summary className="cursor-pointer text-muted-foreground hover:text-foreground">

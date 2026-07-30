@@ -128,6 +128,10 @@ Eigene zusammengesetzte Komponenten (fachlich):
 - Ein Diagramm beantwortet eine Frage; keine Doppelachsen, keine 3D, kein Dekor.
 - Tooltip mit exakten Werten (`AmountText`); X-Achsen-Labels de-DE („Jan", „Feb", …).
 - Vorjahresvergleich als gepaarte Balken oder dezente Vorjahr-Schattenbalken.
+- Legende immer als `ChartLegend` **unter** dem Diagramm, mittig: eine Marke je Reihe
+  (Vergleichsreihe gestrichelt) plus Beschriftung. Nicht die Legende von Recharts — die sitzt
+  in der Zeichenfläche, nimmt ihr Platz weg und bringt die Schrift des SVG statt der der
+  Anwendung mit. Farbe trägt die Unterscheidung nie allein (WCAG 1.4.1).
 - Jede Grafik: Umschalter zur Datentabelle + textuelle Zusammenfassung (Screenreader).
 
 ## 4. Layouts je Gerät

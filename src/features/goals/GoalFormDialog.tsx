@@ -91,6 +91,7 @@ export function GoalFormDialog({
   const createGoal = useCreateGoal();
   const updateGoal = useUpdateGoal();
   const [submitError, setSubmitError] = React.useState<string | null>(null);
+  const contentRef = React.useRef<HTMLDivElement>(null);
 
   const {
     register,
@@ -153,7 +154,20 @@ export function GoalFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent
+        ref={contentRef}
+        onOpenAutoFocus={(event) => {
+          // Sonst setzt Radix den Fokus auf das erste Bedienelement — hier das
+          // Auswahlfeld „Zielart". Es liegt beim Bearbeiten genau unter dem
+          // Zeiger, der eben noch auf „Bearbeiten" stand, und klappte damit
+          // sofort auf: Man sah die Auswahlliste statt des Formulars. Der
+          // Dialog selbst nimmt den Fokus stattdessen entgegen; Titel und
+          // Beschreibung werden vorgelesen, und Tab fuehrt von oben durch das
+          // Formular.
+          event.preventDefault();
+          contentRef.current?.focus();
+        }}
+      >
         <DialogHeader>
           <DialogTitle>{isEdit ? "Ziel bearbeiten" : "Neues Ziel anlegen"}</DialogTitle>
           <DialogDescription>

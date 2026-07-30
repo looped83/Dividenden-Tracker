@@ -16,7 +16,6 @@ import {
   filterPayments,
   monthNameDe,
   refDateFromDate,
-  type ComparisonBase,
   type ComparisonMonthSide,
   type MonthComparison,
   type PeriodComparison,
@@ -28,7 +27,6 @@ import {
   describeComparison,
   entityArchived,
   entityName,
-  formatIsoDate,
   formatPayments,
   statisticsDrillHref,
 } from "./format";
@@ -262,12 +260,12 @@ export function ComparisonTab() {
         <StatCard
           label={comparison.current.label}
           value={<AmountText amount={comparison.current.net} />}
-          comparison={`${formatPayments(comparison.current.count)} · ${describeRange(comparison, "current")}`}
+          comparison={formatPayments(comparison.current.count)}
         />
         <StatCard
           label={comparison.reference.label}
           value={<AmountText amount={comparison.reference.net} />}
-          comparison={`${formatPayments(comparison.reference.count)} · ${describeRange(comparison, "reference")}`}
+          comparison={formatPayments(comparison.reference.count)}
         />
         <StatCard
           label="Veränderung"
@@ -335,15 +333,6 @@ export function ComparisonTab() {
       )}
     </div>
   );
-}
-
-/** „01.01.2026 – 29.07.2026". */
-function describeRange(
-  comparison: ComparisonBase,
-  side: "current" | "reference",
-): string {
-  const { range } = comparison[side];
-  return `${formatIsoDate(range.start)} – ${formatIsoDate(range.end)}`;
 }
 
 // ============================================================================

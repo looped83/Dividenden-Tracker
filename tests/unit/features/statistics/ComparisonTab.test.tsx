@@ -143,12 +143,14 @@ describe("ComparisonTab — gleicher Ausschnitt", () => {
     expect(screen.queryByText("1.200,00 €")).not.toBeInTheDocument();
   });
 
-  it("kappt beide Seiten am Stichtag und nennt den Zeitraum je Seite", () => {
+  it("nennt je Seite die Zahl der Eingaenge — ohne Datumsspanne", () => {
     renderTab();
-    // Die Kappung steht nicht als Satz da, sondern im Zeitraum beider Seiten:
-    // Beide enden am 29.07., keine reicht weiter.
-    expect(screen.getByText(/01\.01\.2026 – 29\.07\.2026/)).toBeInTheDocument();
-    expect(screen.getByText(/01\.01\.2025 – 29\.07\.2025/)).toBeInTheDocument();
+    // Die Spanne („01.01.2026 – 29.07.2026") stand frueher unter jedem Betrag
+    // und wiederholte damit in jeder Kachel, was die Ueberschrift schon sagt.
+    // Die Kappung selbst zeigen die Zahlen daneben (Test oben).
+    expect(screen.getByText("3 Zahlungen")).toBeInTheDocument();
+    expect(screen.getByText("2 Zahlungen")).toBeInTheDocument();
+    expect(screen.queryByText(/29\.07\.2026/)).not.toBeInTheDocument();
   });
 
   it("weist die Veraenderung gegenueber dem Vergleichsjahr aus", () => {
@@ -159,10 +161,8 @@ describe("ComparisonTab — gleicher Ausschnitt", () => {
 
   it("rechnet ungekappt, wenn beide Jahre abgeschlossen sind", () => {
     renderTab("?basis=2025&referenz=2024");
-    // Beide Seiten laufen über das volle Jahr — nichts wird gekappt.
-    expect(screen.getByText(/01\.01\.2025 – 31\.12\.2025/)).toBeInTheDocument();
-    expect(screen.getByText(/01\.01\.2024 – 31\.12\.2024/)).toBeInTheDocument();
-    // Volles Jahr 2025: 200 + 1.000 = 1.200 €.
+    // Volles Jahr 2025: 200 + 1.000 = 1.200 € — die 1.000 € aus September und
+    // Dezember zaehlen mit, weil hier nichts gekappt wird.
     expect(screen.getAllByText("1.200,00 €").length).toBeGreaterThan(0);
   });
 });
@@ -217,8 +217,11 @@ describe("ComparisonTab — Auswahl", () => {
   it("wechselt in den rollierenden Zwoelfmonatsvergleich", () => {
     renderTab("?modus=rollierend");
     expect(screen.getAllByText("Letzte 12 Monate").length).toBeGreaterThan(0);
-    expect(screen.getByText(/01\.08\.2025 – 29\.07\.2026/)).toBeInTheDocument();
-    expect(screen.getByText(/01\.08\.2024 – 29\.07\.2025/)).toBeInTheDocument();
+    // Aug 2025 – Jul 2026: 500 + 500 + 120 + 70 + 130 = 1.320 €; die zwoelf
+    // Monate davor tragen 100 + 100 = 200 €.
+    expect(screen.getAllByText("1.320,00 €").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("200,00 €").length).toBeGreaterThan(0);
+    expect(screen.getByText("gegenüber den 12 Monaten davor")).toBeInTheDocument();
   });
 
   it("uebernimmt ein anderes Vergleichsjahr aus der Auswahl", () => {
@@ -282,10 +285,19 @@ describe("ComparisonTab — Monat gegen Monat", () => {
   });
 
   it("kappt den laufenden Monat auf beiden Seiten", () => {
-    renderTab("?modus=monate&monat=7&basis=2026&referenz=2025");
-    // Ohne Kappung stuenden hier die vollen Juli-Summen beider Jahre.
-    expect(screen.getByText(/01\.07\.2026 – 29\.07\.2026/)).toBeInTheDocument();
-    expect(screen.getByText(/01\.07\.2025 – 29\.07\.2025/)).toBeInTheDocument();
+    // Je ein Eingang vor und einer nach dem 29.: Ohne Kappung stuenden in den
+    // Kacheln die vollen Juli-Summen — auch im abgeschlossenen Vorjahr, dessen
+    // Monat sonst mehr Tage umfasste als der laufende.
+    renderTab("?modus=monate&monat=7&basis=2026&referenz=2025", EMPTY_STATISTICS_FILTER, [
+      p("2026-07-10", "40.00"),
+      p("2026-07-31", "1000.00"),
+      p("2025-07-10", "30.00"),
+      p("2025-07-31", "900.00"),
+    ]);
+    expect(screen.getAllByText("40,00 €").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("30,00 €").length).toBeGreaterThan(0);
+    expect(screen.queryByText("1.040,00 €")).not.toBeInTheDocument();
+    expect(screen.queryByText("930,00 €")).not.toBeInTheDocument();
   });
 
   it("bietet im laufenden Jahr keinen Monat an, der noch nicht begonnen hat", () => {

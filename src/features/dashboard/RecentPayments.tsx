@@ -30,7 +30,11 @@ export function RecentPayments({ payments, securities, depots }: RecentPaymentsP
           Zeilen und damit sichtbar zu hoch. */}
       <CardHeader className="flex flex-row items-baseline justify-between gap-3 space-y-0 pb-5">
         <CardTitle>Letzte Dividendeneingänge</CardTitle>
-        <Button asChild variant="ghost" size="sm">
+        {/* `-mr-3` hebt den waagerechten Innenabstand des Knopfes auf: Erst
+            damit endet seine Beschriftung auf derselben Linie wie die Betraege
+            der Liste darunter, statt drei Millimeter davor. Die Flaeche zum
+            Antippen bleibt dabei vollstaendig erhalten. */}
+        <Button asChild variant="ghost" size="sm" className="-mr-3 shrink-0">
           <Link to="/eingaenge">Alle Dividenden</Link>
         </Button>
       </CardHeader>
