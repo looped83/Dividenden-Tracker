@@ -39,7 +39,7 @@ Abnahmekriterien. Tests der Phase laufen ab dann dauerhaft in CI.
 | 7 Backup, Export und Restore | ✅ umgesetzt — funktionsfähig **erst seit 2026-07-29**, siehe unten |
 | 8 Kontrollierte Numbers-Migration | ⏳ offen (Betriebsschritt, keine Entwicklung) |
 | 9 PWA und mobile Optimierung | ✅ umgesetzt |
-| 10 Accessibility, Performance, Produktionsaudit | ◐ teilweise — Audit durchgeführt (`docs/AUDIT_2026-07-29.md`), Restore-Probe und E2E hinter der Anmeldung offen |
+| 10 Accessibility, Performance, Produktionsaudit | ✅ umgesetzt — Audit (`docs/AUDIT_2026-07-29.md`), Restore-Probe (§4.3) und E2E hinter der Anmeldung inkl. axe (§4.1, CI-Job `e2e-app`) |
 
 ### Nachtrag zu Phase 7 (2026-07-29)
 
