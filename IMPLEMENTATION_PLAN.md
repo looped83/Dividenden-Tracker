@@ -400,7 +400,7 @@ Renditeberechnung, AI-Empfehlungen.
 Verwaltungsliste (Suche/Filter/Sortierung/Pagination als URL-Zustand),
 Detailansicht mit Importherkunft, manuelles Anlegen/Bearbeiten mit Notiz und
 Optimistic Concurrency, Stornieren/Reaktivieren, dauerhaftes Löschen (aktiv und
-storniert, D-6-1) mit atomarem Audit, Massenaktionen, Datenqualitätsansicht
+storniert, D-6-1) mit atomarem Audit, Datenqualitätsansicht
 (Dubletten + Auffälligkeiten, ohne Automatik). Migration 0020 (Löschpolicy +
 `duplicate_dismissals`). Unit-, Integrations- und RLS-Tests ergänzt; Docs
 aktualisiert. Bewusst nicht umgesetzt: alle unter „Nicht Bestandteil dieser

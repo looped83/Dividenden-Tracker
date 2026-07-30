@@ -259,9 +259,9 @@ Zwang als Schutz vor versehentlicher Löschung.
 kein UPDATE, kein anon-Zugriff (`revoke all`, dann minimale Grants). Der
 `enforce_user_id`-Trigger verhindert das Unterschieben einer fremden `user_id`.
 
-**Massenaktionen** laufen als einzelne, jeweils RLS-geprüfte Schreibzugriffe je
-Datensatz (kein globaler Bypass); fremde Datensätze/Unternehmen/Depots sind damit
-nicht erreichbar.
+Schreibzugriffe erfolgen ausschließlich je einzelnem Datensatz und jeweils
+RLS-geprüft (kein globaler Bypass, keine Massenaktionen); fremde
+Datensätze/Unternehmen/Depots sind damit nicht erreichbar.
 
 ---
 

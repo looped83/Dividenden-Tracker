@@ -293,13 +293,11 @@ Bearbeitung importierter Eingänge erhält die Importherkunft (Herkunftsfelder
 bleiben unveränderlich). Parallele Änderungen werden über Optimistic Concurrency
 erkannt.
 
-**Massenaktionen.** Depot/Unternehmen zuweisen, Stornieren, Reaktivieren,
-dauerhaft Löschen — ausschließlich auf sichtbar angehakten Eingängen (Kästchen
-je Zeile, Kopfkästchen für die Seite; die Auswahl bleibt beim Blättern
-erhalten), mit Bestätigung und ehrlicher Ergebniszusammenfassung. Angeboten
-wird nur, was die Auswahl hergibt: Zuweisen und Stornieren bei aktiven,
-Reaktivieren bei stornierten Eingängen, Löschen immer; bei gemischter Auswahl
-wirkt jede Aktion auf ihren Teil und der Dialog nennt die übersprungenen.
+**Keine Mehrfachauswahl.** Die Liste kennt keine Auswahlkästchen und keine
+Massenaktionen. Bearbeiten, Stornieren/Reaktivieren und dauerhaftes Löschen
+stehen je Eingang in seiner Zeile bzw. Karte — für einen persönlichen Bestand
+ist das der kürzere Weg, und die Liste bleibt frei von einer Spalte und einem
+Modus, die sonst dauerhaft mitliefen.
 
 **Datenqualität** (`/eingaenge/datenqualitaet`). Mögliche Dubletten (gewichtet:
 hohe Wahrscheinlichkeit vs. mögliche Dublette) und regelbasierte Auffälligkeiten

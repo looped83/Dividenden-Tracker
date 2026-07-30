@@ -25,7 +25,10 @@ export function RecentPayments({ payments, securities, depots }: RecentPaymentsP
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0 pb-5">
+      {/* `items-baseline` statt `items-center`: Bricht die Ueberschrift auf
+          schmalen Geraeten um, saesse der Knopf sonst auf der Mitte beider
+          Zeilen und damit sichtbar zu hoch. */}
+      <CardHeader className="flex flex-row items-baseline justify-between gap-3 space-y-0 pb-5">
         <CardTitle>Letzte Dividendeneingänge</CardTitle>
         <Button asChild variant="ghost" size="sm">
           <Link to="/eingaenge">Alle Dividenden</Link>
