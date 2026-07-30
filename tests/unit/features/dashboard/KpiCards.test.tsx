@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { EUR, Money } from "@/lib/money";
-import type { AnalyticsPayment } from "@/lib/statistics";
+import { withEffectiveDates, type AnalyticsPayment } from "@/lib/statistics";
 import type { RefDate } from "@/lib/statistics/dates";
 import { KpiCards } from "@/features/dashboard/KpiCards";
 
@@ -52,6 +52,17 @@ describe("KpiCards (Render-Smoke)", () => {
 
     renderCards("all", data);
     expect(screen.queryByText("Ø pro Monat")).not.toBeInTheDocument();
+  });
+
+  it("zählt eine vorgezogene Zahlung zum aktuellen Ausschüttungsmonat (§10)", () => {
+    // Plan Juli, Zahlung bereits am 25. Juni eingetroffen -> zählt zum Juli.
+    const payments = withEffectiveDates(
+      [payment("2026-06-25", "80.00", "sec-plan")],
+      new Map([["sec-plan", [7]]]),
+    );
+    renderCards(2026, payments);
+    expect(screen.getByText("Aktueller Monat (Juli 2026)")).toBeInTheDocument();
+    expect(screen.getAllByText(/80,00\s?€/).length).toBeGreaterThan(0);
   });
 
   it("zeigt die Anzahl ausschüttender Unternehmen im Zeitraum", () => {
