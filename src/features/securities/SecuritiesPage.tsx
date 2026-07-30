@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { EntitySelect, type EntityOption } from "@/components/domain/EntitySelect";
 import { FilterBar, FilterField } from "@/components/ui/filter-bar";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Textarea } from "@/components/ui/textarea";
@@ -303,11 +304,8 @@ export function SecuritiesPage() {
   // Auswahlwerte aus dem Bestand ableiten: nur was vorkommt, ist waehlbar.
   // Basis sind stets alle Unternehmen, damit die Auswahl nicht springt, wenn
   // "Archivierte anzeigen" umgeschaltet wird.
-  const depotGroups = React.useMemo(
-    () => ({
-      active: depots.filter((d) => !d.archived_at),
-      archived: depots.filter((d) => d.archived_at),
-    }),
+  const depotOptions = React.useMemo<EntityOption[]>(
+    () => depots.map((d) => ({ id: d.id, name: d.name, archived: !!d.archived_at })),
     [depots],
   );
 
@@ -414,33 +412,13 @@ export function SecuritiesPage() {
         </FilterField>
 
         <FilterField id="sec-depot" label="Standard-Depot">
-          <Select
+          <EntitySelect
             id="sec-depot"
+            options={depotOptions}
             value={depotFilter}
-            onChange={(event) => {
-              setDepotFilter(event.target.value);
-            }}
-          >
-            <option value="">Alle Depots</option>
-            {depotGroups.active.length > 0 && (
-              <optgroup label="Aktiv">
-                {depotGroups.active.map((depot) => (
-                  <option key={depot.id} value={depot.id}>
-                    {depot.name}
-                  </option>
-                ))}
-              </optgroup>
-            )}
-            {depotGroups.archived.length > 0 && (
-              <optgroup label="Archiviert">
-                {depotGroups.archived.map((depot) => (
-                  <option key={depot.id} value={depot.id}>
-                    {depot.name}
-                  </option>
-                ))}
-              </optgroup>
-            )}
-          </Select>
+            onChange={setDepotFilter}
+            allLabel="Alle Depots"
+          />
         </FilterField>
 
         <FilterField id="sec-quality" label="Datenqualität">
