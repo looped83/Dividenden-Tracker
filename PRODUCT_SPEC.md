@@ -180,7 +180,15 @@ Keine zukünftigen Zahlungen, keine erwarteten Dividenden, keine Kurse.
 
 ### 5.5 Statistiken
 
-Sechs Unterbereiche: Übersicht, Jahre, Monate, **Vergleich**, Unternehmen, Depots.
+Sieben Unterbereiche: Übersicht, Jahre, Monate, **Breakdown**, **Vergleich**, Unternehmen,
+Depots.
+
+Der Breakdown zeigt alle Jahre und Monate in **einer** Tabelle: eine Zeile je Kalendermonat, eine
+Spalte je Kalenderjahr, dazu Jahressummen, den Durchschnitt der abgeschlossenen Jahre und die
+Veränderung zum Vorjahr. Bewusst rein zahlengetrieben und ohne Diagramm — hier geht es um den
+Abgleich Zahl gegen Zahl (Januar 2024 gegen Januar 2025 gegen Januar 2026), nicht um die Form
+einer Kurve. Umschaltbar zwischen Monatssumme, Veränderung zum Vorjahresmonat und aufgelaufener
+Jahressumme (CALCULATION_RULES.md §11.12).
 
 Der Vergleich stellt zwei Zeiträume gegenüber: Jahr gegen Jahr, Monat gegen denselben Monat des
 Vorjahres (aufgeschlüsselt nach Unternehmen) oder die letzten 12 Monate gegen die 12 davor. Ist eines der Jahre das laufende, endet der Vergleich auf **beiden** Seiten am selben

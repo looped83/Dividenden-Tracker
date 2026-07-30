@@ -58,6 +58,9 @@ const YearsTab = React.lazy(async () => ({
 const MonthsTab = React.lazy(async () => ({
   default: (await routeChunks.statisticsMonths()).MonthsTab,
 }));
+const BreakdownTab = React.lazy(async () => ({
+  default: (await routeChunks.statisticsBreakdown()).BreakdownTab,
+}));
 const ComparisonTab = React.lazy(async () => ({
   default: (await routeChunks.statisticsComparison()).ComparisonTab,
 }));
@@ -133,6 +136,7 @@ export const router = createHashRouter([
           { index: true, element: <OverviewTab /> },
           { path: "jahre", element: <YearsTab /> },
           { path: "monate", element: <MonthsTab /> },
+          { path: "breakdown", element: <BreakdownTab /> },
           { path: "vergleich", element: <ComparisonTab /> },
           { path: "unternehmen", element: <CompaniesTab /> },
           { path: "depots", element: <DepotsTab /> },

@@ -34,10 +34,13 @@ function StatisticsSkeleton() {
 export function StatisticsPage() {
   const data = useStatisticsData();
   const { filter, setFilter } = useStatisticsFilter();
-  // Der Vergleichsbereich waehlt seine Zeitraeume selbst; ein Jahresregler
-  // daneben waere dort wirkungslos (CALCULATION_RULES.md §11.10). Die uebrigen
-  // Filter — Unternehmen, Depot, Quelle, Art — wirken auch dort.
+  // Zwei Unterbereiche kommen ohne Jahresregler aus: Der Vergleich waehlt seine
+  // Zeitraeume selbst (§11.10), der Breakdown stellt grundsaetzlich alle Jahre
+  // gegenueber (§11.12) — ein Jahresfilter liesse dort eine einzige Spalte
+  // uebrig. Ein wirkungsloses Bedienelement ist schlimmer als keines. Die
+  // uebrigen Filter — Unternehmen, Depot, Quelle, Art — wirken auch dort.
   const isComparison = useMatch("/statistiken/vergleich") !== null;
+  const isBreakdown = useMatch("/statistiken/breakdown") !== null;
 
   const years = React.useMemo(() => availableYears(data.payments), [data.payments]);
   const filteredPayments = React.useMemo(
@@ -109,7 +112,7 @@ export function StatisticsPage() {
         years={years}
         securities={data.securities}
         depots={data.depots}
-        showYear={!isComparison}
+        showYear={!isComparison && !isBreakdown}
       />
 
       {/* Eigener Ladezustand: Beim Reiterwechsel bleiben Kopfzeile, Reiter und
