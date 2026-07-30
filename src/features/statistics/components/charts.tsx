@@ -208,7 +208,9 @@ interface YearSparklineProps {
  * als Text. Fuer sehende Nutzer zeigt der Titel je Balken Jahr und Betrag.
  */
 export function YearSparkline({ points, maxValue }: YearSparklineProps) {
-  if (points.length === 0) {
+  // Eine Reihe aus lauter Nullen ist keine Entwicklung, sondern eine Leere —
+  // acht Stummel zu zeichnen waere Rauschen in einer ohnehin dichten Tabelle.
+  if (points.length === 0 || points.every((point) => point.money.isZero())) {
     return <span className="text-muted-foreground">—</span>;
   }
   const srText = points

@@ -80,17 +80,21 @@ export function BreakdownTab() {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader className="pb-3">
-          <CardTitle>Jahre × Monate</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Eine Zeile je Jahr, neueste zuerst — eine Spalte je Monat. Jeder Betrag öffnet
-            die zugehörigen Dividendeneingänge.
-          </p>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <label className="block max-w-xs space-y-1.5">
-            <span className="text-sm font-medium">Ansicht</span>
+        {/* Die Ansichtswahl steht in der Kopfzeile rechts: Sie gehoert zur
+            Kachel, nicht zu ihrem Inhalt, und braucht dort keine eigene
+            Beschriftung — die Auswahl benennt sich selbst („Summe je Monat").
+            Fuer Hilfsmittel traegt sie den Namen als `aria-label`. */}
+        <CardHeader className="gap-3 pb-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="space-y-1.5">
+            <CardTitle>Jahre × Monate</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Eine Zeile je Jahr, neueste zuerst — eine Spalte je Monat. Jeder Betrag
+              öffnet die zugehörigen Dividendeneingänge.
+            </p>
+          </div>
+          <div className="sm:w-56 sm:shrink-0">
             <Select
+              aria-label="Ansicht"
               value={view}
               onChange={(event) => {
                 setView(event.target.value as BreakdownView);
@@ -102,8 +106,9 @@ export function BreakdownTab() {
                 </option>
               ))}
             </Select>
-          </label>
-
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
           {filter.year !== null && (
             <p className="flex items-start gap-2 rounded-md bg-muted/50 p-3 text-sm text-muted-foreground">
               <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
@@ -117,36 +122,17 @@ export function BreakdownTab() {
 
           <BreakdownMatrixTable matrix={matrix} view={view} filter={filter} />
 
-          <ul className="space-y-1 text-sm text-muted-foreground">
-            {runningYear && (
-              <li>
-                <span aria-hidden>* </span>
-                {runningYear.year} läuft noch — gerechnet bis{" "}
-                {formatIsoDate(matrix.cutoff)}. Der Vorjahresvergleich endet auf beiden
-                Seiten an diesem Tag, damit kein angefangener Zeitraum gegen einen vollen
-                steht.
-              </li>
-            )}
-            {view === "veraenderung" && (
-              <li>
-                Verglichen wird jeder Monat mit demselben Monat des Vorjahres. Fehlt das
-                Vorjahr in den Daten, steht ein Gedankenstrich — nie eine gerechnete
-                Prozentzahl ohne Grundlage. Randspalte und Fußzeile zeigen weiterhin
-                Summen.
-              </li>
-            )}
-            {view === "kumuliert" && (
-              <li>
-                Jede Zelle ist die Summe seit Jahresbeginn. Randspalte und Fußzeile zeigen
-                die Summen des ganzen Jahres bzw. Monats.
-              </li>
-            )}
-            <li>
-              Monate, die noch nicht erreicht sind, bleiben leer. Ein Monat ohne Zahlungen
-              steht als <span aria-hidden>„—"</span>
-              <span className="sr-only">Gedankenstrich</span>.
-            </li>
-          </ul>
+          {/* Einziger Hinweis unter der Tabelle: das Sternchen am laufenden
+              Jahr. Alles Weitere steht dort, wo es gebraucht wird — als Titel
+              und Screenreader-Text an der jeweiligen Zelle. */}
+          {runningYear && (
+            <p className="text-sm text-muted-foreground">
+              <span aria-hidden>* </span>
+              {`${String(runningYear.year)} läuft noch — gerechnet bis ${formatIsoDate(
+                matrix.cutoff,
+              )}.`}
+            </p>
+          )}
         </CardContent>
       </Card>
     </div>

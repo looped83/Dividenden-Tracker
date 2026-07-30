@@ -3,6 +3,7 @@ import { EUR, Money } from "@/lib/money";
 import type { AnalyticsPayment, PaymentSource, PaymentType } from "@/lib/statistics";
 import {
   activeMonthCount,
+  alignYearBuckets,
   averagePayment,
   averagePerActiveMonth,
   bestYear,
@@ -242,6 +243,33 @@ describe("yearStatistics (§11.3)", () => {
     // Kein 2023 in der Datenbasis → kein Vergleich
     expect(y2024?.change.kind).toBe("no-comparison");
     expect(y2024?.priorYearNet).toBeNull();
+  });
+});
+
+describe("alignYearBuckets (§11.4)", () => {
+  it("legt eine Jahresreihe auf eine feste Achse und füllt Lücken mit 0 €", () => {
+    const stats = monthAcrossYearsStatistics([
+      p("2023-05-10", "100"),
+      p("2025-05-10", "200"),
+    ]);
+    const mai = stats.find((s) => s.month === 5);
+    expect(mai?.perYear.map((b) => b.year)).toEqual([2023, 2025]);
+
+    const achse = alignYearBuckets(mai?.perYear ?? [], [2023, 2024, 2025]);
+    expect(achse.map((b) => b.year)).toEqual([2023, 2024, 2025]);
+    expect(achse.map((b) => b.net.toStringValue())).toEqual(["100.00", "0.00", "200.00"]);
+    expect(achse.map((b) => b.count)).toEqual([1, 0, 1]);
+  });
+
+  it("lässt Jahre außerhalb der Achse weg", () => {
+    const stats = monthAcrossYearsStatistics([
+      p("2023-05-10", "100"),
+      p("2025-05-10", "200"),
+    ]);
+    const mai = stats.find((s) => s.month === 5);
+    const achse = alignYearBuckets(mai?.perYear ?? [], [2025]);
+    expect(achse.map((b) => b.year)).toEqual([2025]);
+    expect(achse[0].net.toStringValue()).toBe("200.00");
   });
 });
 

@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
   aggregate,
+  alignYearBuckets,
+  availableYears,
   securityStatistics,
   sortSecurityStatistics,
   type SecurityStatistics,
@@ -58,6 +60,11 @@ export function CompaniesTab() {
         })),
     [stats, labelOf, securities, filter],
   );
+
+  // Gemeinsame Jahresachse fuer alle Zeilen: Ohne sie zeigte jede Zeile nur
+  // ihre eigenen Jahre, und der dritte Balken der einen waere ein anderes Jahr
+  // als der dritte der naechsten.
+  const years = React.useMemo(() => [...availableYears(payments)].reverse(), [payments]);
 
   const sparkMax = React.useMemo(() => {
     let max = 0;
@@ -151,22 +158,28 @@ export function CompaniesTab() {
         compare: (a, b) => (a.lastPayDate ?? "").localeCompare(b.lastPayDate ?? ""),
         render: (row) => dateCell(row.lastPayDate),
       },
-      {
-        key: "development",
-        header: "Entwicklung",
-        render: (row) => (
-          <YearSparkline
-            points={row.perYear.map((bucket) => ({
-              label: String(bucket.year),
-              value: bucket.net.toChartNumber(),
-              money: bucket.net,
-            }))}
-            maxValue={sparkMax}
-          />
-        ),
-      },
+      // Ein einziges Jahr ergibt einen einzelnen Balken — das ist keine
+      // Entwicklung. Bei gesetztem Jahresfilter entfaellt die Spalte deshalb.
+      ...(years.length > 1
+        ? [
+            {
+              key: "development",
+              header: `Entwicklung ${String(years[0])}–${String(years[years.length - 1])}`,
+              render: (row: SecurityStatistics) => (
+                <YearSparkline
+                  points={alignYearBuckets(row.perYear, years).map((bucket) => ({
+                    label: String(bucket.year),
+                    value: bucket.net.toChartNumber(),
+                    money: bucket.net,
+                  }))}
+                  maxValue={sparkMax}
+                />
+              ),
+            },
+          ]
+        : []),
     ],
-    [labelOf, securities, sparkMax],
+    [labelOf, securities, sparkMax, years],
   );
 
   if (stats.length === 0) {
