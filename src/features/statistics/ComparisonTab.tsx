@@ -272,11 +272,7 @@ export function ComparisonTab() {
         <StatCard
           label="Veränderung"
           value={<span className={changeTone}>{change.text.trim()}</span>}
-          comparison={`${referenceCaption} · ${
-            comparison.truncated
-              ? "gleicher Ausschnitt auf beiden Seiten"
-              : "vollständige Zeiträume"
-          }`}
+          comparison={referenceCaption}
         />
       </div>
 

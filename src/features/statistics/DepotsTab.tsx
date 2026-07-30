@@ -21,11 +21,15 @@ import {
   statisticsDrillHref,
 } from "./format";
 import { CategoryBarChart } from "./components/charts";
-import { StatTable, type StatColumn } from "./components/StatTable";
+import { StatSearch, StatTable, type StatColumn } from "./components/StatTable";
 
 export function DepotsTab() {
   const { payments, depots, filter } = useStatisticsContext();
   const navigate = useNavigate();
+
+  // Die Suche liegt hier statt in der Tabelle: Auf breiten Schirmen steht sie
+  // in der Kopfzeile der Kachel, neben der Ueberschrift.
+  const [query, setQuery] = React.useState("");
 
   const stats = React.useMemo(() => depotStatistics(payments), [payments]);
   const total = React.useMemo(() => aggregate(payments).net, [payments]);
@@ -146,8 +150,11 @@ export function DepotsTab() {
       </Card>
 
       <Card>
-        <CardHeader className="pb-3">
+        <CardHeader className="gap-3 pb-3 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle>Depotstatistik</CardTitle>
+          <div className="sm:w-64 sm:shrink-0">
+            <StatSearch value={query} onChange={setQuery} placeholder="Depot suchen …" />
+          </div>
         </CardHeader>
         <CardContent>
           <StatTable
@@ -156,7 +163,7 @@ export function DepotsTab() {
             getRowKey={(row) => row.depotId}
             caption="Kennzahlen je Depot"
             searchOf={(row) => entityName(depots, row.depotId)}
-            searchPlaceholder="Depot suchen …"
+            query={query}
             initialSort={{ key: "net", direction: "desc" }}
             onRowClick={(row) =>
               void navigate(statisticsDrillHref(filter, { depotId: row.depotId }))

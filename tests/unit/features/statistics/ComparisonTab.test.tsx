@@ -143,16 +143,10 @@ describe("ComparisonTab — gleicher Ausschnitt", () => {
     expect(screen.queryByText("1.200,00 €")).not.toBeInTheDocument();
   });
 
-  it("kappt beide Seiten am Stichtag und weist den Ausschnitt aus", () => {
+  it("kappt beide Seiten am Stichtag und nennt den Zeitraum je Seite", () => {
     renderTab();
-    // Der Stichtag steht nicht als Satz da, sondern in den Zeiträumen beider
-    // Seiten — und in der Kennzahl, die die Veränderung trägt.
-    expect(screen.getByText(/29\.07\.2026/)).toBeInTheDocument();
-    expect(screen.getByText(/gleicher Ausschnitt auf beiden Seiten/)).toBeInTheDocument();
-  });
-
-  it("nennt zu jeder Seite ihren Zeitraum", () => {
-    renderTab();
+    // Die Kappung steht nicht als Satz da, sondern im Zeitraum beider Seiten:
+    // Beide enden am 29.07., keine reicht weiter.
     expect(screen.getByText(/01\.01\.2026 – 29\.07\.2026/)).toBeInTheDocument();
     expect(screen.getByText(/01\.01\.2025 – 29\.07\.2025/)).toBeInTheDocument();
   });
@@ -160,12 +154,14 @@ describe("ComparisonTab — gleicher Ausschnitt", () => {
   it("weist die Veraenderung gegenueber dem Vergleichsjahr aus", () => {
     renderTab();
     expect(screen.getByText("+120,00 € · +60,0 %")).toBeInTheDocument();
-    expect(screen.getByText(/gegenüber 2025 · gleicher Ausschnitt/)).toBeInTheDocument();
+    expect(screen.getByText("gegenüber 2025")).toBeInTheDocument();
   });
 
   it("rechnet ungekappt, wenn beide Jahre abgeschlossen sind", () => {
     renderTab("?basis=2025&referenz=2024");
-    expect(screen.getByText(/vollständige Zeiträume/)).toBeInTheDocument();
+    // Beide Seiten laufen über das volle Jahr — nichts wird gekappt.
+    expect(screen.getByText(/01\.01\.2025 – 31\.12\.2025/)).toBeInTheDocument();
+    expect(screen.getByText(/01\.01\.2024 – 31\.12\.2024/)).toBeInTheDocument();
     // Volles Jahr 2025: 200 + 1.000 = 1.200 €.
     expect(screen.getAllByText("1.200,00 €").length).toBeGreaterThan(0);
   });
@@ -230,7 +226,7 @@ describe("ComparisonTab — Auswahl", () => {
     fireEvent.change(screen.getByLabelText("verglichen mit"), {
       target: { value: "2024" },
     });
-    expect(screen.getByText(/^gegenüber 2024 ·/)).toBeInTheDocument();
+    expect(screen.getByText("gegenüber 2024")).toBeInTheDocument();
   });
 
   it("bietet das laufende Jahr nicht als sein eigenes Vergleichsjahr an", () => {

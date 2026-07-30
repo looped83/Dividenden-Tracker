@@ -31,6 +31,12 @@ interface StatTableProps<T> {
   /** Text, gegen den die Suche (case-insensitiv, Teilstring) prueft. */
   searchOf?: (row: T) => string;
   searchPlaceholder?: string;
+  /**
+   * Von aussen gesteuerte Suche. Ist sie gesetzt, filtert die Tabelle danach
+   * und zeichnet **kein** eigenes Feld — das steht dann dort, wo es der
+   * Aufrufer hinsetzt (z. B. in der Kopfzeile der Kachel, {@link StatSearch}).
+   */
+  query?: string;
   initialSort?: { key: string; direction: SortDirection };
   pageSize?: number;
   caption: string;
@@ -47,12 +53,47 @@ interface StatTableProps<T> {
  * langen Listen (z. B. >500 Unternehmen) begrenzt die Paginierung die Anzahl
  * gleichzeitig gerenderter Zeilen.
  */
+/**
+ * Suchfeld der Statistiktabellen. Eigenstaendig, damit es auch ausserhalb der
+ * Tabelle stehen kann — auf breiten Schirmen sitzt es in der Kopfzeile der
+ * Kachel, wo Ueberschrift und Werkzeug in einer Zeile liegen.
+ */
+export function StatSearch({
+  value,
+  onChange,
+  placeholder = "Suchen …",
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+}) {
+  return (
+    <div className="relative">
+      <Search
+        className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+        aria-hidden
+      />
+      <Input
+        type="search"
+        className="pl-9"
+        placeholder={placeholder}
+        value={value}
+        aria-label={placeholder}
+        onChange={(event) => {
+          onChange(event.target.value);
+        }}
+      />
+    </div>
+  );
+}
+
 export function StatTable<T>({
   rows,
   columns,
   getRowKey,
   searchOf,
   searchPlaceholder = "Suchen …",
+  query: externalQuery,
   initialSort,
   pageSize = 25,
   caption,
@@ -60,12 +101,25 @@ export function StatTable<T>({
   onRowClick,
   rowLabel,
 }: StatTableProps<T>) {
-  const [query, setQuery] = React.useState("");
+  const [ownQuery, setOwnQuery] = React.useState("");
   const [sort, setSort] = React.useState<{
     key: string;
     direction: SortDirection;
   } | null>(initialSort ?? null);
   const [page, setPage] = React.useState(1);
+
+  const controlled = externalQuery !== undefined;
+  const query = externalQuery ?? ownQuery;
+
+  // Eine neue Suche beginnt auf Seite 1 — sonst zeigte die Tabelle die dritte
+  // Seite eines Ergebnisses, das nur noch zwei hat. Angepasst waehrend des
+  // Renderns (React-Muster „state aus Props ableiten"), nicht im Effekt: Ein
+  // Effekt zeichnete erst die falsche Seite und korrigierte danach.
+  const [lastQuery, setLastQuery] = React.useState(query);
+  if (query !== lastQuery) {
+    setLastQuery(query);
+    setPage(1);
+  }
 
   const columnByKey = React.useMemo(() => {
     const map = new Map<string, StatColumn<T>>();
@@ -104,22 +158,12 @@ export function StatTable<T>({
 
   return (
     <div className="space-y-3">
-      {searchOf && (
-        <div className="relative max-w-xs">
-          <Search
-            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-            aria-hidden
-          />
-          <Input
-            type="search"
-            className="pl-9"
-            placeholder={searchPlaceholder}
+      {searchOf && !controlled && (
+        <div className="max-w-xs">
+          <StatSearch
             value={query}
-            aria-label={searchPlaceholder}
-            onChange={(event) => {
-              setQuery(event.target.value);
-              setPage(1);
-            }}
+            onChange={setOwnQuery}
+            placeholder={searchPlaceholder}
           />
         </div>
       )}
