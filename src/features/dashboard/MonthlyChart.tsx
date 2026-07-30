@@ -4,7 +4,6 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Legend,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -12,6 +11,7 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ChartLegend } from "@/components/charts/ChartLegend";
 import { EUR, Money, formatMoney } from "@/lib/money";
 import {
   comparePeriods,
@@ -272,7 +272,6 @@ export function MonthlyChart({ payments, selection, today }: MonthlyChartProps) 
                       }
                       cursor={{ fill: "var(--muted)" }}
                     />
-                    <Legend />
                     <Bar
                       dataKey="prior"
                       name={priorYearLabel}
@@ -300,6 +299,17 @@ export function MonthlyChart({ payments, selection, today }: MonthlyChartProps) 
                 )}
               </ResponsiveContainer>
             </div>
+
+            {/* Nur der Jahresvergleich hat zwei Reihen; die reine Jahresreihe
+                braucht keine Legende. */}
+            {!isAll && (
+              <ChartLegend
+                items={[
+                  { label: priorYearLabel, color: "var(--chart-2)" },
+                  { label: selectedYearLabel, color: "var(--chart-1)" },
+                ]}
+              />
+            )}
 
             <details className="text-sm">
               <summary className="cursor-pointer text-muted-foreground hover:text-foreground">

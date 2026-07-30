@@ -427,9 +427,10 @@ Gegenüberstellung zweier Zeiträume im Unterbereich `/statistiken/vergleich`.
 - **Keine Prognose, keine Hochrechnung** (PRODUCT_SPEC.md Grundsatz 8): Es werden ausschließlich
   vorhandene Zahlungen summiert; ein Teiljahr wird nicht auf ein volles Jahr skaliert.
 - **Darstellung.** Der Stichtag steht nicht als eigener Hinweis über der Auswertung, sondern
-  dort, wo er wirkt: im Zeitraum jeder Seite (`01.01.2026 – 29.07.2026`) und in der Kennzahl
-  „Veränderung" („gleicher Ausschnitt auf beiden Seiten" bzw. „vollständige Zeiträume").
-  Die Aufschlüsselung (Monate bzw. Unternehmen) ist ab `md` eine Tabelle,
+  dort, wo er wirkt: am angeschnittenen Monat der Aufschlüsselung (`420,00 € *` samt Fußnote
+  „nur bis zum Stichtag gerechnet"), der aus demselben Grund nicht verlinkt ist. Die Kennzahlen
+  nennen je Seite nur Summe und Anzahl — die Datumsspanne darunter wiederholte, was die
+  Überschrift bereits sagt. Die Aufschlüsselung (Monate bzw. Unternehmen) ist ab `md` eine Tabelle,
   darunter eine Liste mit denselben Zahlen untereinander. Monate ohne Zahlungen auf beiden
   Seiten stehen dort einzeilig als „keine Zahlungen" — drei Zeilen Gedankenstriche wären
   Rauschen.

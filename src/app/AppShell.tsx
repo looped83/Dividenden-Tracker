@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Outlet } from "react-router";
+import { Outlet, ScrollRestoration } from "react-router";
 import { Sidebar, CompactSidebar } from "@/components/layout/Sidebar";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -23,6 +23,15 @@ export function AppShell() {
         Zum Inhalt springen
       </a>
       <RouteAnnouncer contentId="inhalt" />
+      {/* Ohne dies behielt die Seite ihre Bildlaufposition ueber die
+          Navigation hinweg: Wer weit unten in der Unternehmensliste eines
+          anklickte, landete auf der Detailseite mitten im Inhalt.
+          `getKey` auf den Pfad statt auf den Standardwert (die Id des
+          Eintrags in der Chronik): Filter, Sortierung und Seitenzahl stehen
+          in der Adresse: Jeder Filterklick waere sonst ein neuer Ort und
+          risse die Liste nach oben. So zaehlt nur der Wechsel des Bereichs —
+          und der Weg zurueck landet wieder dort, wo man aufgehoert hat. */}
+      <ScrollRestoration getKey={(location) => location.pathname} />
       <ErrorBoundary>
         <div className="flex min-h-dvh flex-col bg-background text-foreground md:flex-row">
           <Sidebar />

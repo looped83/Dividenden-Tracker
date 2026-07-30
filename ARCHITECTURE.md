@@ -100,6 +100,11 @@ manuelle Review (persönliches Projekt, Nachvollziehbarkeit vor Bequemlichkeit).
   (typescript-eslint#10940).
 - **K-2 React Router 8 im Library-Modus:** Kein Framework-/SSR-Modus. Die App ist eine reine
   SPA hinter Auth; SSR brächte Komplexität ohne Nutzen und kollidiert mit dem PWA-Modell.
+  Die Bildlaufposition übernimmt `<ScrollRestoration>` in der App-Shell, mit `getKey` auf den
+  **Pfad** statt auf den Chronikeintrag: Filter, Sortierung und Seitenzahl stehen in der
+  Adresse, jeder Filterklick wäre sonst ein neuer Ort und risse die Liste nach oben. So
+  beginnt nur der Wechsel des Bereichs oben, und der Weg zurück landet dort, wo man aufgehört
+  hat (`tests/e2e/app/navigation.spec.ts`).
 - **K-3 Zod 4 + @hookform/resolvers ≥ 5:** Resolver-Version 5.x ist die erste mit stabiler
   Zod-4-Unterstützung; ältere Anleitungen (Zod 3) sind nicht 1:1 übertragbar.
 - **K-4 `exceljs` statt SheetJS:** Das npm-Paket `xlsx` ist bei 0.18.5 eingefroren und enthält
