@@ -10,9 +10,9 @@ reines PostgreSQL 16 für Integrations-, RLS- und Restore-Tests (DECISIONS.md D-
 | Stufe | Umfang | Läuft in CI |
 |---|---|---|
 | Lint + Typecheck + Format | ESLint inkl. Geld-Verbotsliste, `tsc --noEmit` strict | ✅ Job `quality` |
-| Unit (Vitest) | 551 Tests / 61 Dateien | ✅ Job `quality` |
+| Unit (Vitest) | 555 Tests / 61 Dateien | ✅ Job `quality` |
 | Integration (PostgreSQL 16) | 98 Tests: Constraints, Trigger, RLS, Import, Statistik, Ziele, Restore | ✅ Job `db-integration` |
-| E2E (Playwright) | 26 Tests: Rauchtests + axe, Chromium und WebKit | ✅ Job `e2e-smoke` |
+| E2E (Playwright) | 33 Tests: Rauchtests, axe und Telefonverhalten (Schriftgröße der Felder, kein seitlicher Überlauf, Pinch-Zoom bleibt erlaubt) | ✅ Job `e2e-smoke` |
 
 **Bekannte Lücken** — bewusst benannt statt stillschweigend hingenommen:
 

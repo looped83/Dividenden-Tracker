@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Outlet, Route, Routes } from "react-router";
 import { EUR, Money } from "@/lib/money";
@@ -32,6 +32,29 @@ beforeAll(() => {
 });
 afterAll(() => {
   vi.useRealTimers();
+});
+
+/**
+ * Schaltet zwischen Tabelle (ab `md`) und Liste um. `useMediaQuery` liest
+ * `matchMedia` bei jedem Rendern, ein Austausch vor `render` genuegt also.
+ */
+function setViewport(breite: "breit" | "schmal") {
+  const matches = breite === "breit";
+  window.matchMedia = (query: string): MediaQueryList => ({
+    matches,
+    media: query,
+    onchange: null,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+    addListener: () => undefined,
+    removeListener: () => undefined,
+    dispatchEvent: () => false,
+  });
+}
+
+// Standard ist die breite Darstellung; die Telefonansicht wird eigens geprueft.
+beforeEach(() => {
+  setViewport("breit");
 });
 
 let seq = 0;
@@ -98,6 +121,16 @@ function renderTab(
 /** Die Zeile eines Monats aus der Monatstabelle. */
 function monthRow(name: string): HTMLElement {
   return screen.getByRole("row", { name: new RegExp(`^${name}`) });
+}
+
+/**
+ * Die Listenzeile zu einer Beschriftung (schmale Darstellung). `li` uebernimmt
+ * seinen Namen nicht aus dem Inhalt, es gibt also keine Rollenabfrage dafuer.
+ */
+function card(label: string): HTMLElement {
+  const zeile = screen.getByText(label).closest("li");
+  if (!zeile) throw new Error(`Keine Listenzeile fuer „${label}".`);
+  return zeile;
 }
 
 describe("ComparisonTab — gleicher Ausschnitt", () => {
@@ -228,8 +261,9 @@ describe("ComparisonTab — Auswahl", () => {
 describe("ComparisonTab — Monat gegen Monat", () => {
   it("stellt denselben Kalendermonat zweier Jahre gegenueber", () => {
     renderTab("?modus=monate&monat=3&basis=2026&referenz=2025");
-    expect(screen.getByText("Mär 2026")).toBeInTheDocument();
-    expect(screen.getByText("Mär 2025")).toBeInTheDocument();
+    // Je zweimal: als Kennzahlkarte und als Spaltenkopf der Tabelle.
+    expect(screen.getAllByText("Mär 2026")).toHaveLength(2);
+    expect(screen.getAllByText("Mär 2025")).toHaveLength(2);
     expect(screen.getAllByText("120,00 €").length).toBeGreaterThan(0);
     expect(screen.getAllByText("100,00 €").length).toBeGreaterThan(0);
   });
@@ -286,5 +320,62 @@ describe("ComparisonTab — Monat gegen Monat", () => {
     expect(
       screen.getByText(/In keinem der beiden Monate gab es Dividendeneingänge/),
     ).toBeInTheDocument();
+  });
+});
+
+describe("ComparisonTab — Darstellung auf dem Telefon", () => {
+  /**
+   * Vier Spalten mit Beträgen und Namen passen bei 390 px nicht nebeneinander.
+   * Statt die Tabelle seitlich verschiebbar zu machen, stehen die Zahlen
+   * untereinander: je Zeile der Name mit der Differenz, darunter beide
+   * Zeiträume.
+   */
+  beforeEach(() => {
+    setViewport("schmal");
+  });
+
+  it("stellt die Monate als Liste dar, nicht als Tabelle", () => {
+    renderTab();
+    // Die Datentabelle des Diagramms bleibt eine Tabelle — gemeint ist die
+    // Aufschluesselung darunter.
+    expect(
+      screen.queryByRole("table", { name: /Netto-Dividenden je Monat/ }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("list", { name: /Netto-Dividenden je Monat/ }),
+    ).toBeInTheDocument();
+  });
+
+  it("nennt je Zeile beide Zeitraeume mit ihrem Betrag", () => {
+    renderTab();
+    const maerz = card("März");
+    expect(within(maerz).getByText("120,00 €")).toBeInTheDocument();
+    expect(within(maerz).getByText("100,00 €")).toBeInTheDocument();
+    expect(within(maerz).getByText("+20,00 €")).toBeInTheDocument();
+    // Beide Zeitraeume sind je Zeile benannt, nicht nur oben in einem Kopf.
+    expect(within(maerz).getByText("2026")).toBeInTheDocument();
+    expect(within(maerz).getByText("2025")).toBeInTheDocument();
+  });
+
+  it("behaelt den Drill-down auch in der Liste", () => {
+    renderTab();
+    const maerz = card("März");
+    expect(within(maerz).getByRole("link", { name: /März 2026/ })).toHaveAttribute(
+      "href",
+      "/eingaenge?year=2026&month=3",
+    );
+  });
+
+  it("stellt auch den Monatsvergleich als Liste dar", () => {
+    renderTab("?modus=monate&monat=5&basis=2026&referenz=2025");
+    expect(
+      screen.queryByRole("table", { name: /je Unternehmen/ }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("list", { name: /je Unternehmen/ })).toBeInTheDocument();
+    const beta = card("Beta SE");
+    expect(within(beta).getByRole("link", { name: "Beta SE" })).toHaveAttribute(
+      "href",
+      "/unternehmen/sec-b",
+    );
   });
 });

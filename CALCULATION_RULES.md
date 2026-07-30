@@ -387,6 +387,10 @@ Gegenüberstellung zweier Zeiträume im Unterbereich `/statistiken/vergleich`.
   darüber nicht widersprechen.
 - **Keine Prognose, keine Hochrechnung** (PRODUCT_SPEC.md Grundsatz 8): Es werden ausschließlich
   vorhandene Zahlungen summiert; ein Teiljahr wird nicht auf ein volles Jahr skaliert.
+- **Darstellung.** Die Aufschlüsselung (Monate bzw. Unternehmen) ist ab `md` eine Tabelle,
+  darunter eine Liste mit denselben Zahlen untereinander. Monate ohne Zahlungen auf beiden
+  Seiten stehen dort einzeilig als „keine Zahlungen" — drei Zeilen Gedankenstriche wären
+  Rauschen.
 - **Drill-down (§11.9) nur, wo er trägt.** Die Zahlungsliste filtert auf Jahr und Monat, nicht
   auf einen Tag. Der am Stichtag **angeschnittene** Monat wird deshalb nicht verlinkt und in der
   Tabelle als solcher gekennzeichnet; alle vollständigen Monate verlinken wie gewohnt. Ein Link,
