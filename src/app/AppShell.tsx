@@ -4,6 +4,7 @@ import { Sidebar, CompactSidebar } from "@/components/layout/Sidebar";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { RouteAnnouncer } from "@/components/layout/RouteAnnouncer";
+import { PageSkeleton } from "@/components/layout/PageSkeleton";
 
 /**
  * Responsive App-Shell (IMPLEMENTATION_PLAN.md Phase 1):
@@ -39,17 +40,7 @@ export function AppShell() {
             <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
               {/* Bereiche werden erst beim Aufruf geladen (siehe router.tsx);
                   der Rahmen der App steht dabei bereits. */}
-              <React.Suspense
-                fallback={
-                  <p
-                    className="text-sm text-muted-foreground"
-                    aria-busy="true"
-                    aria-live="polite"
-                  >
-                    Wird geladen …
-                  </p>
-                }
-              >
+              <React.Suspense fallback={<PageSkeleton />}>
                 <Outlet />
               </React.Suspense>
             </div>

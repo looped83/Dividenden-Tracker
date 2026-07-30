@@ -1,6 +1,7 @@
 import { Plus, MoreHorizontal } from "lucide-react";
 import { NavLink } from "react-router";
 import { BOTTOM_NAV_PRIMARY_ITEMS } from "@/app/navigation";
+import { prefetchProps } from "@/app/routeChunks";
 import { cn } from "@/lib/utils/cn";
 
 /**
@@ -26,6 +27,7 @@ export function BottomNav() {
       <NavLink
         to="/eingaenge/neu"
         aria-label="Neue Dividende erfassen"
+        {...prefetchProps("/eingaenge/neu")}
         className={cn(
           "flex flex-1 flex-col items-center justify-center rounded-md outline-none",
           "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
@@ -43,6 +45,7 @@ export function BottomNav() {
 
       <NavLink
         to="/mehr"
+        {...prefetchProps("/mehr")}
         className={({ isActive }) =>
           cn(
             "flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-xs outline-none",
@@ -71,6 +74,7 @@ function BottomNavLink({
     <NavLink
       to={to}
       end={to === "/"}
+      {...prefetchProps(to)}
       className={({ isActive }) =>
         cn(
           "flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-xs outline-none",

@@ -1,6 +1,7 @@
 import { NavLink } from "react-router";
 import { ChevronRight } from "lucide-react";
 import { BOTTOM_NAV_MORE_ITEMS } from "@/app/navigation";
+import { prefetchProps } from "@/app/routeChunks";
 import { PageHeader } from "@/components/layout/PageHeader";
 
 /**
@@ -18,6 +19,7 @@ export function MorePage() {
           <li key={item.to}>
             <NavLink
               to={item.to}
+              {...prefetchProps(item.to)}
               className="flex min-h-11 items-center gap-3 px-4 py-3 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
             >
               <item.icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />

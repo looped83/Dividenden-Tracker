@@ -1,6 +1,7 @@
 import { Link, NavLink } from "react-router";
 import { Plus } from "lucide-react";
 import { PRIMARY_NAV_ITEMS } from "@/app/navigation";
+import { prefetchProps } from "@/app/routeChunks";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
 
@@ -23,7 +24,8 @@ export function Sidebar() {
           erreichbar. */}
       <div className="px-3 pb-3">
         <Button asChild className="w-full">
-          <Link to="/eingaenge/neu">
+          {/* Der Bereich wird schon beim Zeigen geholt (routeChunks.ts). */}
+          <Link to="/eingaenge/neu" {...prefetchProps("/eingaenge/neu")}>
             <Plus aria-hidden /> Neue Dividende
           </Link>
         </Button>
@@ -34,6 +36,7 @@ export function Sidebar() {
             key={item.to}
             to={item.to}
             end={item.to === "/"}
+            {...prefetchProps(item.to)}
             className={({ isActive }) =>
               cn(
                 "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium outline-none",
@@ -66,6 +69,7 @@ export function CompactSidebar() {
           to="/eingaenge/neu"
           title="Neue Dividende"
           aria-label="Neue Dividende erfassen"
+          {...prefetchProps("/eingaenge/neu")}
         >
           <Plus className="size-5" aria-hidden />
         </Link>
@@ -81,6 +85,7 @@ export function CompactSidebar() {
             end={item.to === "/"}
             title={item.label}
             aria-label={item.label}
+            {...prefetchProps(item.to)}
             className={({ isActive }) =>
               cn(
                 "flex size-11 items-center justify-center rounded-md outline-none",

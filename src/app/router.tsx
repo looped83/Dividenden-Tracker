@@ -7,8 +7,10 @@ import { createHashRouter, Navigate } from "react-router";
 import { AppShell } from "@/app/AppShell";
 import { NotFoundPage } from "@/app/NotFoundPage";
 import { RequireAuth } from "@/app/auth/RequireAuth";
+import { AuthPageSkeleton } from "@/components/layout/PageSkeleton";
 import { LoginPage } from "@/features/auth/LoginPage";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
+import { routeChunks } from "@/app/routeChunks";
 
 /**
  * Routing (PRODUCT_SPEC.md §4): neun Hauptbereiche, kein Kalenderbereich.
@@ -22,93 +24,85 @@ import { DashboardPage } from "@/features/dashboard/DashboardPage";
  * Startpaket. `React.lazy` statt der `lazy`-Route-Eigenschaft, weil der
  * Ladezustand so sichtbar bleibt (Suspense-Rahmen in der App-Huelle) statt die
  * Navigation stumm zu verzoegern.
+ *
+ * Die `import()`-Aufrufe stehen in `routeChunks.ts`, damit das Vorausladen der
+ * Navigation dieselben Teile anfordert wie die Routentabelle.
  */
 const PaymentsPage = React.lazy(async () => ({
-  default: (await import("@/features/payments/PaymentsPage")).PaymentsPage,
+  default: (await routeChunks.payments()).PaymentsPage,
 }));
 const NewPaymentPage = React.lazy(async () => ({
-  default: (await import("@/features/payments/NewPaymentPage")).NewPaymentPage,
+  default: (await routeChunks.newPayment()).NewPaymentPage,
 }));
 const PaymentDetailPage = React.lazy(async () => ({
-  default: (await import("@/features/payments/PaymentDetailPage")).PaymentDetailPage,
+  default: (await routeChunks.paymentDetail()).PaymentDetailPage,
 }));
 const DataQualityPage = React.lazy(async () => ({
-  default: (await import("@/features/payments/DataQualityPage")).DataQualityPage,
+  default: (await routeChunks.dataQuality()).DataQualityPage,
 }));
 const SecuritiesPage = React.lazy(async () => ({
-  default: (await import("@/features/securities/SecuritiesPage")).SecuritiesPage,
+  default: (await routeChunks.securities()).SecuritiesPage,
 }));
 const SecurityDetailPage = React.lazy(async () => ({
   default: (await import("@/features/securities/SecurityDetailPage")).SecurityDetailPage,
 }));
 const StatisticsPage = React.lazy(async () => ({
-  default: (await import("@/features/statistics/StatisticsPage")).StatisticsPage,
+  default: (await routeChunks.statistics()).StatisticsPage,
 }));
 const OverviewTab = React.lazy(async () => ({
-  default: (await import("@/features/statistics/OverviewTab")).OverviewTab,
+  default: (await routeChunks.statisticsOverview()).OverviewTab,
 }));
 const YearsTab = React.lazy(async () => ({
-  default: (await import("@/features/statistics/YearsTab")).YearsTab,
+  default: (await routeChunks.statisticsYears()).YearsTab,
 }));
 const MonthsTab = React.lazy(async () => ({
-  default: (await import("@/features/statistics/MonthsTab")).MonthsTab,
+  default: (await routeChunks.statisticsMonths()).MonthsTab,
 }));
 const ComparisonTab = React.lazy(async () => ({
-  default: (await import("@/features/statistics/ComparisonTab")).ComparisonTab,
+  default: (await routeChunks.statisticsComparison()).ComparisonTab,
 }));
 const CompaniesTab = React.lazy(async () => ({
-  default: (await import("@/features/statistics/CompaniesTab")).CompaniesTab,
+  default: (await routeChunks.statisticsCompanies()).CompaniesTab,
 }));
 const DepotsTab = React.lazy(async () => ({
-  default: (await import("@/features/statistics/DepotsTab")).DepotsTab,
+  default: (await routeChunks.statisticsDepots()).DepotsTab,
 }));
 const GoalsPage = React.lazy(async () => ({
-  default: (await import("@/features/goals/GoalsPage")).GoalsPage,
+  default: (await routeChunks.goals()).GoalsPage,
 }));
 const GoalDetailPage = React.lazy(async () => ({
-  default: (await import("@/features/goals/GoalDetailPage")).GoalDetailPage,
+  default: (await routeChunks.goalDetail()).GoalDetailPage,
 }));
 const SettingsPage = React.lazy(async () => ({
-  default: (await import("@/features/settings/SettingsPage")).SettingsPage,
+  default: (await routeChunks.settings()).SettingsPage,
 }));
 const GeneralSettingsTab = React.lazy(async () => ({
-  default: (await import("@/features/settings/GeneralSettingsTab")).GeneralSettingsTab,
+  default: (await routeChunks.settingsGeneral()).GeneralSettingsTab,
 }));
 const DepotsPage = React.lazy(async () => ({
-  default: (await import("@/features/depots/DepotsPage")).DepotsPage,
+  default: (await routeChunks.settingsDepots()).DepotsPage,
 }));
 const ImportsPage = React.lazy(async () => ({
-  default: (await import("@/features/imports/ImportsPage")).ImportsPage,
+  default: (await routeChunks.settingsImports()).ImportsPage,
 }));
 const BackupPage = React.lazy(async () => ({
-  default: (await import("@/features/backup/BackupPage")).BackupPage,
+  default: (await routeChunks.settingsBackup()).BackupPage,
 }));
 const MorePage = React.lazy(async () => ({
-  default: (await import("@/app/MorePage")).MorePage,
+  default: (await routeChunks.more()).MorePage,
 }));
 const RegisterPage = React.lazy(async () => ({
-  default: (await import("@/features/auth/RegisterPage")).RegisterPage,
+  default: (await routeChunks.register()).RegisterPage,
 }));
 const ResetPasswordRequestPage = React.lazy(async () => ({
-  default: (await import("@/features/auth/ResetPasswordRequestPage"))
-    .ResetPasswordRequestPage,
+  default: (await routeChunks.resetPasswordRequest()).ResetPasswordRequestPage,
 }));
 const ResetPasswordConfirmPage = React.lazy(async () => ({
-  default: (await import("@/features/auth/ResetPasswordConfirmPage"))
-    .ResetPasswordConfirmPage,
+  default: (await routeChunks.resetPasswordConfirm()).ResetPasswordConfirmPage,
 }));
 
-/** Ladezustand fuer nachgeladene Seiten ausserhalb der App-Huelle. */
-function PageFallback() {
-  return (
-    <p className="p-6 text-sm text-muted-foreground" aria-busy="true" aria-live="polite">
-      Wird geladen …
-    </p>
-  );
-}
-
 function standalone(element: React.ReactNode): React.ReactElement {
-  return <React.Suspense fallback={<PageFallback />}>{element}</React.Suspense>;
+  return <React.Suspense fallback={<AuthPageSkeleton />}>{element}</React.Suspense>;
 }
 
 export const router = createHashRouter([

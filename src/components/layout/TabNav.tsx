@@ -1,5 +1,6 @@
 import * as React from "react";
 import { NavLink, useLocation } from "react-router";
+import { prefetchProps } from "@/app/routeChunks";
 import { cn } from "@/lib/utils/cn";
 
 export interface TabNavItem {
@@ -50,6 +51,7 @@ export function TabNav({ label, tabs }: { label: string; tabs: readonly TabNavIt
             <NavLink
               to={tab.to}
               end={tab.end ?? false}
+              {...prefetchProps(tab.to)}
               className={({ isActive }) =>
                 cn(
                   "inline-flex items-center whitespace-nowrap rounded-t-md border-b-2 px-3 py-2",

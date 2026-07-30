@@ -90,6 +90,14 @@ manuelle Review (persönliches Projekt, Nachvollziehbarkeit vor Bequemlichkeit).
   (typescript-eslint, Vitest, IDE-Tooling, generierte Supabase-Typen) vollständig etablierte
   5.9-Linie gepinnt. Upgrade auf 7.x als eigener, getesteter Schritt nach Phase 10
   (DECISIONS.md D-013).
+  **Stand 2026-07-29 (Versuch durchgeführt):** `tsc -b` läuft mit 7.0.2 sauber durch, nachdem
+  das entfernte `baseUrl` aus den drei tsconfigs verschwunden ist (die `paths` sind relativ und
+  brauchen es nicht — die Änderung ist auch unter 5.9 wirksam und bleibt bestehen).
+  **Blockiert ist der Schritt an typescript-eslint:** Version 8.65 verweigert TS 7.0 mit einer
+  Ausnahme beim Laden, `npm run lint` bricht damit vollständig ab. Der angebotene Ausweg wäre
+  ein zweiter Compiler (`typescript-6.0`) nur für das Linting — zwei Compiler im Baum für
+  keinen Gewinn. Erneut prüfen, sobald typescript-eslint TS ≥ 7.1 unterstützt
+  (typescript-eslint#10940).
 - **K-2 React Router 8 im Library-Modus:** Kein Framework-/SSR-Modus. Die App ist eine reine
   SPA hinter Auth; SSR brächte Komplexität ohne Nutzen und kollidiert mit dem PWA-Modell.
 - **K-3 Zod 4 + @hookform/resolvers ≥ 5:** Resolver-Version 5.x ist die erste mit stabiler
@@ -319,6 +327,27 @@ Details fachlich in IMPORT_SPEC.md; architektonisch:
   die App ihre Hülle und die Fehlerzustände der Abfragen — kein stiller Blick auf veraltete
   Beträge.
 - Kein Offline-Banner. Er gehört zu einem ausgebauten Offline-Modus und wäre ohne ihn Zierde.
+
+### 6.1 Ladeverhalten der Bereiche
+
+- **Nachgeladen wird alles außer Hülle, Anmeldung und Übersicht.** Diese drei entscheiden den
+  ersten Bildschirm, alles andere wäre Ballast im Startpaket (`React.lazy` in `app/router.tsx`;
+  der Rauchtest „das Startpaket bleibt schlank" hält die Grenze fest).
+- **Die `import()`-Aufrufe stehen gebündelt in `app/routeChunks.ts`**, nicht in der
+  Routentabelle. Grund: Dieselbe Aufrufstelle bedeutet dasselbe Modul in der Registry des
+  Browsers — zwei Aufrufstellen ergäben zwei Teile, und das Vorausladen liefe ins Leere.
+- **Vorausladen bei Absicht:** Navigationspunkte (Sidebar, Bottom-Navigation, „Mehr",
+  Reiternavigation) holen die Teile ihres Ziels schon bei `pointerenter` und `focus`
+  (`prefetchProps`). Zwischen Absicht und Klick liegen auf dem Desktop einige hundert
+  Millisekunden, auf dem Touchgerät die Dauer der Berührung — in der Regel genug, sodass beim
+  Wechsel gar kein Ladezustand mehr erscheint. Verschachtelte Bereiche holen Hülle **und**
+  ersten Reiter. Im Datensparmodus des Geräts (`navigator.connection.saveData`) unterbleibt es;
+  Fehler bleiben folgenlos, der Klick lädt dann regulär.
+- **Ladezustand als Gerüst, nicht als Textzeile** (`components/layout/PageSkeleton.tsx`): eine
+  Kopfzeile in der Höhe des `PageHeader` und ein Block in Kartenform, damit beim Erscheinen des
+  Inhalts nichts springt. `AuthPageSkeleton` ist das Gegenstück für die Seiten außerhalb der
+  Hülle. Statistik und Einstellungen haben eine eigene Suspense-Grenze um ihren Outlet: Beim
+  Reiterwechsel bleiben Kopfzeile und Reiter stehen, nur der Inhalt darunter wartet.
 
 ## 7. Umgebungen, Konfiguration, Migrationen
 
