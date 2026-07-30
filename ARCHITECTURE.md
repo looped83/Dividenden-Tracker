@@ -212,7 +212,8 @@ Das Dashboard folgt bewusst dem Prinzip aus §4.1 Punkt 3:
   Dashboard-Kennzahlen und in Phase 5B für den Statistikbereich wiederverwendbar.
 - **Effektiver Ausschüttungsmonat:** Vor der Aggregation wird über `withEffectiveDates` je
   Zahlung ein effektives Datum aus dem Unternehmensplan (`securities.payout_months`) gesetzt
-  (nächstliegender geplanter Monat inkl. Jahresverschiebung, CALCULATION_RULES.md §10). Alle
+  (fälliger geplanter Monat, ein Monat Vorlauf für vorgezogene Zahlungen, inkl.
+  Jahresverschiebung — CALCULATION_RULES.md §10). Alle
   Auswertungen und die Eingangsliste rechnen auf diesem effektiven Datum; das echte `pay_date`
   bleibt erhalten. Die Eingangsliste lädt dafür alle Zahlungen paginiert und filtert/sortiert
   clientseitig (kein serverseitiger Datumsfilter, da der Plan clientseitige Stammdaten sind).

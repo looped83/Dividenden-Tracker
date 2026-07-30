@@ -487,6 +487,44 @@ rechenbar, also wird er gerechnet.
 
 ---
 
+## D-8-1: Der Ausschüttungsplan zieht auch vorgezogene Zahlungen — höchstens einen Monat
+
+**Status:** Accepted · **Scope:** Fachlogik / Vertrauen in die Zahlen
+
+Bei hinterlegtem Ausschüttungsplan zählt eine Zahlung zu dem geplanten Monat,
+für den sie bestimmt ist — bisher nur **rückwärts** (verspätete Zahlung → letzter
+fälliger Monat). Eine Woche zu früh eingetroffene Dividende landete damit im
+vorigen Planmonat: Bei Plan Jan/Apr/Jul/Okt wanderte eine Zahlung Ende Juni auf
+April, obwohl sie die Juli-Ausschüttung ist. Der laufende Monat zeigte zu wenig,
+der Vor-Vormonat zu viel — und beide Zahlen waren nach der Regel „nach Plan
+auswerten" falsch.
+
+Neu gilt deshalb: Liegt der letzte fällige Planmonat **mehr als einen Monat**
+zurück und ist der **unmittelbar folgende** Monat geplant, zählt die Zahlung
+vorgezogen zu diesem Monat. Bei gleichem Abstand gewinnt der frühere Monat.
+
+*Warum genau ein Monat Vorlauf:* Dividenden kommen häufig zu spät, aber praktisch
+nie mehr als ein paar Tage zu früh. Ein größeres Fenster würde bei jährlich oder
+halbjährlich zahlenden Unternehmen echte Nachzügler in den nächsten Planmonat
+umbuchen — der Fehler wäre derselbe, nur in die andere Richtung.
+
+*Verworfene Alternative:* „nächstgelegener Planmonat" ohne Begrenzung — kippt bei
+weit auseinanderliegenden Planmonaten in dieselbe Fehlzuordnung. Ebenso ein
+Fenster in **Tagen** (z. B. „bis 14 Tage vor dem Planmonat"): genauer in der
+Theorie, aber eine unbelegte Schwelle, die dieselbe Zahlung je nach Zahltag
+unterschiedlich einsortiert.
+
+*Folge:* Der effektive Monat kann einen Monat in der Zukunft liegen. Auswertungen
+mit Zeitraumkappung dürfen ihn deshalb nicht als „noch nicht begonnen" behandeln
+(Monatsdiagramm, Ø pro Monat), und der effektive Tag einer vorgezogenen Zahlung
+ist der 1. des Planmonats — sonst wäre bereits erhaltenes Geld bis zum Zahltag
+in keinem „bis heute"-Zeitraum sichtbar.
+
+*Beleg:* `lib/statistics/effectiveMonth.ts`,
+`tests/unit/lib/statistics/effectiveMonth.test.ts`, CALCULATION_RULES.md §10.
+
+---
+
 ## ADR-001: Historie vollständig im Client, Schwelle bei 10.000 Zahlungen
 
 **Status:** Accepted  

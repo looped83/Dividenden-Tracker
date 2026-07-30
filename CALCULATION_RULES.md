@@ -210,15 +210,17 @@ Differenz stammt aus `Money.subtract` (exakt, R-3).
 ### 9.5 Weitere Dashboard-Kennzahlen
 
 - **Durchschnitt pro Monat (§5.4):** laufendes Jahr `YTD ÷ begonnene Monate` (inkl. aktuellem);
-  abgeschlossenes Jahr `Jahressumme ÷ 12`; bei „Alle Jahre" nicht ausgewiesen.
+  abgeschlossenes Jahr `Jahressumme ÷ 12`; bei „Alle Jahre" nicht ausgewiesen. Als begonnen zählt
+  außerdem jeder Monat, dem bereits eine Zahlung zugeordnet ist (vorgezogene Zahlung, §10.3).
 - **Bester Monat (§5.5):** Kalendermonat mit maximaler Nettosumme im Zeitraum; bei Gleichstand
   gewinnt der **aktuellere** Monat.
 - **Top-Unternehmen / Depotverteilung (§9/§10):** `Σ net` je Wertpapier/Depot; Anteil
   `= Teilsumme ÷ Zeitraum-Gesamtsumme`, „—" wenn Gesamtsumme ≤ 0. Sortierung: Nettosumme ↓,
   dann Anzahl ↓, dann Name alphabetisch (de).
-- **Monatszeitreihe (§7):** zwölf Monate; zukünftige Monate des laufenden Jahres werden **nicht**
-  als 0 dargestellt, sondern als Lücke „noch nicht begonnen" (keine Prognose). In abgeschlossenen
-  Jahren dürfen zahlungsfreie Monate 0 € sein.
+- **Monatszeitreihe (§7):** zwölf Monate; zukünftige **zahlungsfreie** Monate des laufenden Jahres
+  werden **nicht** als 0 dargestellt, sondern als Lücke „noch nicht begonnen" (keine Prognose).
+  Enthält ein künftiger Monat bereits Zahlungen (vorgezogene Ausschüttung, §10.3), wird er normal
+  dargestellt. In abgeschlossenen Jahren dürfen zahlungsfreie Monate 0 € sein.
 - **Historische Gesamtsumme (§5.3/§12):** immer über die gesamte aktive Historie, unabhängig von
   der Jahresauswahl; als historischer Gesamtwert gekennzeichnet.
 
@@ -236,19 +238,27 @@ Auswertungen bildet.
 ### 10.1 Zuordnungsregel (implementiert in `lib/statistics/effectiveMonth.ts`)
 
 - **Ohne Plan** (`payout_months` leer): das echte `pay_date` bleibt maßgeblich.
-- **Mit Plan:** die Zahlung wird dem **letzten fälligen geplanten Monat am oder vor** dem
-  Zahlungsmonat zugeordnet (größter geplanter Monatsindex ≤ Zahlungsmonat), geprüft über die
-  geplanten Monate der Jahre `J−1` und `J`. Die geplanten Monate sind damit **maßgebend**: eine
-  später als geplant eingetroffene Dividende zählt zu dem Monat, für den sie fällig war — nicht
-  zum bloß nächstgelegenen. Beispiel Quartalsplan Mär/Jun/Sep/Dez: Zahlung 2. April → März;
-  Zahlung 28. Mai → ebenfalls März (nicht Juni).
-- **Jahreswechsel:** die Zuordnung darf das Jahr zurück verschieben. Eine Zahlung vor dem ersten
-  geplanten Monat des Jahres zählt zum letzten geplanten Monat des Vorjahres (z. B. Februar bei
-  Plan Mär/Jun/Sep/Dez → Dezember des Vorjahres; Januar bei Dezember-Plan → Dezember des Vorjahres).
-- Fällt der Zahlungsmonat selbst auf einen geplanten Monat, bleibt dieser.
+- **Zahlungsmonat selbst geplant:** dieser Monat bleibt (Normalfall).
+- **Verspätete Zahlung (Regelfall):** die Zahlung wird dem **letzten fälligen geplanten Monat am
+  oder vor** dem Zahlungsmonat zugeordnet (größter geplanter Monatsindex ≤ Zahlungsmonat). Die
+  geplanten Monate sind damit **maßgebend**: eine später als geplant eingetroffene Dividende zählt
+  zu dem Monat, für den sie fällig war. Beispiel Quartalsplan Mär/Jun/Sep/Dez: Zahlung 2. April
+  → März.
+- **Vorgezogene Zahlung:** liegt der letzte fällige geplante Monat **mehr als einen Monat** zurück
+  und ist der **unmittelbar folgende** Monat geplant, zählt die Zahlung zu diesem geplanten Monat.
+  Beispiel Plan Jan/Apr/Jul/Okt: Zahlung im Juni → Juli (nicht April). Beispiel Plan Mär/Jun:
+  Zahlung 28. Mai → Juni. Weiter als einen Monat wird **nicht** vorgezogen (Plan Jul, Zahlung im
+  Mai → Juli des Vorjahres), denn Zahlungen treffen häufiger spät als früh ein.
+- **Gleichstand:** sind der fällige und der folgende geplante Monat gleich weit entfernt, gewinnt
+  der frühere (fällige) Monat. Beispiel Plan Mär/Mai: Zahlung im April → März.
+- **Jahreswechsel:** die Zuordnung darf das Jahr in beide Richtungen verschieben; geprüft werden
+  die geplanten Monate der Jahre `J−1`, `J` und `J+1`. Beispiele: Januar bei Dezember-Plan →
+  Dezember des Vorjahres; Dezember bei Plan Jan/Apr/Jul/Okt → Januar des Folgejahres.
 - Der Tag des effektiven Datums ist der echte Zahltag, begrenzt auf die Länge des Zielmonats
-  (z. B. 31.03. → geplanter Februar → 28./29.02.). Er dient nur der internen Datumsdarstellung,
-  nicht der Zuordnung.
+  (z. B. 31.03. → geplanter Februar → 28./29.02.). Bei einer **vorgezogenen** Zahlung ist es der
+  **1. des geplanten Monats**, damit bereits erhaltenes Geld in Zeiträumen „bis heute" (Monat bzw.
+  Jahr bis heute, §5.2/§6) ab Monatsbeginn zählt und nicht erst am Zahltag auftaucht. Der Tag dient
+  nur der internen Datumsdarstellung, nicht der Zuordnung.
 
 ### 10.2 Geltungsbereich
 
@@ -262,9 +272,16 @@ Gleitkomma-Geldarithmetik statt.
 
 - Mehrere Zahlungen können auf denselben effektiven Monat fallen (Nachzahlung, Korrektur) —
   sie summieren sich dort erwartungsgemäß.
-- Eine ausnahmsweise **vor** dem geplanten Monat eingetroffene Zahlung wird dem vorherigen
-  geplanten Monat zugerechnet (die Regel geht von „später als geplant" aus). Kein Vorziehen in
-  einen künftigen geplanten Monat.
+- Der effektive Monat kann **einen Monat in der Zukunft** liegen (vorgezogene Zahlung im
+  laufenden Monat für den kommenden geplanten Monat). Auswertungen behandeln einen solchen Monat
+  deshalb **nicht** als „noch nicht begonnen": im Monatsdiagramm (§7) gilt ein künftiger Monat nur
+  ohne Zahlungen als Lücke, und der Ø pro Monat (§5.4) teilt durch die begonnenen Monate
+  **mindestens bis zum letzten Monat mit Zahlungen**. Der ausgewählte Zeitraum (§5.1) und der
+  Jahresvergleich (§6) folgen dagegen unverändert dem effektiven Datum: Geld, das laut Plan erst
+  im kommenden Monat fällig ist, zählt auch erst dort — das ist die gewollte Folge einer
+  Auswertung nach Ausschüttungsplan statt nach Kalender.
+- Eine mehr als einen Monat zu früh eingetroffene Zahlung wird weiterhin dem vorherigen fälligen
+  geplanten Monat zugerechnet (kein Vorziehen über mehr als einen Monat).
 
 ---
 

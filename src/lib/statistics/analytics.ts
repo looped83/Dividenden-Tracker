@@ -274,14 +274,26 @@ export function recentPayments(
  * Durchschnitt pro Monat (§5.4). Laufendes Jahr: Jahressumme ÷ begonnene Monate
  * (inkl. aktuellem Monat). Abgeschlossenes Jahr: Jahressumme ÷ 12. Die Division
  * laeuft ueber Decimal; das Ergebnis wird erst hier auf 2 Stellen gerundet (R-4).
+ *
+ * Ein Monat zaehlt ausserdem als begonnen, sobald ihm eine Zahlung zugeordnet
+ * ist: durch den Ausschuettungsplan (§10) kann eine frueh eingetroffene Zahlung
+ * bereits im kommenden Monat stehen; ohne diesen Ausgleich waere der
+ * Durchschnitt zu hoch (Summe eines Monats mehr, aber gleicher Teiler).
  */
 export function averagePerMonth(
   payments: readonly AnalyticsPayment[],
   year: number,
   ref: RefDate,
 ): Money {
-  const { net } = aggregateInYear(payments, year);
-  const divisor = year === ref.year ? ref.month : 12;
+  const rows = payments.filter((p) => yearOf(p.payDate) === year);
+  const { net } = aggregate(rows);
+  const startedMonths = year < ref.year ? 12 : year === ref.year ? ref.month : 0;
+  let lastMonthWithPayment = 0;
+  for (const payment of rows) {
+    const month = monthOf(payment.payDate);
+    if (month > lastMonthWithPayment) lastMonthWithPayment = month;
+  }
+  const divisor = Math.max(startedMonths, lastMonthWithPayment, 1);
   return Money.fromDecimal(net.toDecimal().div(divisor), EUR);
 }
 

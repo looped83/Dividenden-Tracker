@@ -310,7 +310,8 @@ export function SecurityDetailPage() {
                 </ul>
                 <p className="text-sm text-muted-foreground">
                   Eine später eingetroffene Zahlung zählt für den geplanten Monat, für den
-                  sie fällig war — auch über den Jahreswechsel hinweg.
+                  sie fällig war. Eine Zahlung im Monat direkt davor zählt für den
+                  kommenden geplanten Monat — beides auch über den Jahreswechsel hinweg.
                 </p>
               </div>
             )}
