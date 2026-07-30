@@ -20,7 +20,7 @@ import {
   formatIsoDate,
   statisticsDrillHref,
 } from "./format";
-import { StatTable, type StatColumn } from "./components/StatTable";
+import { StatSearch, StatTable, type StatColumn } from "./components/StatTable";
 
 const TOP_COMPANIES = 10;
 
@@ -36,6 +36,10 @@ export function CompaniesTab() {
     (securityId: string) => entityName(securities, securityId),
     [securities],
   );
+
+  // Die Suche liegt hier statt in der Tabelle: Auf breiten Schirmen steht sie
+  // in der Kopfzeile der Kachel, neben der Ueberschrift.
+  const [query, setQuery] = React.useState("");
 
   const stats = React.useMemo(() => securityStatistics(payments), [payments]);
   const sorted = React.useMemo(
@@ -156,7 +160,7 @@ export function CompaniesTab() {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-5">
           <CardTitle>Unternehmen nach Dividendensumme</CardTitle>
         </CardHeader>
         <CardContent>
@@ -169,8 +173,15 @@ export function CompaniesTab() {
       </Card>
 
       <Card>
-        <CardHeader className="pb-3">
+        <CardHeader className="gap-3 pb-5 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle>Unternehmensstatistik</CardTitle>
+          <div className="sm:w-64 sm:shrink-0">
+            <StatSearch
+              value={query}
+              onChange={setQuery}
+              placeholder="Unternehmen suchen …"
+            />
+          </div>
         </CardHeader>
         <CardContent>
           <StatTable
@@ -179,7 +190,7 @@ export function CompaniesTab() {
             getRowKey={(row) => row.securityId}
             caption="Kennzahlen je Unternehmen"
             searchOf={(row) => entityName(securities, row.securityId)}
-            searchPlaceholder="Unternehmen suchen …"
+            query={query}
             initialSort={{ key: "net", direction: "desc" }}
             onRowClick={(row) =>
               void navigate(statisticsDrillHref(filter, { securityId: row.securityId }))

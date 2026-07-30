@@ -84,7 +84,7 @@ export function BreakdownTab() {
             Kachel, nicht zu ihrem Inhalt, und braucht dort keine eigene
             Beschriftung — die Auswahl benennt sich selbst („Summe je Monat").
             Fuer Hilfsmittel traegt sie den Namen als `aria-label`. */}
-        <CardHeader className="gap-3 pb-3 sm:flex-row sm:items-start sm:justify-between">
+        <CardHeader className="gap-3 pb-5 sm:flex-row sm:items-start sm:justify-between">
           <CardTitle>Jahre × Monate</CardTitle>
           <div className="sm:w-56 sm:shrink-0">
             <Select

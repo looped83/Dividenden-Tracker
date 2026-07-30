@@ -145,7 +145,10 @@ export function MonthlyChart({ payments, selection, today }: MonthlyChartProps) 
     ? "Jährlicher Dividendenverlauf"
     : `Monatlicher Dividendenverlauf ${selectedYearLabel}`;
 
-  const description = isAll
+  // Nur fuer Hilfsmittel: Das Diagramm traegt keine sichtbare Unterzeile mehr,
+  // aber ein `role="img"` braucht eine Beschreibung, die ueber den Titel
+  // hinausgeht — sonst bliebe unklar, was die Achsen zeigen.
+  const chartDescription = isAll
     ? "Netto-Dividendensumme je Kalenderjahr, chronologisch."
     : `Netto-Dividendensumme je Monat für ${selectedYearLabel} im Vergleich zu ${priorYearLabel}${
         mode === "cumulative" ? " (kumuliert)" : ""
@@ -157,11 +160,8 @@ export function MonthlyChart({ payments, selection, today }: MonthlyChartProps) 
 
   return (
     <Card>
-      <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-x-4 gap-y-3 space-y-0">
-        <div className="min-w-0 space-y-1">
-          <CardTitle>{title}</CardTitle>
-          <p className="text-sm text-muted-foreground">{description}</p>
-        </div>
+      <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-x-4 gap-y-3 space-y-0 pb-5">
+        <CardTitle className="min-w-0">{title}</CardTitle>
         {!isAll && (
           <div className="flex gap-1" role="group" aria-label="Darstellung">
             <Button
@@ -201,7 +201,7 @@ export function MonthlyChart({ payments, selection, today }: MonthlyChartProps) 
             <div
               className="h-64 sm:h-72 w-full"
               role="img"
-              aria-label={`${title}. ${description}`}
+              aria-label={`${title}. ${chartDescription}`}
             >
               <ResponsiveContainer width="100%" height="100%">
                 {isAll ? (

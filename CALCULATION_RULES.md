@@ -185,7 +185,10 @@ ausschließlich diese Schicht auf; keine Aggregation in React-Komponenten.
 
 ### 9.3 Aktueller Monat (§5.2/§6.3)
 
-- Aktuell: `[erster Tag des aktuellen Monats, heute]` (unabhängig von der Jahresauswahl).
+- Aktuell: `[erster Tag des aktuellen Monats, heute]`.
+- **Sichtbar nur, wenn der laufende Monat im gewählten Zeitraum liegt** — also im laufenden Jahr
+  und bei „Alle Jahre". In einem anderen Jahr stünde die Kachel für einen Zeitraum, den die Seite
+  gerade nicht zeigt; dieselbe Regel gilt für die Zielsektion (§9.6).
 - Vergleich: gleicher Monat im Vorjahr `[01., entsprechender Kalendertag]`; besitzt der
   Vorjahresmonat weniger Tage, wird auf den letzten gültigen Kalendertag gekappt.
 
@@ -223,6 +226,24 @@ Differenz stammt aus `Money.subtract` (exakt, R-3).
   dargestellt. In abgeschlossenen Jahren dürfen zahlungsfreie Monate 0 € sein.
 - **Historische Gesamtsumme (§5.3/§12):** immer über die gesamte aktive Historie, unabhängig von
   der Jahresauswahl; als historischer Gesamtwert gekennzeichnet.
+- **Zahlungen im Zeitraum:** Anzahl der Eingänge des gewählten Zeitraums, mit Anzahl der
+  ausschüttenden Unternehmen und Depots als Zusatz. Die reine Zahl ausschüttender Unternehmen
+  stand vorher allein — sie sagte nichts über das Jahr aus.
+- **Reihenfolge der Kacheln:** gewählter Zeitraum → laufender Monat → bester Monat →
+  Ø pro Monat → Historie → Zahlungen. Vom Zeitraum, den die Seite zeigt, zu dem, was ihn
+  einordnet.
+- **Letzte Dividendeneingänge:** die fünf jüngsten der gesamten Historie (unabhängig von der
+  Jahresauswahl), mit Weg zur vollständigen Liste. Die Übersicht zeigt den letzten Stand, sie
+  ersetzt die Liste nicht.
+
+### 9.6 Zielsektion der Übersicht
+
+Gezeigt wird ausschließlich, was zum gewählten Jahr gehört: das **Jahresziel dieses Jahres** und —
+nur im laufenden Jahr — das **Monatsziel des laufenden Monats**. Ein Monatsziel gehört zu einem
+Monat eines Jahres; neben einem anderen Jahr stünde es für einen Zeitraum, den die Seite gerade
+nicht zeigt. Bei „Alle Jahre" entfällt der Bereich: Ziele sind an einen Zeitraum gebunden, „alle
+Jahre" ist keiner. Der Zeitraum steht nicht unter dem Zieltitel — die Jahresauswahl der Seite
+sagt ihn bereits.
 
 ---
 

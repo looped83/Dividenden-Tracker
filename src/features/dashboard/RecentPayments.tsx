@@ -1,5 +1,6 @@
 import { Link } from "react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AmountText } from "@/components/money/AmountText";
 import { DateText } from "@/components/DateText";
@@ -13,14 +14,22 @@ interface RecentPaymentsProps {
   depots: Map<string, EntityInfo>;
 }
 
-/** §11 Letzte Dividendeneingaenge: stets die tatsaechlich juengsten der Historie. */
+/**
+ * §11 Letzte Dividendeneingaenge: stets die tatsaechlich juengsten der Historie.
+ *
+ * Fuenf statt acht: Die Uebersicht soll den letzten Stand zeigen, nicht die
+ * Liste ersetzen — dafuer steht der Weg zu allen Eingaengen daneben.
+ */
 export function RecentPayments({ payments, securities, depots }: RecentPaymentsProps) {
-  const recent = recentPayments(payments, 8);
+  const recent = recentPayments(payments, 5);
 
   return (
     <Card>
-      <CardHeader className="pb-3">
+      <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0 pb-5">
         <CardTitle>Letzte Dividendeneingänge</CardTitle>
+        <Button asChild variant="ghost" size="sm">
+          <Link to="/eingaenge">Alle Dividenden</Link>
+        </Button>
       </CardHeader>
       <CardContent>
         {recent.length === 0 ? (

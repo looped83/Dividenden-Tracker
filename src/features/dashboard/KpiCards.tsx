@@ -139,7 +139,10 @@ export function KpiCards({ payments, selection, today }: KpiCardsProps) {
       ? bestMonthAllTime(payments)
       : bestMonthInYear(payments, selection);
 
-    // 5.6 Ausschuettende Unternehmen im Zeitraum
+    // 5.6 Aktivitaet im Zeitraum: Wie viele Zahlungen kamen herein — und aus
+    // wie vielen Quellen? Die blosse Zahl ausschuettender Unternehmen sagte
+    // nichts ueber das Jahr aus; die Anzahl der Eingaenge schon, und die
+    // Breite steht als Zusatz daneben.
     const periodPayments = isAll
       ? payments
       : payments.filter((p) => yearOf(p.payDate) === selection);
@@ -149,6 +152,8 @@ export function KpiCards({ payments, selection, today }: KpiCardsProps) {
     return {
       isAll,
       isCurrentYear,
+      showCurrentMonth: isAll || isCurrentYear,
+      periodCount: periodPayments.length,
       selectedAgg,
       selectedComparison,
       selectedComparisonHint,
@@ -176,39 +181,17 @@ export function KpiCards({ payments, selection, today }: KpiCardsProps) {
         drillLabel={`Zahlungen ${selectionLabel} anzeigen`}
       />
 
-      {/* 5.2 Aktueller Monat */}
-      <KpiCard
-        label={`Aktueller Monat (${currentMonthLabel})`}
-        value={<AmountText amount={cards.monthAgg.net} />}
-        comparison={cards.monthComparison}
-        comparisonHint={`Gegenüber dem gleichen Zeitraum des Vorjahresmonats (1. bis ${String(today.day)}.)`}
-        to={paymentsListHref({ year: today.year, month: today.month })}
-        drillLabel="Zahlungen des aktuellen Monats anzeigen"
-      />
-
-      {/* 5.3 Historische Gesamtsumme */}
-      <KpiCard
-        label="Historisch erhaltene Dividenden"
-        value={<AmountText amount={cards.history.net} />}
-        footnote={
-          cards.history.firstPayDate && cards.history.lastPayDate
-            ? `${formatIsoDate(cards.history.firstPayDate)} – ${formatIsoDate(cards.history.lastPayDate)}`
-            : undefined
-        }
-        to={paymentsListHref({})}
-        drillLabel="Gesamte Dividendenhistorie anzeigen"
-      />
-
-      {/* 5.4 Durchschnitt pro Monat (nur Einzeljahr) */}
-      {!cards.isAll && typeof selection === "number" && (
+      {/* 5.2 Aktueller Monat — nur, wenn er im gewaehlten Zeitraum liegt. In
+          einem anderen Jahr stuende hier eine Zahl aus einem Zeitraum, den die
+          Seite gerade gar nicht zeigt. */}
+      {cards.showCurrentMonth && (
         <KpiCard
-          label="Ø pro Monat"
-          value={<AmountText amount={averagePerMonth(payments, selection, today)} />}
-          caption={
-            cards.isCurrentYear
-              ? "Durchschnitt pro begonnenem Monat"
-              : "Durchschnitt pro Monat"
-          }
+          label={`Aktueller Monat (${currentMonthLabel})`}
+          value={<AmountText amount={cards.monthAgg.net} />}
+          comparison={cards.monthComparison}
+          comparisonHint={`Gegenüber dem gleichen Zeitraum des Vorjahresmonats (1. bis ${String(today.day)}.)`}
+          to={paymentsListHref({ year: today.year, month: today.month })}
+          drillLabel="Zahlungen des aktuellen Monats anzeigen"
         />
       )}
 
@@ -233,11 +216,39 @@ export function KpiCards({ payments, selection, today }: KpiCardsProps) {
         drillLabel="Zahlungen des besten Monats anzeigen"
       />
 
-      {/* 5.6 Ausschuettende Unternehmen */}
+      {/* 5.4 Durchschnitt pro Monat (nur Einzeljahr) */}
+      {!cards.isAll && typeof selection === "number" && (
+        <KpiCard
+          label="Ø pro Monat"
+          value={<AmountText amount={averagePerMonth(payments, selection, today)} />}
+          caption={
+            cards.isCurrentYear
+              ? "Durchschnitt pro begonnenem Monat"
+              : "Durchschnitt pro Monat"
+          }
+        />
+      )}
+
+      {/* 5.3 Historische Gesamtsumme */}
       <KpiCard
-        label="Ausschüttende Unternehmen"
-        value={formatCountNumber(cards.companies)}
-        caption={formatCountNoun(cards.depots, "Depot", "Depots")}
+        label="Historisch erhaltene Dividenden"
+        value={<AmountText amount={cards.history.net} />}
+        footnote={
+          cards.history.firstPayDate && cards.history.lastPayDate
+            ? `${formatIsoDate(cards.history.firstPayDate)} – ${formatIsoDate(cards.history.lastPayDate)}`
+            : undefined
+        }
+        to={paymentsListHref({})}
+        drillLabel="Gesamte Dividendenhistorie anzeigen"
+      />
+
+      {/* 5.6 Aktivitaet im Zeitraum */}
+      <KpiCard
+        label={`Zahlungen ${selectionLabel}`}
+        value={formatCountNumber(cards.periodCount)}
+        caption={`von ${formatCountNoun(cards.companies, "Unternehmen", "Unternehmen")} · ${formatCountNoun(cards.depots, "Depot", "Depots")}`}
+        to={paymentsListHref({ year: selection })}
+        drillLabel={`Zahlungen ${selectionLabel} anzeigen`}
       />
     </div>
   );
