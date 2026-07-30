@@ -20,6 +20,7 @@ import {
 } from "@/lib/statistics";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
+import { EntitySelect, type EntityOption } from "@/components/domain/EntitySelect";
 import { FilterBar, FilterField } from "@/components/ui/filter-bar";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
@@ -162,18 +163,12 @@ export function PaymentsPage() {
 
   // Aktive zuerst, Archivierte darunter — als native Gruppen, damit die
   // Trennung auch auf mobilen Auswahlraedern und im Screenreader ankommt.
-  const securityGroups = React.useMemo(
-    () => ({
-      active: securities.filter((s) => !s.archived_at),
-      archived: securities.filter((s) => s.archived_at),
-    }),
+  const securityOptions = React.useMemo<EntityOption[]>(
+    () => securities.map((s) => ({ id: s.id, name: s.name, archived: !!s.archived_at })),
     [securities],
   );
-  const depotGroups = React.useMemo(
-    () => ({
-      active: depots.filter((d) => !d.archived_at),
-      archived: depots.filter((d) => d.archived_at),
-    }),
+  const depotOptions = React.useMemo<EntityOption[]>(
+    () => depots.map((d) => ({ id: d.id, name: d.name, archived: !!d.archived_at })),
     [depots],
   );
 
@@ -433,63 +428,27 @@ export function PaymentsPage() {
           („Zahlungsdatum – neueste zuerst“), damit alles in eine Zeile passt. */}
       <FilterBar activeCount={activeFilterChips.length}>
         <FilterField id="f-security" label="Unternehmen">
-          <Select
+          <EntitySelect
             id="f-security"
+            options={securityOptions}
             value={securityId}
-            onChange={(event) => {
-              updateParams({ security: event.target.value });
+            onChange={(value) => {
+              updateParams({ security: value });
             }}
-          >
-            <option value="">Alle Unternehmen</option>
-            {securityGroups.active.length > 0 && (
-              <optgroup label="Aktiv">
-                {securityGroups.active.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </optgroup>
-            )}
-            {securityGroups.archived.length > 0 && (
-              <optgroup label="Archiviert">
-                {securityGroups.archived.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </optgroup>
-            )}
-          </Select>
+            allLabel="Alle Unternehmen"
+          />
         </FilterField>
 
         <FilterField id="f-depot" label="Depot">
-          <Select
+          <EntitySelect
             id="f-depot"
+            options={depotOptions}
             value={depotId}
-            onChange={(event) => {
-              updateParams({ depot: event.target.value });
+            onChange={(value) => {
+              updateParams({ depot: value });
             }}
-          >
-            <option value="">Alle Depots</option>
-            {depotGroups.active.length > 0 && (
-              <optgroup label="Aktiv">
-                {depotGroups.active.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name}
-                  </option>
-                ))}
-              </optgroup>
-            )}
-            {depotGroups.archived.length > 0 && (
-              <optgroup label="Archiviert">
-                {depotGroups.archived.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name}
-                  </option>
-                ))}
-              </optgroup>
-            )}
-          </Select>
+            allLabel="Alle Depots"
+          />
         </FilterField>
 
         <FilterField id="f-year" label="Jahr">

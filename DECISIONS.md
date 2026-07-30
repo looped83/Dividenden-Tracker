@@ -422,6 +422,38 @@ sie auf. Lieber kein Link mit Begründung als ein Link mit Abweichung.
 
 ---
 
+## D-7-4: Unternehmen und Depots werden überall gleich ausgewählt
+
+**Status:** Accepted · **Scope:** UI/UX
+
+Jede Auswahlliste für Unternehmen oder Depots ist `components/domain/EntitySelect`:
+neutrale Auswahl, dann die Gruppen „Aktiv" und „Archiviert", sortiert nach
+deutschem Alphabet. Keine neue handgebaute Variante.
+
+### Why
+
+Dieselbe Liste stand an vier Stellen — Dividendenliste (Unternehmen, Depot),
+Unternehmensliste (Standard-Depot) und Statistikfilter (Unternehmen, Depot) — in
+zwei Ausprägungen: drei gruppierten nach „Aktiv"/„Archiviert", die Statistik
+hängte stattdessen „(archiviert)" an den Namen und sortierte alles in eine
+Liste. Der Unterschied war nicht entschieden, sondern entstanden. Ein
+Bedienelement, das je Ort anders aussieht, kostet bei jeder Begegnung
+Orientierung — und die Statistik ist genau der Ort, an dem man zwischen
+Unterbereichen hin- und herwechselt.
+
+### Guardrails
+
+- Archivierte Einträge bleiben **wählbar** (sie tragen Historie), nur gruppiert.
+- Formulare bleiben unberührt: Beim Erfassen wird ein Unternehmen *gesucht*
+  (`Combobox`), in Filterleisten wird *eingegrenzt*. Zwei Aufgaben, zwei Muster.
+- Der Import-Assistent behält seine eigene Zuordnungsliste — dort ist die erste
+  Auswahl „Neu anlegen", nicht „Alle".
+
+*Beleg:* `components/domain/EntitySelect.tsx`,
+`tests/unit/components/EntitySelect.test.tsx`, UX_AND_DESIGN_SYSTEM.md #2.
+
+---
+
 ## D-7-3: Die Diagrammpalette wird gemessen, nicht ausgesucht
 
 **Status:** Accepted · **Scope:** Designsystem / Barrierefreiheit

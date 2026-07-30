@@ -104,6 +104,7 @@ Eigene zusammengesetzte Komponenten (fachlich):
 | `StatCard` | Kennzahl: Wert, Label, Vergleichswert (Δ absolut + %), Drill-down-Link; max. 4 primäre StatCards pro Ansicht (Hierarchie statt Kennzahlflut) |
 | `PaymentTable` / `PaymentCardList` | Tabelle (Desktop/iPad) bzw. Kartenliste (iPhone) mit identischer Datenquelle und Filterzustand |
 | `FilterBar` | Sichtbare Filterleiste Desktop; auf iPhone als Sheet mit progressiver Offenlegung (Basisfilter sichtbar, erweiterte hinter „Mehr Filter") und aktiven Filter-Chips |
+| `EntitySelect` | **Die** Auswahlliste für Unternehmen und Depots — überall dieselbe: neutrale Auswahl („Alle Unternehmen"), darunter die Gruppen „Aktiv" und „Archiviert" (leere Gruppe entfällt), sortiert nach deutschem Alphabet. Archivierte bleiben wählbar, stehen aber nicht zwischen den aktiven. Neue Unternehmens-/Depotauswahlen in Filterleisten verwenden ausschließlich diese Komponente |
 | `ImportWizard` | Schrittleiste, Rohdatenvorschau (Monospace-Grid), Mapping-Zeilen, Bilanzanzeige |
 | `BalanceSummary` | Importbilanz-Block (IMPORT_SPEC.md §8) mit aufklappbaren Kategorien |
 | `AuditTrail` | Änderungsverlauf als vertikale Liste: Zeitpunkt, Aktion, Feld-Diffs (alt → neu) |
