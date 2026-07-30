@@ -2,7 +2,10 @@
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.e2e.tsbuildinfo",
     "target": "ES2023",
-    "lib": ["ES2023"],
+    // DOM-Typen, obwohl die Tests in Node laufen: Die Rueckrufe von
+    // `page.evaluate` werden im Browser ausgefuehrt — ohne sie ist dort jedes
+    // `document` ein Typfehler.
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "types": ["node"],
 

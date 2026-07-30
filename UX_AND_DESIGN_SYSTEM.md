@@ -81,6 +81,12 @@ als Serienfarbe benutzt — auch dann nicht, wenn ein Farbton ähnlich aussieht.
   (`lib/utils/formatNumber.ts`). Ausgenommen sind Jahreszahlen (2026, nicht 2.026).
 - Skala: 12 (Meta) · 14 (Body/Tabellen) · 16 (Formulare mobil, verhindert iOS-Zoom) ·
   18/20 (Abschnittstitel) · 28/32 (Kennzahlwerte). Zeilenhöhe 1,5 für Fließtext.
+- **Formularfelder unterhalb `sm` zwingend 16 px** (`text-base sm:text-sm` in `Input`,
+  `Select`, `Textarea`, `Combobox`). iOS Safari zoomt die Seite, sobald ein Feld mit
+  kleinerer Schrift den Fokus bekommt — und nach dem Zoom lässt sie sich seitlich
+  verschieben. Der Pinch-Zoom bleibt dabei ausdrücklich erlaubt (kein `user-scalable=no`,
+  kein `maximum-scale`): Wer Text vergrößern muss, darf das (WCAG 1.4.4). Gesichert durch
+  `tests/e2e/mobile.spec.ts`.
 
 ### Abstände, Radien, Tiefe
 
@@ -104,6 +110,7 @@ Eigene zusammengesetzte Komponenten (fachlich):
 | `StatCard` | Kennzahl: Wert, Label, Vergleichswert (Δ absolut + %), Drill-down-Link; max. 4 primäre StatCards pro Ansicht (Hierarchie statt Kennzahlflut) |
 | `PaymentTable` / `PaymentCardList` | Tabelle (Desktop/iPad) bzw. Kartenliste (iPhone) mit identischer Datenquelle und Filterzustand |
 | `FilterBar` | Sichtbare Filterleiste Desktop; auf iPhone als Sheet mit progressiver Offenlegung (Basisfilter sichtbar, erweiterte hinter „Mehr Filter") und aktiven Filter-Chips |
+| `ComparisonBreakdown` | Gegenüberstellung Zeile für Zeile (Monate oder Unternehmen): ab `md` eine Tabelle mit vier Spalten, darunter eine Liste — je Zeile Name und Differenz, darunter beide Zeiträume. Vier Spalten passen bei 390 px nicht nebeneinander, und die Seite soll auf dem Telefon nicht seitlich verschiebbar sein |
 | `EntitySelect` | **Die** Auswahlliste für Unternehmen und Depots — überall dieselbe: neutrale Auswahl („Alle Unternehmen"), darunter die Gruppen „Aktiv" und „Archiviert" (leere Gruppe entfällt), sortiert nach deutschem Alphabet. Archivierte bleiben wählbar, stehen aber nicht zwischen den aktiven. Neue Unternehmens-/Depotauswahlen in Filterleisten verwenden ausschließlich diese Komponente |
 | `ImportWizard` | Schrittleiste, Rohdatenvorschau (Monospace-Grid), Mapping-Zeilen, Bilanzanzeige |
 | `BalanceSummary` | Importbilanz-Block (IMPORT_SPEC.md §8) mit aufklappbaren Kategorien |

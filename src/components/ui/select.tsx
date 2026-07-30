@@ -10,7 +10,8 @@ export const Select = React.forwardRef<HTMLSelectElement, React.ComponentProps<"
           ref={ref}
           className={cn(
             "flex h-11 w-full appearance-none rounded-md border border-input bg-background",
-            "px-3 py-2 pr-9 text-sm outline-none",
+            // 16 px auf schmalen Geraeten — sonst zoomt iOS Safari beim Fokussieren.
+            "px-3 py-2 pr-9 text-base outline-none sm:text-sm",
             "focus-visible:ring-2 focus-visible:ring-ring",
             "disabled:cursor-not-allowed disabled:opacity-50",
             className,

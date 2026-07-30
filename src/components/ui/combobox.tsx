@@ -169,7 +169,9 @@ export function Combobox({
         }}
         onKeyDown={onKeyDown}
         className={cn(
-          "flex h-11 w-full rounded-md border border-input bg-background py-2 pl-9 pr-9 text-sm",
+          // 16 px auf schmalen Geraeten — sonst zoomt iOS Safari beim Fokussieren.
+          "flex h-11 w-full rounded-md border border-input bg-background py-2 pl-9 pr-9",
+          "text-base sm:text-sm",
           "placeholder:text-muted-foreground outline-none",
           "focus-visible:ring-2 focus-visible:ring-ring",
         )}
@@ -194,7 +196,9 @@ export function Combobox({
           )}
         >
           {matches.length === 0 ? (
-            <li className="px-3 py-2 text-sm text-muted-foreground">{emptyMessage}</li>
+            <li className="px-3 py-2 text-base text-muted-foreground sm:text-sm">
+              {emptyMessage}
+            </li>
           ) : (
             matches.map((option, index) => {
               const isActive = index === activeIndex;
@@ -212,7 +216,7 @@ export function Combobox({
                     setActiveIndex(index);
                   }}
                   className={cn(
-                    "flex min-h-11 cursor-pointer items-center gap-2 px-3 py-2 text-sm",
+                    "flex min-h-11 cursor-pointer items-center gap-2 px-3 py-2 text-base sm:text-sm",
                     isActive && "bg-muted",
                   )}
                 >
