@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { Landmark, Pencil, Plus, RotateCcw, Archive as ArchiveIcon } from "lucide-react";
 import { emptyToNull } from "@/lib/utils/emptyToNull";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
+import { formatCountNumber } from "@/lib/utils/formatNumber";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -277,7 +278,6 @@ export function DepotsPage() {
         <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0 pb-5">
           <CardTitle>Portfolios</CardTitle>
           <Button
-            variant="outline"
             size="sm"
             onClick={() => {
               setPortfolioDialog({ open: true, portfolio: null });
@@ -287,54 +287,76 @@ export function DepotsPage() {
           </Button>
         </CardHeader>
         <CardContent className="space-y-3">
+          {/* Dieselbe Darstellung wie die Depots darunter: Zeilen mit Status
+              und Aktionen. Zuvor standen Portfolios als Etiketten mit winzigen
+              Symbolknoepfen da — eine zweite Sprache auf einer Seite, deren
+              Bedienelemente ausserdem unter der Mindestgroesse fuer Beruehrung
+              lagen. */}
           {visiblePortfolios.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               Noch keine Portfolios angelegt.
             </p>
           ) : (
-            <ul className="flex flex-wrap gap-2">
-              {visiblePortfolios.map((portfolio) => (
-                <li key={portfolio.id}>
-                  <Badge
-                    variant={portfolio.archived_at ? "neutral" : "primary"}
-                    className="gap-1.5 py-1 pl-2.5 pr-1.5"
-                  >
-                    {portfolio.name}
-                    <button
-                      type="button"
-                      aria-label={`Portfolio ${portfolio.name} bearbeiten`}
-                      onClick={() => {
-                        setPortfolioDialog({ open: true, portfolio });
-                      }}
-                      className="rounded p-0.5 hover:bg-black/10"
-                    >
-                      <Pencil className="size-3" />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label={
-                        portfolio.archived_at
-                          ? `Portfolio ${portfolio.name} reaktivieren`
-                          : `Portfolio ${portfolio.name} archivieren`
-                      }
-                      onClick={() =>
-                        void archivePortfolio.mutateAsync({
-                          id: portfolio.id,
-                          archived: Boolean(portfolio.archived_at),
-                        })
-                      }
-                      className="rounded p-0.5 hover:bg-black/10"
-                    >
-                      {portfolio.archived_at ? (
-                        <RotateCcw className="size-3" />
-                      ) : (
-                        <ArchiveIcon className="size-3" />
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Depots</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Aktionen</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {visiblePortfolios.map((portfolio) => (
+                  <TableRow key={portfolio.id}>
+                    <TableCell className="font-medium">{portfolio.name}</TableCell>
+                    <TableCell className="text-muted-foreground tabular-nums">
+                      {formatCountNumber(
+                        depots.filter((d) => d.portfolio_id === portfolio.id).length,
                       )}
-                    </button>
-                  </Badge>
-                </li>
-              ))}
-            </ul>
+                    </TableCell>
+                    <TableCell>
+                      {portfolio.archived_at ? (
+                        <Badge variant="neutral">Archiviert</Badge>
+                      ) : (
+                        <Badge variant="positive">Aktiv</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Portfolio ${portfolio.name} bearbeiten`}
+                          onClick={() => {
+                            setPortfolioDialog({ open: true, portfolio });
+                          }}
+                        >
+                          <Pencil />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label={
+                            portfolio.archived_at
+                              ? `Portfolio ${portfolio.name} reaktivieren`
+                              : `Portfolio ${portfolio.name} archivieren`
+                          }
+                          onClick={() =>
+                            void archivePortfolio.mutateAsync({
+                              id: portfolio.id,
+                              archived: Boolean(portfolio.archived_at),
+                            })
+                          }
+                        >
+                          {portfolio.archived_at ? <RotateCcw /> : <ArchiveIcon />}
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
         </CardContent>
       </Card>
