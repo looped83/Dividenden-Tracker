@@ -390,7 +390,7 @@ function MonthTable({
   priorLabel: string;
 }) {
   return (
-    <div className="mt-3 overflow-x-auto">
+    <div className="relative mt-3 overflow-x-auto">
       <table className="w-full text-left text-sm">
         <caption className="sr-only">
           Monatliche Netto-Dividenden {selectedLabel} und {priorLabel}
@@ -434,7 +434,7 @@ function MonthTable({
 
 function YearTable({ rows }: { rows: YearRow[] }) {
   return (
-    <div className="mt-3 overflow-x-auto">
+    <div className="relative mt-3 overflow-x-auto">
       <table className="w-full text-left text-sm">
         <caption className="sr-only">Netto-Dividenden je Jahr</caption>
         <thead>

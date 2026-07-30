@@ -124,7 +124,10 @@ export function StatTable<T>({
         </div>
       )}
 
-      <div className="w-full overflow-x-auto rounded-lg border border-border">
+      {/* `relative`: haelt die absolut positionierten `sr-only`-Texte im
+          Bildlaufkasten — sonst schiebt eine breite Tabelle die ganze Seite
+          nach rechts (siehe ui/table.tsx). */}
+      <div className="relative w-full overflow-x-auto rounded-lg border border-border">
         <table className="w-full caption-bottom text-sm">
           <caption className="sr-only">{caption}</caption>
           <thead className="bg-muted/50">

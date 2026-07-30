@@ -183,8 +183,8 @@ Keine zukünftigen Zahlungen, keine erwarteten Dividenden, keine Kurse.
 Sieben Unterbereiche: Übersicht, Jahre, Monate, **Breakdown**, **Vergleich**, Unternehmen,
 Depots.
 
-Der Breakdown zeigt alle Jahre und Monate in **einer** Tabelle: eine Zeile je Kalendermonat, eine
-Spalte je Kalenderjahr, dazu Jahressummen, den Durchschnitt der abgeschlossenen Jahre und die
+Der Breakdown zeigt alle Jahre und Monate in **einer** Tabelle: eine Zeile je Kalenderjahr
+(neueste zuerst), eine Spalte je Monat, dazu Jahressummen, Monatssummen über alle Jahre und die
 Veränderung zum Vorjahr. Bewusst rein zahlengetrieben und ohne Diagramm — hier geht es um den
 Abgleich Zahl gegen Zahl (Januar 2024 gegen Januar 2025 gegen Januar 2026), nicht um die Form
 einer Kurve. Umschaltbar zwischen Monatssumme, Veränderung zum Vorjahresmonat und aufgelaufener

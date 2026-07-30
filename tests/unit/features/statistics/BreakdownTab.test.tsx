@@ -70,16 +70,28 @@ function renderBreakdown(
 }
 
 describe("BreakdownTab", () => {
-  it("stellt alle Jahre als Spalten und alle Monate als Zeilen dar", () => {
+  it("stellt alle Jahre als Zeilen dar, neueste zuerst", () => {
     renderBreakdown();
     const table = screen.getByRole("table");
-    expect(within(table).getByRole("columnheader", { name: /2024/ })).toBeInTheDocument();
-    expect(within(table).getByRole("columnheader", { name: /2025/ })).toBeInTheDocument();
+    const jahre = within(table)
+      .getAllByRole("rowheader")
+      .map((zelle) => zelle.textContent);
+    expect(jahre).toEqual(["2026* (laufendes Jahr)", "2025", "2024", "Gesamt"]);
+  });
+
+  it("stellt die zwölf Monate als Spalten dar", () => {
+    renderBreakdown();
+    const table = screen.getByRole("table");
     expect(
-      within(table).getByRole("columnheader", { name: /2026.*laufendes Jahr/ }),
+      within(table).getByRole("columnheader", { name: "Januar" }),
     ).toBeInTheDocument();
-    // Zwoelf Monatszeilen plus Kopfzeile, Gesamt- und Vorjahreszeile.
-    expect(within(table).getAllByRole("row")).toHaveLength(15);
+    expect(
+      within(table).getByRole("columnheader", { name: "Dezember" }),
+    ).toBeInTheDocument();
+    // Jahr + zwölf Monate + Gesamt.
+    expect(within(table).getAllByRole("columnheader")).toHaveLength(14);
+    // Drei Jahreszeilen plus Kopf- und Summenzeile.
+    expect(within(table).getAllByRole("row")).toHaveLength(5);
   });
 
   it("verlinkt jeden Betrag in die zugehörigen Dividendeneingänge", () => {
@@ -89,13 +101,13 @@ describe("BreakdownTab", () => {
     expect(link).toHaveAttribute("href", expect.stringContaining("month=3"));
   });
 
-  it("zeigt Jahressummen und den Durchschnitt der abgeschlossenen Jahre", () => {
+  it("zeigt Jahressummen am Zeilenende und Monatssummen in der Fußzeile", () => {
     renderBreakdown();
     const table = screen.getByRole("table");
-    // 2024: 100 + 300; Ø März: (100 + 150) ÷ 2 = 125 €.
+    // 2024: 100 + 300 = 400 €.
     expect(within(table).getAllByText(/400,00\s?€/).length).toBeGreaterThan(0);
-    expect(within(table).getAllByText(/125,00\s?€/).length).toBeGreaterThan(0);
-    expect(screen.getByText(/2 abgeschlossenen Jahre/)).toBeInTheDocument();
+    // März über alle Jahre: 100 + 150 + 180 = 430 €.
+    expect(within(table).getAllByText(/430,00\s?€/).length).toBeGreaterThan(0);
   });
 
   it("wechselt die Ansicht auf die Veränderung zum Vorjahresmonat", () => {
@@ -105,10 +117,8 @@ describe("BreakdownTab", () => {
     });
     // März 2025: 150 gegen 100 € im Vorjahr.
     expect(screen.getByText("+50,0 %")).toBeInTheDocument();
-    // Ø und Gesamt entfallen — Veraenderungen lassen sich nicht addieren.
-    expect(
-      screen.queryByRole("columnheader", { name: "Gesamt" }),
-    ).not.toBeInTheDocument();
+    // Der Rand bleibt bei Summen: die Jahressumme 2024 steht weiterhin da.
+    expect(screen.getAllByText(/400,00\s?€/).length).toBeGreaterThan(0);
   });
 
   it('summiert in der Ansicht „Aufgelaufen" über das Jahr', () => {
@@ -123,7 +133,7 @@ describe("BreakdownTab", () => {
   it("ignoriert den Jahresfilter und sagt das ausdrücklich", () => {
     renderBreakdown(PAYMENTS, { ...EMPTY_STATISTICS_FILTER, year: 2025 });
     const table = screen.getByRole("table");
-    expect(within(table).getByRole("columnheader", { name: /2024/ })).toBeInTheDocument();
+    expect(within(table).getByRole("rowheader", { name: /2024/ })).toBeInTheDocument();
     expect(
       screen.getByText(/Jahresfilter \(2025\) wirkt in diesem Bereich nicht/),
     ).toBeInTheDocument();

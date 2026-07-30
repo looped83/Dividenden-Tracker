@@ -15,7 +15,6 @@ import {
   refDateFromDate,
   type BreakdownCell,
   type BreakdownMatrix,
-  type BreakdownYearColumn,
   type ComparisonResult,
   type StatisticsFilter,
 } from "@/lib/statistics";
@@ -42,11 +41,11 @@ import {
  * Werkzeug, und jede Zahl fuehrt in die Zahlungsliste dahinter (§11.9).
  *
  * Die Rechnung liegt vollstaendig in `lib/statistics/breakdown`; diese Seite
- * stellt dar und benennt, was die Zahlen einschraenkt: das laufende Jahr, den
- * laufenden Monat und den Divisor der Ø-Spalte.
+ * stellt dar und benennt, was die Zahlen einschraenkt: das laufende Jahr und
+ * den laufenden Monat.
  *
  * Der Jahresfilter der Statistikleiste bleibt hier wirkungslos — er reduzierte
- * die Matrix auf eine einzige Spalte und damit auf das, was „Monate" ohnehin
+ * die Matrix auf eine einzige Zeile und damit auf das, was „Monate" ohnehin
  * zeigt. Alle uebrigen Filter wirken.
  */
 export function BreakdownTab() {
@@ -66,11 +65,7 @@ export function BreakdownTab() {
     setSearchParams((prev) => applyBreakdownView(prev, next), { replace: false });
   };
 
-  // Ø und Gesamt sind Summen ueber die Jahre. Sie ergeben nur neben absoluten
-  // Monatssummen einen Sinn: Veraenderungen lassen sich nicht addieren, und
-  // aufgelaufene Werte enthalten die Vormonate bereits.
-  const showAggregates = view === "summe";
-  const runningYear = matrix.years.find((column) => column.running);
+  const runningYear = matrix.years.find((row) => row.running);
 
   if (matrix.years.length === 0) {
     return (
@@ -88,8 +83,8 @@ export function BreakdownTab() {
         <CardHeader className="pb-3">
           <CardTitle>Jahre × Monate</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Eine Zeile je Monat, eine Spalte je Jahr — der gesamte Bestand auf einen
-            Blick. Jeder Betrag öffnet die zugehörigen Dividendeneingänge.
+            Eine Zeile je Jahr, neueste zuerst — eine Spalte je Monat. Jeder Betrag öffnet
+            die zugehörigen Dividendeneingänge.
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -120,12 +115,7 @@ export function BreakdownTab() {
             </p>
           )}
 
-          <BreakdownMatrixTable
-            matrix={matrix}
-            view={view}
-            filter={filter}
-            showAggregates={showAggregates}
-          />
+          <BreakdownMatrixTable matrix={matrix} view={view} filter={filter} />
 
           <ul className="space-y-1 text-sm text-muted-foreground">
             {runningYear && (
@@ -137,21 +127,18 @@ export function BreakdownTab() {
                 steht.
               </li>
             )}
-            {showAggregates && (
-              <li>
-                <span aria-hidden>Ø: </span>
-                {matrix.completedYears > 0
-                  ? `Durchschnitt über die ${String(matrix.completedYears)} abgeschlossenen ${
-                      matrix.completedYears === 1 ? "Jahr" : "Jahre"
-                    } — das laufende Jahr zählt nicht mit, weil noch nicht erreichte Monate den Schnitt drücken würden.`
-                  : "Noch kein abgeschlossenes Jahr vorhanden."}
-              </li>
-            )}
             {view === "veraenderung" && (
               <li>
                 Verglichen wird jeder Monat mit demselben Monat des Vorjahres. Fehlt das
                 Vorjahr in den Daten, steht ein Gedankenstrich — nie eine gerechnete
-                Prozentzahl ohne Grundlage.
+                Prozentzahl ohne Grundlage. Randspalte und Fußzeile zeigen weiterhin
+                Summen.
+              </li>
+            )}
+            {view === "kumuliert" && (
+              <li>
+                Jede Zelle ist die Summe seit Jahresbeginn. Randspalte und Fußzeile zeigen
+                die Summen des ganzen Jahres bzw. Monats.
               </li>
             )}
             <li>
@@ -174,31 +161,42 @@ interface MatrixProps {
   matrix: BreakdownMatrix;
   view: BreakdownView;
   filter: StatisticsFilter;
-  showAggregates: boolean;
 }
 
 /**
  * Die Matrix selbst.
  *
+ * **Jahre als Zeilen, Monate als Spalten.** Die Breite steht damit fest: zwoelf
+ * Monate plus zwei Randspalten, heute wie in zehn Jahren. Waeren die Jahre die
+ * Spalten, wuechse die Tabelle mit jedem Jahreswechsel weiter nach rechts.
+ *
  * **Waagerecht verschiebbar statt umgebrochen.** Eine Matrix laesst sich nicht
  * in Karten aufloesen, ohne genau das zu verlieren, wofuer sie da ist: den
- * Vergleich nebeneinander. Die Monatsspalte bleibt deshalb beim Schieben stehen
- * (`sticky`), sodass jede Zahl ihre Zeile behaelt — auch auf dem Telefon.
+ * Vergleich nebeneinander. Die Monate verschieben sich deshalb zwischen zwei
+ * festen Spalten: das Jahr links, die Jahressumme rechts (`sticky`). So behaelt
+ * jede Zahl ihre Zeile, und der Wert, auf den die Zeile hinauslaeuft, bleibt
+ * sichtbar. Auf dem Telefon steht nur die Jahresspalte fest — zwei feste
+ * Spalten liessen von zwoelf Monaten kaum einen uebrig.
  *
  * `border-separate` statt `border-collapse`: Zusammengefasste Rahmen
  * verschwinden in mehreren Browsern unter `position: sticky`. Die Linien liegen
  * deshalb an den Zellen.
  */
-function BreakdownMatrixTable({ matrix, view, filter, showAggregates }: MatrixProps) {
+function BreakdownMatrixTable({ matrix, view, filter }: MatrixProps) {
   const caption =
     view === "veraenderung"
-      ? "Veränderung der Netto-Dividenden je Monat gegenüber dem Vorjahresmonat, Zeilen je Monat, Spalten je Jahr"
+      ? "Veränderung der Netto-Dividenden je Monat gegenüber dem Vorjahresmonat, Zeilen je Jahr, Spalten je Monat"
       : view === "kumuliert"
-        ? "Aufgelaufene Netto-Dividenden je Jahr, Zeilen je Monat, Spalten je Jahr"
-        : "Netto-Dividenden je Monat und Jahr, Zeilen je Monat, Spalten je Jahr";
+        ? "Aufgelaufene Netto-Dividenden im Jahresverlauf, Zeilen je Jahr, Spalten je Monat"
+        : "Netto-Dividenden je Monat und Jahr, Zeilen je Jahr, Spalten je Monat";
 
   return (
-    <div className="w-full overflow-x-auto rounded-lg border border-border">
+    // `relative` ist hier keine Kosmetik: Die Beschriftungen fuer Hilfsmittel
+    // (`sr-only`) sind absolut positioniert. Ohne positionierten Vorfahren ist
+    // ihr Bezugsrahmen das Dokument — der seitliche Bildlauf dieses Kastens
+    // klammert sie dann nicht ein, und die Seite selbst laesst sich bis zur
+    // rechten Tabellenkante schieben, obwohl dort nichts Sichtbares steht.
+    <div className="relative w-full overflow-x-auto rounded-lg border border-border">
       <table className="w-full border-separate border-spacing-0 text-sm">
         <caption className="sr-only">{caption}</caption>
         <thead>
@@ -207,81 +205,67 @@ function BreakdownMatrixTable({ matrix, view, filter, showAggregates }: MatrixPr
               scope="col"
               className="sticky left-0 z-20 border-b border-r border-border bg-muted px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground"
             >
-              Monat
+              Jahr
             </th>
-            {matrix.years.map((column) => (
-              <YearHeader key={column.year} column={column} />
+            {matrix.months.map((month) => (
+              <th
+                key={month.month}
+                scope="col"
+                className="whitespace-nowrap border-b border-border bg-muted px-2.5 py-2 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground"
+              >
+                <span aria-hidden>{monthNameDeShort(month.month)}</span>
+                <span className="sr-only">{monthNameDe(month.month)}</span>
+              </th>
             ))}
-            {showAggregates && (
-              <>
-                <th
-                  scope="col"
-                  className="whitespace-nowrap border-b border-l border-border bg-muted px-3 py-2 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground"
-                  title="Durchschnitt über die abgeschlossenen Jahre"
-                >
-                  Ø
-                </th>
-                <th
-                  scope="col"
-                  className="whitespace-nowrap border-b border-border bg-muted px-3 py-2 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground"
-                >
-                  Gesamt
-                </th>
-              </>
-            )}
+            <th
+              scope="col"
+              className="z-20 whitespace-nowrap border-b border-l border-border bg-muted px-3 py-2 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground sm:sticky sm:right-0"
+            >
+              Gesamt
+            </th>
           </tr>
         </thead>
 
         <tbody>
-          {matrix.months.map((row) => (
-            <tr key={row.month}>
+          {matrix.years.map((row) => (
+            <tr key={row.year}>
               <th
                 scope="row"
-                className="sticky left-0 z-10 border-b border-r border-border bg-card px-3 py-2 text-left font-medium"
+                className="sticky left-0 z-10 whitespace-nowrap border-b border-r border-border bg-card px-3 py-2 text-left font-medium tabular-nums"
               >
-                {monthNameDeShort(row.month)}
-                <span className="sr-only"> {monthNameDe(row.month)}</span>
+                {row.year}
+                {row.running && (
+                  <>
+                    <span aria-hidden>*</span>
+                    <span className="sr-only"> (laufendes Jahr)</span>
+                  </>
+                )}
               </th>
               {row.cells.map((cell) => (
                 <td
-                  key={cell.year}
+                  key={cell.month}
                   className={cn(
-                    "whitespace-nowrap border-b border-border px-3 py-2 text-right tabular-nums",
+                    "whitespace-nowrap border-b border-border px-2.5 py-2 text-right tabular-nums",
                     cell.future && "bg-muted/40",
                   )}
                 >
                   <MatrixCell cell={cell} view={view} filter={filter} />
                 </td>
               ))}
-              {showAggregates && (
-                <>
-                  <td className="whitespace-nowrap border-b border-l border-border px-3 py-2 text-right tabular-nums text-muted-foreground">
-                    {/* Ein Monat, in dem nie etwas kam, hat keinen Durchschnitt
-                        — „0,00 €" neben dem Gedankenstrich der Gesamtspalte
-                        waeren zwei Aussagen ueber dieselbe Leere. */}
-                    {row.count === 0 || !row.average ? (
-                      <Dash
-                        label={
-                          row.count === 0
-                            ? "Keine Zahlungen"
-                            : "Kein abgeschlossenes Jahr"
-                        }
-                      />
-                    ) : (
-                      <AmountText amount={row.average} />
-                    )}
-                  </td>
-                  <td className="whitespace-nowrap border-b border-border px-3 py-2 text-right font-medium tabular-nums">
-                    {row.count === 0 ? (
-                      <Dash label="Keine Zahlungen" />
-                    ) : (
-                      <span title={formatPayments(row.count)}>
-                        <AmountText amount={row.net} />
-                      </span>
-                    )}
-                  </td>
-                </>
-              )}
+              {/* Jahressumme und Vorjahresvergleich stehen zusammen in **einer**
+                  Spalte: Beide sagen etwas ueber dasselbe Jahr, und eine Spalte
+                  weniger heisst eine Spalte mehr Platz fuer die Monate. */}
+              <td
+                className="z-10 whitespace-nowrap border-b border-l border-border bg-card px-3 py-2 text-right font-medium tabular-nums sm:sticky sm:right-0"
+                title={`${String(row.year)}: ${formatMoney(row.net)} · ${formatPayments(
+                  row.count,
+                )} · Zahlungen in ${String(row.activeMonths)} von 12 Monaten`}
+              >
+                <AmountText amount={row.net} />
+                <span className="block text-xs font-normal">
+                  <ChangeValue change={row.change} context="ggü. Vorjahr" />
+                </span>
+              </td>
             </tr>
           ))}
         </tbody>
@@ -290,81 +274,35 @@ function BreakdownMatrixTable({ matrix, view, filter, showAggregates }: MatrixPr
           <tr>
             <th
               scope="row"
-              className="sticky left-0 z-10 border-r border-border bg-muted px-3 py-2 text-left font-medium"
+              className="sticky left-0 z-10 whitespace-nowrap border-r border-t border-border bg-muted px-3 py-2 text-left font-medium"
             >
               Gesamt
             </th>
-            {matrix.years.map((column) => (
+            {matrix.months.map((month) => (
               <td
-                key={column.year}
-                className="whitespace-nowrap bg-muted px-3 py-2 text-right font-medium tabular-nums"
-                title={`${String(column.year)}: ${formatMoney(column.net)} · ${formatPayments(
-                  column.count,
-                )} · Zahlungen in ${String(column.activeMonths)} von 12 Monaten`}
+                key={month.month}
+                className="whitespace-nowrap border-t border-border bg-muted px-2.5 py-2 text-right font-medium tabular-nums"
+                title={`${monthNameDe(month.month)} über alle Jahre: ${formatMoney(
+                  month.net,
+                )} · ${formatPayments(month.count)}`}
               >
-                <AmountText amount={column.net} />
-                {column.running && <span aria-hidden>*</span>}
+                {month.count === 0 ? (
+                  <Dash label={`${monthNameDe(month.month)}: keine Zahlungen`} />
+                ) : (
+                  <AmountText amount={month.net} />
+                )}
               </td>
             ))}
-            {showAggregates && (
-              <>
-                <td className="whitespace-nowrap border-l border-border bg-muted px-3 py-2 text-right tabular-nums text-muted-foreground">
-                  {matrix.totals.average ? (
-                    <AmountText amount={matrix.totals.average} />
-                  ) : (
-                    <Dash label="Kein abgeschlossenes Jahr" />
-                  )}
-                </td>
-                <td className="whitespace-nowrap bg-muted px-3 py-2 text-right font-semibold tabular-nums">
-                  <span title={formatPayments(matrix.totals.count)}>
-                    <AmountText amount={matrix.totals.net} />
-                  </span>
-                </td>
-              </>
-            )}
-          </tr>
-          <tr>
-            <th
-              scope="row"
-              className="sticky left-0 z-10 whitespace-nowrap border-r border-t border-border bg-muted px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground"
+            <td
+              className="z-10 whitespace-nowrap border-l border-t border-border bg-muted px-3 py-2 text-right font-semibold tabular-nums sm:sticky sm:right-0"
+              title={formatPayments(matrix.totals.count)}
             >
-              Δ Vorjahr
-            </th>
-            {matrix.years.map((column) => (
-              <td
-                key={column.year}
-                className="whitespace-nowrap border-t border-border bg-muted px-3 py-2 text-right tabular-nums"
-              >
-                <ChangeValue change={column.change} context="ggü. Vorjahr" />
-              </td>
-            ))}
-            {showAggregates && (
-              <>
-                <td className="border-l border-t border-border bg-muted px-3 py-2" />
-                <td className="border-t border-border bg-muted px-3 py-2" />
-              </>
-            )}
+              <AmountText amount={matrix.totals.net} />
+            </td>
           </tr>
         </tfoot>
       </table>
     </div>
-  );
-}
-
-function YearHeader({ column }: { column: BreakdownYearColumn }) {
-  return (
-    <th
-      scope="col"
-      className="whitespace-nowrap border-b border-border bg-muted px-3 py-2 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground"
-    >
-      {column.year}
-      {column.running && (
-        <>
-          <span aria-hidden>*</span>
-          <span className="sr-only"> (laufendes Jahr)</span>
-        </>
-      )}
-    </th>
   );
 }
 
@@ -393,14 +331,12 @@ function MatrixCell({
     );
   }
 
-  const amount = view === "kumuliert" ? cell.cumulative : cell.net;
-
   if (view === "kumuliert") {
-    return amount.isZero() ? (
+    return cell.cumulative.isZero() ? (
       <Dash label={`${period}: noch nichts aufgelaufen`} />
     ) : (
-      <span title={`${period}: ${formatMoney(amount)} seit Jahresbeginn`}>
-        <AmountText amount={amount} />
+      <span title={`${period}: ${formatMoney(cell.cumulative)} seit Jahresbeginn`}>
+        <AmountText amount={cell.cumulative} />
         {cell.partial && <span aria-hidden>*</span>}
       </span>
     );

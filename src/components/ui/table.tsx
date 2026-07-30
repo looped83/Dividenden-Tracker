@@ -3,7 +3,11 @@ import { cn } from "@/lib/utils/cn";
 
 export function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
-    <div className="w-full overflow-x-auto rounded-lg border border-border">
+    // `relative` klammert die absolut positionierten `sr-only`-Texte (u. a.
+    // die Tabellenbeschriftung) in diesen Kasten ein. Ohne positionierten
+    // Vorfahren beziehen sie sich auf das Dokument, und eine breite Tabelle
+    // laesst dann die **Seite** seitlich scrollen statt nur sich selbst.
+    <div className="relative w-full overflow-x-auto rounded-lg border border-border">
       <table className={cn("w-full caption-bottom text-sm", className)} {...props} />
     </div>
   );

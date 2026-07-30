@@ -23,12 +23,16 @@ function p(payDate: string, net: string): AnalyticsPayment {
 /** 15. Juli 2026 — mitten im laufenden Jahr, mitten im laufenden Monat. */
 const HEUTE: RefDate = { year: 2026, month: 7, day: 15 };
 
+/** Zeile eines Jahres. */
+function jahr(matrix: ReturnType<typeof breakdownMatrix>, year: number) {
+  const row = matrix.years.find((candidate) => candidate.year === year);
+  if (!row) throw new Error(`Keine Zeile für ${String(year)}`);
+  return row;
+}
+
 /** Zelle (Jahr, Monat) der Matrix. */
 function cell(matrix: ReturnType<typeof breakdownMatrix>, year: number, month: number) {
-  const row = matrix.months[month - 1];
-  const found = row.cells.find((candidate) => candidate.year === year);
-  if (!found) throw new Error(`Keine Zelle für ${String(year)}-${String(month)}`);
-  return found;
+  return jahr(matrix, year).cells[month - 1];
 }
 
 describe("breakdownMatrix (§11.12)", () => {
@@ -43,14 +47,16 @@ describe("breakdownMatrix (§11.12)", () => {
     p("2026-07-10", "260.00"),
   ];
 
-  it("liefert zwölf Zeilen und eine Spalte je Jahr, aufsteigend", () => {
+  it("liefert eine Zeile je Jahr, neueste zuerst, mit zwölf Monatsspalten", () => {
     const matrix = breakdownMatrix(payments, HEUTE);
-    expect(matrix.months).toHaveLength(12);
-    expect(matrix.years.map((column) => column.year)).toEqual([2024, 2025, 2026]);
-    expect(matrix.months.map((row) => row.cells.length)).toEqual(Array(12).fill(3));
+    expect(matrix.years.map((row) => row.year)).toEqual([2026, 2025, 2024]);
+    expect(matrix.years.map((row) => row.cells.length)).toEqual([12, 12, 12]);
+    expect(matrix.months.map((month) => month.month)).toEqual([
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+    ]);
   });
 
-  it("summiert je Zelle und je Zeile über alle Jahre", () => {
+  it("summiert je Zelle und je Monatsspalte über alle Jahre", () => {
     const matrix = breakdownMatrix(payments, HEUTE);
     expect(cell(matrix, 2025, 7).net.toStringValue()).toBe("200.00");
     expect(cell(matrix, 2025, 7).count).toBe(2);
@@ -59,13 +65,13 @@ describe("breakdownMatrix (§11.12)", () => {
     expect(matrix.months[2].count).toBe(3);
   });
 
-  it("führt die laufende Jahressumme je Spalte mit", () => {
+  it("führt die laufende Jahressumme je Zeile mit", () => {
     const matrix = breakdownMatrix(payments, HEUTE);
     expect(cell(matrix, 2024, 3).cumulative.toStringValue()).toBe("100.00");
     expect(cell(matrix, 2024, 7).cumulative.toStringValue()).toBe("300.00");
     expect(cell(matrix, 2024, 12).cumulative.toStringValue()).toBe("600.00");
-    // Dezemberwert der Spalte entspricht der Jahressumme.
-    expect(matrix.years[0].net.toStringValue()).toBe("600.00");
+    // Dezemberwert der Zeile entspricht der Jahressumme.
+    expect(jahr(matrix, 2024).net.toStringValue()).toBe("600.00");
   });
 
   it("kennzeichnet noch nicht erreichte Monate statt sie als 0 € zu zählen", () => {
@@ -112,12 +118,12 @@ describe("breakdownMatrix (§11.12)", () => {
   it("vergleicht ohne Vorjahr in der Datenbasis gar nicht", () => {
     const matrix = breakdownMatrix(payments, HEUTE);
     expect(cell(matrix, 2024, 3).change.kind).toBe("no-comparison");
-    expect(matrix.years[0].change.kind).toBe("no-comparison");
+    expect(jahr(matrix, 2024).change.kind).toBe("no-comparison");
   });
 
   it("vergleicht das laufende Jahr über denselben Ausschnitt", () => {
     const matrix = breakdownMatrix(payments, HEUTE);
-    const laufend = matrix.years[2];
+    const laufend = jahr(matrix, 2026);
     expect(laufend.running).toBe(true);
     expect(laufend.net.toStringValue()).toBe("440.00");
     // 1.1.–15.7.2026 (440 €) gegen 1.1.–15.7.2025 (150 + 100 = 250 €).
@@ -127,28 +133,10 @@ describe("breakdownMatrix (§11.12)", () => {
     }
   });
 
-  it("mittelt nur über abgeschlossene Jahre", () => {
-    const matrix = breakdownMatrix(payments, HEUTE);
-    expect(matrix.completedYears).toBe(2);
-    // März: (100 + 150) ÷ 2 = 125 €; das laufende Jahr zählt nicht mit.
-    expect(matrix.months[2].average?.toStringValue()).toBe("125.00");
-    // Dezember: (300 + 0) ÷ 2 = 150 € — ein zahlungsfreier Dezember 2025 zählt.
-    expect(matrix.months[11].average?.toStringValue()).toBe("150.00");
-  });
-
-  it("summiert die Zeilendurchschnitte zum Gesamtdurchschnitt", () => {
-    const matrix = breakdownMatrix(payments, HEUTE);
-    const summe = matrix.months.reduce(
-      (total, row) => (row.average ? total.add(row.average) : total),
-      Money.zero(EUR),
-    );
-    expect(summe.toStringValue()).toBe(matrix.totals.average?.toStringValue());
-  });
-
   it("zählt Monate mit Zahlungen je Jahr", () => {
     const matrix = breakdownMatrix(payments, HEUTE);
-    expect(matrix.years[0].activeMonths).toBe(3);
-    expect(matrix.years[1].activeMonths).toBe(2);
+    expect(jahr(matrix, 2024).activeMonths).toBe(3);
+    expect(jahr(matrix, 2025).activeMonths).toBe(2);
   });
 
   it("nennt Gesamtsumme, Anzahl und Stichtag", () => {
@@ -162,17 +150,9 @@ describe("breakdownMatrix (§11.12)", () => {
     const matrix = breakdownMatrix([], HEUTE);
     expect(matrix.years).toHaveLength(0);
     expect(matrix.months).toHaveLength(12);
-    expect(matrix.months[0].cells).toHaveLength(0);
+    expect(matrix.months[0].net.isZero()).toBe(true);
     expect(matrix.totals.net.isZero()).toBe(true);
-    expect(matrix.totals.average).toBeNull();
-    expect(matrix.completedYears).toBe(0);
-  });
-
-  it("lässt den Durchschnitt ohne abgeschlossenes Jahr offen", () => {
-    const matrix = breakdownMatrix([p("2026-03-10", "180.00")], HEUTE);
-    expect(matrix.completedYears).toBe(0);
-    expect(matrix.months[2].average).toBeNull();
-    expect(matrix.totals.average).toBeNull();
+    expect(matrix.totals.count).toBe(0);
   });
 
   it("bildet den 29.02. auf den letzten gültigen Tag des Vorjahres ab", () => {
