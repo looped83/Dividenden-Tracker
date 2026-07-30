@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AmountText } from "@/components/money/AmountText";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
+  alignYearBuckets,
+  availableYears,
   calendarMonthBuckets,
   monthAcrossYearsStatistics,
   monthNameDe,
@@ -35,7 +37,11 @@ export function MonthsTab() {
     [payments, filter],
   );
 
-  // Gemeinsame Skala fuer alle Monats-Sparklines (Entwicklung über die Jahre).
+  // Gemeinsame Jahresachse **und** gemeinsame Skala fuer alle Monatszeilen:
+  // Ohne beides waeren die Balken zweier Zeilen nicht vergleichbar — weder in
+  // der Hoehe noch in der Bedeutung ihrer Position.
+  const years = React.useMemo(() => [...availableYears(payments)].reverse(), [payments]);
+
   const sparkMax = React.useMemo(() => {
     let max = 0;
     for (const month of stats) {
@@ -46,6 +52,10 @@ export function MonthsTab() {
     }
     return max;
   }, [stats]);
+
+  // Ein einziges Jahr ergibt einen einzelnen Balken — das ist keine
+  // Entwicklung. Bei gesetztem Jahresfilter entfaellt die Spalte deshalb.
+  const showDevelopment = years.length > 1;
 
   const columns = React.useMemo<StatColumn<MonthAcrossYearsStatistics>[]>(
     () => [
@@ -80,22 +90,26 @@ export function MonthsTab() {
         compare: (a, b) => a.averagePayment.compareTo(b.averagePayment),
         render: (row) => <AmountText amount={row.averagePayment} />,
       },
-      {
-        key: "development",
-        header: "Entwicklung",
-        render: (row) => (
-          <YearSparkline
-            points={row.perYear.map((bucket) => ({
-              label: String(bucket.year),
-              value: bucket.net.toChartNumber(),
-              money: bucket.net,
-            }))}
-            maxValue={sparkMax}
-          />
-        ),
-      },
+      ...(showDevelopment
+        ? [
+            {
+              key: "development",
+              header: `Entwicklung ${String(years[0])}–${String(years[years.length - 1])}`,
+              render: (row: MonthAcrossYearsStatistics) => (
+                <YearSparkline
+                  points={alignYearBuckets(row.perYear, years).map((bucket) => ({
+                    label: String(bucket.year),
+                    value: bucket.net.toChartNumber(),
+                    money: bucket.net,
+                  }))}
+                  maxValue={sparkMax}
+                />
+              ),
+            },
+          ]
+        : []),
     ],
-    [sparkMax],
+    [sparkMax, years, showDevelopment],
   );
 
   if (payments.length === 0) {
