@@ -17,7 +17,9 @@ import ExportSection from "./ExportSection";
 export function BackupPage() {
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start">
+      {/* Ohne `items-start`: Beide Kacheln fuellen die Zeilenhoehe, ihre
+          Unterkanten liegen also auf einer Linie. */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <BackupSection />
         <RestoreSection />
       </div>
