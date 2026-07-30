@@ -146,7 +146,7 @@ export function YearsTab() {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-5">
           <CardTitle>Jährliche Entwicklung</CardTitle>
         </CardHeader>
         <CardContent>
@@ -159,7 +159,7 @@ export function YearsTab() {
       </Card>
 
       <Card>
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-5">
           <CardTitle>Jahresstatistik</CardTitle>
         </CardHeader>
         <CardContent>

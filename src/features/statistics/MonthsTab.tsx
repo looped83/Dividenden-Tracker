@@ -85,7 +85,7 @@ export function MonthsTab() {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-5">
           <CardTitle>Monatliche Entwicklung</CardTitle>
         </CardHeader>
         <CardContent>
@@ -98,7 +98,7 @@ export function MonthsTab() {
       </Card>
 
       <Card>
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-5">
           <CardTitle>Monatsstatistik</CardTitle>
         </CardHeader>
         <CardContent>

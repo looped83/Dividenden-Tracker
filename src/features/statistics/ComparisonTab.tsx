@@ -139,7 +139,7 @@ export function ComparisonTab() {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-5">
           <CardTitle>Zeitraumvergleich</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -279,7 +279,7 @@ export function ComparisonTab() {
       {"months" in comparison ? (
         <>
           <Card>
-            <CardHeader className="pb-3">
+            <CardHeader className="pb-5">
               <CardTitle>Kumulierter Verlauf</CardTitle>
             </CardHeader>
             <CardContent>
@@ -293,7 +293,7 @@ export function ComparisonTab() {
           </Card>
 
           <Card>
-            <CardHeader className="pb-3">
+            <CardHeader className="pb-5">
               <CardTitle>Monat für Monat</CardTitle>
             </CardHeader>
             <CardContent>
@@ -312,7 +312,7 @@ export function ComparisonTab() {
         </>
       ) : (
         <Card>
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-5">
             <CardTitle>Nach Unternehmen</CardTitle>
           </CardHeader>
           <CardContent>

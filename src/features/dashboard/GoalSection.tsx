@@ -10,7 +10,6 @@ import { GoalProgressBar } from "@/features/goals/GoalProgressBar";
 import {
   goalDisplayTitle,
   money,
-  periodLabel,
   remainderText,
   statusLabel,
   statusTone,
@@ -36,7 +35,6 @@ function CompactGoalCard({ progress }: { progress: GoalProgress }) {
             >
               {goalDisplayTitle(progress.goal)}
             </Link>
-            <p className="text-xs text-muted-foreground">{periodLabel(progress.goal)}</p>
           </div>
           <Badge variant={badgeVariantByTone[tone]}>{statusLabel(progress.status)}</Badge>
         </div>
@@ -62,14 +60,16 @@ interface GoalSectionProps {
 }
 
 /**
- * Kompakte Zielsektion des Dashboards (Auftrag §25/§26). Interaktion:
- * - Einzelnes Jahr gewaehlt → Jahresziel dieses Jahres (falls vorhanden), sonst
- *   ein leerer Zustand mit Anlege-Aktion.
- * - „Alle Jahre" → keine einzelne Jahres-Zielkarte, stattdessen ein klarer Link
- *   zur Zielübersicht.
- * - Die Karte fuer das aktive Monatsziel des aktuellen Monats bleibt unabhaengig
- *   von der Jahresauswahl (konsistent zur Monatskennzahl des Dashboards).
- * Keine Zielkarte verwendet je einen anderen Zeitraum als ihre Beschriftung.
+ * Kompakte Zielsektion des Dashboards (Auftrag §25/§26).
+ *
+ * **Gezeigt wird ausschliesslich, was zum gewaehlten Jahr gehoert.** Wer 2024
+ * betrachtet, sieht das Jahresziel 2024 — und nicht daneben das Monatsziel des
+ * heutigen Monats, das zu einem ganz anderen Jahr gehoert. Das Monatsziel
+ * erscheint deshalb nur im laufenden Jahr.
+ *
+ * Bei „Alle Jahre" entfaellt der Bereich ganz: Ziele sind immer an einen
+ * Zeitraum gebunden, „alle Jahre" ist keiner. Eine Karte, die nur sagt „waehle
+ * ein Jahr", ist kein Inhalt — der Weg zu den Zielen steht in der Navigation.
  */
 export function GoalSection({ payments, selection, today }: GoalSectionProps) {
   const goalsQuery = useGoals();
@@ -80,10 +80,16 @@ export function GoalSection({ payments, selection, today }: GoalSectionProps) {
       ? null
       : (goals.find((g) => g.goalType === "annual" && g.year === selection) ?? null);
 
+  // Das Monatsziel gehoert zum laufenden Monat — und damit zum laufenden Jahr.
+  // In einem anderen Jahr stuende es fuer einen Zeitraum, den die Seite
+  // gerade gar nicht zeigt.
   const monthlyGoal =
-    goals.find(
-      (g) => g.goalType === "monthly" && g.year === today.year && g.month === today.month,
-    ) ?? null;
+    selection === today.year
+      ? (goals.find(
+          (g) =>
+            g.goalType === "monthly" && g.year === today.year && g.month === today.month,
+        ) ?? null)
+      : null;
 
   const annualProgress = annualGoal
     ? computeGoalProgress(annualGoal, payments, today)
@@ -101,23 +107,13 @@ export function GoalSection({ payments, selection, today }: GoalSectionProps) {
     </div>
   );
 
+  if (selection === "all") return null;
+
   return (
     <section className="space-y-3" aria-label="Ziele">
       {heading}
       <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2">
-        {selection === "all" ? (
-          <Card className="sm:col-span-2">
-            <CardContent className="flex flex-wrap items-center justify-between gap-3 p-5">
-              <p className="text-sm text-muted-foreground">
-                Wähle ein Jahr aus, um das zugehörige Jahresziel zu sehen, oder öffne die
-                Zielübersicht.
-              </p>
-              <Button asChild variant="outline" size="sm">
-                <Link to="/ziele">Zur Zielübersicht</Link>
-              </Button>
-            </CardContent>
-          </Card>
-        ) : annualProgress ? (
+        {annualProgress ? (
           <CompactGoalCard progress={annualProgress} />
         ) : (
           <Card>

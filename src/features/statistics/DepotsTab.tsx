@@ -124,7 +124,7 @@ export function DepotsTab() {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-5">
           <CardTitle>Depotverteilung</CardTitle>
         </CardHeader>
         <CardContent>
@@ -137,7 +137,7 @@ export function DepotsTab() {
       </Card>
 
       <Card>
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-5">
           <CardTitle>Monatliche Verteilung</CardTitle>
         </CardHeader>
         <CardContent>
@@ -150,7 +150,7 @@ export function DepotsTab() {
       </Card>
 
       <Card>
-        <CardHeader className="gap-3 pb-3 sm:flex-row sm:items-center sm:justify-between">
+        <CardHeader className="gap-3 pb-5 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle>Depotstatistik</CardTitle>
           <div className="sm:w-64 sm:shrink-0">
             <StatSearch value={query} onChange={setQuery} placeholder="Depot suchen …" />

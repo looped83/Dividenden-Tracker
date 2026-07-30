@@ -28,11 +28,8 @@ export function HistoricalOverview({ payments }: HistoricalOverviewProps) {
 
   return (
     <Card>
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-5">
         <CardTitle>Historische Übersicht</CardTitle>
-        <p className="text-sm text-muted-foreground">
-          Gesamte erhaltene Dividenden über alle Jahre.
-        </p>
       </CardHeader>
       <CardContent>
         <dl className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">

@@ -49,7 +49,7 @@ export function TopCompanies({
 
   return (
     <Card>
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-5">
         <CardTitle>Top-Unternehmen</CardTitle>
       </CardHeader>
       <CardContent>
@@ -91,7 +91,7 @@ export function DepotDistribution({
 
   return (
     <Card>
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-5">
         <CardTitle>Depotverteilung</CardTitle>
       </CardHeader>
       <CardContent>

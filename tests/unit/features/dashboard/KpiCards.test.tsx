@@ -33,6 +33,20 @@ function renderCards(selection: number | "all", payments: AnalyticsPayment[]) {
   );
 }
 
+/** Prueft, dass die Beschriftungen in genau dieser Folge im Dokument stehen. */
+function erwarteReihenfolge(labels: string[]) {
+  const elemente = labels.map((label) => screen.getByText(label));
+  for (let index = 1; index < elemente.length; index += 1) {
+    const folgt =
+      elemente[index - 1].compareDocumentPosition(elemente[index]) &
+      Node.DOCUMENT_POSITION_FOLLOWING;
+    expect(
+      folgt,
+      `${labels[index]} steht nicht hinter ${labels[index - 1]}`,
+    ).toBeTruthy();
+  }
+}
+
 describe("KpiCards (Render-Smoke)", () => {
   it("rendert die historische Gesamtsumme aus den echten Daten", () => {
     renderCards(2026, [
@@ -65,11 +79,38 @@ describe("KpiCards (Render-Smoke)", () => {
     expect(screen.getAllByText(/80,00\s?€/).length).toBeGreaterThan(0);
   });
 
-  it("zeigt die Anzahl ausschüttender Unternehmen im Zeitraum", () => {
+  it("verzichtet auf die Monatskachel, wenn ein anderes Jahr gewählt ist", () => {
+    const payments = [payment("2024-03-10", "50.00"), payment("2026-07-10", "80.00")];
+    // Laufendes Jahr: Der aktuelle Monat gehört zum Zeitraum.
+    const { unmount } = renderCards(2026, payments);
+    expect(screen.getByText("Aktueller Monat (Juli 2026)")).toBeInTheDocument();
+    unmount();
+
+    // 2024: Juli 2026 läge außerhalb dessen, was die Seite gerade zeigt.
+    renderCards(2024, payments);
+    expect(screen.queryByText(/Aktueller Monat/)).not.toBeInTheDocument();
+  });
+
+  it("ordnet die Kacheln vom gewählten Zeitraum zur Historie", () => {
+    renderCards(2026, [payment("2026-03-10", "50.00"), payment("2024-05-10", "70.00")]);
+    // Erst der gewählte Zeitraum, dann der laufende Monat, dann die
+    // Ableitungen daraus — die Historie steht zuletzt.
+    erwarteReihenfolge([
+      "Dividenden 2026",
+      "Aktueller Monat (Juli 2026)",
+      "Bester Monat",
+      "Ø pro Monat",
+      "Historisch erhaltene Dividenden",
+      "Zahlungen 2026",
+    ]);
+  });
+
+  it("zaehlt die Zahlungen des Zeitraums und nennt ihre Herkunft", () => {
     renderCards(2026, [
       payment("2026-03-10", "50.00", "sec-a"),
       payment("2026-04-10", "30.00", "sec-b"),
     ]);
-    expect(screen.getByText("Ausschüttende Unternehmen")).toBeInTheDocument();
+    expect(screen.getByText("Zahlungen 2026")).toBeInTheDocument();
+    expect(screen.getByText("von 2 Unternehmen · 1 Depot")).toBeInTheDocument();
   });
 });
