@@ -516,8 +516,7 @@ function ComparisonBreakdown({
       {hasPartial && (
         <p className="text-sm text-muted-foreground">
           <span aria-hidden>*</span> Angeschnittener Monat: nur bis zum Stichtag
-          gerechnet. Diese Beträge führen nicht in die Zahlungsliste, weil sie dort nur
-          als ganzer Monat darstellbar wären.
+          gerechnet.
         </p>
       )}
     </div>

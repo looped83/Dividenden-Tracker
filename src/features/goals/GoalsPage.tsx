@@ -127,7 +127,7 @@ export function GoalsPage() {
   );
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {heading}
 
       {goalsQuery.isLoading || paymentsLoading ? (
