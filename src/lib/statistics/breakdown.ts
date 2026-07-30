@@ -21,9 +21,15 @@ import type { AnalyticsPayment, ComparisonResult } from "./types";
  *
  * Die uebrigen Statistikbereiche zeigen jeweils eine Achse — Jahre untereinander
  * oder Monate ueber alle Jahre zusammengefasst. Hier stehen beide Achsen
- * gleichzeitig: eine Zeile je Kalendermonat, eine Spalte je Kalenderjahr. Das
- * beantwortet die Frage, die keine der beiden Einzelansichten beantwortet:
- * „Wie steht dieser Monat gegenueber demselben Monat der Vorjahre?"
+ * gleichzeitig: eine Zeile je Kalenderjahr (neueste zuerst), eine Spalte je
+ * Kalendermonat. Das beantwortet die Frage, die keine der beiden
+ * Einzelansichten beantwortet: „Wie steht dieser Monat gegenueber demselben
+ * Monat der Vorjahre?"
+ *
+ * **Jahre als Zeilen, Monate als Spalten**, nicht umgekehrt: Monate sind zwoelf
+ * und bleiben zwoelf, Jahre kommen jedes Jahr eines dazu. Waeren die Jahre die
+ * Spalten, wuechse die Tabelle mit jedem Jahreswechsel in die Breite — in die
+ * einzige Richtung, in der ein Bildschirm nicht nachgibt.
  *
  * Zwei Regeln tragen die Rechnung:
  *
@@ -37,7 +43,7 @@ import type { AnalyticsPayment, ComparisonResult } from "./types";
  *
  * Keine Prognose, keine Hochrechnung (PRODUCT_SPEC.md Grundsatz 8): Es werden
  * ausschliesslich vorhandene Zahlungen summiert. Alle Betraege sind decimal-
- * sicher; gerundet wird ausschliesslich am Ende einer Division (R-4).
+ * sicher.
  */
 
 const ZERO = Money.zero(EUR);
@@ -63,28 +69,11 @@ export interface BreakdownCell {
   partial: boolean;
 }
 
-/** Eine Zeile der Matrix: ein Kalendermonat ueber alle Jahre. */
-export interface BreakdownMonthRow {
-  month: number;
-  /** Eine Zelle je Jahr, in derselben Reihenfolge wie {@link BreakdownMatrix.years}. */
-  cells: BreakdownCell[];
-  /** Summe ueber alle Jahre, inklusive des laufenden. */
-  net: Money;
-  count: number;
-  /**
-   * Durchschnitt dieses Monats ueber die **abgeschlossenen** Jahre
-   * (`Σ net ÷ Anzahl abgeschlossener Jahre`); null, wenn es keine gibt. Das
-   * laufende Jahr bleibt aussen vor: Es haette fuer noch nicht erreichte Monate
-   * eine 0 beigesteuert und den Durchschnitt kuenstlich gedrueckt. Weil alle
-   * Zeilen denselben Divisor benutzen, ergeben die Zeilendurchschnitte in Summe
-   * genau den Gesamtdurchschnitt.
-   */
-  average: Money | null;
-}
-
-/** Eine Spalte der Matrix: ein Kalenderjahr. */
-export interface BreakdownYearColumn {
+/** Eine Zeile der Matrix: ein Kalenderjahr mit seinen zwoelf Monaten. */
+export interface BreakdownYearRow {
   year: number;
+  /** Genau zwoelf Zellen, Januar bis Dezember. */
+  cells: BreakdownCell[];
   net: Money;
   count: number;
   /** Monate mit mindestens einer Zahlung. */
@@ -98,22 +87,26 @@ export interface BreakdownYearColumn {
   running: boolean;
 }
 
-/** Summenzeile der Matrix. */
+/** Eine Spaltensumme der Matrix: ein Kalendermonat ueber alle Jahre. */
+export interface BreakdownMonthTotal {
+  /** Kalendermonat 1..12. */
+  month: number;
+  net: Money;
+  count: number;
+}
+
+/** Summenecke der Matrix. */
 export interface BreakdownTotals {
   net: Money;
   count: number;
-  /** Durchschnittliches abgeschlossenes Jahr; null ohne abgeschlossenes Jahr. */
-  average: Money | null;
 }
 
 /** Jahre × Monate in einer Tabelle (§11.12). */
 export interface BreakdownMatrix {
-  /** Vorhandene Kalenderjahre, aufsteigend (aelteste zuerst). */
-  years: BreakdownYearColumn[];
-  /** Genau zwoelf Zeilen, Januar bis Dezember. */
-  months: BreakdownMonthRow[];
-  /** Anzahl abgeschlossener Jahre — Divisor der Ø-Werte. */
-  completedYears: number;
+  /** Eine Zeile je Kalenderjahr mit Zahlungen, **absteigend** (neueste zuerst). */
+  years: BreakdownYearRow[];
+  /** Zwoelf Spaltensummen, Januar bis Dezember. */
+  months: BreakdownMonthTotal[];
   totals: BreakdownTotals;
   /** Letzter beruecksichtigter Tag des laufenden Jahres (ISO), fuer die Fussnote. */
   cutoff: string;
@@ -157,7 +150,9 @@ export function breakdownMatrix(
   payments: readonly AnalyticsPayment[],
   ref: RefDate,
 ): BreakdownMatrix {
-  const years = availableYears(payments).sort((a, b) => a - b);
+  // `availableYears` liefert bereits absteigend (§3) — genau die Reihenfolge
+  // der Zeilen: Das laufende Jahr steht oben, ohne Bildlauf nach unten.
+  const years = availableYears(payments);
   const yearSet = new Set(years);
 
   const cells = new Map<string, Bucket>();
@@ -193,53 +188,6 @@ export function breakdownMatrix(
     return comparePeriods(current, prior);
   };
 
-  const completedYears = years.filter((year) => year < ref.year);
-  const divisor = completedYears.length;
-
-  // Laufende Jahressumme, waehrend die Zeilen Januar → Dezember entstehen.
-  const running = new Map<number, Money>(years.map((year) => [year, ZERO]));
-
-  const months: BreakdownMonthRow[] = [];
-  for (let month = 1; month <= 12; month += 1) {
-    const row: BreakdownCell[] = [];
-    let rowNet = ZERO;
-    let rowCount = 0;
-    let completedNet = ZERO;
-
-    for (const year of years) {
-      const bucket = bucketOf(year, month);
-      const future = bucket.count === 0 && isAfterRef(year, month, ref);
-      const cumulative = (running.get(year) ?? ZERO).add(bucket.net);
-      running.set(year, cumulative);
-
-      row.push({
-        year,
-        month,
-        net: bucket.net,
-        count: bucket.count,
-        cumulative,
-        change: future ? { kind: "no-comparison" } : monthChange(year, month, bucket.net),
-        future,
-        partial: year === ref.year && month === ref.month,
-      });
-
-      rowNet = rowNet.add(bucket.net);
-      rowCount += bucket.count;
-      if (year < ref.year) completedNet = completedNet.add(bucket.net);
-    }
-
-    months.push({
-      month,
-      cells: row,
-      net: rowNet,
-      count: rowCount,
-      average:
-        divisor === 0
-          ? null
-          : Money.fromDecimal(completedNet.toDecimal().div(divisor), EUR),
-    });
-  }
-
   /**
    * Vergleich der Jahressumme mit dem Vorjahr. Im laufenden Jahr zaehlt auf
    * beiden Seiten 1.1. bis Stichtag (§6.2) — ein angefangenes Jahr gegen ein
@@ -251,14 +199,33 @@ export function breakdownMatrix(
     return comparePeriods(current, prior);
   };
 
-  const columns: BreakdownYearColumn[] = years.map((year) => {
-    const bucket = perYear.get(String(year)) ?? EMPTY_BUCKET;
+  const rows: BreakdownYearRow[] = years.map((year) => {
+    const cellsOfYear: BreakdownCell[] = [];
+    let cumulative = ZERO;
     let activeMonths = 0;
+
     for (let month = 1; month <= 12; month += 1) {
-      if (bucketOf(year, month).count > 0) activeMonths += 1;
+      const bucket = bucketOf(year, month);
+      const future = bucket.count === 0 && isAfterRef(year, month, ref);
+      cumulative = cumulative.add(bucket.net);
+      if (bucket.count > 0) activeMonths += 1;
+
+      cellsOfYear.push({
+        year,
+        month,
+        net: bucket.net,
+        count: bucket.count,
+        cumulative,
+        change: future ? { kind: "no-comparison" } : monthChange(year, month, bucket.net),
+        future,
+        partial: year === ref.year && month === ref.month,
+      });
     }
+
+    const bucket = perYear.get(String(year)) ?? EMPTY_BUCKET;
     return {
       year,
+      cells: cellsOfYear,
       net: bucket.net,
       count: bucket.count,
       activeMonths,
@@ -267,23 +234,24 @@ export function breakdownMatrix(
     };
   });
 
+  const months: BreakdownMonthTotal[] = Array.from({ length: 12 }, (_, index) => {
+    const month = index + 1;
+    let net = ZERO;
+    let count = 0;
+    for (const year of years) {
+      const bucket = bucketOf(year, month);
+      net = net.add(bucket.net);
+      count += bucket.count;
+    }
+    return { month, net, count };
+  });
+
   const total = aggregate(payments);
-  const completedNet = columns
-    .filter((column) => column.year < ref.year)
-    .reduce<Money>((sum, column) => sum.add(column.net), ZERO);
 
   return {
-    years: columns,
+    years: rows,
     months,
-    completedYears: divisor,
-    totals: {
-      net: total.net,
-      count: total.count,
-      average:
-        divisor === 0
-          ? null
-          : Money.fromDecimal(completedNet.toDecimal().div(divisor), EUR),
-    },
+    totals: { net: total.net, count: total.count },
     cutoff: isoFromRef(ref),
   };
 }
