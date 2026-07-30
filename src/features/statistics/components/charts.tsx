@@ -191,52 +191,6 @@ export function CategoryBarChart({
   );
 }
 
-export interface SparkPoint {
-  label: string;
-  value: number;
-  money: Money;
-}
-
-interface YearSparklineProps {
-  points: SparkPoint[];
-  maxValue: number;
-}
-
-/**
- * Kompakte, rein visuelle Balken-Sparkline zur „Entwicklung über die Jahre"
- * (§11.4/§11.5). Enthaelt keine Berechnung; ein Screenreader liest die Werte
- * als Text. Fuer sehende Nutzer zeigt der Titel je Balken Jahr und Betrag.
- */
-export function YearSparkline({ points, maxValue }: YearSparklineProps) {
-  // Eine Reihe aus lauter Nullen ist keine Entwicklung, sondern eine Leere —
-  // acht Stummel zu zeichnen waere Rauschen in einer ohnehin dichten Tabelle.
-  if (points.length === 0 || points.every((point) => point.money.isZero())) {
-    return <span className="text-muted-foreground">—</span>;
-  }
-  const srText = points
-    .map((point) => `${point.label}: ${formatMoney(point.money)}`)
-    .join(", ");
-  return (
-    <span className="inline-flex items-end gap-0.5" role="img" aria-label={srText}>
-      {points.map((point) => {
-        const height = maxValue > 0 ? Math.max(8, (point.value / maxValue) * 100) : 8;
-        return (
-          <span
-            key={point.label}
-            title={`${point.label}: ${formatMoney(point.money)}`}
-            aria-hidden
-            className="block w-1.5 rounded-sm bg-chart-1"
-            style={{
-              height: `${String(Math.round(height * 0.24))}px`,
-              backgroundColor: "var(--chart-1)",
-            }}
-          />
-        );
-      })}
-    </span>
-  );
-}
-
 export interface HeatmapCell {
   month: number;
   net: Money;

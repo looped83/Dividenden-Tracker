@@ -5,8 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AmountText } from "@/components/money/AmountText";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
-  alignYearBuckets,
-  availableYears,
   calendarMonthBuckets,
   monthAcrossYearsStatistics,
   monthNameDe,
@@ -15,7 +13,7 @@ import {
 } from "@/lib/statistics";
 import { useStatisticsContext } from "./context";
 import { formatCountNumber, statisticsDrillHref } from "./format";
-import { CategoryBarChart, YearSparkline } from "./components/charts";
+import { CategoryBarChart } from "./components/charts";
 import { StatTable, type StatColumn } from "./components/StatTable";
 
 export function MonthsTab() {
@@ -36,26 +34,6 @@ export function MonthsTab() {
       })),
     [payments, filter],
   );
-
-  // Gemeinsame Jahresachse **und** gemeinsame Skala fuer alle Monatszeilen:
-  // Ohne beides waeren die Balken zweier Zeilen nicht vergleichbar — weder in
-  // der Hoehe noch in der Bedeutung ihrer Position.
-  const years = React.useMemo(() => [...availableYears(payments)].reverse(), [payments]);
-
-  const sparkMax = React.useMemo(() => {
-    let max = 0;
-    for (const month of stats) {
-      for (const bucket of month.perYear) {
-        const value = bucket.net.toChartNumber();
-        if (value > max) max = value;
-      }
-    }
-    return max;
-  }, [stats]);
-
-  // Ein einziges Jahr ergibt einen einzelnen Balken — das ist keine
-  // Entwicklung. Bei gesetztem Jahresfilter entfaellt die Spalte deshalb.
-  const showDevelopment = years.length > 1;
 
   const columns = React.useMemo<StatColumn<MonthAcrossYearsStatistics>[]>(
     () => [
@@ -90,26 +68,8 @@ export function MonthsTab() {
         compare: (a, b) => a.averagePayment.compareTo(b.averagePayment),
         render: (row) => <AmountText amount={row.averagePayment} />,
       },
-      ...(showDevelopment
-        ? [
-            {
-              key: "development",
-              header: `Entwicklung ${String(years[0])}–${String(years[years.length - 1])}`,
-              render: (row: MonthAcrossYearsStatistics) => (
-                <YearSparkline
-                  points={alignYearBuckets(row.perYear, years).map((bucket) => ({
-                    label: String(bucket.year),
-                    value: bucket.net.toChartNumber(),
-                    money: bucket.net,
-                  }))}
-                  maxValue={sparkMax}
-                />
-              ),
-            },
-          ]
-        : []),
     ],
-    [sparkMax, years, showDevelopment],
+    [],
   );
 
   if (payments.length === 0) {
@@ -127,9 +87,6 @@ export function MonthsTab() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle>Monatliche Entwicklung</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Netto-Dividendensumme je Kalendermonat über alle Jahre hinweg.
-          </p>
         </CardHeader>
         <CardContent>
           <CategoryBarChart
@@ -143,10 +100,6 @@ export function MonthsTab() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle>Monatsstatistik</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Über alle Jahre zusammengefasst. Eine Zeile öffnet alle Zahlungen dieses
-            Monats.
-          </p>
         </CardHeader>
         <CardContent>
           <StatTable

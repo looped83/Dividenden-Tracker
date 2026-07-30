@@ -143,10 +143,12 @@ describe("ComparisonTab — gleicher Ausschnitt", () => {
     expect(screen.queryByText("1.200,00 €")).not.toBeInTheDocument();
   });
 
-  it("benennt den Stichtag, statt ihn nur anzuwenden", () => {
+  it("kappt beide Seiten am Stichtag und weist den Ausschnitt aus", () => {
     renderTab();
-    expect(screen.getByText(/Ein laufendes Jahr ist beteiligt/)).toBeInTheDocument();
-    expect(screen.getByText("29.07.2026")).toBeInTheDocument();
+    // Der Stichtag steht nicht als Satz da, sondern in den Zeiträumen beider
+    // Seiten — und in der Kennzahl, die die Veränderung trägt.
+    expect(screen.getByText(/29\.07\.2026/)).toBeInTheDocument();
+    expect(screen.getByText(/gleicher Ausschnitt auf beiden Seiten/)).toBeInTheDocument();
   });
 
   it("nennt zu jeder Seite ihren Zeitraum", () => {
@@ -161,11 +163,9 @@ describe("ComparisonTab — gleicher Ausschnitt", () => {
     expect(screen.getByText(/gegenüber 2025 · gleicher Ausschnitt/)).toBeInTheDocument();
   });
 
-  it("verzichtet auf den Hinweis, wenn beide Jahre abgeschlossen sind", () => {
+  it("rechnet ungekappt, wenn beide Jahre abgeschlossen sind", () => {
     renderTab("?basis=2025&referenz=2024");
-    expect(
-      screen.queryByText(/Ein laufendes Jahr ist beteiligt/),
-    ).not.toBeInTheDocument();
+    expect(screen.getByText(/vollständige Zeiträume/)).toBeInTheDocument();
     // Volles Jahr 2025: 200 + 1.000 = 1.200 €.
     expect(screen.getAllByText("1.200,00 €").length).toBeGreaterThan(0);
   });
@@ -285,10 +285,8 @@ describe("ComparisonTab — Monat gegen Monat", () => {
     expect(link).toHaveAttribute("href", "/eingaenge?year=2026&month=5&security=sec-b");
   });
 
-  it("kappt den laufenden Monat auf beiden Seiten und sagt es", () => {
+  it("kappt den laufenden Monat auf beiden Seiten", () => {
     renderTab("?modus=monate&monat=7&basis=2026&referenz=2025");
-    expect(screen.getByText(/Der Monat läuft noch/)).toBeInTheDocument();
-    expect(screen.getByText("29.07.2026")).toBeInTheDocument();
     // Ohne Kappung stuenden hier die vollen Juli-Summen beider Jahre.
     expect(screen.getByText(/01\.07\.2026 – 29\.07\.2026/)).toBeInTheDocument();
     expect(screen.getByText(/01\.07\.2025 – 29\.07\.2025/)).toBeInTheDocument();

@@ -7,8 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
   aggregate,
-  alignYearBuckets,
-  availableYears,
   calendarMonthBuckets,
   depotStatistics,
   MONTH_NAMES_DE_SHORT,
@@ -22,7 +20,7 @@ import {
   formatCountNumber,
   statisticsDrillHref,
 } from "./format";
-import { CategoryBarChart, YearSparkline } from "./components/charts";
+import { CategoryBarChart } from "./components/charts";
 import { StatTable, type StatColumn } from "./components/StatTable";
 
 export function DepotsTab() {
@@ -56,22 +54,6 @@ export function DepotsTab() {
       })),
     [payments, filter],
   );
-
-  // Gemeinsame Jahresachse fuer alle Zeilen: Ohne sie zeigte jede Zeile nur
-  // ihre eigenen Jahre, und der dritte Balken der einen waere ein anderes Jahr
-  // als der dritte der naechsten.
-  const years = React.useMemo(() => [...availableYears(payments)].reverse(), [payments]);
-
-  const sparkMax = React.useMemo(() => {
-    let max = 0;
-    for (const stat of stats) {
-      for (const bucket of stat.perYear) {
-        const value = bucket.net.toChartNumber();
-        if (value > max) max = value;
-      }
-    }
-    return max;
-  }, [stats]);
 
   const columns = React.useMemo<StatColumn<DepotStatistics>[]>(
     () => [
@@ -121,28 +103,8 @@ export function DepotsTab() {
         compare: (a, b) => a.distinctSecurities - b.distinctSecurities,
         render: (row) => formatCountNumber(row.distinctSecurities),
       },
-      // Ein einziges Jahr ergibt einen einzelnen Balken — das ist keine
-      // Entwicklung. Bei gesetztem Jahresfilter entfaellt die Spalte deshalb.
-      ...(years.length > 1
-        ? [
-            {
-              key: "development",
-              header: `Entwicklung ${String(years[0])}–${String(years[years.length - 1])}`,
-              render: (row: DepotStatistics) => (
-                <YearSparkline
-                  points={alignYearBuckets(row.perYear, years).map((bucket) => ({
-                    label: String(bucket.year),
-                    value: bucket.net.toChartNumber(),
-                    money: bucket.net,
-                  }))}
-                  maxValue={sparkMax}
-                />
-              ),
-            },
-          ]
-        : []),
     ],
-    [depots, sparkMax, years],
+    [depots],
   );
 
   if (stats.length === 0) {
@@ -160,10 +122,6 @@ export function DepotsTab() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle>Depotverteilung</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Netto-Dividende je Depot im aktuellen Filter. Archivierte Depots bleiben
-            historisch erhalten.
-          </p>
         </CardHeader>
         <CardContent>
           <RankedBars
@@ -177,10 +135,6 @@ export function DepotsTab() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle>Monatliche Verteilung</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Netto-Dividende je Kalendermonat
-            {filter.depotId ? " des gewählten Depots" : " über alle Depots"}.
-          </p>
         </CardHeader>
         <CardContent>
           <CategoryBarChart
@@ -194,9 +148,6 @@ export function DepotsTab() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle>Depotstatistik</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Eine Zeile öffnet alle Dividendeneingänge des Depots.
-          </p>
         </CardHeader>
         <CardContent>
           <StatTable

@@ -384,23 +384,6 @@ export function availableYears(payments: readonly AnalyticsPayment[]): number[] 
   return [...years].sort((a, b) => b - a);
 }
 
-/**
- * Legt eine Jahresreihe auf eine **feste** Jahresachse (§11.4): je Jahr der
- * Achse der vorhandene Eimer, sonst 0 € / 0 Zahlungen.
- *
- * Ohne gemeinsame Achse zeigt jede Zeile einer Tabelle nur ihre eigenen Jahre —
- * der dritte Balken der einen Zeile waere ein anderes Jahr als der dritte der
- * naechsten, und Zeilen mit wenigen Jahren saehen kuerzer aus statt kleiner.
- * Ein zahlungsfreies Jahr ist eine Luecke in der Reihe, kein fehlender Balken.
- */
-export function alignYearBuckets(
-  buckets: readonly YearBucket[],
-  years: readonly number[],
-): YearBucket[] {
-  const byYear = new Map(buckets.map((bucket) => [bucket.year, bucket]));
-  return years.map((year) => byYear.get(year) ?? { year, net: ZERO, count: 0 });
-}
-
 // =============================================================================
 // Phase 5B — Statistikbereich (CALCULATION_RULES.md §11)
 //

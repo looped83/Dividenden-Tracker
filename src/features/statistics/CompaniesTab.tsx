@@ -7,8 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
   aggregate,
-  alignYearBuckets,
-  availableYears,
   securityStatistics,
   sortSecurityStatistics,
   type SecurityStatistics,
@@ -22,10 +20,9 @@ import {
   formatIsoDate,
   statisticsDrillHref,
 } from "./format";
-import { YearSparkline } from "./components/charts";
 import { StatTable, type StatColumn } from "./components/StatTable";
 
-const TOP_COMPANIES = 8;
+const TOP_COMPANIES = 10;
 
 function dateCell(iso: string | null): React.ReactNode {
   return iso ? formatIsoDate(iso) : <span className="text-muted-foreground">—</span>;
@@ -60,22 +57,6 @@ export function CompaniesTab() {
         })),
     [stats, labelOf, securities, filter],
   );
-
-  // Gemeinsame Jahresachse fuer alle Zeilen: Ohne sie zeigte jede Zeile nur
-  // ihre eigenen Jahre, und der dritte Balken der einen waere ein anderes Jahr
-  // als der dritte der naechsten.
-  const years = React.useMemo(() => [...availableYears(payments)].reverse(), [payments]);
-
-  const sparkMax = React.useMemo(() => {
-    let max = 0;
-    for (const stat of stats) {
-      for (const bucket of stat.perYear) {
-        const value = bucket.net.toChartNumber();
-        if (value > max) max = value;
-      }
-    }
-    return max;
-  }, [stats]);
 
   const columns = React.useMemo<StatColumn<SecurityStatistics>[]>(
     () => [
@@ -158,28 +139,8 @@ export function CompaniesTab() {
         compare: (a, b) => (a.lastPayDate ?? "").localeCompare(b.lastPayDate ?? ""),
         render: (row) => dateCell(row.lastPayDate),
       },
-      // Ein einziges Jahr ergibt einen einzelnen Balken — das ist keine
-      // Entwicklung. Bei gesetztem Jahresfilter entfaellt die Spalte deshalb.
-      ...(years.length > 1
-        ? [
-            {
-              key: "development",
-              header: `Entwicklung ${String(years[0])}–${String(years[years.length - 1])}`,
-              render: (row: SecurityStatistics) => (
-                <YearSparkline
-                  points={alignYearBuckets(row.perYear, years).map((bucket) => ({
-                    label: String(bucket.year),
-                    value: bucket.net.toChartNumber(),
-                    money: bucket.net,
-                  }))}
-                  maxValue={sparkMax}
-                />
-              ),
-            },
-          ]
-        : []),
     ],
-    [labelOf, securities, sparkMax, years],
+    [labelOf, securities],
   );
 
   if (stats.length === 0) {
@@ -197,10 +158,6 @@ export function CompaniesTab() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle>Unternehmen nach Dividendensumme</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Die {Math.min(TOP_COMPANIES, topItems.length)} stärksten Zahler im aktuellen
-            Filter.
-          </p>
         </CardHeader>
         <CardContent>
           <RankedBars
@@ -214,10 +171,6 @@ export function CompaniesTab() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle>Unternehmensstatistik</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Sortier- und durchsuchbar. Eine Zeile öffnet alle Dividendeneingänge des
-            Unternehmens. Archivierte Unternehmen bleiben sichtbar.
-          </p>
         </CardHeader>
         <CardContent>
           <StatTable

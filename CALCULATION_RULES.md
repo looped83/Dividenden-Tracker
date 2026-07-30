@@ -329,13 +329,6 @@ Genau zwölf Einträge (Kalendermonate 1..12) **über alle Jahre**. Je Monat: Di
 Anzahl Zahlungen, Durchschnittszahlung (§11.2) und die Entwicklung über die Jahre
 (`yearlyBuckets` des Monats, aufsteigend).
 
-**Gemeinsame Jahresachse** (`alignYearBuckets`). Für die Darstellung der Entwicklung werden die
-Jahresreihen aller Zeilen auf **dieselbe** Achse gelegt — die Jahre der gefilterten Datenbasis —,
-fehlende Jahre zählen als 0 € / 0 Zahlungen. Ohne diese Achse zeigte jede Zeile nur ihre eigenen
-Jahre: Der dritte Balken der einen Zeile wäre ein anderes Jahr als der dritte der nächsten, und
-eine Zeile mit wenigen Jahren sähe kürzer aus statt kleiner. Dieselbe Achse gilt in der
-Unternehmens- (§11.5) und Depotstatistik (§11.6). Bleibt nach dem Filter nur **ein** Jahr übrig,
-entfällt die Darstellung ganz: Ein einzelner Balken ist keine Entwicklung.
 
 ### 11.5 Unternehmensstatistik (`securityStatistics` + `sortSecurityStatistics`)
 
@@ -412,7 +405,10 @@ Gegenüberstellung zweier Zeiträume im Unterbereich `/statistiken/vergleich`.
   darüber nicht widersprechen.
 - **Keine Prognose, keine Hochrechnung** (PRODUCT_SPEC.md Grundsatz 8): Es werden ausschließlich
   vorhandene Zahlungen summiert; ein Teiljahr wird nicht auf ein volles Jahr skaliert.
-- **Darstellung.** Die Aufschlüsselung (Monate bzw. Unternehmen) ist ab `md` eine Tabelle,
+- **Darstellung.** Der Stichtag steht nicht als eigener Hinweis über der Auswertung, sondern
+  dort, wo er wirkt: im Zeitraum jeder Seite (`01.01.2026 – 29.07.2026`) und in der Kennzahl
+  „Veränderung" („gleicher Ausschnitt auf beiden Seiten" bzw. „vollständige Zeiträume").
+  Die Aufschlüsselung (Monate bzw. Unternehmen) ist ab `md` eine Tabelle,
   darunter eine Liste mit denselben Zahlen untereinander. Monate ohne Zahlungen auf beiden
   Seiten stehen dort einzeilig als „keine Zahlungen" — drei Zeilen Gedankenstriche wären
   Rauschen.

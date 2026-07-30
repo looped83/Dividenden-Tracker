@@ -148,9 +148,6 @@ export function YearsTab() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle>Jährliche Entwicklung</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Netto-Dividendensumme je Kalenderjahr, chronologisch.
-          </p>
         </CardHeader>
         <CardContent>
           <CategoryBarChart
@@ -164,9 +161,6 @@ export function YearsTab() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle>Jahresstatistik</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Neueste Jahre zuerst. Eine Zeile öffnet die Monate dieses Jahres.
-          </p>
         </CardHeader>
         <CardContent>
           <StatTable
