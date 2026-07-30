@@ -58,9 +58,12 @@ export const STATISTICS_TABS: readonly { to: string; label: string; end?: boolea
   { to: "/statistiken", label: "Übersicht", end: true },
   { to: "/statistiken/jahre", label: "Jahre" },
   { to: "/statistiken/monate", label: "Monate" },
-  // Der Vergleich steht bewusst hinter „Monate": Er beantwortet die zeitliche
-  // Frage („laufe ich besser als im Vorjahr?") und gehoert damit zu den beiden
-  // Zeitbereichen, nicht zu den Aufschluesselungen danach.
+  // Der Breakdown fuehrt beide Zeitachsen in einer Tabelle zusammen und steht
+  // deshalb direkt hinter ihnen. Der Vergleich folgt: Er beantwortet dieselbe
+  // zeitliche Frage („laufe ich besser als im Vorjahr?") fuer zwei gewaehlte
+  // Zeitraeume und gehoert damit zu den Zeitbereichen, nicht zu den
+  // Aufschluesselungen danach.
+  { to: "/statistiken/breakdown", label: "Breakdown" },
   { to: "/statistiken/vergleich", label: "Vergleich" },
   { to: "/statistiken/unternehmen", label: "Unternehmen" },
   { to: "/statistiken/depots", label: "Depots" },

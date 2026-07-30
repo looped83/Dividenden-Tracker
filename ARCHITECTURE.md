@@ -250,17 +250,18 @@ eigene Query oder Berechnung ein:
   parallele Aggregation. Der effektive Ausschüttungsmonat (§4.4) wird einmal angewandt.
 - **Analytics-Schicht als einzige Quelle.** Sämtliche Statistik-Kennzahlen (`overviewStatistics`,
   `yearStatistics`, `monthAcrossYearsStatistics`, `securityStatistics`, `depotStatistics`,
-  `calendarMonthBuckets`, `heatmapByYearMonth`, `filterPayments`, `sortSecurityStatistics`) sind
+  `calendarMonthBuckets`, `heatmapByYearMonth`, `breakdownMatrix`, `filterPayments`,
+  `sortSecurityStatistics`) sind
   reine Funktionen in `src/lib/statistics` (CALCULATION_RULES.md §11). Komponenten und Diagramme
   enthalten keine Aggregation, Rundung oder Betrags-/Datumssortierung.
 - **Layout mit geteiltem, gefiltertem Datensatz.** Die Layoutseite (`StatisticsPage`) lädt die
   Daten, wendet den URL-Filter **einmal** an (`filterPayments`, memoisiert) und reicht die
   gefilterten Zahlungen samt Namensauflösung über den React-Router-`Outlet`-Kontext an die
-  Unterbereiche (Übersicht, Jahre, Monate, Vergleich, Unternehmen, Depots) weiter. Der Kontext
+  Unterbereiche (Übersicht, Jahre, Monate, Breakdown, Vergleich, Unternehmen, Depots) weiter. Der Kontext
   ist bewusst frei von Supabase-Abhängigkeiten (`context.ts`), damit Unterbereiche isoliert
   testbar bleiben. Neben den gefilterten Zahlungen liegt der **ungefilterte** Bestand im Kontext:
-  Der Vergleichsbereich braucht ihn, weil der Jahresfilter dort nicht greifen darf
-  (CALCULATION_RULES.md §11.10).
+  Vergleich und Breakdown brauchen ihn, weil der Jahresfilter dort nicht greifen darf
+  (CALCULATION_RULES.md §11.10 und §11.12).
 - **URL-Filter.** Jahr, Unternehmen, Depot, Datenquelle und Zahlungsart liegen in der URL
   (`?year=&security=&depot=&source=&type=`), sind kombinierbar, bleiben nach Reload erhalten und
   funktionieren mit Browser-Zurück/-Vorwärts. Parsing/Serialisierung sind als reine, isoliert

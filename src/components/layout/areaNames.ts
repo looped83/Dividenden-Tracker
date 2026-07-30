@@ -7,6 +7,8 @@ const AREA_NAMES: readonly { prefix: string; name: string; exact?: boolean }[] =
   { prefix: "/unternehmen", name: "Unternehmen" },
   { prefix: "/statistiken/jahre", name: "Statistik, Jahre" },
   { prefix: "/statistiken/monate", name: "Statistik, Monate" },
+  { prefix: "/statistiken/breakdown", name: "Statistik, Breakdown" },
+  { prefix: "/statistiken/vergleich", name: "Statistik, Vergleich" },
   { prefix: "/statistiken/unternehmen", name: "Statistik, Unternehmen" },
   { prefix: "/statistiken/depots", name: "Statistik, Depots" },
   { prefix: "/statistiken", name: "Statistik" },

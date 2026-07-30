@@ -453,6 +453,50 @@ Jede Zahlung in `/eingaenge` trägt einen Indikator, wie sie zur Zahlung desselb
 - Der Indikator nennt in Titel und Screenreader-Text Differenz, Betrag **und Datum** der
   Vergleichszahlung; damit bleibt nachprüfbar, worauf er sich stützt.
 
+## 11.12 Breakdown — Jahre × Monate (`breakdownMatrix`)
+
+Alle Jahre und Monate in **einer** Matrix (`/statistiken/breakdown`): eine Zeile je
+Kalendermonat (1..12), eine Spalte je Kalenderjahr mit Zahlungen (aufsteigend, älteste zuerst).
+Rein zahlengetrieben, ohne Diagramm — die Frage lautet „Wie steht dieser Monat gegenüber
+demselben Monat der Vorjahre?", und darauf antwortet eine Tabelle genauer als eine Kurve.
+
+- **Je Zelle** (Jahr × Monat): Nettosumme, Anzahl Zahlungen, die **aufgelaufene Jahressumme**
+  bis einschließlich dieses Monats sowie die Veränderung gegenüber demselben Monat des
+  Vorjahres (`comparePeriods` §6.4).
+- **Laufender Monat und laufendes Jahr werden gekappt** — dieselbe tragende Regel wie §11.10:
+  Der Vergleich des laufenden Monats endet auf **beiden** Seiten am Stichtag (bei kürzerem
+  Vorjahresmonat an dessen letztem Tag, 29.02. → 28.02.), der Vergleich des laufenden Jahres
+  läuft über `1.1.` bis Stichtag gegen denselben Ausschnitt des Vorjahres (§6.2). Angezeigt
+  wird weiterhin der volle Monats- bzw. Jahreswert; die Oberfläche kennzeichnet ihn (`*`) und
+  benennt den Stichtag.
+- **Noch nicht erreichte Monate sind keine Nullmonate.** Ein Monat des laufenden Jahres nach
+  dem Stichtagsmonat ohne Zahlungen trägt kein Ergebnis (`future`) und bleibt leer; ein
+  „0,00 €"-Dezember im Juli wäre eine Falschaussage. Ein vergangener Monat ohne Zahlungen ist
+  dagegen eine echte Null und steht als Gedankenstrich.
+- **Fehlt das Vorjahr in der Datenbasis**, gilt „kein Vergleichswert" — nie eine gerechnete
+  Prozentzahl ohne Grundlage (wie §11.3).
+- **Ø-Spalte:** Durchschnitt je Monat über die **abgeschlossenen** Jahre
+  (`Σ net ÷ Anzahl abgeschlossener Jahre`); ohne abgeschlossenes Jahr leer. Das laufende Jahr
+  bleibt außen vor, weil es für noch nicht erreichte Monate eine 0 beisteuerte und den Schnitt
+  künstlich drückte. Zahlungsfreie abgeschlossene Jahre zählen dagegen im Divisor mit — und weil
+  alle Zeilen denselben Divisor benutzen, ergeben die Zeilendurchschnitte in Summe **exakt** den
+  Gesamtdurchschnitt (die Spalte kann ihrer eigenen Summe nicht widersprechen).
+- **Gesamt-Spalte** je Monatszeile: Summe über alle Jahre inklusive des laufenden.
+  **Gesamt-Zeile** je Jahresspalte: Jahressumme, dazu eine Zeile „Δ Vorjahr" mit der
+  Veränderung der Jahressumme.
+- **Ansichten** (URL-Schlüssel `?ansicht=`): Monatssumme (Vorgabe), Veränderung zum
+  Vorjahresmonat, aufgelaufene Jahressumme. Ø und Gesamt erscheinen nur neben absoluten
+  Monatssummen: Veränderungen lassen sich nicht addieren, und aufgelaufene Werte enthalten die
+  Vormonate bereits.
+- **Drill-down (§11.9):** Jeder Monatsbetrag führt in die Zahlungsliste, gefiltert auf Jahr und
+  Monat. Anders als beim Zeitraumvergleich ist auch der laufende Monat verlinkt — die Zelle
+  enthält genau die Zahlungen dieses Monats, die Liste zeigt also nicht mehr als die Zahl daneben.
+- **Filter.** Unternehmen, Depot, Datenquelle und Zahlungsart wirken wie überall; der
+  **Jahresfilter** wirkt hier nicht (er ließe eine einzige Spalte übrig und damit genau das, was
+  „Monate" ohnehin zeigt). Sein Regler wird deshalb ausgeblendet, ein mitgebrachter Jahresfilter
+  bleibt in der URL, wird aber benannt.
+- **Keine Prognose, keine Hochrechnung** (PRODUCT_SPEC.md Grundsatz 8).
+
 ## Phase 6 – Validierung und Datenqualität
 
 **Zahlungsdatum.** Gültiges Kalenderdatum, ≥ 1970-01-01 und ≤ heute (lokal,

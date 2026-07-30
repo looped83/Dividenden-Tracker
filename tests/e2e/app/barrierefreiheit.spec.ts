@@ -45,6 +45,7 @@ const ROUTEN = [
   { pfad: "/#/unternehmen", name: "Unternehmen", warten: "Unternehmen" },
   { pfad: "/#/statistiken", name: "Statistiken", warten: "Statistik" },
   { pfad: "/#/statistiken/jahre", name: "Statistik Jahre", warten: "Statistik" },
+  { pfad: "/#/statistiken/breakdown", name: "Statistik Breakdown", warten: "Statistik" },
   { pfad: "/#/statistiken/vergleich", name: "Statistik Vergleich", warten: "Statistik" },
   { pfad: "/#/ziele", name: "Ziele", warten: "Ziele" },
   { pfad: "/#/einstellungen", name: "Einstellungen", warten: "Einstellungen" },
