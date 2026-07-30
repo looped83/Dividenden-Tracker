@@ -198,7 +198,12 @@ function BreakdownMatrixTable({ matrix, view, filter, showAggregates }: MatrixPr
         : "Netto-Dividenden je Monat und Jahr, Zeilen je Monat, Spalten je Jahr";
 
   return (
-    <div className="w-full overflow-x-auto rounded-lg border border-border">
+    // `relative` ist hier keine Kosmetik: Die Beschriftungen fuer Hilfsmittel
+    // (`sr-only`) sind absolut positioniert. Ohne positionierten Vorfahren ist
+    // ihr Bezugsrahmen das Dokument — der seitliche Bildlauf dieses Kastens
+    // klammert sie dann nicht ein, und die Seite selbst laesst sich bis zur
+    // rechten Tabellenkante schieben, obwohl dort nichts Sichtbares steht.
+    <div className="relative w-full overflow-x-auto rounded-lg border border-border">
       <table className="w-full border-separate border-spacing-0 text-sm">
         <caption className="sr-only">{caption}</caption>
         <thead>

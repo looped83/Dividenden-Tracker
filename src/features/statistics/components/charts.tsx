@@ -138,7 +138,7 @@ export function CategoryBarChart({
         <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
           Datentabelle anzeigen
         </summary>
-        <div className="mt-3 overflow-x-auto">
+        <div className="relative mt-3 overflow-x-auto">
           <table className="w-full text-left text-sm">
             <caption className="sr-only">{ariaLabel}</caption>
             <thead>
@@ -285,7 +285,7 @@ export function PaymentsHeatmap({
   };
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-border">
+    <div className="relative overflow-x-auto rounded-lg border border-border">
       <table className="w-full border-separate border-spacing-1 text-sm">
         <caption className="sr-only">
           Netto-Dividenden nach Jahr (Zeile) und Monat (Spalte)
@@ -505,7 +505,7 @@ export function ComparisonLineChart({
         <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
           Datentabelle anzeigen
         </summary>
-        <div className="mt-3 overflow-x-auto">
+        <div className="relative mt-3 overflow-x-auto">
           <table className="w-full text-left text-sm">
             <caption className="sr-only">{ariaLabel}</caption>
             <thead>
