@@ -11,13 +11,7 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
   Dialog,
@@ -278,21 +272,21 @@ export function DepotsPage() {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader>
+        {/* Die Aktion gehoert in die Kopfzeile der Kachel, nicht in ihren
+            Inhalt: Sie betrifft die ganze Kachel, nicht eine Zeile darin. */}
+        <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0 pb-5">
           <CardTitle>Portfolios</CardTitle>
-          <CardDescription>
-            Optional. Portfolios gruppieren mehrere Depots, etwa nach Anlagezweck.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
           <Button
             variant="outline"
+            size="sm"
             onClick={() => {
               setPortfolioDialog({ open: true, portfolio: null });
             }}
           >
             <Plus /> Neues Portfolio
           </Button>
+        </CardHeader>
+        <CardContent className="space-y-3">
           {visiblePortfolios.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               Noch keine Portfolios angelegt.
@@ -346,32 +340,18 @@ export function DepotsPage() {
       </Card>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0 pb-5">
           <CardTitle>Depots</CardTitle>
-          <CardDescription>
-            Konten, auf denen Dividenden eingehen. Jeder Eingang gehört zu genau einem
-            Depot.
-          </CardDescription>
+          <Button
+            size="sm"
+            onClick={() => {
+              setDepotDialog({ open: true, depot: null });
+            }}
+          >
+            <Plus /> Neues Depot
+          </Button>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              onClick={() => {
-                setDepotDialog({ open: true, depot: null });
-              }}
-            >
-              <Plus /> Neues Depot
-            </Button>
-            <label className="flex min-h-11 items-center gap-2 text-sm text-muted-foreground">
-              <Checkbox
-                checked={showArchived}
-                onChange={(event) => {
-                  setShowArchived(event.target.checked);
-                }}
-              />
-              Archivierte anzeigen
-            </label>
-          </div>
           {isLoading ? (
             <p className="text-sm text-muted-foreground">Wird geladen …</p>
           ) : visibleDepots.length === 0 ? (
@@ -457,6 +437,19 @@ export function DepotsPage() {
               </TableBody>
             </Table>
           )}
+
+          {/* Der Archivfilter steht **unter** der Liste: Er beantwortet die
+              Frage „fehlt hier etwas?", die erst beim Lesen der Liste
+              aufkommt — und er gilt zugleich fuer die Portfolios darueber. */}
+          <label className="flex min-h-11 items-center gap-2 text-sm text-muted-foreground">
+            <Checkbox
+              checked={showArchived}
+              onChange={(event) => {
+                setShowArchived(event.target.checked);
+              }}
+            />
+            Archivierte anzeigen
+          </label>
         </CardContent>
       </Card>
 

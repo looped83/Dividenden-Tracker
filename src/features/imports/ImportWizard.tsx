@@ -56,6 +56,7 @@ import type {
   CompanyDecision,
   BrokerDecision,
 } from "@/lib/import/types";
+import { formatTimestampDate } from "@/lib/utils/formatDate";
 
 function eur(canonical: string): string {
   return formatMoney(Money.fromString(canonical, EUR));
@@ -411,9 +412,7 @@ export function ImportWizard({ onFinished }: { onFinished: () => void }) {
               />
               <span>
                 Diese Datei wurde bereits am{" "}
-                {new Date(
-                  priorImport.committed_at ?? priorImport.created_at,
-                ).toLocaleDateString("de-DE")}{" "}
+                {formatTimestampDate(priorImport.committed_at ?? priorImport.created_at)}{" "}
                 importiert (Status: {priorImport.status}). Ein erneuter Import erzeugt
                 doppelte Produktivdaten und ist standardmäßig zu vermeiden.
               </span>

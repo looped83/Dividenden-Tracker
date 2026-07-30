@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { History } from "lucide-react";
 import { fetchAuditTrail, type AuditLogRow } from "@/lib/supabase/repositories/auditLog";
 import { EmptyState } from "@/components/ui/empty-state";
+import { formatTimestamp } from "@/lib/utils/formatDate";
 
 const ACTION_LABELS: Record<AuditLogRow["action"], string> = {
   insert: "Angelegt",
@@ -13,13 +14,6 @@ const ACTION_LABELS: Record<AuditLogRow["action"], string> = {
   import_rollback: "Import zurückgerollt",
   restore: "Wiederhergestellt",
 };
-
-function formatTimestamp(value: string): string {
-  return new Intl.DateTimeFormat("de-DE", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
-}
 
 function formatFieldValue(value: unknown): string {
   if (value === null || value === undefined) return "—";

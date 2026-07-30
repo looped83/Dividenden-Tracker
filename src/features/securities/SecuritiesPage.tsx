@@ -437,17 +437,25 @@ export function SecuritiesPage() {
             ))}
           </Select>
         </FilterField>
+
+        {/* Zuruecksetzen steht wie im Statistikbereich **in** der Leiste. */}
+        {hasActiveFilters && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-11"
+            onClick={resetFilters}
+          >
+            <X /> Filter zurücksetzen
+          </Button>
+        )}
       </FilterBar>
 
       {hasActiveFilters && (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <Button type="button" variant="ghost" size="sm" onClick={resetFilters}>
-            <X /> Filter zurücksetzen
-          </Button>
-          <p className="text-sm text-muted-foreground" aria-live="polite">
-            {formatCountNumber(visible.length)} Unternehmen gefunden.
-          </p>
-        </div>
+        <p className="text-sm text-muted-foreground" aria-live="polite">
+          {formatCountNumber(visible.length)} Unternehmen gefunden.
+        </p>
       )}
 
       {isLoading ? (

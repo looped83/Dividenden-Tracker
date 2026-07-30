@@ -20,15 +20,8 @@ export function describeSource(source: PaymentSource): string {
   return SOURCE_LABELS[source];
 }
 
-/** Deutsches mittleres Datumsformat aus einem ISO-Kalenderdatum. */
-export function formatIsoDate(iso: string): string {
-  // Reines Kalenderdatum ohne Zeitzonenbezug interpretieren.
-  const [year, month, day] = iso.split("-").map(Number);
-  if (!year || !month || !day) return iso;
-  return new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" }).format(
-    new Date(year, month - 1, day),
-  );
-}
+/** Kalenderdatum als `29.07.2026` ({@link formatCalendarDate}). */
+export { formatCalendarDate as formatIsoDate } from "@/lib/utils/formatDate";
 
 /** „Juli 2026" bzw. „Alle Jahre" fuer die Zeitraumbeschriftung. */
 export function describeSelection(selection: YearSelection): string {

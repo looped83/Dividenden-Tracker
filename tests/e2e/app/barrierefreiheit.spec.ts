@@ -48,6 +48,7 @@ const ROUTEN = [
   { pfad: "/#/statistiken/breakdown", name: "Statistik Breakdown", warten: "Statistik" },
   { pfad: "/#/statistiken/vergleich", name: "Statistik Vergleich", warten: "Statistik" },
   { pfad: "/#/ziele", name: "Ziele", warten: "Ziele" },
+  { pfad: "/#/ziele/beendet", name: "Ziele beendet", warten: "Ziele" },
   { pfad: "/#/einstellungen", name: "Einstellungen", warten: "Einstellungen" },
   { pfad: "/#/einstellungen/depots", name: "Depots", warten: "Einstellungen" },
   { pfad: "/#/einstellungen/importe", name: "Importe", warten: "Einstellungen" },
@@ -83,10 +84,13 @@ test("gesetzte Filter sind frei von axe-Verstößen", async ({ page, konto }) =>
   await expect(page.getByRole("heading", { name: "Dividenden", level: 1 })).toBeVisible();
   // Erst prüfen, dass die Filter wirklich greifen — sonst liefe die
   // axe-Prüfung auf einer ungefilterten Liste und behauptete etwas, das sie
-  // nicht gemessen hat.
-  await expect(page.getByText(`Unternehmen: ${konto.securityName}`)).toBeVisible();
-  await expect(page.getByText("Jahr: 2026")).toBeVisible();
-  await expect(page.getByText("Monat: Januar")).toBeVisible();
+  // nicht gemessen hat. Die Werte stehen in den Feldern der Filterleiste, das
+  // Ergebnis in der Zeile darunter.
+  await expect(page.getByLabel("Jahr")).toHaveValue("2026");
+  await expect(page.getByLabel("Monat")).toHaveValue("1");
+  // `#f-security`: „Unternehmen" heisst auch der Navigationspunkt daneben.
+  await expect(page.locator("#f-security")).toHaveValue(konto.securityId);
+  await expect(page.getByText("1 Eingang gefunden.")).toBeVisible();
   await pruefe(page, "Eingangsliste mit Filtern");
 });
 

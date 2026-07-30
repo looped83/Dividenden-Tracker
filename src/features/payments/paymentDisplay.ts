@@ -16,15 +16,7 @@ export function isImported(source: PaymentSource): boolean {
   return source === "csv_import" || source === "excel_import";
 }
 
-export function formatDate(value: string): string {
-  return new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" }).format(
-    new Date(value),
-  );
-}
-
-export function formatDateTime(value: string): string {
-  return new Intl.DateTimeFormat("de-DE", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
-}
+export {
+  formatTimestampDate as formatDate,
+  formatTimestamp as formatDateTime,
+} from "@/lib/utils/formatDate";

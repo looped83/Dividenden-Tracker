@@ -1,13 +1,7 @@
 import * as React from "react";
 import { Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -130,12 +124,8 @@ export default function RestoreSection() {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="pb-5">
         <CardTitle>Sicherung wiederherstellen</CardTitle>
-        <CardDescription>
-          Spielt eine zuvor heruntergeladene Sicherungsdatei wieder ein. Der Vorgang läuft
-          vollständig in einem Schritt in der Datenbank: Er gelingt ganz oder gar nicht.
-        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {error && (

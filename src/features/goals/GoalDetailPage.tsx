@@ -24,6 +24,7 @@ import {
   statusTone,
   timeProgressText,
 } from "./format";
+import { formatTimestampDate } from "@/lib/utils/formatDate";
 
 const badgeVariantByTone = {
   positive: "positive",
@@ -34,7 +35,7 @@ const badgeVariantByTone = {
 function formatTimestamp(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
-  return new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" }).format(date);
+  return formatTimestampDate(date);
 }
 
 export function GoalDetailPage() {
