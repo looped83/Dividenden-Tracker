@@ -21,7 +21,9 @@ import {
  * nicht ersetzen; darauf weist der Bereich ausdruecklich hin.
  */
 const FORMAT_HINTS: Record<ExportFormat, string> = {
-  csv: "Öffnet sich in Numbers, Excel und Google Tabellen. Formeln in Textfeldern werden entschärft, damit sich beim Öffnen nichts ausführen kann.",
+  // CSV ohne Hinweis: Das Format erklaert sich, und die Entschaerfung von
+  // Formeln passiert ohnehin — sie ist Aufgabe des Exports, keine Nachricht.
+  csv: "",
   xlsx: "Öffnet sich direkt in Numbers und Excel. Beträge sind echte Zahlen und Datumsangaben echte Datumswerte — man kann damit rechnen.",
   json: "Für eigene Auswertungen. Diese Datei lässt sich **nicht** wieder einspielen — dafür ist die Sicherung da.",
 };
@@ -81,7 +83,9 @@ export default function ExportSection() {
             <option value="xlsx">Excel (XLSX)</option>
             <option value="json">JSON</option>
           </Select>
-          <p className="text-sm text-muted-foreground">{FORMAT_HINTS[format]}</p>
+          {FORMAT_HINTS[format] && (
+            <p className="text-sm text-muted-foreground">{FORMAT_HINTS[format]}</p>
+          )}
         </div>
 
         <label className="flex min-h-11 items-center gap-2 text-sm">

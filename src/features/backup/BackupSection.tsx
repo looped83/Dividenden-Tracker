@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Download, ShieldCheck } from "lucide-react";
+import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -88,15 +88,6 @@ export default function BackupSection() {
             <BackupContents backup={backup} />
           </div>
         )}
-
-        <p className="flex gap-2 border-t border-border pt-4 text-sm text-muted-foreground">
-          <ShieldCheck className="mt-0.5 size-4 shrink-0" aria-hidden />
-          <span>
-            Die Datei wird nirgendwohin hochgeladen — sie liegt nur auf deinem Gerät. Sie
-            enthält deine vollständigen Finanzdaten; bewahre sie so sorgfältig auf wie ein
-            Passwort.
-          </span>
-        </p>
       </CardContent>
     </Card>
   );
