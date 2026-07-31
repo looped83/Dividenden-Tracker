@@ -42,7 +42,7 @@ und erzwingt Währungs- und Skalenkontext im Typsystem.
 | **R-3 Summen** | Summen über gespeicherte 2-Stellen-Beträge sind exakt; **keine erneute Rundung** | — |
 | **R-4 Durchschnitte/Quoten** | Erst am Ende der Berechnung für die Anzeige: Beträge auf 2 Stellen, Prozentwerte auf 1 Stelle | ROUND_HALF_UP |
 | **R-5 Anzeige** | `Intl.NumberFormat('de-DE', {currency})` ausschließlich zur Formatierung bereits gerundeter Werte; Formatierung rundet nie selbst (Skala stimmt bereits) | — |
-| **R-6 Export** | Exporte enthalten die gespeicherten Werte in voller Skala (2 bzw. 6/8 Stellen), Dezimalpunkt-Notation im JSON, konfigurierbares Format in CSV/Excel | — |
+| **R-6 Export** | Exporte enthalten die gespeicherten Werte in voller Skala (2 bzw. 6/8 Stellen), Dezimalpunkt-Notation in der Sicherung und in CSV, echte Zahlen und Datumswerte in Excel | — |
 | **R-7 Dividende je Aktie (Anzeige-Ableitung)** | `original_gross ÷ quantity`, Anzeige auf max. 6 Stellen | ROUND_HALF_UP |
 
 Es gibt **keine** Bankers-Rundung (HALF_EVEN): deutsche Abrechnungen runden kaufmännisch;

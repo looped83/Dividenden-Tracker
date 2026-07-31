@@ -47,6 +47,7 @@ const RESERVED_PARAMS = new Set(["select", "order", "limit", "offset"]);
 const EMBEDS: Record<string, Record<string, { table: string; fk: string }>> = {
   dividend_payments: {
     securities: { table: "securities", fk: "security_id" },
+    depots: { table: "depots", fk: "depot_id" },
   },
 };
 
@@ -104,10 +105,15 @@ function parseSelect(table: string, select: string | null): SelectPart {
     return result;
   }
   for (const part of splitTopLevel(select)) {
-    const embedMatch = /^([a-z_][a-z0-9_]*)(!inner)?\((.*)\)$/.exec(part);
+    // `security:securities(name)` — PostgREST erlaubt der Einbettung einen
+    // eigenen Namen in der Antwort. Der Datenexport nutzt das, damit `security`
+    // und `depot` im Ergebnis einzahlig heissen.
+    const embedMatch =
+      /^(?:([a-z_][a-z0-9_]*):)?([a-z_][a-z0-9_]*)(!inner)?\((.*)\)$/.exec(part);
     if (embedMatch) {
-      const [, relation, , inner] = embedMatch as unknown as [
+      const [, alias, relation, , inner] = embedMatch as unknown as [
         string,
+        string | undefined,
         string,
         string | undefined,
         string,
@@ -122,7 +128,7 @@ function parseSelect(table: string, select: string | null): SelectPart {
         );
       }
       result.embeds.push({
-        alias: relation,
+        alias: alias ?? relation,
         table: embed.table,
         fk: embed.fk,
         columns: splitTopLevel(inner),

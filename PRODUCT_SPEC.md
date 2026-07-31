@@ -48,7 +48,7 @@ Die Anwendung ist als **Progressive Web App** installierbar (Add to Home Screen 
 7. Unternehmens-/Wertpapier-Stammdaten mit Historie
 8. Mehrere Depots mit Auswertungen
 9. Persönliche Ziele (getrennt von Ist-Daten)
-10. Backups (JSON/CSV/Excel-Export), validierte Wiederherstellung
+10. Backups (JSON-Sicherung, CSV-/Excel-Export), validierte Wiederherstellung
 11. Audit Log für alle relevanten Änderungen
 12. Kontrollierte Migration aus Numbers (Golden-Source-Prinzip)
 13. PWA mit Offline-Lesecache (Supabase bleibt Source of Truth)

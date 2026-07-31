@@ -6,7 +6,7 @@ The Dividend Tracker provides three data management features:
 
 1. **Backup** — Download a complete snapshot of your data
 2. **Restore** — Upload a previous backup to recover data
-3. **Export** — Export dividend records in CSV, Excel, or JSON format
+3. **Export** — Export dividend records in CSV or Excel format
 
 ## Backup: Protecting Your Data
 
@@ -141,7 +141,6 @@ If merge mode detects conflicts:
 2. Choose export format:
    - **CSV** (recommended for Excel/Sheets)
    - **Excel** (.xlsx with formatting)
-   - **JSON** (for developers/integrations)
 3. Optional: Check **"Auch archivierte Zahlungen einschließen"** to include old/deleted payments
 4. Click **"[Format] exportieren"** button
 5. Your browser downloads `dividenden-export-YYYY-MM-DD.[format]`
@@ -154,7 +153,10 @@ If merge mode detects conflicts:
 
 **Content:**
 - One row per dividend payment
-- Columns: Date, Company, Ticker, Depot, Gross Amount, Net Amount, Taxes, etc.
+- Columns depend on your data: date, company, depot and net amount are always
+  present; ticker, gross amount, taxes, fees, quantity, note and the cancelled
+  flag appear only when at least one payment carries a value
+- UTF-8 with a byte order mark, so umlauts survive Excel on Windows
 - No formatting or colors
 
 **Opening:**
@@ -172,42 +174,13 @@ If merge mode detects conflicts:
 - Proper Excel spreadsheet with headers
 - Number formatting preserved
 - Sortable and filterable columns
+- Amounts are real numbers and dates are real dates — you can calculate with them
 - Print-friendly layout
 
 **Opening:**
 1. Open directly in Excel, Numbers, or Google Sheets
 2. All formatting ready to use
 3. Can add your own formulas and charts
-
-#### JSON
-
-**Best for:** Developers, data analysis tools, integrations
-
-**Content:**
-```json
-{
-  "metadata": {
-    "exportedAt": "2026-07-27T12:00:00Z",
-    "recordCount": 145,
-    "columns": [...]
-  },
-  "data": [
-    {
-      "pay_date": "2026-03-15",
-      "security_name": "Allianz SE",
-      "gross_amount": "150.00",
-      ...
-    }
-  ]
-}
-```
-
-**Opening:**
-1. Open in any text editor or JSON viewer
-2. Use in your own scripts/tools
-3. Parse programmatically
-
-**Note:** JSON exports **cannot** be restored as backups
 
 ### Export Options
 

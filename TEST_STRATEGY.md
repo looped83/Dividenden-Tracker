@@ -83,8 +83,10 @@ leere Historie, ein einziger Eingang, Teiljahr, fehlendes Vorjahr, negative Korr
 Monate mit 0, 29.02.-Vergleich, Zielerreichung > 100 %; Property-Test „Kennzahl == Aggregat
 der Drill-down-Filtermenge"
 
-**Exportformatierung** (`lib/export`) — CSV/XLSX/JSON-Formate, Formula-Injection-Escaping
-(`=SUM(A1)` → `'=SUM(A1)`), Skalenerhalt der Beträge, kanonische Checksummen
+**Exportformatierung** (`lib/backup/exportService`) — die **erzeugte Datei**: Spaltenwahl je
+Bestand, aufgelöste Unternehmens-/Depotnamen, Beträge als Zahl und Datumsangaben als Datum in
+XLSX, BOM und CRLF in CSV, Formula-Injection-Escaping (`=SUM(A1)` → `'=SUM(A1)`), Skalenerhalt
+der Beträge, kanonische Checksummen der Sicherung
 
 ## 3. Importtests (Unit/Komponententests mit Fixture-Dateien)
 
