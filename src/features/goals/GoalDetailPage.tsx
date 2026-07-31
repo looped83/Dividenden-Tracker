@@ -10,15 +10,14 @@ import { refDateFromDate } from "@/lib/statistics";
 import { computeGoalProgress } from "@/lib/goals";
 import { useDeleteGoal, useGoal, useGoalProgressPayments } from "./hooks";
 import { GoalProgressBar } from "./GoalProgressBar";
+import { GoalTypeLabel, GoalTypeMark } from "./GoalTypeMark";
 import { GoalFormDialog } from "./GoalFormDialog";
 import { DeleteGoalDialog } from "./DeleteGoalDialog";
 import {
   achievementText,
   drillDownHref,
   goalDisplayTitle,
-  goalTypeLabel,
   money,
-  periodLabel,
   remainderText,
   statusLabel,
   statusTone,
@@ -119,18 +118,19 @@ export function GoalDetailPage() {
       {backLink}
 
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-xl font-semibold tracking-tight">
-              {goalDisplayTitle(goal)}
-            </h1>
-            <Badge variant={badgeVariantByTone[tone]}>
-              {statusLabel(progress.status)}
-            </Badge>
+        <div className="flex items-start gap-3">
+          <GoalTypeMark goal={goal} className="mt-0.5" />
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-xl font-semibold tracking-tight">
+                {goalDisplayTitle(goal)}
+              </h1>
+              <Badge variant={badgeVariantByTone[tone]}>
+                {statusLabel(progress.status)}
+              </Badge>
+            </div>
+            <GoalTypeLabel goal={goal} />
           </div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {goalTypeLabel(goal.goalType)} · {periodLabel(goal)}
-          </p>
         </div>
         <div className="flex gap-2">
           <Button

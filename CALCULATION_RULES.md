@@ -243,7 +243,7 @@ nur im laufenden Jahr — das **Monatsziel des laufenden Monats**. Ein Monatszie
 Monat eines Jahres; neben einem anderen Jahr stünde es für einen Zeitraum, den die Seite gerade
 nicht zeigt. Bei „Alle Jahre" entfällt der Bereich: Ziele sind an einen Zeitraum gebunden, „alle
 Jahre" ist keiner. Der Zeitraum steht nicht unter dem Zieltitel — die Jahresauswahl der Seite
-sagt ihn bereits.
+sagt ihn bereits. Dargestellt wird dieselbe Zielkarte wie auf der Zielseite.
 
 ---
 

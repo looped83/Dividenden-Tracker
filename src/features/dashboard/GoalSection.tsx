@@ -2,56 +2,10 @@ import { Link } from "react-router";
 import { Target } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import type { AnalyticsPayment, RefDate, YearSelection } from "@/lib/statistics";
-import { computeGoalProgress, type GoalProgress } from "@/lib/goals";
+import { computeGoalProgress } from "@/lib/goals";
 import { useGoals } from "@/features/goals/hooks";
-import { GoalProgressBar } from "@/features/goals/GoalProgressBar";
-import {
-  goalDisplayTitle,
-  money,
-  remainderText,
-  statusLabel,
-  statusTone,
-} from "@/features/goals/format";
-
-const badgeVariantByTone = {
-  positive: "positive",
-  neutral: "primary",
-  negative: "negative",
-} as const;
-
-/** Kompakte Zielkarte fuer das Dashboard (Auftrag §25): Kernwerte + Detaillink. */
-function CompactGoalCard({ progress }: { progress: GoalProgress }) {
-  const tone = statusTone(progress.status);
-  return (
-    <Card>
-      <CardContent className="space-y-3 p-5">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <Link
-              to={`/ziele/${progress.goal.id}`}
-              className="block truncate rounded-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              {goalDisplayTitle(progress.goal)}
-            </Link>
-          </div>
-          <Badge variant={badgeVariantByTone[tone]}>{statusLabel(progress.status)}</Badge>
-        </div>
-        <div className="flex items-baseline justify-between text-sm">
-          <span className="tabular-nums font-medium">{money(progress.actual)}</span>
-          <span className="text-xs text-muted-foreground">
-            von {money(progress.target)}
-          </span>
-        </div>
-        {/* Der Balken nennt den Prozentwert selbst — deshalb steht er oben
-            nicht mehr zusaetzlich hinter dem Zielbetrag. */}
-        <GoalProgressBar progress={progress} />
-        <p className="text-xs text-muted-foreground">{remainderText(progress)}</p>
-      </CardContent>
-    </Card>
-  );
-}
+import { GoalCard } from "@/features/goals/GoalCard";
 
 interface GoalSectionProps {
   payments: readonly AnalyticsPayment[];
@@ -60,7 +14,13 @@ interface GoalSectionProps {
 }
 
 /**
- * Kompakte Zielsektion des Dashboards (Auftrag §25/§26).
+ * Zielsektion der Uebersicht (Auftrag §25/§26).
+ *
+ * Die Karte ist **dieselbe** wie auf der Zielseite (`GoalCard`). Zuvor gab es
+ * hier eine eigene, kuerzere Fassung: Dasselbe Ziel sah an zwei Stellen
+ * unterschiedlich aus, und die Zielart war in keiner der beiden auf den ersten
+ * Blick zu erkennen. Bearbeiten und Loeschen fehlen hier, weil die Dialoge
+ * dafuer auf der Zielseite liegen.
  *
  * **Gezeigt wird ausschliesslich, was zum gewaehlten Jahr gehoert.** Wer 2024
  * betrachtet, sieht das Jahresziel 2024 — und nicht daneben das Monatsziel des
@@ -114,7 +74,7 @@ export function GoalSection({ payments, selection, today }: GoalSectionProps) {
       {heading}
       <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2">
         {annualProgress ? (
-          <CompactGoalCard progress={annualProgress} />
+          <GoalCard progress={annualProgress} />
         ) : (
           <Card>
             <CardContent className="flex flex-col items-start gap-3 p-5">
@@ -129,7 +89,7 @@ export function GoalSection({ payments, selection, today }: GoalSectionProps) {
           </Card>
         )}
 
-        {monthlyProgress && <CompactGoalCard progress={monthlyProgress} />}
+        {monthlyProgress && <GoalCard progress={monthlyProgress} />}
       </div>
     </section>
   );
