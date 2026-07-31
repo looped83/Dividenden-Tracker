@@ -82,30 +82,55 @@ export function computeGoalProgress(
 }
 
 /**
- * Stabile Sortierung mehrerer Ziele fuer Uebersichten (Auftrag §9). Gruppen in
- * fester Reihenfolge — aktiv/erreicht/uebertroffen (laufend) zuerst, dann
- * bevorstehend, zuletzt beendet — und innerhalb jeder Gruppe der juengste
- * Zeitraum zuerst. Monatsziele nach dem Monat, Jahresziele vor Monatszielen
- * desselben Startdatums. Deterministischer Tiebreaker ueber die technische ID.
+ * In welcher Ordnung eine Zielgruppe gelesen wird. Die Zielseite zeigt die drei
+ * Gruppen in eigenen Reitern; jede beantwortet eine andere Frage, und deshalb
+ * hat jede ihre eigene sinnvolle Reihenfolge.
  */
-export function sortGoalProgress(items: readonly GoalProgress[]): GoalProgress[] {
-  const groupRank: Record<GoalStatus, number> = {
-    active: 0,
-    reached: 0,
-    exceeded: 0,
-    upcoming: 1,
-    missed: 2,
-  };
+export type GoalOrder = "current" | "upcoming" | "ended";
+
+/** Jahresziel vor Monatsziel: der groessere Zeitraum ist der Rahmen des kleineren. */
+function typeRank(item: GoalProgress): number {
+  return item.goal.goalType === "annual" ? 0 : 1;
+}
+
+function compareText(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+/**
+ * Stabile Sortierung einer Zielgruppe (Auftrag §9).
+ *
+ * - `current` — was gerade laeuft: das Jahresziel als Rahmen zuerst, darunter
+ *   die Monatsziele, jeweils der juengste Zeitraum oben.
+ * - `upcoming` — was als **naechstes** kommt, steht oben. Zuvor war es
+ *   umgekehrt: Das am weitesten entfernte Ziel stand zuerst, und der naechste
+ *   Zeitraum lag am Ende der Liste.
+ * - `ended` — das zuletzt beendete oben. Zuvor entschied der Zielstatus: Alles
+ *   Erreichte stand vor allem Verfehlten, wodurch die Jahre durcheinander
+ *   liefen.
+ *
+ * Bei gleichem Zeitraum entscheidet die Zielart, danach die technische Id —
+ * damit ist die Reihenfolge bei jedem Aufruf dieselbe.
+ */
+export function sortGoalProgress(
+  items: readonly GoalProgress[],
+  order: GoalOrder = "current",
+): GoalProgress[] {
   return [...items].sort((a, b) => {
-    const byGroup = groupRank[a.status] - groupRank[b.status];
-    if (byGroup !== 0) return byGroup;
-    // Juengster Zeitraum zuerst (spaeteres Startdatum zuerst).
-    if (a.period.start !== b.period.start) {
-      return a.period.start < b.period.start ? 1 : -1;
+    if (order === "upcoming") {
+      const byStart = compareText(a.period.start, b.period.start);
+      if (byStart !== 0) return byStart;
+    } else if (order === "ended") {
+      const byEnd = compareText(b.period.end, a.period.end);
+      if (byEnd !== 0) return byEnd;
+    } else {
+      const byType = typeRank(a) - typeRank(b);
+      if (byType !== 0) return byType;
+      const byStart = compareText(b.period.start, a.period.start);
+      if (byStart !== 0) return byStart;
     }
-    if (a.period.end !== b.period.end) {
-      return a.period.end < b.period.end ? 1 : -1;
-    }
-    return a.goal.id < b.goal.id ? -1 : a.goal.id > b.goal.id ? 1 : 0;
+    const byType = typeRank(a) - typeRank(b);
+    if (byType !== 0) return byType;
+    return compareText(a.goal.id, b.goal.id);
   });
 }

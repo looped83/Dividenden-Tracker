@@ -40,6 +40,21 @@ export function goalTypeLabel(goalType: Goal["goalType"]): string {
   return goalType === "monthly" ? "Monatsziel" : "Jahresziel";
 }
 
+/**
+ * Zielart samt Zeitraum in einem Zug, z. B. „Jahresziel 2026" oder
+ * „Monatsziel März 2026" — die Beschriftung der Zielart-Marke. Beides zusammen,
+ * weil die Art ohne ihren Zeitraum die halbe Auskunft ist.
+ */
+export function goalTypeBadgeLabel(
+  goal: Pick<Goal, "goalType" | "year" | "month">,
+): string {
+  const year = String(goal.year);
+  if (goal.goalType === "monthly" && goal.month !== null) {
+    return `Monatsziel ${monthNameDe(goal.month)} ${year}`;
+  }
+  return `Jahresziel ${year}`;
+}
+
 /** Beginn-Hinweis fuer bevorstehende Ziele (Auftrag §16), z. B. „Beginnt am 01.01.2028". */
 export function startsAtLabel(goal: Pick<Goal, "goalType" | "year" | "month">): string {
   const year = String(goal.year);

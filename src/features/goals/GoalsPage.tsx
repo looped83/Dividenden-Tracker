@@ -62,11 +62,21 @@ export function GoalsPage() {
 
   const byStatus = React.useMemo(
     () => ({
-      current: sortGoalProgress(progressList.filter((p) => p.time.status === "current")),
+      // Jede Gruppe in ihrer eigenen Ordnung: laufend nach Rahmen (Jahresziel
+      // vor Monatszielen), bevorstehend das naechste zuerst, beendet das
+      // zuletzt beendete zuerst.
+      current: sortGoalProgress(
+        progressList.filter((p) => p.time.status === "current"),
+        "current",
+      ),
       upcoming: sortGoalProgress(
         progressList.filter((p) => p.time.status === "upcoming"),
+        "upcoming",
       ),
-      ended: sortGoalProgress(progressList.filter((p) => p.time.status === "ended")),
+      ended: sortGoalProgress(
+        progressList.filter((p) => p.time.status === "ended"),
+        "ended",
+      ),
     }),
     [progressList],
   );

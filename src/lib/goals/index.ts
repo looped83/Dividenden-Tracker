@@ -14,4 +14,4 @@ export {
   computeTimeProgress,
   timeStatus,
 } from "./period";
-export { computeGoalProgress, sortGoalProgress } from "./progress";
+export { computeGoalProgress, sortGoalProgress, type GoalOrder } from "./progress";

@@ -318,8 +318,9 @@ Verteilung oder Vorschläge.
 
 **Funktionen.** Anlegen, Bearbeiten, dauerhaftes Löschen (mit Bestätigung, ohne
 Veränderung von Dividendeneingängen), Zielübersicht (`/ziele`) mit aktiven,
-bevorstehenden und beendeten Zielen, Detailansicht (`/ziele/:id`) mit Drill-down
-zu den Eingängen des Zeitraums, kompakte Dashboard-Zielsektion.
+bevorstehenden und beendeten Zielen als eigene Reiter, Detailansicht
+(`/ziele/:id`) mit Drill-down zu den Eingängen des Zeitraums, Zielsektion der
+Übersicht mit denselben Zielkarten.
 
 **Angezeigt** werden: bisher erhaltene Dividenden, Zielbetrag, Zielerreichung in
 Prozent, verbleibender bzw. überschrittener Betrag, Zielstatus (bevorstehend /

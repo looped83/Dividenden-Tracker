@@ -84,20 +84,37 @@ const MONATSZIEL_JULI_2026 = goal({
 });
 
 describe("GoalSection — zeigt nur Ziele des gewählten Zeitraums", () => {
+  // Abgefragt wird die Überschrift der Karte, nicht irgendein Text: Die
+  // Zielart-Marke trägt dieselbe Beschriftung („Jahresziel 2026"), und eine
+  // Textsuche träfe beide.
+  const karte = (titel: string) =>
+    screen.queryByRole("heading", { name: titel, level: 3 });
+
   it("zeigt im laufenden Jahr Jahres- und Monatsziel", () => {
     renderSection(2026, [JAHRESZIEL_2026, JAHRESZIEL_2024, MONATSZIEL_JULI_2026]);
-    expect(screen.getByText("Jahresziel 2026")).toBeInTheDocument();
-    expect(screen.getByText("Monatsziel Juli 2026")).toBeInTheDocument();
-    expect(screen.queryByText("Jahresziel 2024")).not.toBeInTheDocument();
+    expect(karte("Jahresziel 2026")).toBeInTheDocument();
+    expect(karte("Monatsziel Juli 2026")).toBeInTheDocument();
+    expect(karte("Jahresziel 2024")).not.toBeInTheDocument();
   });
 
   it("lässt das Monatsziel in einem anderen Jahr weg", () => {
     renderSection(2024, [JAHRESZIEL_2026, JAHRESZIEL_2024, MONATSZIEL_JULI_2026]);
-    expect(screen.getByText("Jahresziel 2024")).toBeInTheDocument();
+    expect(karte("Jahresziel 2024")).toBeInTheDocument();
     // Juli 2026 gehört nicht zu 2024 — die Karte wäre eine Zahl aus einem
     // Zeitraum, den die Seite gerade nicht zeigt.
-    expect(screen.queryByText("Monatsziel Juli 2026")).not.toBeInTheDocument();
-    expect(screen.queryByText("Jahresziel 2026")).not.toBeInTheDocument();
+    expect(karte("Monatsziel Juli 2026")).not.toBeInTheDocument();
+    expect(karte("Jahresziel 2026")).not.toBeInTheDocument();
+  });
+
+  it("zeigt dieselbe Karte wie die Zielseite — mit Marke der Zielart", () => {
+    // Die Übersicht hatte eine eigene, kürzere Karte; dasselbe Ziel sah an
+    // zwei Stellen unterschiedlich aus.
+    renderSection(2026, [JAHRESZIEL_2026, MONATSZIEL_JULI_2026]);
+    expect(screen.getAllByText("Zielbetrag")).toHaveLength(2);
+    expect(screen.getAllByText("Erhalten")).toHaveLength(2);
+    // Die Marke steht zusätzlich zur Überschrift — je Karte einmal.
+    expect(screen.getAllByText("Jahresziel 2026")).toHaveLength(2);
+    expect(screen.getAllByText("Monatsziel Juli 2026")).toHaveLength(2);
   });
 
   it("nennt den Zeitraum nicht noch einmal unter dem Titel", () => {

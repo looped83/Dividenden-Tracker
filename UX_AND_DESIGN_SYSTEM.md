@@ -260,13 +260,30 @@ nur über Farbe (Text-Badges), tastaturbedienbare Auswahl.
 
 ## Phase 7 — Ziele
 
-**Zielseite (`/ziele`).** Überschrift, kurze fachliche Einordnung („Vergleichs­
-wert, keine Prognose"), primäre Aktion „Ziel anlegen", danach Sektionen für
-aktive, bevorstehende und beendete Ziele als klar lesbare Zielkarten (Grid,
+**Zielseite (`/ziele`).** Überschrift, primäre Aktion „Ziel anlegen", darunter
+Reiter für aktive, bevorstehende und beendete Ziele als Zielkarten (Grid,
 1/2/3 Spalten je Breite). Detailansicht `/ziele/:id` mit Drill-down zu den
 Eingängen des Zeitraums.
 
-**Zielkarte & Fortschrittsanzeige.** `GoalProgressBar` ist ein zugängliches
+**Reihenfolge je Reiter.** Jeder Reiter beantwortet eine andere Frage und hat
+deshalb seine eigene Ordnung: *Aktiv* das Jahresziel als Rahmen zuerst, darunter
+die Monatsziele; *Bevorstehend* das nächste Ziel zuerst; *Beendet* das zuletzt
+beendete zuerst. Der Zielstatus (erreicht/verfehlt) sortiert nirgends — sonst
+liefen die Zeiträume durcheinander.
+
+**Zielkarte.** `GoalCard` ist **eine** Komponente für Zielseite und Übersicht;
+eine zweite, kürzere Fassung für das Dashboard gab es, und dieselbe Sache sah an
+zwei Stellen unterschiedlich aus. Auf der Übersicht entfällt allein die Zeile
+mit „Bearbeiten"/„Löschen" — die Dialoge dafür liegen auf der Zielseite.
+
+**Zielart erkennbar machen.** Jahres- und Monatsziel tragen dieselbe Karte und
+waren dadurch kaum zu unterscheiden. Drei Merkmale trennen sie: eine
+36-px-Symbolkachel (`CalendarRange` für das Jahr, `CalendarDays` für den Monat),
+deren Tönung (Primärfarbe gegen Grau) und die Beschriftung darunter
+(„Jahresziel 2026", „Monatsziel März 2026"). Symbol und Farbe tragen nie allein
+— dasselbe Zeichen erscheint auf Übersicht, Zielseite und Detailseite.
+
+**Fortschrittsanzeige.** `GoalProgressBar` ist ein zugängliches
 `role="progressbar"` mit `aria-valuemin/max/now` und aussagekräftigem
 `aria-valuetext` (Betrag + Prozent, bei Überschreitung inkl. übertroffenem
 Betrag). Der Balken ist visuell auf 100 % begrenzt; der reale Prozentwert steht

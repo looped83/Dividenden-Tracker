@@ -166,33 +166,48 @@ describe("computeGoalProgress – Berechnungsgrundlage", () => {
 });
 
 describe("sortGoalProgress", () => {
-  it("aktive/erreichte zuerst, dann bevorstehende, zuletzt beendete; jüngster Zeitraum zuerst", () => {
-    const active = computeGoalProgress(
-      annualGoal({ id: "active" }),
-      [payment("2027-01-05", "1.00")],
+  const monthlyGoal = (overrides: Partial<Goal> = {}): Goal =>
+    annualGoal({ goalType: "monthly", month: 7, ...overrides });
+
+  const fortschritt = (goal: Goal) => computeGoalProgress(goal, [], midYear);
+
+  it("laufend: das Jahresziel als Rahmen zuerst, darunter die Monatsziele", () => {
+    const jahr = fortschritt(annualGoal({ id: "jahr" }));
+    const juli = fortschritt(monthlyGoal({ id: "juli", month: 7 }));
+    const juni = fortschritt(monthlyGoal({ id: "juni", month: 6 }));
+    const sorted = sortGoalProgress([juni, juli, jahr], "current");
+    expect(sorted.map((p) => p.goal.id)).toEqual(["jahr", "juli", "juni"]);
+  });
+
+  it("bevorstehend: das naechste Ziel zuerst", () => {
+    // Zuvor stand das am weitesten entfernte Ziel oben und das naechste ganz
+    // unten — genau verkehrt herum fuer eine Liste dessen, was kommt.
+    const naechstes = fortschritt(annualGoal({ id: "2028", year: 2028 }));
+    const spaeter = fortschritt(annualGoal({ id: "2031", year: 2031 }));
+    const sorted = sortGoalProgress([spaeter, naechstes], "upcoming");
+    expect(sorted.map((p) => p.goal.id)).toEqual(["2028", "2031"]);
+  });
+
+  it("beendet: das zuletzt beendete zuerst, unabhaengig vom Zielstatus", () => {
+    // Zuvor entschied der Status: Ein erreichtes Ziel von 2020 stand vor einem
+    // verfehlten von 2025, und die Jahre liefen durcheinander.
+    const erreicht2020 = computeGoalProgress(
+      annualGoal({ id: "2020", year: 2020, targetAmount: Money.fromString("1.00", EUR) }),
+      [payment("2020-01-05", "5.00")],
       midYear,
     );
-    const upcoming = computeGoalProgress(
-      annualGoal({ id: "upcoming", year: 2029 }),
+    const verfehlt2025 = computeGoalProgress(
+      annualGoal({ id: "2025", year: 2025 }),
       [],
       midYear,
     );
-    const endedOld = computeGoalProgress(
-      annualGoal({ id: "ended-old", year: 2020 }),
-      [payment("2020-01-05", "1.00")],
-      midYear,
-    );
-    const endedNew = computeGoalProgress(
-      annualGoal({ id: "ended-new", year: 2025 }),
-      [payment("2025-01-05", "1.00")],
-      midYear,
-    );
-    const sorted = sortGoalProgress([endedOld, upcoming, endedNew, active]);
-    expect(sorted.map((p) => p.goal.id)).toEqual([
-      "active",
-      "upcoming",
-      "ended-new",
-      "ended-old",
-    ]);
+    const sorted = sortGoalProgress([erreicht2020, verfehlt2025], "ended");
+    expect(sorted.map((p) => p.goal.id)).toEqual(["2025", "2020"]);
+  });
+
+  it("sortiert bei gleichem Zeitraum stabil ueber Zielart und Id", () => {
+    const a = fortschritt(annualGoal({ id: "a" }));
+    const b = fortschritt(annualGoal({ id: "b" }));
+    expect(sortGoalProgress([b, a], "current").map((p) => p.goal.id)).toEqual(["a", "b"]);
   });
 });
