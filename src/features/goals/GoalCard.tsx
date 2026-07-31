@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { GoalProgress } from "@/lib/goals";
 import { GoalProgressBar } from "./GoalProgressBar";
-import { GoalTypeLabel, GoalTypeMark } from "./GoalTypeMark";
+import { GoalTypeMark } from "./GoalTypeMark";
 import {
   goalDisplayTitle,
   money,
@@ -52,13 +52,25 @@ export function GoalCard({ progress, onEdit, onDelete }: GoalCardProps) {
   return (
     <Card className="flex flex-col">
       <CardContent className="flex flex-1 flex-col gap-4 p-5">
-        {/* Titel ueber die volle Breite, darunter Zielart und Status.
-            Stand die Statusmarke rechts neben dem Titel, blieben in einer
-            dreispaltigen Kachel rund 110 px fuer die Ueberschrift — „Dividenden-
-            ziel 2028" brach dann mitten im Wort um. */}
+        {/* Der Titel nennt Zielart und Zeitraum bereits („Dividendenziel 2026",
+            „Monatsziel Juli 2026") — eine Zeile darunter, die dasselbe noch
+            einmal sagt, ist keine Auskunft. Dort steht deshalb der
+            Zeitfortschritt. Umbrochen wird nur an Wortgrenzen: Abgeschnitten
+            oder mitten im Wort gebrochen liest sich beides schlechter als eine
+            zweite Zeile. */}
         <div className="flex items-start gap-3">
           <GoalTypeMark goal={goal} />
           <div className="min-w-0 flex-1 space-y-1">
+            {/* Die Marke steht in der Ecke und wird umflossen, statt eine
+                eigene Spalte zu belegen: Als drittes Flex-Element nahm sie dem
+                Titel dauerhaft ihre Breite, sodass „Dividendenziel 2026" auch
+                dann umbrach, wenn es nebeneinander gepasst haette. */}
+            <Badge
+              variant={badgeVariantByTone[tone]}
+              className="float-right ml-2 whitespace-nowrap"
+            >
+              {statusLabel(status)}
+            </Badge>
             <Link
               to={`/ziele/${goal.id}`}
               className="block rounded-sm outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
@@ -67,12 +79,11 @@ export function GoalCard({ progress, onEdit, onDelete }: GoalCardProps) {
                 {goalDisplayTitle(goal)}
               </h3>
             </Link>
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-              <GoalTypeLabel goal={goal} />
-              <Badge variant={badgeVariantByTone[tone]} className="whitespace-nowrap">
-                {statusLabel(status)}
-              </Badge>
-            </div>
+            {!isUpcoming && (
+              <p className="text-xs text-muted-foreground">
+                {timeProgressText(progress)}
+              </p>
+            )}
           </div>
         </div>
 
@@ -96,12 +107,7 @@ export function GoalCard({ progress, onEdit, onDelete }: GoalCardProps) {
           </div>
         </dl>
 
-        {!isUpcoming && (
-          <div className="space-y-1 text-sm">
-            <p className="font-medium">{remainderText(progress)}</p>
-            <p className="text-xs text-muted-foreground">{timeProgressText(progress)}</p>
-          </div>
-        )}
+        {!isUpcoming && <p className="text-sm font-medium">{remainderText(progress)}</p>}
 
         {/* „Öffnen" gab es hier zusaetzlich; der Titel fuehrt bereits dorthin,
             und drei Schaltflaechen brachen die Zeile um. */}

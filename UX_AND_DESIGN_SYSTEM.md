@@ -277,11 +277,19 @@ zwei Stellen unterschiedlich aus. Auf der Übersicht entfällt allein die Zeile
 mit „Bearbeiten"/„Löschen" — die Dialoge dafür liegen auf der Zielseite.
 
 **Zielart erkennbar machen.** Jahres- und Monatsziel tragen dieselbe Karte und
-waren dadurch kaum zu unterscheiden. Drei Merkmale trennen sie: eine
-36-px-Symbolkachel (`CalendarRange` für das Jahr, `CalendarDays` für den Monat),
-deren Tönung (Primärfarbe gegen Grau) und die Beschriftung darunter
-(„Jahresziel 2026", „Monatsziel März 2026"). Symbol und Farbe tragen nie allein
-— dasselbe Zeichen erscheint auf Übersicht, Zielseite und Detailseite.
+waren dadurch kaum zu unterscheiden. Eine 36-px-Symbolkachel trennt sie
+(`CalendarRange` für das Jahr, `CalendarDays` für den Monat) samt Tönung
+(Primärfarbe gegen Grau); den Klartext liefert der Titel selbst
+(„Dividendenziel 2026", „Monatsziel März 2026"), Farbe und Form tragen nie
+allein. Dasselbe Zeichen erscheint auf Übersicht, Zielseite und Detailseite; nur
+die Detailseite nennt die Zielart zusätzlich als Text.
+
+**Aufbau der Zielkarte.** Symbolkachel, Titel, darunter der Zeitfortschritt
+(„58 % des Jahres vergangen"); die Statusmarke steht in der oberen rechten Ecke
+und wird vom Titel umflossen, statt als eigene Spalte dauerhaft Breite zu
+belegen. Darunter Fortschrittsbalken, Zielbetrag und Erhaltenes, zuletzt der
+Restbetragssatz. Eine Zeile, die Zielart und Zeitraum wiederholt, gibt es nicht
+— das steht schon im Titel.
 
 **Fortschrittsanzeige.** `GoalProgressBar` ist ein zugängliches
 `role="progressbar"` mit `aria-valuemin/max/now` und aussagekräftigem
