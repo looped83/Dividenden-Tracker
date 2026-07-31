@@ -8,25 +8,17 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/toast";
 import ProgressIndicator from "@/components/backup/ProgressIndicator";
-import {
-  executeExport,
-  DEFAULT_EXPORT_COLUMNS,
-  type ExportFormat,
-} from "@/lib/backup/exportService";
+import { executeExport, type ExportFormat } from "@/lib/backup/exportService";
 
 /**
- * Datenexport (CSV, Excel, JSON) — bewusst getrennt von der Sicherung:
- * Ein Export ist eine **Auswahl** zum Weiterverarbeiten, eine Sicherung ist der
- * vollstaendige Bestand zum Wiedereinspielen. Ein Export kann eine Sicherung
- * nicht ersetzen; darauf weist der Bereich ausdruecklich hin.
+ * Datenexport (CSV, Excel) — bewusst getrennt von der Sicherung: Ein Export ist
+ * eine Datei zum Weiterverarbeiten, eine Sicherung ist der vollstaendige
+ * Bestand zum Wiedereinspielen. Ein Export kann eine Sicherung nicht ersetzen.
+ *
+ * JSON gab es hier als drittes Format. Es hatte keinen Empfaenger: einspielen
+ * liess es sich nicht, und wer eine Tabelle auswerten will, oeffnet CSV oder
+ * Excel. Ein Format, das niemand waehlen sollte, gehoert nicht in die Auswahl.
  */
-const FORMAT_HINTS: Record<ExportFormat, string> = {
-  // CSV ohne Hinweis: Das Format erklaert sich, und die Entschaerfung von
-  // Formeln passiert ohnehin — sie ist Aufgabe des Exports, keine Nachricht.
-  csv: "",
-  xlsx: "Öffnet sich direkt in Numbers und Excel. Beträge sind echte Zahlen und Datumsangaben echte Datumswerte — man kann damit rechnen.",
-  json: "Für eigene Auswertungen. Diese Datei lässt sich **nicht** wieder einspielen — dafür ist die Sicherung da.",
-};
 
 export default function ExportSection() {
   const { notify } = useToast();
@@ -40,11 +32,7 @@ export default function ExportSection() {
     setError(null);
 
     try {
-      const result = await executeExport({
-        format,
-        includeArchived,
-        columns: DEFAULT_EXPORT_COLUMNS,
-      });
+      const result = await executeExport({ format, includeArchived });
 
       if (result.success) {
         notify(`Export erstellt: ${result.fileName}`);
@@ -81,11 +69,7 @@ export default function ExportSection() {
           >
             <option value="csv">CSV</option>
             <option value="xlsx">Excel (XLSX)</option>
-            <option value="json">JSON</option>
           </Select>
-          {FORMAT_HINTS[format] && (
-            <p className="text-sm text-muted-foreground">{FORMAT_HINTS[format]}</p>
-          )}
         </div>
 
         <label className="flex min-h-11 items-center gap-2 text-sm">

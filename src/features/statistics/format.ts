@@ -1,8 +1,11 @@
 import type { EntityInfo } from "@/features/dashboard/format";
 import { formatCountNoun } from "@/lib/utils/formatNumber";
 import { paymentsListHref } from "@/features/dashboard/format";
-import type { PaymentSource, PaymentType, StatisticsFilter } from "@/lib/statistics";
+import type { PaymentSource, StatisticsFilter } from "@/lib/statistics";
 import { applyStatisticsFilter } from "./filterParams";
+
+// Die Zahlungsarten stehen in `lib`: Der Datenexport braucht dieselben Namen.
+export { describePaymentType, PAYMENT_TYPE_VALUES } from "@/lib/payments/paymentType";
 
 export {
   describeSource,
@@ -79,33 +82,11 @@ export function entityArchived(map: Map<string, EntityInfo>, id: string): boolea
   return map.get(id)?.archived ?? false;
 }
 
-const PAYMENT_TYPE_LABELS: Record<PaymentType, string> = {
-  regular: "Regulär",
-  special: "Sonderdividende",
-  correction: "Korrektur",
-  cancellation: "Stornierung",
-  refund: "Erstattung",
-  other: "Sonstige",
-};
-
-export function describePaymentType(type: PaymentType): string {
-  return PAYMENT_TYPE_LABELS[type];
-}
-
 export const PAYMENT_SOURCE_VALUES: readonly PaymentSource[] = [
   "manual",
   "csv_import",
   "excel_import",
   "restore",
-];
-
-export const PAYMENT_TYPE_VALUES: readonly PaymentType[] = [
-  "regular",
-  "special",
-  "correction",
-  "cancellation",
-  "refund",
-  "other",
 ];
 
 export { formatCountNumber, formatCountNoun } from "@/lib/utils/formatNumber";
