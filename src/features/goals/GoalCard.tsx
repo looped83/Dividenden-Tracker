@@ -96,7 +96,9 @@ export function GoalCard({ progress, onEdit, onDelete }: GoalCardProps) {
           <GoalProgressBar progress={progress} />
         )}
 
-        <dl className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2 text-sm">
+        {/* Zwei Spalten schon auf dem Telefon — wie in der Historischen
+            Uebersicht. Untereinander brauchten zwei kurze Zahlen vier Zeilen. */}
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
           <div>
             <dt className="text-xs text-muted-foreground">Zielbetrag</dt>
             <dd className="tabular-nums font-medium">{money(progress.target)}</dd>
