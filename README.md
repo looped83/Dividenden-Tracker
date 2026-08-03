@@ -84,6 +84,18 @@ Testbrücke (`tests/e2e/support/bridge.ts`), damit die angemeldeten Abläufe
 gegen echte Migrationen, echte RLS und die echten RPCs laufen — Aufbau und
 Grenzen in TEST_STRATEGY.md §8.1.
 
+Beim Arbeiten an einem einzelnen Test lohnt der Umweg über den Neuaufbau der
+Datenbank nicht — sie ändert sich nur mit einer neuen Migration:
+
+```bash
+npm run db:test:reset        # einmal, danach nur bei neuer Migration
+npm run test:e2e:app:only    # ohne Neuaufbau
+npm run test:e2e:app:only -- --project=Desktop -g "storniert"   # ein Ablauf, ein Projekt
+```
+
+Der Vorschauserver wird lokal wiederverwendet (`reuseExistingServer`), der Build
+läuft also ebenfalls nur beim ersten Aufruf.
+
 ## Spezifikation
 
 | Dokument | Inhalt |

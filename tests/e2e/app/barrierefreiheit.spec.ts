@@ -23,9 +23,11 @@ test.use({
   },
 });
 
-async function pruefe(page: import("@playwright/test").Page, kontext: string) {
+type Page = import("@playwright/test").Page;
+
+async function pruefe(page: Page, kontext: string) {
   const ergebnis = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
     .analyze();
   expect(
     ergebnis.violations.map((v) => ({
@@ -35,6 +37,41 @@ async function pruefe(page: import("@playwright/test").Page, kontext: string) {
       elemente: v.nodes.map((n) => n.target.join(" ")),
     })),
   ).toEqual([]);
+}
+
+/**
+ * Prüft dieselbe, bereits geladene Seite in hell **und** dunkel.
+ *
+ * Beide Themes brauchen eine eigene Messung — die Farbtoken stammen je Theme
+ * aus eigenen Werten, und Kontrast ist genau das, was dabei bricht. Sie
+ * brauchen aber **keinen zweiten Seitenaufbau**: Der `ThemeProvider` liest die
+ * Systemvorliebe über `useSyncExternalStore` mit einem Listener auf der
+ * Medienabfrage, `emulateMedia` schaltet also im laufenden Bild um. Das spart
+ * je Route ein Testkonto, einen Browserkontext und einen Seitenaufbau, ohne
+ * eine einzige Prüfung aufzugeben.
+ *
+ * Die Zusicherung auf die Klasse `dark` ist dabei kein Beiwerk, sondern der
+ * Kern: Ohne sie würde ein nicht greifender Themewechsel unbemerkt zweimal
+ * dasselbe helle Bild prüfen — ein Test, der bestätigt, was er nie gemessen
+ * hat.
+ *
+ * Vorausgesetzt wird `reducedMotion: "reduce"` (im Test gesetzt): Flächen und
+ * Rahmen wechseln ihre Farbe über `transition-colors`, und axe misst die Farbe
+ * im Moment der Prüfung. Mitten im Übergang misst es eine Zwischenfarbe und
+ * meldet einen Kontrastfehler, den es 150 ms später nicht mehr gibt. Statt
+ * einer Wartezeit nutzt der Test die Vorkehrung der Anwendung selbst: Bei
+ * reduzierter Bewegung schaltet `styles/index.css` die Übergänge ab. Gemessen
+ * wird derselbe Endzustand, nur ohne Zwischenbilder.
+ */
+async function pruefeBeideThemes(page: Page, name: string) {
+  const wurzel = page.locator("html");
+
+  await expect(wurzel).not.toHaveClass(/\bdark\b/);
+  await pruefe(page, `${name} (hell)`);
+
+  await page.emulateMedia({ colorScheme: "dark" });
+  await expect(wurzel).toHaveClass(/\bdark\b/);
+  await pruefe(page, `${name} (dunkel)`);
 }
 
 const ROUTEN = [
@@ -60,17 +97,15 @@ const ROUTEN = [
   },
 ] as const;
 
-for (const theme of ["light", "dark"] as const) {
-  for (const route of ROUTEN) {
-    test(`${route.name} ist frei von axe-Verstößen (${theme})`, async ({ page }) => {
-      await page.emulateMedia({ colorScheme: theme });
-      await page.goto(route.pfad);
-      await expect(
-        page.getByRole("heading", { name: route.warten, level: 1 }).first(),
-      ).toBeVisible();
-      await pruefe(page, `${route.name} (${theme})`);
-    });
-  }
+for (const route of ROUTEN) {
+  test(`${route.name} ist frei von axe-Verstößen`, async ({ page }) => {
+    await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" });
+    await page.goto(route.pfad);
+    await expect(
+      page.getByRole("heading", { name: route.warten, level: 1 }).first(),
+    ).toBeVisible();
+    await pruefeBeideThemes(page, route.name);
+  });
 }
 
 test("geöffneter Storno-Dialog ist frei von axe-Verstößen", async ({ page, konto }) => {

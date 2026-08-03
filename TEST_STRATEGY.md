@@ -10,9 +10,9 @@ reines PostgreSQL 16 für Integrations-, RLS- und Restore-Tests (DECISIONS.md D-
 | Stufe | Umfang | Läuft in CI |
 |---|---|---|
 | Lint + Typecheck + Format | ESLint inkl. Geld-Verbotsliste, `tsc --noEmit` strict | ✅ Job `quality` |
-| Unit (Vitest) | 555 Tests / 61 Dateien | ✅ Job `quality` |
-| Integration (PostgreSQL 16) | 98 Tests: Constraints, Trigger, RLS, Import, Statistik, Ziele, Restore | ✅ Job `db-integration` |
-| E2E öffentlich (Playwright) | 33 Tests: Rauchtests, axe und Telefonverhalten (Schriftgröße der Felder, kein seitlicher Überlauf, Pinch-Zoom bleibt erlaubt) | ✅ Job `e2e-smoke` |
+| Unit (Vitest) | 708 Tests / 72 Dateien | ✅ Job `quality` |
+| Integration (PostgreSQL 16) | 118 Tests: Constraints, Trigger, RLS, Import, Statistik, Ziele, Restore | ✅ Job `db-integration` |
+| E2E öffentlich (Playwright) | 34 Tests: Rauchtests, axe und Telefonverhalten (Schriftgröße der Felder, kein seitlicher Überlauf, Pinch-Zoom bleibt erlaubt) | ✅ Job `e2e-smoke` |
 | E2E angemeldet (Playwright + PostgreSQL) | 38 Tests je Projekt (Desktop + iPhone): die fünf Kernabläufe und axe auf allen Routen hinter der Anmeldung | ✅ Job `e2e-app` |
 
 **Bekannte Lücken** — bewusst benannt statt stillschweigend hingenommen:
@@ -218,13 +218,36 @@ Sicherung erstellen — dazu An-/Abmeldung und axe (§9).
 **Stand: umgesetzt für die kontofreien Routen** (`tests/e2e/accessibility.spec.ts`):
 axe-core über `@axe-core/playwright` auf Anmelden, Registrieren und Passwort-vergessen, jeweils
 **hell und dunkel** (Kontraste stammen je Theme aus eigenen Tokens), geprüft gegen WCAG 2.0/2.1
-Stufe A und AA. Ein Fund nennt Regel, Beschreibung und betroffenes Element.
+Stufe A und AA sowie 2.2 Stufe AA. Ein Fund nennt Regel, Beschreibung und betroffenes Element.
 
 **Hinter der Anmeldung ebenfalls umgesetzt** (`tests/e2e/app/barrierefreiheit.spec.ts`): alle
-dreizehn angemeldeten Routen in hell und dunkel, dazu die Zustände, in denen Barrierefreiheit
+sechzehn angemeldeten Routen in hell und dunkel, dazu die Zustände, in denen Barrierefreiheit
 erfahrungsgemäß bricht — geöffneter Dialog, gesetzte Filter, eingeblendete Rückmeldung und der
 Fehlerzustand „nicht gefunden". Die Filterprüfung weist zuerst nach, dass die Filter greifen,
 bevor sie misst; sonst prüfte sie eine Liste, die sie gar nicht gemeint hat.
+
+**Ein Test je Route, zwei Messungen darin.** Beide Themes brauchen eine eigene Messung, aber
+keinen zweiten Seitenaufbau: Der `ThemeProvider` hängt über `useSyncExternalStore` an der
+Medienabfrage, `emulateMedia` schaltet also im laufenden Bild um. Das halbiert Testkonten,
+Browserkontexte und Seitenaufbauten, ohne eine Prüfung aufzugeben — gemessen 108 → 76 Testläufe
+und 89 s → 75 s lokal.
+
+Zwei Dinge sind dabei Bedingung, nicht Beiwerk:
+
+- Nach jedem Wechsel wird die Klasse `dark` am Wurzelelement zugesichert. Ohne diese Zusicherung
+  prüfte ein nicht greifender Themewechsel unbemerkt zweimal dasselbe helle Bild — ein Test, der
+  bestätigt, was er nie gemessen hat.
+- Die Tests laufen mit `reducedMotion: "reduce"`. Flächen und Rahmen wechseln ihre Farbe über
+  `transition-colors`; axe misst die Farbe im Moment der Prüfung und meldete mitten im Übergang
+  Kontrastfehler, die 150 ms später nicht mehr existierten (reproduziert: wechselnde Routen
+  schlugen bei jedem Lauf fehl). Bei reduzierter Bewegung schaltet `styles/index.css` die
+  Übergänge selbst ab — gemessen wird derselbe Endzustand, nur ohne Zwischenbilder, und ohne
+  Wartezeit im Test.
+
+**WCAG 2.2 (`wcag22aa`) ist eingeschlossen.** In axe-core 4.12 steckt dahinter genau eine Regel:
+`target-size` (2.5.8, Mindestgröße von Bedienelementen). Sie gibt gerade dem iPhone-Projekt einen
+eigenen Zweck, der über die Wiederholung der Desktop-Prüfung hinausgeht. Nachgewiesen ist, dass
+die Regel tatsächlich läuft und nicht nur getaggt ist (`passes`, nicht `inapplicable`).
 
 Nicht automatisiert und weiterhin Sache der Checkliste: Tastaturbedienung über ganze Abläufe,
 Screenreader-Ausgabe, 200-%-Zoom, Reduced Motion.

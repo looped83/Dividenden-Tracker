@@ -26,7 +26,8 @@
     "test:integration": "npm run db:test:reset && vitest run --config vitest.integration.config.ts",
     "gen:types": "supabase gen types typescript --db-url \"postgresql://postgres:postgres@127.0.0.1:5432/dividend_tracker_test\" --schema public > src/lib/supabase/database.types.ts",
     "test:e2e": "playwright test",
-    "test:e2e:app": "npm run db:test:reset && playwright test --config playwright.app.config.ts"
+    "test:e2e:app": "npm run db:test:reset && playwright test --config playwright.app.config.ts",
+    "test:e2e:app:only": "playwright test --config playwright.app.config.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "5.5.7",
