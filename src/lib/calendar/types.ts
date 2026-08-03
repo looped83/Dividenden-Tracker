@@ -1,3 +1,4 @@
+import { Money, toCurrencyCode } from "@/lib/money";
 import type {
   CalendarEventState,
   CalendarEventType,
@@ -25,8 +26,20 @@ export interface CalendarEvent {
   externalUid: string;
   eventType: CalendarEventType;
   eventState: CalendarEventState;
-  /** SUMMARY des Feeds; fehlt sie, bleibt sie leer (kein erfundener Titel). */
+  /** SUMMARY des Feeds unveraendert; fehlt sie, bleibt sie leer. */
   title: string | null;
+  /**
+   * Unternehmensname, beim Einlesen aus der SUMMARY geloest. Erkennt der Parser
+   * die Zeile nicht, bleibt er leer und die Oberflaeche zeigt `title`.
+   */
+  companyName: string | null;
+  /**
+   * **Erwarteter** Betrag laut Kalenderquelle — keine erhaltene Zahlung und
+   * keine Schaetzung dieser App. Fehlt er im Feed, bleibt er leer.
+   */
+  expectedAmount: Money | null;
+  /** Depot oder Broker, den die Quelle zu diesem Termin nennt. */
+  sourcePortfolio: string | null;
   description: string | null;
   location: string | null;
   externalUrl: string | null;
@@ -40,6 +53,25 @@ export interface CalendarEvent {
   isAllDay: boolean;
 }
 
+/**
+ * Betrag und Waehrung stehen in der Datenbank nur gemeinsam (Constraint der
+ * Migration 0028). Eine unbekannte Waehrung fuehrt nicht zum Absturz der
+ * Kalenderseite, sondern laesst den Betrag weg — angezeigt wird dann eben
+ * keiner.
+ */
+function readExpectedAmount(row: CalendarEventRow): Money | null {
+  const { expected_amount: amount, expected_currency: currency } = row;
+  if (amount === null || currency === null) return null;
+  try {
+    // PostgREST liefert `numeric` je nach Cast als JSON-Zahl statt als String
+    // (siehe normalizeAmountFields); Money.fromString erwartet einen String.
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-conversion -- Laufzeittyp weicht bewusst vom statischen Typ ab
+    return Money.fromString(String(amount), toCurrencyCode(currency));
+  } catch {
+    return null;
+  }
+}
+
 export function mapCalendarEvent(row: CalendarEventRow): CalendarEvent {
   return {
     id: row.id,
@@ -47,6 +79,9 @@ export function mapCalendarEvent(row: CalendarEventRow): CalendarEvent {
     eventType: row.event_type,
     eventState: row.event_state,
     title: row.title,
+    companyName: row.company_name,
+    expectedAmount: readExpectedAmount(row),
+    sourcePortfolio: row.source_portfolio,
     description: row.description,
     location: row.location,
     externalUrl: row.external_url,

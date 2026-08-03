@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ToastProvider } from "@/components/ui/toast";
+import { EUR, Money } from "@/lib/money";
 import type { CalendarEvent, CalendarSyncStatusRow } from "@/lib/calendar/types";
 
 /**
@@ -53,11 +54,13 @@ const { resetAutoSyncForTests } = await import("@/features/calendar/hooks");
 const HEUTE = new Date("2026-08-05T09:00:00.000Z");
 
 function event(overrides: Partial<CalendarEvent> & { id: string }): CalendarEvent {
+  const title = overrides.title ?? "Apple Inc.";
   return {
     externalUid: `uid-${overrides.id}`,
     eventType: "payment",
     eventState: "active",
-    title: "Apple Inc.",
+    expectedAmount: null,
+    sourcePortfolio: null,
     description: null,
     location: null,
     externalUrl: null,
@@ -68,6 +71,10 @@ function event(overrides: Partial<CalendarEvent> & { id: string }): CalendarEven
     endsAt: null,
     isAllDay: true,
     ...overrides,
+    title,
+    // Der Feed liefert den Namen in der SUMMARY; die App loest ihn beim
+    // Einlesen heraus. Ohne eigene Vorgabe folgt er hier dem Titel.
+    companyName: overrides.companyName ?? title,
   };
 }
 
@@ -324,6 +331,76 @@ describe("Kennzahlkacheln", () => {
     renderPage("agenda");
 
     expect(screen.queryByText("Nächster Zahltag")).not.toBeInTheDocument();
+  });
+});
+
+describe("Erwartete Beträge aus dem Feed", () => {
+  const mitBetrag = (id: string, date: string, title: string, amount: string) =>
+    event({
+      id,
+      date,
+      title,
+      companyName: title,
+      expectedAmount: Money.fromString(amount, EUR),
+      sourcePortfolio: "Trade Republic",
+    });
+
+  it("zeigt den Betrag an der Kachel und nennt ihn als erwartet", () => {
+    zustand.events = [
+      mitBetrag("1", "2026-08-13", "Verizon Communications Inc", "51.37"),
+    ];
+    renderPage("agenda");
+
+    const kachel = screen.getByRole("button", {
+      name: /Verizon Communications Inc, Zahltag am 13\. August 2026, erwartet 51,37/,
+    });
+    expect(kachel).toHaveTextContent("51,37 €");
+    expect(kachel).toHaveTextContent("Trade Republic");
+  });
+
+  it("summiert die Beträge in den Kacheln", () => {
+    zustand.events = [
+      mitBetrag("1", "2026-08-13", "Verizon", "51.37"),
+      mitBetrag("2", "2026-08-20", "Allianz", "12.63"),
+    ];
+    renderPage("agenda");
+
+    // 51,37 + 12,63 = 64,00 — exakt, nicht 64,000000000000006.
+    expect(screen.getAllByText("64,00 €").length).toBeGreaterThan(0);
+    // Monat und 30-Tage-Fenster enthalten hier dieselben zwei Termine.
+    expect(screen.getAllByText(/aus 2 Terminen/).length).toBeGreaterThan(0);
+  });
+
+  it("weist aus, wenn nicht jeder Termin einen Betrag mitbringt", () => {
+    zustand.events = [
+      mitBetrag("1", "2026-08-13", "Verizon", "51.37"),
+      event({ id: "2", date: "2026-08-20", title: "Ohne Betrag AG" }),
+    ];
+    renderPage("agenda");
+
+    expect(screen.getAllByText(/aus 1 von 2 Terminen/).length).toBeGreaterThan(0);
+  });
+
+  it("faellt ohne Beträge auf die Anzahl zurück", () => {
+    zustand.events = [event({ id: "1", date: "2026-08-13", title: "Ohne Betrag AG" })];
+    renderPage("agenda");
+
+    expect(screen.getByText("Diesen Monat")).toBeInTheDocument();
+    expect(screen.queryByText(/aus \d+ Termin/)).not.toBeInTheDocument();
+  });
+
+  it("zeigt den Betrag und das Depot in der Detailansicht", async () => {
+    const user = userEvent.setup();
+    zustand.events = [mitBetrag("1", "2026-08-13", "Verizon", "51.37")];
+    renderPage("agenda");
+
+    await user.click(screen.getByRole("button", { name: /Verizon/ }));
+
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText("Erwarteter Betrag")).toBeInTheDocument();
+    expect(within(dialog).getByText("51,37 €")).toBeInTheDocument();
+    expect(within(dialog).getByText("Depot laut Quelle")).toBeInTheDocument();
+    expect(within(dialog).getByText("Trade Republic")).toBeInTheDocument();
   });
 });
 

@@ -1,13 +1,14 @@
+import { Money, sumMoney, type CurrencyCode } from "@/lib/money";
 import { addDays } from "./month";
 import type { CalendarEvent } from "./types";
 
 /**
  * Kennzahlen des Dividendenkalenders (Kachelzeile über der Liste).
  *
- * Ausschliesslich **abzaehlbare** Groessen: Anzahl Termine, Anzahl Unternehmen,
- * Abstand in Tagen. Betraege stehen bewusst nicht dabei — der Feed liefert
- * keine, und eine geschaetzte Zahl waere eine Behauptung (PRODUCT_SPEC.md
- * Grundsatz 8).
+ * Gezeigt werden Anzahl Termine, Anzahl Unternehmen, Abstand in Tagen — und die
+ * Summe der **erwarteten** Betraege, soweit die Quelle sie nennt. Geschaetzt
+ * wird nichts: Fehlt ein Betrag im Feed, fehlt er auch in der Summe, und die
+ * Kachel sagt, aus wie vielen Terminen sie stammt (PRODUCT_SPEC.md Grundsatz 8).
  *
  * Abgesagte Termine zaehlen nirgends mit: Sie sind gerade **keine**
  * angekuendigte Zahlung mehr. In der Liste bleiben sie sichtbar und sind dort
@@ -21,12 +22,30 @@ export interface NextPayday {
   events: CalendarEvent[];
 }
 
+/**
+ * Summe erwarteter Betraege eines Zeitraums.
+ *
+ * `total` bleibt leer, wenn die Quelle fuer keinen Termin des Zeitraums einen
+ * Betrag nennt — oder wenn die Betraege in **verschiedenen** Waehrungen stehen.
+ * Verschiedene Waehrungen zu addieren waere eine stillschweigende Umrechnung zu
+ * einem erfundenen Kurs; `mixedCurrencies` macht den Fall in der Oberflaeche
+ * benennbar.
+ */
+export interface ExpectedTotal {
+  total: Money | null;
+  /** Termine des Zeitraums, die einen Betrag mitbringen. */
+  withAmount: number;
+  /** Termine des Zeitraums insgesamt. */
+  count: number;
+  mixedCurrencies: boolean;
+}
+
 export interface CalendarSummary {
   next: NextPayday | null;
   /** Termine im laufenden Kalendermonat (ganzer Monat, nicht nur ab heute). */
-  thisMonth: number;
+  thisMonth: ExpectedTotal;
   /** Termine von heute bis einschliesslich in 30 Tagen. */
-  next30Days: number;
+  next30Days: ExpectedTotal;
   /** Verschiedene Unternehmen unter den kommenden Terminen. */
   companies: number;
   /** Kommende Termine insgesamt. */
@@ -44,6 +63,30 @@ export function daysBetween(from: string, to: string): number {
 
 function isCounted(event: CalendarEvent): boolean {
   return event.eventState !== "cancelled";
+}
+
+/**
+ * Bildet die Summe der erwarteten Betraege einer Terminmenge. Summiert wird
+ * ausschliesslich ueber `lib/money` (Decimal) — nie mit `+` auf rohen Zahlen
+ * (CALCULATION_RULES.md §8).
+ */
+export function expectedTotalOf(events: readonly CalendarEvent[]): ExpectedTotal {
+  const amounts: Money[] = [];
+  let currency: CurrencyCode | null = null;
+  let mixedCurrencies = false;
+
+  for (const event of events) {
+    const amount = event.expectedAmount;
+    if (!amount) continue;
+    if (currency === null) currency = amount.currency;
+    else if (currency !== amount.currency) mixedCurrencies = true;
+    amounts.push(amount);
+  }
+
+  const total =
+    currency !== null && !mixedCurrencies ? sumMoney(amounts, currency) : null;
+
+  return { total, withAmount: amounts.length, count: events.length, mixedCurrencies };
 }
 
 export function buildCalendarSummary(
@@ -71,9 +114,12 @@ export function buildCalendarSummary(
 
   return {
     next,
-    thisMonth: counted.filter((event) => event.date.startsWith(monthPrefix)).length,
-    next30Days: upcoming.filter((event) => event.date <= horizon).length,
-    companies: new Set(upcoming.map((event) => event.title ?? "")).size,
+    thisMonth: expectedTotalOf(
+      counted.filter((event) => event.date.startsWith(monthPrefix)),
+    ),
+    next30Days: expectedTotalOf(upcoming.filter((event) => event.date <= horizon)),
+    companies: new Set(upcoming.map((event) => event.companyName ?? event.title ?? ""))
+      .size,
     upcoming: upcoming.length,
   };
 }

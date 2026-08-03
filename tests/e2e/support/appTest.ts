@@ -41,7 +41,17 @@ export interface SeedOptions {
    * ausschließlich serverseitig (Edge Function, service_role) — im Test legt
    * sie deshalb der Superuser an, nicht der angemeldete Nutzer.
    */
-  calendarEvents?: { date: string; title: string; description?: string }[];
+  calendarEvents?: {
+    date: string;
+    title: string;
+    description?: string;
+    /** Unternehmensname, wie ihn die Synchronisation aus der SUMMARY loest. */
+    company?: string;
+    /** Erwarteter Betrag laut Quelle, kanonischer Dezimalstring. */
+    amount?: string;
+    currency?: string;
+    portfolio?: string;
+  }[];
 }
 
 async function createAccount(options: SeedOptions = {}): Promise<Konto> {
@@ -110,12 +120,19 @@ async function seedCalendarEvents(
     for (const [index, event] of events.entries()) {
       await client.query(
         `insert into dividend_calendar_events
-           (user_id, external_uid, title, description, event_date)
-         values ($1, $2, $3, $4, $5)`,
+           (user_id, external_uid, title, company_name, expected_amount,
+            expected_currency, source_portfolio, description, event_date)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
         [
           userId,
           `e2e-${String(index)}-${event.date}`,
           event.title,
+          // Die Synchronisation loest diese Felder aus der SUMMARY; der Test
+          // legt sie direkt an, statt den Parser hier ein zweites Mal zu fahren.
+          event.company ?? event.title,
+          event.amount ?? null,
+          event.amount ? (event.currency ?? "EUR") : null,
+          event.portfolio ?? null,
           event.description ?? null,
           event.date,
         ],

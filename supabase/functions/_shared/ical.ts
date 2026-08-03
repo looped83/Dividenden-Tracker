@@ -12,6 +12,7 @@
  * Edge Function und im Unit-Test.
  */
 import ICAL from "ical.js";
+import { parseSummary } from "./summary.ts";
 import {
   DISPLAY_TIME_ZONE,
   addDays,
@@ -38,8 +39,16 @@ export interface ParsedCalendarEvent {
   externalUid: string;
   eventType: CalendarEventType;
   eventState: Exclude<CalendarEventState, "removed_from_source">;
-  /** SUMMARY; fehlt sie im Feed, bleibt sie leer — es wird nichts erfunden. */
+  /** SUMMARY unveraendert; fehlt sie im Feed, bleibt sie leer. */
   title: string | null;
+  /** Unternehmensname aus der SUMMARY, ohne Betrag, Ereignisart und Depot. */
+  companyName: string | null;
+  /** Erwarteter Betrag **laut Quelle**, kanonischer Dezimalstring. */
+  expectedAmount: string | null;
+  /** ISO-4217-Code zum erwarteten Betrag. */
+  expectedCurrency: string | null;
+  /** Depot oder Broker, den die Quelle zu diesem Termin nennt. */
+  sourcePortfolio: string | null;
   description: string | null;
   location: string | null;
   externalUrl: string | null;
@@ -223,16 +232,17 @@ function readRawData(vevent: IcalComponent): Record<string, string | string[]> {
 }
 
 /**
- * Ereignistyp aus dem Feed. DivvyDiary liefert je nach `dates`-Parameter
- * Zahltage oder Ex-Tage; erkannt wird der Ex-Tag an den ueblichen Kennzeichen
- * in CATEGORIES oder SUMMARY. Ohne Hinweis bleibt es beim Zahltag — dem
- * einzigen Typ, den der aktuell verwendete Feed (`dates=pay`) enthaelt.
+ * Ereignistyp. Maszgeblich ist das Schlagwort der SUMMARY („Zahltag", „Ex-Tag"),
+ * das `parseSummary` bereits herausgeloest hat. Fehlt es, entscheiden die
+ * CATEGORIES; ohne jeden Hinweis bleibt es beim Zahltag — dem einzigen Typ, den
+ * der aktuell verwendete Feed (`dates=pay`) enthaelt.
  */
 function readEventType(
+  fromSummary: CalendarEventType | null,
   categories: string[] | null,
-  title: string | null,
 ): CalendarEventType {
-  const haystack = [...(categories ?? []), title ?? ""].join(" ").toLowerCase();
+  if (fromSummary !== null) return fromSummary;
+  const haystack = (categories ?? []).join(" ").toLowerCase();
   if (/\bex[- ]?(date|tag|dividende)\b/.test(haystack)) return "ex_date";
   return "payment";
 }
@@ -261,15 +271,20 @@ function parseEvent(vevent: IcalComponent): ParsedCalendarEvent | null {
   }
 
   const title = trimmedOrNull(vevent.getFirstPropertyValue("summary"), 500);
+  const summary = parseSummary(title);
   const categories = readCategories(vevent);
   const status = trimmedOrNull(vevent.getFirstPropertyValue("status"), 50);
   const recurrence = vevent.getFirstPropertyValue("rrule");
 
   return {
     externalUid,
-    eventType: readEventType(categories, title),
+    eventType: readEventType(summary.eventType, categories),
     eventState: status?.toUpperCase() === "CANCELLED" ? "cancelled" : "active",
     title,
+    companyName: summary.company,
+    expectedAmount: summary.amount,
+    expectedCurrency: summary.currency,
+    sourcePortfolio: summary.portfolio,
     description: trimmedOrNull(vevent.getFirstPropertyValue("description"), 4000),
     location: trimmedOrNull(vevent.getFirstPropertyValue("location"), 500),
     externalUrl: trimmedOrNull(vevent.getFirstPropertyValue("url"), 2000),

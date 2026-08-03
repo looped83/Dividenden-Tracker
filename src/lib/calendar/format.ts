@@ -23,9 +23,16 @@ export function eventTypeLabel(event: CalendarEvent): string {
   return event.eventType === "ex_date" ? "Ex-Tag" : "Zahltag";
 }
 
-/** Titel eines Termins; ohne SUMMARY im Feed bleibt es bei „Ohne Titel". */
+/**
+ * Titel eines Termins: der beim Einlesen geloeste Unternehmensname.
+ *
+ * Erkennt der Parser die SUMMARY-Zeile nicht, steht dort die vollstaendige
+ * Zeile — lieber einmal „Verizon Communications Inc 51,37 € Zahltag (Trade
+ * Republic)" als ein abgeschnittener oder geratener Name. Fehlt beides, bleibt
+ * es bei „Ohne Titel".
+ */
 export function eventTitle(event: CalendarEvent): string {
-  return event.title ?? "Ohne Titel";
+  return event.companyName ?? event.title ?? "Ohne Titel";
 }
 
 /** „Montag, 13.08.2026". */

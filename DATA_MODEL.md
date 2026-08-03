@@ -503,7 +503,11 @@ Beschreibung in [docs/CALENDAR_INTEGRATION.md](docs/CALENDAR_INTEGRATION.md).
 | external_uid | text not null | `UID` des VEVENT — Identität über alle Läufe |
 | event_type | calendar_event_type | Zahltag oder Ex-Tag |
 | event_state | calendar_event_state | Lebenszyklus; entfallene Termine werden markiert, nie gelöscht |
-| title | text | `SUMMARY`; im Feed optional, daher nullable |
+| title | text | `SUMMARY` unverändert; im Feed optional, daher nullable |
+| company_name | text | Unternehmensname, beim Einlesen aus der SUMMARY gelöst (0028) |
+| expected_amount | numeric(14,2) | **erwarteter** Betrag laut Quelle — keine erhaltene Zahlung (0028) |
+| expected_currency | char(3) | ISO-Code dazu; nur gemeinsam mit dem Betrag gesetzt (0028) |
+| source_portfolio | text | Depot/Broker, den die Quelle nennt (0028) |
 | description, location, external_url | text | direkt aus dem Feed |
 | categories | text[] | `CATEGORIES` |
 | event_date | date not null | **maßgeblicher Kalendertag** (keine Zeitzone) |

@@ -402,6 +402,11 @@ export interface Database {
           event_type: CalendarEventType;
           event_state: CalendarEventState;
           title: string | null;
+          company_name: string | null;
+          /** numeric — als String typisiert (siehe Kopf dieser Datei). */
+          expected_amount: string | null;
+          expected_currency: string | null;
+          source_portfolio: string | null;
           description: string | null;
           location: string | null;
           external_url: string | null;

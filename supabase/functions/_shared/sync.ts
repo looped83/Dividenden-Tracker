@@ -24,6 +24,10 @@ export interface CalendarEventWrite {
   event_type: CalendarEventType;
   event_state: CalendarEventState;
   title: string | null;
+  company_name: string | null;
+  expected_amount: string | null;
+  expected_currency: string | null;
+  source_portfolio: string | null;
   description: string | null;
   location: string | null;
   external_url: string | null;
@@ -74,6 +78,10 @@ export function toWrite(event: ParsedCalendarEvent): CalendarEventWrite {
     event_type: event.eventType,
     event_state: event.eventState,
     title: event.title,
+    company_name: event.companyName,
+    expected_amount: event.expectedAmount,
+    expected_currency: event.expectedCurrency,
+    source_portfolio: event.sourcePortfolio,
     description: event.description,
     location: event.location,
     external_url: event.externalUrl,
