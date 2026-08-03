@@ -149,6 +149,25 @@ describe("parseSummary", () => {
     expect(parsed.company).toBe("Beispiel AG 51,37");
   });
 
+  it("kuerzt einen uebermaessig langen Namen, statt den Lauf scheitern zu lassen", () => {
+    // Eine Zeile, die der Parser nicht zerlegen kann, wuerde sonst in voller
+    // Laenge als Unternehmensname in eine Spalte mit Grenze 300 geschrieben —
+    // und der Datenbank-Check liesse die gesamte Synchronisation scheitern.
+    const lang = "A".repeat(480);
+
+    const parsed = parseSummary(lang);
+
+    expect(parsed.company).toHaveLength(300);
+    expect(parsed.company?.startsWith("AAA")).toBe(true);
+  });
+
+  it("kuerzt auch eine ueberlange Depotangabe", () => {
+    const parsed = parseSummary(`Beispiel AG 1,00 € Zahltag (${"D".repeat(220)})`);
+
+    expect(parsed.portfolio).toHaveLength(200);
+    expect(parsed.company).toBe("Beispiel AG");
+  });
+
   it("kommt mit leerer und fehlender Zeile zurecht", () => {
     expect(parseSummary(null).company).toBeNull();
     expect(parseSummary("   ").company).toBeNull();

@@ -8,6 +8,7 @@
  */
 import { FeedError, type FeedErrorCode } from "./feed.ts";
 import { IcalParseError } from "./ical.ts";
+import { StoreError } from "./sync.ts";
 
 const GENERIC =
   "Der Dividendenkalender konnte gerade nicht aktualisiert werden. Die zuletzt gespeicherten Termine werden weiterhin angezeigt.";
@@ -27,10 +28,20 @@ const BY_CODE: Record<FeedErrorCode, string> = {
   network: GENERIC,
 };
 
+/**
+ * Scheitert nicht die Quelle, sondern die eigene Datenbank, ist der
+ * Sammeltext irrefuehrend: Er legt einen Ausfall bei DivvyDiary nahe, waehrend
+ * in Wahrheit meist eine Migration fehlt. Der Hinweis nennt deshalb die
+ * wahrscheinlichste Ursache, ohne technische Einzelheiten zu zeigen.
+ */
+const STORE_ERROR =
+  "Die Termine konnten nicht gespeichert werden. Vermutlich fehlt im Supabase-Projekt eine Datenbankmigration.";
+
 /** Meldung, die dem Nutzer gezeigt und in `calendar_sync_status` abgelegt wird. */
 export function userMessageFor(error: unknown): string {
   if (error instanceof FeedError) return BY_CODE[error.code];
   if (error instanceof IcalParseError) return BY_CODE.content_type;
+  if (error instanceof StoreError) return STORE_ERROR;
   return GENERIC;
 }
 
@@ -48,6 +59,13 @@ export function logCodeFor(error: unknown): string {
       : `feed:${error.code}:${String(error.status)}`;
   }
   if (error instanceof IcalParseError) return "ical:parse";
+  if (error instanceof StoreError) {
+    // Der Datenbankfehler wird ausnahmsweise mitprotokolliert: Er benennt die
+    // fehlende Spalte oder verletzte Bedingung und ist ohne ihn nicht
+    // auffindbar. Er enthaelt weder die Feed-Adresse noch den Token; die
+    // Werte der Zeile stehen in `details`, das bewusst nicht mitgeht.
+    return `store:${error.step}${error.detail ? ` — ${error.detail}` : ""}`;
+  }
   if (error instanceof Error) return `internal:${error.name}`;
   return "internal:unknown";
 }

@@ -18,6 +18,33 @@ import type {
 
 export const CALENDAR_SOURCE = "divvydiary";
 
+/** Die Schritte, an denen ein Schreib- oder Lesezugriff scheitern kann. */
+export const STORE_FAILURES = ["load", "insert", "update", "remove"] as const;
+export type StoreFailure = (typeof STORE_FAILURES)[number];
+
+/**
+ * Die eigene Datenbank hat den Zugriff abgelehnt — nicht die Kalenderquelle.
+ *
+ * Der Unterschied ist wichtig genug fuer einen eigenen Fehlertyp: Ein Ausfall
+ * bei DivvyDiary geht vorueber, eine fehlende Migration nicht. Beides mit
+ * derselben Meldung zu quittieren schickte den Betreiber auf die falsche
+ * Faehrte.
+ *
+ * `detail` traegt die Meldung der Datenbank fuer das Server-Log (etwa
+ * „column … does not exist"), niemals die Werte der Zeile.
+ */
+export class StoreError extends Error {
+  readonly step: StoreFailure;
+  readonly detail: string | null;
+
+  constructor(step: StoreFailure, detail: string | null = null) {
+    super(`store_${step}_failed`);
+    this.name = "StoreError";
+    this.step = step;
+    this.detail = detail;
+  }
+}
+
 /** Fachliche Felder einer Kalenderzeile — genau das, was der Feed bestimmt. */
 export interface CalendarEventWrite {
   external_uid: string;

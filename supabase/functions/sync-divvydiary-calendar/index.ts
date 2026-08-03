@@ -24,6 +24,7 @@ import { parseIcalCalendar } from "../_shared/ical.ts";
 import { logCodeFor, userMessageFor } from "../_shared/messages.ts";
 import {
   CALENDAR_SOURCE,
+  StoreError,
   runCalendarSync,
   type CalendarEventStore,
   type CalendarEventWrite,
@@ -65,6 +66,18 @@ const EVENT_COLUMNS = [
   "raw_data",
 ].join(", ");
 
+/**
+ * Kurzbeschreibung eines Datenbankfehlers fuer das Server-Log: Code und
+ * Meldung, aber **nicht** `details` — dort stehen die Werte der betroffenen
+ * Zeile (etwa die UID mit dem Unternehmensnamen).
+ */
+function describe(error: { code?: string; message?: string }): string {
+  const parts = [error.code, error.message].filter(
+    (part): part is string => typeof part === "string" && part.length > 0,
+  );
+  return parts.join(" ").slice(0, 300);
+}
+
 function json(body: unknown, status: number): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -89,7 +102,7 @@ function createStore(
         .select(EVENT_COLUMNS)
         .eq("user_id", userId)
         .eq("source", CALENDAR_SOURCE);
-      if (error) throw new Error("load_failed");
+      if (error) throw new StoreError("load", describe(error));
       return (data ?? []) as unknown as StoredCalendarEvent[];
     },
 
@@ -103,7 +116,7 @@ function createStore(
           last_synced_at: now,
         })),
       );
-      if (error) throw new Error("insert_failed");
+      if (error) throw new StoreError("insert", describe(error));
     },
 
     async updateEvents(rows: StoredCalendarEvent[]): Promise<void> {
@@ -113,7 +126,7 @@ function createStore(
           .update({ ...row, last_synced_at: now })
           .eq("id", id)
           .eq("user_id", userId);
-        if (error) throw new Error("update_failed");
+        if (error) throw new StoreError("update", describe(error));
       }
     },
 
@@ -123,7 +136,7 @@ function createStore(
         .update({ event_state: "removed_from_source", last_synced_at: now })
         .in("id", ids)
         .eq("user_id", userId);
-      if (error) throw new Error("remove_failed");
+      if (error) throw new StoreError("remove", describe(error));
     },
   };
 }
