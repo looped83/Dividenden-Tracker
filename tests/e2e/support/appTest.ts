@@ -36,6 +36,12 @@ export interface SeedOptions {
   payments?: { payDate: string; netAmount: string }[];
   /** Ausschüttungsmonate des angelegten Unternehmens (§10). */
   payoutMonths?: number[];
+  /**
+   * Angekündigte Termine des Dividendenkalenders. Sie entstehen sonst
+   * ausschließlich serverseitig (Edge Function, service_role) — im Test legt
+   * sie deshalb der Superuser an, nicht der angemeldete Nutzer.
+   */
+  calendarEvents?: { date: string; title: string; description?: string }[];
 }
 
 async function createAccount(options: SeedOptions = {}): Promise<Konto> {
@@ -84,7 +90,45 @@ async function createAccount(options: SeedOptions = {}): Promise<Konto> {
     return { depotId: depotRow.id, securityId: securityRow.id, paymentIds };
   });
 
+  await seedCalendarEvents(userId, options.calendarEvents ?? []);
+
   return { userId, email, depotId, depotName, securityId, securityName, paymentIds };
+}
+
+/**
+ * Legt angekündigte Kalendertermine an. Der angemeldete Nutzer darf in
+ * `dividend_calendar_events` nicht schreiben (Migration 0027) — im Betrieb tut
+ * das allein die Edge Function mit service_role. Der Test bildet genau das ab
+ * und schreibt als Superuser.
+ */
+async function seedCalendarEvents(
+  userId: string,
+  events: NonNullable<SeedOptions["calendarEvents"]>,
+): Promise<void> {
+  if (events.length === 0) return;
+  await asSuperuser(async (client) => {
+    for (const [index, event] of events.entries()) {
+      await client.query(
+        `insert into dividend_calendar_events
+           (user_id, external_uid, title, description, event_date)
+         values ($1, $2, $3, $4, $5)`,
+        [
+          userId,
+          `e2e-${String(index)}-${event.date}`,
+          event.title,
+          event.description ?? null,
+          event.date,
+        ],
+      );
+    }
+    await client.query(
+      `insert into calendar_sync_status (user_id, state, last_attempt_at, last_success_at, events_read, events_created)
+       values ($1, 'success', now(), now(), $2, $2)
+       on conflict (user_id, source) do update
+         set state = 'success', last_success_at = now()`,
+      [userId, events.length],
+    );
+  });
 }
 
 function storageStateFor(konto: Konto) {

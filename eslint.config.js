@@ -41,7 +41,19 @@ export default tseslint.config(
     // Gueltigkeitsbereich). Sie werden formatiert, aber nicht typgestuetzt
     // geprueft — die typisierten Regeln brauchen ein Projekt, das es hier
     // nicht gibt.
-    ignores: ["dist", "coverage", "node_modules", "public", "**/*.config.js"],
+    //
+    // `supabase/functions/*/index.ts` sind die Deno-Einstiegspunkte der Edge
+    // Functions: eigene Laufzeit, eigene Globals (`Deno`), kein Teil des
+    // TypeScript-Projekts. Ihre fachliche Logik liegt in
+    // `supabase/functions/_shared` und wird regulaer geprueft.
+    ignores: [
+      "dist",
+      "coverage",
+      "node_modules",
+      "public",
+      "supabase/functions/*/index.ts",
+      "**/*.config.js",
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.strictTypeChecked,

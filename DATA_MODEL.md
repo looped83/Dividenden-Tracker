@@ -474,3 +474,65 @@ Unique `(user_id, pair_key)`. RLS: select/insert/delete nur eigene Zeilen; kein
 UPDATE (Einträge sind unveränderlich, Widerruf per DELETE). Kein Bezug am
 Dividendeneingang selbst — die Dublettenerkennung bleibt eine jederzeit neu
 berechenbare Ableitung.
+
+---
+
+## Dividendenkalender (Migration 0027)
+
+Angekündigte Zahltage aus einem persönlichen DivvyDiary-iCal-Feed. Vollständig
+getrennt von `dividend_payments` — kein Fremdschlüssel, kein automatischer
+Abgleich, keine geschätzten Beträge (PRODUCT_SPEC.md Grundsatz 8). Vollständige
+Beschreibung in [docs/CALENDAR_INTEGRATION.md](docs/CALENDAR_INTEGRATION.md).
+
+### Enums
+
+| Enum | Werte |
+|---|---|
+| `calendar_source` | `divvydiary` |
+| `calendar_event_type` | `payment`, `ex_date` |
+| `calendar_event_state` | `active`, `cancelled`, `removed_from_source` |
+| `calendar_sync_state` | `never`, `running`, `success`, `error` |
+
+### `dividend_calendar_events`
+
+| Spalte | Typ | Beschreibung |
+|---|---|---|
+| id | uuid PK | |
+| user_id | uuid not null | Eigentümer (RLS, `on delete cascade`) |
+| source | calendar_source | Herkunft des Termins |
+| external_uid | text not null | `UID` des VEVENT — Identität über alle Läufe |
+| event_type | calendar_event_type | Zahltag oder Ex-Tag |
+| event_state | calendar_event_state | Lebenszyklus; entfallene Termine werden markiert, nie gelöscht |
+| title | text | `SUMMARY`; im Feed optional, daher nullable |
+| description, location, external_url | text | direkt aus dem Feed |
+| categories | text[] | `CATEGORIES` |
+| event_date | date not null | **maßgeblicher Kalendertag** (keine Zeitzone) |
+| end_date | date | letzter Tag mehrtägiger Termine, inklusiv |
+| starts_at, ends_at | timestamptz | nur bei Terminen mit Uhrzeit |
+| is_all_day | boolean not null | |
+| sequence_number, recurrence_rule | int / text | `SEQUENCE`, `RRULE` (unausgewertet aufbewahrt) |
+| source_created_at, source_updated_at | timestamptz | `CREATED`, `LAST-MODIFIED`/`DTSTAMP` |
+| raw_data | jsonb | alle Eigenschaften des VEVENT als Text |
+| first_synced_at, last_synced_at | timestamptz | erster/letzter Lauf, der die Zeile schrieb |
+| created_at, updated_at | timestamptz | |
+
+Unique `(user_id, source, external_uid)` verhindert Dubletten und trägt den Upsert.
+Check-Constraints sichern die Zeitkonsistenz (ganztägig ⇔ ohne Zeitpunkt) und
+`end_date >= event_date`. Indizes: `(user_id, event_date, id)` für die Ansicht,
+`(user_id, source, event_date) where event_state = 'active'` für den Abgleich.
+
+RLS: `authenticated` darf **ausschließlich lesen**, und nur eigene Zeilen
+(`dividend_calendar_events_select_own`). Es gibt bewusst keine INSERT-, UPDATE- oder
+DELETE-Policy — geschrieben wird allein serverseitig durch die Edge Function
+`sync-divvydiary-calendar` (service_role, ohne DELETE-Recht).
+
+### `calendar_sync_status`
+
+Primärschlüssel `(user_id, source)`. Enthält Zustand, Zeitpunkt des letzten Versuchs
+und des letzten Erfolgs, die Zähler eines Laufs (gelesen, neu, aktualisiert, entfernt,
+übersprungen) und eine **bereinigte** Fehlermeldung. Niemals Secrets oder Feed-Inhalte.
+Ebenfalls nur lesbar für `authenticated`.
+
+`claim_calendar_sync(uuid, calendar_source, interval)` (security definer, nur für
+service_role ausführbar) belegt einen Lauf atomar und verhindert parallele
+Synchronisationen; eine Belegung verfällt nach der übergebenen Frist.

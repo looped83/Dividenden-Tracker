@@ -9,6 +9,12 @@ coverage
 .env.*
 !.env.example
 
+# Secrets der Edge Functions (u. a. die persoenliche DivvyDiary-Feed-URL mit
+# Token). Die Muster oben greifen nur im Wurzelverzeichnis.
+supabase/functions/.env
+supabase/functions/**/.env
+supabase/.env
+
 # Editor/OS
 .DS_Store
 .vscode/*
@@ -23,3 +29,7 @@ test-results
 tests/fixtures/*.xlsx
 tests/fixtures/*.xls
 tests/fixtures/*.csv
+
+# Von Deno beim lokalen Pruefen erzeugt. Die Versionen der Edge Function stehen
+# exakt gepinnt in deren deno.json; die Sperrdatei braucht das Deployment nicht.
+supabase/functions/**/deno.lock
