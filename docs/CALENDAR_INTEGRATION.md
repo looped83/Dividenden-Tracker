@@ -139,6 +139,20 @@ erfolgreich synchronisierten Stand weiter.
 Vergangene Termine werden nie als entfallen markiert: Der Feed enthält nur kommende
 Zahltage, jeder vergangene Termin fehlt darin zwangsläufig.
 
+### Darstellung
+
+Standard ist die **Liste**: je Termin eine Kachel mit Datumsfeld (Tageszahl und
+Monatskürzel), Unternehmen, Ereignisart und Wochentag; auf breiten Bildschirmen mehrspaltig,
+gruppiert nach „Heute", „Diese Woche" und „Später". Darüber stehen vier Kennzahlkacheln
+(`StatCard` wie auf der Übersicht): nächster Zahltag mit Abstand in Tagen, Termine im
+laufenden Monat, Termine der nächsten 30 Tage und Anzahl verschiedener Unternehmen.
+
+Sie zeigen ausschließlich **Abzählbares**. Eine Kachel „erwartete Summe" gibt es nicht — der
+Feed liefert keine Beträge, und eine geschätzte Zahl wäre eine Behauptung. Abgesagte Termine
+zählen in keiner Kennzahl mit, bleiben in der Liste aber sichtbar und gekennzeichnet.
+
+Das Monatsraster ist einen Klick entfernt; die Wahl bleibt in `localStorage` erhalten.
+
 ### Wann synchronisiert wird
 
 - Beim Öffnen des Kalenders, wenn der letzte Erfolg älter als **12 Stunden** ist oder noch

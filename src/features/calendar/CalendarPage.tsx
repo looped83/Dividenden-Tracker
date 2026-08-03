@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { useToast } from "@/components/ui/toast";
 import { isoFromRef, refDateFromDate } from "@/lib/statistics";
 import { shiftMonth } from "@/lib/calendar/month";
+import { buildCalendarSummary } from "@/lib/calendar/summary";
 import { lastSyncLabel } from "@/lib/calendar/format";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { cn } from "@/lib/utils/cn";
@@ -18,6 +19,7 @@ import {
   useSyncCalendar,
 } from "./hooks";
 import { useCalendarViewMode } from "./viewMode";
+import { CalendarSummaryTiles } from "./CalendarSummary";
 import { CalendarToolbar } from "./CalendarToolbar";
 import { MonthView } from "./MonthView";
 import { AgendaView } from "./AgendaView";
@@ -76,6 +78,10 @@ export function CalendarPage() {
   const syncMutation = useSyncCalendar();
 
   const events = React.useMemo(() => eventsQuery.data ?? [], [eventsQuery.data]);
+  const summary = React.useMemo(
+    () => buildCalendarSummary(events, today),
+    [events, today],
+  );
   const status = statusQuery.data ?? null;
   const isSyncing = syncMutation.isPending;
 
@@ -191,6 +197,8 @@ export function CalendarPage() {
               <AlertDescription>{syncErrorMessage}</AlertDescription>
             </Alert>
           )}
+
+          {events.length > 0 && <CalendarSummaryTiles summary={summary} today={today} />}
 
           {/* Ohne einen einzigen Termin gibt es nichts zu blaettern und nichts
               umzuschalten; die Bedienleiste bliebe eine leere Geste. */}

@@ -1,7 +1,7 @@
-import { monthNameDe } from "@/lib/statistics";
-import { formatCountNoun } from "@/lib/utils/formatNumber";
+import { monthNameDe, monthNameDeShort } from "@/lib/statistics";
+import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
 import { formatCalendarDate } from "@/lib/utils/formatDate";
-import { WEEKDAYS_DE, weekdayIndex } from "./month";
+import { WEEKDAYS_DE, WEEKDAYS_DE_SHORT, weekdayIndex } from "./month";
 import type { CalendarEvent } from "./types";
 
 /**
@@ -33,11 +33,46 @@ export function longDate(iso: string): string {
   return `${WEEKDAYS_DE[weekdayIndex(iso)]}, ${formatCalendarDate(iso)}`;
 }
 
+/**
+ * „Mo, 13.08.2026" — die Fassung fuer die Kacheln der Liste.
+ *
+ * Der ausgeschriebene Wochentag sprengte dort die Zeile: In der dreispaltigen
+ * Darstellung brach „Donnerstag, 13.08.2026" um und machte einzelne Kacheln
+ * hoeher als ihre Nachbarn. Vollstaendig steht das Datum weiterhin in der
+ * zugaenglichen Bezeichnung und in der Detailansicht.
+ */
+export function shortDate(iso: string): string {
+  return `${WEEKDAYS_DE_SHORT[weekdayIndex(iso)]}, ${formatCalendarDate(iso)}`;
+}
+
 /** „13. August 2026" — ausgeschrieben fuer Sprachausgaben. */
 export function spokenDate(iso: string): string {
   const day = Number.parseInt(iso.slice(8, 10), 10);
   const month = Number.parseInt(iso.slice(5, 7), 10);
   return `${String(day)}. ${monthNameDe(month)} ${iso.slice(0, 4)}`;
+}
+
+/**
+ * Bestandteile der Datumskachel: Tageszahl und kurzer Monatsname.
+ *
+ * Die Kachel ersetzt die frühere Datumszeile über der Liste — das Datum steht
+ * damit **am** Termin statt darüber, und mehrere Termine desselben Tages sind
+ * einzeln lesbar, ohne die Überschrift mitdenken zu müssen.
+ */
+export function dateTile(iso: string): { day: string; month: string } {
+  return {
+    day: String(Number.parseInt(iso.slice(8, 10), 10)),
+    month: monthNameDeShort(Number.parseInt(iso.slice(5, 7), 10)),
+  };
+}
+
+/** „heute", „morgen", „übermorgen", „in 5 Tagen", „vor 3 Tagen". */
+export function relativeDayLabel(daysAway: number): string {
+  if (daysAway === 0) return "heute";
+  if (daysAway === 1) return "morgen";
+  if (daysAway === 2) return "übermorgen";
+  if (daysAway > 0) return `in ${formatCountNumber(daysAway)} Tagen`;
+  return `vor ${formatCountNumber(Math.abs(daysAway))} Tagen`;
 }
 
 /** Uhrzeit eines Termins mit Zeitangabe, in Berliner Zeit. */
