@@ -70,8 +70,12 @@ const EVENT_TYPE_WORDS: readonly (readonly [RegExp, CalendarEventType])[] = [
   [/^(ex[- ]?tag|ex[- ]?datum|ex[- ]?dividende|ex[- ]?date|ex[- ]?day)$/i, "ex_date"],
 ];
 
-/** Depot/Broker in Klammern am Zeilenende. */
-const TRAILING_PARENTHESES = /\s*\(([^()]{1,200})\)\s*$/;
+/**
+ * Depot/Broker in Klammern am Zeilenende. Das Muster laesst mehr zu, als die
+ * Spalte fasst: Eine ueberlange Angabe soll als Depot **erkannt** und dann
+ * gekuerzt werden, statt unerkannt im Unternehmensnamen stehen zu bleiben.
+ */
+const TRAILING_PARENTHESES = /\s*\(([^()]{1,400})\)\s*$/;
 
 /** Ein bis zwei Woerter am Zeilenende — Kandidaten fuer die Ereignisart. */
 const TRAILING_WORDS = /\s+([\p{L}][\p{L}\- ]{0,24})$/u;
@@ -82,8 +86,24 @@ const AMOUNT_THEN_CURRENCY =
 const CURRENCY_THEN_AMOUNT =
   /\s*([^\s\d]{1,3}|[A-Z]{3})\s*(-?[\d][\d.,\u00a0\u202f ]*)\s*$/;
 
+/**
+ * Laengengrenzen der Spalten aus Migration 0028. Sie stehen hier, weil der
+ * Parser sie einhalten muss: Eine Zeile, die er nicht zerlegen kann, ergaebe
+ * sonst einen Unternehmensnamen in voller SUMMARY-Laenge (bis 500 Zeichen) —
+ * und der Datenbank-Check `length(company_name) between 1 and 300` liesse den
+ * ganzen Lauf scheitern. Ein zu langer Name wird gekuerzt, nicht verworfen.
+ */
+const MAX_COMPANY_LENGTH = 300;
+const MAX_PORTFOLIO_LENGTH = 200;
+
 function collapseSpaces(value: string): string {
   return value.replace(/\s+/g, " ").trim();
+}
+
+/** Gekuerzter, leerer Wert wird zu `null` — die Spalten verlangen mindestens ein Zeichen. */
+function trimTo(value: string, maxLength: number): string | null {
+  const trimmed = collapseSpaces(value).slice(0, maxLength).trim();
+  return trimmed.length > 0 ? trimmed : null;
 }
 
 /**
@@ -202,7 +222,7 @@ export function parseSummary(summary: string | null): ParsedSummary {
 
   const parentheses = TRAILING_PARENTHESES.exec(rest);
   if (parentheses) {
-    portfolio = collapseSpaces(parentheses[1]) || null;
+    portfolio = trimTo(parentheses[1], MAX_PORTFOLIO_LENGTH);
     rest = rest.slice(0, parentheses.index);
   }
 
@@ -223,6 +243,6 @@ export function parseSummary(summary: string | null): ParsedSummary {
     rest = money.rest;
   }
 
-  const company = collapseSpaces(rest) || null;
+  const company = trimTo(rest, MAX_COMPANY_LENGTH);
   return { company, amount, currency, eventType, portfolio };
 }
