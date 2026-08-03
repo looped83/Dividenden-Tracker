@@ -244,8 +244,14 @@ Route einen Seitenaufbau und wurde deshalb umgesetzt — er scheiterte zweimal:
 
 Ein Neuladen für den zweiten Durchgang wäre korrekt gewesen, kostete aber genau die Ersparnis,
 um die es ging (gemessen: 89 s → 84 s angemeldet, öffentlich sogar 24 s → 30 s). Deshalb bleibt
-es bei einem Test je Route und Theme. `reducedMotion` ist geblieben, weil es die Messung
-unabhängig von Übergängen macht.
+es bei einem Test je Route und Theme.
+
+Auch `reducedMotion` ist wieder entfallen: Es war die Absicherung gegen Farbübergänge beim
+Umschalten und mit dem Umschaltweg überflüssig. Beibehalten schadete sogar — in WebKit meldete
+axe damit auf der Anmeldeseite in Dunkel reproduzierbar Kontrastfehler auf `p` und `span`, die
+ohne die Emulation nicht auftreten. Was die Anwendung unter reduzierter Bewegung darstellt,
+gehört eigenständig geprüft (siehe manuelle Liste unten), nicht als Nebenwirkung einer
+Messvorbereitung.
 
 Die Zusicherung auf die Klasse `dark` (`erwarteTheme`) bleibt in jedem Test: Ohne sie prüfte ein
 nicht greifendes Theme unbemerkt zweimal dasselbe Bild — ein Test, der bestätigt, was er nie

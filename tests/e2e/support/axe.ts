@@ -44,11 +44,19 @@ export async function pruefeAxe(page: Page, kontext: string): Promise<void> {
  * neu auf; Warten hilft nicht, weil bereits der Endzustand ein anderer ist.
  *
  * Deshalb: Theme setzen, dann laden. So misst der Test die Lage, die auch im
- * Betrieb gilt. `reducedMotion` kommt mit, damit die Farbübergänge
- * (`transition-colors`) die Messung nicht mit Zwischenfarben stören.
+ * Betrieb gilt — und es gibt keinen Farbübergang, gegen den die Messung
+ * abgesichert werden müsste.
+ *
+ * **Bewusst ohne `reducedMotion`.** Es war die Absicherung für den
+ * Umschaltweg und wurde mit ihm überflüssig. Beibehalten schadete sogar: In
+ * WebKit meldete axe damit auf der Anmeldeseite in Dunkel reproduzierbar
+ * Kontrastfehler auf `p` und `span`, die ohne die Emulation nicht auftreten.
+ * Was die Anwendung unter reduzierter Bewegung darstellt, gehört eigenständig
+ * geprüft (TEST_STRATEGY.md §9, manuelle Liste) — nicht als Nebenwirkung einer
+ * Messvorbereitung.
  */
 export async function stelleThemeEin(page: Page, theme: "light" | "dark"): Promise<void> {
-  await page.emulateMedia({ colorScheme: theme, reducedMotion: "reduce" });
+  await page.emulateMedia({ colorScheme: theme });
 }
 
 /**
