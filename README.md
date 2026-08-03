@@ -103,7 +103,3 @@ Grenzen in TEST_STRATEGY.md §8.1.
 | [DECISIONS.md](DECISIONS.md) | Entscheidungsprotokoll (D-Einträge und ADRs) |
 | [docs/AUDIT_2026-07-29.md](docs/AUDIT_2026-07-29.md) | Bestandsaufnahme, Risiken, Phasenplan |
 | [docs/CALENDAR_INTEGRATION.md](docs/CALENDAR_INTEGRATION.md) | Dividendenkalender: Edge Function, Secret, Datenmodell, Synchronisation |
-| [docs/divvydiary-api-discovery.md](docs/divvydiary-api-discovery.md) | Untersuchung eines lesenden Depotzugriffs über die DivvyDiary-API (Phase B0): Befunde, Endpunktmatrix, Entscheidungsmatrix, Empfehlung |
-| [docs/divvydiary-integration-architecture.md](docs/divvydiary-integration-architecture.md) | Entwurf der Zielarchitektur, des Datenmodells und des Bestandsbereichs — nicht umgesetzt |
-| [docs/divvydiary-data-mapping.md](docs/divvydiary-data-mapping.md) | Feldmatrizen, Kennungen und Zuordnungsregeln, Datenhoheitsmodell |
-| [docs/divvydiary-security-assessment.md](docs/divvydiary-security-assessment.md) | Sicherheitsbewertung der geplanten Integration und verbindliche Auflagen |

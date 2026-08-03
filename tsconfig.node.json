@@ -14,14 +14,10 @@
     "noEmit": true,
 
     "strict": true,
-    "noUncheckedIndexedAccess": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  // `scripts/divvydiary-discovery` ist ein Node-Werkzeug ausserhalb der
-  // Anwendung (docs/divvydiary-api-discovery.md). Es gehoert hierher, weil es
-  // wie `vite.config.ts` Node-Globals nutzt und nicht ins Browser-Bundle geht.
-  "include": ["vite.config.ts", "scripts/divvydiary-discovery"]
+  "include": ["vite.config.ts"]
 }

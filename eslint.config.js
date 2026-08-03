@@ -96,9 +96,7 @@ export default tseslint.config(
     },
   },
   {
-    // Node-Werkzeuge ausserhalb der Anwendung: Konfiguration und die
-    // DivvyDiary-Discovery (scripts/divvydiary-discovery/README.md).
-    files: ["*.config.{js,ts}", "eslint.config.js", "scripts/**/*.ts"],
+    files: ["*.config.{js,ts}", "eslint.config.js"],
     languageOptions: {
       globals: globals.node,
     },
