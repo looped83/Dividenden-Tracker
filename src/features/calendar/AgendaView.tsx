@@ -2,17 +2,30 @@ import { ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils/cn";
 import { buildAgenda } from "@/lib/calendar/agenda";
-import { eventTime, eventTitle, eventTypeLabel, longDate } from "@/lib/calendar/format";
+import {
+  dateTile,
+  eventTime,
+  eventTitle,
+  eventTypeLabel,
+  shortDate,
+  spokenDate,
+} from "@/lib/calendar/format";
 import type { CalendarEvent } from "@/lib/calendar/types";
 
 /**
- * Listenansicht (Auftrag §10). Auf dem Telefon die Standardansicht: Termine
- * stehen chronologisch untereinander, nach Tag gruppiert, mit Zielflaechen ueber
- * die volle Breite.
+ * Listenansicht: je Termin eine Kachel mit Datumsfeld.
+ *
+ * Die frühere Fassung setzte eine Datumsüberschrift über eine Reihe reiner
+ * Textzeilen — auf dem Bildschirm war das eine Textwüste, in der das Datum
+ * einmal oben stand und danach mitgedacht werden musste. Jetzt trägt jede
+ * Kachel ihr Datum selbst: Der Tag ist die groesste Zahl der Kachel, der Rest
+ * ordnet sich darunter. Mehrere Termine desselben Tages sind dadurch einzeln
+ * lesbar, und auf breiten Bildschirmen stehen sie nebeneinander statt in einer
+ * schmalen Spalte.
  *
  * Ueberschriftenhierarchie: Die Seite traegt die h1, jeder Abschnitt („Heute",
- * „Diese Woche", „Später") eine h2, jeder Tag eine h3 — so laesst sich die
- * Liste mit einer Sprachausgabe ueberspringen statt durchhoeren.
+ * „Diese Woche", „Später") eine h2. Das Datum jeder Kachel steht vollstaendig
+ * in ihrer zugaenglichen Bezeichnung.
  */
 export function AgendaView({
   events,
@@ -26,39 +39,36 @@ export function AgendaView({
   const sections = buildAgenda(events, today);
 
   return (
-    <div className="space-y-8">
-      {sections.map((section) => (
-        <section key={section.key} className="space-y-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            {section.label}
-          </h2>
-          {section.days.map((day) => (
-            <div key={day.date} className="space-y-1.5">
-              <h3 className="text-sm font-medium text-foreground">
-                {longDate(day.date)}
-              </h3>
-              <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
-                {day.events.map((event) => (
-                  <li key={event.id}>
-                    <AgendaRow event={event} onSelect={onSelect} />
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </section>
-      ))}
+    <div className="space-y-6">
+      {sections.map((section) => {
+        const sectionEvents = section.days.flatMap((day) => day.events);
+        return (
+          <section key={section.key} className="space-y-2">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              {section.label}
+            </h2>
+            <ul className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3">
+              {sectionEvents.map((event) => (
+                <li key={event.id}>
+                  <EventTile event={event} onSelect={onSelect} />
+                </li>
+              ))}
+            </ul>
+          </section>
+        );
+      })}
     </div>
   );
 }
 
-function AgendaRow({
+function EventTile({
   event,
   onSelect,
 }: {
   event: CalendarEvent;
   onSelect: (event: CalendarEvent) => void;
 }) {
+  const { day, month } = dateTile(event.date);
   const time = eventTime(event);
   const cancelled = event.eventState === "cancelled";
 
@@ -68,12 +78,28 @@ function AgendaRow({
       onClick={() => {
         onSelect(event);
       }}
-      aria-label={`${eventTitle(event)} — ${eventTypeLabel(event)}${time ? `, ${time}` : ""}${cancelled ? ", abgesagt" : ""}. Details anzeigen`}
+      aria-label={`${eventTitle(event)}, ${eventTypeLabel(event)} am ${spokenDate(event.date)}${time ? `, ${time}` : ""}${cancelled ? ", abgesagt" : ""}. Details anzeigen`}
       className={cn(
-        "flex min-h-11 w-full items-center gap-3 px-4 py-3 text-left outline-none",
-        "hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
+        "flex h-full min-h-11 w-full items-center gap-3 rounded-lg border border-border bg-card p-3 text-left",
+        "outline-none transition-colors hover:border-primary/40 hover:bg-accent",
+        "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background",
       )}
     >
+      {/* Das Datumsfeld ist rein dekorativ — die vollstaendige Angabe steht in
+          der Bezeichnung der Schaltflaeche. Zweimal vorgelesen waere es Laerm. */}
+      <span
+        aria-hidden
+        className={cn(
+          "flex size-12 shrink-0 flex-col items-center justify-center rounded-md",
+          cancelled ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary",
+        )}
+      >
+        <span className="text-lg font-semibold leading-none tabular-amount">{day}</span>
+        <span className="mt-0.5 text-[0.625rem] font-medium uppercase leading-none">
+          {month}
+        </span>
+      </span>
+
       <span className="min-w-0 flex-1">
         <span
           className={cn(
@@ -83,12 +109,18 @@ function AgendaRow({
         >
           {eventTitle(event)}
         </span>
-        <span className="mt-1 flex flex-wrap items-center gap-1.5">
-          <Badge variant="primary">{eventTypeLabel(event)}</Badge>
+        <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+          <Badge variant={cancelled ? "neutral" : "primary"}>
+            {eventTypeLabel(event)}
+          </Badge>
           {cancelled && <Badge variant="negative">Abgesagt</Badge>}
-          {time && <span className="text-xs text-muted-foreground">{time}</span>}
+          <span className="truncate text-xs text-muted-foreground">
+            {shortDate(event.date)}
+            {time && ` · ${time}`}
+          </span>
         </span>
       </span>
+
       <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
     </button>
   );

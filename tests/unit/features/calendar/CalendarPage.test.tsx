@@ -172,6 +172,25 @@ describe("Kopf und Zustaende", () => {
   });
 });
 
+describe("Voreinstellung der Ansicht", () => {
+  it("zeigt ohne eigene Wahl die Liste", () => {
+    zustand.events = [event({ id: "1", date: "2026-08-13", title: "Apple Inc." })];
+    render(
+      <ToastProvider>
+        <CalendarPage />
+      </ToastProvider>,
+    );
+
+    expect(screen.getByRole("button", { name: "Liste" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(
+      screen.queryByRole("columnheader", { name: "Montag" }),
+    ).not.toBeInTheDocument();
+  });
+});
+
 describe("Monatsansicht", () => {
   it("stellt Termine am richtigen Kalendertag dar", () => {
     zustand.events = [event({ id: "1", date: "2026-08-13", title: "Apple Inc." })];
@@ -241,21 +260,26 @@ describe("Listenansicht", () => {
     ];
   });
 
-  it("gruppiert nach Zeitraum und Tag", () => {
+  it("gruppiert nach Zeitraum", () => {
     renderPage("agenda");
 
     expect(screen.getByRole("heading", { name: "Heute", level: 2 })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Später", level: 2 })).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { name: "Mittwoch, 05.08.2026", level: 3 }),
-    ).toBeInTheDocument();
   });
 
-  it("nennt Titel und Ereignisart in der Schaltflaeche", () => {
+  it("traegt das Datum an jeder Kachel — als Zahl und als vollstaendige Angabe", () => {
     renderPage("agenda");
 
+    // Die Datumskachel zeigt Tageszahl und Monatskuerzel …
+    const kachel = screen.getByRole("button", { name: /Heute AG/ });
+    expect(kachel).toHaveTextContent("5");
+    expect(kachel).toHaveTextContent("Aug");
+    expect(kachel).toHaveTextContent("Mi, 05.08.2026");
+    // … fuer Sprachausgaben steht das Datum ausgeschrieben in der Bezeichnung.
     expect(
-      screen.getByRole("button", { name: /Heute AG — Zahltag\. Details anzeigen/ }),
+      screen.getByRole("button", {
+        name: /Heute AG, Zahltag am 5\. August 2026\. Details anzeigen/,
+      }),
     ).toBeInTheDocument();
   });
 
@@ -266,6 +290,40 @@ describe("Listenansicht", () => {
     await user.click(screen.getByRole("button", { name: "Monat", pressed: false }));
 
     expect(screen.getByRole("heading", { name: "August 2026" })).toBeInTheDocument();
+  });
+});
+
+describe("Kennzahlkacheln", () => {
+  it("zeigt den naechsten Zahltag mit Abstand und Anzahl", () => {
+    zustand.events = [
+      event({ id: "1", date: "2026-08-13", title: "Apple Inc." }),
+      event({ id: "2", date: "2026-08-13", title: "Allianz SE" }),
+    ];
+    renderPage("agenda");
+
+    expect(screen.getByText("Nächster Zahltag")).toBeInTheDocument();
+    expect(screen.getByText("13.08.2026")).toBeInTheDocument();
+    expect(screen.getByText("in 8 Tagen · 2 Termine")).toBeInTheDocument();
+  });
+
+  it("zaehlt Monat, Zeitraum und Unternehmen", () => {
+    zustand.events = [
+      event({ id: "1", date: "2026-08-13", title: "Apple Inc." }),
+      event({ id: "2", date: "2026-08-20", title: "Apple Inc." }),
+      event({ id: "3", date: "2026-12-01", title: "Weit weg AG" }),
+    ];
+    renderPage("agenda");
+
+    expect(screen.getByText("Diesen Monat")).toBeInTheDocument();
+    expect(screen.getByText("Nächste 30 Tage")).toBeInTheDocument();
+    // Apple zaehlt einmal, obwohl es zweimal vorkommt.
+    expect(screen.getByText("mit kommenden Zahltagen")).toBeInTheDocument();
+  });
+
+  it("bleibt ohne Termine weg", () => {
+    renderPage("agenda");
+
+    expect(screen.queryByText("Nächster Zahltag")).not.toBeInTheDocument();
   });
 });
 

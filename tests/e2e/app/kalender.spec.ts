@@ -32,20 +32,32 @@ async function pruefeAxe(page: import("@playwright/test").Page, kontext: string)
   ).toEqual([]);
 }
 
-test("Liste zeigt die angekündigten Zahltage nach Tag gruppiert", async ({ page }) => {
+test("Liste ist die Standardansicht und zeigt Kacheln je Termin", async ({ page }) => {
   await page.goto("/#/kalender");
   await expect(
     page.getByRole("heading", { name: "Dividendenkalender", level: 1 }),
   ).toBeVisible();
 
-  await page.getByRole("button", { name: "Liste", exact: true }).click();
+  // Ohne eigene Wahl steht die Liste bereits — kein Klick noetig.
+  await expect(page.getByRole("button", { name: "Liste", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
 
   await expect(page.getByRole("heading", { name: "Später", level: 2 })).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Freitag, 13.03.2099", level: 3 }),
-  ).toBeVisible();
-  await expect(page.getByRole("button", { name: /Apple Inc\./ })).toBeVisible();
+  // Jede Kachel traegt ihr Datum selbst — als Zahl und ausgeschrieben.
+  const apple = page.getByRole("button", { name: /Apple Inc\./ });
+  await expect(apple).toBeVisible();
+  await expect(apple).toContainText("13");
+  await expect(apple).toContainText("Fr, 13.03.2099");
   await expect(page.getByRole("button", { name: /Allianz SE/ })).toBeVisible();
+
+  // Kennzahlkacheln ueber der Liste.
+  await expect(page.getByText("Nächster Zahltag")).toBeVisible();
+  await expect(page.getByText("13.03.2099", { exact: true })).toBeVisible();
+  // „Unternehmen" heisst auch der Navigationspunkt daneben — deshalb die
+  // Bildunterschrift der Kachel als eindeutiges Merkmal.
+  await expect(page.getByText("mit kommenden Zahltagen")).toBeVisible();
 
   await pruefeAxe(page, "Kalender – Liste");
 });
