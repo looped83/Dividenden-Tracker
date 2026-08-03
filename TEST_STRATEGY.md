@@ -12,8 +12,8 @@ reines PostgreSQL 16 für Integrations-, RLS- und Restore-Tests (DECISIONS.md D-
 | Lint + Typecheck + Format | ESLint inkl. Geld-Verbotsliste, `tsc --noEmit` strict | ✅ Job `quality` |
 | Unit (Vitest) | 708 Tests / 72 Dateien | ✅ Job `quality` |
 | Integration (PostgreSQL 16) | 118 Tests: Constraints, Trigger, RLS, Import, Statistik, Ziele, Restore | ✅ Job `db-integration` |
-| E2E öffentlich (Playwright) | 34 Tests: Rauchtests, axe und Telefonverhalten (Schriftgröße der Felder, kein seitlicher Überlauf, Pinch-Zoom bleibt erlaubt) | ✅ Job `e2e-smoke` |
-| E2E angemeldet (Playwright + PostgreSQL) | 38 Tests je Projekt (Desktop + iPhone): die fünf Kernabläufe und axe auf allen Routen hinter der Anmeldung | ✅ Job `e2e-app` |
+| E2E öffentlich (Playwright) | 33 Tests: Rauchtests, axe und Telefonverhalten (Schriftgröße der Felder, kein seitlicher Überlauf, Pinch-Zoom bleibt erlaubt) | ✅ Job `e2e-smoke` |
+| E2E angemeldet (Playwright + PostgreSQL) | 54 Tests je Projekt (Desktop + iPhone): die fünf Kernabläufe und axe auf allen Routen hinter der Anmeldung | ✅ Job `e2e-app` |
 
 **Bekannte Lücken** — bewusst benannt statt stillschweigend hingenommen:
 
@@ -226,23 +226,33 @@ erfahrungsgemäß bricht — geöffneter Dialog, gesetzte Filter, eingeblendete 
 Fehlerzustand „nicht gefunden". Die Filterprüfung weist zuerst nach, dass die Filter greifen,
 bevor sie misst; sonst prüfte sie eine Liste, die sie gar nicht gemeint hat.
 
-**Ein Test je Route, zwei Messungen darin.** Beide Themes brauchen eine eigene Messung, aber
-keinen zweiten Seitenaufbau: Der `ThemeProvider` hängt über `useSyncExternalStore` an der
-Medienabfrage, `emulateMedia` schaltet also im laufenden Bild um. Das halbiert Testkonten,
-Browserkontexte und Seitenaufbauten, ohne eine Prüfung aufzugeben — gemessen 108 → 76 Testläufe
-und 89 s → 75 s lokal.
+**Das Theme steht fest, bevor die Seite geladen wird** — nie im laufenden Bild umgeschaltet.
+Das ist eine bewusste Festlegung mit Vorgeschichte, damit sie nicht versehentlich rückgängig
+gemacht wird:
 
-Zwei Dinge sind dabei Bedingung, nicht Beiwerk:
+Der Versuch, hell und dunkel in *einem* Test zu messen (`emulateMedia` nach dem Laden), spart je
+Route einen Seitenaufbau und wurde deshalb umgesetzt — er scheiterte zweimal:
 
-- Nach jedem Wechsel wird die Klasse `dark` am Wurzelelement zugesichert. Ohne diese Zusicherung
-  prüfte ein nicht greifender Themewechsel unbemerkt zweimal dasselbe helle Bild — ein Test, der
-  bestätigt, was er nie gemessen hat.
-- Die Tests laufen mit `reducedMotion: "reduce"`. Flächen und Rahmen wechseln ihre Farbe über
-  `transition-colors`; axe misst die Farbe im Moment der Prüfung und meldete mitten im Übergang
-  Kontrastfehler, die 150 ms später nicht mehr existierten (reproduziert: wechselnde Routen
-  schlugen bei jedem Lauf fehl). Bei reduzierter Bewegung schaltet `styles/index.css` die
-  Übergänge selbst ab — gemessen wird derselbe Endzustand, nur ohne Zwischenbilder, und ohne
-  Wartezeit im Test.
+1. In Chromium meldete axe Kontrastfehler auf wechselnden Routen, weil `button` über
+   `transition-colors` umfärbt und mitten im 150-ms-Übergang gemessen wurde. `reducedMotion`
+   löste das (`styles/index.css` schaltet die Übergänge dann ab).
+2. In WebKit blieben Kontrastfehler auf Überschriften, Beschriftungen und Eingabefeldern —
+   **reproduzierbar, mit identischer Fundliste über Versuch und Wiederholung**, also kein
+   Zeitproblem. Ein nachträglich geändertes `color-scheme` löst dort offenbar nicht alle Farben
+   neu auf; der Endzustand ist ein anderer als bei einem frischen Dunkel-Start. Warten hilft
+   dagegen nicht.
+
+Ein Neuladen für den zweiten Durchgang wäre korrekt gewesen, kostete aber genau die Ersparnis,
+um die es ging (gemessen: 89 s → 84 s angemeldet, öffentlich sogar 24 s → 30 s). Deshalb bleibt
+es bei einem Test je Route und Theme. `reducedMotion` ist geblieben, weil es die Messung
+unabhängig von Übergängen macht.
+
+Die Zusicherung auf die Klasse `dark` (`erwarteTheme`) bleibt in jedem Test: Ohne sie prüfte ein
+nicht greifendes Theme unbemerkt zweimal dasselbe Bild — ein Test, der bestätigt, was er nie
+gemessen hat.
+
+Die geprüften Stufen und die Auswertung stehen an einer Stelle (`tests/e2e/support/axe.ts`),
+damit die öffentliche und die angemeldete Prüfung nicht auseinanderlaufen.
 
 **WCAG 2.2 (`wcag22aa`) ist eingeschlossen.** In axe-core 4.12 steckt dahinter genau eine Regel:
 `target-size` (2.5.8, Mindestgröße von Bedienelementen). Sie gibt gerade dem iPhone-Projekt einen
