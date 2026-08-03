@@ -1,5 +1,5 @@
-import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "../support/appTest";
+import { pruefeAxe, pruefeBeideThemes } from "../support/axe";
 
 /**
  * Barrierefreiheit **hinter** der Anmeldung (TEST_STRATEGY.md §9,
@@ -11,8 +11,8 @@ import { expect, test } from "../support/appTest";
  * eingeblendete Rückmeldung, Leer- und Fehlerzustand.
  *
  * axe deckt nur einen Teil ab; die Checkliste für Tastatur, Screenreader und
- * Zoom bleibt daneben bestehen. Gemessen werden die verbindlichen Stufen A
- * und AA.
+ * Zoom bleibt daneben bestehen. Geprüfte Stufen und der Themewechsel stehen
+ * in `../support/axe.ts` — eine Stelle für beide axe-Prüfungen des Projekts.
  */
 test.use({
   seed: {
@@ -22,57 +22,6 @@ test.use({
     ],
   },
 });
-
-type Page = import("@playwright/test").Page;
-
-async function pruefe(page: Page, kontext: string) {
-  const ergebnis = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-    .analyze();
-  expect(
-    ergebnis.violations.map((v) => ({
-      kontext,
-      regel: v.id,
-      beschreibung: v.help,
-      elemente: v.nodes.map((n) => n.target.join(" ")),
-    })),
-  ).toEqual([]);
-}
-
-/**
- * Prüft dieselbe, bereits geladene Seite in hell **und** dunkel.
- *
- * Beide Themes brauchen eine eigene Messung — die Farbtoken stammen je Theme
- * aus eigenen Werten, und Kontrast ist genau das, was dabei bricht. Sie
- * brauchen aber **keinen zweiten Seitenaufbau**: Der `ThemeProvider` liest die
- * Systemvorliebe über `useSyncExternalStore` mit einem Listener auf der
- * Medienabfrage, `emulateMedia` schaltet also im laufenden Bild um. Das spart
- * je Route ein Testkonto, einen Browserkontext und einen Seitenaufbau, ohne
- * eine einzige Prüfung aufzugeben.
- *
- * Die Zusicherung auf die Klasse `dark` ist dabei kein Beiwerk, sondern der
- * Kern: Ohne sie würde ein nicht greifender Themewechsel unbemerkt zweimal
- * dasselbe helle Bild prüfen — ein Test, der bestätigt, was er nie gemessen
- * hat.
- *
- * Vorausgesetzt wird `reducedMotion: "reduce"` (im Test gesetzt): Flächen und
- * Rahmen wechseln ihre Farbe über `transition-colors`, und axe misst die Farbe
- * im Moment der Prüfung. Mitten im Übergang misst es eine Zwischenfarbe und
- * meldet einen Kontrastfehler, den es 150 ms später nicht mehr gibt. Statt
- * einer Wartezeit nutzt der Test die Vorkehrung der Anwendung selbst: Bei
- * reduzierter Bewegung schaltet `styles/index.css` die Übergänge ab. Gemessen
- * wird derselbe Endzustand, nur ohne Zwischenbilder.
- */
-async function pruefeBeideThemes(page: Page, name: string) {
-  const wurzel = page.locator("html");
-
-  await expect(wurzel).not.toHaveClass(/\bdark\b/);
-  await pruefe(page, `${name} (hell)`);
-
-  await page.emulateMedia({ colorScheme: "dark" });
-  await expect(wurzel).toHaveClass(/\bdark\b/);
-  await pruefe(page, `${name} (dunkel)`);
-}
 
 const ROUTEN = [
   { pfad: "/#/", name: "Übersicht", warten: "Übersicht" },
@@ -112,7 +61,7 @@ test("geöffneter Storno-Dialog ist frei von axe-Verstößen", async ({ page, ko
   await page.goto(`/#/eingaenge/${konto.paymentIds[0] ?? ""}`);
   await page.getByRole("button", { name: "Stornieren", exact: true }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
-  await pruefe(page, "Storno-Dialog");
+  await pruefeAxe(page, "Storno-Dialog");
 });
 
 test("gesetzte Filter sind frei von axe-Verstößen", async ({ page, konto }) => {
@@ -127,7 +76,7 @@ test("gesetzte Filter sind frei von axe-Verstößen", async ({ page, konto }) =>
   // `#f-security`: „Unternehmen" heisst auch der Navigationspunkt daneben.
   await expect(page.locator("#f-security")).toHaveValue(konto.securityId);
   await expect(page.getByText("1 Eingang gefunden.")).toBeVisible();
-  await pruefe(page, "Eingangsliste mit Filtern");
+  await pruefeAxe(page, "Eingangsliste mit Filtern");
 });
 
 test("eingeblendete Rückmeldung ist frei von axe-Verstößen", async ({ page, konto }) => {
@@ -135,12 +84,12 @@ test("eingeblendete Rückmeldung ist frei von axe-Verstößen", async ({ page, k
   await page.getByLabel("Nettobetrag").fill("11,11");
   await page.getByRole("button", { name: "Speichern" }).click();
   await expect(page.getByText("Dividende gespeichert.")).toBeVisible();
-  await pruefe(page, "Toast");
+  await pruefeAxe(page, "Toast");
 });
 
 test("Fehlerzustand ist frei von axe-Verstößen", async ({ page }) => {
   // Eine fremde/unbekannte Id: die Seite meldet „nicht gefunden".
   await page.goto("/#/eingaenge/00000000-0000-4000-8000-000000000000");
   await expect(page.getByText("Dividendeneingang nicht gefunden")).toBeVisible();
-  await pruefe(page, "Nicht gefunden");
+  await pruefeAxe(page, "Nicht gefunden");
 });
