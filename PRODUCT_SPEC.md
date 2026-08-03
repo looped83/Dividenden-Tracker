@@ -201,6 +201,11 @@ Kalendertag; die Zeiträume unter den Kennzahlen nennen ihn — alles andere wä
 Untertreibung des laufenden Jahres (CALCULATION_RULES.md §11.10, DECISIONS.md D-7-1). Es wird
 nichts hochgerechnet (Grundsatz 8).
 
+Der Unterbereich Unternehmen blendet in der Tabelle „Unternehmensstatistik" archivierte
+Unternehmen zunächst aus; unterhalb der Tabelle sind sie zuschaltbar (dasselbe Muster wie in der
+Unternehmensverwaltung). Berechnung und Rangliste bleiben davon unberührt — die Kennzahlen
+umfassen weiterhin alle Unternehmen (CALCULATION_RULES.md §11.5).
+
 Vollständige Kennzahlenliste mit verbindlichen Definitionen: CALCULATION_RULES.md §6.
 Umfasst mindestens: Netto/Brutto pro Monat und Jahr, Vorjahresvergleich (absolut/prozentual),
 rollierende 12-Monats-Summe, monatlicher Durchschnitt (gesamt und je Jahr), bestes Jahr,

@@ -1,0 +1,79 @@
+import { describe, expect, it } from "vitest";
+import { fireEvent, render, screen, within } from "@testing-library/react";
+import { MemoryRouter, Outlet, Route, Routes } from "react-router";
+import { EUR, Money } from "@/lib/money";
+import type { AnalyticsPayment } from "@/lib/statistics";
+import type { EntityInfo } from "@/features/dashboard/format";
+import { CompaniesTab } from "@/features/statistics/CompaniesTab";
+import { EMPTY_STATISTICS_FILTER } from "@/features/statistics/filterParams";
+import type { StatisticsContext } from "@/features/statistics/context";
+
+let seq = 0;
+function p(securityId: string, payDate: string, net: string): AnalyticsPayment {
+  seq += 1;
+  return {
+    id: `id-${String(seq)}`,
+    payDate,
+    actualPayDate: payDate,
+    netAmount: Money.fromString(net, EUR),
+    grossAmount: Money.fromString(net, EUR),
+    securityId,
+    depotId: "dep-1",
+    paymentType: "regular",
+    source: "manual",
+    createdAt: `${payDate}T10:00:00Z`,
+  };
+}
+
+const PAYMENTS = [p("sec-a", "2025-03-10", "100.00"), p("sec-b", "2025-04-10", "300.00")];
+
+function renderCompanies(payments: AnalyticsPayment[] = PAYMENTS) {
+  const context: StatisticsContext = {
+    payments,
+    allPayments: payments,
+    securities: new Map<string, EntityInfo>([
+      ["sec-a", { name: "Alpha AG", archived: false }],
+      ["sec-b", { name: "Beta AG", archived: true }],
+    ]),
+    depots: new Map<string, EntityInfo>([
+      ["dep-1", { name: "Hauptdepot", archived: false }],
+    ]),
+    filter: EMPTY_STATISTICS_FILTER,
+  };
+  return render(
+    <MemoryRouter>
+      <Routes>
+        <Route element={<Outlet context={context} />}>
+          <Route index element={<CompaniesTab />} />
+        </Route>
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
+/** Zeilen der Unternehmensstatistik (die Kachel darüber ist keine Tabelle). */
+function tableNames() {
+  return within(screen.getByRole("table"))
+    .getAllByRole("link")
+    .map((link) => link.textContent);
+}
+
+describe("CompaniesTab", () => {
+  it("blendet archivierte Unternehmen in der Statistik zunächst aus", () => {
+    renderCompanies();
+    expect(tableNames()).toEqual(["Alpha AG"]);
+  });
+
+  it("blendet archivierte Unternehmen auf Wunsch ein", () => {
+    renderCompanies();
+    fireEvent.click(screen.getByLabelText("Archivierte anzeigen"));
+    expect(tableNames()).toEqual(["Beta AG", "Alpha AG"]);
+  });
+
+  it("erklärt eine leere Tabelle, wenn nur archivierte Unternehmen übrig sind", () => {
+    renderCompanies([p("sec-b", "2025-04-10", "300.00")]);
+    expect(
+      screen.getByText(/Nur archivierte Unternehmen in dieser Auswahl/),
+    ).toBeInTheDocument();
+  });
+});
