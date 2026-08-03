@@ -163,6 +163,10 @@ Maßgeblich ist der **Kalendertag**, nicht der Zeitpunkt (`event_date` ist ein `
 
 ## 8. Einrichtung und Betrieb
 
+Drei Dinge sind nötig: die Migration, das Secret und die ausgerollte Funktion.
+
+**Mit der Supabase CLI:**
+
 ```bash
 # 1) Migration einspielen
 supabase migration up            # oder: supabase db push
@@ -173,6 +177,25 @@ supabase secrets set DIVVYDIARY_ICAL_URL="YOUR_PRIVATE_ICAL_URL"
 # 3) Edge Function ausrollen
 supabase functions deploy sync-divvydiary-calendar
 ```
+
+**Ohne lokale CLI:**
+
+1. Migration: Dashboard → SQL Editor → Inhalt von
+   `supabase/migrations/0027_dividend_calendar.sql` ausführen.
+2. Secret: Dashboard → Project Settings → Edge Functions → Secrets →
+   `DIVVYDIARY_ICAL_URL` anlegen. Direktlink:
+   `https://supabase.com/dashboard/project/<ref>/settings/functions`
+3. Funktion: einmalig zwei GitHub-Secrets hinterlegen (Repository → Settings →
+   Secrets and variables → Actions) — `SUPABASE_ACCESS_TOKEN`
+   (https://supabase.com/dashboard/account/tokens) und `SUPABASE_PROJECT_ID`
+   (die Projekt-Ref). Danach GitHub → Actions → **Deploy Edge Functions** →
+   *Run workflow*. Der Workflow
+   (`.github/workflows/deploy-functions.yml`) rollt anschließend bei jeder
+   Änderung unter `supabase/functions/` automatisch aus.
+
+Das Dashboard kann Edge Functions zwar auch im Browser anlegen, aber nur als
+einzelne Datei — diese Funktion besteht bewusst aus mehreren Modulen, die von den
+Unit-Tests des Projekts geprüft werden. Der Weg über Actions hält beides zusammen.
 
 ### Lokale Entwicklung
 

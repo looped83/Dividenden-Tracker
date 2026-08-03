@@ -65,6 +65,14 @@ export class CalendarSyncError extends Error {
 const GENERIC_SYNC_ERROR =
   "Der Dividendenkalender konnte gerade nicht aktualisiert werden. Die zuletzt gespeicherten Termine werden weiterhin angezeigt.";
 
+/**
+ * Antwortet nicht die Funktion, sondern das Supabase-Gateway (die Funktion ist
+ * nicht ausgerollt), ist das kein Betriebsfehler, sondern ein fehlender
+ * Einrichtungsschritt — und genau das soll dastehen.
+ */
+const NOT_DEPLOYED_ERROR =
+  "Die Kalender-Synchronisation ist im Supabase-Projekt noch nicht eingerichtet.";
+
 interface SyncResponseBody {
   status?: unknown;
   message?: unknown;
@@ -79,10 +87,22 @@ function count(value: unknown): number {
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }
 
-/** Uebernimmt nur eine plausible, bereits bereinigte Meldung der Funktion. */
-function safeMessage(value: unknown): string {
-  return typeof value === "string" && value.length > 0 && value.length <= 500
-    ? value
+/**
+ * Uebernimmt eine Meldung nur dann, wenn sie **aus der eigenen Edge Function**
+ * stammt — erkennbar am `status`-Feld der Antwort.
+ *
+ * Auf demselben Weg antworten naemlich auch andere: Das Supabase-Gateway meldet
+ * eine nicht ausgerollte Funktion mit „Requested function was not found", ein
+ * Proxy schickt womoeglich eine HTML-Seite. Solche Texte sind englisch,
+ * technisch und dem Nutzer nicht zumutbar (Auftrag §12); nur die Meldungen der
+ * eigenen Funktion sind bewusst formuliert und bereinigt.
+ */
+function safeMessage(body: SyncResponseBody | null): string {
+  const fromOwnFunction = body?.status === "error" || body?.status === "running";
+  if (!fromOwnFunction) return GENERIC_SYNC_ERROR;
+  const { message } = body;
+  return typeof message === "string" && message.length > 0 && message.length <= 500
+    ? message
     : GENERIC_SYNC_ERROR;
 }
 
@@ -115,11 +135,14 @@ export async function triggerCalendarSync(): Promise<CalendarSyncSummary> {
     const context: unknown = (error as { context?: unknown }).context;
     const response = context instanceof Response ? context : undefined;
     const body = await readBody(response);
-    throw new CalendarSyncError(safeMessage(body.message), body.status === "running");
+    if (response?.status === 404 && body.status !== "error") {
+      throw new CalendarSyncError(NOT_DEPLOYED_ERROR);
+    }
+    throw new CalendarSyncError(safeMessage(body), body.status === "running");
   }
 
   if (data?.status !== "success") {
-    throw new CalendarSyncError(safeMessage(data?.message), data?.status === "running");
+    throw new CalendarSyncError(safeMessage(data), data?.status === "running");
   }
 
   return {
