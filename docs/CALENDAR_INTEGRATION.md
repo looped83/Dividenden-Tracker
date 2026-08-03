@@ -11,7 +11,7 @@ unberührt.
 |---|---|---|
 | Inhalt | tatsächlich erhaltene Zahlungen | angekündigte Zahltage der Quelle |
 | Herkunft | manuell erfasst, CSV-/Excel-Import, Wiederherstellung | DivvyDiary-iCal-Feed |
-| Beträge | Brutto, Netto, Steuern, Währung | **keine** — der Feed liefert keine |
+| Beträge | Brutto, Netto, Steuern, Währung | **erwarteter** Betrag laut Quelle, sofern die SUMMARY ihn nennt |
 | Tabelle | `dividend_payments` | `dividend_calendar_events` |
 
 Beide Datenarten werden bewusst **nicht** vermischt (PRODUCT_SPEC.md Grundsatz 8):
@@ -19,7 +19,9 @@ Beide Datenarten werden bewusst **nicht** vermischt (PRODUCT_SPEC.md Grundsatz 8
 - Die Kalendersynchronisation verändert keine Zahlung, kein Unternehmen, kein Depot.
 - Kein angekündigter Termin wird automatisch als „erhalten" markiert.
 - Es wird kein Betrag geschätzt und keine Währung abgeleitet — angezeigt wird nur, was
-  tatsächlich im Feed steht.
+  tatsächlich im Feed steht. Der Betrag ist eine **Ankündigung** der Quelle, keine
+  erhaltene Zahlung; er wird nirgends in die Statistik, in Ziele oder in die
+  Dividendenhistorie eingerechnet.
 
 Ein späterer Abgleich („dieser Zahltag ist eingetroffen") ist durch die stabile
 `external_uid` und den erweiterbaren `event_type` vorbereitet, aber **nicht** umgesetzt.
@@ -42,6 +44,7 @@ Kalenderansicht der PWA
 | `supabase/functions/sync-divvydiary-calendar/deno.json` | Abhängigkeiten der Funktion (supabase-js, ical.js) |
 | `supabase/functions/_shared/feed.ts` | HTTPS-Abruf mit Zeitgrenze und Plausibilitätsprüfung |
 | `supabase/functions/_shared/ical.ts` | iCal-Verarbeitung (ICAL.js) |
+| `supabase/functions/_shared/summary.ts` | Zerlegung der SUMMARY-Zeile in Unternehmen, Betrag, Art und Depot |
 | `supabase/functions/_shared/sync.ts` | idempotenter Abgleich |
 | `supabase/functions/_shared/datetime.ts` | Kalendertag- und Zeitzonenlogik |
 | `supabase/functions/_shared/messages.ts` | bereinigte Nutzermeldungen und Log-Codes |
@@ -77,6 +80,35 @@ die Meldung des ursprünglichen Fehlers, weil `fetch` darin die angefragte Adres
 Fehlt das Secret, meldet die Oberfläche „Für den Dividendenkalender ist noch keine
 Kalenderquelle hinterlegt." — gespeicherte Termine bleiben sichtbar.
 
+## 3a. Die SUMMARY-Zeile
+
+DivvyDiary presst vier Angaben in eine Zeile:
+
+```
+Verizon Communications Inc 51,37 € Zahltag (Trade Republic)
+└─ Unternehmen ─────────┘ └ Betrag ┘ └ Art ┘ └─ Depot ──┘
+```
+
+`_shared/summary.ts` zerlegt sie **von rechts nach links**, weil nur das Zeilenende eine
+feste Gestalt hat (Klammer, Schlagwort, Betrag) — der Unternehmensname darf beliebig viele
+Wörter, Punkte und Ziffern enthalten („3M Co."). Erkannt werden:
+
+- deutsche und englische Zahlschreibweise (`51,37`, `1.234,56`, `1,234.56`),
+- Währungszeichen (`€`, `$`, `£`, `CA$` …) und ISO-Codes,
+- die Schlagwörter „Zahltag" und „Ex-Tag" (samt englischer Varianten) — daraus folgt
+  `event_type`,
+- das Depot in der Klammer.
+
+**Passt ein Teil nicht auf das Muster, bleibt das Feld leer** und die Oberfläche zeigt
+weiterhin die vollständige Zeile als Titel. Ein halb geratener Betrag wäre schlimmer als
+gar keiner: Er stünde neben echten Finanzdaten, ohne als Vermutung erkennbar zu sein.
+Betrag und Währung werden nur **gemeinsam** übernommen; ein Betrag ohne Währung ist nicht
+darstellbar.
+
+Gerechnet wird beim Zerlegen nichts — der Wert wird als kanonischer Dezimalstring
+gespeichert und erst in der App über `lib/money` (Decimal) summiert, nie als
+Fließkommazahl (CALCULATION_RULES.md §8).
+
 ## 4. Datenmodell
 
 `dividend_calendar_events` — ein Termin je Zeile, eindeutig über
@@ -90,7 +122,11 @@ Kalenderquelle hinterlegt." — gespeicherte Termine bleiben sichtbar.
 | `event_date` | **maßgeblicher Kalendertag** (`date`, keine Zeitzone) |
 | `end_date` | letzter Tag mehrtägiger Termine, inklusiv (DTEND ist im Feed exklusiv) |
 | `starts_at` / `ends_at` | nur bei Terminen mit Uhrzeit, sonst `null` |
-| `title`, `description`, `location`, `external_url`, `categories` | direkt aus dem Feed; fehlende Felder bleiben leer |
+| `title` | SUMMARY-Zeile unverändert |
+| `company_name` | Unternehmensname, beim Einlesen aus der SUMMARY gelöst |
+| `expected_amount` / `expected_currency` | **erwarteter** Betrag laut Quelle, `numeric(14,2)` plus ISO-Code; nur gemeinsam gesetzt |
+| `source_portfolio` | Depot/Broker aus der Klammer am Zeilenende |
+| `description`, `location`, `external_url`, `categories` | direkt aus dem Feed; fehlende Felder bleiben leer |
 | `sequence_number`, `recurrence_rule`, `source_created_at`, `source_updated_at` | Metadaten des Feeds |
 | `raw_data` | alle Eigenschaften des VEVENT als Text — für spätere Auswertungen |
 | `first_synced_at`, `last_synced_at` | erster bzw. letzter Lauf, der diese Zeile geschrieben hat |
@@ -144,12 +180,17 @@ Zahltage, jeder vergangene Termin fehlt darin zwangsläufig.
 Standard ist die **Liste**: je Termin eine Kachel mit Datumsfeld (Tageszahl und
 Monatskürzel), Unternehmen, Ereignisart und Wochentag; auf breiten Bildschirmen mehrspaltig,
 gruppiert nach „Heute", „Diese Woche" und „Später". Darüber stehen vier Kennzahlkacheln
-(`StatCard` wie auf der Übersicht): nächster Zahltag mit Abstand in Tagen, Termine im
-laufenden Monat, Termine der nächsten 30 Tage und Anzahl verschiedener Unternehmen.
+(`StatCard` wie auf der Übersicht): nächster Zahltag mit Abstand in Tagen, erwartete Summe
+im laufenden Monat, erwartete Summe der nächsten 30 Tage und Anzahl verschiedener
+Unternehmen.
 
-Sie zeigen ausschließlich **Abzählbares**. Eine Kachel „erwartete Summe" gibt es nicht — der
-Feed liefert keine Beträge, und eine geschätzte Zahl wäre eine Behauptung. Abgesagte Termine
-zählen in keiner Kennzahl mit, bleiben in der Liste aber sichtbar und gekennzeichnet.
+Die Summen stammen ausschließlich aus den Beträgen, die die Quelle nennt. Nennt sie für
+einen Termin keinen, fehlt er in der Summe — und die Kachel sagt es („aus 2 von 3
+Terminen"), statt die Lücke stillschweigend als Null zu verrechnen. Liefert die Quelle
+überhaupt keine Beträge, zeigt die Kachel die Anzahl. Beträge in verschiedenen Währungen
+werden **nicht** addiert (das wäre eine Umrechnung zu einem erfundenen Kurs); die Kachel
+weist dann „verschiedene Währungen" aus. Abgesagte Termine zählen nirgends mit, bleiben in
+der Liste aber sichtbar und gekennzeichnet.
 
 Das Monatsraster ist einen Klick entfernt; die Wahl bleibt in `localStorage` erhalten.
 

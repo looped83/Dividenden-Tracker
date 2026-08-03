@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { AmountText } from "@/components/money/AmountText";
 import { Badge } from "@/components/ui/badge";
 import { eventTime, eventTitle, eventTypeLabel, longDate } from "@/lib/calendar/format";
 import { formatCalendarDate } from "@/lib/utils/formatDate";
@@ -73,11 +74,22 @@ export function EventDetailDialog({
             </div>
 
             <dl className="grid gap-3 text-sm">
+              {event.expectedAmount && (
+                <Detail term="Erwarteter Betrag">
+                  <AmountText
+                    amount={event.expectedAmount}
+                    className="text-base font-semibold"
+                  />
+                </Detail>
+              )}
               <Detail term="Datum">
                 {longDate(event.date)}
                 {event.endDate && ` bis ${longDate(event.endDate)}`}
               </Detail>
               {time && <Detail term="Uhrzeit">{time}</Detail>}
+              {event.sourcePortfolio && (
+                <Detail term="Depot laut Quelle">{event.sourcePortfolio}</Detail>
+              )}
               {event.location && <Detail term="Ort">{event.location}</Detail>}
               {event.description && (
                 <Detail term="Beschreibung">
@@ -100,8 +112,8 @@ export function EventDetailDialog({
             </dl>
 
             <p className="text-xs text-muted-foreground">
-              Angekündigter Termin der Kalenderquelle. Ob die Zahlung eingegangen ist,
-              steht unter „Dividenden“.
+              Angekündigter Termin der Kalenderquelle — der Betrag ist eine Ankündigung,
+              keine erhaltene Zahlung. Ob sie eingegangen ist, steht unter „Dividenden“.
             </p>
           </>
         )}

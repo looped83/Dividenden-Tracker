@@ -1,6 +1,8 @@
 import { ChevronRight } from "lucide-react";
+import { AmountText } from "@/components/money/AmountText";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils/cn";
+import { formatMoney } from "@/lib/money";
 import { buildAgenda } from "@/lib/calendar/agenda";
 import {
   dateTile,
@@ -47,7 +49,11 @@ export function AgendaView({
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
               {section.label}
             </h2>
-            <ul className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3">
+            {/* Hoechstens zwei Spalten: Mit Betrag und Depot braucht eine Kachel
+                Breite. Dreispaltig kuerzte sie „Verizon Communications Inc" auf
+                „Verizon Commun…" und das Depot auf „Tr…" — abgeschnittene
+                Namen sind schlimmer als eine Spalte weniger. */}
+            <ul className="grid grid-cols-1 gap-2 md:grid-cols-2">
               {sectionEvents.map((event) => (
                 <li key={event.id}>
                   <EventTile event={event} onSelect={onSelect} />
@@ -71,6 +77,11 @@ function EventTile({
   const { day, month } = dateTile(event.date);
   const time = eventTime(event);
   const cancelled = event.eventState === "cancelled";
+  // „erwartet" gehoert in die Ansage: Der Betrag ist eine Ankuendigung der
+  // Quelle, keine erhaltene Zahlung.
+  const amountLabel = event.expectedAmount
+    ? `, erwartet ${formatMoney(event.expectedAmount)}`
+    : "";
 
   return (
     <button
@@ -78,7 +89,7 @@ function EventTile({
       onClick={() => {
         onSelect(event);
       }}
-      aria-label={`${eventTitle(event)}, ${eventTypeLabel(event)} am ${spokenDate(event.date)}${time ? `, ${time}` : ""}${cancelled ? ", abgesagt" : ""}. Details anzeigen`}
+      aria-label={`${eventTitle(event)}, ${eventTypeLabel(event)} am ${spokenDate(event.date)}${amountLabel}${time ? `, ${time}` : ""}${cancelled ? ", abgesagt" : ""}. Details anzeigen`}
       className={cn(
         "flex h-full min-h-11 w-full items-center gap-3 rounded-lg border border-border bg-card p-3 text-left",
         "outline-none transition-colors hover:border-primary/40 hover:bg-accent",
@@ -117,9 +128,24 @@ function EventTile({
           <span className="truncate text-xs text-muted-foreground">
             {shortDate(event.date)}
             {time && ` · ${time}`}
+            {event.sourcePortfolio && ` · ${event.sourcePortfolio}`}
           </span>
         </span>
       </span>
+
+      {/* Der Betrag steht rechts an der Kante: In einer Spalte untereinander
+          lassen sich Betraege vergleichen, mitten im Text nicht. */}
+      {event.expectedAmount && (
+        <span
+          aria-hidden
+          className={cn(
+            "shrink-0 text-sm font-semibold",
+            cancelled ? "text-muted-foreground line-through" : "text-foreground",
+          )}
+        >
+          <AmountText amount={event.expectedAmount} />
+        </span>
+      )}
 
       <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
     </button>

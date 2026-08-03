@@ -13,11 +13,46 @@ import { expect, test } from "../support/appTest";
  * navigiert deshalb ausdrücklich in ihren Monat, statt sich auf „heute" zu
  * verlassen.
  */
+/** Kalendertag in `days` Tagen — fuer die Kacheln „Diesen Monat"/„30 Tage". */
+function inDays(days: number): string {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
 test.use({
   seed: {
     calendarEvents: [
-      { date: "2099-03-13", title: "Apple Inc.", description: "Quartalsdividende" },
-      { date: "2099-03-13", title: "Allianz SE" },
+      // Zwei Termine im 30-Tage-Fenster: nur sie erscheinen in der Summe.
+      {
+        date: inDays(3),
+        title: "Realty Income Corp. 60,00 € Zahltag (Trade Republic)",
+        company: "Realty Income Corp.",
+        amount: "60.00",
+        portfolio: "Trade Republic",
+      },
+      {
+        date: inDays(5),
+        title: "Main Street Capital 40,00 € Zahltag (Trade Republic)",
+        company: "Main Street Capital",
+        amount: "40.00",
+        portfolio: "Trade Republic",
+      },
+      {
+        date: "2099-03-13",
+        title: "Apple Inc. 51,37 € Zahltag (Trade Republic)",
+        company: "Apple Inc.",
+        amount: "51.37",
+        portfolio: "Trade Republic",
+        description: "Quartalsdividende",
+      },
+      {
+        date: "2099-03-13",
+        title: "Allianz SE 12,63 € Zahltag (Trade Republic)",
+        company: "Allianz SE",
+        amount: "12.63",
+        portfolio: "Trade Republic",
+      },
       { date: "2099-04-02", title: "Coca-Cola Co." },
     ],
   },
@@ -50,11 +85,19 @@ test("Liste ist die Standardansicht und zeigt Kacheln je Termin", async ({ page 
   await expect(apple).toBeVisible();
   await expect(apple).toContainText("13");
   await expect(apple).toContainText("Fr, 13.03.2099");
+  // Der Unternehmensname steht ohne Betrag und Depot im Titel …
+  await expect(apple).toContainText("Apple Inc.");
+  // … der Betrag rechts an der Kante, das Depot in der Metazeile.
+  await expect(apple).toContainText("51,37 €");
+  await expect(apple).toContainText("Trade Republic");
   await expect(page.getByRole("button", { name: /Allianz SE/ })).toBeVisible();
 
-  // Kennzahlkacheln ueber der Liste.
+  // Kennzahlkacheln ueber der Liste — mit der Summe der erwarteten Betraege.
   await expect(page.getByText("Nächster Zahltag")).toBeVisible();
-  await expect(page.getByText("13.03.2099", { exact: true })).toBeVisible();
+  // Die Summenkacheln zaehlen nur das 30-Tage-Fenster: 60,00 + 40,00 = 100,00.
+  // Die Termine von 2099 stehen in der Liste, aber nicht in dieser Summe.
+  await expect(page.getByText("100,00 €").first()).toBeVisible();
+  await expect(page.getByText(/aus 2 Terminen/).first()).toBeVisible();
   // „Unternehmen" heisst auch der Navigationspunkt daneben — deshalb die
   // Bildunterschrift der Kachel als eindeutiges Merkmal.
   await expect(page.getByText("mit kommenden Zahltagen")).toBeVisible();
@@ -92,6 +135,10 @@ test("Detailansicht öffnet per Tastatur und schließt mit Escape", async ({ pag
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
   await expect(dialog.getByText("Quartalsdividende")).toBeVisible();
+  // Die Feldnamen im Dialog sind per CSS grossgeschrieben; Playwright liest den
+  // dargestellten Text, deshalb ohne Ruecksicht auf Gross-/Kleinschreibung.
+  await expect(dialog.getByText(/erwarteter betrag/i)).toBeVisible();
+  await expect(dialog.getByText("51,37 €")).toBeVisible();
   await expect(dialog.getByText("Angekündigter Zahltag am 13.03.2099")).toBeVisible();
   await pruefeAxe(page, "Kalender – Detailansicht");
 

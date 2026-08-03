@@ -1,18 +1,20 @@
 import { StatCard } from "@/components/domain/StatCard";
+import { AmountText } from "@/components/money/AmountText";
 import { monthNameDe } from "@/lib/statistics";
-import { formatCountNumber } from "@/lib/utils/formatNumber";
+import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
 import { formatCalendarDate } from "@/lib/utils/formatDate";
 import { relativeDayLabel } from "@/lib/calendar/format";
-import type { CalendarSummary as Summary } from "@/lib/calendar/summary";
+import type { CalendarSummary as Summary, ExpectedTotal } from "@/lib/calendar/summary";
 
 /**
  * Kennzahlen über der Liste — dieselbe `StatCard` wie auf der Übersicht, damit
  * Kacheln in der ganzen App gleich aussehen.
  *
- * Gezeigt wird ausschliesslich Abzaehlbares (Termine, Unternehmen, Tage). Der
- * Feed liefert keine Betraege; eine Kachel „Erwartete Summe" waere geraten und
- * stuende im Widerspruch zur Trennung von Prognose und Ist (PRODUCT_SPEC.md
- * Grundsatz 8).
+ * Die Beträge sind die **angekündigten** der Kalenderquelle, nicht erhaltene
+ * Zahlungen und keine Schätzung dieser App (PRODUCT_SPEC.md Grundsatz 8). Nennt
+ * die Quelle für einen Termin keinen Betrag, fehlt er auch hier — die Kachel
+ * fällt dann auf die Anzahl zurück, statt eine Lücke stillschweigend als Null
+ * zu verrechnen.
  */
 export function CalendarSummaryTiles({
   summary,
@@ -41,13 +43,13 @@ export function CalendarSummaryTiles({
       />
       <StatCard
         label="Diesen Monat"
-        value={formatCountNumber(summary.thisMonth)}
-        comparison={month}
+        value={<TotalValue total={summary.thisMonth} />}
+        comparison={`${month} · ${captionFor(summary.thisMonth)}`}
       />
       <StatCard
         label="Nächste 30 Tage"
-        value={formatCountNumber(summary.next30Days)}
-        comparison={`von ${formatCountNumber(summary.upcoming)} angekündigten`}
+        value={<TotalValue total={summary.next30Days} />}
+        comparison={captionFor(summary.next30Days)}
       />
       <StatCard
         label="Unternehmen"
@@ -56,4 +58,28 @@ export function CalendarSummaryTiles({
       />
     </div>
   );
+}
+
+/**
+ * Die Summe, wenn die Quelle Beträge nennt — sonst die Anzahl der Termine.
+ * So bleibt die Kachel auch dann aussagekräftig, wenn der Feed nur Namen
+ * liefert.
+ */
+function TotalValue({ total }: { total: ExpectedTotal }) {
+  if (total.total) return <AmountText amount={total.total} />;
+  return <>{formatCountNumber(total.count)}</>;
+}
+
+function captionFor(total: ExpectedTotal): string {
+  if (total.mixedCurrencies) {
+    return `${formatCountNoun(total.count, "Termin", "Termine")} · verschiedene Währungen`;
+  }
+  if (total.total === null) {
+    return formatCountNoun(total.count, "Termin", "Termine");
+  }
+  // Nennt die Quelle nicht fuer jeden Termin einen Betrag, gehoert das dazu:
+  // Die Summe waere sonst als vollstaendig zu lesen.
+  return total.withAmount === total.count
+    ? `aus ${formatCountNoun(total.count, "Termin", "Terminen")}`
+    : `aus ${formatCountNumber(total.withAmount)} von ${formatCountNoun(total.count, "Termin", "Terminen")}`;
 }

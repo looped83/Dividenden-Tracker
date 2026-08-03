@@ -128,6 +128,72 @@ describe("Eindeutigkeit verhindert Dubletten", () => {
   });
 });
 
+describe("Zerlegte SUMMARY (Migration 0028)", () => {
+  it("nimmt Unternehmen, Betrag, Waehrung und Depot auf", async () => {
+    const id = await asSuperuser(async (client) => {
+      const result = await client.query<{ id: string }>(
+        `insert into dividend_calendar_events
+           (user_id, external_uid, title, company_name, expected_amount,
+            expected_currency, source_portfolio, event_date)
+         values ($1, 'pay-parsed', 'Verizon Communications Inc 51,37 € Zahltag (Trade Republic)',
+                 'Verizon Communications Inc', 51.37, 'EUR', 'Trade Republic', '2026-08-13')
+         returning id`,
+        [userA],
+      );
+      return firstRow(result).id;
+    });
+
+    const row = await asUser(userA, (client) =>
+      client.query<{ expected_amount: string; expected_currency: string }>(
+        "select expected_amount, expected_currency from dividend_calendar_events where id = $1",
+        [id],
+      ),
+    );
+    // numeric(14,2): der Betrag kommt exakt zurueck, nicht als Fliesskommazahl.
+    expect(firstRow(row).expected_amount).toBe("51.37");
+    expect(firstRow(row).expected_currency).toBe("EUR");
+  });
+
+  it("laesst Betrag ohne Waehrung nicht zu", async () => {
+    await expect(
+      asSuperuser((client) =>
+        client.query(
+          `insert into dividend_calendar_events
+             (user_id, external_uid, title, expected_amount, event_date)
+           values ($1, 'pay-ohne-waehrung', 'Beispiel AG', 12.00, '2026-08-13')`,
+          [userA],
+        ),
+      ),
+    ).rejects.toThrow(/dividend_calendar_events_amount_currency/);
+  });
+
+  it("laesst Waehrung ohne Betrag nicht zu", async () => {
+    await expect(
+      asSuperuser((client) =>
+        client.query(
+          `insert into dividend_calendar_events
+             (user_id, external_uid, title, expected_currency, event_date)
+           values ($1, 'pay-ohne-betrag', 'Beispiel AG', 'EUR', '2026-08-13')`,
+          [userA],
+        ),
+      ),
+    ).rejects.toThrow(/dividend_calendar_events_amount_currency/);
+  });
+
+  it("weist einen negativen Betrag zurueck", async () => {
+    await expect(
+      asSuperuser((client) =>
+        client.query(
+          `insert into dividend_calendar_events
+             (user_id, external_uid, title, expected_amount, expected_currency, event_date)
+           values ($1, 'pay-negativ', 'Beispiel AG', -1.00, 'EUR', '2026-08-13')`,
+          [userA],
+        ),
+      ),
+    ).rejects.toThrow(/expected_amount_check|violates check constraint/);
+  });
+});
+
 describe("Synchronisationsstatus", () => {
   it("ist nur fuer den eigenen Nutzer lesbar", async () => {
     const eigen = await asUser(userA, (client) =>
