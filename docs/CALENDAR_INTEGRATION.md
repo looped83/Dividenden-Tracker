@@ -77,6 +77,12 @@ Die Funktion liest das Secret über `Deno.env.get("DIVVYDIARY_ICAL_URL")` und gi
 jedem Fehler nur einen Code aus (`feed:timeout`, `feed:http:403`, `ical:parse`, …) — nie
 die Meldung des ursprünglichen Fehlers, weil `fetch` darin die angefragte Adresse nennt.
 
+Eine begründete Ausnahme sind Fehler der **eigenen** Datenbank (`store:load`,
+`store:insert`, …): Dort wird die Meldung von PostgreSQL mitprotokolliert, weil sie die
+fehlende Spalte oder verletzte Bedingung benennt und der Fehler ohne sie nicht auffindbar
+ist. Sie enthält weder Adresse noch Token; die Werte der betroffenen Zeile stehen in
+`details`, das bewusst nicht mitgeht.
+
 Fehlt das Secret, meldet die Oberfläche „Für den Dividendenkalender ist noch keine
 Kalenderquelle hinterlegt." — gespeicherte Termine bleiben sichtbar.
 
@@ -293,6 +299,7 @@ npm run test:e2e:app      # Kalenderseite im Browser inkl. axe und 320-px-Prüfu
 | DivvyDiary nicht erreichbar / Zeitüberschreitung | gespeicherte Termine bleiben sichtbar, dezenter Hinweis, Status `error` |
 | Antwort ist kein Kalender (z. B. HTML-Fehlerseite) | Abbruch **vor** jedem Schreibzugriff, Bestand unverändert |
 | Secret fehlt | Hinweis auf die fehlende Kalenderquelle, kein Datenverlust |
+| Datenbank lehnt ab (fehlende Migration, verletzte Bedingung) | eigener Hinweis „Vermutlich fehlt … eine Datenbankmigration"; im Log steht `store:<schritt> — <Meldung der Datenbank>` |
 | Gerät offline | Die App-Hülle kommt aus dem Service Worker; Termine stammen aus der Datenbank, ein Abruf schlägt sichtbar fehl, ohne etwas zu löschen |
 | Zwei Läufe gleichzeitig | der zweite endet sofort mit `409`, ohne die Quelle erneut anzufragen |
 

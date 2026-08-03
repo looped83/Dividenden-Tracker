@@ -8,6 +8,7 @@ import {
   logCodeFor,
   userMessageFor,
 } from "../../../supabase/functions/_shared/messages.ts";
+import { StoreError } from "../../../supabase/functions/_shared/sync.ts";
 
 /**
  * Abruf des iCal-Feeds (Auftrag §20 „HTTP-Fehler / Timeout / leere Antwort").
@@ -158,5 +159,32 @@ describe("Meldungen (Auftrag §12) enthalten keine technischen Details", () => {
     expect(logCodeFor(new FeedError("timeout"))).toBe("feed:timeout");
     expect(logCodeFor(new Error(`boom ${FEED_URL}`))).toBe("internal:Error");
     expect(logCodeFor("kaputt")).toBe("internal:unknown");
+  });
+});
+
+describe("Fehler der eigenen Datenbank sind von Feed-Ausfaellen zu unterscheiden", () => {
+  it("nennt dem Nutzer die wahrscheinlichste Ursache statt der Quelle", () => {
+    const meldung = userMessageFor(new StoreError("load"));
+
+    expect(meldung).toContain("Datenbankmigration");
+    // Kein Hinweis auf die Kalenderquelle — die ist nicht schuld.
+    expect(meldung).not.toContain("Kalenderquelle");
+  });
+
+  it("protokolliert Schritt und Datenbankmeldung, damit die Ursache auffindbar ist", () => {
+    const code = logCodeFor(
+      new StoreError(
+        "load",
+        "PGRST204 column dividend_calendar_events.company_name does not exist",
+      ),
+    );
+
+    expect(code).toBe(
+      "store:load — PGRST204 column dividend_calendar_events.company_name does not exist",
+    );
+  });
+
+  it("kommt auch ohne Datenbankmeldung mit einem Code aus", () => {
+    expect(logCodeFor(new StoreError("insert"))).toBe("store:insert");
   });
 });
