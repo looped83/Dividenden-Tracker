@@ -1,5 +1,5 @@
 import { expect, test } from "../support/appTest";
-import { pruefeAxe, pruefeBeideThemes } from "../support/axe";
+import { erwarteTheme, pruefeAxe, stelleThemeEin } from "../support/axe";
 
 /**
  * Barrierefreiheit **hinter** der Anmeldung (TEST_STRATEGY.md §9,
@@ -46,15 +46,19 @@ const ROUTEN = [
   },
 ] as const;
 
-for (const route of ROUTEN) {
-  test(`${route.name} ist frei von axe-Verstößen`, async ({ page }) => {
-    await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" });
-    await page.goto(route.pfad);
-    await expect(
-      page.getByRole("heading", { name: route.warten, level: 1 }).first(),
-    ).toBeVisible();
-    await pruefeBeideThemes(page, route.name);
-  });
+for (const theme of ["light", "dark"] as const) {
+  for (const route of ROUTEN) {
+    test(`${route.name} ist frei von axe-Verstößen (${theme})`, async ({ page }) => {
+      await stelleThemeEin(page, theme);
+      await page.goto(route.pfad);
+      await expect(
+        page.getByRole("heading", { name: route.warten, level: 1 }).first(),
+      ).toBeVisible();
+      await erwarteTheme(page, theme);
+
+      await pruefeAxe(page, `${route.name} (${theme})`);
+    });
+  }
 }
 
 test("geöffneter Storno-Dialog ist frei von axe-Verstößen", async ({ page, konto }) => {

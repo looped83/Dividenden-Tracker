@@ -1,14 +1,14 @@
 import { expect, test } from "@playwright/test";
-import { pruefeBeideThemes } from "./support/axe";
+import { erwarteTheme, pruefeAxe, stelleThemeEin } from "./support/axe";
 
 /**
  * Automatisierte Barrierefreiheitspruefung (TEST_STRATEGY.md §9) auf den
  * Routen, die ohne Konto erreichbar sind — in beiden Themes, weil Kontraste
- * je Theme aus eigenen Tokens stammen. Gemessen wird beides auf **einem**
- * Seitenaufbau; die Einzelheiten dazu stehen in `support/axe.ts`.
+ * je Theme aus eigenen Tokens stammen.
  *
  * axe findet nur einen Teil der Probleme; die Checkliste fuer Tastatur,
- * Screenreader und Zoom bleibt daneben bestehen.
+ * Screenreader und Zoom bleibt daneben bestehen. Geprueft werden die
+ * verbindlichen Stufen; welche das sind, steht in `support/axe.ts`.
  */
 const ROUTEN = [
   { pfad: "/#/login", name: "Anmelden" },
@@ -16,16 +16,17 @@ const ROUTEN = [
   { pfad: "/#/passwort-vergessen", name: "Passwort vergessen" },
 ];
 
-for (const route of ROUTEN) {
-  test(`${route.name} ist frei von axe-Verstoessen`, async ({ page }) => {
-    // Das Theme haengt an der Klasse `dark` am Wurzelelement; die
-    // Systemvorliebe wird vor dem Laden gesetzt, damit der ThemeProvider sie
-    // uebernimmt. `reducedMotion` schaltet ueber styles/index.css die
-    // Farbuebergaenge ab — sonst maesse axe beim Wechsel eine Zwischenfarbe.
-    await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" });
-    await page.goto(route.pfad);
-    await expect(page.getByRole("heading", { name: route.name })).toBeVisible();
+const THEMES = ["light", "dark"] as const;
 
-    await pruefeBeideThemes(page, route.name);
-  });
+for (const theme of THEMES) {
+  for (const route of ROUTEN) {
+    test(`${route.name} ist frei von axe-Verstoessen (${theme})`, async ({ page }) => {
+      await stelleThemeEin(page, theme);
+      await page.goto(route.pfad);
+      await expect(page.getByRole("heading", { name: route.name })).toBeVisible();
+      await erwarteTheme(page, theme);
+
+      await pruefeAxe(page, `${route.name} (${theme})`);
+    });
+  }
 }

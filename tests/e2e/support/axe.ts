@@ -3,8 +3,8 @@ import { expect, type Page } from "@playwright/test";
 
 /**
  * Gemeinsame axe-Prüfung für die öffentlichen und die angemeldeten Routen
- * (TEST_STRATEGY.md §9). Eine Stelle für die geprüften Stufen und für den
- * Themewechsel — sonst liefen die beiden Prüfungen mit der Zeit auseinander.
+ * (TEST_STRATEGY.md §9). Eine Stelle für die geprüften Stufen und für die
+ * Auswertung — sonst liefen die beiden Prüfungen mit der Zeit auseinander.
  */
 
 /**
@@ -15,7 +15,11 @@ import { expect, type Page } from "@playwright/test";
  */
 const STUFEN = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 
-/** Misst die aktuell dargestellte Seite. Ein Fund nennt Regel und Element. */
+/**
+ * Misst die aktuell dargestellte Seite. Ein Fund nennt Kontext, Regel,
+ * Beschreibung und betroffenes Element — genug, um ihn ohne Nachstellen zu
+ * verstehen.
+ */
 export async function pruefeAxe(page: Page, kontext: string): Promise<void> {
   const ergebnis = await new AxeBuilder({ page }).withTags(STUFEN).analyze();
 
@@ -29,56 +33,31 @@ export async function pruefeAxe(page: Page, kontext: string): Promise<void> {
   ).toEqual([]);
 }
 
-function hintergrundfarbe(page: Page): Promise<string> {
-  return page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+/**
+ * Das Theme wird **vor** dem Laden gesetzt, nie im laufenden Bild umgeschaltet.
+ *
+ * Ein nachträgliches `emulateMedia` wäre schneller — es spart je Route einen
+ * Seitenaufbau —, liefert aber nicht denselben Zustand: In WebKit meldete axe
+ * danach reproduzierbar Kontrastfehler auf Überschriften, Beschriftungen und
+ * Eingabefeldern, die bei einem frischen Dunkel-Start nicht auftreten. Ein
+ * nachträglich geändertes `color-scheme` löst dort offenbar nicht alle Farben
+ * neu auf; Warten hilft nicht, weil bereits der Endzustand ein anderer ist.
+ *
+ * Deshalb: Theme setzen, dann laden. So misst der Test die Lage, die auch im
+ * Betrieb gilt. `reducedMotion` kommt mit, damit die Farbübergänge
+ * (`transition-colors`) die Messung nicht mit Zwischenfarben stören.
+ */
+export async function stelleThemeEin(page: Page, theme: "light" | "dark"): Promise<void> {
+  await page.emulateMedia({ colorScheme: theme, reducedMotion: "reduce" });
 }
 
 /**
- * Prüft dieselbe, bereits geladene Seite in hell **und** dunkel.
- *
- * Beide Themes brauchen eine eigene Messung — die Farbtoken stammen je Theme
- * aus eigenen Werten, und Kontrast ist genau das, was dabei bricht. Sie
- * brauchen aber **keinen zweiten Seitenaufbau**: Der `ThemeProvider` liest die
- * Systemvorliebe über `useSyncExternalStore` mit einem Listener auf der
- * Medienabfrage, `emulateMedia` schaltet also im laufenden Bild um. Das spart
- * je Route ein Testkonto, einen Browserkontext und einen Seitenaufbau, ohne
- * eine einzige Prüfung aufzugeben.
- *
- * **Der Umschaltpunkt ist die heikle Stelle.** axe liest berechnete Farben im
- * Moment der Prüfung. Wird zu früh gemessen, misst es den alten oder einen
- * halb umgestellten Zustand und meldet Kontrastfehler, die es nicht gibt —
- * beobachtet in WebKit, wo sich die Fundliste zwischen Versuch und
- * Wiederholung unterschied. Deshalb wird nicht auf die Klasse allein gewartet,
- * sondern auf die **tatsächlich berechnete Hintergrundfarbe**: Sie ändert sich
- * erst, wenn die Stilberechnung durch ist. Danach noch ein Einzelbild, damit
- * auch Motoren fertig sind, die verzögert zeichnen.
- *
- * Die Zusicherung auf die Klasse `dark` bleibt daneben stehen: Ohne sie würde
- * ein nicht greifender Themewechsel unbemerkt zweimal dasselbe helle Bild
- * prüfen — ein Test, der bestätigt, was er nie gemessen hat.
+ * Belegt, dass das gewünschte Theme wirklich anliegt. Ohne diese Zusicherung
+ * prüfte ein nicht greifender Themewechsel unbemerkt zweimal dasselbe Bild —
+ * ein Test, der bestätigt, was er nie gemessen hat.
  */
-export async function pruefeBeideThemes(page: Page, name: string): Promise<void> {
+export async function erwarteTheme(page: Page, theme: "light" | "dark"): Promise<void> {
   const wurzel = page.locator("html");
-
-  await expect(wurzel).not.toHaveClass(/\bdark\b/);
-  const hell = await hintergrundfarbe(page);
-  await pruefeAxe(page, `${name} (hell)`);
-
-  await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });
-  await expect(wurzel).toHaveClass(/\bdark\b/);
-  await expect.poll(() => hintergrundfarbe(page)).not.toBe(hell);
-  await naechstesBild(page);
-
-  await pruefeAxe(page, `${name} (dunkel)`);
-}
-
-function naechstesBild(page: Page): Promise<void> {
-  return page.evaluate(
-    () =>
-      new Promise<void>((fertig) => {
-        requestAnimationFrame(() => {
-          fertig();
-        });
-      }),
-  );
+  if (theme === "dark") await expect(wurzel).toHaveClass(/\bdark\b/);
+  else await expect(wurzel).not.toHaveClass(/\bdark\b/);
 }
