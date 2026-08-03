@@ -4,6 +4,7 @@ import { BarChart3 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AmountText } from "@/components/money/AmountText";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
   aggregate,
@@ -40,11 +41,27 @@ export function CompaniesTab() {
   // Die Suche liegt hier statt in der Tabelle: Auf breiten Schirmen steht sie
   // in der Kopfzeile der Kachel, neben der Ueberschrift.
   const [query, setQuery] = React.useState("");
+  // Archivierte Unternehmen sind abgeschlossene Positionen und wuerden die
+  // Tabelle verlaengern, ohne die laufende Entwicklung zu erklaeren. Sie bleiben
+  // wie in der Unternehmensverwaltung zuschaltbar (unterhalb der Tabelle).
+  const [showArchived, setShowArchived] = React.useState(false);
 
   const stats = React.useMemo(() => securityStatistics(payments), [payments]);
   const sorted = React.useMemo(
     () => sortSecurityStatistics(stats, "net", labelOf),
     [stats, labelOf],
+  );
+
+  const hasArchived = React.useMemo(
+    () => sorted.some((row) => entityArchived(securities, row.securityId)),
+    [sorted, securities],
+  );
+  const tableRows = React.useMemo(
+    () =>
+      showArchived
+        ? sorted
+        : sorted.filter((row) => !entityArchived(securities, row.securityId)),
+    [sorted, showArchived, securities],
   );
 
   const total = React.useMemo(() => aggregate(payments).net, [payments]);
@@ -185,13 +202,18 @@ export function CompaniesTab() {
         </CardHeader>
         <CardContent>
           <StatTable
-            rows={sorted}
+            rows={tableRows}
             columns={columns}
             getRowKey={(row) => row.securityId}
             caption="Kennzahlen je Unternehmen"
             searchOf={(row) => entityName(securities, row.securityId)}
             query={query}
             initialSort={{ key: "net", direction: "desc" }}
+            emptyMessage={
+              tableRows.length === 0 && hasArchived
+                ? "Nur archivierte Unternehmen in dieser Auswahl — unten einblenden."
+                : "Keine Daten für die aktuelle Auswahl."
+            }
             onRowClick={(row) =>
               void navigate(statisticsDrillHref(filter, { securityId: row.securityId }))
             }
@@ -199,6 +221,19 @@ export function CompaniesTab() {
               `Dividendeneingänge von ${entityName(securities, row.securityId)} anzeigen`
             }
           />
+          {/* Nebenschalter am Fuss der Kachel, abgesetzt durch eine Trennlinie —
+              dasselbe Muster wie unter der Unternehmensliste. */}
+          <div className="mt-4 border-t border-border pt-4">
+            <label className="flex min-h-11 items-center gap-2 text-sm text-muted-foreground">
+              <Checkbox
+                checked={showArchived}
+                onChange={(event) => {
+                  setShowArchived(event.target.checked);
+                }}
+              />
+              Archivierte anzeigen
+            </label>
+          </div>
         </CardContent>
       </Card>
     </div>
