@@ -18,6 +18,7 @@ Alle Funktionsbereiche sind umgesetzt und unter GitHub Pages im Einsatz:
 | Ziele (Jahr und Monat) mit Fortschritt | in Betrieb |
 | Datensicherung, Wiederherstellung und Export | in Betrieb seit 2026-07-29; Restore-Probe am realen Bestand bestanden |
 | PWA (installierbar, App-Hülle offline, Aktualisierungshinweis) | in Betrieb |
+| Dividendenkalender (angekündigte Zahltage aus dem DivvyDiary-iCal-Feed) | neu; Edge Function und Secret müssen einmalig eingerichtet werden ([docs/CALENDAR_INTEGRATION.md](docs/CALENDAR_INTEGRATION.md)) |
 
 Die Numbers-Migration (Übernahme der historischen Daten nach
 [MIGRATION_PLAN.md](MIGRATION_PLAN.md)) ist der verbleibende Betriebsschritt. Ihre
@@ -46,6 +47,18 @@ Node.js ≥ 22 wird vorausgesetzt. Alle Paketversionen sind exakt gepinnt
 
 Für den Betrieb wird ein Supabase-Projekt benötigt: `.env` aus `.env.example` anlegen und
 `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` eintragen (SECURITY_MODEL.md §5).
+
+Der Dividendenkalender braucht zusätzlich eine Edge Function und ein serverseitiges
+Secret — der persönliche Feed-Link gehört **nie** ins Repository oder in eine
+`VITE_`-Variable:
+
+```bash
+supabase migration up
+supabase secrets set DIVVYDIARY_ICAL_URL="YOUR_PRIVATE_ICAL_URL"
+supabase functions deploy sync-divvydiary-calendar
+```
+
+Einzelheiten in [docs/CALENDAR_INTEGRATION.md](docs/CALENDAR_INTEGRATION.md).
 
 ### Datenbank und Sicherheitstests
 
@@ -89,3 +102,4 @@ Grenzen in TEST_STRATEGY.md §8.1.
 | [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) | 10 Phasen mit Scope, Tests und Abnahmekriterien |
 | [DECISIONS.md](DECISIONS.md) | Entscheidungsprotokoll (D-Einträge und ADRs) |
 | [docs/AUDIT_2026-07-29.md](docs/AUDIT_2026-07-29.md) | Bestandsaufnahme, Risiken, Phasenplan |
+| [docs/CALENDAR_INTEGRATION.md](docs/CALENDAR_INTEGRATION.md) | Dividendenkalender: Edge Function, Secret, Datenmodell, Synchronisation |

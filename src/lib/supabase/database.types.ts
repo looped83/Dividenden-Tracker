@@ -39,6 +39,11 @@ export type AuditAction =
   | "import_rollback"
   | "restore";
 export type AuditOrigin = "ui" | "import" | "rollback" | "restore" | "migration";
+/** Kalenderintegration (Migration 0027). */
+export type CalendarSource = "divvydiary";
+export type CalendarEventType = "payment" | "ex_date";
+export type CalendarEventState = "active" | "cancelled" | "removed_from_source";
+export type CalendarSyncState = "never" | "running" | "success" | "error";
 
 export interface Database {
   public: {
@@ -383,6 +388,64 @@ export interface Database {
         }>;
         Relationships: [];
       };
+      /**
+       * Angekuendigte Zahltage aus dem DivvyDiary-iCal-Feed (Migration 0027).
+       * Geschrieben ausschliesslich serverseitig von der Edge Function
+       * `sync-divvydiary-calendar`; der Client hat nur Leserecht.
+       */
+      dividend_calendar_events: {
+        Row: {
+          id: string;
+          user_id: string;
+          source: CalendarSource;
+          external_uid: string;
+          event_type: CalendarEventType;
+          event_state: CalendarEventState;
+          title: string | null;
+          description: string | null;
+          location: string | null;
+          external_url: string | null;
+          categories: string[] | null;
+          event_date: string;
+          end_date: string | null;
+          starts_at: string | null;
+          ends_at: string | null;
+          is_all_day: boolean;
+          sequence_number: number | null;
+          recurrence_rule: string | null;
+          source_created_at: string | null;
+          source_updated_at: string | null;
+          raw_data: Json | null;
+          first_synced_at: string;
+          last_synced_at: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: never; // nur ueber die Edge Function (service_role)
+        Update: never;
+        Relationships: [];
+      };
+      /** Ergebnis des letzten Synchronisationslaufs je Nutzer und Quelle. */
+      calendar_sync_status: {
+        Row: {
+          user_id: string;
+          source: CalendarSource;
+          state: CalendarSyncState;
+          last_attempt_at: string | null;
+          last_success_at: string | null;
+          events_read: number;
+          events_created: number;
+          events_updated: number;
+          events_removed: number;
+          events_skipped: number;
+          error_message: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: never; // nur ueber die Edge Function (service_role)
+        Update: never;
+        Relationships: [];
+      };
       audit_log: {
         Row: {
           id: number;
@@ -511,6 +574,10 @@ export interface Database {
       goal_type: GoalType;
       audit_action: AuditAction;
       audit_origin: AuditOrigin;
+      calendar_source: CalendarSource;
+      calendar_event_type: CalendarEventType;
+      calendar_event_state: CalendarEventState;
+      calendar_sync_state: CalendarSyncState;
     };
   };
 }

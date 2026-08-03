@@ -94,6 +94,7 @@ Diese 15 Grundsätze sind Abnahmekriterien für jede Phase (siehe IMPLEMENTATION
 |---|---|
 | **Übersicht** | Dashboard mit Kernkennzahlen, Entwicklung, Zielfortschritt |
 | **Dividendeneingänge** | Vollständige Zahlungshistorie, Erfassung, Bearbeitung, Detailansicht |
+| **Kalender** | Angekündigte Zahltage aus dem persönlichen DivvyDiary-iCal-Feed |
 | **Unternehmen** | Wertpapier-Stammdaten und Historie je Unternehmen |
 | **Depots** | Depotverwaltung und Auswertung je Depot |
 | **Statistiken** | Vertiefte Auswertungen, Vergleiche, Aufteilungen |
@@ -102,7 +103,11 @@ Diese 15 Grundsätze sind Abnahmekriterien für jede Phase (siehe IMPLEMENTATION
 | **Datensicherung** | Export, Backup, Restore, Backup-Status |
 | **Einstellungen** | Profil, Basiswährung, Darstellung, Sicherheit |
 
-**Es gibt keinen Kalenderbereich.**
+**Der Kalenderbereich zeigt ausschließlich angekündigte Termine.** Er ist bewusst kein
+zweiter Ort für erhaltene Zahlungen: Prognose- und Ist-Daten bleiben getrennt
+(Grundsatz 8). Die Termine stammen serverseitig aus einem persönlichen
+DivvyDiary-iCal-Feed, verändern keine Dividendeneingänge und markieren nichts als
+erhalten — Einzelheiten in [docs/CALENDAR_INTEGRATION.md](docs/CALENDAR_INTEGRATION.md).
 
 Navigationsmuster je Gerät: Desktop dauerhafte Sidebar, iPad adaptive Sidebar, iPhone Bottom
 Navigation mit 5 Slots (Übersicht, Eingänge, ＋ Erfassen, Statistiken, Mehr) — Details in

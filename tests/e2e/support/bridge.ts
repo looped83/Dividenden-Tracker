@@ -187,6 +187,13 @@ function buildWhere(
         values.push(value);
         index += 1;
         break;
+      // Der Dividendenkalender blendet aus der Quelle entfernte Termine aus
+      // (`event_state != 'removed_from_source'`).
+      case "neq":
+        conditions.push(`t.${column} <> $${String(index)}`);
+        values.push(value);
+        index += 1;
+        break;
       case "is":
         if (value !== "null") {
           throw new BridgeError(501, "PGRSTX03", `is.${value} wird nicht unterstuetzt.`);

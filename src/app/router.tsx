@@ -13,7 +13,8 @@ import { DashboardPage } from "@/features/dashboard/DashboardPage";
 import { routeChunks } from "@/app/routeChunks";
 
 /**
- * Routing (PRODUCT_SPEC.md §4): neun Hauptbereiche, kein Kalenderbereich.
+ * Routing (PRODUCT_SPEC.md §4). Der Kalenderbereich (`/kalender`) kam mit der
+ * DivvyDiary-Integration hinzu (docs/CALENDAR_INTEGRATION.md).
  * React Router 8 im Library-Modus (kein SSR/Framework-Modus, ARCHITECTURE.md K-2).
  * Hash-Router statt Browser-Router: GitHub Pages unterstuetzt kein
  * server-seitiges SPA-Fallback fuer direkt aufgerufene/neu geladene Routen
@@ -39,6 +40,9 @@ const PaymentDetailPage = React.lazy(async () => ({
 }));
 const DataQualityPage = React.lazy(async () => ({
   default: (await routeChunks.dataQuality()).DataQualityPage,
+}));
+const CalendarPage = React.lazy(async () => ({
+  default: (await routeChunks.calendar()).CalendarPage,
 }));
 const SecuritiesPage = React.lazy(async () => ({
   default: (await routeChunks.securities()).SecuritiesPage,
@@ -130,6 +134,7 @@ export const router = createHashRouter([
       { path: "eingaenge/datenqualitaet", element: <DataQualityPage /> },
       { path: "eingaenge/:id", element: <PaymentDetailPage /> },
       { path: "eingaenge/:id/bearbeiten", element: <NewPaymentPage /> },
+      { path: "kalender", element: <CalendarPage /> },
       { path: "unternehmen", element: <SecuritiesPage /> },
       { path: "unternehmen/:id", element: <SecurityDetailPage /> },
       {

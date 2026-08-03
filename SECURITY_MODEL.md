@@ -284,3 +284,28 @@ Umgehungsfläche über unsichere Funktionen. Clientseitige Filter sind nirgends
 Sicherheitsmaßnahme. Anlegen, Ändern und Löschen eines Ziels werden über den
 generischen Audit-Trigger (`entity_type = 'goal'`, Aktion insert/update/delete)
 protokolliert.
+
+## Dividendenkalender (Migration 0027, Edge Function)
+
+Der DivvyDiary-Feed ist eine persönliche Adresse **mit Token**. Er wird ausschließlich
+serverseitig verwendet; das Frontend kennt ihn nicht.
+
+- **Secret**: `DIVVYDIARY_ICAL_URL` liegt allein als Supabase-Secret vor (kein
+  `VITE_`-Präfix, nicht im Repository, nicht in einer öffentlichen Env-Variablen).
+  `.env.example` enthält nur einen leeren Platzhalter.
+- **Authentifizierung**: Die Edge Function `sync-divvydiary-calendar` läuft mit
+  `verify_jwt = true`; zusätzlich bestimmt sie die Nutzerkennung über `auth.getUser()`
+  aus dem geprüften JWT. Eine vom Client übergebene `user_id` wird nie verwendet.
+- **Schreibrechte**: Der Client hat auf `dividend_calendar_events` und
+  `calendar_sync_status` **nur SELECT** auf eigene Zeilen und keinerlei
+  Schreib-Policy. Geschrieben wird mit service_role, das jede Anweisung zusätzlich auf
+  die ermittelte `user_id` einschränkt; ein DELETE-Recht besitzt es nicht.
+- **Fehlerprotokollierung**: Weder Antwort noch Log enthalten die Feed-Adresse, den
+  Token oder iCal-Rohdaten. Protokolliert wird ausschließlich ein Code
+  (`feed:timeout`, `feed:http:403`, `ical:parse`, …); die Nutzermeldung entsteht aus
+  einer festen Tabelle, nie aus dem ursprünglichen Fehlertext (`_shared/messages.ts`).
+- **Verfügbarkeit**: Abruf und Parsen laufen vollständig vor dem ersten Schreibzugriff.
+  Ein Ausfall der Quelle kann gespeicherte Termine daher nicht beschädigen.
+- **Geprüft** in `tests/integration/calendar.test.ts` (RLS, Grants, Eindeutigkeit,
+  Sperre) und `tests/unit/calendar/feed.test.ts` (keine Adresse und kein Token in
+  Meldungen oder Logcodes).

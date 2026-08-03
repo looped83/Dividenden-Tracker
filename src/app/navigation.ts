@@ -1,6 +1,7 @@
 import {
   BarChart3,
   Building2,
+  CalendarDays,
   LayoutDashboard,
   Settings,
   Target,
@@ -25,6 +26,10 @@ export interface NavItem {
 export const PRIMARY_NAV_ITEMS: readonly NavItem[] = [
   { to: "/", label: "Übersicht", icon: LayoutDashboard },
   { to: "/eingaenge", label: "Dividenden", icon: Wallet },
+  // Direkt hinter den erfassten Eingaengen: Beide Bereiche beantworten dieselbe
+  // Frage entlang der Zeit — was kam an, was ist angekuendigt. Getrennte
+  // Datenarten (PRODUCT_SPEC.md Grundsatz 8), benachbarte Wege.
+  { to: "/kalender", label: "Kalender", icon: CalendarDays },
   { to: "/unternehmen", label: "Unternehmen", icon: Building2 },
   { to: "/statistiken", label: "Statistiken", icon: BarChart3 },
   { to: "/ziele", label: "Ziele", icon: Target },
@@ -48,6 +53,7 @@ export const BOTTOM_NAV_PRIMARY_ITEMS: readonly NavItem[] = [
 
 /** Hinter "Mehr" zusammengefasste Bereiche der Bottom Navigation. */
 export const BOTTOM_NAV_MORE_ITEMS: readonly NavItem[] = [
+  findNavItem("/kalender"),
   findNavItem("/unternehmen"),
   findNavItem("/ziele"),
   findNavItem("/einstellungen"),

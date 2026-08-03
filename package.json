@@ -66,6 +66,7 @@
     "eslint-plugin-react-hooks": "7.1.1",
     "eslint-plugin-react-refresh": "0.5.3",
     "globals": "17.8.0",
+    "ical.js": "2.2.1",
     "jsdom": "30.0.1",
     "pg": "8.22.0",
     "prettier": "3.9.6",

@@ -42,6 +42,7 @@ const ROUTEN = [
   { pfad: "/#/eingaenge", name: "Dividenden", warten: "Dividenden" },
   { pfad: "/#/eingaenge/neu", name: "Neue Dividende", warten: "Neue Dividende" },
   { pfad: "/#/eingaenge/datenqualitaet", name: "Datenqualität", warten: "Datenqualität" },
+  { pfad: "/#/kalender", name: "Kalender", warten: "Dividendenkalender" },
   { pfad: "/#/unternehmen", name: "Unternehmen", warten: "Unternehmen" },
   { pfad: "/#/statistiken", name: "Statistiken", warten: "Statistik" },
   { pfad: "/#/statistiken/jahre", name: "Statistik Jahre", warten: "Statistik" },

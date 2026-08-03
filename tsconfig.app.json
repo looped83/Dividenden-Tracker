@@ -32,5 +32,10 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src", "tests/unit", "tests/setup.ts"]
+  // `supabase/functions/_shared` enthaelt die laufzeitunabhaengige Logik der
+  // Kalendersynchronisation (iCal-Verarbeitung, Abgleich). Sie laeuft in der
+  // Edge Function unter Deno und in den Unit-Tests unter Node — geprueft wird
+  // sie deshalb hier mit. Der Deno-Einstiegspunkt (`*/index.ts`) steht bewusst
+  // nicht im Projekt: Er nutzt `Deno`-Globals, die es hier nicht gibt.
+  "include": ["src", "tests/unit", "tests/setup.ts", "supabase/functions/_shared"]
 }
