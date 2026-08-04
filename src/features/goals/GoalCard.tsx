@@ -114,7 +114,11 @@ export function GoalCard({ progress, onEdit, onDelete }: GoalCardProps) {
         {/* „Öffnen" gab es hier zusaetzlich; der Titel fuehrt bereits dorthin,
             und drei Schaltflaechen brachen die Zeile um. */}
         {hasActions && (
-          <div className="-ml-3 mt-auto flex flex-wrap gap-2">
+          // `-mb-2` neben `-ml-3`: In den Schaltflaechen steckt bereits Luft
+          // (44px Zielflaeche um eine 20px hohe Zeile). Ohne den Ausgleich sass
+          // unter der letzten Zeile sichtbar mehr Rand als an den Seiten, und
+          // die Kachel wirkte unten ausgefranst.
+          <div className="-mb-2 -ml-3 mt-auto flex flex-wrap gap-2">
             {onEdit && (
               <Button
                 variant="ghost"

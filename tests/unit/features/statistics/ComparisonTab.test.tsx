@@ -147,16 +147,25 @@ describe("ComparisonTab — gleicher Ausschnitt", () => {
     renderTab();
     // Die Spanne („01.01.2026 – 29.07.2026") stand frueher unter jedem Betrag
     // und wiederholte damit in jeder Kachel, was die Ueberschrift schon sagt.
-    // Die Kappung selbst zeigen die Zahlen daneben (Test oben).
     expect(screen.getByText("3 Zahlungen")).toBeInTheDocument();
     expect(screen.getByText("2 Zahlungen")).toBeInTheDocument();
-    expect(screen.queryByText(/29\.07\.2026/)).not.toBeInTheDocument();
+  });
+
+  it("nennt den Stichtag genau einmal, in einer eigenen Kachel", () => {
+    renderTab();
+    // Zusage 1 der Oberflaeche: Die Kappung wird benannt. Genau einmal — je
+    // Kachel wiederholt waere es wieder die Spanne von frueher.
+    expect(screen.getByText("Zeitausschnitt")).toBeInTheDocument();
+    expect(screen.getAllByText(/29\.07\.2026/)).toHaveLength(1);
+    expect(screen.getByText("beide Zeiträume gleich lang gekappt")).toBeInTheDocument();
   });
 
   it("weist die Veraenderung gegenueber dem Vergleichsjahr aus", () => {
     renderTab();
-    expect(screen.getByText("+120,00 € · +60,0 %")).toBeInTheDocument();
-    expect(screen.getByText("gegenüber 2025")).toBeInTheDocument();
+    // Betrag als Kennzahl, Prozentzahl mit Bezugszeitraum darunter — in der
+    // halbbreiten Kachel des Telefons trägt jede Zeile genau eine Zahl.
+    expect(screen.getByText("+120,00 €")).toBeInTheDocument();
+    expect(screen.getByText("+60,0 % gegenüber 2025")).toBeInTheDocument();
   });
 
   it("rechnet ungekappt, wenn beide Jahre abgeschlossen sind", () => {
@@ -164,6 +173,9 @@ describe("ComparisonTab — gleicher Ausschnitt", () => {
     // Volles Jahr 2025: 200 + 1.000 = 1.200 € — die 1.000 € aus September und
     // Dezember zaehlen mit, weil hier nichts gekappt wird.
     expect(screen.getAllByText("1.200,00 €").length).toBeGreaterThan(0);
+    // Und die Kachel sagt es: Hier ist nichts gekappt.
+    expect(screen.getByText("vollständig")).toBeInTheDocument();
+    expect(screen.getByText("beide Zeiträume vollständig gezählt")).toBeInTheDocument();
   });
 });
 
@@ -221,7 +233,7 @@ describe("ComparisonTab — Auswahl", () => {
     // Monate davor tragen 100 + 100 = 200 €.
     expect(screen.getAllByText("1.320,00 €").length).toBeGreaterThan(0);
     expect(screen.getAllByText("200,00 €").length).toBeGreaterThan(0);
-    expect(screen.getByText("gegenüber den 12 Monaten davor")).toBeInTheDocument();
+    expect(screen.getByText(/gegenüber den 12 Monaten davor/)).toBeInTheDocument();
   });
 
   it("uebernimmt ein anderes Vergleichsjahr aus der Auswahl", () => {
@@ -229,7 +241,9 @@ describe("ComparisonTab — Auswahl", () => {
     fireEvent.change(screen.getByLabelText("verglichen mit"), {
       target: { value: "2024" },
     });
-    expect(screen.getByText("gegenüber 2024")).toBeInTheDocument();
+    // 320 € (2026 bis zum Stichtag) gegen 90 € (2024) = +230,00 € / +255,6 %.
+    expect(screen.getByText("+230,00 €")).toBeInTheDocument();
+    expect(screen.getByText("+255,6 % gegenüber 2024")).toBeInTheDocument();
   });
 
   it("bietet das laufende Jahr nicht als sein eigenes Vergleichsjahr an", () => {

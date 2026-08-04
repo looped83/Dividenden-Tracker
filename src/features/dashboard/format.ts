@@ -73,6 +73,42 @@ export function describeComparison(
 }
 
 /**
+ * Wie {@link describeComparison}, aber auf zwei Zeilen verteilt: der absolute
+ * Betrag als Kennzahl, die Prozentzahl in der Zeile darunter.
+ *
+ * In einer halbbreiten Kachel (zwei je Zeile auf dem Telefon) passt
+ * „+12.345,67 € · +593,6 %" nicht in eine Zeile; der Umbruch trennte die
+ * Prozentzahl mitten im Mittelpunkt vom Betrag. Getrennt gesetzt traegt jede
+ * Zeile genau eine Zahl — und die Kachel liest sich in beiden Breiten gleich.
+ */
+export function splitComparison(
+  result: ComparisonResult,
+  contextLabel: string,
+): { value: string; caption: string; tone: ComparisonTone } {
+  const combined = describeComparison(result, contextLabel);
+  switch (result.kind) {
+    case "percent": {
+      const sign = !result.percent.isNegative() && !result.percent.isZero() ? "+" : "";
+      const absSign = result.absolute.isPositive() ? "+" : "";
+      return {
+        value: `${absSign}${formatMoney(result.absolute)}`,
+        caption: `${sign}${formatPercent(result.percent)} ${contextLabel}`.trim(),
+        tone: combined.tone,
+      };
+    }
+    case "new":
+      return {
+        value: `+${formatMoney(result.absolute)}`,
+        caption: `neu ${contextLabel}`.trim(),
+        tone: combined.tone,
+      };
+    case "both-zero":
+    case "no-comparison":
+      return { value: NOT_AVAILABLE, caption: combined.text, tone: combined.tone };
+  }
+}
+
+/**
  * Baut das Ziel fuer den Drill-down auf die Zahlungsliste (§13). Leere/`all`-
  * Werte werden weggelassen, damit keine unnoetigen Filter entstehen.
  */

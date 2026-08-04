@@ -121,9 +121,16 @@ function EventTile({
           {eventTitle(event)}
         </span>
         <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-          <Badge variant={cancelled ? "neutral" : "primary"}>
-            {eventTypeLabel(event)}
-          </Badge>
+          {/* Nur der Ex-Tag traegt ein Etikett: „Zahltag" stand an praktisch
+              jedem Termin dieses Kalenders und sagte damit nichts — ein
+              Etikett, das immer dasselbe behauptet, ist Farbe ohne Auskunft.
+              Der Ex-Tag ist die Ausnahme und bleibt deshalb gekennzeichnet;
+              vorgelesen wird die Art weiterhin in beiden Faellen. */}
+          {event.eventType === "ex_date" && (
+            <Badge variant={cancelled ? "neutral" : "primary"}>
+              {eventTypeLabel(event)}
+            </Badge>
+          )}
           {cancelled && <Badge variant="negative">Abgesagt</Badge>}
           <span className="truncate text-xs text-muted-foreground">
             {shortDate(event.date)}

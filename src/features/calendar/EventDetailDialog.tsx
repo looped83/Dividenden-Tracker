@@ -63,8 +63,9 @@ export function EventDetailDialog({
               </DialogDescription>
             </DialogHeader>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="primary">{eventTypeLabel(event)}</Badge>
+            {/* Kein Etikett fuer die Terminart: Die Zeile darueber nennt sie
+                bereits im Satz („Angekündigter Zahltag am 13.08.2026"). */}
+            <div className="flex flex-wrap items-center gap-2 empty:hidden">
               {event.eventState === "cancelled" && (
                 <Badge variant="negative">Abgesagt</Badge>
               )}

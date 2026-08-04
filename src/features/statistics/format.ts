@@ -12,6 +12,7 @@ export {
   formatIsoDate,
   formatMonthYear,
   describeComparison,
+  splitComparison,
   paymentsListHref,
   type EntityInfo,
   type ComparisonTone,
