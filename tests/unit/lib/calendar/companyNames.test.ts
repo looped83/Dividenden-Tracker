@@ -71,20 +71,29 @@ describe("buildCompanyNameResolver", () => {
   });
 
   it("loest den langen ETF-Namen der Quelle auf den eigenen auf", () => {
-    const resolve = buildCompanyNameResolver([
-      company("JPM Europe Equity Premium Income Active", { id: "s1" }),
-      company("JPM US Equity Premium Income Active", { id: "s2" }),
-    ]);
-
-    expect(resolve("JPM Europe Equity Premium Income Active UCITS ETF EUR (dist)")).toBe(
-      "JPM Europe Equity Premium Income Active",
+    // Schreibweisen aus dem echten Feed (DivvyDiary/Trade Republic) gegen die
+    // Namen, unter denen dieselben Fonds im Bestand stehen.
+    const resolve = buildCompanyNameResolver(
+      [
+        "JPM Europe Equity Premium Income Active",
+        "JPM Global Equity Premium Income Active",
+        "JPM Nasdaq Equity Premium Income Active",
+        "JPM US Equity Premium Income Active",
+      ].map((name) => company(name)),
     );
-    expect(resolve("JPM US Equity Premium Income Active UCITS ETF USD (dist)")).toBe(
+
+    expect(
+      resolve("JPM Global Equity Premium Income Active UCITS ETF - USD (dist)"),
+    ).toBe("JPM Global Equity Premium Income Active");
+    expect(
+      resolve("JPM Europe Equity Premium Income Active UCITS ETF - EUR (dist)"),
+    ).toBe("JPM Europe Equity Premium Income Active");
+    expect(resolve("JPM US Equity Premium Income Active UCITS ETF - USD (dist)")).toBe(
       "JPM US Equity Premium Income Active",
     );
-    // Die Fonds unterscheiden sich nur im Regionswort — verwechselt werden
+    // Die vier Fonds unterscheiden sich nur im Regionswort — verwechselt werden
     // duerfen sie deshalb nicht.
-    expect(resolve("JPM Global Equity Premium Income Active UCITS ETF")).toBeNull();
+    expect(resolve("JPM Japan Equity Premium Income Active UCITS ETF")).toBeNull();
   });
 
   it("nutzt beim Import bestaetigte Schreibweisen", () => {
