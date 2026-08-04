@@ -6,6 +6,7 @@ import {
   Ban,
   Pencil,
   RotateCcw,
+  Plus,
   ShieldCheck,
   Trash2,
   Wallet,
@@ -23,6 +24,7 @@ import { Select } from "@/components/ui/select";
 import { EntitySelect, type EntityOption } from "@/components/domain/EntitySelect";
 import { FilterBar, FilterField } from "@/components/ui/filter-bar";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { useNewPayment } from "@/features/payments/PaymentComposer";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -79,6 +81,7 @@ const PAGE_SIZE = 25;
 
 export function PaymentsPage() {
   const { notify } = useToast();
+  const newPayment = useNewPayment();
   const { data: depots = [] } = useDepots();
   const { data: securities = [] } = useSecurities();
 
@@ -334,7 +337,17 @@ export function PaymentsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Dividenden" />
+      {/* Erst ab `md`: Auf dem Telefon steht das Erfassen als hervorgehobene
+          Schaltflaeche in der Bottom-Navigation, eine zweite daneben waere
+          dieselbe Aktion zweimal auf demselben Bildschirm. */}
+      <PageHeader
+        title="Dividenden"
+        actions={
+          <Button className="hidden md:inline-flex" onClick={newPayment}>
+            <Plus /> Neue Dividende
+          </Button>
+        }
+      />
 
       {/* Filterleiste in der Optik des Statistikbereichs (geteiltes Primitive).
           Sortierrichtung als Symbolschalter statt langer Auswahltexte

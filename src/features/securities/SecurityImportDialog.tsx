@@ -160,9 +160,9 @@ export function SecurityImportDialog({
           <DialogTitle>Unternehmen aus Excel importieren</DialogTitle>
           <DialogDescription>
             Liest Name, Ticker, ISIN und WKN aus der ersten Tabelle einer .xlsx-Datei.
-            Eine Depot-/Broker-Spalte wird per Namensabgleich als Standard-Depot
-            übernommen, falls sie zu einem bestehenden Depot passt. Andere Spalten
-            (Stückzahl, Kurse, …) werden ignoriert.
+            Eine Depot-/Broker-Spalte wird per Namensabgleich als Depot übernommen, falls
+            sie zu einem bestehenden Depot passt. Andere Spalten (Stückzahl, Kurse, …)
+            werden ignoriert.
           </DialogDescription>
         </DialogHeader>
 
@@ -200,7 +200,7 @@ export function SecurityImportDialog({
                     <TableHead>Ticker</TableHead>
                     <TableHead>ISIN</TableHead>
                     <TableHead>Land</TableHead>
-                    <TableHead>Standard-Depot</TableHead>
+                    <TableHead>Depot</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>

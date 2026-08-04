@@ -47,3 +47,51 @@ test("weist unvollständige Eingaben zurück, statt sie zu speichern", async ({ 
   await expect(page.getByText("Depot ist erforderlich")).toBeVisible();
   await expect(page).toHaveURL(/#\/eingaenge\/neu$/);
 });
+
+test("erfasst auf breiten Schirmen im Overlay, ohne die Seite zu verlassen", async ({
+  page,
+  konto,
+}) => {
+  // Feste, breite Fenstergroesse statt der Vorgabe des Projekts: Geprueft wird
+  // das Verhalten dieser Breite, nicht die Geometrie eines Geraets.
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/#/statistiken");
+  await expect(page.getByRole("heading", { name: "Statistik", level: 1 })).toBeVisible();
+
+  await page.getByRole("button", { name: "Neue Dividende" }).first().click();
+
+  // Das Formular liegt ueber der Seite — die Adresse bleibt, wo sie war.
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByRole("heading", { name: "Neue Dividende" })).toBeVisible();
+  await expect(page).toHaveURL(/#\/statistiken$/);
+
+  await dialog.getByRole("combobox", { name: "Unternehmen" }).fill("Muster");
+  await page.getByRole("option", { name: konto.securityName }).click();
+  await dialog
+    .getByRole("combobox", { name: "Depot", exact: true })
+    .selectOption({ label: `${konto.depotName} (EUR)` });
+  await dialog.getByLabel("Zahlungsdatum").fill("2026-05-14");
+  await dialog.getByLabel("Nettobetrag").fill("77,00");
+  await dialog.getByRole("button", { name: "Speichern" }).click();
+
+  // Danach schliesst das Overlay und die Statistik steht noch da.
+  await expect(dialog).toBeHidden();
+  await expect(page.getByText("Dividende erfasst.")).toBeVisible();
+  await expect(page).toHaveURL(/#\/statistiken$/);
+});
+
+test("Abbrechen fuehrt dorthin zurueck, wo man herkam", async ({ page }) => {
+  // Schmal: Dort fuehrt die Bottom-Navigation auf die eigene Seite.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/#/kalender");
+  await expect(
+    page.getByRole("heading", { name: "Dividendenkalender", level: 1 }),
+  ).toBeVisible();
+
+  await page.getByRole("link", { name: "Neue Dividende erfassen" }).click();
+  await expect(page).toHaveURL(/#\/eingaenge\/neu$/);
+
+  await page.getByRole("button", { name: "Abbrechen" }).click();
+  // Zurueck in den Kalender — nicht in die Dividendenliste.
+  await expect(page).toHaveURL(/#\/kalender$/);
+});
