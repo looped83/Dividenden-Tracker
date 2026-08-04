@@ -113,6 +113,29 @@ describe("buildPortfolioSeries", () => {
     expect(series.expectedBySecurity.size).toBe(1);
   });
 
+  it("merkt sich, welche Unternehmen im jüngsten Stand gehalten werden", () => {
+    // Der Entwicklungsbereich muss „nicht mehr gehalten" (traegt kuenftig null
+    // bei) von „gehalten, aber ohne Betrag der Quelle" (unbekannt)
+    // unterscheiden. `expectedBySecurity` allein wirft beides zusammen.
+    const series = buildPortfolioSeries(
+      [
+        snapshot({ security_id: "sec-a", as_of: "2026-02-02" }),
+        snapshot({ security_id: "sec-b", as_of: "2026-08-03" }),
+        // Gehalten, aber die Quelle nennt keinen Betrag.
+        snapshot({
+          security_id: "sec-etf",
+          as_of: "2026-08-03",
+          annual_dividend_total: null,
+        }),
+      ],
+      FACETS,
+    );
+    expect([...series.heldSecurityIds].sort()).toEqual(["sec-b", "sec-etf"]);
+    // sec-etf ist gehalten, hat aber keine Erwartung — der Unterschied zaehlt.
+    expect(series.expectedBySecurity.has("sec-etf")).toBe(false);
+    expect(series.heldSecurityIds.has("sec-a")).toBe(false);
+  });
+
   it("rechnet die Rendite auf den Einstand in Prozentpunkte um", () => {
     const series = buildPortfolioSeries([snapshot()], FACETS);
     const onBuyin = series.yieldOnBuyinBySecurity.get("sec-a");

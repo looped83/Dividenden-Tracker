@@ -184,9 +184,24 @@ laufende Jahr: Die Erwartung gilt für zwölf Monate, ein angebrochenes Jahr lie
 zwangsläufig zu hoch aussehen.
 
 **`/#/statistiken/entwicklung`** — der Unterbereich, der aus den Ständen eine Zeitreihe
-macht: vier Kacheln (erwartet p. a., erhalten in den zwölf Monaten bis zum Stichtag, die
-Abweichung, Rendite auf den Einstand), der Verlauf beider Größen über die Stichtage, die
+macht: vier Kacheln (erwartet p. a., erhalten in den zwölf Monaten bis zum Stichtag, der
+Zuwachs, Rendite auf den Einstand), der Verlauf beider Größen über die Stichtage, die
 Gegenüberstellung je Unternehmen und die Aufteilung nach Branche und Land.
+
+Die Differenz wird als **Zuwachs** gerechnet — erwartet minus erhalten —, nicht als
+Abweichung. „Erwartet p. a." ist kein Ziel, das verfehlt werden könnte, sondern die
+Ertragskraft des heutigen Depots; wer weiter investiert, hat sie zwangsläufig über dem,
+was zwölf Monate davor mit kleinerem Bestand hereinkam. Andersherum stünde dort dauerhaft
+eine rote Zahl für genau den Vorgang, der gut läuft. Die Wachstumsrate misst sich am
+**Erhaltenen**, denn eine Rate bezieht sich auf den Wert, aus dem gewachsen wurde. Fällt
+der Zuwachs negativ aus — Verkäufe, gekürzte Dividenden, eine Sonderausschüttung im
+Vorjahr —, ist das ein echter Rückgang und bleibt rot.
+
+Je Unternehmen sind drei Fälle zu unterscheiden: **gehalten mit Betrag** (Zuwachs =
+erwartet − erhalten), **nicht mehr gehalten** (trägt künftig nichts bei, der Zuwachs ist
+der Wegfall des Erhaltenen) und **gehalten, aber ohne Betrag der Quelle** (unbekannt, kein
+Wert). Dafür führt die Zeitreihe `heldSecurityIds` mit: Ohne diese Unterscheidung würde
+das Schweigen der Quelle als Null gelesen.
 
 Verglichen werden **zwei Zwölfmonatszeiträume** (`trailingYearRange`). Die Erwartung gilt
 für zwölf Monate nach vorn; ihr Gegenstück sind die zwölf Monate, die am Stichtag enden.

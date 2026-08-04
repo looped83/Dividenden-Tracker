@@ -241,6 +241,11 @@ vorn, ihr Gegenstück sind die zwölf Monate, die am Stichtag enden. Bewusst nic
 Kalenderjahr — ein angebrochenes ließe die Erwartung zwangsläufig zu hoch aussehen, ein
 abgeschlossenes hinkte bis zu zwölf Monate hinterher.
 
+Ihre Differenz heißt **Zuwachs** und wird als *erwartet minus erhalten* gerechnet. „Erwartet
+p. a." ist kein Ziel, das verfehlt werden könnte, sondern die Ertragskraft des heutigen
+Depots; als Abweichung gelesen stünde dort bei jedem Zukauf eine rote Zahl für genau den
+Vorgang, der gut läuft. Ein negativer Zuwachs bleibt ein echter Rückgang.
+
 Der Jahresregler entfällt hier wie beim Vergleich und beim Breakdown: Die Zeitachse sind
 die Stichtage der Depotstände, und zu jedem gehört ein eigenes Zwölfmonatsfenster. Die
 übrigen Filter — Unternehmen, Depot — wirken. Ein Verlauf entsteht ab dem zweiten
