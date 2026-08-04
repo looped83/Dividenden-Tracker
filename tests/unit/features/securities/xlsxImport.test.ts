@@ -133,7 +133,7 @@ describe("mapWorksheetToSecurities", () => {
     expect(result.valid[0]?.defaultDepotId).toBeNull();
     expect(result.valid[0]?.defaultDepotName).toBeNull();
     expect(result.valid[0]?.warnings).toEqual([
-      'Depot „Unbekanntes Depot" nicht gefunden, kein Standard-Depot gesetzt',
+      'Depot „Unbekanntes Depot" nicht gefunden, kein Depot gesetzt',
     ]);
   });
 

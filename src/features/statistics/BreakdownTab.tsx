@@ -161,8 +161,44 @@ interface MatrixProps {
  * `border-separate` statt `border-collapse`: Zusammengefasste Rahmen
  * verschwinden in mehreren Browsern unter `position: sticky`. Die Linien liegen
  * deshalb an den Zellen.
+ *
+ * **Alle zwoelf Monatsspalten sind gleich breit.** Mit der automatischen
+ * Breitenverteilung richtet sich jede Spalte nach ihrem Inhalt: Filtert man auf
+ * ein Unternehmen, das im Maerz und im Juni zahlt, stehen zwei 130px breite
+ * Spalten zwischen zehn 55px schmalen — die Monatsnamen sitzen dann an voellig
+ * verschiedenen Stellen, und die Tabelle wirkt zerrissen. Die Breite wird
+ * deshalb einmal aus dem laengsten Zahlenwert berechnet und fuer alle Monate
+ * gesetzt (`table-fixed`). In `ch` gerechnet, weil alle Zahlen in
+ * Tabellenziffern stehen — dort ist ein Zeichen so breit wie jedes andere.
  */
 function BreakdownMatrixTable({ matrix, view, filter }: MatrixProps) {
+  // Der laengste Betrag bestimmt die Spaltenbreite. Die Prozentwerte der
+  // Ansicht „Veraenderung" sind stets kuerzer, die Monatssummen der Fusszeile
+  // die groessten Zahlen der Tabelle — beides ist damit abgedeckt. Drei Zeichen
+  // Zugabe tragen den Innenabstand der Zelle.
+  const { monthWidth, totalWidth } = React.useMemo(() => {
+    let month = 4;
+    let total = 4;
+    for (const row of matrix.years) {
+      for (const cell of row.cells) {
+        month = Math.max(
+          month,
+          formatMoney(cell.net).length,
+          formatMoney(cell.cumulative).length,
+        );
+      }
+      total = Math.max(total, formatMoney(row.net).length);
+    }
+    for (const column of matrix.months) {
+      month = Math.max(month, formatMoney(column.net).length);
+    }
+    total = Math.max(total, formatMoney(matrix.totals.net).length);
+    return {
+      monthWidth: `${String(month + 3)}ch`,
+      totalWidth: `${String(total + 4)}ch`,
+    };
+  }, [matrix]);
+
   const caption =
     view === "veraenderung"
       ? "Veränderung der Netto-Dividenden je Monat gegenüber dem Vorjahresmonat, Zeilen je Jahr, Spalten je Monat"
@@ -177,8 +213,15 @@ function BreakdownMatrixTable({ matrix, view, filter }: MatrixProps) {
     // klammert sie dann nicht ein, und die Seite selbst laesst sich bis zur
     // rechten Tabellenkante schieben, obwohl dort nichts Sichtbares steht.
     <div className="relative w-full overflow-x-auto rounded-lg border border-border">
-      <table className="w-full border-separate border-spacing-0 text-sm">
+      <table className="w-full table-fixed border-separate border-spacing-0 text-sm">
         <caption className="sr-only">{caption}</caption>
+        <colgroup>
+          <col className="w-20" />
+          {matrix.months.map((month) => (
+            <col key={month.month} style={{ width: monthWidth }} />
+          ))}
+          <col style={{ width: totalWidth }} />
+        </colgroup>
         <thead>
           <tr>
             <th
