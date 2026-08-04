@@ -15,8 +15,17 @@ import {
   ChartCanvas,
   ChartDataTable,
   ChartEmpty,
+  ChartRowHeader,
   ChartTooltipBox,
 } from "@/components/charts/chart";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   CHART_BAR_CURSOR,
   CHART_BAR_RADIUS,
@@ -112,31 +121,25 @@ export function CategoryBarChart({
       </ChartCanvas>
 
       <ChartDataTable>
-        <table className="w-full text-left text-sm">
+        <Table>
           <caption className="sr-only">{ariaLabel}</caption>
-          <thead>
-            <tr className="text-muted-foreground">
-              <th scope="col" className="py-1 pr-4 font-medium">
-                {categoryHeader}
-              </th>
-              <th scope="col" className="py-1 pr-4 text-right font-medium">
-                Nettodividende
-              </th>
-              <th scope="col" className="py-1 text-right font-medium">
-                Zahlungen
-              </th>
-            </tr>
-          </thead>
-          <tbody>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{categoryHeader}</TableHead>
+              <TableHead className="text-right">Nettodividende</TableHead>
+              <TableHead className="text-right">Zahlungen</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {data.map((row) => (
-              <tr key={row.key} className="border-t border-border">
+              <TableRow key={row.key}>
                 {/* Der Drill-down lag zuvor ausschliesslich auf dem Balken —
-                      als `onClick`. Damit war er per Maus erreichbar und sonst
-                      gar nicht: Tastatur und Screenreader kamen nicht zu den
-                      Zahlen hinter einer Kennzahl. Die Datentabelle ist der
-                      zugaengliche Zwilling des Diagramms und traegt das Ziel
-                      deshalb als echten Link. */}
-                <th scope="row" className="py-1 pr-4 font-normal">
+                    als `onClick`. Damit war er per Maus erreichbar und sonst
+                    gar nicht: Tastatur und Screenreader kamen nicht zu den
+                    Zahlen hinter einer Kennzahl. Die Datentabelle ist der
+                    zugaengliche Zwilling des Diagramms und traegt das Ziel
+                    deshalb als echten Link. */}
+                <ChartRowHeader>
                   {row.href ? (
                     <Link
                       to={row.href}
@@ -147,17 +150,17 @@ export function CategoryBarChart({
                   ) : (
                     row.label
                   )}
-                </th>
-                <td className="py-1 pr-4 text-right tabular-nums">
+                </ChartRowHeader>
+                <TableCell className="text-right tabular-nums">
                   {formatMoney(row.money)}
-                </td>
-                <td className="py-1 text-right tabular-nums">
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
                   {formatCountNumber(row.count)}
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </ChartDataTable>
     </div>
   );
@@ -391,37 +394,29 @@ export function ComparisonLineChart({
       />
 
       <ChartDataTable>
-        <table className="w-full text-left text-sm">
+        <Table>
           <caption className="sr-only">{ariaLabel}</caption>
-          <thead>
-            <tr className="text-muted-foreground">
-              <th scope="col" className="py-1 pr-4 font-medium">
-                Monat
-              </th>
-              <th scope="col" className="py-1 pr-4 text-right font-medium">
-                {currentLabel}
-              </th>
-              <th scope="col" className="py-1 text-right font-medium">
-                {referenceLabel}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Monat</TableHead>
+              <TableHead className="text-right">{currentLabel}</TableHead>
+              <TableHead className="text-right">{referenceLabel}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {points.map((point) => (
-              <tr key={point.label} className="border-t border-border">
-                <th scope="row" className="py-1 pr-4 font-normal">
-                  {point.label}
-                </th>
-                <td className="py-1 pr-4 text-right tabular-nums">
+              <TableRow key={point.label}>
+                <ChartRowHeader>{point.label}</ChartRowHeader>
+                <TableCell className="text-right tabular-nums">
                   {formatMoney(point.currentMoney)}
-                </td>
-                <td className="py-1 text-right tabular-nums">
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
                   {formatMoney(point.referenceMoney)}
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </ChartDataTable>
     </div>
   );

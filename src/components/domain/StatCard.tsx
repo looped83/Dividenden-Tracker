@@ -22,9 +22,11 @@ interface StatCardProps {
  * dieselbe Regel wie in den Kacheln der Uebersicht. Stehen zwei Kacheln
  * nebeneinander und braucht die eine Kennzahl zwei Zeilen (ein Zeitraum, ein
  * langer Betrag), saessen die Zusatzzeilen sonst auf verschiedenen Hoehen; in
- * einem Raster faellt das sofort als Unruhe auf. Auf dem Telefon steht die
- * Zusatzzeile eine Stufe kleiner: In halber Breite geriete sie sonst laenger
- * als die Kennzahl darueber.
+ * einem Raster faellt das sofort als Unruhe auf.
+ *
+ * Sie steht in der Meta-Groesse (12px, UX_AND_DESIGN_SYSTEM.md §1) — dieselbe
+ * wie in den Kacheln der Uebersicht. Zwei Groessen fuer dieselbe Zeile fielen
+ * auf breiten Schirmen nebeneinander auf.
  */
 export function StatCard({
   label,
@@ -55,7 +57,7 @@ export function StatCard({
           body
         )}
         {comparison !== undefined && (
-          <div className="text-xs text-muted-foreground sm:text-sm">{comparison}</div>
+          <div className="text-xs text-muted-foreground">{comparison}</div>
         )}
       </CardContent>
     </Card>

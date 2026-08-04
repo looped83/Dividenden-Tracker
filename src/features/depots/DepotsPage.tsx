@@ -280,6 +280,7 @@ export function DepotsPage() {
           <CardTitle>Portfolios</CardTitle>
           <Button
             size="sm"
+            className="-my-2"
             onClick={() => {
               setPortfolioDialog({ open: true, portfolio: null });
             }}
@@ -367,6 +368,7 @@ export function DepotsPage() {
           <CardTitle>Depots</CardTitle>
           <Button
             size="sm"
+            className="-my-2"
             onClick={() => {
               setDepotDialog({ open: true, depot: null });
             }}

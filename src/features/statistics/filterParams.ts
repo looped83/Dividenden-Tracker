@@ -1,4 +1,4 @@
-import type { PaymentSource, PaymentType, StatisticsFilter } from "@/lib/statistics";
+import type { StatisticsFilter } from "@/lib/statistics";
 
 /**
  * Reine Serialisierung/Validierung der URL-Parameter des Statistikfilters
@@ -6,27 +6,16 @@ import type { PaymentSource, PaymentType, StatisticsFilter } from "@/lib/statist
  * Gueltige, kombinierbare Kriterien bleiben nach Reload und ueber Browser-
  * Zurueck/-Vorwaerts erhalten; unbekannte Werte fallen sicher auf „kein Filter".
  *
- * Parameterschluessel: `year`, `security`, `depot`, `source`, `type`. Sie sind
- * mit den Drill-down-Zielen der Zahlungsliste (`paymentsListHref`) kompatibel.
+ * Parameterschluessel: `year`, `security`, `depot` — genau die drei, die auch
+ * die Zahlungsliste kennt (`paymentsListHref`). Damit fuehrt jeder Drill-down
+ * in eine Liste, die **dieselbe** Teilmenge zeigt wie die Kennzahl daneben.
+ * Quelle und Zahlungsart gab es hier frueher zusaetzlich; sie liessen sich in
+ * der Zahlungsliste nicht nachbilden, sodass die Zielliste mehr Zahlungen
+ * enthielt als die Zahl, aus der man kam.
  */
 
 const EARLIEST_YEAR = 1970; // pay_date-Constraint (DATA_MODEL.md §3.5)
 const CURRENT_YEAR = new Date().getFullYear();
-
-const SOURCES: readonly PaymentSource[] = [
-  "manual",
-  "csv_import",
-  "excel_import",
-  "restore",
-];
-const PAYMENT_TYPES: readonly PaymentType[] = [
-  "regular",
-  "special",
-  "correction",
-  "cancellation",
-  "refund",
-  "other",
-];
 
 function parseYear(raw: string | null): number | null {
   if (raw !== null && /^\d{4}$/.test(raw)) {
@@ -40,25 +29,11 @@ function parseId(raw: string | null): string | null {
   return raw && raw.length > 0 ? raw : null;
 }
 
-function parseSource(raw: string | null): PaymentSource | null {
-  return raw !== null && SOURCES.includes(raw as PaymentSource)
-    ? (raw as PaymentSource)
-    : null;
-}
-
-function parseType(raw: string | null): PaymentType | null {
-  return raw !== null && PAYMENT_TYPES.includes(raw as PaymentType)
-    ? (raw as PaymentType)
-    : null;
-}
-
 export function parseStatisticsFilter(params: URLSearchParams): StatisticsFilter {
   return {
     year: parseYear(params.get("year")),
     securityId: parseId(params.get("security")),
     depotId: parseId(params.get("depot")),
-    source: parseSource(params.get("source")),
-    paymentType: parseType(params.get("type")),
   };
 }
 
@@ -79,8 +54,6 @@ export function applyStatisticsFilter(
   set("year", filter.year !== null ? String(filter.year) : null);
   set("security", filter.securityId);
   set("depot", filter.depotId);
-  set("source", filter.source);
-  set("type", filter.paymentType);
   return next;
 }
 
@@ -88,6 +61,4 @@ export const EMPTY_STATISTICS_FILTER: StatisticsFilter = {
   year: null,
   securityId: null,
   depotId: null,
-  source: null,
-  paymentType: null,
 };

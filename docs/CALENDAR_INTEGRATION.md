@@ -185,12 +185,19 @@ Zahltage, jeder vergangene Termin fehlt darin zwangsläufig.
 
 Standard ist die **Liste**: je Termin eine Kachel mit Datumsfeld (Tageszahl und
 Monatskürzel), Unternehmen und Wochentag; auf breiten Bildschirmen mehrspaltig,
-gruppiert nach „Heute", „Diese Woche" und „Später". Ein Etikett trägt nur der **Ex-Tag**:
+gruppiert nach „Heute", „Diese Woche", „Später" — und danach **je Monat ein eigener
+Abschnitt** („September 2026"). „Später" endet mit dem laufenden Monat; zuvor trug es alles,
+was nach dieser Woche kam, sodass in einem gut gefüllten Kalender ein halbes Jahr Termine
+ohne sichtbaren Monatswechsel untereinander stand. Ein Etikett trägt nur der **Ex-Tag**:
 „Zahltag" stünde an praktisch jedem Termin dieses Kalenders und sagte damit nichts. Für
-Hilfsmittel wird die Art weiterhin in beiden Fällen angesagt. Darüber stehen vier Kennzahlkacheln
-(`StatCard` wie auf der Übersicht): nächster Zahltag mit Abstand in Tagen, erwartete Summe
-im laufenden Monat, erwartete Summe der nächsten 30 Tage und Anzahl verschiedener
-Unternehmen.
+Hilfsmittel wird die Art weiterhin in beiden Fällen angesagt.
+
+Direkt unter der Kopfzeile — an derselben Stelle wie in jedem anderen Bereich — stehen vier
+Kennzahlkacheln (`StatCard` wie auf der Übersicht): nächster Zahltag mit Abstand in Tagen,
+erwartete Summe im laufenden Monat, erwartete Summe der nächsten 30 Tage und Anzahl
+verschiedener Unternehmen. Darunter die Wahl der Darstellung (Liste links als
+Voreinstellung, Monatsraster rechts). Wann zuletzt abgeglichen wurde, steht als Fußnote am
+Seitenende: Es ist eine Auskunft über die Herkunft der Daten, nicht über Dividenden.
 
 Die Summen stammen ausschließlich aus den Beträgen, die die Quelle nennt. Nennt sie für
 einen Termin keinen, fehlt er in der Summe — und die Kachel sagt es („aus 2 von 3

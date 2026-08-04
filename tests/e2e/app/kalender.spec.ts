@@ -79,7 +79,11 @@ test("Liste ist die Standardansicht und zeigt Kacheln je Termin", async ({ page 
     "true",
   );
 
-  await expect(page.getByRole("heading", { name: "Später", level: 2 })).toBeVisible();
+  // Jeder kommende Monat traegt seine eigene Ueberschrift. „Später" endet mit
+  // dem laufenden Monat und bleibt hier deshalb leer — die gesetzten Termine
+  // liegen alle in 2099 bzw. in dieser Woche.
+  await expect(page.getByRole("heading", { name: "März 2099", level: 2 })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "April 2099", level: 2 })).toBeVisible();
   // Jede Kachel traegt ihr Datum selbst — als Zahl und ausgeschrieben.
   const apple = page.getByRole("button", { name: /Apple Inc\./ });
   await expect(apple).toBeVisible();

@@ -157,7 +157,7 @@ describe("ComparisonTab — gleicher Ausschnitt", () => {
     // Kachel wiederholt waere es wieder die Spanne von frueher.
     expect(screen.getByText("Zeitausschnitt")).toBeInTheDocument();
     expect(screen.getAllByText(/29\.07\.2026/)).toHaveLength(1);
-    expect(screen.getByText("beide Zeiträume gleich lang gekappt")).toBeInTheDocument();
+    expect(screen.getByText("beide Seiten gekappt")).toBeInTheDocument();
   });
 
   it("weist die Veraenderung gegenueber dem Vergleichsjahr aus", () => {
@@ -173,9 +173,10 @@ describe("ComparisonTab — gleicher Ausschnitt", () => {
     // Volles Jahr 2025: 200 + 1.000 = 1.200 € — die 1.000 € aus September und
     // Dezember zaehlen mit, weil hier nichts gekappt wird.
     expect(screen.getAllByText("1.200,00 €").length).toBeGreaterThan(0);
-    // Und die Kachel sagt es: Hier ist nichts gekappt.
-    expect(screen.getByText("vollständig")).toBeInTheDocument();
-    expect(screen.getByText("beide Zeiträume vollständig gezählt")).toBeInTheDocument();
+    // Und die Kachel sagt es: Hier ist nichts gekappt, gezaehlt wurde bis zum
+    // letzten Tag des Jahres.
+    expect(screen.getByText(/31\.12\.2025/)).toBeInTheDocument();
+    expect(screen.getByText("volle Zeiträume")).toBeInTheDocument();
   });
 });
 

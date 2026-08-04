@@ -122,28 +122,27 @@ export function CalendarPage() {
       ? (status.error_message ?? SYNC_FAILED_HINT)
       : null;
 
+  // Ohne Unterzeile: „Alle angekündigten Zahltage deiner Dividenden auf einen
+  // Blick" sagte dasselbe wie der Titel darüber. Was der Bereich zeigt und was
+  // er **nicht** zeigt (erhaltene Zahlungen), steht dort, wo die Frage
+  // entsteht — im Detaildialog eines Termins.
   const heading = (
-    <>
-      <PageHeader
-        title="Dividendenkalender"
-        actions={
-          <Button
-            variant="outline"
-            onClick={() => {
-              runSync({ announce: true });
-            }}
-            disabled={isSyncing}
-            aria-busy={isSyncing}
-          >
-            <RefreshCw className={cn(isSyncing && "animate-spin")} aria-hidden />
-            {isSyncing ? "Wird aktualisiert …" : "Aktualisieren"}
-          </Button>
-        }
-      />
-      <p className="text-sm text-muted-foreground">
-        Alle angekündigten Zahltage deiner Dividenden auf einen Blick.
-      </p>
-    </>
+    <PageHeader
+      title="Dividendenkalender"
+      actions={
+        <Button
+          variant="outline"
+          onClick={() => {
+            runSync({ announce: true });
+          }}
+          disabled={isSyncing}
+          aria-busy={isSyncing}
+        >
+          <RefreshCw className={cn(isSyncing && "animate-spin")} aria-hidden />
+          {isSyncing ? "Wird aktualisiert …" : "Aktualisieren"}
+        </Button>
+      }
+    />
   );
 
   return (
@@ -187,18 +186,14 @@ export function CalendarPage() {
         />
       ) : (
         <div className="space-y-4">
-          <SyncStatusLine
-            lastSuccessAt={lastSuccessAt}
-            today={today}
-            isSyncing={isSyncing}
-          />
-
           {syncErrorMessage && (
             <Alert variant="destructive">
               <AlertDescription>{syncErrorMessage}</AlertDescription>
             </Alert>
           )}
 
+          {/* Die Kennzahlen stehen wie in jedem anderen Bereich direkt unter
+              der Kopfzeile — nicht hinter Statuszeile und Hinweis. */}
           {events.length > 0 && <CalendarSummaryTiles summary={summary} today={today} />}
 
           {/* Ohne einen einzigen Termin gibt es nichts zu blaettern und nichts
@@ -243,6 +238,17 @@ export function CalendarPage() {
             />
           )}
         </div>
+      )}
+
+      {/* Wann zuletzt abgeglichen wurde, ist eine Fussnote zur Herkunft der
+          Daten, keine Auskunft ueber Dividenden: Sie steht deshalb am Ende der
+          Seite und nicht ueber den Terminen. */}
+      {!isInitialLoading && !eventsQuery.isError && (
+        <SyncStatusLine
+          lastSuccessAt={lastSuccessAt}
+          today={today}
+          isSyncing={isSyncing}
+        />
       )}
 
       <EventDetailDialog

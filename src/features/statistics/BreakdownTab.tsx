@@ -86,7 +86,7 @@ export function BreakdownTab() {
             Fuer Hilfsmittel traegt sie den Namen als `aria-label`. */}
         <CardHeader className="gap-3 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle>Jahre × Monate</CardTitle>
-          <div className="sm:w-56 sm:shrink-0">
+          <div className="sm:-my-3 sm:w-56 sm:shrink-0">
             <Select
               aria-label="Ansicht"
               value={view}

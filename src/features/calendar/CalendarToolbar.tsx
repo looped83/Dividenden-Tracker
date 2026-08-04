@@ -69,20 +69,23 @@ export function CalendarToolbar({
         aria-label="Darstellung"
         className="flex items-center gap-1 rounded-md border border-border p-0.5"
       >
-        <ModeButton
-          active={mode === "month"}
-          icon={CalendarDays}
-          label="Monat"
-          onClick={() => {
-            onModeChange("month");
-          }}
-        />
+        {/* Die Liste steht links: Sie ist die Voreinstellung und die Ansicht,
+            mit der die meisten Wege beginnen — das Monatsraster ist der
+            Nebenweg und sitzt deshalb rechts daneben. */}
         <ModeButton
           active={mode === "agenda"}
           icon={List}
           label="Liste"
           onClick={() => {
             onModeChange("agenda");
+          }}
+        />
+        <ModeButton
+          active={mode === "month"}
+          icon={CalendarDays}
+          label="Monat"
+          onClick={() => {
+            onModeChange("month");
           }}
         />
       </div>

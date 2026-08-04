@@ -1,14 +1,10 @@
 import type { EntityInfo } from "@/features/dashboard/format";
 import { formatCountNoun } from "@/lib/utils/formatNumber";
 import { paymentsListHref } from "@/features/dashboard/format";
-import type { PaymentSource, StatisticsFilter } from "@/lib/statistics";
+import type { StatisticsFilter } from "@/lib/statistics";
 import { applyStatisticsFilter } from "./filterParams";
 
-// Die Zahlungsarten stehen in `lib`: Der Datenexport braucht dieselben Namen.
-export { describePaymentType, PAYMENT_TYPE_VALUES } from "@/lib/payments/paymentType";
-
 export {
-  describeSource,
   formatIsoDate,
   formatMonthYear,
   describeComparison,
@@ -82,12 +78,5 @@ export function entityName(map: Map<string, EntityInfo>, id: string): string {
 export function entityArchived(map: Map<string, EntityInfo>, id: string): boolean {
   return map.get(id)?.archived ?? false;
 }
-
-export const PAYMENT_SOURCE_VALUES: readonly PaymentSource[] = [
-  "manual",
-  "csv_import",
-  "excel_import",
-  "restore",
-];
 
 export { formatCountNumber, formatCountNoun } from "@/lib/utils/formatNumber";

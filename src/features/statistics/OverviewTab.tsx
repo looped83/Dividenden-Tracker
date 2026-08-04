@@ -128,14 +128,15 @@ export function OverviewTab() {
           label="Zeitraum"
           value={
             stats.firstPayDate && stats.lastPayDate ? (
-              // Dieselbe Schriftgroesse wie die Betraege daneben: Eine eigene,
-              // kleinere Stufe machte aus dieser Kachel eine Ausnahme im
-              // Raster. Auf dem Telefon bricht der Zeitraum um; die Zusatzzeile
-              // steht trotzdem auf derselben Hoehe wie nebenan, weil sie am
-              // Kachelboden sitzt.
-              <>
+              // Eine Stufe kleiner als die Betraege — aber nur ab `sm`, und nur
+              // hier: Zwei Daten sind rund 23 Zeichen, in Kennzahlgroesse waere
+              // die Kachel als einzige zweizeilig und ihre Reihe damit hoeher
+              // als die uebrigen. Auf dem Telefon bricht der Zeitraum ohnehin
+              // um; die Zusatzzeile steht trotzdem auf derselben Hoehe wie
+              // nebenan, weil sie am Kachelboden sitzt.
+              <span className="sm:text-xl">
                 {formatIsoDate(stats.firstPayDate)} – {formatIsoDate(stats.lastPayDate)}
-              </>
+              </span>
             ) : (
               <span className="text-muted-foreground">—</span>
             )

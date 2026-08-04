@@ -81,24 +81,19 @@ describe("filterPayments (§11)", () => {
     expect(result.every((r) => r.payDate.startsWith("2025"))).toBe(true);
   });
 
-  it("kombiniert Jahr, Unternehmen und Quelle (UND-Verknüpfung)", () => {
+  it("kombiniert Jahr und Unternehmen (UND-Verknüpfung)", () => {
     const result = filterPayments(payments, {
       year: 2025,
       securityId: "a",
       depotId: null,
-      source: "manual",
-      paymentType: null,
     });
     expect(result).toHaveLength(1);
     expect(result[0]?.netAmount.toStringValue()).toBe("50.00");
   });
 
-  it("filtert nach Depot und Zahlungsart", () => {
+  it("filtert nach Depot", () => {
     expect(
       filterPayments(payments, { ...EMPTY_STATISTICS_FILTER, depotId: "d2" }),
-    ).toHaveLength(1);
-    expect(
-      filterPayments(payments, { ...EMPTY_STATISTICS_FILTER, paymentType: "special" }),
     ).toHaveLength(1);
   });
 });

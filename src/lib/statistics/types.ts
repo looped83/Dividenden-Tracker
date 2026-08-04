@@ -116,8 +116,6 @@ export interface StatisticsFilter {
   year: number | null;
   securityId: string | null;
   depotId: string | null;
-  source: PaymentSource | null;
-  paymentType: PaymentType | null;
 }
 
 /** Gesamtueberblick der (gefilterten) Historie fuer den Statistikbereich (§11.1). */

@@ -4,19 +4,8 @@ import { Select } from "@/components/ui/select";
 import { EntitySelect, type EntityOption } from "@/components/domain/EntitySelect";
 import { FilterBar as FilterBarShell, FilterField } from "@/components/ui/filter-bar";
 import { Button } from "@/components/ui/button";
-import {
-  isEmptyFilter,
-  type PaymentSource,
-  type PaymentType,
-  type StatisticsFilter,
-} from "@/lib/statistics";
+import { isEmptyFilter, type StatisticsFilter } from "@/lib/statistics";
 import type { EntityInfo } from "@/features/dashboard/format";
-import { describeSource } from "@/features/dashboard/format";
-import {
-  describePaymentType,
-  PAYMENT_SOURCE_VALUES,
-  PAYMENT_TYPE_VALUES,
-} from "./format";
 import { EMPTY_STATISTICS_FILTER } from "./filterParams";
 
 interface FilterBarProps {
@@ -41,11 +30,22 @@ function toOptions(map: Map<string, EntityInfo>): EntityOption[] {
 }
 
 /**
- * Globale, kombinierbare Statistikfilter (§11): Jahr, Unternehmen, Depot,
- * Datenquelle und Zahlungsstatus. Der Filter ist URL-gestuetzt (siehe
- * `useStatisticsFilter`) und wirkt auf alle Unterbereiche. Archivierte
- * Unternehmen/Depots bleiben waehlbar (gesondert gruppiert, aber nie
- * ausgeschlossen — {@link EntitySelect}).
+ * Globale, kombinierbare Statistikfilter (§11): **Jahr, Unternehmen, Depot** —
+ * in jedem Unterbereich dieselben drei, in derselben Reihenfolge. Der Filter
+ * ist URL-gestuetzt (siehe `useStatisticsFilter`) und wirkt ueberall gleich.
+ * Archivierte Unternehmen/Depots bleiben waehlbar (gesondert gruppiert, aber
+ * nie ausgeschlossen — {@link EntitySelect}).
+ *
+ * **Datenquelle und Zahlungsart standen frueher daneben.** Sie liessen sich in
+ * der Zahlungsliste nicht nachbilden: Wer eine so gefilterte Kennzahl anklickte,
+ * landete in einer Liste mit *mehr* Zahlungen als die Zahl, aus der er kam —
+ * genau die Zusage, auf der der ganze Statistikbereich steht (§13). Beide
+ * Kriterien sind deshalb entfallen; wer nach Herkunft sucht, findet sie in der
+ * Datenqualitaet.
+ *
+ * Einzige Abweichung zwischen den Unterbereichen ist die Jahresauswahl: Der
+ * Vergleich und der Breakdown waehlen ihre Zeitraeume selbst, dort waere sie
+ * wirkungslos ({@link showYear}).
  */
 export function FilterBar({
   filter,
@@ -62,8 +62,6 @@ export function FilterBar({
     showYear ? filter.year : null,
     filter.securityId,
     filter.depotId,
-    filter.source,
-    filter.paymentType,
   ].filter((value) => value !== null).length;
 
   return (
@@ -110,46 +108,6 @@ export function FilterBar({
           }}
           allLabel="Alle Depots"
         />
-      </FilterField>
-
-      <FilterField id="stats-filter-source" label="Datenquelle">
-        <Select
-          id="stats-filter-source"
-          value={filter.source ?? ""}
-          onChange={(event) => {
-            setFilter({
-              ...filter,
-              source: (event.target.value || null) as PaymentSource | null,
-            });
-          }}
-        >
-          <option value="">Alle Quellen</option>
-          {PAYMENT_SOURCE_VALUES.map((source) => (
-            <option key={source} value={source}>
-              {describeSource(source)}
-            </option>
-          ))}
-        </Select>
-      </FilterField>
-
-      <FilterField id="stats-filter-type" label="Zahlungsart">
-        <Select
-          id="stats-filter-type"
-          value={filter.paymentType ?? ""}
-          onChange={(event) => {
-            setFilter({
-              ...filter,
-              paymentType: (event.target.value || null) as PaymentType | null,
-            });
-          }}
-        >
-          <option value="">Alle Arten</option>
-          {PAYMENT_TYPE_VALUES.map((type) => (
-            <option key={type} value={type}>
-              {describePaymentType(type)}
-            </option>
-          ))}
-        </Select>
       </FilterField>
 
       {active && (
