@@ -12,7 +12,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
  */
 export function MorePage() {
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <PageHeader title="Mehr" />
       <ul className="divide-y divide-border rounded-lg border border-border bg-card">
         {BOTTOM_NAV_MORE_ITEMS.map((item) => (

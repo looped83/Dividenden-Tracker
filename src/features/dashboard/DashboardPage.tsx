@@ -48,7 +48,7 @@ function DashboardSkeleton() {
       <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 6 }).map((_, index) => (
           <Card key={index}>
-            <CardHeader className="pb-2">
+            <CardHeader className="pb-2 sm:pb-2">
               <div className="h-4 w-24 animate-pulse rounded bg-muted" />
             </CardHeader>
             <CardContent>
@@ -59,7 +59,7 @@ function DashboardSkeleton() {
         ))}
       </div>
       <Card>
-        <CardContent className="p-6">
+        <CardContent className="p-4 sm:p-6">
           <div className="h-72 w-full animate-pulse rounded bg-muted" />
         </CardContent>
       </Card>

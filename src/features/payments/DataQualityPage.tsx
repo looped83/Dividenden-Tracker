@@ -271,7 +271,7 @@ export function DataQualityPage() {
 function OverviewTile({ label, value }: { label: string; value: number }) {
   return (
     <Card>
-      <CardContent className="p-4">
+      <CardContent className="p-4 sm:p-6">
         <p className="text-2xl font-semibold tabular-nums">{formatCountNumber(value)}</p>
         <p className="text-xs text-muted-foreground">{label}</p>
       </CardContent>
@@ -301,7 +301,7 @@ function DuplicateCard({
   return (
     <li>
       <Card>
-        <CardHeader className="flex-row items-center justify-between gap-2 space-y-0">
+        <CardHeader className="flex-row items-center justify-between gap-2">
           <CardTitle className="text-base">{securityName(pair.a.security_id)}</CardTitle>
           <Badge variant={pair.category === "high" ? "negative" : "warning"}>
             {pair.category === "high" ? "Hohe Wahrscheinlichkeit" : "Mögliche Dublette"}
@@ -348,7 +348,7 @@ function DuplicateCard({
             ))}
           </div>
           <div className="flex justify-end">
-            <Button variant="ghost" size="sm" onClick={onDismiss}>
+            <Button variant="ghost" size="sm" className="-mr-3" onClick={onDismiss}>
               Keine Dublette
             </Button>
           </div>

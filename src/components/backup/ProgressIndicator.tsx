@@ -33,7 +33,7 @@ export default function ProgressIndicator({ progress }: ProgressIndicatorProps) 
 
   return (
     <Card>
-      <CardContent className="pt-6 space-y-4">
+      <CardContent className="space-y-4 p-4 sm:p-6">
         <div className="space-y-2">
           <p className="font-medium" aria-live="polite">
             {stageLabels[progress.stage]}

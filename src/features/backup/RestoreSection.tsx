@@ -124,7 +124,7 @@ export default function RestoreSection() {
 
   return (
     <Card>
-      <CardHeader className="pb-5">
+      <CardHeader>
         <CardTitle>Sicherung wiederherstellen</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">

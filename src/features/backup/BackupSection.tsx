@@ -61,7 +61,7 @@ export default function BackupSection() {
 
   return (
     <Card>
-      <CardHeader className="pb-5">
+      <CardHeader>
         <CardTitle>Sicherung erstellen</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">

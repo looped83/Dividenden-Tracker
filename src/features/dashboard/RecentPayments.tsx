@@ -28,7 +28,7 @@ export function RecentPayments({ payments, securities, depots }: RecentPaymentsP
       {/* `items-baseline` statt `items-center`: Bricht die Ueberschrift auf
           schmalen Geraeten um, saesse der Knopf sonst auf der Mitte beider
           Zeilen und damit sichtbar zu hoch. */}
-      <CardHeader className="flex flex-row items-baseline justify-between gap-3 space-y-0 pb-5">
+      <CardHeader className="flex-row items-baseline justify-between gap-3">
         <CardTitle>Letzte Dividendeneingänge</CardTitle>
         {/* `-mr-3` hebt den waagerechten Innenabstand des Knopfes auf: Erst
             damit endet seine Beschriftung auf derselben Linie wie die Betraege
@@ -52,7 +52,7 @@ export function RecentPayments({ payments, securities, depots }: RecentPaymentsP
                 <li key={payment.id}>
                   <Link
                     to={`/eingaenge/${payment.id}`}
-                    className="flex items-center justify-between gap-3 rounded-sm py-2.5 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="flex items-center justify-between gap-3 rounded-sm py-3 outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     <div className="min-w-0">
                       <p className="flex items-center gap-1.5 font-medium">

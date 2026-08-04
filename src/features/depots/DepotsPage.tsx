@@ -275,7 +275,7 @@ export function DepotsPage() {
       <Card>
         {/* Die Aktion gehoert in die Kopfzeile der Kachel, nicht in ihren
             Inhalt: Sie betrifft die ganze Kachel, nicht eine Zeile darin. */}
-        <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0 pb-5">
+        <CardHeader className="flex-row items-center justify-between gap-3">
           <CardTitle>Portfolios</CardTitle>
           <Button
             size="sm"
@@ -362,7 +362,7 @@ export function DepotsPage() {
       </Card>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0 pb-5">
+        <CardHeader className="flex-row items-center justify-between gap-3">
           <CardTitle>Depots</CardTitle>
           <Button
             size="sm"

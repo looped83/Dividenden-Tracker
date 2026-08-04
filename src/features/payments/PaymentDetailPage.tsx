@@ -78,7 +78,7 @@ export function PaymentDetailPage() {
   // Ziel- und Unternehmensseiten fuehren ihn ohnehin oben. Eine Anordnung fuer
   // dieselbe Handlung statt dreier.
   const backLink = (
-    <Button asChild variant="ghost" size="sm" className="-ml-2 w-fit">
+    <Button asChild variant="ghost" size="sm" className="-ml-3 w-fit">
       <Link to="/eingaenge">
         <ArrowLeft aria-hidden /> Zu den Dividenden
       </Link>
