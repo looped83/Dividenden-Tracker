@@ -1,9 +1,11 @@
 import * as React from "react";
-import { X } from "lucide-react";
 import { Select } from "@/components/ui/select";
 import { EntitySelect, type EntityOption } from "@/components/domain/EntitySelect";
-import { FilterBar as FilterBarShell, FilterField } from "@/components/ui/filter-bar";
-import { Button } from "@/components/ui/button";
+import {
+  FilterBar as FilterBarShell,
+  FilterField,
+  FilterReset,
+} from "@/components/ui/filter-bar";
 import { isEmptyFilter, type StatisticsFilter } from "@/lib/statistics";
 import type { EntityInfo } from "@/features/dashboard/format";
 import { EMPTY_STATISTICS_FILTER } from "./filterParams";
@@ -111,17 +113,11 @@ export function FilterBar({
       </FilterField>
 
       {active && (
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="h-11"
+        <FilterReset
           onClick={() => {
             setFilter(EMPTY_STATISTICS_FILTER);
           }}
-        >
-          <X /> Filter zurücksetzen
-        </Button>
+        />
       )}
     </FilterBarShell>
   );

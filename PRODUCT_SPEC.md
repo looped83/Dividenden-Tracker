@@ -176,9 +176,9 @@ Pro Wertpapier/Unternehmen:
 - Brutto-/Nettoentwicklung, gezahlte Steuern
 - Anteil am gesamten Dividendeneinkommen
 
-Die Liste trägt dieselbe Filterleiste wie die Dividendenliste — Branche, Währung,
-Standard-Depot und rechts die **Sortierung** (Name, Ticker, Branche, Land, Standard-Depot)
-mit Richtungsschalter daneben. Unternehmen ohne den sortierten Wert stehen in beiden
+Die Liste trägt dieselbe Filterleiste wie die Dividendenliste — Branche, Währung, Depot und
+rechts die **Sortierung** („Nach Name", „Nach Ticker", „Nach Branche", „Nach Land", „Nach
+Depot") mit Richtungsschalter daneben. Unternehmen ohne den sortierten Wert stehen in beiden
 Richtungen am Ende: Ein Unternehmen ohne Ticker ist keine Antwort auf „sortiere nach Ticker".
 
 Keine zukünftigen Zahlungen, keine erwarteten Dividenden, keine Kurse.

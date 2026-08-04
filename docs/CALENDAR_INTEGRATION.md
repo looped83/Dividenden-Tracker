@@ -222,6 +222,12 @@ Raster, darüber in einer eigenen Spalte (20 rem) rechts daneben — erst dort b
 ihr noch sieben brauchbare Rasterspalten übrig. Beides ist derselbe Baum; es gibt keine
 zweite Darstellung im Dokument und keine Media Query in JavaScript.
 
+Die Kacheln der Tagesspalte tragen **kein** Datum: Es steht als Überschrift unmittelbar
+darüber, und zweimal dasselbe Datum in zwei Schriftgrößen liest sich wie zwei Angaben.
+Unter dem Unternehmensnamen bleibt dort nur das Depot (und die Uhrzeit, falls die Quelle
+eine nennt). In der Liste trägt jede Kachel ihr Datum weiterhin selbst — dort gibt es keine
+Überschrift je Tag. Vorgelesen wird das vollständige Datum in beiden Fällen.
+
 ### Unternehmensnamen
 
 Die Quelle schreibt „Realty Income Corporation", im eigenen Bestand steht „Realty Income" —
@@ -232,7 +238,13 @@ Zurückhaltung wie beim Import (IMPORT_SPEC.md §6):
 
 1. gleicher Name nach Normalisierung,
 2. eine beim Import bestätigte Schreibweise (`security_aliases`),
-3. gleicher Name ohne Rechtsform („Corp.", „AG", „plc" …) und Satzzeichen.
+3. gleicher Name ohne Satzzeichen, ohne Rechtsform („Corp.", „AG", „plc" …) und ohne die
+   Angaben zum **Papier** am Namensende — Fondsart, Ausschüttungsart und Währung der
+   Anteilsklasse („UCITS ETF", „EUR (dist)", „Acc"). Der Kalender nennt ETFs in voller
+   Länge, im eigenen Bestand steht der Name meist ohne diesen Anhang: „JPM US Equity
+   Premium Income Active UCITS ETF USD (dist)" trifft damit „JPM US Equity Premium Income
+   Active". Abgetragen wird nur am **Ende**; in der Mitte gehören dieselben Wörter zum
+   Namen („ETF Securities").
 
 Passen zwei eigene Unternehmen auf denselben Schlüssel, bleibt der Name der Quelle stehen;
 eine Ähnlichkeitsstufe wie im Import gibt es hier nicht — dort bestätigt ein Mensch den

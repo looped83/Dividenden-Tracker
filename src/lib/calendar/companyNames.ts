@@ -81,16 +81,55 @@ const LEGAL_FORM_TOKENS = new Set([
   "spa",
 ]);
 
+/**
+ * Angaben zum **Papier**, nicht zum Emittenten: Fondsart, Ausschuettungsart und
+ * die Waehrung der Anteilsklasse. Der Kalender nennt einen ETF gern in voller
+ * Laenge — „JPM Europe Equity Premium Income Active UCITS ETF EUR (dist)" —,
+ * im eigenen Bestand steht der Name ohne diesen Anhang.
+ *
+ * Sie fallen wie Rechtsformen nur **am Ende** weg. Zwei Anteilsklassen
+ * desselben Fonds ergeben damit denselben Schluessel; sind beide angelegt,
+ * greift die Eindeutigkeitspruefung und es bleibt beim Namen der Quelle.
+ */
+const INSTRUMENT_TOKENS = new Set([
+  "acc",
+  "accumulating",
+  "aud",
+  "ausschuettend",
+  "ausschüttend",
+  "cad",
+  "chf",
+  "dis",
+  "dist",
+  "distributing",
+  "dkk",
+  "etc",
+  "etf",
+  "etfs",
+  "eur",
+  "fonds",
+  "fund",
+  "gbp",
+  "jpy",
+  "nok",
+  "sek",
+  "thesaurierend",
+  "ucits",
+  "usd",
+]);
+
 /** Fuellwoerter, die zwei Schreibweisen desselben Namens trennen. */
 const FILLER_TOKENS = new Set(["and", "und", "the"]);
 
 /**
- * Vergleichsschluessel ohne Rechtsform und Satzzeichen: „The Coca-Cola Company"
- * und „Coca Cola Co." ergeben beide „coca cola".
+ * Vergleichsschluessel ohne Rechtsform, Papierangaben und Satzzeichen: „The
+ * Coca-Cola Company" und „Coca Cola Co." ergeben beide „coca cola", „JPM US
+ * Equity Premium Income Active UCITS ETF USD (dist)" und „JPM US Equity
+ * Premium Income Active" beide „jpm us equity premium income active".
  *
- * Rechtsformen fallen nur **am Ende** weg. In der Mitte sind dieselben Silben
- * Teil des Namens („Co-operative", „SA Braspress") — dort abgetragen entstuende
- * ein Schluessel, der zwei Unternehmen zusammenwirft.
+ * Abgetragen wird nur **am Ende**. In der Mitte sind dieselben Silben Teil des
+ * Namens („Co-operative", „SA Braspress", „ETF Securities") — dort abgetragen
+ * entstuende ein Schluessel, der zwei Unternehmen zusammenwirft.
  */
 export function canonicalCompanyKey(name: string): string {
   const normalized = normalizeCompareName(name);
@@ -101,7 +140,11 @@ export function canonicalCompanyKey(name: string): string {
     .split(/\s+/)
     .filter((token) => token.length > 0 && !FILLER_TOKENS.has(token));
 
-  while (tokens.length > 1 && LEGAL_FORM_TOKENS.has(tokens[tokens.length - 1])) {
+  while (
+    tokens.length > 1 &&
+    (LEGAL_FORM_TOKENS.has(tokens[tokens.length - 1]) ||
+      INSTRUMENT_TOKENS.has(tokens[tokens.length - 1]))
+  ) {
     tokens.pop();
   }
 
