@@ -207,7 +207,7 @@ export function CompaniesTab() {
       <Card>
         <CardHeader className="gap-3 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle>Unternehmensstatistik</CardTitle>
-          <div className="sm:w-64 sm:shrink-0">
+          <div className="sm:-my-3 sm:w-64 sm:shrink-0">
             <StatSearch
               value={query}
               onChange={setQuery}

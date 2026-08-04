@@ -157,7 +157,7 @@ export function MonthlyChart({ payments, selection, today }: MonthlyChartProps) 
       <CardHeader className="flex-row flex-wrap items-center justify-between gap-x-4 gap-y-3">
         <CardTitle className="min-w-0">{title}</CardTitle>
         {!isAll && (
-          <div className="flex gap-1" role="group" aria-label="Darstellung">
+          <div className="-my-2 flex gap-1" role="group" aria-label="Darstellung">
             <Button
               type="button"
               size="sm"

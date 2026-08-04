@@ -99,6 +99,10 @@ als Serienfarbe benutzt — auch dann nicht, wenn ein Farbton ähnlich aussieht.
 - 44-px-Bedienelemente an einer Kante bekommen den negativen Rand ihres eigenen
   Innenabstands (`-mr-3` bei `size="sm"`, `-my-2` bei `size="icon"`): Sonst misst die
   Zeile mehr als der Text daneben und die Kachel wirkt unten schwerer als oben.
+- Dasselbe in der **Kopfzeile einer Karte**: Die Höhe bestimmt die Überschrift, nicht das
+  Bedienelement daneben — `-my-2` bei `size="sm"` (36 px), `sm:-my-3` bei einem Feld mit
+  44 px. Ohne das saß die Überschrift einer Karte mit Schaltfläche 10 px tiefer als die der
+  Karte daneben, mit Suchfeld 14 px.
 - Radius 8 px (Karten 12 px); Schatten nur eine dezente Stufe für schwebende Elemente
   (Dialoge, Popover) — Karten trennen sich per Fläche und 1-px-Border, nicht per Schatten.
 - Animationen: nur funktionale Übergänge ≤ 200 ms (Panel auf/zu, Fokus); Diagramme ohne

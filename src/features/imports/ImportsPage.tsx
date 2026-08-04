@@ -94,6 +94,7 @@ export function ImportsPage() {
           <CardTitle>Import</CardTitle>
           <Button
             size="sm"
+            className="-my-2"
             onClick={() => {
               setWizardOpen(true);
             }}

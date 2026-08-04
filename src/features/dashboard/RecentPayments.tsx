@@ -34,7 +34,7 @@ export function RecentPayments({ payments, securities, depots }: RecentPaymentsP
             damit endet seine Beschriftung auf derselben Linie wie die Betraege
             der Liste darunter, statt drei Millimeter davor. Die Flaeche zum
             Antippen bleibt dabei vollstaendig erhalten. */}
-        <Button asChild variant="ghost" size="sm" className="-mr-3 shrink-0">
+        <Button asChild variant="ghost" size="sm" className="-my-2 -mr-3 shrink-0">
           <Link to="/eingaenge">Alle Dividenden</Link>
         </Button>
       </CardHeader>
