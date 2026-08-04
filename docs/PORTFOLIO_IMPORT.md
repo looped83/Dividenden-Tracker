@@ -42,7 +42,8 @@ Kacheln (/unternehmen) · Positionskarte (Detailseite) · Statistik „Entwicklu
 
 | Datei | Rolle |
 |---|---|
-| `supabase/migrations/0029_security_snapshots.sql` | Tabellen, Enums, Indizes, RLS, Eigentumsprüfung |
+| `supabase/migrations/0029_security_snapshots.sql` | Tabellen, Enums, Indizes, RLS |
+| `supabase/migrations/0030_enforce_owned_references.sql` | Eigentumsprüfung der referenzierten Stammdaten |
 | `src/features/securities/divvydiaryCsv.ts` | Einlesen und Normalisieren der CSV |
 | `src/features/securities/portfolioMatch.ts` | Zuordnung zu den eigenen Unternehmen |
 | `src/features/securities/snapshots.ts` | Auswertung (jüngster Stand, Summen, Rendite, Zeitreihe) |
@@ -207,6 +208,15 @@ Verglichen werden **zwei Zwölfmonatszeiträume** (`trailingYearRange`). Die Erw
 für zwölf Monate nach vorn; ihr Gegenstück sind die zwölf Monate, die am Stichtag enden.
 Ein Kalenderjahr taugt dafür nicht: Ein angebrochenes ließe die Erwartung zwangsläufig zu
 hoch aussehen, ein abgeschlossenes hinkte bis zu zwölf Monate hinterher.
+
+Der **Unternehmensfilter** wirkt auf beiden Seiten: Ist eines ausgewählt, folgen ihm die
+Depotstände ebenso wie die Zahlungen. Ohne das stünde dessen erhaltene Summe neben der
+erwarteten Jahresdividende des *ganzen* Depots — zwei Zahlen aus verschiedenen
+Grundgesamtheiten, deren Differenz nichts bedeutet. Der **Depotfilter** entfällt hier
+ganz: Der Export fasst alle Depots zusammen und nennt keines (§3); angewandt träfe er nur
+die erhaltenen Zahlungen und ließe die erwarteten unberührt. Die Filterleiste blendet ihn
+deshalb aus, und der Bereich verwirft ihn auch dann, wenn er noch als Suchparameter in der
+Adresse steht.
 
 Die Daten kommen als **Domänentyp** `PortfolioSeries` über den Statistik-Kontext, nicht als
 Snapshot-Zeilen — so bleibt der Kontext frei von Datenbanktypen und die Unterbereiche

@@ -247,8 +247,10 @@ Depots; als Abweichung gelesen stünde dort bei jedem Zukauf eine rote Zahl für
 Vorgang, der gut läuft. Ein negativer Zuwachs bleibt ein echter Rückgang.
 
 Der Jahresregler entfällt hier wie beim Vergleich und beim Breakdown: Die Zeitachse sind
-die Stichtage der Depotstände, und zu jedem gehört ein eigenes Zwölfmonatsfenster. Die
-übrigen Filter — Unternehmen, Depot — wirken. Ein Verlauf entsteht ab dem zweiten
+die Stichtage der Depotstände, und zu jedem gehört ein eigenes Zwölfmonatsfenster. Der
+**Depotregler** entfällt ebenfalls, weil der Portfolio-Export alle Depots zusammenfasst und
+keines nennt — er träfe nur die erhaltenen Zahlungen und ließe die erwarteten unberührt.
+Das **Unternehmen** wirkt und dabei auf beiden Seiten des Vergleichs. Ein Verlauf entsteht ab dem zweiten
 Depotstand; bis dahin sagt der Bereich das, statt eine Linie durch einen Punkt zu zeichnen.
 Kein Wert der Depotstände geht in eine Kennzahl der übrigen Statistik ein (Grundsatz 8).
 

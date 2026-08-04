@@ -21,6 +21,12 @@ interface FilterBarProps {
    * selbst; dort waere dieser Regler wirkungslos und damit irrefuehrend.
    */
   showYear?: boolean;
+  /**
+   * Depotauswahl anzeigen. Die Entwicklung setzt auf den Depotstaenden auf, und
+   * die kennen kein Depot — der Regler traefe dort nur eine Haelfte des
+   * Vergleichs.
+   */
+  showDepot?: boolean;
 }
 
 function toOptions(map: Map<string, EntityInfo>): EntityOption[] {
@@ -45,9 +51,16 @@ function toOptions(map: Map<string, EntityInfo>): EntityOption[] {
  * Kriterien sind deshalb entfallen; wer nach Herkunft sucht, findet sie in der
  * Datenqualitaet.
  *
- * Einzige Abweichung zwischen den Unterbereichen ist die Jahresauswahl: Der
- * Vergleich und der Breakdown waehlen ihre Zeitraeume selbst, dort waere sie
- * wirkungslos ({@link showYear}).
+ * Zwei Auswahlen entfallen je nach Unterbereich, weil sie dort wirkungslos
+ * waeren — und ein wirkungsloses Bedienelement ist schlimmer als keines:
+ *
+ * * die **Jahresauswahl** im Vergleich und im Breakdown, die ihre Zeitraeume
+ *   selbst waehlen ({@link showYear});
+ * * die **Depotauswahl** in der Entwicklung, die auf den Depotstaenden
+ *   aufsetzt. Der Portfolio-Export fasst alle Depots zusammen und nennt keines
+ *   (docs/PORTFOLIO_IMPORT.md §3); eine Depotauswahl traefe dort nur die
+ *   erhaltenen Zahlungen und liesse die erwarteten unberuehrt — der Vergleich
+ *   waere still falsch ({@link showDepot}).
  */
 export function FilterBar({
   filter,
@@ -56,6 +69,7 @@ export function FilterBar({
   securities,
   depots,
   showYear = true,
+  showDepot = true,
 }: FilterBarProps) {
   const securityOptions = React.useMemo(() => toOptions(securities), [securities]);
   const depotOptions = React.useMemo(() => toOptions(depots), [depots]);
@@ -63,7 +77,7 @@ export function FilterBar({
   const activeCount = [
     showYear ? filter.year : null,
     filter.securityId,
-    filter.depotId,
+    showDepot ? filter.depotId : null,
   ].filter((value) => value !== null).length;
 
   return (
@@ -100,17 +114,19 @@ export function FilterBar({
         />
       </FilterField>
 
-      <FilterField id="stats-filter-depot" label="Depot">
-        <EntitySelect
-          id="stats-filter-depot"
-          options={depotOptions}
-          value={filter.depotId ?? ""}
-          onChange={(value) => {
-            setFilter({ ...filter, depotId: value || null });
-          }}
-          allLabel="Alle Depots"
-        />
-      </FilterField>
+      {showDepot && (
+        <FilterField id="stats-filter-depot" label="Depot">
+          <EntitySelect
+            id="stats-filter-depot"
+            options={depotOptions}
+            value={filter.depotId ?? ""}
+            onChange={(value) => {
+              setFilter({ ...filter, depotId: value || null });
+            }}
+            allLabel="Alle Depots"
+          />
+        </FilterField>
+      )}
 
       {active && (
         <FilterReset
