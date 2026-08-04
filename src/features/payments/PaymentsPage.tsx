@@ -1,16 +1,6 @@
 import * as React from "react";
 import { Link, useSearchParams } from "react-router";
-import {
-  ArrowDown,
-  ArrowUp,
-  Ban,
-  Pencil,
-  RotateCcw,
-  ShieldCheck,
-  Trash2,
-  Wallet,
-  X,
-} from "lucide-react";
+import { Ban, Pencil, RotateCcw, ShieldCheck, Trash2, Wallet } from "lucide-react";
 import {
   effectivePayDate,
   monthNameDe,
@@ -21,7 +11,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { EntitySelect, type EntityOption } from "@/components/domain/EntitySelect";
-import { FilterBar, FilterField } from "@/components/ui/filter-bar";
+import {
+  FilterBar,
+  FilterField,
+  FilterReset,
+  FilterSort,
+  type FilterSortOption,
+} from "@/components/ui/filter-bar";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -76,6 +72,15 @@ type Row = {
 } & SortableRow;
 
 const PAGE_SIZE = 25;
+
+/** Sortierkriterien der Liste — dieselbe Benennung wie in der Unternehmensliste. */
+const SORT_OPTIONS: readonly FilterSortOption[] = [
+  { value: "payment_date", label: "Nach Datum" },
+  { value: "amount", label: "Nach Betrag" },
+  { value: "company", label: "Nach Unternehmen" },
+  { value: "depot", label: "Nach Depot" },
+  { value: "updated", label: "Nach Änderung" },
+];
 
 export function PaymentsPage() {
   const { notify } = useToast();
@@ -400,60 +405,24 @@ export function PaymentsPage() {
           </Select>
         </FilterField>
 
-        {/* Etwas breiter als die uebrigen Felder: Es traegt zusaetzlich den
-            Richtungsschalter. Die Optionen benennen die Sortierung selbst
-            („Nach Datum"), da die Beschriftung nur noch fuer Screenreader
-            existiert. */}
-        <FilterField id="f-sort" label="Sortierung" className="sm:basis-52">
-          <div className="flex gap-2">
-            <Select
-              id="f-sort"
-              value={sort.field}
-              onChange={(event) => {
-                updateParams({ sort: event.target.value, direction: sort.direction });
-              }}
-            >
-              <option value="payment_date">Nach Datum</option>
-              <option value="amount">Nach Betrag</option>
-              <option value="company">Nach Unternehmen</option>
-              <option value="depot">Nach Depot</option>
-              <option value="updated">Nach Änderung</option>
-            </Select>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="shrink-0"
-              aria-label={
-                sort.direction === "desc"
-                  ? "Absteigend sortiert — zu aufsteigend wechseln"
-                  : "Aufsteigend sortiert — zu absteigend wechseln"
-              }
-              onClick={() => {
-                updateParams({
-                  sort: sort.field,
-                  direction: sort.direction === "desc" ? "asc" : "desc",
-                });
-              }}
-            >
-              {sort.direction === "desc" ? <ArrowDown /> : <ArrowUp />}
-            </Button>
-          </div>
-        </FilterField>
+        {/* Die Optionen benennen die Sortierung selbst („Nach Datum"), da die
+            Beschriftung nur noch fuer Screenreader existiert. */}
+        <FilterSort
+          id="f-sort"
+          value={sort.field}
+          direction={sort.direction}
+          options={SORT_OPTIONS}
+          onValueChange={(value) => {
+            updateParams({ sort: value, direction: sort.direction });
+          }}
+          onDirectionChange={(direction) => {
+            updateParams({ sort: sort.field, direction });
+          }}
+        />
 
         {/* Zuruecksetzen steht wie im Statistikbereich **in** der Leiste, nicht
             darunter: Es gehoert zu den Filtern, nicht zur Liste. */}
-        {hasActiveFilters && (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="h-11"
-            onClick={resetFilters}
-          >
-            <X /> Filter zurücksetzen
-          </Button>
-        )}
+        {hasActiveFilters && <FilterReset onClick={resetFilters} />}
       </FilterBar>
 
       {hasActiveFilters && (

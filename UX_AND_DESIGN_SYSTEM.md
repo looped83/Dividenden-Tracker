@@ -126,7 +126,7 @@ Eigene zusammengesetzte Komponenten (fachlich):
 | `AmountText` | Betragsdarstellung: tabular-nums, Währung, Vorzeichen, Farbe (semantisch), niemals Rundung in der Komponente |
 | `StatCard` | Kennzahl: Wert, Label, Vergleichswert (Δ absolut + %), Drill-down-Link; max. 4 primäre StatCards pro Ansicht (Hierarchie statt Kennzahlflut) |
 | `PaymentTable` / `PaymentCardList` | Tabelle (Desktop/iPad) bzw. Kartenliste (iPhone) mit identischer Datenquelle und Filterzustand |
-| `FilterBar` | Sichtbare Filterleiste Desktop; auf iPhone als Sheet mit progressiver Offenlegung (Basisfilter sichtbar, erweiterte hinter „Mehr Filter") und aktiven Filter-Chips |
+| `FilterBar` / `FilterField` / `FilterSort` / `FilterReset` | **Eine** Filterleiste für alle Bereiche (Dividenden, Unternehmen, Statistik) — dieselben Bausteine, dieselben Abstände. Ab `sm` dauerhaft sichtbar, darunter eine aufklappbare Zeile mit der Zahl wirkender Filter. Regeln unten |
 | `ComparisonBreakdown` | Gegenüberstellung Zeile für Zeile (Monate oder Unternehmen): ab `md` eine Tabelle mit vier Spalten, darunter eine Liste — je Zeile Name und Differenz, darunter beide Zeiträume. Vier Spalten passen bei 390 px nicht nebeneinander, und die Seite soll auf dem Telefon nicht seitlich verschiebbar sein |
 | `EntitySelect` | **Die** Auswahlliste für Unternehmen und Depots — überall dieselbe: neutrale Auswahl („Alle Unternehmen"), darunter die Gruppen „Aktiv" und „Archiviert" (leere Gruppe entfällt), sortiert nach deutschem Alphabet. Archivierte bleiben wählbar, stehen aber nicht zwischen den aktiven. Neue Unternehmens-/Depotauswahlen in Filterleisten verwenden ausschließlich diese Komponente |
 | `ImportWizard` | Schrittleiste, Rohdatenvorschau (Monospace-Grid), Mapping-Zeilen, Bilanzanzeige |
@@ -137,6 +137,30 @@ Eigene zusammengesetzte Komponenten (fachlich):
 | `ChartPanel` | Recharts-Wrapper: Titel, Zeitraum, Umschalter Diagramm ↔ Datentabelle (Accessibility), Drill-down bei Klick auf Segment |
 | `GoalProgress` | Zielfortschritt: Balken, „X von Y (Z %)", Kappung 100 % visuell |
 | `ToastProvider` / `useToast` | Kurze Rückmeldung nach abgeschlossenen Aktionen (Speichern, Storno, Reaktivieren): `role="status"`, `aria-live="polite"`, 4 s sichtbar, von Hand schließbar, über der Bottom-Navigation. Nur Bestätigungen und beiläufige Fehler — alles Entscheidungspflichtige bleibt Dialog oder Feldfehler. **Sichtbar gestaltet:** farbiger Streifen an der linken Kante, getönter Grund im Ton der Meldung (grün/rot), Symbol passend zum Ton (Haken bzw. Ausrufezeichen), kräftiger Schatten und ein kurzes Einblenden von unten (`motion-safe`, 200 ms). Eine Rückmeldung, die man übersieht, ist keine — und ein Haken an einer Fehlermeldung ist eine falsche. Inhalt mittig in der Zeile, damit der Text nicht über der 44-px-Schließen-Fläche klebt |
+
+### Filterleisten — verbindliche Regeln
+
+Sie stehen auf drei Seiten nebeneinander im Gedächtnis; unterschiedliche Feldbreiten oder
+ein anderer Platz fürs Zurücksetzen fallen beim Wechsel sofort auf.
+
+- **Reihenfolge:** Filter → Sortierung → Zurücksetzen. Die Sortierung ist immer das letzte
+  Feld, das Zurücksetzen immer das letzte Element und an der rechten Kante (`ml-auto`) —
+  auch wenn es in eine zweite Zeile rutscht.
+- **Breiten:** alle Felder einer Leiste gleich breit (`basis-40`, wachsend, höchstens
+  18 rem). Das Sortierfeld ist genau um den Richtungsschalter breiter (`basis-53`,
+  `max-w-85`), damit seine Auswahl so breit ist wie die Felder daneben.
+- **Abstände:** 0,75 rem zwischen den Feldern, 0,5 rem zwischen Auswahl und
+  Richtungsschalter (die beiden sind ein Bedienelement), 1 rem Innenabstand der Leiste.
+  Jede Zeile endet bündig an der rechten Kante — ein Feld in Inhaltsbreite ließ dort früher
+  rund 30 px offen.
+- **Höhe:** alles 44 px (`h-11`), auch das Zurücksetzen — die Zeile darf keine zweite Höhe
+  kennen.
+- **Beschriftungen:** unsichtbar, aber vorhanden (`sr-only`). Jedes Feld benennt sich über
+  seinen neutralen Wert selbst („Alle Jahre", „Alle Depots"); Sortieroptionen beginnen mit
+  „Nach …" und nennen den Begriff, den die Seite selbst verwendet — kurz und ohne
+  technische Zusätze („Nach Depot", nicht „Nach Standard-Depot").
+- **Auf dem Telefon** steht ein Bedienelement je Zeile, in voller Breite — auch das
+  Zurücksetzen.
 
 ## 3. Diagramm-Richtlinien
 

@@ -177,8 +177,8 @@ Pro Wertpapier/Unternehmen:
 - Anteil am gesamten Dividendeneinkommen
 
 Die Liste trägt dieselbe Filterleiste wie die Dividendenliste — Branche, Währung,
-Standard-Depot und rechts die **Sortierung** (Name, Ticker, Branche, Land, Standard-Depot)
-mit Richtungsschalter daneben. Unternehmen ohne den sortierten Wert stehen in beiden
+Standard-Depot und rechts die **Sortierung** („Nach Name", „Nach Ticker", „Nach Branche",
+„Nach Land", „Nach Depot") mit Richtungsschalter daneben. Unternehmen ohne den sortierten Wert stehen in beiden
 Richtungen am Ende: Ein Unternehmen ohne Ticker ist keine Antwort auf „sortiere nach Ticker".
 
 Keine zukünftigen Zahlungen, keine erwarteten Dividenden, keine Kurse.

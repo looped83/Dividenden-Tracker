@@ -3,14 +3,11 @@ import { Link } from "react-router";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import {
-  ArrowDown,
-  ArrowUp,
   Building2,
   Pencil,
   Plus,
   RotateCcw,
   Trash2,
-  X,
   Archive as ArchiveIcon,
 } from "lucide-react";
 import { emptyToNull } from "@/lib/utils/emptyToNull";
@@ -24,7 +21,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { EntitySelect, type EntityOption } from "@/components/domain/EntitySelect";
-import { FilterBar, FilterField } from "@/components/ui/filter-bar";
+import {
+  FilterBar,
+  FilterField,
+  FilterReset,
+  FilterSort,
+} from "@/components/ui/filter-bar";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -432,61 +434,23 @@ export function SecuritiesPage() {
           />
         </FilterField>
 
-        {/* Sortierung wie in der Dividendenliste: rechts in der Leiste, mit
-            dem Richtungsschalter daneben. Etwas breiter als die uebrigen
-            Felder, weil es beides traegt. */}
-        <FilterField id="sec-sort" label="Sortierung" className="sm:basis-52">
-          <div className="flex gap-2">
-            <Select
-              id="sec-sort"
-              value={sort.field}
-              onChange={(event) => {
-                setSort((current) => ({
-                  ...current,
-                  field: event.target.value as SecuritySortField,
-                }));
-              }}
-            >
-              {SECURITY_SORT_FIELDS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </Select>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="shrink-0"
-              aria-label={
-                sort.direction === "asc"
-                  ? "Aufsteigend sortiert — zu absteigend wechseln"
-                  : "Absteigend sortiert — zu aufsteigend wechseln"
-              }
-              onClick={() => {
-                setSort((current) => ({
-                  ...current,
-                  direction: current.direction === "asc" ? "desc" : "asc",
-                }));
-              }}
-            >
-              {sort.direction === "asc" ? <ArrowUp /> : <ArrowDown />}
-            </Button>
-          </div>
-        </FilterField>
+        {/* Sortierung wie in der Dividendenliste: rechts in der Leiste, vor dem
+            Zuruecksetzen. */}
+        <FilterSort
+          id="sec-sort"
+          value={sort.field}
+          direction={sort.direction}
+          options={SECURITY_SORT_FIELDS}
+          onValueChange={(value) => {
+            setSort((current) => ({ ...current, field: value as SecuritySortField }));
+          }}
+          onDirectionChange={(direction) => {
+            setSort((current) => ({ ...current, direction }));
+          }}
+        />
 
         {/* Zuruecksetzen steht wie im Statistikbereich **in** der Leiste. */}
-        {hasActiveFilters && (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="h-11"
-            onClick={resetFilters}
-          >
-            <X /> Filter zurücksetzen
-          </Button>
-        )}
+        {hasActiveFilters && <FilterReset onClick={resetFilters} />}
       </FilterBar>
 
       {hasActiveFilters && (

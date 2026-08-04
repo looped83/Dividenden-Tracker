@@ -26,7 +26,10 @@ export const SECURITY_SORT_FIELDS: readonly {
   { value: "ticker", label: "Nach Ticker" },
   { value: "sector", label: "Nach Branche" },
   { value: "country", label: "Nach Land" },
-  { value: "depot", label: "Nach Standard-Depot" },
+  // „Nach Depot": Die Liste kennt nur ein Depot je Unternehmen — das
+  // Standard-Depot —, und „Nach Standard-Depot" fuellte die Auswahl mit einem
+  // Wort, das an dieser Stelle nichts unterscheidet.
+  { value: "depot", label: "Nach Depot" },
 ];
 
 export const DEFAULT_SECURITY_SORT: SecuritySort = { field: "name", direction: "asc" };
