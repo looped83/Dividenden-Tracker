@@ -12,6 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { EmptyState } from "@/components/ui/empty-state";
+import { SkeletonRows } from "@/components/ui/skeleton";
 import { Money } from "@/lib/money/money";
 import { EUR } from "@/lib/money/currency";
 import { formatMoney } from "@/lib/money/format";
@@ -108,7 +109,7 @@ export function ImportsPage() {
           )}
 
           {isLoading ? (
-            <p className="text-sm text-muted-foreground">Wird geladen …</p>
+            <SkeletonRows rows={3} label="Importe" />
           ) : imports.length === 0 ? (
             <EmptyState
               title="Noch keine Importe"

@@ -2,6 +2,7 @@ import * as React from "react";
 import { Link } from "react-router";
 import { AlertTriangle, CheckCircle2, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PageSkeleton } from "@/components/layout/PageSkeleton";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -157,7 +158,7 @@ export function DataQualityPage() {
       </div>
 
       {isLoading ? (
-        <p className="text-sm text-muted-foreground">Wird geladen …</p>
+        <PageSkeleton header={false} />
       ) : (
         <>
           {/* Dubletten (§16) */}

@@ -26,6 +26,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { EmptyState } from "@/components/ui/empty-state";
+import { SkeletonRows } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -462,7 +463,7 @@ export function PaymentsPage() {
       )}
 
       {isLoading ? (
-        <p className="text-sm text-muted-foreground">Wird geladen …</p>
+        <SkeletonRows rows={8} label="Dividendeneingänge" />
       ) : allPayments.length === 0 && !hasActiveFilters ? (
         <EmptyState
           icon={Wallet}

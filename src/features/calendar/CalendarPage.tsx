@@ -1,6 +1,7 @@
 import * as React from "react";
 import { CalendarDays, RefreshCw, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -32,10 +33,10 @@ function CalendarSkeleton() {
   return (
     <div className="space-y-4" aria-busy="true" aria-live="polite">
       <span className="sr-only">Kalender wird geladen …</span>
-      <div className="h-11 w-full animate-pulse rounded-md bg-muted" />
+      <Skeleton className="h-11 w-full rounded-md" />
       <div className="grid grid-cols-7 gap-1">
         {Array.from({ length: 35 }).map((_, index) => (
-          <div key={index} className="h-20 animate-pulse rounded-md bg-muted sm:h-24" />
+          <Skeleton key={index} className="h-20 rounded-md sm:h-24" />
         ))}
       </div>
     </div>

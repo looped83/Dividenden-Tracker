@@ -70,7 +70,7 @@ export function OverviewTab() {
           Bild. */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
         <StatCard
-          label="Historische Gesamtsumme"
+          label="Gesamtsumme"
           value={<AmountText amount={stats.net} />}
           comparison={formatPayments(stats.count)}
           onDrillDown={() => void navigate(statisticsDrillHref(filter))}
@@ -78,12 +78,12 @@ export function OverviewTab() {
         <StatCard
           label="Ø Zahlung"
           value={<AmountText amount={stats.averagePayment} />}
-          comparison="Durchschnitt je Zahlung"
+          comparison={`aus ${formatPayments(stats.count)}`}
         />
         <StatCard
           label="Ø Monat"
           value={<AmountText amount={stats.averageMonth} />}
-          comparison={`über ${formatCountNumber(stats.activeMonths)} Monate mit Zahlungen`}
+          comparison={`${formatCountNumber(stats.activeMonths)} Monate`}
         />
         <StatCard
           label="Bester Monat"
@@ -128,12 +128,14 @@ export function OverviewTab() {
           label="Zeitraum"
           value={
             stats.firstPayDate && stats.lastPayDate ? (
-              // Zwei Daten sind fuer eine Kennzahl viel Text: kleiner gesetzt,
-              // damit die Kachel neben den Betraegen ruhig bleibt. Auf dem
-              // Telefon bricht der Zeitraum in der halbbreiten Kachel um.
-              <span className="text-sm sm:text-xl">
+              // Dieselbe Schriftgroesse wie die Betraege daneben: Eine eigene,
+              // kleinere Stufe machte aus dieser Kachel eine Ausnahme im
+              // Raster. Auf dem Telefon bricht der Zeitraum um; die Zusatzzeile
+              // steht trotzdem auf derselben Hoehe wie nebenan, weil sie am
+              // Kachelboden sitzt.
+              <>
                 {formatIsoDate(stats.firstPayDate)} – {formatIsoDate(stats.lastPayDate)}
-              </span>
+              </>
             ) : (
               <span className="text-muted-foreground">—</span>
             )

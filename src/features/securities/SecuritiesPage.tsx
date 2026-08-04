@@ -29,6 +29,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatCountNumber } from "@/lib/utils/formatNumber";
 import { EmptyState } from "@/components/ui/empty-state";
+import { SkeletonRows } from "@/components/ui/skeleton";
 import { useDepots } from "@/features/depots/hooks";
 import {
   Dialog,
@@ -459,7 +460,7 @@ export function SecuritiesPage() {
       )}
 
       {isLoading ? (
-        <p className="text-sm text-muted-foreground">Wird geladen …</p>
+        <SkeletonRows rows={6} label="Unternehmen" />
       ) : visible.length === 0 ? (
         <EmptyState
           icon={Building2}

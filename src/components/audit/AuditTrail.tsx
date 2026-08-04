@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { History } from "lucide-react";
 import { fetchAuditTrail, type AuditLogRow } from "@/lib/supabase/repositories/auditLog";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatTimestamp } from "@/lib/utils/formatDate";
 
 const ACTION_LABELS: Record<AuditLogRow["action"], string> = {
@@ -67,7 +68,17 @@ export function AuditTrail({ entityType, entityId }: AuditTrailProps) {
   });
 
   if (isLoading) {
-    return <p className="text-sm text-muted-foreground">Verlauf wird geladen …</p>;
+    return (
+      <div className="space-y-4 border-l border-border pl-4" aria-busy="true">
+        <span className="sr-only">Verlauf wird geladen …</span>
+        {Array.from({ length: 3 }).map((_, index) => (
+          <div key={index} className="space-y-1.5">
+            <Skeleton className="h-4 w-48" />
+            <Skeleton className="h-3 w-32" />
+          </div>
+        ))}
+      </div>
+    );
   }
 
   if (!data || data.length === 0) {

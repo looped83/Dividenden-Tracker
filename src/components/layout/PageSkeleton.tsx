@@ -1,13 +1,20 @@
 import { cn } from "@/lib/utils/cn";
+import { Skeleton } from "@/components/ui/skeleton";
+
+/** Kurzform fuer die Balken dieses Geruests. */
+function Bar({ className }: { className: string }) {
+  return <Skeleton className={className} />;
+}
 
 /**
- * Ladezustand fuer nachgeladene Bereiche.
+ * Ladezustand fuer nachgeladene Bereiche und Detailseiten.
  *
  * Ein Geruest in der Form des kommenden Inhalts statt einer Textzeile: Die
  * Seite behaelt ihre Hoehe, nichts springt beim Erscheinen des Inhalts, und
  * der Wechsel wirkt kuerzer als er ist. Dieselbe Machart wie die Ladezustaende
  * der Bereiche selbst (Uebersicht, Statistik) — ein Ladezustand soll ueberall
- * gleich aussehen.
+ * gleich aussehen. Fuer Listen und Tabellen gibt es das passendere
+ * {@link SkeletonRows}.
  *
  * Abstaende wie auf den Seiten selbst: `space-y-6` zwischen Kopfzeile und
  * Inhalt, Karteninnenabstand 16px/24px. Mit `space-y-4` sprang der Inhalt beim
@@ -17,10 +24,6 @@ import { cn } from "@/lib/utils/cn";
  * Die Ansage bleibt hoeflich und kurz; den Namen des Bereichs meldet bereits
  * der RouteAnnouncer.
  */
-function Bar({ className }: { className: string }) {
-  return <div className={cn("animate-pulse rounded bg-muted", className)} />;
-}
-
 export function PageSkeleton({
   className,
   /** Aus, wenn die Kopfzeile schon steht — etwa beim Wechsel eines Reiters. */
