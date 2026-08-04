@@ -42,7 +42,8 @@ Kacheln (/unternehmen) · Positionskarte (Detailseite) · Statistik „Entwicklu
 
 | Datei | Rolle |
 |---|---|
-| `supabase/migrations/0029_security_snapshots.sql` | Tabellen, Enums, Indizes, RLS, Eigentumsprüfung |
+| `supabase/migrations/0029_security_snapshots.sql` | Tabellen, Enums, Indizes, RLS |
+| `supabase/migrations/0030_enforce_owned_references.sql` | Eigentumsprüfung der referenzierten Stammdaten |
 | `src/features/securities/divvydiaryCsv.ts` | Einlesen und Normalisieren der CSV |
 | `src/features/securities/portfolioMatch.ts` | Zuordnung zu den eigenen Unternehmen |
 | `src/features/securities/snapshots.ts` | Auswertung (jüngster Stand, Summen, Rendite, Zeitreihe) |
