@@ -32,3 +32,10 @@ export function useMediaQuery(query: string): boolean {
 
 /** Tailwind-Haltepunkt `md` (>= 768px) — Tabelle statt Karten. */
 export const MD_BREAKPOINT_QUERY = "(min-width: 768px)";
+
+/**
+ * Tailwind-Haltepunkt `lg` (>= 1024px). Erst hier ist eine Spalte des
+ * Monatsrasters (rund 136px) breit genug, dass ein Unternehmensname darin
+ * steht statt abgeschnitten zu werden.
+ */
+export const LG_BREAKPOINT_QUERY = "(min-width: 1024px)";

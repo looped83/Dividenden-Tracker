@@ -46,9 +46,7 @@ export function AgendaView({
         const sectionEvents = section.days.flatMap((day) => day.events);
         return (
           <section key={section.key} className="space-y-2">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              {section.label}
-            </h2>
+            <h2 className="text-lg font-semibold tracking-tight">{section.label}</h2>
             {/* Hoechstens zwei Spalten: Mit Betrag und Depot braucht eine Kachel
                 Breite. Dreispaltig kuerzte sie „Verizon Communications Inc" auf
                 „Verizon Commun…" und das Depot auf „Tr…" — abgeschnittene
@@ -67,7 +65,11 @@ export function AgendaView({
   );
 }
 
-function EventTile({
+/**
+ * Terminkachel — dieselbe in der Liste wie unter dem Monatsraster: Ein Termin
+ * soll ueberall gleich aussehen.
+ */
+export function EventTile({
   event,
   onSelect,
 }: {
@@ -112,9 +114,13 @@ function EventTile({
       </span>
 
       <span className="min-w-0 flex-1">
+        {/* Kein `truncate`: „Verizon Communications Inc" wurde auf dem Telefon
+            zu „Verizon Communicatio…". Ein Name, der umbricht, ist lesbar; ein
+            abgeschnittener ist es nicht — die Kachel waechst lieber um eine
+            Zeile. */}
         <span
           className={cn(
-            "block truncate text-sm font-medium",
+            "block text-sm font-medium",
             cancelled && "text-muted-foreground line-through",
           )}
         >
@@ -132,7 +138,7 @@ function EventTile({
             </Badge>
           )}
           {cancelled && <Badge variant="negative">Abgesagt</Badge>}
-          <span className="truncate text-xs text-muted-foreground">
+          <span className="text-xs text-muted-foreground">
             {shortDate(event.date)}
             {time && ` · ${time}`}
             {event.sourcePortfolio && ` · ${event.sourcePortfolio}`}
