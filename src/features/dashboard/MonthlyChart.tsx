@@ -8,8 +8,17 @@ import {
   ChartCanvas,
   ChartDataTable,
   ChartEmpty,
+  ChartRowHeader,
   ChartTooltipBox,
 } from "@/components/charts/chart";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   CHART_BAR_CURSOR,
   CHART_BAR_RADIUS,
@@ -126,9 +135,9 @@ export function MonthlyChart({ payments, selection, today }: MonthlyChartProps) 
   const selectedYearLabel = typeof selection === "number" ? String(selection) : "";
   const priorYearLabel = typeof selection === "number" ? String(selection - 1) : "";
 
-  const title = isAll
-    ? "Jährlicher Dividendenverlauf"
-    : `Monatlicher Dividendenverlauf ${selectedYearLabel}`;
+  // „Monatlicher"/„Jährlicher" sagte, was die X-Achse ohnehin zeigt. Die
+  // Jahreszahl bleibt: Sie ist die Angabe, die man aus der Ueberschrift braucht.
+  const title = isAll ? "Dividendenverlauf" : `Dividendenverlauf ${selectedYearLabel}`;
 
   // Nur fuer Hilfsmittel: Das Diagramm traegt keine sichtbare Unterzeile mehr,
   // aber ein `role="img"` braucht eine Beschreibung, die ueber den Titel
@@ -341,78 +350,62 @@ function MonthTable({
   priorLabel: string;
 }) {
   return (
-    <table className="w-full text-left text-sm">
+    <Table>
       <caption className="sr-only">
         Monatliche Netto-Dividenden {selectedLabel} und {priorLabel}
       </caption>
-      <thead>
-        <tr className="text-muted-foreground">
-          <th scope="col" className="py-1 pr-4 font-medium">
-            Monat
-          </th>
-          <th scope="col" className="py-1 pr-4 text-right font-medium">
-            {selectedLabel}
-          </th>
-          <th scope="col" className="py-1 text-right font-medium">
-            {priorLabel}
-          </th>
-        </tr>
-      </thead>
-      <tbody>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Monat</TableHead>
+          <TableHead className="text-right">{selectedLabel}</TableHead>
+          <TableHead className="text-right">{priorLabel}</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
         {rows.map((row) => (
-          <tr key={row.month} className="border-t border-border">
-            <th scope="row" className="py-1 pr-4 font-normal">
-              {monthNameDe(row.month)}
-            </th>
-            <td className="py-1 pr-4 text-right tabular-nums">
+          <TableRow key={row.month}>
+            <ChartRowHeader>{monthNameDe(row.month)}</ChartRowHeader>
+            <TableCell className="text-right tabular-nums">
               {row.isFuture
                 ? "noch nicht begonnen"
                 : row.selectedMoney
                   ? formatMoney(row.selectedMoney)
                   : "—"}
-            </td>
-            <td className="py-1 text-right tabular-nums">
+            </TableCell>
+            <TableCell className="text-right tabular-nums">
               {formatMoney(row.priorMoney)}
-            </td>
-          </tr>
+            </TableCell>
+          </TableRow>
         ))}
-      </tbody>
-    </table>
+      </TableBody>
+    </Table>
   );
 }
 
 function YearTable({ rows }: { rows: YearRow[] }) {
   return (
-    <table className="w-full text-left text-sm">
+    <Table>
       <caption className="sr-only">Netto-Dividenden je Jahr</caption>
-      <thead>
-        <tr className="text-muted-foreground">
-          <th scope="col" className="py-1 pr-4 font-medium">
-            Jahr
-          </th>
-          <th scope="col" className="py-1 pr-4 text-right font-medium">
-            Nettodividende
-          </th>
-          <th scope="col" className="py-1 text-right font-medium">
-            Zahlungen
-          </th>
-        </tr>
-      </thead>
-      <tbody>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Jahr</TableHead>
+          <TableHead className="text-right">Nettodividende</TableHead>
+          <TableHead className="text-right">Zahlungen</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
         {rows.map((row) => (
-          <tr key={row.year} className="border-t border-border">
-            <th scope="row" className="py-1 pr-4 font-normal">
-              {row.year}
-            </th>
-            <td className="py-1 pr-4 text-right tabular-nums">
+          <TableRow key={row.year}>
+            <ChartRowHeader>{row.year}</ChartRowHeader>
+            <TableCell className="text-right tabular-nums">
               {formatMoney(row.money)}
-            </td>
-            <td className="py-1 text-right tabular-nums">
+            </TableCell>
+            <TableCell className="text-right tabular-nums">
               {formatCountNumber(row.count)}
-            </td>
-          </tr>
+            </TableCell>
+          </TableRow>
         ))}
-      </tbody>
-    </table>
+      </TableBody>
+    </Table>
   );
 }

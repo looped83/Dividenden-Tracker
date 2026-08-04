@@ -140,7 +140,10 @@ Eigene zusammengesetzte Komponenten (fachlich):
   (Vergleichsreihe gestrichelt) plus Beschriftung. Nicht die Legende von Recharts — die sitzt
   in der Zeichenfläche, nimmt ihr Platz weg und bringt die Schrift des SVG statt der der
   Anwendung mit. Farbe trägt die Unterscheidung nie allein (WCAG 1.4.1).
-- Jede Grafik: Umschalter zur Datentabelle + textuelle Zusammenfassung (Screenreader).
+- Jede Grafik: Umschalter zur Datentabelle + textuelle Zusammenfassung (Screenreader). Die
+  Datentabelle ist die **gewöhnliche** Tabelle der Anwendung (`components/ui/table`) — Rahmen,
+  graue Kopfzeile, `px-4 py-3` je Zelle. Ein eigenes, engeres Muster ließ dieselbe Sache zwei
+  Bildschirme weiter anders aussehen.
 - **Ein Stil für alle Diagramme.** Achsen, Raster, Tooltip-Kasten, Höhe, Leerzustand und die
   aufklappbare Datentabelle kommen aus `components/charts/chart.tsx` bzw. `chartTheme.ts`.
   Recharts liest die Typen seiner Kinder — die gemeinsamen Achseneinstellungen sind deshalb

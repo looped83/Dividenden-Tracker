@@ -408,21 +408,13 @@ export function filterPayments(
     if (filter.year !== null && yearOf(p.payDate) !== filter.year) return false;
     if (filter.securityId !== null && p.securityId !== filter.securityId) return false;
     if (filter.depotId !== null && p.depotId !== filter.depotId) return false;
-    if (filter.source !== null && p.source !== filter.source) return false;
-    if (filter.paymentType !== null && p.paymentType !== filter.paymentType) return false;
     return true;
   });
 }
 
 /** True, wenn kein Filterkriterium gesetzt ist. */
 export function isEmptyFilter(filter: StatisticsFilter): boolean {
-  return (
-    filter.year === null &&
-    filter.securityId === null &&
-    filter.depotId === null &&
-    filter.source === null &&
-    filter.paymentType === null
-  );
+  return filter.year === null && filter.securityId === null && filter.depotId === null;
 }
 
 /** Durchschnittliche Einzelzahlung: Nettosumme ÷ Anzahl Zahlungen (0 € ohne Zahlungen). */

@@ -39,6 +39,15 @@ import {
   type ComparisonMode,
 } from "./comparisonParams";
 import { ComparisonLineChart, type ComparisonPoint } from "./components/charts";
+import { ChartRowHeader } from "@/components/charts/chart";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 /**
  * Zeitraumvergleich (Statistik §11).
@@ -51,7 +60,7 @@ import { ComparisonLineChart, type ComparisonPoint } from "./components/charts";
  *
  * Der Jahresfilter der Statistikleiste bleibt hier bewusst wirkungslos: Er
  * reduziert die Datenbasis auf ein Jahr, womit die Vergleichsseite immer leer
- * waere. Unternehmens-, Depot-, Quellen- und Artfilter wirken dagegen weiter.
+ * waere. Unternehmens- und Depotfilter wirken dagegen weiter.
  */
 export function ComparisonTab() {
   const { allPayments, filter, securities } = useStatisticsContext();
@@ -288,19 +297,15 @@ export function ComparisonTab() {
         <StatCard
           label="Zeitausschnitt"
           value={
-            comparison.truncated ? (
-              <span className="text-base sm:text-xl">
-                bis {formatIsoDate(comparison.cutoff)}
-              </span>
-            ) : (
-              <span className="text-base sm:text-xl">vollständig</span>
-            )
+            <span className="text-base sm:text-xl">
+              bis {formatIsoDate(comparison.cutoff)}
+            </span>
           }
-          comparison={
-            comparison.truncated
-              ? "beide Zeiträume gleich lang gekappt"
-              : "beide Zeiträume vollständig gezählt"
-          }
+          // Einzeilig: In der halbbreiten Kachel des Telefons brach der
+          // vollstaendige Satz auf drei Zeilen um und machte die Kachel hoeher
+          // als ihre Nachbarn. Der Stichtag steht als Wert darueber, die Zeile
+          // sagt nur noch, ob dafuer etwas abgeschnitten wurde.
+          comparison={comparison.truncated ? "beide Seiten gekappt" : "volle Zeiträume"}
         />
       </div>
 
@@ -434,54 +439,39 @@ function ComparisonBreakdown({
   return (
     <div className="space-y-3">
       {isWide ? (
-        <div className="w-full rounded-lg border border-border">
-          <table className="w-full caption-bottom text-sm">
-            <caption className="sr-only">{caption}</caption>
-            <thead className="bg-muted/50">
-              <tr className="border-b border-border">
-                <th scope="col" className="px-4 py-3 text-left font-medium">
-                  {rowHeader}
-                </th>
-                <th
-                  scope="col"
-                  className="whitespace-nowrap px-4 py-3 text-right font-medium"
-                >
-                  {currentLabel}
-                </th>
-                <th
-                  scope="col"
-                  className="whitespace-nowrap px-4 py-3 text-right font-medium"
-                >
-                  {referenceLabel}
-                </th>
-                <th
-                  scope="col"
-                  className="whitespace-nowrap px-4 py-3 text-right font-medium"
-                >
-                  Differenz
-                </th>
-              </tr>
-            </thead>
-            <tbody className="[&_tr:last-child]:border-0">
-              {rows.map((row) => (
-                <tr key={row.key} className="border-b border-border">
-                  <th scope="row" className="px-4 py-3 text-left font-medium">
-                    <BreakdownLabel row={row} />
-                  </th>
-                  <td className="whitespace-nowrap px-4 py-3 text-right">
-                    <BreakdownAmount value={row.current} />
-                  </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-right">
-                    <BreakdownAmount value={row.reference} />
-                  </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-right">
-                    <BreakdownDifference amount={row.difference} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <Table>
+          <caption className="sr-only">{caption}</caption>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{rowHeader}</TableHead>
+              <TableHead className="whitespace-nowrap text-right">
+                {currentLabel}
+              </TableHead>
+              <TableHead className="whitespace-nowrap text-right">
+                {referenceLabel}
+              </TableHead>
+              <TableHead className="whitespace-nowrap text-right">Differenz</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((row) => (
+              <TableRow key={row.key}>
+                <ChartRowHeader>
+                  <BreakdownLabel row={row} />
+                </ChartRowHeader>
+                <TableCell className="whitespace-nowrap text-right">
+                  <BreakdownAmount value={row.current} />
+                </TableCell>
+                <TableCell className="whitespace-nowrap text-right">
+                  <BreakdownAmount value={row.reference} />
+                </TableCell>
+                <TableCell className="whitespace-nowrap text-right">
+                  <BreakdownDifference amount={row.difference} />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       ) : (
         <ul
           className="divide-y divide-border rounded-lg border border-border"

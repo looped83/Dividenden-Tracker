@@ -18,28 +18,24 @@ describe("parseStatisticsFilter (§11)", () => {
       year: "2025",
       security: "sec-1",
       depot: "dep-1",
-      source: "csv_import",
-      type: "special",
     });
     expect(parseStatisticsFilter(params)).toEqual<StatisticsFilter>({
       year: 2025,
       securityId: "sec-1",
       depotId: "dep-1",
-      source: "csv_import",
-      paymentType: "special",
     });
   });
 
-  it("verwirft ungültige Jahre und unbekannte Enum-Werte", () => {
-    const params = new URLSearchParams({
-      year: "1800",
-      source: "unbekannt",
-      type: "nope",
-    });
-    const filter = parseStatisticsFilter(params);
+  it("verwirft ungültige Jahre", () => {
+    const filter = parseStatisticsFilter(new URLSearchParams({ year: "1800" }));
     expect(filter.year).toBeNull();
-    expect(filter.source).toBeNull();
-    expect(filter.paymentType).toBeNull();
+  });
+
+  it("ignoriert abgelegte Kriterien aus alten Adressen", () => {
+    // Quelle und Zahlungsart gab es hier einmal. Ein Lesezeichen von damals
+    // darf nicht unsichtbar weiterfiltern — es bleibt schlicht wirkungslos.
+    const params = new URLSearchParams({ source: "csv_import", type: "special" });
+    expect(parseStatisticsFilter(params)).toEqual(EMPTY_STATISTICS_FILTER);
   });
 
   it("verwirft Jahre in der Zukunft", () => {
@@ -54,15 +50,11 @@ describe("applyStatisticsFilter (§11)", () => {
       year: 2025,
       securityId: "sec-1",
       depotId: null,
-      source: null,
-      paymentType: "regular",
     };
     const params = applyStatisticsFilter(new URLSearchParams(), filter);
     expect(params.get("year")).toBe("2025");
     expect(params.get("security")).toBe("sec-1");
     expect(params.has("depot")).toBe(false);
-    expect(params.has("source")).toBe(false);
-    expect(params.get("type")).toBe("regular");
   });
 
   it("ist mit parseStatisticsFilter round-trip-stabil", () => {
@@ -70,8 +62,6 @@ describe("applyStatisticsFilter (§11)", () => {
       year: 2024,
       securityId: "abc",
       depotId: "xyz",
-      source: "manual",
-      paymentType: "correction",
     };
     const params = applyStatisticsFilter(new URLSearchParams(), filter);
     expect(parseStatisticsFilter(params)).toEqual(filter);
@@ -82,8 +72,6 @@ describe("applyStatisticsFilter (§11)", () => {
       year: 2023,
       securityId: null,
       depotId: "dep-9",
-      source: "excel_import",
-      paymentType: null,
     };
     const serialized = applyStatisticsFilter(new URLSearchParams(), filter).toString();
     const reparsed = parseStatisticsFilter(new URLSearchParams(serialized));

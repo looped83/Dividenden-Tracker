@@ -377,11 +377,17 @@ Entwicklung je Jahr (`yearlyBuckets`) und je Kalendermonat über alle Jahre
 
 ### 11.8 Filter (`filterPayments`)
 
-Kombinierbarer Filter über Jahr (effektives Kalenderjahr), Unternehmen, Depot, Datenquelle
-(`source`) und Zahlungsart (`payment_type`). Reine UND-Verknüpfung als Vorstufe der Aggregation;
-`null` bedeutet je Kriterium „keine Einschränkung". Der Filter ist URL-serialisiert
-(`?year=&security=&depot=&source=&type=`) und bleibt nach Reload sowie über Browser-Zurück/-Vorwärts
-erhalten.
+Kombinierbarer Filter über **Jahr** (effektives Kalenderjahr), **Unternehmen** und **Depot** —
+genau die drei Kriterien, die auch die Zahlungsliste kennt. Reine UND-Verknüpfung als Vorstufe
+der Aggregation; `null` bedeutet je Kriterium „keine Einschränkung". Der Filter ist
+URL-serialisiert (`?year=&security=&depot=`) und bleibt nach Reload sowie über
+Browser-Zurück/-Vorwärts erhalten.
+
+Datenquelle (`source`) und Zahlungsart (`payment_type`) waren einmal Teil dieses Filters und sind
+entfallen: Die Zahlungsliste kann beide nicht filtern, sodass ein Drill-down aus einer so
+eingeschränkten Kennzahl in eine Liste mit **mehr** Zahlungen führte, als die Zahl behauptete —
+ein Bruch der Drill-down-Zusage (§13). Alte Adressen mit `source=`/`type=` bleiben gültig, die
+Parameter wirken nur nicht mehr.
 
 ### 11.9 Drill-down-Garantie
 
@@ -438,7 +444,7 @@ Gegenüberstellung zweier Zeiträume im Unterbereich `/statistiken/vergleich`.
   auf einen Tag. Der am Stichtag **angeschnittene** Monat wird deshalb nicht verlinkt und in der
   Tabelle als solcher gekennzeichnet; alle vollständigen Monate verlinken wie gewohnt. Ein Link,
   der mehr zeigt als die Zahl daneben, beschädigt das Vertrauen in beide.
-- **Filter.** Unternehmen, Depot, Datenquelle und Zahlungsart wirken wie überall; der
+- **Filter.** Unternehmen und Depot wirken wie überall; der
   **Jahresfilter** wirkt in diesem Unterbereich nicht (er reduzierte die Datenbasis auf ein Jahr
   und ließe die Vergleichsseite grundsätzlich leer). Sein Regler wird deshalb hier ausgeblendet:
   Ein Bedienelement ohne Wirkung ist schlimmer als keines. Ein aus einem anderen Unterbereich
@@ -515,7 +521,7 @@ unten — in die Richtung, in der ein Bildschirm nachgibt.
 - **Drill-down (§11.9):** Jeder Monatsbetrag führt in die Zahlungsliste, gefiltert auf Jahr und
   Monat. Anders als beim Zeitraumvergleich ist auch der laufende Monat verlinkt — die Zelle
   enthält genau die Zahlungen dieses Monats, die Liste zeigt also nicht mehr als die Zahl daneben.
-- **Filter.** Unternehmen, Depot, Datenquelle und Zahlungsart wirken wie überall; der
+- **Filter.** Unternehmen und Depot wirken wie überall; der
   **Jahresfilter** wirkt hier nicht (er ließe eine einzige Zeile übrig und damit genau das, was
   „Monate" ohnehin zeigt). Sein Regler wird deshalb ausgeblendet, ein mitgebrachter Jahresfilter
   bleibt in der URL, wird aber benannt.

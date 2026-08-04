@@ -188,6 +188,13 @@ Keine zukünftigen Zahlungen, keine erwarteten Dividenden, keine Kurse.
 Sieben Unterbereiche: Übersicht, Jahre, Monate, **Breakdown**, **Vergleich**, Unternehmen,
 Depots.
 
+Über allen steht dieselbe Filterleiste mit denselben drei Kriterien in derselben Reihenfolge:
+**Jahr, Unternehmen, Depot** (Voreinstellung „Alle …"). Einzige Abweichung ist der
+Jahresregler, der im Vergleich und im Breakdown fehlt — beide wählen ihre Zeiträume selbst,
+dort wäre er wirkungslos. Datenquelle und Zahlungsart standen einmal daneben; sie sind
+entfallen, weil die Zahlungsliste sie nicht filtern kann und der Drill-down damit mehr zeigte
+als die Kennzahl, aus der er kam (CALCULATION_RULES.md §11.8).
+
 Der Breakdown zeigt alle Jahre und Monate in **einer** Tabelle: eine Zeile je Kalenderjahr
 (neueste zuerst), eine Spalte je Monat, dazu Jahressummen, Monatssummen über alle Jahre und die
 Veränderung zum Vorjahr. Bewusst rein zahlengetrieben und ohne Diagramm — hier geht es um den
