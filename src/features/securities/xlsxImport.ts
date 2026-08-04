@@ -148,7 +148,7 @@ export function mapWorksheetToSecurities(
     const depotName = cellToTrimmedString(row, depotIdx);
     const matchedDepot = depotName ? depotByName.get(depotName.toLowerCase()) : undefined;
     if (depotName && !matchedDepot) {
-      warnings.push(`Depot „${depotName}" nicht gefunden, kein Standard-Depot gesetzt`);
+      warnings.push(`Depot „${depotName}" nicht gefunden, kein Depot gesetzt`);
     }
 
     valid.push({

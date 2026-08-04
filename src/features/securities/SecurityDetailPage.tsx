@@ -249,7 +249,7 @@ export function SecurityDetailPage() {
               <Field label="Branche" value={security.sector} />
               <Field label="Währung" value={security.currency} />
               <Field
-                label="Standard-Depot"
+                label="Depot"
                 value={
                   security.default_depot_id ? depotName(security.default_depot_id) : null
                 }

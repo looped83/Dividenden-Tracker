@@ -5,6 +5,7 @@ import { BottomNav } from "@/components/layout/BottomNav";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { RouteAnnouncer } from "@/components/layout/RouteAnnouncer";
 import { PageSkeleton } from "@/components/layout/PageSkeleton";
+import { PaymentComposerProvider } from "@/features/payments/PaymentComposer";
 
 /**
  * Responsive App-Shell (IMPLEMENTATION_PLAN.md Phase 1):
@@ -33,29 +34,31 @@ export function AppShell() {
           und der Weg zurueck landet wieder dort, wo man aufgehoert hat. */}
       <ScrollRestoration getKey={(location) => location.pathname} />
       <ErrorBoundary>
-        <div className="flex min-h-dvh flex-col bg-background text-foreground md:flex-row">
-          <Sidebar />
-          <CompactSidebar />
-          {/* Der untere Abstand traegt die Bottom-Navigation **plus** die
+        <PaymentComposerProvider>
+          <div className="flex min-h-dvh flex-col bg-background text-foreground md:flex-row">
+            <Sidebar />
+            <CompactSidebar />
+            {/* Der untere Abstand traegt die Bottom-Navigation **plus** die
               sichere Flaeche des Geraets. Mit festem `pb-20` (5rem) lagen auf
               iPhones mit Home-Indikator die letzten Pixel der Seite unter der
               Leiste: Die Leiste ist rund 3,75rem hoch und waechst um
               `safe-area-inset-bottom`. */}
-          <main
-            id="inhalt"
-            tabIndex={-1}
-            className="min-w-0 flex-1 overflow-x-hidden pb-[calc(5rem+env(safe-area-inset-bottom))] outline-none md:pb-6"
-          >
-            <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-              {/* Bereiche werden erst beim Aufruf geladen (siehe router.tsx);
+            <main
+              id="inhalt"
+              tabIndex={-1}
+              className="min-w-0 flex-1 overflow-x-hidden pb-[calc(5rem+env(safe-area-inset-bottom))] outline-none md:pb-6"
+            >
+              <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+                {/* Bereiche werden erst beim Aufruf geladen (siehe router.tsx);
                   der Rahmen der App steht dabei bereits. */}
-              <React.Suspense fallback={<PageSkeleton />}>
-                <Outlet />
-              </React.Suspense>
-            </div>
-          </main>
-          <BottomNav />
-        </div>
+                <React.Suspense fallback={<PageSkeleton />}>
+                  <Outlet />
+                </React.Suspense>
+              </div>
+            </main>
+            <BottomNav />
+          </div>
+        </PaymentComposerProvider>
       </ErrorBoundary>
     </>
   );

@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router";
 import { ToastProvider } from "@/components/ui/toast";
+import { PaymentComposerProvider } from "@/features/payments/PaymentComposer";
 import type { PaymentListRow } from "@/lib/supabase/repositories/payments";
 
 // Die Seite haengt an drei Abfragen; sie werden hier durch Fixtures ersetzt,
@@ -80,7 +81,11 @@ function renderList(rows: PaymentListRow[], route = "/eingaenge") {
     <MemoryRouter initialEntries={[route]}>
       <QueryClientProvider client={client}>
         <ToastProvider>
-          <PaymentsPage />
+          {/* Wie in der App-Huelle: Die Seite oeffnet „Neue Dividende" als
+              Overlay und braucht dafuer den Anbieter. */}
+          <PaymentComposerProvider>
+            <PaymentsPage />
+          </PaymentComposerProvider>
         </ToastProvider>
       </QueryClientProvider>
     </MemoryRouter>,

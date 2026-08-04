@@ -307,6 +307,13 @@ verwendet:
   („Dividendeneingang dauerhaft löschen?" mit Unternehmen, Datum, Depot, Betrag,
   Datenquelle) und wird atomar im Audit Log protokolliert.
 
+**Erfassen ohne Ortswechsel.** „Neue Dividende" steht auf breiten Schirmen in der Sidebar
+**und** oben rechts in der Dividendenliste; beide öffnen das Formular als Overlay über der
+aktuellen Seite. Wer aus Liste, Übersicht oder Kalender heraus erfasst, macht danach genau
+dort weiter — als eigene Seite ging dieser Zusammenhang verloren. Auf dem iPhone bleibt es
+bei der eigenen Seite (die Bottom-Navigation führt mit einem Fingertipp dorthin); Abbrechen
+führt dort zurück, wo man herkam, nicht pauschal in die Liste.
+
 **Manuelles Anlegen/Bearbeiten.** Pflichtfelder: Zahlungsdatum, Unternehmen,
 Depot, Nettobetrag; optional Notiz. Zukünftige Zahlungsdaten werden abgelehnt.
 Bearbeitung importierter Eingänge erhält die Importherkunft (Herkunftsfelder

@@ -221,9 +221,9 @@ function SecurityFormDialog({
           </div>
           {/* Halbe Breite: ein Depotname braucht nicht die ganze Zeile. */}
           <div className="space-y-1.5 sm:w-1/2 sm:pr-2">
-            <Label htmlFor="security-default-depot">Standard-Depot</Label>
+            <Label htmlFor="security-default-depot">Depot</Label>
             <Select id="security-default-depot" {...register("defaultDepotId")}>
-              <option value="">Kein Standard-Depot</option>
+              <option value="">Kein Depot</option>
               {activeDepots.map((depot) => (
                 <option key={depot.id} value={depot.id}>
                   {depot.name}
@@ -412,7 +412,7 @@ export function SecuritiesPage() {
           </Select>
         </FilterField>
 
-        <FilterField id="sec-depot" label="Standard-Depot">
+        <FilterField id="sec-depot" label="Depot">
           <EntitySelect
             id="sec-depot"
             options={depotOptions}
@@ -484,7 +484,7 @@ export function SecuritiesPage() {
               <TableHead>Ticker</TableHead>
               <TableHead>ISIN</TableHead>
               <TableHead>Land</TableHead>
-              <TableHead>Standard-Depot</TableHead>
+              <TableHead>Depot</TableHead>
               <TableHead>Ausschüttung</TableHead>
               <TableHead>Datenqualität</TableHead>
               <TableHead>Status</TableHead>
