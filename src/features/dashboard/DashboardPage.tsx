@@ -4,6 +4,7 @@ import { LayoutDashboard, Upload, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useSecurities } from "@/features/securities/hooks";
 import { useDepots } from "@/features/depots/hooks";
@@ -49,18 +50,18 @@ function DashboardSkeleton() {
         {Array.from({ length: 6 }).map((_, index) => (
           <Card key={index}>
             <CardHeader className="pb-2 sm:pb-2">
-              <div className="h-4 w-24 animate-pulse rounded bg-muted" />
+              <Skeleton className="h-4 w-24" />
             </CardHeader>
             <CardContent>
-              <div className="h-8 w-32 animate-pulse rounded bg-muted" />
-              <div className="mt-3 h-3 w-40 animate-pulse rounded bg-muted" />
+              <Skeleton className="h-8 w-32" />
+              <Skeleton className="mt-3 h-3 w-40" />
             </CardContent>
           </Card>
         ))}
       </div>
       <Card>
         <CardContent className="p-4 sm:p-6">
-          <div className="h-72 w-full animate-pulse rounded bg-muted" />
+          <Skeleton className="h-72 w-full" />
         </CardContent>
       </Card>
     </div>
@@ -198,9 +199,7 @@ export function DashboardPage() {
 
       <GoalSection payments={payments} selection={selection} today={today} />
 
-      <React.Suspense
-        fallback={<div className="h-72 animate-pulse rounded-lg border border-border" />}
-      >
+      <React.Suspense fallback={<Skeleton className="h-72 rounded-lg" />}>
         <MonthlyChart payments={payments} selection={selection} today={today} />
       </React.Suspense>
 

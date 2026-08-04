@@ -141,6 +141,13 @@ Eigene zusammengesetzte Komponenten (fachlich):
   in der Zeichenfläche, nimmt ihr Platz weg und bringt die Schrift des SVG statt der der
   Anwendung mit. Farbe trägt die Unterscheidung nie allein (WCAG 1.4.1).
 - Jede Grafik: Umschalter zur Datentabelle + textuelle Zusammenfassung (Screenreader).
+- **Ein Stil für alle Diagramme.** Achsen, Raster, Tooltip-Kasten, Höhe, Leerzustand und die
+  aufklappbare Datentabelle kommen aus `components/charts/chart.tsx` bzw. `chartTheme.ts`.
+  Recharts liest die Typen seiner Kinder — die gemeinsamen Achseneinstellungen sind deshalb
+  Objekte zum Ausbreiten (`{...CHART_Y_AXIS_PROPS}`), keine Wrapper-Komponenten.
+- Y-Achse ohne Währungszeichen, mit Tausenderpunkt, kompakt erst ab einer Million
+  („1,5 Mio."). Mit „€" an jedem Strich wurde die Beschriftung breiter als ihre Spalte und
+  brach zweizeilig um; die Währung nennen Titel, Tooltip und Datentabelle.
 
 ## 4. Layouts je Gerät
 
@@ -181,7 +188,7 @@ Eigene zusammengesetzte Komponenten (fachlich):
 | Zustand | Muster |
 |---|---|
 | Leer (neues Konto) | Onboarding-EmptyState: „Eingang erfassen" oder „Aus Numbers importieren" (Verweis Migration) |
-| Laden | Skeletons in Karten-/Tabellenform; keine Spinner-Vollflächen. Auch der Bereichswechsel: `PageSkeleton` statt einer Textzeile, Kopfzeilenhöhe vorweggenommen, damit nichts springt. Beim Reiterwechsel bleiben Kopfzeile und Reiter stehen (`header={false}`). Navigationspunkte laden ihren Bereich schon beim Zeigen vor, sodass der Zustand meist gar nicht erscheint (ARCHITECTURE.md §6.1) |
+| Laden | Skeletons in Karten-/Tabellenform; keine Spinner-Vollflächen und **keine Textzeile „Wird geladen …"**. Bausteine: `Skeleton` (Fläche, schaltet bei `prefers-reduced-motion` das Pulsieren ab), `SkeletonRows` (Listen und Tabellen), `PageSkeleton` (ganze Seite). Auch der Bereichswechsel: `PageSkeleton` statt einer Textzeile, Kopfzeilenhöhe vorweggenommen, damit nichts springt. Beim Reiterwechsel bleiben Kopfzeile und Reiter stehen (`header={false}`). Navigationspunkte laden ihren Bereich schon beim Zeigen vor, sodass der Zustand meist gar nicht erscheint (ARCHITECTURE.md §6.1) |
 | Fehler | ErrorState mit Ursache + Aktion („Erneut versuchen"); Formularfehler feldnah + Zusammenfassung oben |
 | Offline | Persistenter, dezenter Banner; Schreibaktionen deaktiviert mit Begründung |
 | Warnung (Duplikate, Invariante) | WarningBanner bernstein, niemals blockierend ohne Erklärung, immer mit Detail-Link |

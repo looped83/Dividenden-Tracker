@@ -6,37 +6,30 @@ import {
   CartesianGrid,
   Line,
   LineChart,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
 import { ChartLegend } from "@/components/charts/ChartLegend";
+import {
+  ChartCanvas,
+  ChartDataTable,
+  ChartEmpty,
+  ChartTooltipBox,
+} from "@/components/charts/chart";
+import {
+  CHART_BAR_CURSOR,
+  CHART_BAR_RADIUS,
+  CHART_GRID_PROPS,
+  CHART_LINE_CURSOR,
+  CHART_MARGIN,
+  CHART_X_AXIS_PROPS,
+  CHART_Y_AXIS_PROPS,
+} from "@/components/charts/chartTheme";
+import { useReducedMotion } from "@/lib/hooks/useReducedMotion";
 import { formatMoney, type Money } from "@/lib/money";
 import { formatPayments } from "../format";
 import { formatCountNumber } from "@/lib/utils/formatNumber";
-
-function useReducedMotion(): boolean {
-  const [reduced, setReduced] = React.useState(false);
-  React.useEffect(() => {
-    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const update = () => {
-      setReduced(query.matches);
-    };
-    update();
-    query.addEventListener("change", update);
-    return () => {
-      query.removeEventListener("change", update);
-    };
-  }, []);
-  return reduced;
-}
-
-const axisFormatter = new Intl.NumberFormat("de-DE", {
-  notation: "compact",
-  maximumFractionDigits: 1,
-});
-const tickFormatter = (value: number) => `${axisFormatter.format(value)} €`;
 
 /** Vorberechneter Balkenpunkt. Die Werte stammen ausschliesslich aus der Analytics-Schicht. */
 export interface CategoryDatum {
@@ -59,11 +52,11 @@ function CategoryTooltip({ active, payload }: CategoryTooltipProps) {
   if (!active || !payload || payload.length === 0) return null;
   const row = payload[0].payload;
   return (
-    <div className="rounded-md border border-border bg-card px-3 py-2 text-sm shadow-md">
+    <ChartTooltipBox>
       <p className="font-medium">{row.label}</p>
       <p>{formatMoney(row.money)}</p>
       <p className="text-muted-foreground">{formatPayments(row.count)}</p>
-    </div>
+    </ChartTooltipBox>
   );
 }
 
@@ -92,102 +85,80 @@ export function CategoryBarChart({
   const navigate = useNavigate();
 
   if (data.length === 0 || data.every((row) => row.value === 0)) {
-    return (
-      <p className="py-12 text-center text-sm text-muted-foreground">{emptyMessage}</p>
-    );
+    return <ChartEmpty>{emptyMessage}</ChartEmpty>;
   }
 
   return (
     <div className="space-y-4">
-      <div className="h-64 sm:h-72 w-full" role="img" aria-label={ariaLabel}>
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 8, right: 8, bottom: 4, left: 4 }}>
-            <CartesianGrid
-              strokeDasharray="3 3"
-              vertical={false}
-              stroke="var(--border)"
-            />
-            <XAxis
-              dataKey="label"
-              tick={{ fontSize: 12 }}
-              stroke="var(--muted-foreground)"
-            />
-            <YAxis
-              tickFormatter={tickFormatter}
-              tick={{ fontSize: 12 }}
-              width={64}
-              stroke="var(--muted-foreground)"
-            />
-            <Tooltip content={<CategoryTooltip />} cursor={{ fill: "var(--muted)" }} />
-            <Bar
-              dataKey="value"
-              name="Nettodividende"
-              fill="var(--chart-1)"
-              radius={[4, 4, 0, 0]}
-              isAnimationActive={!reducedMotion}
-              cursor="pointer"
-              onClick={(entry) => {
-                const row = (entry as unknown as { payload?: CategoryDatum }).payload;
-                if (row?.href) void navigate(row.href);
-              }}
-            />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+      <ChartCanvas ariaLabel={ariaLabel}>
+        <BarChart data={data} margin={CHART_MARGIN}>
+          <CartesianGrid {...CHART_GRID_PROPS} />
+          <XAxis dataKey="label" {...CHART_X_AXIS_PROPS} />
+          <YAxis {...CHART_Y_AXIS_PROPS} />
+          <Tooltip content={<CategoryTooltip />} cursor={CHART_BAR_CURSOR} />
+          <Bar
+            dataKey="value"
+            name="Nettodividende"
+            fill="var(--chart-1)"
+            radius={CHART_BAR_RADIUS}
+            isAnimationActive={!reducedMotion}
+            cursor="pointer"
+            onClick={(entry) => {
+              const row = (entry as unknown as { payload?: CategoryDatum }).payload;
+              if (row?.href) void navigate(row.href);
+            }}
+          />
+        </BarChart>
+      </ChartCanvas>
 
-      <details className="text-sm">
-        <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
-          Datentabelle anzeigen
-        </summary>
-        <div className="relative mt-3 overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <caption className="sr-only">{ariaLabel}</caption>
-            <thead>
-              <tr className="text-muted-foreground">
-                <th scope="col" className="py-1 pr-4 font-medium">
-                  {categoryHeader}
-                </th>
-                <th scope="col" className="py-1 pr-4 text-right font-medium">
-                  Nettodividende
-                </th>
-                <th scope="col" className="py-1 text-right font-medium">
-                  Zahlungen
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.map((row) => (
-                <tr key={row.key} className="border-t border-border">
-                  {/* Der Drill-down lag zuvor ausschliesslich auf dem Balken —
+      <ChartDataTable>
+        <table className="w-full text-left text-sm">
+          <caption className="sr-only">{ariaLabel}</caption>
+          <thead>
+            <tr className="text-muted-foreground">
+              <th scope="col" className="py-1 pr-4 font-medium">
+                {categoryHeader}
+              </th>
+              <th scope="col" className="py-1 pr-4 text-right font-medium">
+                Nettodividende
+              </th>
+              <th scope="col" className="py-1 text-right font-medium">
+                Zahlungen
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((row) => (
+              <tr key={row.key} className="border-t border-border">
+                {/* Der Drill-down lag zuvor ausschliesslich auf dem Balken —
                       als `onClick`. Damit war er per Maus erreichbar und sonst
                       gar nicht: Tastatur und Screenreader kamen nicht zu den
                       Zahlen hinter einer Kennzahl. Die Datentabelle ist der
                       zugaengliche Zwilling des Diagramms und traegt das Ziel
                       deshalb als echten Link. */}
-                  <th scope="row" className="py-1 pr-4 font-normal">
-                    {row.href ? (
-                      <Link
-                        to={row.href}
-                        className="rounded-sm outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
-                      >
-                        {row.label}
-                      </Link>
-                    ) : (
-                      row.label
-                    )}
-                  </th>
-                  <td className="py-1 pr-4 text-right tabular-nums">
-                    {formatMoney(row.money)}
-                  </td>
-                  <td className="py-1 text-right tabular-nums">
-                    {formatCountNumber(row.count)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </details>
+                <th scope="row" className="py-1 pr-4 font-normal">
+                  {row.href ? (
+                    <Link
+                      to={row.href}
+                      className="rounded-sm outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      {row.label}
+                    </Link>
+                  ) : (
+                    row.label
+                  )}
+                </th>
+                <td className="py-1 pr-4 text-right tabular-nums">
+                  {formatMoney(row.money)}
+                </td>
+                <td className="py-1 text-right tabular-nums">
+                  {formatCountNumber(row.count)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </ChartDataTable>
     </div>
   );
 }
@@ -228,11 +199,7 @@ export function PaymentsHeatmap({
   const navigate = useNavigate();
 
   if (rows.length === 0) {
-    return (
-      <p className="py-12 text-center text-sm text-muted-foreground">
-        Keine Daten für die aktuelle Auswahl.
-      </p>
-    );
+    return <ChartEmpty>Keine Daten für die aktuelle Auswahl.</ChartEmpty>;
   }
 
   const intensity = (value: number): number => {
@@ -371,69 +338,50 @@ export function ComparisonLineChart({
   const reducedMotion = useReducedMotion();
 
   if (points.length === 0) {
-    return (
-      <p className="py-12 text-center text-sm text-muted-foreground">
-        Keine Daten für die aktuelle Auswahl.
-      </p>
-    );
+    return <ChartEmpty>Keine Daten für die aktuelle Auswahl.</ChartEmpty>;
   }
 
   return (
     <div className="space-y-4">
-      <div className="h-64 w-full sm:h-72" role="img" aria-label={ariaLabel}>
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={points} margin={{ top: 8, right: 8, bottom: 4, left: 4 }}>
-            <CartesianGrid
-              strokeDasharray="3 3"
-              vertical={false}
-              stroke="var(--border)"
-            />
-            <XAxis
-              dataKey="label"
-              tick={{ fontSize: 12 }}
-              stroke="var(--muted-foreground)"
-            />
-            <YAxis
-              tickFormatter={tickFormatter}
-              tick={{ fontSize: 12 }}
-              width={64}
-              stroke="var(--muted-foreground)"
-            />
-            <Tooltip
-              content={
-                <ComparisonTooltip
-                  currentLabel={currentLabel}
-                  referenceLabel={referenceLabel}
-                />
-              }
-              cursor={{ stroke: "var(--muted-foreground)", strokeDasharray: "3 3" }}
-            />
-            {/* Die Vergleichsreihe liegt hinten und traegt einen Strich: Der
+      <ChartCanvas ariaLabel={ariaLabel}>
+        <LineChart data={points} margin={CHART_MARGIN}>
+          <CartesianGrid {...CHART_GRID_PROPS} />
+          <XAxis dataKey="label" {...CHART_X_AXIS_PROPS} />
+          <YAxis {...CHART_Y_AXIS_PROPS} />
+          <Tooltip
+            content={
+              <ComparisonTooltip
+                currentLabel={currentLabel}
+                referenceLabel={referenceLabel}
+              />
+            }
+            cursor={CHART_LINE_CURSOR}
+          />
+          {/* Die Vergleichsreihe liegt hinten und traegt einen Strich: Der
                 Blick soll zuerst auf dem aktuellen Zeitraum landen. */}
-            <Line
-              type="monotone"
-              dataKey="reference"
-              name={referenceLabel}
-              stroke="var(--chart-2)"
-              strokeWidth={2}
-              strokeDasharray="6 4"
-              dot={false}
-              activeDot={{ r: 5 }}
-              isAnimationActive={!reducedMotion}
-            />
-            <Line
-              type="monotone"
-              dataKey="current"
-              name={currentLabel}
-              stroke="var(--chart-1)"
-              strokeWidth={2}
-              dot={false}
-              activeDot={{ r: 5 }}
-              isAnimationActive={!reducedMotion}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
+          <Line
+            type="monotone"
+            dataKey="reference"
+            name={referenceLabel}
+            stroke="var(--chart-2)"
+            strokeWidth={2}
+            strokeDasharray="6 4"
+            dot={false}
+            activeDot={{ r: 5 }}
+            isAnimationActive={!reducedMotion}
+          />
+          <Line
+            type="monotone"
+            dataKey="current"
+            name={currentLabel}
+            stroke="var(--chart-1)"
+            strokeWidth={2}
+            dot={false}
+            activeDot={{ r: 5 }}
+            isAnimationActive={!reducedMotion}
+          />
+        </LineChart>
+      </ChartCanvas>
 
       <ChartLegend
         items={[
@@ -442,44 +390,39 @@ export function ComparisonLineChart({
         ]}
       />
 
-      <details className="text-sm">
-        <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
-          Datentabelle anzeigen
-        </summary>
-        <div className="relative mt-3 overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <caption className="sr-only">{ariaLabel}</caption>
-            <thead>
-              <tr className="text-muted-foreground">
-                <th scope="col" className="py-1 pr-4 font-medium">
-                  Monat
+      <ChartDataTable>
+        <table className="w-full text-left text-sm">
+          <caption className="sr-only">{ariaLabel}</caption>
+          <thead>
+            <tr className="text-muted-foreground">
+              <th scope="col" className="py-1 pr-4 font-medium">
+                Monat
+              </th>
+              <th scope="col" className="py-1 pr-4 text-right font-medium">
+                {currentLabel}
+              </th>
+              <th scope="col" className="py-1 text-right font-medium">
+                {referenceLabel}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {points.map((point) => (
+              <tr key={point.label} className="border-t border-border">
+                <th scope="row" className="py-1 pr-4 font-normal">
+                  {point.label}
                 </th>
-                <th scope="col" className="py-1 pr-4 text-right font-medium">
-                  {currentLabel}
-                </th>
-                <th scope="col" className="py-1 text-right font-medium">
-                  {referenceLabel}
-                </th>
+                <td className="py-1 pr-4 text-right tabular-nums">
+                  {formatMoney(point.currentMoney)}
+                </td>
+                <td className="py-1 text-right tabular-nums">
+                  {formatMoney(point.referenceMoney)}
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {points.map((point) => (
-                <tr key={point.label} className="border-t border-border">
-                  <th scope="row" className="py-1 pr-4 font-normal">
-                    {point.label}
-                  </th>
-                  <td className="py-1 pr-4 text-right tabular-nums">
-                    {formatMoney(point.currentMoney)}
-                  </td>
-                  <td className="py-1 text-right tabular-nums">
-                    {formatMoney(point.referenceMoney)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </details>
+            ))}
+          </tbody>
+        </table>
+      </ChartDataTable>
     </div>
   );
 }
@@ -500,14 +443,14 @@ function ComparisonTooltip({
   const row = payload?.[0]?.payload;
   if (!active || !row) return null;
   return (
-    <div className="rounded-md border border-border bg-popover px-3 py-2 text-sm shadow-md">
+    <ChartTooltipBox>
       <p className="font-medium">{row.label}</p>
-      <p className="tabular-nums">
+      <p>
         {currentLabel}: {formatMoney(row.currentMoney)}
       </p>
-      <p className="tabular-nums text-muted-foreground">
+      <p className="text-muted-foreground">
         {referenceLabel}: {formatMoney(row.referenceMoney)}
       </p>
-    </div>
+    </ChartTooltipBox>
   );
 }

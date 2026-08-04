@@ -1,17 +1,24 @@
 import * as React from "react";
 import { useNavigate } from "react-router";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import { Bar, BarChart, CartesianGrid, Tooltip, XAxis, YAxis } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChartLegend } from "@/components/charts/ChartLegend";
+import {
+  ChartCanvas,
+  ChartDataTable,
+  ChartEmpty,
+  ChartTooltipBox,
+} from "@/components/charts/chart";
+import {
+  CHART_BAR_CURSOR,
+  CHART_BAR_RADIUS,
+  CHART_GRID_PROPS,
+  CHART_MARGIN,
+  CHART_X_AXIS_PROPS,
+  CHART_Y_AXIS_PROPS,
+} from "@/components/charts/chartTheme";
+import { useReducedMotion } from "@/lib/hooks/useReducedMotion";
 import { EUR, Money, formatMoney } from "@/lib/money";
 import {
   comparePeriods,
@@ -25,28 +32,6 @@ import {
 } from "@/lib/statistics";
 import { describeComparison, paymentsListHref } from "./format";
 import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
-
-function useReducedMotion(): boolean {
-  const [reduced, setReduced] = React.useState(false);
-  React.useEffect(() => {
-    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const update = () => {
-      setReduced(query.matches);
-    };
-    update();
-    query.addEventListener("change", update);
-    return () => {
-      query.removeEventListener("change", update);
-    };
-  }, []);
-  return reduced;
-}
-
-const axisFormatter = new Intl.NumberFormat("de-DE", {
-  notation: "compact",
-  maximumFractionDigits: 1,
-});
-const tickFormatter = (value: number) => `${axisFormatter.format(value)} €`;
 
 type ChartMode = "monthly" | "cumulative";
 
@@ -191,114 +176,73 @@ export function MonthlyChart({ payments, selection, today }: MonthlyChartProps) 
       </CardHeader>
       <CardContent className="space-y-4">
         {!hasData ? (
-          <p className="py-12 text-center text-sm text-muted-foreground">
+          <ChartEmpty>
             {isAll
               ? "Noch keine Dividendeneingänge vorhanden."
               : `Für ${selectedYearLabel} liegen keine Dividendeneingänge vor.`}
-          </p>
+          </ChartEmpty>
         ) : (
           <>
-            <div
-              className="h-64 sm:h-72 w-full"
-              role="img"
-              aria-label={`${title}. ${chartDescription}`}
-            >
-              <ResponsiveContainer width="100%" height="100%">
-                {isAll ? (
-                  <BarChart
-                    data={yearData}
-                    margin={{ top: 8, right: 8, bottom: 4, left: 4 }}
-                  >
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      vertical={false}
-                      stroke="var(--border)"
-                    />
-                    <XAxis
-                      dataKey="label"
-                      tick={{ fontSize: 12 }}
-                      stroke="var(--muted-foreground)"
-                    />
-                    <YAxis
-                      tickFormatter={tickFormatter}
-                      tick={{ fontSize: 12 }}
-                      width={64}
-                      stroke="var(--muted-foreground)"
-                    />
-                    <Tooltip
-                      content={<YearTooltip />}
-                      cursor={{ fill: "var(--muted)" }}
-                    />
-                    <Bar
-                      dataKey="value"
-                      name="Nettodividende"
-                      fill="var(--chart-1)"
-                      radius={[4, 4, 0, 0]}
-                      isAnimationActive={!reducedMotion}
-                      onClick={(data) => {
-                        const row = (data as unknown as { payload?: YearRow }).payload;
-                        if (row) void navigate(paymentsListHref({ year: row.year }));
-                      }}
-                      cursor="pointer"
-                    />
-                  </BarChart>
-                ) : (
-                  <BarChart
-                    data={monthData}
-                    margin={{ top: 8, right: 8, bottom: 4, left: 4 }}
-                  >
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      vertical={false}
-                      stroke="var(--border)"
-                    />
-                    <XAxis
-                      dataKey="label"
-                      tick={{ fontSize: 12 }}
-                      stroke="var(--muted-foreground)"
-                    />
-                    <YAxis
-                      tickFormatter={tickFormatter}
-                      tick={{ fontSize: 12 }}
-                      width={64}
-                      stroke="var(--muted-foreground)"
-                    />
-                    <Tooltip
-                      content={
-                        <MonthTooltip
-                          selectedLabel={selectedYearLabel}
-                          priorLabel={priorYearLabel}
-                        />
+            <ChartCanvas ariaLabel={`${title}. ${chartDescription}`}>
+              {isAll ? (
+                <BarChart data={yearData} margin={CHART_MARGIN}>
+                  <CartesianGrid {...CHART_GRID_PROPS} />
+                  <XAxis dataKey="label" {...CHART_X_AXIS_PROPS} />
+                  <YAxis {...CHART_Y_AXIS_PROPS} />
+                  <Tooltip content={<YearTooltip />} cursor={CHART_BAR_CURSOR} />
+                  <Bar
+                    dataKey="value"
+                    name="Nettodividende"
+                    fill="var(--chart-1)"
+                    radius={CHART_BAR_RADIUS}
+                    isAnimationActive={!reducedMotion}
+                    onClick={(data) => {
+                      const row = (data as unknown as { payload?: YearRow }).payload;
+                      if (row) void navigate(paymentsListHref({ year: row.year }));
+                    }}
+                    cursor="pointer"
+                  />
+                </BarChart>
+              ) : (
+                <BarChart data={monthData} margin={CHART_MARGIN}>
+                  <CartesianGrid {...CHART_GRID_PROPS} />
+                  <XAxis dataKey="label" {...CHART_X_AXIS_PROPS} />
+                  <YAxis {...CHART_Y_AXIS_PROPS} />
+                  <Tooltip
+                    content={
+                      <MonthTooltip
+                        selectedLabel={selectedYearLabel}
+                        priorLabel={priorYearLabel}
+                      />
+                    }
+                    cursor={CHART_BAR_CURSOR}
+                  />
+                  <Bar
+                    dataKey="prior"
+                    name={priorYearLabel}
+                    fill="var(--chart-2)"
+                    radius={CHART_BAR_RADIUS}
+                    isAnimationActive={!reducedMotion}
+                  />
+                  <Bar
+                    dataKey="selected"
+                    name={selectedYearLabel}
+                    fill="var(--chart-1)"
+                    radius={CHART_BAR_RADIUS}
+                    isAnimationActive={!reducedMotion}
+                    onClick={(data) => {
+                      const row = (data as unknown as { payload?: MonthRow }).payload;
+                      if (row && !row.isFuture && typeof selection === "number") {
+                        void navigate(
+                          paymentsListHref({ year: selection, month: row.month }),
+                        );
                       }
-                      cursor={{ fill: "var(--muted)" }}
-                    />
-                    <Bar
-                      dataKey="prior"
-                      name={priorYearLabel}
-                      fill="var(--chart-2)"
-                      radius={[4, 4, 0, 0]}
-                      isAnimationActive={!reducedMotion}
-                    />
-                    <Bar
-                      dataKey="selected"
-                      name={selectedYearLabel}
-                      fill="var(--chart-1)"
-                      radius={[4, 4, 0, 0]}
-                      isAnimationActive={!reducedMotion}
-                      onClick={(data) => {
-                        const row = (data as unknown as { payload?: MonthRow }).payload;
-                        if (row && !row.isFuture && typeof selection === "number") {
-                          void navigate(
-                            paymentsListHref({ year: selection, month: row.month }),
-                          );
-                        }
-                      }}
-                      cursor="pointer"
-                    />
-                  </BarChart>
-                )}
-              </ResponsiveContainer>
-            </div>
+                    }}
+                    cursor="pointer"
+                  />
+                </BarChart>
+              )}
+            </ChartCanvas>
 
             {/* Nur der Jahresvergleich hat zwei Reihen; die reine Jahresreihe
                 braucht keine Legende. */}
@@ -311,10 +255,7 @@ export function MonthlyChart({ payments, selection, today }: MonthlyChartProps) 
               />
             )}
 
-            <details className="text-sm">
-              <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
-                Datentabelle anzeigen
-              </summary>
+            <ChartDataTable>
               {isAll ? (
                 <YearTable rows={yearData} />
               ) : (
@@ -324,7 +265,7 @@ export function MonthlyChart({ payments, selection, today }: MonthlyChartProps) 
                   priorLabel={priorYearLabel}
                 />
               )}
-            </details>
+            </ChartDataTable>
           </>
         )}
       </CardContent>
@@ -355,7 +296,7 @@ function MonthTooltip({
         )
       : null;
   return (
-    <div className="rounded-md border border-border bg-card px-3 py-2 text-sm shadow-md">
+    <ChartTooltipBox>
       <p className="font-medium">{monthNameDe(row.month)}</p>
       {row.isFuture ? (
         <p className="text-muted-foreground">Noch nicht begonnen</p>
@@ -370,7 +311,7 @@ function MonthTooltip({
           {comparison && <p className="mt-1 text-xs">{comparison.text}</p>}
         </>
       )}
-    </div>
+    </ChartTooltipBox>
   );
 }
 
@@ -378,13 +319,13 @@ function YearTooltip({ active, payload }: TooltipInput<YearRow>) {
   if (!active || !payload || payload.length === 0) return null;
   const row = payload[0].payload;
   return (
-    <div className="rounded-md border border-border bg-card px-3 py-2 text-sm shadow-md">
+    <ChartTooltipBox>
       <p className="font-medium">{row.year}</p>
       <p>{formatMoney(row.money)}</p>
       <p className="text-muted-foreground">
         {formatCountNoun(row.count, "Zahlung", "Zahlungen")}
       </p>
-    </div>
+    </ChartTooltipBox>
   );
 }
 
@@ -400,82 +341,78 @@ function MonthTable({
   priorLabel: string;
 }) {
   return (
-    <div className="relative mt-3 overflow-x-auto">
-      <table className="w-full text-left text-sm">
-        <caption className="sr-only">
-          Monatliche Netto-Dividenden {selectedLabel} und {priorLabel}
-        </caption>
-        <thead>
-          <tr className="text-muted-foreground">
-            <th scope="col" className="py-1 pr-4 font-medium">
-              Monat
+    <table className="w-full text-left text-sm">
+      <caption className="sr-only">
+        Monatliche Netto-Dividenden {selectedLabel} und {priorLabel}
+      </caption>
+      <thead>
+        <tr className="text-muted-foreground">
+          <th scope="col" className="py-1 pr-4 font-medium">
+            Monat
+          </th>
+          <th scope="col" className="py-1 pr-4 text-right font-medium">
+            {selectedLabel}
+          </th>
+          <th scope="col" className="py-1 text-right font-medium">
+            {priorLabel}
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((row) => (
+          <tr key={row.month} className="border-t border-border">
+            <th scope="row" className="py-1 pr-4 font-normal">
+              {monthNameDe(row.month)}
             </th>
-            <th scope="col" className="py-1 pr-4 text-right font-medium">
-              {selectedLabel}
-            </th>
-            <th scope="col" className="py-1 text-right font-medium">
-              {priorLabel}
-            </th>
+            <td className="py-1 pr-4 text-right tabular-nums">
+              {row.isFuture
+                ? "noch nicht begonnen"
+                : row.selectedMoney
+                  ? formatMoney(row.selectedMoney)
+                  : "—"}
+            </td>
+            <td className="py-1 text-right tabular-nums">
+              {formatMoney(row.priorMoney)}
+            </td>
           </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.month} className="border-t border-border">
-              <th scope="row" className="py-1 pr-4 font-normal">
-                {monthNameDe(row.month)}
-              </th>
-              <td className="py-1 pr-4 text-right tabular-nums">
-                {row.isFuture
-                  ? "noch nicht begonnen"
-                  : row.selectedMoney
-                    ? formatMoney(row.selectedMoney)
-                    : "—"}
-              </td>
-              <td className="py-1 text-right tabular-nums">
-                {formatMoney(row.priorMoney)}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+        ))}
+      </tbody>
+    </table>
   );
 }
 
 function YearTable({ rows }: { rows: YearRow[] }) {
   return (
-    <div className="relative mt-3 overflow-x-auto">
-      <table className="w-full text-left text-sm">
-        <caption className="sr-only">Netto-Dividenden je Jahr</caption>
-        <thead>
-          <tr className="text-muted-foreground">
-            <th scope="col" className="py-1 pr-4 font-medium">
-              Jahr
+    <table className="w-full text-left text-sm">
+      <caption className="sr-only">Netto-Dividenden je Jahr</caption>
+      <thead>
+        <tr className="text-muted-foreground">
+          <th scope="col" className="py-1 pr-4 font-medium">
+            Jahr
+          </th>
+          <th scope="col" className="py-1 pr-4 text-right font-medium">
+            Nettodividende
+          </th>
+          <th scope="col" className="py-1 text-right font-medium">
+            Zahlungen
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((row) => (
+          <tr key={row.year} className="border-t border-border">
+            <th scope="row" className="py-1 pr-4 font-normal">
+              {row.year}
             </th>
-            <th scope="col" className="py-1 pr-4 text-right font-medium">
-              Nettodividende
-            </th>
-            <th scope="col" className="py-1 text-right font-medium">
-              Zahlungen
-            </th>
+            <td className="py-1 pr-4 text-right tabular-nums">
+              {formatMoney(row.money)}
+            </td>
+            <td className="py-1 text-right tabular-nums">
+              {formatCountNumber(row.count)}
+            </td>
           </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.year} className="border-t border-border">
-              <th scope="row" className="py-1 pr-4 font-normal">
-                {row.year}
-              </th>
-              <td className="py-1 pr-4 text-right tabular-nums">
-                {formatMoney(row.money)}
-              </td>
-              <td className="py-1 text-right tabular-nums">
-                {formatCountNumber(row.count)}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+        ))}
+      </tbody>
+    </table>
   );
 }

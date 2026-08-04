@@ -3,6 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
 import { useLocation, useNavigate, useParams } from "react-router";
 import { Button } from "@/components/ui/button";
+import { PageSkeleton } from "@/components/layout/PageSkeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
@@ -182,7 +183,7 @@ export function NewPaymentPage() {
   });
 
   if (isEditMode && isLoadingPayment) {
-    return <p className="text-sm text-muted-foreground">Wird geladen …</p>;
+    return <PageSkeleton />;
   }
 
   if (isEditMode && existingPayment?.archived_at) {

@@ -3,6 +3,7 @@ import { Outlet, useMatch } from "react-router";
 import { BarChart3 } from "lucide-react";
 import { STATISTICS_TABS } from "@/app/navigation";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -21,8 +22,8 @@ function StatisticsSkeleton() {
         {Array.from({ length: 6 }).map((_, index) => (
           <Card key={index}>
             <CardContent className="p-4 sm:p-6">
-              <div className="h-4 w-24 animate-pulse rounded bg-muted" />
-              <div className="mt-3 h-8 w-32 animate-pulse rounded bg-muted" />
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="mt-3 h-8 w-32" />
             </CardContent>
           </Card>
         ))}

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { PageSkeleton } from "@/components/layout/PageSkeleton";
 import { StatCard } from "@/components/domain/StatCard";
 import { AmountText } from "@/components/money/AmountText";
 import { DateText } from "@/components/DateText";
@@ -130,9 +131,9 @@ export function SecurityDetailPage() {
 
   if (isLoading || securitiesLoading) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-6">
         {backLink}
-        <p className="text-sm text-muted-foreground">Wird geladen …</p>
+        <PageSkeleton />
       </div>
     );
   }

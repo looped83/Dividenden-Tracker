@@ -2,6 +2,7 @@ import * as React from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { ArrowLeft, ExternalLink, Pencil, Target, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -66,9 +67,9 @@ export function GoalDetailPage() {
         <Card>
           <CardContent className="space-y-4 p-4 sm:p-6" aria-busy="true">
             <span className="sr-only">Ziel wird geladen …</span>
-            <div className="h-6 w-48 animate-pulse rounded bg-muted" />
-            <div className="h-2.5 w-full animate-pulse rounded bg-muted" />
-            <div className="h-24 w-full animate-pulse rounded bg-muted" />
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-2.5 w-full" />
+            <Skeleton className="h-24 w-full" />
           </CardContent>
         </Card>
       </div>

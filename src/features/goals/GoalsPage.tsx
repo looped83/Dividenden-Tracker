@@ -2,6 +2,7 @@ import * as React from "react";
 import { Outlet, useNavigate } from "react-router";
 import { Plus, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -30,9 +31,9 @@ function GoalsSkeleton() {
       {Array.from({ length: 3 }).map((_, index) => (
         <Card key={index}>
           <CardContent className="space-y-4 p-4 sm:p-6">
-            <div className="h-5 w-40 animate-pulse rounded bg-muted" />
-            <div className="h-2.5 w-full animate-pulse rounded bg-muted" />
-            <div className="h-10 w-full animate-pulse rounded bg-muted" />
+            <Skeleton className="h-5 w-40" />
+            <Skeleton className="h-2.5 w-full" />
+            <Skeleton className="h-10 w-full" />
           </CardContent>
         </Card>
       ))}

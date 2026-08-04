@@ -53,13 +53,13 @@ function renderOverview(payments: AnalyticsPayment[]) {
 }
 
 describe("OverviewTab (Render-Smoke)", () => {
-  it("zeigt die historische Gesamtsumme und Kernkennzahlen", () => {
+  it("zeigt die Gesamtsumme und Kernkennzahlen", () => {
     renderOverview([
       p("2024-05-10", "100.00", "sec-a"),
       p("2025-05-10", "300.00", "sec-b"),
       p("2025-08-10", "50.00", "sec-a"),
     ]);
-    expect(screen.getByText("Historische Gesamtsumme")).toBeInTheDocument();
+    expect(screen.getByText("Gesamtsumme")).toBeInTheDocument();
     expect(screen.getAllByText(/450,00\s?€/).length).toBeGreaterThan(0);
     expect(screen.getByText("Bester Monat")).toBeInTheDocument();
     expect(screen.getByText("Bestes Jahr")).toBeInTheDocument();
