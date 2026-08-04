@@ -418,41 +418,53 @@ export function PortfolioImportDialog({
                 <legend className="text-sm font-medium">Stammdaten ergänzen</legend>
                 <p className="text-xs text-muted-foreground">
                   Vorhandene Werte werden nur ersetzt, wenn die Quelle abweicht. Leere
-                  Angaben der Quelle lassen deine Daten unangetastet.
+                  Angaben der Quelle lassen deine Daten unangetastet. Die ISIN wird nur
+                  ergänzt, nie geändert.
                 </p>
-                {FIELD_ORDER.filter((field) => changesByField.has(field)).map((field) => {
-                  const entries = changesByField.get(field) ?? [];
-                  return (
-                    <label
-                      key={field}
-                      className="flex items-start gap-2 text-sm"
-                      htmlFor={`field-${field}`}
-                    >
-                      <Checkbox
-                        id={`field-${field}`}
-                        checked={selectedFields.has(field)}
-                        onChange={() => {
-                          toggleField(field);
-                        }}
-                      />
-                      <span>
-                        {FIELD_LABELS[field]} für{" "}
-                        {formatCountNoun(entries.length, "Unternehmen", "Unternehmen")}
-                        <span className="block text-xs text-muted-foreground">
-                          {entries
-                            .slice(0, 3)
-                            .map(
-                              (entry) =>
-                                `${entry.name}: ${entry.from ?? "—"} → ${entry.to}`,
-                            )
-                            .join(" · ")}
-                          {entries.length > 3 &&
-                            ` · und ${formatCountNumber(entries.length - 3)} weitere`}
-                        </span>
-                      </span>
-                    </label>
-                  );
-                })}
+                {/* Zweispaltig, sobald der Platz reicht: Sechs Felder mit je zwei
+                    Zeilen fuellten sonst allein schon einen halben Bildschirm und
+                    schoben die Bestaetigung aus dem Sichtfeld. */}
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {FIELD_ORDER.filter((field) => changesByField.has(field)).map(
+                    (field) => {
+                      const entries = changesByField.get(field) ?? [];
+                      return (
+                        <label
+                          key={field}
+                          className="flex items-start gap-2 text-sm"
+                          htmlFor={`field-${field}`}
+                        >
+                          <Checkbox
+                            id={`field-${field}`}
+                            checked={selectedFields.has(field)}
+                            onChange={() => {
+                              toggleField(field);
+                            }}
+                          />
+                          <span className="min-w-0">
+                            {FIELD_LABELS[field]} für{" "}
+                            {formatCountNoun(
+                              entries.length,
+                              "Unternehmen",
+                              "Unternehmen",
+                            )}
+                            <span className="block truncate text-xs text-muted-foreground">
+                              {entries
+                                .slice(0, 2)
+                                .map(
+                                  (entry) =>
+                                    `${entry.name}: ${entry.from ?? "—"} → ${entry.to}`,
+                                )
+                                .join(" · ")}
+                              {entries.length > 2 &&
+                                ` · und ${formatCountNumber(entries.length - 2)} weitere`}
+                            </span>
+                          </span>
+                        </label>
+                      );
+                    },
+                  )}
+                </div>
               </fieldset>
             )}
 

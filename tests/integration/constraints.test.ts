@@ -113,10 +113,11 @@ describe("CHECK-Constraints (TEST_STRATEGY.md §5)", () => {
 
 describe("Foreign Keys", () => {
   it("lehnt einen Dividendeneingang mit unbekanntem Wertpapier ab", async () => {
-    // Wird bereits vom BEFORE-Trigger recompute_business_fingerprint()
-    // abgefangen (eigene Existenzpruefung fuer die Fingerprint-Berechnung),
-    // bevor die FK-Constraint ueberhaupt ausgewertet wird — mit einer
-    // klareren Fehlermeldung als der reine FK-Verstoss.
+    // Faengt seit 0030 die Eigentumspruefung ab (`trg_02x_…`), noch vor der
+    // Fingerprint-Berechnung und lange vor der FK-Constraint. Fuer eine
+    // unbekannte Kennung ist die Aussage dieselbe wie fuer eine fremde: Sie
+    // gehoert nicht zum eigenen Bestand — beides kann der Nutzer nicht
+    // unterscheiden, und beides ist gleich zu beheben.
     await expect(
       asUser(userId, async (client) => {
         const depotId = await seedDepot(client, "Depot FK 1");
@@ -125,10 +126,13 @@ describe("Foreign Keys", () => {
           depotId,
         });
       }),
-    ).rejects.toThrow(/security_id .* nicht gefunden/);
+    ).rejects.toThrow(/security_id .* gehoert nicht zum eigenen Bestand/);
   });
 
   it("lehnt einen Dividendeneingang mit unbekanntem Depot ab", async () => {
+    // Seit 0030 greift hier die Eigentumspruefung (`trg_02y_…`) vor der
+    // FK-Constraint. Der Zugriff wird weiterhin abgelehnt — nur mit einer
+    // Meldung, die den Grund nennt, statt den Constraint-Namen.
     await expect(
       asUser(userId, async (client) => {
         const securityId = await seedSecurity(client, { name: "FK AG 2" });
@@ -137,7 +141,7 @@ describe("Foreign Keys", () => {
           depotId: "00000000-0000-0000-0000-000000000000",
         });
       }),
-    ).rejects.toThrow(/violates foreign key constraint/);
+    ).rejects.toThrow(/depot_id .* gehoert nicht zum eigenen Bestand/);
   });
 
   it("lehnt ein unbekanntes Standard-Depot am Unternehmen ab (0014)", async () => {

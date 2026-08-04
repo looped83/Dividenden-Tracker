@@ -342,3 +342,77 @@ describe("Grants (Least Privilege, SECURITY_MODEL.md §3.4)", () => {
     expect(result.rowCount).toBe(0);
   });
 });
+
+/**
+ * Eigentum der referenzierten Stammdaten (Migration 0030).
+ *
+ * Der Fremdschluessel prueft nur, dass die Zeile existiert — nicht, wem sie
+ * gehoert. Vor 0030 liess sich eine Zahlung an das **Depot eines anderen
+ * Nutzers** haengen; beim Unternehmen scheiterte es nur als Nebenwirkung der
+ * Fingerprint-Berechnung, mit einer Meldung, die nichts erklaerte.
+ */
+describe("Eigentum der referenzierten Stammdaten (0030)", () => {
+  let depotB: string;
+  let securityB: string;
+
+  beforeAll(async () => {
+    depotB = await asUser(userB, (client) => seedDepot(client, "Depot B (0030)"));
+    securityB = await asUser(userB, (client) =>
+      seedSecurity(client, { name: "Security B (0030)" }),
+    );
+  });
+
+  it("weist eine Zahlung auf das Unternehmen eines anderen Nutzers ab", async () => {
+    await expect(
+      asUser(userA, (client) =>
+        seedPayment(client, { securityId: securityB, depotId: depotA }),
+      ),
+    ).rejects.toThrow(/security_id .* gehoert nicht zum eigenen Bestand/i);
+  });
+
+  it("weist eine Zahlung auf das Depot eines anderen Nutzers ab", async () => {
+    await expect(
+      asUser(userA, (client) =>
+        seedPayment(client, { securityId: securityA, depotId: depotB }),
+      ),
+    ).rejects.toThrow(/depot_id .* gehoert nicht zum eigenen Bestand/i);
+  });
+
+  it("verhindert auch das nachtraegliche Umhaengen per UPDATE", async () => {
+    await expect(
+      asUser(userA, (client) =>
+        client.query("update dividend_payments set depot_id = $1 where id = $2", [
+          depotB,
+          paymentAId,
+        ]),
+      ),
+    ).rejects.toThrow(/depot_id .* gehoert nicht zum eigenen Bestand/i);
+  });
+
+  it("laesst eigene Stammdaten unveraendert zu", async () => {
+    const payment = await asUser(userA, (client) =>
+      seedPayment(client, { securityId: securityA, depotId: depotA }),
+    );
+    expect(payment.id).toBeTruthy();
+  });
+
+  it("prueft das Eigentum vor der Fingerprint-Berechnung", async () => {
+    // Die Reihenfolge der BEFORE-Trigger ist alphabetisch; `trg_02x_…` muss
+    // zwischen `trg_02_enforce_user_id` und `trg_03_recompute_fingerprint`
+    // liegen. Sonst gewaenne wieder die alte, nichtssagende Meldung.
+    const result = await asSuperuser((client) =>
+      client.query<{ tgname: string }>(
+        `select tgname from pg_trigger
+          where tgrelid = 'dividend_payments'::regclass and not tgisinternal
+          order by tgname`,
+      ),
+    );
+    const names = result.rows.map((row) => row.tgname);
+    expect(names.indexOf("trg_02_enforce_user_id")).toBeLessThan(
+      names.indexOf("trg_02x_enforce_own_security"),
+    );
+    expect(names.indexOf("trg_02y_enforce_own_depot")).toBeLessThan(
+      names.indexOf("trg_03_recompute_fingerprint"),
+    );
+  });
+});

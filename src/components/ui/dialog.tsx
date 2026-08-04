@@ -17,7 +17,14 @@ export function DialogContent({
       <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
       <DialogPrimitive.Content
         className={cn(
-          "fixed left-1/2 top-1/2 z-50 grid w-[calc(100%-1rem)] max-w-sm sm:max-w-lg -translate-x-1/2 -translate-y-1/2",
+          // **Eine** Breitenklasse, kein `max-w-sm sm:max-w-lg`: Ein `max-w-*`
+          // aus `className` haette die Basisklasse zwar ersetzt, nicht aber die
+          // `sm:`-Variante — die gewinnt ab 640px und deckelte jeden breiteren
+          // Dialog stillschweigend wieder auf 512px. Genau das traf die
+          // Importdialoge, die ausdruecklich `max-w-2xl`/`max-w-3xl` setzen.
+          // Mit einer Gruppe greift eine Ueberschreibung auf allen Breiten.
+          // Schmale Geraete begrenzt weiterhin `w-[calc(100%-1rem)]`.
+          "fixed left-1/2 top-1/2 z-50 grid w-[calc(100%-1rem)] max-w-lg -translate-x-1/2 -translate-y-1/2",
           "gap-4 rounded-lg border border-border bg-card p-4 sm:p-6 shadow-lg",
           "max-h-[90vh] overflow-y-auto",
           className,

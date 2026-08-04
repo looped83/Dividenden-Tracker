@@ -592,3 +592,28 @@ Tabellen — ein Stichtag wird als Ganzes ersetzt. Der Trigger `enforce_own_secu
 stellt sicher, dass das referenzierte Unternehmen dem Schreibenden gehört (der
 Fremdschlüssel allein prüft nur die Existenz); er läuft ohne `security definer`, sodass
 die RLS von `securities` die Prüfung trägt.
+
+---
+
+## Eigentum referenzierter Stammdaten (Migration 0030)
+
+Ein Fremdschlüssel prüft nur die **Existenz** der referenzierten Zeile, nicht ihren
+Eigentümer — und RLS verhindert das *Lesen* fremder Zeilen, nicht das *Verweisen* auf
+sie. Zwei Triggerfunktionen schließen das:
+
+| Funktion | Prüft | Angebunden an |
+|---|---|---|
+| `enforce_own_security()` | `security_id` gehört dem Schreibenden | `dividend_payments` (`trg_02x_…`), `security_snapshots` |
+| `enforce_own_depot()` | `depot_id` gehört dem Schreibenden | `dividend_payments` (`trg_02y_…`) |
+
+Beide vergleichen `user_id` ausdrücklich gegen `coalesce(new.user_id, auth.uid())`. Das
+Coalesce ist nötig, weil BEFORE-Trigger alphabetisch laufen und `enforce_user_id` die
+Spalte je nach Tabelle erst danach füllt; der ausdrückliche Vergleich (statt sich auf die
+Sichtbarkeit durch RLS zu verlassen) hält die Regel auch in `security definer`-Kontexten
+und für `service_role` aufrecht.
+
+Die Namen `trg_02x_`/`trg_02y_` sind kein Zufall: Sie liegen zwischen
+`trg_02_enforce_user_id` und `trg_03_recompute_fingerprint`. Letzteres schlug das
+Unternehmen bislang selbst nach und scheiterte zuerst — mit „security_id … nicht
+gefunden", einer Meldung, die den Grund nicht nennt. Vorher war `depot_id` überhaupt
+nicht geprüft.

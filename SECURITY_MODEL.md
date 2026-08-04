@@ -67,6 +67,15 @@ create policy upd on <t> for update using (user_id = auth.uid())
 5. RPCs (`commit_import`, `rollback_import`, `restore_backup`, `archive_payment`):
    `security invoker`, geprüfter `search_path`, Eingabevalidierung in der Funktion; sie können
    RLS nicht umgehen.
+6. **Eigentum referenzierter Stammdaten** (Migration 0030): Ein Fremdschlüssel prüft nur,
+   dass die referenzierte Zeile *existiert* — nicht, wem sie gehört. RLS verhindert das
+   Lesen fremder Zeilen, nicht das *Verweisen* auf sie. Die Trigger
+   `enforce_own_security` und `enforce_own_depot` schließen das für
+   `dividend_payments.security_id`/`.depot_id` und `security_snapshots.security_id`.
+   Sie vergleichen `user_id` ausdrücklich (statt sich auf die Sichtbarkeit durch RLS zu
+   verlassen), damit die Regel auch in `security definer`-Kontexten und für
+   `service_role` gilt. Neue Tabellen mit einem Fremdschlüssel auf nutzereigene
+   Stammdaten brauchen denselben Trigger.
 
 ## 4. Migration-Sicherheitscheckliste
 
@@ -76,6 +85,8 @@ Jede Migration wird nur gemerged, wenn:
 - [ ] Policies für SELECT/INSERT/UPDATE (DELETE nur begründet) vorhanden
 - [ ] Grants minimal (kein impliziter `public`-Zugriff)
 - [ ] `user_id`-Spalte not null + FK + Trigger `enforce_user_id`
+- [ ] Fremdschlüssel auf nutzereigene Stammdaten zusätzlich durch einen
+      Eigentums-Trigger abgesichert (§3, Punkt 6)
 - [ ] Audit-Trigger angebunden (fachliche Tabellen)
 - [ ] RLS-Tests für die neue Tabelle ergänzt (§10)
 

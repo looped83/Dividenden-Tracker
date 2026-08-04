@@ -160,9 +160,8 @@ Stichtag ist damit nicht speicherbar, nicht nur unerwünscht.
   `securities` die eigentliche Arbeit.
 - Geprüft in `tests/integration/portfolioSnapshots.test.ts`.
 
-> **Bekannte Lücke außerhalb dieser Änderung:** `dividend_payments.security_id` und
-> `depot_id` haben dieselbe Prüfung **nicht**. Das ist Bestand, nicht neu — aber es wäre
-> derselbe Handgriff.
+Dieselbe Prüfung gilt seit Migration 0030 auch für `dividend_payments.security_id` und
+`.depot_id` (siehe SECURITY_MODEL.md §3.5).
 
 ## 8. Was die Oberfläche zeigt
 
