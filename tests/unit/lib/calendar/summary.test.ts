@@ -27,6 +27,7 @@ function event(
     eventState: "active",
     title,
     companyName: title,
+    matchedCompanyName: null,
     expectedAmount: null,
     sourcePortfolio: null,
     description: null,

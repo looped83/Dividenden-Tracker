@@ -9,10 +9,15 @@ import { useToast } from "@/components/ui/toast";
 import { isoFromRef, refDateFromDate } from "@/lib/statistics";
 import { shiftMonth } from "@/lib/calendar/month";
 import { buildCalendarSummary } from "@/lib/calendar/summary";
+import {
+  buildCompanyNameResolver,
+  resolveCompanyNames,
+} from "@/lib/calendar/companyNames";
 import { lastSyncLabel } from "@/lib/calendar/format";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { cn } from "@/lib/utils/cn";
 import type { CalendarEvent } from "@/lib/calendar/types";
+import { useSecurities, useSecurityAliases } from "@/features/securities/hooks";
 import {
   useAutoCalendarSync,
   useCalendarEvents,
@@ -78,7 +83,30 @@ export function CalendarPage() {
   const statusQuery = useCalendarSyncStatus();
   const syncMutation = useSyncCalendar();
 
-  const events = React.useMemo(() => eventsQuery.data ?? [], [eventsQuery.data]);
+  // Die Namen der Quelle werden an die angelegten Unternehmen angeglichen
+  // (siehe lib/calendar/companyNames.ts). Der Kalender wartet darauf **nicht**:
+  // Fehlt der Bestand noch oder laesst er sich nicht laden, stehen die Termine
+  // mit dem Namen der Quelle da — eine abweichende Schreibweise ist besser als
+  // eine leere Seite.
+  const securitiesQuery = useSecurities();
+  const aliasesQuery = useSecurityAliases();
+  const resolveCompanyName = React.useMemo(
+    () =>
+      buildCompanyNameResolver(
+        (securitiesQuery.data ?? []).map((security) => ({
+          id: security.id,
+          name: security.name,
+          archived: security.archived_at !== null,
+        })),
+        aliasesQuery.data ?? [],
+      ),
+    [securitiesQuery.data, aliasesQuery.data],
+  );
+
+  const events = React.useMemo(
+    () => resolveCompanyNames(eventsQuery.data ?? [], resolveCompanyName),
+    [eventsQuery.data, resolveCompanyName],
+  );
   const summary = React.useMemo(
     () => buildCalendarSummary(events, today),
     [events, today],

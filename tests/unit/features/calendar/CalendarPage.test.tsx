@@ -21,6 +21,14 @@ const zustand = vi.hoisted(() => ({
   syncPending: false,
   syncError: null as Error | null,
   mutate: vi.fn(),
+  /** Angelegte Unternehmen — Grundlage der Namensangleichung. */
+  securities: [] as { id: string; name: string; archived_at: string | null }[],
+  aliases: [] as { aliasNormalized: string; securityId: string }[],
+}));
+
+vi.mock("@/features/securities/hooks", () => ({
+  useSecurities: () => ({ data: zustand.securities }),
+  useSecurityAliases: () => ({ data: zustand.aliases }),
 }));
 
 vi.mock("@/features/calendar/hooks", async (importOriginal) => {
@@ -70,6 +78,7 @@ function event(overrides: Partial<CalendarEvent> & { id: string }): CalendarEven
     startsAt: null,
     endsAt: null,
     isAllDay: true,
+    matchedCompanyName: null,
     ...overrides,
     title,
     // Der Feed liefert den Namen in der SUMMARY; die App loest ihn beim
@@ -107,13 +116,13 @@ function renderPage(ansicht: "month" | "agenda" = "month") {
 }
 
 /**
- * `useMediaQuery` liest `matchMedia` bei jedem Rendern, ein Austausch vor
- * `render` genuegt also. Die Monatsansicht zeigt schmal nur Punkte je Tag und
- * die Termine unter dem Raster, ab `md` die Namen in der Zelle selbst.
+ * jsdom kennt `matchMedia` nicht. Der Kalender selbst fragt sie nicht mehr ab —
+ * die Monatsansicht unterscheidet ihre beiden Anordnungen in CSS —, ein
+ * Bestandteil des Designsystems koennte es aber tun.
  */
-function darstellung(matches: boolean) {
+function stubMatchMedia() {
   window.matchMedia = (query: string): MediaQueryList => ({
-    matches,
+    matches: false,
     media: query,
     onchange: null,
     addEventListener: () => undefined,
@@ -123,17 +132,9 @@ function darstellung(matches: boolean) {
     dispatchEvent: () => false,
   });
 }
-const schmaleDarstellung = () => {
-  darstellung(false);
-};
-const breiteDarstellung = () => {
-  darstellung(true);
-};
 
 beforeEach(() => {
-  // Vorgabe ist die schmale Darstellung — die breite schaltet ein Test eigens
-  // ein und darf sie nicht an die folgenden vererben.
-  schmaleDarstellung();
+  stubMatchMedia();
   vi.useFakeTimers({ shouldAdvanceTime: true });
   vi.setSystemTime(HEUTE);
   zustand.events = [];
@@ -144,6 +145,8 @@ beforeEach(() => {
   zustand.syncPending = false;
   zustand.syncError = null;
   zustand.mutate = vi.fn();
+  zustand.securities = [];
+  zustand.aliases = [];
   resetAutoSyncForTests();
   window.localStorage.clear();
 });
@@ -226,25 +229,37 @@ describe("Voreinstellung der Ansicht", () => {
 });
 
 describe("Monatsansicht", () => {
-  it("stellt die Termine eines Tages unter dem Raster dar (schmal)", async () => {
+  it("stellt die Termine des gewaehlten Tages neben dem Raster dar", async () => {
     const user = userEvent.setup();
     zustand.events = [event({ id: "1", date: "2026-08-13", title: "Apple Inc." })];
     renderPage("month");
 
-    // Sieben Spalten sind auf einem Telefon 46px breit; darin bliebe von
-    // „Apple Inc." ein „Ap…". Der Tag traegt deshalb nur Punkte, seine Termine
-    // stehen als volle Kacheln darunter.
+    // Sieben Spalten teilen sich die Seitenbreite — auf dem Telefon 46px, am
+    // Schreibtisch rund 90px. In beiden bliebe von „Apple Inc." ein „Ap…". Der
+    // Tag traegt deshalb ueberall nur Punkte; seine Termine stehen als volle
+    // Kacheln in der Tagesspalte (schmal darunter, breit rechts daneben).
     const tag = screen.getByRole("button", {
       name: "13. August 2026, 1 angekündigter Zahltag",
     });
     await user.click(tag);
 
     expect(tag).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("heading", { name: /13\.08\.2026/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Apple Inc\./ })).toBeInTheDocument();
+    // Die Zelle selbst traegt keine Termine, nur die Schaltflaeche des Tages.
+    const zelle = tag.closest("td") as HTMLElement;
+    expect(within(zelle).getAllByRole("button")).toHaveLength(1);
+
+    const tagesspalte = screen.getByRole("region", {
+      name: "Termine am Donnerstag, 13.08.2026",
+    });
+    expect(
+      within(tagesspalte).getByRole("heading", { name: /13\.08\.2026/ }),
+    ).toBeInTheDocument();
+    expect(
+      within(tagesspalte).getByRole("button", { name: /Apple Inc\./ }),
+    ).toBeInTheDocument();
   });
 
-  it("listet mehrere Termine eines Tages vollstaendig auf (schmal)", async () => {
+  it("listet mehrere Termine eines Tages vollstaendig auf", async () => {
     const user = userEvent.setup();
     zustand.events = [
       event({ id: "1", date: "2026-08-13", title: "Apple Inc." }),
@@ -260,18 +275,27 @@ describe("Monatsansicht", () => {
     expect(screen.getByRole("button", { name: /Allianz SE/ })).toBeInTheDocument();
   });
 
-  it("stellt die Termine ab `md` in der Tageszelle selbst dar", () => {
-    breiteDarstellung();
-    zustand.events = [
-      event({ id: "1", date: "2026-08-13", title: "Apple Inc." }),
-      event({ id: "2", date: "2026-08-13", title: "Allianz SE" }),
-    ];
+  it("waehlt beim Oeffnen den ersten Tag mit Terminen vor", () => {
+    zustand.events = [event({ id: "1", date: "2026-08-13", title: "Apple Inc." })];
     renderPage("month");
 
-    const zelle = screen
-      .getByText("13. August 2026, 2 angekündigte Zahltage")
-      .closest("td") as HTMLElement;
-    expect(within(zelle).getAllByRole("button")).toHaveLength(2);
+    // Ohne Vorauswahl stuende neben dem Raster ein leerer Kasten.
+    expect(
+      screen.getByRole("button", { name: "13. August 2026, 1 angekündigter Zahltag" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: /Apple Inc\./ })).toBeInTheDocument();
+  });
+
+  it("sagt in der Tagesspalte, wenn der Monat keine Termine traegt", async () => {
+    const user = userEvent.setup();
+    zustand.events = [event({ id: "1", date: "2026-08-13", title: "Apple Inc." })];
+    renderPage("month");
+
+    await user.click(screen.getByRole("button", { name: "Nächster Monat" }));
+
+    expect(
+      screen.getByText("In diesem Monat ist kein Zahltag angekündigt."),
+    ).toBeInTheDocument();
   });
 
   it("kennzeichnet den heutigen Tag auch fuer Sprachausgaben", () => {
@@ -530,5 +554,58 @@ describe("Aktualisierung", () => {
       "Die Kalenderquelle hat nicht rechtzeitig geantwortet.",
     );
     expect(screen.getByRole("button", { name: /Apple Inc\./ })).toBeInTheDocument();
+  });
+});
+
+describe("Namen der angelegten Unternehmen", () => {
+  it("zeigt den eigenen Namen statt der Schreibweise der Quelle", () => {
+    zustand.securities = [{ id: "s1", name: "Realty Income", archived_at: null }];
+    zustand.events = [
+      event({ id: "1", date: "2026-08-13", companyName: "Realty Income Corporation" }),
+    ];
+    renderPage("agenda");
+
+    expect(screen.getByRole("button", { name: /Realty Income,/ })).toBeInTheDocument();
+    expect(screen.queryByText("Realty Income Corporation")).not.toBeInTheDocument();
+  });
+
+  it("nennt in der Detailansicht weiterhin den Namen der Quelle", async () => {
+    const user = userEvent.setup();
+    zustand.securities = [{ id: "s1", name: "Realty Income", archived_at: null }];
+    zustand.events = [
+      event({ id: "1", date: "2026-08-13", companyName: "Realty Income Corporation" }),
+    ];
+    renderPage("agenda");
+
+    await user.click(screen.getByRole("button", { name: /Realty Income,/ }));
+
+    const dialog = await screen.findByRole("dialog");
+    // Angeglichen wird die Anzeige, nicht die Quelle: Was im Feed steht, bleibt
+    // nachvollziehbar.
+    expect(within(dialog).getByText("Realty Income Corporation")).toBeInTheDocument();
+  });
+
+  it("laesst unbekannte Unternehmen unveraendert", () => {
+    zustand.securities = [{ id: "s1", name: "Allianz", archived_at: null }];
+    zustand.events = [event({ id: "1", date: "2026-08-13", companyName: "Apple Inc." })];
+    renderPage("agenda");
+
+    expect(screen.getByRole("button", { name: /Apple Inc\./ })).toBeInTheDocument();
+  });
+
+  it("zaehlt angeglichene Termine als ein Unternehmen", () => {
+    zustand.securities = [{ id: "s1", name: "Realty Income", archived_at: null }];
+    zustand.events = [
+      event({ id: "1", date: "2026-08-13", companyName: "Realty Income Corporation" }),
+      event({ id: "2", date: "2026-08-20", companyName: "Realty Income" }),
+    ];
+    renderPage("agenda");
+
+    // Beide Termine gehoeren zu „Realty Income" — die Kachel zaehlt sie als ein
+    // Unternehmen, nicht als zwei Schreibweisen.
+    // Die Kennzahl steht in der Kachel unmittelbar ueber ihrer Bildunterschrift.
+    expect(
+      screen.getByText("mit kommenden Zahltagen").previousElementSibling,
+    ).toHaveTextContent("1");
   });
 });

@@ -9,7 +9,13 @@ import {
 } from "@/components/ui/dialog";
 import { AmountText } from "@/components/money/AmountText";
 import { Badge } from "@/components/ui/badge";
-import { eventTime, eventTitle, eventTypeLabel, longDate } from "@/lib/calendar/format";
+import {
+  eventTime,
+  eventTitle,
+  eventTypeLabel,
+  longDate,
+  sourceCompanyName,
+} from "@/lib/calendar/format";
 import { formatCalendarDate } from "@/lib/utils/formatDate";
 import type { CalendarEvent } from "@/lib/calendar/types";
 
@@ -35,6 +41,10 @@ export function EventDetailDialog({
   onClose: () => void;
 }) {
   const time = event ? eventTime(event) : null;
+  // Der Titel zeigt den Namen des eigenen Unternehmens; weicht die Quelle davon
+  // ab, steht ihre Schreibweise hier — sonst waere nicht nachvollziehbar, warum
+  // im Feed etwas anderes steht.
+  const sourceName = event ? sourceCompanyName(event) : null;
 
   return (
     <Dialog
@@ -88,6 +98,7 @@ export function EventDetailDialog({
                 {event.endDate && ` bis ${longDate(event.endDate)}`}
               </Detail>
               {time && <Detail term="Uhrzeit">{time}</Detail>}
+              {sourceName && <Detail term="Unternehmen laut Quelle">{sourceName}</Detail>}
               {event.sourcePortfolio && (
                 <Detail term="Depot laut Quelle">{event.sourcePortfolio}</Detail>
               )}

@@ -1,5 +1,6 @@
 import { Money, sumMoney, type CurrencyCode } from "@/lib/money";
 import { addDays } from "./month";
+import { eventTitle } from "./format";
 import type { CalendarEvent } from "./types";
 
 /**
@@ -118,8 +119,9 @@ export function buildCalendarSummary(
       counted.filter((event) => event.date.startsWith(monthPrefix)),
     ),
     next30Days: expectedTotalOf(upcoming.filter((event) => event.date <= horizon)),
-    companies: new Set(upcoming.map((event) => event.companyName ?? event.title ?? ""))
-      .size,
+    // Gezaehlt wird der **angezeigte** Name: „Realty Income Corporation" aus dem
+    // Feed und das eigene „Realty Income" sind ein Unternehmen, kein zweites.
+    companies: new Set(upcoming.map((event) => eventTitle(event))).size,
     upcoming: upcoming.length,
   };
 }

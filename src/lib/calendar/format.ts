@@ -24,7 +24,12 @@ export function eventTypeLabel(event: CalendarEvent): string {
 }
 
 /**
- * Titel eines Termins: der beim Einlesen geloeste Unternehmensname.
+ * Titel eines Termins: der Name des **angelegten** Unternehmens, sonst der
+ * beim Einlesen geloeste Name der Quelle.
+ *
+ * Passt der Name des Feeds eindeutig auf ein eigenes Unternehmen, steht dessen
+ * Schreibweise hier (siehe `companyNames.ts`) — „Realty Income Corporation"
+ * und „Realty Income" sind sonst zwei Namen fuer dieselbe Sache.
  *
  * Erkennt der Parser die SUMMARY-Zeile nicht, steht dort die vollstaendige
  * Zeile — lieber einmal „Verizon Communications Inc 51,37 € Zahltag (Trade
@@ -32,7 +37,17 @@ export function eventTypeLabel(event: CalendarEvent): string {
  * es bei „Ohne Titel".
  */
 export function eventTitle(event: CalendarEvent): string {
-  return event.companyName ?? event.title ?? "Ohne Titel";
+  return event.matchedCompanyName ?? event.companyName ?? event.title ?? "Ohne Titel";
+}
+
+/**
+ * Der Name der Kalenderquelle, **wenn** die Anzeige einen anderen zeigt — sonst
+ * `null`. Damit bleibt in der Detailansicht nachvollziehbar, was tatsaechlich im
+ * Feed steht; angeglichen wird nur die Darstellung, nicht die Quelle.
+ */
+export function sourceCompanyName(event: CalendarEvent): string | null {
+  if (event.matchedCompanyName === null || event.companyName === null) return null;
+  return event.companyName === event.matchedCompanyName ? null : event.companyName;
 }
 
 /** „Montag, 13.08.2026". */

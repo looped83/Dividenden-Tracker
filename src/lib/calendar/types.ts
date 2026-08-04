@@ -34,6 +34,13 @@ export interface CalendarEvent {
    */
   companyName: string | null;
   /**
+   * Name des **angelegten** Unternehmens, wenn `companyName` eindeutig darauf
+   * passt (siehe `companyNames.ts`). Steht nicht in der Datenbank: Der Abgleich
+   * geschieht beim Anzeigen, damit Umbenennungen sofort greifen und der
+   * gespeicherte Termin unangetastet bleibt.
+   */
+  matchedCompanyName: string | null;
+  /**
    * **Erwarteter** Betrag laut Kalenderquelle — keine erhaltene Zahlung und
    * keine Schaetzung dieser App. Fehlt er im Feed, bleibt er leer.
    */
@@ -80,6 +87,9 @@ export function mapCalendarEvent(row: CalendarEventRow): CalendarEvent {
     eventState: row.event_state,
     title: row.title,
     companyName: row.company_name,
+    // Der Abgleich mit den eigenen Unternehmen braucht deren Bestand und
+    // geschieht deshalb erst in der Kalenderseite, nicht hier an der Zeile.
+    matchedCompanyName: null,
     expectedAmount: readExpectedAmount(row),
     sourcePortfolio: row.source_portfolio,
     description: row.description,

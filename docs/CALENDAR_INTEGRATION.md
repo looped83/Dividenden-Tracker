@@ -50,7 +50,7 @@ Kalenderansicht der PWA
 | `supabase/functions/_shared/messages.ts` | bereinigte Nutzermeldungen und Log-Codes |
 | `supabase/migrations/0027_dividend_calendar.sql` | Tabellen, Enums, Indizes, RLS, Sperrfunktion |
 | `src/features/calendar/*` | Kalenderseite (Monat, Liste, Detailansicht, Synchronisation) |
-| `src/lib/calendar/*` | Monatsraster, Gruppierung, Beschriftungen |
+| `src/lib/calendar/*` | Monatsraster, Gruppierung, Beschriftungen, Namensangleichung |
 
 Die Dateien unter `_shared/` enthalten bewusst keinen Laufzeitbezug (kein `Deno`, kein
 `fetch`, keine Datenbank). Dadurch läuft **derselbe** Code in der Edge Function und in den
@@ -129,7 +129,7 @@ Fließkommazahl (CALCULATION_RULES.md §8).
 | `end_date` | letzter Tag mehrtägiger Termine, inklusiv (DTEND ist im Feed exklusiv) |
 | `starts_at` / `ends_at` | nur bei Terminen mit Uhrzeit, sonst `null` |
 | `title` | SUMMARY-Zeile unverändert |
-| `company_name` | Unternehmensname, beim Einlesen aus der SUMMARY gelöst |
+| `company_name` | Unternehmensname, beim Einlesen aus der SUMMARY gelöst (die Anzeige gleicht ihn an die angelegten Unternehmen an, siehe „Unternehmensnamen") |
 | `expected_amount` / `expected_currency` | **erwarteter** Betrag laut Quelle, `numeric(14,2)` plus ISO-Code; nur gemeinsam gesetzt |
 | `source_portfolio` | Depot/Broker aus der Klammer am Zeilenende |
 | `description`, `location`, `external_url`, `categories` | direkt aus dem Feed; fehlende Felder bleiben leer |
@@ -207,14 +207,40 @@ werden **nicht** addiert (das wäre eine Umrechnung zu einem erfundenen Kurs); d
 weist dann „verschiedene Währungen" aus. Abgesagte Termine zählen nirgends mit, bleiben in
 der Liste aber sichtbar und gekennzeichnet.
 
-Das Monatsraster ist einen Klick entfernt; die Wahl bleibt in `localStorage` erhalten. Es hat
-**zwei Darstellungen**: Ab `lg` (Spaltenbreite rund 136 px) steht der Unternehmensname in der
-Tageszelle. Darunter — auf dem Telefon sind sieben Spalten je 46 px breit — bliebe von
-„Johnson & Johnson" ein „Jo…"; dort trägt der Tag deshalb nur **Punkte** (einer je Termin,
-abgesagte gedämpft), und der angetippte Tag stellt seine Termine als volle Kacheln unter das
-Raster — dieselben Kacheln wie in der Liste. Die ganze Tageszelle ist die Zielfläche: Ein
-einzelner Punkt wäre bei 46 px kein zuverlässig treffbares Ziel (WCAG 2.5.5). Vorgewählt ist
-heute, sonst der erste Tag des Monats mit Terminen.
+Das Monatsraster ist einen Klick entfernt; die Wahl bleibt in `localStorage` erhalten. Es
+folgt **einer** Logik auf allen Breiten: Der Tag trägt nur **Punkte** (einer je Termin,
+abgesagte gedämpft), und der gewählte Tag stellt seine Termine als volle Kacheln daneben —
+dieselben Kacheln wie in der Liste. Sieben Spalten teilen sich die Seitenbreite, auf dem
+Telefon 46 px und am Schreibtisch rund 90 px; in beiden blieb von „Johnson & Johnson" ein
+„Jo…". Namen in der Tageszelle waren deshalb auch auf großen Bildschirmen nicht lesbar.
+Die ganze Tageszelle ist die Zielfläche: Ein einzelner Punkt wäre bei 46 px kein zuverlässig
+treffbares Ziel (WCAG 2.5.5). Vorgewählt ist heute, sonst der erste Tag des Monats mit
+Terminen; ein Monat ohne Termine sagt das in der Tagesspalte.
+
+Wo diese Tagesspalte steht, entscheidet allein der Platz und damit CSS: bis `xl` unter dem
+Raster, darüber in einer eigenen Spalte (20 rem) rechts daneben — erst dort bleiben neben
+ihr noch sieben brauchbare Rasterspalten übrig. Beides ist derselbe Baum; es gibt keine
+zweite Darstellung im Dokument und keine Media Query in JavaScript.
+
+### Unternehmensnamen
+
+Die Quelle schreibt „Realty Income Corporation", im eigenen Bestand steht „Realty Income" —
+dasselbe Unternehmen, zwei Schreibweisen. Der Kalender zeigt deshalb den Namen des
+**angelegten** Unternehmens, sobald der Name des Feeds eindeutig darauf passt
+(`src/lib/calendar/companyNames.ts`). Drei Stufen, jede eindeutig oder gar nicht — dieselbe
+Zurückhaltung wie beim Import (IMPORT_SPEC.md §6):
+
+1. gleicher Name nach Normalisierung,
+2. eine beim Import bestätigte Schreibweise (`security_aliases`),
+3. gleicher Name ohne Rechtsform („Corp.", „AG", „plc" …) und Satzzeichen.
+
+Passen zwei eigene Unternehmen auf denselben Schlüssel, bleibt der Name der Quelle stehen;
+eine Ähnlichkeitsstufe wie im Import gibt es hier nicht — dort bestätigt ein Mensch den
+Vorschlag, hier widerspräche niemand. Angeglichen wird **nur die Anzeige**: Der Termin wird
+keinem Unternehmen zugeordnet, nichts wird gespeichert, `company_name` bleibt der Wert des
+Feeds und steht in der Detailansicht als „Unternehmen laut Quelle", sobald er abweicht. Die
+Kachel „Unternehmen" zählt den angezeigten Namen, sodass zwei Schreibweisen nicht als zwei
+Unternehmen erscheinen.
 
 Die Abschnittsüberschriften der Liste („Heute", „September 2026") sind gesetzt wie die
 Abschnittstitel der übrigen Bereiche; zuvor standen sie klein, grau und in Großbuchstaben da

@@ -9,11 +9,23 @@ import {
   type SecurityInsert,
   type SecurityUpdate,
 } from "@/lib/supabase/repositories/securities";
+import { fetchSecurityAliases } from "@/lib/supabase/repositories/imports";
 
 const SECURITIES_KEY = ["securities"] as const;
+const SECURITY_ALIASES_KEY = ["security-aliases"] as const;
 
 export function useSecurities() {
   return useQuery({ queryKey: SECURITIES_KEY, queryFn: fetchSecurities });
+}
+
+/**
+ * Beim Import bestaetigte Schreibweisen („Coca-Cola Company" meint das eigene
+ * „Coca-Cola"). Sie gelten ueber den Import hinaus: Wer eine Schreibweise
+ * einmal zugeordnet hat, soll sie nicht an jeder anderen Stelle erneut
+ * erklaeren muessen.
+ */
+export function useSecurityAliases() {
+  return useQuery({ queryKey: SECURITY_ALIASES_KEY, queryFn: fetchSecurityAliases });
 }
 
 export function useCreateSecurity() {
