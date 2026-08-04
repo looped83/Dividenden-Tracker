@@ -114,6 +114,10 @@ export const STATISTICS_TABS: readonly { to: string; label: string; end?: boolea
   { to: "/statistiken/vergleich", label: "Vergleich" },
   { to: "/statistiken/unternehmen", label: "Unternehmen" },
   { to: "/statistiken/depots", label: "Depots" },
+  // „Entwicklung" steht am Ende: Sie ist der einzige Unterbereich, der auf den
+  // Depotstaenden aufsetzt statt allein auf den erhaltenen Zahlungen
+  // (docs/PORTFOLIO_IMPORT.md) — und der einzige, der nach vorn schaut.
+  { to: "/statistiken/entwicklung", label: "Entwicklung" },
 ];
 
 /**

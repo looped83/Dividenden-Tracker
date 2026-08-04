@@ -10,6 +10,7 @@ import {
 import type { EntityInfo } from "@/features/dashboard/format";
 import { ComparisonTab } from "@/features/statistics/ComparisonTab";
 import { EMPTY_STATISTICS_FILTER } from "@/features/statistics/filterParams";
+import { EMPTY_PORTFOLIO_SERIES } from "@/features/securities/snapshots";
 import type { StatisticsContext } from "@/features/statistics/context";
 
 /**
@@ -96,7 +97,7 @@ function renderTab(
   payments: AnalyticsPayment[] = PAYMENTS,
 ) {
   const context: StatisticsContext = {
-    expectedAnnualDividend: new Map(),
+    portfolio: EMPTY_PORTFOLIO_SERIES,
     payments: filterPayments(payments, filter),
     allPayments: payments,
     securities: new Map<string, EntityInfo>([

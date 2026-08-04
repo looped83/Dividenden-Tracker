@@ -37,7 +37,7 @@ features/securities/portfolioMatch.ts  Zuordnung + Stammdaten-Vorschläge
         ↓
 Supabase  security_snapshot_runs + security_snapshots (RLS, eigene Zeilen)
         ↓
-Kacheln (/unternehmen) · Positionskarte (Detailseite) · Spalte „Erwartet p. a."
+Kacheln (/unternehmen) · Positionskarte (Detailseite) · Statistik „Entwicklung"
 ```
 
 | Datei | Rolle |
@@ -45,7 +45,8 @@ Kacheln (/unternehmen) · Positionskarte (Detailseite) · Spalte „Erwartet p. 
 | `supabase/migrations/0029_security_snapshots.sql` | Tabellen, Enums, Indizes, RLS, Eigentumsprüfung |
 | `src/features/securities/divvydiaryCsv.ts` | Einlesen und Normalisieren der CSV |
 | `src/features/securities/portfolioMatch.ts` | Zuordnung zu den eigenen Unternehmen |
-| `src/features/securities/snapshots.ts` | Auswertung (jüngster Stand, Summen, Rendite) |
+| `src/features/securities/snapshots.ts` | Auswertung (jüngster Stand, Summen, Rendite, Zeitreihe) |
+| `src/features/statistics/DevelopmentTab.tsx` | Unterbereich „Entwicklung" |
 | `src/features/securities/PortfolioImportDialog.tsx` | Assistent |
 | `src/features/securities/PortfolioSummary.tsx` | Kennzahlkacheln |
 | `src/features/securities/PositionCard.tsx` | Position auf der Detailseite |
@@ -182,6 +183,24 @@ Wachstum. Darunter die erwartete Jahresausschüttung neben dem, was im letzten
 laufende Jahr: Die Erwartung gilt für zwölf Monate, ein angebrochenes Jahr ließe sie
 zwangsläufig zu hoch aussehen.
 
+**`/#/statistiken/entwicklung`** — der Unterbereich, der aus den Ständen eine Zeitreihe
+macht: vier Kacheln (erwartet p. a., erhalten in den zwölf Monaten bis zum Stichtag, die
+Abweichung, Rendite auf den Einstand), der Verlauf beider Größen über die Stichtage, die
+Gegenüberstellung je Unternehmen und die Aufteilung nach Branche und Land.
+
+Verglichen werden **zwei Zwölfmonatszeiträume** (`trailingYearRange`). Die Erwartung gilt
+für zwölf Monate nach vorn; ihr Gegenstück sind die zwölf Monate, die am Stichtag enden.
+Ein Kalenderjahr taugt dafür nicht: Ein angebrochenes ließe die Erwartung zwangsläufig zu
+hoch aussehen, ein abgeschlossenes hinkte bis zu zwölf Monate hinterher.
+
+Die Daten kommen als **Domänentyp** `PortfolioSeries` über den Statistik-Kontext, nicht als
+Snapshot-Zeilen — so bleibt der Kontext frei von Datenbanktypen und die Unterbereiche
+weiterhin ohne Datenzugriffsschicht testbar. Die Aufteilung nutzt für alle Stichtage die
+**heutige** Branche und das heutige Land: Eine mitwandernde Einordnung machte den Vergleich
+zweier Zeitpunkte unmöglich. Fehlt beides — bei ETFs, weil „mixed" beim Import verworfen
+wird —, sammelt sie ein sichtbarer Eimer „ohne Angabe"; ohne ihn addierten sich die Anteile
+nicht zu hundert Prozent.
+
 **`/#/statistiken/unternehmen`** — die Spalte „Erwartet p. a." neben den erhaltenen Summen.
 Sie erscheint nur, wenn ein Depotstand importiert ist; eine Spalte voller Gedankenstriche
 wäre nichts als verbrauchte Breite. Die Zahl kommt über den Statistik-Kontext, damit die
@@ -216,7 +235,6 @@ Repository, auch nicht in ein privates.
   die Ausschüttungsmonate rechnerisch bestimmen. Sie steuern aber die Monatszuordnung nach
   CALCULATION_RULES.md §10 — ein falscher Wert verschiebt still Zahlungen in falsche Monate.
   Die bessere Quelle liegt ohnehin im Haus: die eigene Zahlungshistorie.
-- **Kein Verlaufsdiagramm.** Ab mehreren Stichtagen sinnvoll, mit einem einzigen nicht.
 - **Keine Performance-Kennzahl** (TWR/IRR). Dafür bräuchte es einzelne Transaktionen mit
   Datum und Betrag; die CSV nennt nur deren Anzahl.
 - **Keine Standsverwaltung in der Oberfläche.** `security_snapshot_runs` trägt alles dafür

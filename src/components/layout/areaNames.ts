@@ -11,6 +11,7 @@ const AREA_NAMES: readonly { prefix: string; name: string; exact?: boolean }[] =
   { prefix: "/statistiken/vergleich", name: "Statistik, Vergleich" },
   { prefix: "/statistiken/unternehmen", name: "Statistik, Unternehmen" },
   { prefix: "/statistiken/depots", name: "Statistik, Depots" },
+  { prefix: "/statistiken/entwicklung", name: "Statistik, Entwicklung" },
   { prefix: "/statistiken", name: "Statistik" },
   { prefix: "/ziele/bevorstehend", name: "Ziele, bevorstehend" },
   { prefix: "/ziele/beendet", name: "Ziele, beendet" },

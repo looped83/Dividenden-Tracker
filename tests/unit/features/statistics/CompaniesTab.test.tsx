@@ -6,6 +6,7 @@ import type { AnalyticsPayment } from "@/lib/statistics";
 import type { EntityInfo } from "@/features/dashboard/format";
 import { CompaniesTab } from "@/features/statistics/CompaniesTab";
 import { EMPTY_STATISTICS_FILTER } from "@/features/statistics/filterParams";
+import { EMPTY_PORTFOLIO_SERIES } from "@/features/securities/snapshots";
 import type { StatisticsContext } from "@/features/statistics/context";
 
 let seq = 0;
@@ -29,7 +30,7 @@ const PAYMENTS = [p("sec-a", "2025-03-10", "100.00"), p("sec-b", "2025-04-10", "
 
 function renderCompanies(payments: AnalyticsPayment[] = PAYMENTS) {
   const context: StatisticsContext = {
-    expectedAnnualDividend: new Map(),
+    portfolio: EMPTY_PORTFOLIO_SERIES,
     payments,
     allPayments: payments,
     securities: new Map<string, EntityInfo>([

@@ -179,3 +179,163 @@ export function ratioToPercent(value: string | null): DecimalInstance | null {
   if (value === null) return null;
   return new MoneyDecimal(value).times(HUNDRED);
 }
+
+// --- Zeitreihe ---------------------------------------------------------------
+
+/** Ein Depotstand als Ganzes, auf die Zahlen reduziert, die den Verlauf tragen. */
+export interface PortfolioPoint {
+  asOf: string;
+  marketValue: Money | null;
+  buyinTotal: Money | null;
+  annualDividend: Money | null;
+  positions: number;
+}
+
+/** Ein Anteil des Depots — je Branche oder Land. */
+export interface AllocationBucket {
+  /** Stabiler Schluessel; leer fuer „ohne Angabe". */
+  key: string;
+  label: string;
+  marketValue: Money;
+  annualDividend: Money;
+  positions: number;
+}
+
+/**
+ * Alles, was der Entwicklungsbereich aus den Depotstaenden braucht — als
+ * **Domaenentyp**, nicht als Datenbankzeilen.
+ *
+ * Der Statistikkontext bleibt dadurch frei von Supabase-Typen, und die
+ * Unterbereiche (samt ihren Tests) lassen sich weiterhin ohne
+ * Datenzugriffsschicht rendern.
+ */
+export interface PortfolioSeries {
+  /** Ein Punkt je Stichtag, aeltester zuerst. */
+  points: PortfolioPoint[];
+  latest: PortfolioPoint | null;
+  /** Erwartete Jahresdividende je Unternehmen im juengsten Stand. */
+  expectedBySecurity: Map<string, Money>;
+  /** Rendite auf den Einstand je Unternehmen, in Prozentpunkten. */
+  yieldOnBuyinBySecurity: Map<string, DecimalInstance>;
+  bySector: AllocationBucket[];
+  byCountry: AllocationBucket[];
+}
+
+export const EMPTY_PORTFOLIO_SERIES: PortfolioSeries = {
+  points: [],
+  latest: null,
+  expectedBySecurity: new Map(),
+  yieldOnBuyinBySecurity: new Map(),
+  bySector: [],
+  byCountry: [],
+};
+
+/** Stammdaten, die der Depotstand selbst nicht traegt. */
+export interface SecurityFacets {
+  sector: string | null;
+  country: string | null;
+}
+
+/** Der Betrag einer Summe — `null`, wenn es keinen ehrlichen gibt. */
+function amountOrNull(sum: SnapshotSum): Money | null {
+  return sum.kind === "amount" ? sum.value : null;
+}
+
+function pointAt(snapshots: readonly SecuritySnapshot[], asOf: string): PortfolioPoint {
+  const rows = snapshotsAt(snapshots, asOf);
+  return {
+    asOf,
+    marketValue: amountOrNull(sumField(rows, (row) => row.market_value)),
+    buyinTotal: amountOrNull(sumField(rows, (row) => row.buyin_total)),
+    annualDividend: amountOrNull(sumField(rows, (row) => row.annual_dividend_total)),
+    positions: rows.length,
+  };
+}
+
+/**
+ * Fasst Snapshots eines Stichtags nach einem Stammdatenfeld zusammen.
+ *
+ * Fehlt die Angabe — bei ETFs steht dort nichts, weil „mixed" beim Import
+ * verworfen wird —, sammelt sie ein eigener Eimer „ohne Angabe". Ihn
+ * wegzulassen hiesse, dass sich die Anteile nicht zu hundert Prozent addieren,
+ * ohne dass jemand den Grund sieht.
+ */
+function allocate(
+  rows: readonly SecuritySnapshot[],
+  facetOf: (securityId: string) => string | null,
+): AllocationBucket[] {
+  const buckets = new Map<string, SecuritySnapshot[]>();
+  for (const row of rows) {
+    const key = facetOf(row.security_id)?.trim() ?? "";
+    const list = buckets.get(key);
+    if (list) list.push(row);
+    else buckets.set(key, [row]);
+  }
+
+  const result: AllocationBucket[] = [];
+  for (const [key, list] of buckets) {
+    const marketValue = amountOrNull(sumField(list, (row) => row.market_value));
+    const annualDividend = amountOrNull(
+      sumField(list, (row) => row.annual_dividend_total),
+    );
+    result.push({
+      key,
+      label: key === "" ? "ohne Angabe" : key,
+      marketValue: marketValue ?? Money.zero(EUR),
+      annualDividend: annualDividend ?? Money.zero(EUR),
+      positions: list.length,
+    });
+  }
+
+  // Groesster Anteil zuerst; „ohne Angabe" steht am Ende, egal wie gross es
+  // ist — es ist keine Kategorie, sondern das Fehlen einer.
+  return result.sort((a, b) => {
+    if (a.key === "") return 1;
+    if (b.key === "") return -1;
+    return b.marketValue.compareTo(a.marketValue);
+  });
+}
+
+/**
+ * Baut die Zeitreihe aus allen Depotstaenden.
+ *
+ * @param facets Branche und Land je Unternehmen — sie stehen in `securities`,
+ *               nicht im Depotstand. Bewusst der **heutige** Stand auch fuer
+ *               alte Stichtage: Eine mitwandernde Einordnung machte den
+ *               Vergleich zweier Zeitpunkte unmoeglich.
+ */
+export function buildPortfolioSeries(
+  snapshots: readonly SecuritySnapshot[],
+  facets: ReadonlyMap<string, SecurityFacets>,
+): PortfolioSeries {
+  if (snapshots.length === 0) return EMPTY_PORTFOLIO_SERIES;
+
+  const dates = [...new Set(snapshots.map((row) => row.as_of))].sort((a, b) =>
+    a.localeCompare(b),
+  );
+  const points = dates.map((asOf) => pointAt(snapshots, asOf));
+  const latestDate = dates.at(-1) ?? null;
+  const current = snapshotsAt(snapshots, latestDate);
+
+  const expectedBySecurity = new Map<string, Money>();
+  const yieldOnBuyinBySecurity = new Map<string, DecimalInstance>();
+  for (const row of current) {
+    if (row.annual_dividend_total !== null) {
+      expectedBySecurity.set(
+        row.security_id,
+        Money.fromString(row.annual_dividend_total, toCurrencyCode(row.currency)),
+      );
+    }
+    const onBuyin = ratioToPercent(row.dividend_yield_on_buyin);
+    if (onBuyin !== null) yieldOnBuyinBySecurity.set(row.security_id, onBuyin);
+  }
+
+  return {
+    points,
+    latest: points.at(-1) ?? null,
+    expectedBySecurity,
+    yieldOnBuyinBySecurity,
+    bySector: allocate(current, (id) => facets.get(id)?.sector ?? null),
+    byCountry: allocate(current, (id) => facets.get(id)?.country ?? null),
+  };
+}

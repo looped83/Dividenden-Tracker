@@ -34,6 +34,13 @@ const ROUTEN = [
   { pfad: "/#/statistiken/jahre", name: "Statistik Jahre", warten: "Statistik" },
   { pfad: "/#/statistiken/breakdown", name: "Statistik Breakdown", warten: "Statistik" },
   { pfad: "/#/statistiken/vergleich", name: "Statistik Vergleich", warten: "Statistik" },
+  // Ohne Depotstand zeigt der Bereich seinen Leerzustand — auch der muss
+  // barrierefrei sein, und er ist der erste, den jemand hier zu sehen bekommt.
+  {
+    pfad: "/#/statistiken/entwicklung",
+    name: "Statistik Entwicklung",
+    warten: "Statistik",
+  },
   { pfad: "/#/ziele", name: "Ziele", warten: "Ziele" },
   { pfad: "/#/ziele/beendet", name: "Ziele beendet", warten: "Ziele" },
   { pfad: "/#/einstellungen", name: "Einstellungen", warten: "Einstellungen" },

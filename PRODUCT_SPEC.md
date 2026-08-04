@@ -230,6 +230,23 @@ und die größte Einzelzahlung — die Nebenkennzahl der Tabelle — erscheint e
 neben der Seitennavigation Platz für sie bleibt. Sie steht unabhängig davon auf der
 Unternehmensseite.
 
+Der Unterbereich **Entwicklung** ist der einzige, der auf den Depotständen aufsetzt statt
+allein auf den erhaltenen Zahlungen (docs/PORTFOLIO_IMPORT.md). Er beantwortet eine Frage:
+*Wächst mein passives Einkommen?* Dafür stellt er die erwartete Jahresdividende dem
+gegenüber, was tatsächlich hereinkam — je Stichtag als Verlauf, je Unternehmen als Tabelle,
+dazu die Aufteilung des Depots nach Branche und Land.
+
+Verglichen werden **zwei Zwölfmonatszeiträume**: Die Erwartung gilt für zwölf Monate nach
+vorn, ihr Gegenstück sind die zwölf Monate, die am Stichtag enden. Bewusst nicht das
+Kalenderjahr — ein angebrochenes ließe die Erwartung zwangsläufig zu hoch aussehen, ein
+abgeschlossenes hinkte bis zu zwölf Monate hinterher.
+
+Der Jahresregler entfällt hier wie beim Vergleich und beim Breakdown: Die Zeitachse sind
+die Stichtage der Depotstände, und zu jedem gehört ein eigenes Zwölfmonatsfenster. Die
+übrigen Filter — Unternehmen, Depot — wirken. Ein Verlauf entsteht ab dem zweiten
+Depotstand; bis dahin sagt der Bereich das, statt eine Linie durch einen Punkt zu zeichnen.
+Kein Wert der Depotstände geht in eine Kennzahl der übrigen Statistik ein (Grundsatz 8).
+
 Vollständige Kennzahlenliste mit verbindlichen Definitionen: CALCULATION_RULES.md §6.
 Umfasst mindestens: Netto/Brutto pro Monat und Jahr, Vorjahresvergleich (absolut/prozentual),
 rollierende 12-Monats-Summe, monatlicher Durchschnitt (gesamt und je Jahr), bestes Jahr,

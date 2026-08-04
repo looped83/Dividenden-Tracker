@@ -45,12 +45,8 @@ function periodCell(first: string | null, last: string | null): React.ReactNode 
 }
 
 export function CompaniesTab() {
-  const {
-    payments,
-    securities,
-    filter,
-    expectedAnnualDividend: expectedById,
-  } = useStatisticsContext();
+  const { payments, securities, filter, portfolio } = useStatisticsContext();
+  const expectedById = portfolio.expectedBySecurity;
   const navigate = useNavigate();
 
   const labelOf = React.useCallback(
