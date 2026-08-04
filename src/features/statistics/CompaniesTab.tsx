@@ -45,7 +45,12 @@ function periodCell(first: string | null, last: string | null): React.ReactNode 
 }
 
 export function CompaniesTab() {
-  const { payments, securities, filter } = useStatisticsContext();
+  const {
+    payments,
+    securities,
+    filter,
+    expectedAnnualDividend: expectedById,
+  } = useStatisticsContext();
   const navigate = useNavigate();
 
   const labelOf = React.useCallback(
@@ -138,6 +143,32 @@ export function CompaniesTab() {
         compare: (a, b) => a.net.compareTo(b.net),
         render: (row) => <AmountText amount={row.net} />,
       },
+      // Die erwartete Jahresdividende steht direkt neben der erhaltenen Summe:
+      // erst dort wird aus zwei Zahlen ein Soll-Ist-Vergleich. Sie erscheint
+      // nur, wenn ein Depotstand importiert ist — eine Spalte voller
+      // Gedankenstriche waere nichts als verbrauchte Breite.
+      ...(expectedById.size > 0
+        ? [
+            {
+              key: "expected",
+              header: "Erwartet p. a.",
+              headerLabel: "Erwartete Jahresdividende laut Depotstand",
+              align: "right" as const,
+              className: "hidden lg:table-cell",
+              compare: (a: SecurityStatistics, b: SecurityStatistics) =>
+                (expectedById.get(a.securityId)?.toChartNumber() ?? 0) -
+                (expectedById.get(b.securityId)?.toChartNumber() ?? 0),
+              render: (row: SecurityStatistics) => {
+                const expected = expectedById.get(row.securityId);
+                return expected ? (
+                  <AmountText amount={expected} />
+                ) : (
+                  <span className="text-muted-foreground">—</span>
+                );
+              },
+            },
+          ]
+        : []),
       {
         key: "count",
         header: "Zahlungen",
@@ -183,7 +214,7 @@ export function CompaniesTab() {
         render: (row) => periodCell(row.firstPayDate, row.lastPayDate),
       },
     ],
-    [labelOf, securities],
+    [labelOf, securities, expectedById],
   );
 
   if (stats.length === 0) {

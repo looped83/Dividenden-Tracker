@@ -26,7 +26,9 @@ import {
   CategoryBarChart,
   type CategoryDatum,
 } from "@/features/statistics/components/charts";
-import { useSecurities } from "@/features/securities/hooks";
+import { useSecurities, useSecuritySnapshots } from "@/features/securities/hooks";
+import { PositionCard } from "@/features/securities/PositionCard";
+import { latestAsOf, statusOf } from "@/features/securities/snapshots";
 import { useDepots } from "@/features/depots/hooks";
 import { deriveDataQuality } from "@/features/securities/dataQuality";
 import { formatDate } from "@/features/payments/paymentDisplay";
@@ -57,7 +59,16 @@ export function SecurityDetailPage() {
   const { id = "" } = useParams();
   const { payments, isLoading } = useStatisticsData();
   const { data: securities = [], isLoading: securitiesLoading } = useSecurities();
+  const { data: snapshots = [] } = useSecuritySnapshots();
   const { data: depots = [] } = useDepots();
+
+  // Der Depotstand dieser Position und die Auskunft, ob er noch der juengste
+  // ist — ohne sie stuende auf der Seite einer verkauften Position dauerhaft
+  // ein Bestand, den es nicht mehr gibt.
+  const snapshotStatus = React.useMemo(
+    () => statusOf(snapshots, id, latestAsOf(snapshots)),
+    [snapshots, id],
+  );
 
   const security = React.useMemo(
     () => securities.find((entry) => entry.id === id) ?? null,
@@ -234,6 +245,12 @@ export function SecurityDetailPage() {
           </Card>
         </>
       )}
+
+      {/* Der Depotstand steht zwischen der erhaltenen Historie und den
+          Stammdaten: erst was kam, dann wie die Position heute dasteht, dann
+          was sie ist. Bewusst ausserhalb der Bedingung oben — ein frisch
+          gekauftes Papier hat einen Bestand, aber noch keinen Eingang. */}
+      <PositionCard status={snapshotStatus} perYear={stats.perYear} />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>

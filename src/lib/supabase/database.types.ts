@@ -44,6 +44,10 @@ export type CalendarSource = "divvydiary";
 export type CalendarEventType = "payment" | "ex_date";
 export type CalendarEventState = "active" | "cancelled" | "removed_from_source";
 export type CalendarSyncState = "never" | "running" | "success" | "error";
+/** Depotstaende aus dem Portfolio-Export (Migration 0029). */
+export type DividendFrequency =
+  "none" | "monthly" | "quarterly" | "biannually" | "annually" | "irregular";
+export type SecurityAssetType = "equity" | "etf" | "fund" | "crypto" | "other";
 
 export interface Database {
   public: {
@@ -450,6 +454,112 @@ export interface Database {
         Insert: never; // nur ueber die Edge Function (service_role)
         Update: never;
         Relationships: [];
+      };
+      /**
+       * Ein Upload des Portfolio-Exports (Migration 0029). Ohne diesen Satz
+       * liesse sich „an diesem Tag kein Upload" nicht von „an diesem Tag keine
+       * Positionen" unterscheiden.
+       */
+      security_snapshot_runs: {
+        Row: {
+          id: string;
+          user_id: string;
+          as_of: string;
+          source: string;
+          file_name: string | null;
+          rows_total: number;
+          rows_imported: number;
+          rows_skipped: number;
+          rows_invalid: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string;
+          as_of: string;
+          source?: string;
+          file_name?: string | null;
+          rows_total?: number;
+          rows_imported?: number;
+          rows_skipped?: number;
+          rows_invalid?: number;
+        };
+        // Ein Lauf wird ersetzt, nie umgeschrieben — die Datenbank vergibt
+        // dafuer bewusst kein UPDATE-Recht.
+        Update: never;
+        Relationships: [];
+      };
+      /** Depotstand je Unternehmen und Stichtag (Migration 0029). */
+      security_snapshots: {
+        Row: {
+          id: string;
+          user_id: string;
+          security_id: string;
+          run_id: string;
+          as_of: string;
+          /** numeric — als String typisiert (siehe Kopf dieser Datei). */
+          quantity: string;
+          buyin_per_share: string | null;
+          buyin_total: string | null;
+          price: string | null;
+          market_value: string | null;
+          gain_absolute: string | null;
+          gain_relative: string | null;
+          allocation: string | null;
+          dividend_yield: string | null;
+          dividend_yield_on_buyin: string | null;
+          annual_dividend_total: string | null;
+          dividend_per_share: string | null;
+          dividend_frequency: DividendFrequency | null;
+          dividend_cagr: string | null;
+          dividend_cagr_period: string | null;
+          next_ex_date: string | null;
+          next_pay_date: string | null;
+          asset_type: SecurityAssetType | null;
+          currency: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string;
+          security_id: string;
+          run_id: string;
+          as_of: string;
+          quantity: string;
+          buyin_per_share?: string | null;
+          buyin_total?: string | null;
+          price?: string | null;
+          market_value?: string | null;
+          gain_absolute?: string | null;
+          gain_relative?: string | null;
+          allocation?: string | null;
+          dividend_yield?: string | null;
+          dividend_yield_on_buyin?: string | null;
+          annual_dividend_total?: string | null;
+          dividend_per_share?: string | null;
+          dividend_frequency?: DividendFrequency | null;
+          dividend_cagr?: string | null;
+          dividend_cagr_period?: string | null;
+          next_ex_date?: string | null;
+          next_pay_date?: string | null;
+          asset_type?: SecurityAssetType | null;
+          currency: string;
+        };
+        Update: never;
+        Relationships: [
+          {
+            foreignKeyName: "security_snapshots_security_id_fkey";
+            columns: ["security_id"];
+            referencedRelation: "securities";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "security_snapshots_run_fkey";
+            columns: ["run_id", "as_of"];
+            referencedRelation: "security_snapshot_runs";
+            referencedColumns: ["id", "as_of"];
+          },
+        ];
       };
       audit_log: {
         Row: {

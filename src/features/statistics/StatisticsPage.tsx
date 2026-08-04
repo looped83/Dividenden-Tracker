@@ -56,8 +56,16 @@ export function StatisticsPage() {
       securities: data.securities,
       depots: data.depots,
       filter,
+      expectedAnnualDividend: data.expectedAnnualDividend,
     }),
-    [filteredPayments, data.payments, data.securities, data.depots, filter],
+    [
+      filteredPayments,
+      data.payments,
+      data.securities,
+      data.depots,
+      data.expectedAnnualDividend,
+      filter,
+    ],
   );
 
   const heading = <PageHeader title="Statistik" />;

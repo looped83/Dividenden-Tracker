@@ -67,6 +67,10 @@ vi.mock("@/features/statistics/hooks", () => ({
 }));
 vi.mock("@/features/securities/hooks", () => ({
   useSecurities: () => ({ data: securities, isLoading: false }),
+  // Ohne importierten Depotstand — die Positionskarte bleibt dann aus, und
+  // diese Tests pruefen weiterhin ausschliesslich die Zahlen aus den
+  // erhaltenen Eingaengen.
+  useSecuritySnapshots: () => ({ data: [], isLoading: false }),
 }));
 vi.mock("@/features/depots/hooks", () => ({
   useDepots: () => ({ data: [{ id: "dep-1", name: "Hauptdepot", archived_at: null }] }),
