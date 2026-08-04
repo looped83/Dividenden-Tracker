@@ -27,15 +27,23 @@ import { entityArchived, entityName, formatCountNumber } from "./format";
 import { ComparisonLineChart, type ComparisonPoint } from "./components/charts";
 import { StatSearch, StatTable, type StatColumn } from "./components/StatTable";
 
-/** Eine Zeile der Soll-Ist-Tabelle je Unternehmen. */
+/** Eine Zeile der Gegenueberstellung je Unternehmen. */
 interface CompanyRow {
   securityId: string;
   name: string;
   archived: boolean;
   expected: Money | null;
   received: Money;
-  /** erhalten − erwartet; `null`, wenn es keine Erwartung gibt. */
-  difference: Money | null;
+  /**
+   * **erwartet − erhalten**: um wie viel die kuenftige Jahresausschuettung ueber
+   * dem liegt, was in den letzten zwoelf Monaten tatsaechlich kam.
+   *
+   * `null` nur, wenn die Quelle fuer ein **gehaltenes** Papier keinen Betrag
+   * nennt — dann ist der Zuwachs unbekannt, nicht null. Fuer ein verkauftes
+   * Papier steht er dagegen fest: Es traegt kuenftig nichts mehr bei, der
+   * Zuwachs ist also der Wegfall des Erhaltenen.
+   */
+  growth: Money | null;
   yieldOnBuyin: DecimalInstance | null;
 }
 
@@ -48,6 +56,13 @@ const HUNDRED = new MoneyDecimal(100);
  * die erwartete Jahresdividende aus den Depotstaenden dem gegenueber, was
  * tatsaechlich hereinkam — und zeigt beides ueber die Zeit, sobald mehrere
  * Staende vorliegen.
+ *
+ * **Die Richtung ist „Zuwachs", nicht „Abweichung".** „Erwartet p. a." ist kein
+ * Ziel, das verfehlt werden koennte, sondern die Ertragskraft des heutigen
+ * Depots. Wer weiter investiert, hat sie zwangslaeufig ueber dem, was in den
+ * zwoelf Monaten davor mit kleinerem Bestand hereinkam — als Soll-Ist-Rechnung
+ * gelesen stuende dort dauerhaft eine rote Zahl fuer genau den Vorgang, der gut
+ * laeuft. Gerechnet wird deshalb erwartet minus erhalten.
  *
  * **Verglichen werden zwei Zwoelfmonatszeitraeume.** Die Erwartung gilt fuer
  * zwoelf Monate nach vorn; ihr Gegenstueck sind deshalb die zwoelf Monate, die
@@ -127,13 +142,23 @@ export function DevelopmentTab() {
         payments.filter((payment) => payment.securityId === securityId),
         range,
       ).net;
+      // Ein verkauftes Papier traegt kuenftig nichts mehr bei — sein Zuwachs
+      // ist der Wegfall des Erhaltenen. Ein gehaltenes ohne Betrag der Quelle
+      // bleibt dagegen unbekannt; daraus zu rechnen hiesse, das Schweigen der
+      // Quelle als Null zu lesen.
+      const held = portfolio.heldSecurityIds.has(securityId);
+      const growth = expected
+        ? expected.subtract(received)
+        : held
+          ? null
+          : received.negate();
       return {
         securityId,
         name: entityName(securities, securityId),
         archived: entityArchived(securities, securityId),
         expected,
         received,
-        difference: expected ? received.subtract(expected) : null,
+        growth,
         yieldOnBuyin: portfolio.yieldOnBuyinBySecurity.get(securityId) ?? null,
       };
     });
@@ -178,15 +203,15 @@ export function DevelopmentTab() {
         render: (row) => <AmountText amount={row.received} />,
       },
       {
-        key: "difference",
-        header: "Abweichung",
-        headerLabel: "Erhalten abzüglich erwartet",
+        key: "growth",
+        header: "Zuwachs",
+        headerLabel: "Erwartet abzüglich erhalten",
         align: "right",
         compare: (a, b) =>
-          (a.difference?.toChartNumber() ?? 0) - (b.difference?.toChartNumber() ?? 0),
+          (a.growth?.toChartNumber() ?? 0) - (b.growth?.toChartNumber() ?? 0),
         render: (row) =>
-          row.difference ? (
-            <AmountText amount={row.difference} showSign />
+          row.growth ? (
+            <AmountText amount={row.growth} showSign />
           ) : (
             <span className="text-muted-foreground">—</span>
           ),
@@ -230,10 +255,28 @@ export function DevelopmentTab() {
 
   const expected = latest.annualDividend;
   const received = receivedAt(latest.asOf);
-  const difference = expected ? received.subtract(expected) : null;
-  const differencePercent =
-    expected && !expected.isZero()
-      ? difference?.toDecimal().dividedBy(expected.toDecimal()).times(HUNDRED)
+
+  /**
+   * **Zuwachs: erwartet − erhalten**, nicht umgekehrt.
+   *
+   * „Erwartet p. a." ist kein Ziel, das verfehlt werden koennte — es ist die
+   * Ertragskraft des heutigen Depots. Wer weiter investiert, hat sie zwangs-
+   * laeufig ueber dem, was in den zwoelf Monaten davor mit einem kleineren
+   * Bestand hereinkam. Als „Abweichung" (erhalten − erwartet) stand dort
+   * dauerhaft eine rote Zahl fuer genau den Vorgang, der gut laeuft.
+   *
+   * Faellt der Zuwachs negativ aus — Verkaeufe, gekuerzte Dividenden, eine
+   * Sonderausschuettung im Vorjahr —, ist das ein echter Rueckgang und darf
+   * rot sein. Das Vorzeichen sagt dann die Wahrheit statt einer Konvention.
+   */
+  const growth = expected ? expected.subtract(received) : null;
+  /**
+   * Gemessen am **Erhaltenen**, nicht an der Erwartung: Eine Wachstumsrate
+   * bezieht sich auf den Ausgangswert, aus dem gewachsen wurde.
+   */
+  const growthPercent =
+    growth && !received.isZero()
+      ? growth.toDecimal().dividedBy(received.toDecimal()).times(HUNDRED)
       : null;
   const yieldOnBuyin =
     expected && latest.buyinTotal && !latest.buyinTotal.isZero()
@@ -255,19 +298,16 @@ export function DevelopmentTab() {
           comparison={`${formatCalendarDate(range.start)} – ${formatCalendarDate(range.end)}`}
         />
         <StatCard
-          label="Abweichung"
-          value={
-            difference ? <AmountText amount={difference} showSign /> : <span>—</span>
-          }
+          label="Zuwachs"
+          value={growth ? <AmountText amount={growth} showSign /> : <span>—</span>}
           comparison={
-            differencePercent
-              ? // Vorzeichen wie beim Betrag darueber: „3.040,0 % der Erwartung"
-                // liest sich sonst wie „so viel ist hereingekommen", gemeint ist
-                // aber der Abstand dazu.
-                `${differencePercent.isPositive() ? "+" : ""}${formatPercent(
-                  differencePercent,
+            growthPercent
+              ? // Vorzeichen wie beim Betrag darueber, damit beide Zeilen
+                // dasselbe sagen.
+                `${growthPercent.isPositive() ? "+" : ""}${formatPercent(
+                  growthPercent,
                   1,
-                )} gegenüber der Erwartung`
+                )} gegenüber den letzten zwölf Monaten`
               : undefined
           }
         />
@@ -327,7 +367,7 @@ export function DevelopmentTab() {
             getRowKey={(row) => row.securityId}
             query={query}
             searchOf={(row) => row.name}
-            initialSort={{ key: "expected", direction: "desc" }}
+            initialSort={{ key: "growth", direction: "desc" }}
             caption="Erwartete und erhaltene Dividenden je Unternehmen"
             emptyMessage="Kein Unternehmen mit Bestand oder Zahlung in diesem Zeitraum."
           />

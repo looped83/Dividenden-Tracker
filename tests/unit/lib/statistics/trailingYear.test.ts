@@ -4,7 +4,7 @@ import { isInRange, trailingYearRange } from "@/lib/statistics";
 /**
  * Das Zwoelfmonatsfenster, das an einem beliebigen Tag endet.
  *
- * Es traegt den Soll-Ist-Vergleich im Entwicklungsbereich: Die erwartete
+ * Es traegt die Gegenueberstellung im Entwicklungsbereich: Die erwartete
  * Jahresdividende gilt fuer zwoelf Monate nach vorn, ihr Gegenstueck sind die
  * zwoelf Monate, die am Stichtag enden. Beide Zeitraeume muessen exakt gleich
  * lang sein, sonst vergleicht man Ungleiches.

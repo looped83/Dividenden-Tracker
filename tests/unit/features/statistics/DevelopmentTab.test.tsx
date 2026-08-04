@@ -15,10 +15,12 @@ import type { StatisticsContext } from "@/features/statistics/context";
 /**
  * Unterbereich „Entwicklung".
  *
- * Der Kern ist der Soll-Ist-Vergleich zweier **Zwoelfmonatszeitraeume**: die
+ * Der Kern ist die Gegenueberstellung zweier **Zwoelfmonatszeitraeume**: die
  * erwartete Jahresdividende gegen das, was in den zwoelf Monaten bis zum
- * Stichtag tatsaechlich hereinkam. Genau daran haengen diese Tests — plus die
- * Frage, was der Bereich zeigt, solange es nur einen Stand gibt.
+ * Stichtag tatsaechlich hereinkam. Ihre Differenz ist ein **Zuwachs**
+ * (erwartet minus erhalten), keine Abweichung von einem Ziel — daran haengen
+ * diese Tests, plus die Frage, was der Bereich zeigt, solange es nur einen
+ * Stand gibt.
  */
 let seq = 0;
 function payment(payDate: string, net: string, securityId = "sec-a"): AnalyticsPayment {
@@ -69,6 +71,7 @@ const SERIES: PortfolioSeries = {
     ["sec-a", money("40.00")],
     ["sec-b", money("10.00")],
   ]),
+  heldSecurityIds: new Set(["sec-a", "sec-b"]),
   yieldOnBuyinBySecurity: new Map(),
   bySector: [],
   byCountry: [],
@@ -90,6 +93,7 @@ function renderTab(
     securities: new Map<string, EntityInfo>([
       ["sec-a", { name: "Alpha AG", archived: false }],
       ["sec-b", { name: "Beta SE", archived: false }],
+      ["sec-c", { name: "Gamma GmbH", archived: false }],
     ]),
     depots: new Map<string, EntityInfo>([
       ["dep-1", { name: "Hauptdepot", archived: false }],
@@ -132,28 +136,69 @@ describe("DevelopmentTab", () => {
     expect(screen.getByText("04.08.2025 – 03.08.2026")).toBeInTheDocument();
   });
 
-  it("weist die Abweichung mit Vorzeichen aus", () => {
-    // Erwartet 50 €, erhalten 42 € — acht Euro darunter.
+  it("rechnet den Zuwachs als erwartet minus erhalten", () => {
+    // 50 € erwartet gegen 42 € erhalten sind **acht Euro mehr**, kein Minus:
+    // Wer weiter investiert, hat die Ertragskraft des heutigen Depots
+    // zwangslaeufig ueber dem, was mit kleinerem Bestand hereinkam. Andersherum
+    // stuende dauerhaft eine rote Zahl fuer den Vorgang, der gut laeuft.
     renderTab();
-    expect(screen.getByText(/^-8,00/)).toBeInTheDocument();
-    expect(screen.getByText(/-16,0 % gegenüber der Erwartung/)).toBeInTheDocument();
+    expect(screen.getByText(/^\+8,00/)).toBeInTheDocument();
+  });
+
+  it("misst die Wachstumsrate am Erhaltenen, nicht an der Erwartung", () => {
+    // 8 von 42 sind 19,0 %. An der Erwartung gemessen waeren es 16,0 % — eine
+    // Wachstumsrate bezieht sich aber auf den Wert, aus dem gewachsen wurde.
+    renderTab();
+    expect(
+      screen.getByText(/\+19,0 % gegenüber den letzten zwölf Monaten/),
+    ).toBeInTheDocument();
+  });
+
+  it("zeigt einen echten Rückgang weiterhin negativ", () => {
+    // Weniger erwartet als erhalten heisst Verkauf, Kuerzung oder eine
+    // Sonderausschuettung im Vorjahr — dann sagt das Minus die Wahrheit.
+    renderTab({
+      ...SERIES,
+      latest: { ...SERIES.points[1], annualDividend: money("30.00") },
+    });
+    expect(screen.getByText(/^-12,00/)).toBeInTheDocument();
   });
 
   it("stellt je Unternehmen erwartet und erhalten gegenüber", () => {
     renderTab();
     const zeile = screen.getByRole("row", { name: /Alpha AG/ });
-    // Alpha: 40 € erwartet, 42 € erhalten, also +2 €.
+    // Alpha: 40 € erwartet, 42 € erhalten — zwei Euro weniger als zuletzt.
     expect(within(zeile).getByText(/^40,00/)).toBeInTheDocument();
     expect(within(zeile).getByText(/^42,00/)).toBeInTheDocument();
-    expect(within(zeile).getByText(/^\+2,00/)).toBeInTheDocument();
+    expect(within(zeile).getByText(/^-2,00/)).toBeInTheDocument();
   });
 
   it("führt auch Unternehmen ohne Zahlung im Zeitraum auf", () => {
-    // Beta hat eine Erwartung, aber nichts gezahlt — genau das soll auffallen.
+    // Beta ist neu im Depot: 10 € Erwartung, noch nichts gezahlt. Der volle
+    // Betrag ist Zuwachs — genau das soll auffallen.
     renderTab();
     const zeile = screen.getByRole("row", { name: /Beta SE/ });
     expect(within(zeile).getByText(/^10,00/)).toBeInTheDocument();
-    expect(within(zeile).getByText(/^-10,00/)).toBeInTheDocument();
+    expect(within(zeile).getByText(/^\+10,00/)).toBeInTheDocument();
+  });
+
+  it("verbucht ein verkauftes Papier als Wegfall, nicht als Lücke", () => {
+    // Gamma hat gezahlt, steht aber nicht mehr im juengsten Stand: Es traegt
+    // kuenftig nichts mehr bei, der Zuwachs ist also der Wegfall.
+    renderTab(SERIES, [payment("2026-03-01", "25.00", "sec-c")]);
+    const zeile = screen.getByRole("row", { name: /Gamma/ });
+    expect(within(zeile).getByText(/^-25,00/)).toBeInTheDocument();
+  });
+
+  it("lässt den Zuwachs offen, wenn die Quelle für ein gehaltenes Papier schweigt", () => {
+    // Kein Betrag der Quelle heisst „unbekannt", nicht „null" — daraus zu
+    // rechnen hiesse, das Schweigen als Zahl zu lesen.
+    renderTab(
+      { ...SERIES, expectedBySecurity: new Map(), heldSecurityIds: new Set(["sec-a"]) },
+      [payment("2026-03-01", "25.00")],
+    );
+    const zeile = screen.getByRole("row", { name: /Alpha AG/ });
+    expect(within(zeile).getAllByText("—").length).toBeGreaterThan(0);
   });
 
   it("zeigt statt einer Kurve einen Hinweis, solange es nur einen Stand gibt", () => {

@@ -140,7 +140,7 @@ export function CompaniesTab() {
         render: (row) => <AmountText amount={row.net} />,
       },
       // Die erwartete Jahresdividende steht direkt neben der erhaltenen Summe:
-      // erst dort wird aus zwei Zahlen ein Soll-Ist-Vergleich. Sie erscheint
+      // erst dort laesst sich beides zusammen lesen. Sie erscheint
       // nur, wenn ein Depotstand importiert ist — eine Spalte voller
       // Gedankenstriche waere nichts als verbrauchte Breite.
       ...(expectedById.size > 0

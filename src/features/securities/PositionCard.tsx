@@ -36,7 +36,7 @@ export function PositionCard({
   perYear,
 }: {
   status: SnapshotStatus;
-  /** Tatsaechlich erhaltene Dividenden je Jahr — fuer den Soll-Ist-Vergleich. */
+  /** Tatsaechlich erhaltene Dividenden je Jahr — fuer die Gegenueberstellung. */
   perYear: readonly YearBucket[];
 }) {
   const { snapshot, current } = status;

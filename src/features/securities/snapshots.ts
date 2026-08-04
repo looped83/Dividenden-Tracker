@@ -215,6 +215,15 @@ export interface PortfolioSeries {
   latest: PortfolioPoint | null;
   /** Erwartete Jahresdividende je Unternehmen im juengsten Stand. */
   expectedBySecurity: Map<string, Money>;
+  /**
+   * Unternehmen, die im juengsten Stand ueberhaupt vorkommen.
+   *
+   * Unterscheidet zwei Faelle, die `expectedBySecurity` allein
+   * zusammenwirft: **nicht mehr gehalten** (traegt kuenftig null bei) und
+   * **gehalten, aber ohne Betrag der Quelle** (unbekannt). Aus dem einen darf
+   * gerechnet werden, aus dem anderen nicht.
+   */
+  heldSecurityIds: Set<string>;
   /** Rendite auf den Einstand je Unternehmen, in Prozentpunkten. */
   yieldOnBuyinBySecurity: Map<string, DecimalInstance>;
   bySector: AllocationBucket[];
@@ -225,6 +234,7 @@ export const EMPTY_PORTFOLIO_SERIES: PortfolioSeries = {
   points: [],
   latest: null,
   expectedBySecurity: new Map(),
+  heldSecurityIds: new Set(),
   yieldOnBuyinBySecurity: new Map(),
   bySector: [],
   byCountry: [],
@@ -318,8 +328,10 @@ export function buildPortfolioSeries(
   const current = snapshotsAt(snapshots, latestDate);
 
   const expectedBySecurity = new Map<string, Money>();
+  const heldSecurityIds = new Set<string>();
   const yieldOnBuyinBySecurity = new Map<string, DecimalInstance>();
   for (const row of current) {
+    heldSecurityIds.add(row.security_id);
     if (row.annual_dividend_total !== null) {
       expectedBySecurity.set(
         row.security_id,
@@ -334,6 +346,7 @@ export function buildPortfolioSeries(
     points,
     latest: points.at(-1) ?? null,
     expectedBySecurity,
+    heldSecurityIds,
     yieldOnBuyinBySecurity,
     bySector: allocate(current, (id) => facets.get(id)?.sector ?? null),
     byCountry: allocate(current, (id) => facets.get(id)?.country ?? null),
