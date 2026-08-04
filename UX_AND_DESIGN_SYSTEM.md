@@ -114,6 +114,11 @@ Verwendete Basiskomponenten: Button, Input, Select, Combobox, DatePicker, Dialog
 Table, Tabs, Badge, Card, Toast/Sonner, Tooltip, DropdownMenu, Form (RHF-Integration),
 Skeleton, Alert.
 
+Die **Combobox** klappt ihre Vorschlagsliste nur auf ausdrückliche Absicht auf: Antippen,
+Tippen, Pfeil-nach-unten. Der bloße Fokus genügt nicht — als erstes Feld eines Formulars
+verdeckte die Liste sonst alles darunter, sobald der Fokus sie streifte, und beim Durchgehen
+mit der Tabulatortaste ging sie ungefragt auf.
+
 Eigene zusammengesetzte Komponenten (fachlich):
 
 | Komponente | Zweck |

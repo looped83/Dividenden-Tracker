@@ -93,3 +93,29 @@ describe("CompaniesTab", () => {
     ).toBeInTheDocument();
   });
 });
+
+describe("Spalten der Unternehmensstatistik", () => {
+  it("fasst erste und letzte Zahlung zu einem Zeitraum zusammen", () => {
+    renderCompanies([
+      p("sec-a", "2025-03-10", "100.00"),
+      p("sec-a", "2025-09-12", "120.00"),
+    ]);
+
+    // Zwei Spalten fuer zwei Daten liessen die Tabelle rechts aus dem Bild
+    // laufen; als Zeitraum stehen beide weiterhin da.
+    const table = screen.getByRole("table");
+    expect(
+      within(table).getByRole("columnheader", { name: /Zeitraum/ }),
+    ).toBeInTheDocument();
+    expect(within(table).getByText("10.03.2025 – 12.09.2025")).toBeInTheDocument();
+    expect(
+      within(table).queryByRole("columnheader", { name: /Erste Zahlung/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("nennt einen einzelnen Tag nur einmal", () => {
+    renderCompanies([p("sec-a", "2025-03-10", "100.00")]);
+
+    expect(within(screen.getByRole("table")).getByText("10.03.2025")).toBeInTheDocument();
+  });
+});

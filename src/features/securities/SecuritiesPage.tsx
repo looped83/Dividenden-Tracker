@@ -3,6 +3,8 @@ import { Link } from "react-router";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import {
+  ArrowDown,
+  ArrowUp,
   Building2,
   Pencil,
   Plus,
@@ -58,17 +60,14 @@ import {
   type SecurityFormValues,
 } from "@/features/securities/schemas";
 import { deriveDataQuality } from "@/features/securities/dataQuality";
+import {
+  DEFAULT_SECURITY_SORT,
+  SECURITY_SORT_FIELDS,
+  sortSecurities,
+  type SecuritySort,
+  type SecuritySortField,
+} from "@/features/securities/sortSecurities";
 import type { Security } from "@/lib/supabase/repositories/securities";
-import type { DataQuality } from "@/lib/supabase/database.types";
-
-const DATA_QUALITY_LABELS: Record<
-  DataQuality,
-  { label: string; variant: "positive" | "warning" | "negative" }
-> = {
-  ok: { label: "OK", variant: "positive" },
-  incomplete: { label: "Unvollständig", variant: "warning" },
-  needs_review: { label: "Prüfen", variant: "negative" },
-};
 
 function SecurityFormDialog({
   security,
@@ -284,7 +283,10 @@ function SecurityFormDialog({
 export function SecuritiesPage() {
   const { data: securities = [], isLoading } = useSecurities();
   const { data: depots = [] } = useDepots();
-  const depotById = new Map(depots.map((depot) => [depot.id, depot]));
+  const depotById = React.useMemo(
+    () => new Map(depots.map((depot) => [depot.id, depot])),
+    [depots],
+  );
   const archiveSecurity = useArchiveSecurity();
   const deleteSecurity = useDeleteSecurity();
   const { error: deleteError, showError, clearError } = useErrorState();
@@ -292,7 +294,7 @@ export function SecuritiesPage() {
   const [sectorFilter, setSectorFilter] = React.useState("");
   const [currencyFilter, setCurrencyFilter] = React.useState("");
   const [depotFilter, setDepotFilter] = React.useState("");
-  const [qualityFilter, setQualityFilter] = React.useState("");
+  const [sort, setSort] = React.useState<SecuritySort>(DEFAULT_SECURITY_SORT);
   const [dialog, setDialog] = React.useState<{
     open: boolean;
     security: Security | null;
@@ -321,32 +323,40 @@ export function SecuritiesPage() {
     };
   }, [securities]);
 
-  const visible = React.useMemo(
-    () =>
-      securities.filter((s) => {
-        if (!showArchived && s.archived_at) return false;
-        if (sectorFilter && s.sector !== sectorFilter) return false;
-        if (currencyFilter && s.currency !== currencyFilter) return false;
-        if (depotFilter && s.default_depot_id !== depotFilter) return false;
-        if (qualityFilter && s.data_quality !== qualityFilter) return false;
-        return true;
-      }),
-    [securities, showArchived, sectorFilter, currencyFilter, depotFilter, qualityFilter],
-  );
-
-  const activeFilterCount = [
+  const visible = React.useMemo(() => {
+    const filtered = securities.filter((s) => {
+      if (!showArchived && s.archived_at) return false;
+      if (sectorFilter && s.sector !== sectorFilter) return false;
+      if (currencyFilter && s.currency !== currencyFilter) return false;
+      if (depotFilter && s.default_depot_id !== depotFilter) return false;
+      return true;
+    });
+    // Sortiert wird nach dem **Namen** des Standard-Depots, nicht nach seiner
+    // Kennung — die sagt niemandem etwas.
+    return sortSecurities(filtered, sort, (security) =>
+      security.default_depot_id
+        ? (depotById.get(security.default_depot_id)?.name ?? null)
+        : null,
+    );
+  }, [
+    securities,
+    showArchived,
     sectorFilter,
     currencyFilter,
     depotFilter,
-    qualityFilter,
-  ].filter((value) => value !== "").length;
+    sort,
+    depotById,
+  ]);
+
+  const activeFilterCount = [sectorFilter, currencyFilter, depotFilter].filter(
+    (value) => value !== "",
+  ).length;
   const hasActiveFilters = activeFilterCount > 0;
 
   const resetFilters = () => {
     setSectorFilter("");
     setCurrencyFilter("");
     setDepotFilter("");
-    setQualityFilter("");
   };
 
   const handleDelete = async () => {
@@ -422,21 +432,47 @@ export function SecuritiesPage() {
           />
         </FilterField>
 
-        <FilterField id="sec-quality" label="Datenqualität">
-          <Select
-            id="sec-quality"
-            value={qualityFilter}
-            onChange={(event) => {
-              setQualityFilter(event.target.value);
-            }}
-          >
-            <option value="">Alle Datenqualitäten</option>
-            {(Object.keys(DATA_QUALITY_LABELS) as DataQuality[]).map((key) => (
-              <option key={key} value={key}>
-                {DATA_QUALITY_LABELS[key].label}
-              </option>
-            ))}
-          </Select>
+        {/* Sortierung wie in der Dividendenliste: rechts in der Leiste, mit
+            dem Richtungsschalter daneben. Etwas breiter als die uebrigen
+            Felder, weil es beides traegt. */}
+        <FilterField id="sec-sort" label="Sortierung" className="sm:basis-52">
+          <div className="flex gap-2">
+            <Select
+              id="sec-sort"
+              value={sort.field}
+              onChange={(event) => {
+                setSort((current) => ({
+                  ...current,
+                  field: event.target.value as SecuritySortField,
+                }));
+              }}
+            >
+              {SECURITY_SORT_FIELDS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </Select>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="shrink-0"
+              aria-label={
+                sort.direction === "asc"
+                  ? "Aufsteigend sortiert — zu absteigend wechseln"
+                  : "Absteigend sortiert — zu aufsteigend wechseln"
+              }
+              onClick={() => {
+                setSort((current) => ({
+                  ...current,
+                  direction: current.direction === "asc" ? "desc" : "asc",
+                }));
+              }}
+            >
+              {sort.direction === "asc" ? <ArrowUp /> : <ArrowDown />}
+            </Button>
+          </div>
         </FilterField>
 
         {/* Zuruecksetzen steht wie im Statistikbereich **in** der Leiste. */}
@@ -486,105 +522,98 @@ export function SecuritiesPage() {
               <TableHead>Land</TableHead>
               <TableHead>Depot</TableHead>
               <TableHead>Ausschüttung</TableHead>
-              <TableHead>Datenqualität</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Aktionen</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {visible.map((security) => {
-              const quality = DATA_QUALITY_LABELS[security.data_quality];
-              return (
-                <TableRow key={security.id}>
-                  <TableCell className="font-medium">
-                    {/* Der Name fuehrt zur Detailseite — sie beantwortet die
+            {visible.map((security) => (
+              <TableRow key={security.id}>
+                <TableCell className="font-medium">
+                  {/* Der Name fuehrt zur Detailseite — sie beantwortet die
                         Frage nach der Entwicklung dieser Position, die diese
                         Verwaltungsliste bewusst nicht stellt. */}
-                    <Link
-                      to={`/unternehmen/${security.id}`}
-                      className="rounded-sm outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+                  <Link
+                    to={`/unternehmen/${security.id}`}
+                    className="rounded-sm outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    {security.name}
+                  </Link>
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {security.ticker ?? "—"}
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {security.isin ?? "—"}
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {security.country ?? "—"}
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {security.default_depot_id
+                    ? (depotById.get(security.default_depot_id)?.name ?? "—")
+                    : "—"}
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {normalizePayoutMonths(security.payout_months).length === 0
+                    ? "—"
+                    : normalizePayoutMonths(security.payout_months)
+                        .map((month) => monthNameDeShort(month))
+                        .join(", ")}
+                </TableCell>
+                <TableCell>
+                  {security.archived_at ? (
+                    <Badge variant="neutral">Archiviert</Badge>
+                  ) : (
+                    <Badge variant="positive">Aktiv</Badge>
+                  )}
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label={`${security.name} bearbeiten`}
+                      onClick={() => {
+                        setDialog({ open: true, security });
+                      }}
                     >
-                      {security.name}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {security.ticker ?? "—"}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {security.isin ?? "—"}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {security.country ?? "—"}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {security.default_depot_id
-                      ? (depotById.get(security.default_depot_id)?.name ?? "—")
-                      : "—"}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {normalizePayoutMonths(security.payout_months).length === 0
-                      ? "—"
-                      : normalizePayoutMonths(security.payout_months)
-                          .map((month) => monthNameDeShort(month))
-                          .join(", ")}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={quality.variant}>{quality.label}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    {security.archived_at ? (
-                      <Badge variant="neutral">Archiviert</Badge>
-                    ) : (
-                      <Badge variant="positive">Aktiv</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
+                      <Pencil />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label={
+                        security.archived_at
+                          ? `${security.name} reaktivieren`
+                          : `${security.name} archivieren`
+                      }
+                      onClick={() =>
+                        void archiveSecurity.mutateAsync({
+                          id: security.id,
+                          archived: Boolean(security.archived_at),
+                        })
+                      }
+                    >
+                      {security.archived_at ? <RotateCcw /> : <ArchiveIcon />}
+                    </Button>
+                    {security.archived_at && (
                       <Button
                         variant="ghost"
                         size="icon"
-                        aria-label={`${security.name} bearbeiten`}
+                        aria-label={`${security.name} endgültig löschen`}
                         onClick={() => {
-                          setDialog({ open: true, security });
+                          clearError();
+                          setDeleteTarget(security);
                         }}
                       >
-                        <Pencil />
+                        <Trash2 />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label={
-                          security.archived_at
-                            ? `${security.name} reaktivieren`
-                            : `${security.name} archivieren`
-                        }
-                        onClick={() =>
-                          void archiveSecurity.mutateAsync({
-                            id: security.id,
-                            archived: Boolean(security.archived_at),
-                          })
-                        }
-                      >
-                        {security.archived_at ? <RotateCcw /> : <ArchiveIcon />}
-                      </Button>
-                      {security.archived_at && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label={`${security.name} endgültig löschen`}
-                          onClick={() => {
-                            clearError();
-                            setDeleteTarget(security);
-                          }}
-                        >
-                          <Trash2 />
-                        </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
           </TableBody>
         </Table>
       )}

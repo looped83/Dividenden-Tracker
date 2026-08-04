@@ -33,6 +33,10 @@ function fold(text: string): string {
  * Bewusst ohne zusaetzliche Abhaengigkeit und ohne Portal — die Liste ist
  * ein Kind des Feldes (`relative`), damit sie weder aus dem Container
  * herauslaeuft noch das Dokument verbreitert.
+ *
+ * **Die Liste oeffnet nur auf ausdrueckliche Absicht** — Antippen, Tippen,
+ * Pfeil-nach-unten —, nicht schon beim Fokussieren: Als erstes Feld eines
+ * Formulars verdeckte sie sonst alles darunter, sobald der Fokus sie streifte.
  */
 export function Combobox({
   id,
@@ -164,7 +168,12 @@ export function Combobox({
           setQuery(event.target.value);
           setActiveIndex(0);
         }}
-        onFocus={() => {
+        // Bewusst **nicht** `onFocus`: Fokus allein ist keine Absicht. Wer das
+        // Formular betritt oder mit der Tabulatortaste durchgeht, stand sonst
+        // sofort vor einer aufgeklappten Liste, die den Rest des Formulars
+        // verdeckte. Geoeffnet wird durch Antippen des Feldes, durch Tippen und
+        // durch Pfeil-nach-unten (siehe onKeyDown).
+        onPointerDown={() => {
           if (!open) openList();
         }}
         onKeyDown={onKeyDown}
