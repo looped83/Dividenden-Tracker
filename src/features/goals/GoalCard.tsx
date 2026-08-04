@@ -51,7 +51,7 @@ export function GoalCard({ progress, onEdit, onDelete }: GoalCardProps) {
 
   return (
     <Card className="flex flex-col">
-      <CardContent className="flex flex-1 flex-col gap-4 p-5">
+      <CardContent className="flex flex-1 flex-col gap-4 p-4 sm:p-6">
         {/* Der Titel nennt Zielart und Zeitraum bereits („Dividendenziel 2026",
             „Monatsziel Juli 2026") — eine Zeile darunter, die dasselbe noch
             einmal sagt, ist keine Auskunft. Dort steht deshalb der
@@ -114,7 +114,7 @@ export function GoalCard({ progress, onEdit, onDelete }: GoalCardProps) {
         {/* „Öffnen" gab es hier zusaetzlich; der Titel fuehrt bereits dorthin,
             und drei Schaltflaechen brachen die Zeile um. */}
         {hasActions && (
-          <div className="mt-auto flex flex-wrap gap-2 pt-1">
+          <div className="-ml-3 mt-auto flex flex-wrap gap-2">
             {onEdit && (
               <Button
                 variant="ghost"

@@ -146,7 +146,7 @@ export function CalendarPage() {
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {heading}
 
       {isInitialLoading ? (

@@ -61,7 +61,7 @@ export function GoalSection({ payments, selection, today }: GoalSectionProps) {
   const heading = (
     <div className="flex items-center justify-between gap-3">
       <h2 className="text-lg font-semibold tracking-tight">Ziele</h2>
-      <Button asChild variant="ghost" size="sm">
+      <Button asChild variant="ghost" size="sm" className="-mr-3 shrink-0">
         <Link to="/ziele">Alle Ziele</Link>
       </Button>
     </div>
@@ -77,7 +77,7 @@ export function GoalSection({ payments, selection, today }: GoalSectionProps) {
           <GoalCard progress={annualProgress} />
         ) : (
           <Card>
-            <CardContent className="flex flex-col items-start gap-3 p-5">
+            <CardContent className="flex flex-col items-start gap-3 p-4 sm:p-6">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Target className="size-4" aria-hidden />
                 <span>Noch kein Jahresziel für {selection} festgelegt</span>

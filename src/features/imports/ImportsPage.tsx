@@ -89,7 +89,7 @@ export function ImportsPage() {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0 pb-5">
+        <CardHeader className="flex-row items-center justify-between gap-3">
           <CardTitle>Import</CardTitle>
           <Button
             size="sm"

@@ -28,7 +28,7 @@ export function HistoricalOverview({ payments }: HistoricalOverviewProps) {
 
   return (
     <Card>
-      <CardHeader className="pb-5">
+      <CardHeader>
         <CardTitle>Historische Übersicht</CardTitle>
       </CardHeader>
       <CardContent>

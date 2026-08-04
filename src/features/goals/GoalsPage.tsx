@@ -29,7 +29,7 @@ function GoalsSkeleton() {
       <span className="sr-only">Ziele werden geladen …</span>
       {Array.from({ length: 3 }).map((_, index) => (
         <Card key={index}>
-          <CardContent className="space-y-4 p-5">
+          <CardContent className="space-y-4 p-4 sm:p-6">
             <div className="h-5 w-40 animate-pulse rounded bg-muted" />
             <div className="h-2.5 w-full animate-pulse rounded bg-muted" />
             <div className="h-10 w-full animate-pulse rounded bg-muted" />

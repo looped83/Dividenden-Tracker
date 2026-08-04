@@ -91,6 +91,14 @@ als Serienfarbe benutzt — auch dann nicht, wenn ein Farbton ähnlich aussieht.
 ### Abstände, Radien, Tiefe
 
 - 4-px-Raster (4/8/12/16/24/32/48); Seitenränder: 24 px Desktop, 16 px iPhone.
+- Karten tragen denselben Rand wie die Seite: 16 px unter `sm`, 24 px darüber; Kopf zu
+  Inhalt 12 px bzw. 20 px. Der Wert steht in `components/ui/card.tsx`, nicht an der
+  Aufrufstelle — wer ihn dort überschreibt, muss die `sm:`-Stufe mitsetzen.
+- Seitenrhythmus: `space-y-6` zwischen Kopfzeile und Inhalt (auch im Ladegerüst, sonst
+  springt der Inhalt); Raster `gap-3 sm:gap-4`.
+- 44-px-Bedienelemente an einer Kante bekommen den negativen Rand ihres eigenen
+  Innenabstands (`-mr-3` bei `size="sm"`, `-my-2` bei `size="icon"`): Sonst misst die
+  Zeile mehr als der Text daneben und die Kachel wirkt unten schwerer als oben.
 - Radius 8 px (Karten 12 px); Schatten nur eine dezente Stufe für schwebende Elemente
   (Dialoge, Popover) — Karten trennen sich per Fläche und 1-px-Border, nicht per Schatten.
 - Animationen: nur funktionale Übergänge ≤ 200 ms (Panel auf/zu, Fokus); Diagramme ohne

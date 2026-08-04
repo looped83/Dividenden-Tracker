@@ -52,7 +52,7 @@ export function GoalDetailPage() {
   const goal = goalQuery.data ?? null;
 
   const backLink = (
-    <Button asChild variant="ghost" size="sm" className="-ml-2 w-fit">
+    <Button asChild variant="ghost" size="sm" className="-ml-3 w-fit">
       <Link to="/ziele">
         <ArrowLeft aria-hidden /> Zur Zielübersicht
       </Link>
@@ -64,7 +64,7 @@ export function GoalDetailPage() {
       <div className="space-y-4">
         {backLink}
         <Card>
-          <CardContent className="space-y-4 p-6" aria-busy="true">
+          <CardContent className="space-y-4 p-4 sm:p-6" aria-busy="true">
             <span className="sr-only">Ziel wird geladen …</span>
             <div className="h-6 w-48 animate-pulse rounded bg-muted" />
             <div className="h-2.5 w-full animate-pulse rounded bg-muted" />
@@ -157,7 +157,7 @@ export function GoalDetailPage() {
       </div>
 
       <Card>
-        <CardContent className="space-y-6 p-6">
+        <CardContent className="space-y-6 p-4 sm:p-6">
           {!isUpcoming && <GoalProgressBar progress={progress} />}
 
           <dl className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">

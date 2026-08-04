@@ -139,7 +139,7 @@ export function OverviewTab() {
       </div>
 
       <Card>
-        <CardHeader className="pb-5">
+        <CardHeader>
           <CardTitle>Jährliche Entwicklung</CardTitle>
         </CardHeader>
         <CardContent>
@@ -152,7 +152,7 @@ export function OverviewTab() {
       </Card>
 
       <Card>
-        <CardHeader className="pb-5">
+        <CardHeader>
           <CardTitle>Zahlungs-Heatmap</CardTitle>
         </CardHeader>
         <CardContent>

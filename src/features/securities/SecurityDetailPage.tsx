@@ -121,7 +121,7 @@ export function SecurityDetailPage() {
   // aus der Statistik und von Zahlungen aus erreicht, und ein per Lesezeichen
   // geoeffneter Aufruf haette keine Vorgeschichte.
   const backLink = (
-    <Button asChild variant="ghost" size="sm" className="-ml-2 w-fit">
+    <Button asChild variant="ghost" size="sm" className="-ml-3 w-fit">
       <Link to="/unternehmen">
         <ArrowLeft aria-hidden /> Zu den Unternehmen
       </Link>

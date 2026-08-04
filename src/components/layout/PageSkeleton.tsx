@@ -9,6 +9,11 @@ import { cn } from "@/lib/utils/cn";
  * der Bereiche selbst (Uebersicht, Statistik) — ein Ladezustand soll ueberall
  * gleich aussehen.
  *
+ * Abstaende wie auf den Seiten selbst: `space-y-6` zwischen Kopfzeile und
+ * Inhalt, Karteninnenabstand 16px/24px. Mit `space-y-4` sprang der Inhalt beim
+ * Erscheinen um acht Pixel nach unten — genau das, was das Geruest verhindern
+ * soll.
+ *
  * Die Ansage bleibt hoeflich und kurz; den Namen des Bereichs meldet bereits
  * der RouteAnnouncer.
  */
@@ -25,7 +30,7 @@ export function PageSkeleton({
   header?: boolean;
 }) {
   return (
-    <div className={cn("space-y-4", className)} aria-busy="true" aria-live="polite">
+    <div className={cn("space-y-6", className)} aria-busy="true" aria-live="polite">
       <span className="sr-only">Inhalt wird geladen …</span>
       {/* Hoehe der Kopfzeile (PageHeader): so bleibt der Inhalt an seinem Platz. */}
       {header && (
@@ -33,7 +38,7 @@ export function PageSkeleton({
           <Bar className="h-6 w-40" />
         </div>
       )}
-      <div className="space-y-3 rounded-lg border border-border bg-card p-4">
+      <div className="space-y-3 rounded-lg border border-border bg-card p-4 sm:p-6">
         <Bar className="h-4 w-1/3" />
         <Bar className="h-4 w-2/3" />
         <Bar className="h-4 w-1/2" />
@@ -59,7 +64,7 @@ export function AuthPageSkeleton() {
         <p className="text-center text-base font-semibold tracking-tight">
           Dividend Tracker
         </p>
-        <div className="space-y-4 rounded-lg border border-border bg-card p-6">
+        <div className="space-y-4 rounded-lg border border-border bg-card p-4 sm:p-6">
           <Bar className="h-5 w-32" />
           <Bar className="h-10 w-full" />
           <Bar className="h-10 w-full" />

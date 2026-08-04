@@ -518,7 +518,7 @@ export function ImportWizard({ onFinished }: { onFinished: () => void }) {
                 {formatCountNumber(newCompanyCount)} werden neu (archiviert) angelegt
               </CardTitle>
             </CardHeader>
-            <CardContent className="max-h-96 overflow-y-auto p-0">
+            <CardContent className="max-h-96 overflow-y-auto p-0 sm:p-0">
               <Table>
                 <TableHeader className="sticky top-0 bg-background">
                   <TableRow>
@@ -554,7 +554,7 @@ export function ImportWizard({ onFinished }: { onFinished: () => void }) {
                 {formatCountNumber(newDepotCount)} werden neu angelegt
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-0">
+            <CardContent className="p-0 sm:p-0">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -623,7 +623,7 @@ export function ImportWizard({ onFinished }: { onFinished: () => void }) {
             <CardHeader>
               <CardTitle className="text-base">Kontrollwerte je Jahr</CardTitle>
             </CardHeader>
-            <CardContent className="p-0">
+            <CardContent className="p-0 sm:p-0">
               <Table>
                 <TableHeader>
                   <TableRow>

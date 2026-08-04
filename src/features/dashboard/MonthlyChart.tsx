@@ -160,7 +160,7 @@ export function MonthlyChart({ payments, selection, today }: MonthlyChartProps) 
 
   return (
     <Card>
-      <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-x-4 gap-y-3 space-y-0 pb-5">
+      <CardHeader className="flex-row flex-wrap items-center justify-between gap-x-4 gap-y-3">
         <CardTitle className="min-w-0">{title}</CardTitle>
         {!isAll && (
           <div className="flex gap-1" role="group" aria-label="Darstellung">

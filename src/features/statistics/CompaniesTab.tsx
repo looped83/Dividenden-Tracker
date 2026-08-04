@@ -177,7 +177,7 @@ export function CompaniesTab() {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader className="pb-5">
+        <CardHeader>
           <CardTitle>Unternehmen nach Dividendensumme</CardTitle>
         </CardHeader>
         <CardContent>
@@ -190,7 +190,7 @@ export function CompaniesTab() {
       </Card>
 
       <Card>
-        <CardHeader className="gap-3 pb-5 sm:flex-row sm:items-center sm:justify-between">
+        <CardHeader className="gap-3 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle>Unternehmensstatistik</CardTitle>
           <div className="sm:w-64 sm:shrink-0">
             <StatSearch
