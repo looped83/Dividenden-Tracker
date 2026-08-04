@@ -207,7 +207,18 @@ werden **nicht** addiert (das wäre eine Umrechnung zu einem erfundenen Kurs); d
 weist dann „verschiedene Währungen" aus. Abgesagte Termine zählen nirgends mit, bleiben in
 der Liste aber sichtbar und gekennzeichnet.
 
-Das Monatsraster ist einen Klick entfernt; die Wahl bleibt in `localStorage` erhalten.
+Das Monatsraster ist einen Klick entfernt; die Wahl bleibt in `localStorage` erhalten. Es hat
+**zwei Darstellungen**: Ab `lg` (Spaltenbreite rund 136 px) steht der Unternehmensname in der
+Tageszelle. Darunter — auf dem Telefon sind sieben Spalten je 46 px breit — bliebe von
+„Johnson & Johnson" ein „Jo…"; dort trägt der Tag deshalb nur **Punkte** (einer je Termin,
+abgesagte gedämpft), und der angetippte Tag stellt seine Termine als volle Kacheln unter das
+Raster — dieselben Kacheln wie in der Liste. Die ganze Tageszelle ist die Zielfläche: Ein
+einzelner Punkt wäre bei 46 px kein zuverlässig treffbares Ziel (WCAG 2.5.5). Vorgewählt ist
+heute, sonst der erste Tag des Monats mit Terminen.
+
+Die Abschnittsüberschriften der Liste („Heute", „September 2026") sind gesetzt wie die
+Abschnittstitel der übrigen Bereiche; zuvor standen sie klein, grau und in Großbuchstaben da
+und sahen damit nach Beschriftung statt nach Überschrift aus.
 
 ### Wann synchronisiert wird
 

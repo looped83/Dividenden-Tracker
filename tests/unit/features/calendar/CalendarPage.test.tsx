@@ -106,7 +106,34 @@ function renderPage(ansicht: "month" | "agenda" = "month") {
   );
 }
 
+/**
+ * `useMediaQuery` liest `matchMedia` bei jedem Rendern, ein Austausch vor
+ * `render` genuegt also. Die Monatsansicht zeigt schmal nur Punkte je Tag und
+ * die Termine unter dem Raster, ab `md` die Namen in der Zelle selbst.
+ */
+function darstellung(matches: boolean) {
+  window.matchMedia = (query: string): MediaQueryList => ({
+    matches,
+    media: query,
+    onchange: null,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+    addListener: () => undefined,
+    removeListener: () => undefined,
+    dispatchEvent: () => false,
+  });
+}
+const schmaleDarstellung = () => {
+  darstellung(false);
+};
+const breiteDarstellung = () => {
+  darstellung(true);
+};
+
 beforeEach(() => {
+  // Vorgabe ist die schmale Darstellung — die breite schaltet ein Test eigens
+  // ein und darf sie nicht an die folgenden vererben.
+  schmaleDarstellung();
   vi.useFakeTimers({ shouldAdvanceTime: true });
   vi.setSystemTime(HEUTE);
   zustand.events = [];
@@ -199,20 +226,42 @@ describe("Voreinstellung der Ansicht", () => {
 });
 
 describe("Monatsansicht", () => {
-  it("stellt Termine am richtigen Kalendertag dar", () => {
+  it("stellt die Termine eines Tages unter dem Raster dar (schmal)", async () => {
+    const user = userEvent.setup();
     zustand.events = [event({ id: "1", date: "2026-08-13", title: "Apple Inc." })];
     renderPage("month");
 
-    const zelle = screen
-      .getByText("13. August 2026, 1 angekündigter Zahltag")
-      .closest("td");
-    expect(zelle).not.toBeNull();
-    expect(
-      within(zelle as HTMLElement).getByRole("button", { name: /Apple Inc./ }),
-    ).toBeInTheDocument();
+    // Sieben Spalten sind auf einem Telefon 46px breit; darin bliebe von
+    // „Apple Inc." ein „Ap…". Der Tag traegt deshalb nur Punkte, seine Termine
+    // stehen als volle Kacheln darunter.
+    const tag = screen.getByRole("button", {
+      name: "13. August 2026, 1 angekündigter Zahltag",
+    });
+    await user.click(tag);
+
+    expect(tag).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("heading", { name: /13\.08\.2026/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Apple Inc\./ })).toBeInTheDocument();
   });
 
-  it("stellt mehrere Termine eines Tages nebeneinander dar", () => {
+  it("listet mehrere Termine eines Tages vollstaendig auf (schmal)", async () => {
+    const user = userEvent.setup();
+    zustand.events = [
+      event({ id: "1", date: "2026-08-13", title: "Apple Inc." }),
+      event({ id: "2", date: "2026-08-13", title: "Allianz SE" }),
+    ];
+    renderPage("month");
+
+    await user.click(
+      screen.getByRole("button", { name: "13. August 2026, 2 angekündigte Zahltage" }),
+    );
+
+    expect(screen.getByRole("button", { name: /Apple Inc\./ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Allianz SE/ })).toBeInTheDocument();
+  });
+
+  it("stellt die Termine ab `md` in der Tageszelle selbst dar", () => {
+    breiteDarstellung();
     zustand.events = [
       event({ id: "1", date: "2026-08-13", title: "Apple Inc." }),
       event({ id: "2", date: "2026-08-13", title: "Allianz SE" }),
