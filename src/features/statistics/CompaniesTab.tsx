@@ -65,18 +65,26 @@ export function CompaniesTab() {
   );
 
   const total = React.useMemo(() => aggregate(payments).net, [payments]);
+  // Die Rangliste zeigt **nur aktive** Unternehmen: Sie beantwortet „woher
+  // kommen meine Dividenden", und eine geschlossene Position gehoert nicht mehr
+  // zu dieser Antwort — sie stand in der Vergangenheit oft weit oben und
+  // verdraengte die laufenden Zahler aus den ersten zehn Plaetzen. Die
+  // Gesamtsumme bleibt die des Zeitraums (auch mit archivierten Zahlungen); die
+  // Anteile sagen damit weiterhin „so viel Prozent aller Dividenden".
+  // Archivierte bleiben in der Tabelle darunter zuschaltbar.
   const topItems = React.useMemo<RankedBarItem[]>(
     () =>
-      sortSecurityStatistics(stats, "net", labelOf)
+      sorted
+        .filter((stat) => !entityArchived(securities, stat.securityId))
         .slice(0, TOP_COMPANIES)
         .map((stat) => ({
           key: stat.securityId,
           name: entityName(securities, stat.securityId),
-          archived: entityArchived(securities, stat.securityId),
+          archived: false,
           net: stat.net,
           href: statisticsDrillHref(filter, { securityId: stat.securityId }),
         })),
-    [stats, labelOf, securities, filter],
+    [sorted, securities, filter],
   );
 
   const columns = React.useMemo<StatColumn<SecurityStatistics>[]>(
@@ -181,11 +189,18 @@ export function CompaniesTab() {
           <CardTitle>Unternehmen nach Dividendensumme</CardTitle>
         </CardHeader>
         <CardContent>
-          <RankedBars
-            items={topItems}
-            total={total}
-            ariaLabel="Unternehmen nach Nettodividende"
-          />
+          {topItems.length === 0 ? (
+            <p className="py-6 text-sm text-muted-foreground">
+              Kein aktives Unternehmen in dieser Auswahl — die Tabelle darunter zeigt die
+              archivierten.
+            </p>
+          ) : (
+            <RankedBars
+              items={topItems}
+              total={total}
+              ariaLabel="Aktive Unternehmen nach Nettodividende"
+            />
+          )}
         </CardContent>
       </Card>
 

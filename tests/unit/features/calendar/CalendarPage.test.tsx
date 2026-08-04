@@ -122,15 +122,15 @@ beforeEach(() => {
 });
 
 describe("Kopf und Zustaende", () => {
-  it("zeigt Ueberschrift und Unterzeile", () => {
+  it("zeigt die Ueberschrift — ohne Unterzeile, die sie wiederholt", () => {
     renderPage();
 
     expect(
       screen.getByRole("heading", { name: "Dividendenkalender", level: 1 }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("Alle angekündigten Zahltage deiner Dividenden auf einen Blick."),
-    ).toBeInTheDocument();
+      screen.queryByText(/Alle angekündigten Zahltage deiner Dividenden/),
+    ).not.toBeInTheDocument();
   });
 
   it("zeigt beim ersten Laden ein Geruest statt eines leeren Bildschirms", () => {
@@ -267,11 +267,16 @@ describe("Listenansicht", () => {
     ];
   });
 
-  it("gruppiert nach Zeitraum", () => {
+  it("gruppiert nach Zeitraum und gibt jedem spaeteren Monat einen Abschnitt", () => {
     renderPage("agenda");
 
     expect(screen.getByRole("heading", { name: "Heute", level: 2 })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Später", level: 2 })).toBeInTheDocument();
+    // „Später" endet mit dem laufenden Monat; der September traegt seine eigene
+    // Ueberschrift, statt in einer Sammelrubrik zu verschwinden.
+    expect(
+      screen.getByRole("heading", { name: "September 2026", level: 2 }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Später" })).not.toBeInTheDocument();
   });
 
   it("traegt das Datum an jeder Kachel — als Zahl und als vollstaendige Angabe", () => {

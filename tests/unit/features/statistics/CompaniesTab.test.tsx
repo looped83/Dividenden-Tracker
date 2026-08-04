@@ -70,6 +70,22 @@ describe("CompaniesTab", () => {
     expect(tableNames()).toEqual(["Beta AG", "Alpha AG"]);
   });
 
+  it("führt in der Rangliste nur aktive Unternehmen", () => {
+    renderCompanies();
+    // „Beta AG" zahlte mehr (300 € gegen 100 €) und stand deshalb ganz oben —
+    // als geschlossene Position verdrängte sie die laufenden Zahler.
+    const ranking = screen.getByLabelText("Aktive Unternehmen nach Nettodividende");
+    expect(within(ranking).getByText("Alpha AG")).toBeInTheDocument();
+    expect(within(ranking).queryByText("Beta AG")).not.toBeInTheDocument();
+  });
+
+  it("sagt es, wenn die Rangliste ohne archivierte leer bliebe", () => {
+    renderCompanies([p("sec-b", "2025-04-10", "300.00")]);
+    expect(
+      screen.getByText(/Kein aktives Unternehmen in dieser Auswahl/),
+    ).toBeInTheDocument();
+  });
+
   it("erklärt eine leere Tabelle, wenn nur archivierte Unternehmen übrig sind", () => {
     renderCompanies([p("sec-b", "2025-04-10", "300.00")]);
     expect(
