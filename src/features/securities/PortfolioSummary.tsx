@@ -38,7 +38,12 @@ export function PortfolioSummary({
       : undefined;
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
+    // Dasselbe Raster wie die Kennzahlen des Kalenders (`CalendarSummary`):
+    // zwei Kacheln je Zeile auf dem Telefon, vier ab `lg`. Einspaltig standen
+    // sie hier als vier volle Bloecke untereinander und schoben die Liste weit
+    // nach unten — und sahen anders aus als dieselben Kacheln zwei Bereiche
+    // weiter.
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       <StatCard
         label="Depotwert"
         value={<SumValue sum={totals.marketValue} />}
