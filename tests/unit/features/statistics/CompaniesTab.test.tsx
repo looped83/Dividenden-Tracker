@@ -29,6 +29,7 @@ const PAYMENTS = [p("sec-a", "2025-03-10", "100.00"), p("sec-b", "2025-04-10", "
 
 function renderCompanies(payments: AnalyticsPayment[] = PAYMENTS) {
   const context: StatisticsContext = {
+    expectedAnnualDividend: new Map(),
     payments,
     allPayments: payments,
     securities: new Map<string, EntityInfo>([

@@ -19,6 +19,7 @@ Alle Funktionsbereiche sind umgesetzt und unter GitHub Pages im Einsatz:
 | Datensicherung, Wiederherstellung und Export | in Betrieb seit 2026-07-29; Restore-Probe am realen Bestand bestanden |
 | PWA (installierbar, App-Hülle offline, Aktualisierungshinweis) | in Betrieb |
 | Dividendenkalender (angekündigte Zahltage aus dem DivvyDiary-iCal-Feed) | neu; Edge Function und Secret müssen einmalig eingerichtet werden ([docs/CALENDAR_INTEGRATION.md](docs/CALENDAR_INTEGRATION.md)) |
+| Depotstand (Bestand, Marktwert und erwartete Ausschüttung aus dem DivvyDiary-Portfolio-Export) | neu; Migration 0029 muss eingespielt werden ([docs/PORTFOLIO_IMPORT.md](docs/PORTFOLIO_IMPORT.md)) |
 
 Die Numbers-Migration (Übernahme der historischen Daten nach
 [MIGRATION_PLAN.md](MIGRATION_PLAN.md)) ist der verbleibende Betriebsschritt. Ihre
@@ -115,3 +116,4 @@ läuft also ebenfalls nur beim ersten Aufruf.
 | [DECISIONS.md](DECISIONS.md) | Entscheidungsprotokoll (D-Einträge und ADRs) |
 | [docs/AUDIT_2026-07-29.md](docs/AUDIT_2026-07-29.md) | Bestandsaufnahme, Risiken, Phasenplan |
 | [docs/CALENDAR_INTEGRATION.md](docs/CALENDAR_INTEGRATION.md) | Dividendenkalender: Edge Function, Secret, Datenmodell, Synchronisation |
+| [docs/PORTFOLIO_IMPORT.md](docs/PORTFOLIO_IMPORT.md) | Depotstand: CSV-Import, Zuordnung, Datenmodell, Kennzahlen |

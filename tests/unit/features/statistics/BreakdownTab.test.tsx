@@ -48,6 +48,7 @@ function renderBreakdown(
   filter = EMPTY_STATISTICS_FILTER,
 ) {
   const context: StatisticsContext = {
+    expectedAnnualDividend: new Map(),
     payments: filterPayments(payments, filter),
     allPayments: payments,
     securities: new Map<string, EntityInfo>([

@@ -540,3 +540,55 @@ Ebenfalls nur lesbar für `authenticated`.
 `claim_calendar_sync(uuid, calendar_source, interval)` (security definer, nur für
 service_role ausführbar) belegt einen Lauf atomar und verhindert parallele
 Synchronisationen; eine Belegung verfällt nach der übergebenen Frist.
+
+---
+
+## Depotstände (Migration 0029)
+
+Bestand, Marktwert und **erwartete** Ausschüttungen je Unternehmen und Stichtag aus dem
+DivvyDiary-Portfolio-Export. Getrennt von `dividend_payments` (PRODUCT_SPEC.md
+Grundsatz 8): kein Snapshot erzeugt eine Zahlung, und kein Wert daraus geht in Statistik
+oder Ziele ein. Die einzige Verbindung ist `security_id`. Vollständige Beschreibung in
+[docs/PORTFOLIO_IMPORT.md](docs/PORTFOLIO_IMPORT.md).
+
+### Enums
+
+| Enum | Werte |
+|---|---|
+| `dividend_frequency` | `none`, `monthly`, `quarterly`, `biannually`, `annually`, `irregular` |
+| `security_asset_type` | `equity`, `etf`, `fund`, `crypto`, `other` |
+
+### `security_snapshot_runs`
+
+Ein Upload je Zeile, eindeutig über `(user_id, source, as_of)` — ein zweiter Upload
+desselben Tages ersetzt den ersten. Der Satz trennt „an diesem Tag kein Upload" von „an
+diesem Tag keine Positionen"; ohne ihn zeichnete eine Verlaufskurve eine fehlende Datei
+als Depotwert 0. Der Check `rows_total = rows_imported + rows_skipped + rows_invalid`
+hält die Importbilanz serverseitig (IMPORT_SPEC.md §8). Zusätzlich `unique (id, as_of)`
+als Ziel des zusammengesetzten Fremdschlüssels der Snapshot-Zeilen.
+
+### `security_snapshots`
+
+Eine Zeile je Unternehmen und Stichtag, eindeutig über `(user_id, security_id, as_of)`.
+Enthält Position (`quantity`, `buyin_per_share`, `buyin_total`, `price`, `market_value`,
+`gain_absolute`, `gain_relative`, `allocation`), Dividendenkennzahlen
+(`dividend_yield`, `dividend_yield_on_buyin`, `annual_dividend_total`,
+`dividend_per_share`, `dividend_frequency`, `dividend_cagr`, `dividend_cagr_period`),
+die nächsten Termine laut Quelle (`next_ex_date`, `next_pay_date`; gespeichert, aber
+nicht angezeigt) sowie `asset_type` und `currency`.
+
+`currency` ist die **Depotwährung des Exports**, nicht die übliche
+Ausschüttungswährung des Papiers — die steht in `securities.currency`.
+
+`as_of` steht bewusst doppelt (am Lauf und an der Zeile), weil jede Auswertung nach
+Stichtag liest und ein Join dafür zu teuer wäre. Der Fremdschlüssel
+`(run_id, as_of) → security_snapshot_runs (id, as_of)` verhindert, dass die Doppelung
+auseinanderläuft. `security_id` referenziert `securities` mit `on delete cascade`:
+Snapshots sind abgeleitete Daten und dürfen das Löschen eines archivierten Unternehmens
+nicht blockieren.
+
+RLS: `select`, `insert` und `delete` nur auf eigenen Zeilen; **kein UPDATE** für beide
+Tabellen — ein Stichtag wird als Ganzes ersetzt. Der Trigger `enforce_own_security`
+stellt sicher, dass das referenzierte Unternehmen dem Schreibenden gehört (der
+Fremdschlüssel allein prüft nur die Existenz); er läuft ohne `security definer`, sodass
+die RLS von `securities` die Prüfung trägt.

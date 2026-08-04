@@ -96,6 +96,7 @@ function renderTab(
   payments: AnalyticsPayment[] = PAYMENTS,
 ) {
   const context: StatisticsContext = {
+    expectedAnnualDividend: new Map(),
     payments: filterPayments(payments, filter),
     allPayments: payments,
     securities: new Map<string, EntityInfo>([

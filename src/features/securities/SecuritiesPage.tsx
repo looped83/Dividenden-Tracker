@@ -16,6 +16,8 @@ import { useErrorState } from "@/lib/hooks/useErrorState";
 import { cn } from "@/lib/utils/cn";
 import { monthNameDeShort, normalizePayoutMonths } from "@/lib/statistics";
 import { SecurityImportButton } from "@/features/securities/SecurityImportDialog";
+import { PortfolioImportButton } from "@/features/securities/PortfolioImportDialog";
+import { PortfolioSummary } from "@/features/securities/PortfolioSummary";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -55,6 +57,7 @@ import {
   useCreateSecurity,
   useDeleteSecurity,
   useSecurities,
+  useSecuritySnapshots,
   useUpdateSecurity,
 } from "@/features/securities/hooks";
 import {
@@ -284,6 +287,7 @@ function SecurityFormDialog({
 
 export function SecuritiesPage() {
   const { data: securities = [], isLoading } = useSecurities();
+  const { data: snapshots = [] } = useSecuritySnapshots();
   const { data: depots = [] } = useDepots();
   const depotById = React.useMemo(
     () => new Map(depots.map((depot) => [depot.id, depot])),
@@ -386,6 +390,13 @@ export function SecuritiesPage() {
           </Button>
         }
       />
+
+      {/* Kennzahlen des Depotstands, sofern einer importiert ist. Sie stehen
+          bewusst ueber der Liste: Die Liste verwaltet Stammdaten, die Kacheln
+          beantworten „wie steht mein Depot" — und dafuer gibt es sonst keinen
+          Ort. Als Spalten in der Tabelle waeren es drei Zahlenspalten mehr in
+          einer Liste, die auf dem Telefon schon jetzt seitlich scrollt. */}
+      <PortfolioSummary snapshots={snapshots} />
 
       {/* Filterleiste in derselben Optik wie Dividenden und Statistik. Die
           Auswahlwerte stammen aus dem Bestand — leere Listen entfallen. */}
@@ -595,6 +606,7 @@ export function SecuritiesPage() {
           Archivierte anzeigen
         </label>
         <SecurityImportButton />
+        <PortfolioImportButton />
       </div>
 
       <SecurityFormDialog

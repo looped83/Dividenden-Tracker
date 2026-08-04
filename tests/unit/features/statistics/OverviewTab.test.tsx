@@ -40,6 +40,7 @@ function renderOverview(payments: AnalyticsPayment[]) {
     securities,
     depots,
     filter: EMPTY_STATISTICS_FILTER,
+    expectedAnnualDividend: new Map(),
   };
   return render(
     <MemoryRouter>
