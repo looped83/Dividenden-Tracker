@@ -42,6 +42,10 @@ export function StatisticsPage() {
   // uebrigen Filter — Unternehmen, Depot, Quelle, Art — wirken auch dort.
   const isComparison = useMatch("/statistiken/vergleich") !== null;
   const isBreakdown = useMatch("/statistiken/breakdown") !== null;
+  // Auch die Entwicklung waehlt ihre Zeitachse selbst: Sie sind die Stichtage
+  // der Depotstaende, und zu jedem gehoert ein Zwoelfmonatsfenster. Ein
+  // Jahresfilter darueber liesse diese Fenster leer laufen.
+  const isDevelopment = useMatch("/statistiken/entwicklung") !== null;
 
   const years = React.useMemo(() => availableYears(data.payments), [data.payments]);
   const filteredPayments = React.useMemo(
@@ -56,14 +60,14 @@ export function StatisticsPage() {
       securities: data.securities,
       depots: data.depots,
       filter,
-      expectedAnnualDividend: data.expectedAnnualDividend,
+      portfolio: data.portfolio,
     }),
     [
       filteredPayments,
       data.payments,
       data.securities,
       data.depots,
-      data.expectedAnnualDividend,
+      data.portfolio,
       filter,
     ],
   );
@@ -121,7 +125,7 @@ export function StatisticsPage() {
         years={years}
         securities={data.securities}
         depots={data.depots}
-        showYear={!isComparison && !isBreakdown}
+        showYear={!isComparison && !isBreakdown && !isDevelopment}
       />
 
       {/* Eigener Ladezustand: Beim Reiterwechsel bleiben Kopfzeile, Reiter und

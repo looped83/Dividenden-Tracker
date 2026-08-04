@@ -96,6 +96,40 @@ export function priorYearMonthToDateRange(ref: RefDate): DateRange {
   };
 }
 
+/**
+ * Die zwoelf Monate, die auf `endIso` **enden** — inklusive dieses Tages.
+ *
+ * Anders als {@link ytdRange} an keinen Kalenderanfang gebunden: Der
+ * Bezugspunkt ist ein beliebiger Tag, etwa der Stichtag eines Depotstands. Nur
+ * so laesst sich die erwartete Jahresdividende (zwoelf Monate nach vorn) mit
+ * dem vergleichen, was tatsaechlich hereinkam — zwei Zwoelfmonatszeitraeume,
+ * die am selben Tag enden.
+ *
+ * Regel: Anfang = derselbe Tag ein Jahr frueher, **plus einen Tag**. Der
+ * Vorjahrestag selbst gehoert nicht mehr dazu, sonst zaehlte er doppelt.
+ *
+ * Zwei Kalenderbesonderheiten fallen darunter:
+ *
+ * * Faellt der Vorjahrestag auf einen Monatsletzten (oder gibt es ihn nicht,
+ *   etwa den 29.02. in einem Nicht-Schaltjahr), beginnt das Fenster am Ersten
+ *   des Folgemonats.
+ * * Ein Fenster, das einen 29. Februar ueberspannt, umfasst 366 Tage. Das ist
+ *   kein Fehler, sondern die Laenge eines Jahres, das diesen Tag enthaelt.
+ */
+export function trailingYearRange(endIso: string): DateRange {
+  const year = yearOf(endIso) - 1;
+  const month = monthOf(endIso);
+  const day = Number.parseInt(endIso.slice(8, 10), 10);
+  // Ein Tag nach dem Vorjahrestag: Der 03.08.2025 selbst zaehlt nicht mehr
+  // mit, sonst umfasste das Fenster 366 Tage.
+  const lastDay = lastDayOfMonth(year, month);
+  const start =
+    day >= lastDay
+      ? isoDate(month === 12 ? year + 1 : year, month === 12 ? 1 : month + 1, 1)
+      : isoDate(year, month, day + 1);
+  return { start, end: endIso };
+}
+
 /** True, wenn `iso` (YYYY-MM-DD) inklusive innerhalb des Bereichs liegt. */
 export function isInRange(iso: string, range: DateRange): boolean {
   return iso >= range.start && iso <= range.end;

@@ -71,6 +71,9 @@ const ComparisonTab = React.lazy(async () => ({
 const CompaniesTab = React.lazy(async () => ({
   default: (await routeChunks.statisticsCompanies()).CompaniesTab,
 }));
+const DevelopmentTab = React.lazy(async () => ({
+  default: (await routeChunks.statisticsDevelopment()).DevelopmentTab,
+}));
 const DepotsTab = React.lazy(async () => ({
   default: (await routeChunks.statisticsDepots()).DepotsTab,
 }));
@@ -148,6 +151,7 @@ export const router = createHashRouter([
           { path: "vergleich", element: <ComparisonTab /> },
           { path: "unternehmen", element: <CompaniesTab /> },
           { path: "depots", element: <DepotsTab /> },
+          { path: "entwicklung", element: <DevelopmentTab /> },
         ],
       },
       {

@@ -6,11 +6,15 @@ import {
   type AnalyticsPayment,
   type StatisticsFilter,
 } from "@/lib/statistics";
-import { Money, toCurrencyCode } from "@/lib/money";
 import type { EntityInfo } from "@/features/dashboard/format";
 import { useDashboardPayments } from "@/features/dashboard/hooks";
 import { useSecurities, useSecuritySnapshots } from "@/features/securities/hooks";
-import { latestAsOf, snapshotsAt } from "@/features/securities/snapshots";
+import {
+  buildPortfolioSeries,
+  EMPTY_PORTFOLIO_SERIES,
+  type PortfolioSeries,
+  type SecurityFacets,
+} from "@/features/securities/snapshots";
 import { useDepots } from "@/features/depots/hooks";
 import { applyStatisticsFilter, parseStatisticsFilter } from "./filterParams";
 
@@ -31,8 +35,8 @@ export interface StatisticsData {
   payments: AnalyticsPayment[];
   securities: Map<string, EntityInfo>;
   depots: Map<string, EntityInfo>;
-  /** Erwartete Jahresdividende je Unternehmen aus dem juengsten Depotstand. */
-  expectedAnnualDividend: Map<string, Money>;
+  /** Depotstaende als Zeitreihe (docs/PORTFOLIO_IMPORT.md); leer ohne Import. */
+  portfolio: PortfolioSeries;
   isLoading: boolean;
   isError: boolean;
   error: Error | null;
@@ -79,29 +83,29 @@ export function useStatisticsData(): StatisticsData {
     [depotsQuery.data],
   );
 
-  // Nur der **juengste** Stand: Eine aeltere Stueckzahl beschriebe eine
-  // Position, die es so nicht mehr gibt.
-  const expectedAnnualDividend = React.useMemo(() => {
-    const map = new Map<string, Money>();
-    const snapshots = snapshotsQuery.data ?? [];
-    for (const snapshot of snapshotsAt(snapshots, latestAsOf(snapshots))) {
-      if (snapshot.annual_dividend_total === null) continue;
-      map.set(
-        snapshot.security_id,
-        Money.fromString(
-          snapshot.annual_dividend_total,
-          toCurrencyCode(snapshot.currency),
-        ),
-      );
+  // Branche und Land stehen in `securities`, nicht im Depotstand — die Serie
+  // braucht beides, um die Aufteilung zu bilden.
+  const facets = React.useMemo(() => {
+    const map = new Map<string, SecurityFacets>();
+    for (const security of securitiesQuery.data ?? []) {
+      map.set(security.id, { sector: security.sector, country: security.country });
     }
     return map;
-  }, [snapshotsQuery.data]);
+  }, [securitiesQuery.data]);
+
+  const portfolio = React.useMemo(
+    () =>
+      snapshotsQuery.data
+        ? buildPortfolioSeries(snapshotsQuery.data, facets)
+        : EMPTY_PORTFOLIO_SERIES,
+    [snapshotsQuery.data, facets],
+  );
 
   return {
     payments,
     securities,
     depots,
-    expectedAnnualDividend,
+    portfolio,
     isLoading: paymentsQuery.isLoading,
     isError: paymentsQuery.isError,
     error: paymentsQuery.error,

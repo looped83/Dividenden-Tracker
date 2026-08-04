@@ -7,6 +7,7 @@ import { filterPayments } from "@/lib/statistics";
 import type { EntityInfo } from "@/features/dashboard/format";
 import { BreakdownTab } from "@/features/statistics/BreakdownTab";
 import { EMPTY_STATISTICS_FILTER } from "@/features/statistics/filterParams";
+import { EMPTY_PORTFOLIO_SERIES } from "@/features/securities/snapshots";
 import type { StatisticsContext } from "@/features/statistics/context";
 
 let seq = 0;
@@ -48,7 +49,7 @@ function renderBreakdown(
   filter = EMPTY_STATISTICS_FILTER,
 ) {
   const context: StatisticsContext = {
-    expectedAnnualDividend: new Map(),
+    portfolio: EMPTY_PORTFOLIO_SERIES,
     payments: filterPayments(payments, filter),
     allPayments: payments,
     securities: new Map<string, EntityInfo>([
