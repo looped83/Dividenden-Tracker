@@ -156,7 +156,9 @@ export function MonthView({
               <ul className="space-y-2">
                 {selectedEvents.map((event) => (
                   <li key={event.id}>
-                    <EventTile event={event} onSelect={onSelect} />
+                    {/* Ohne Datum: Es steht als Ueberschrift unmittelbar
+                        darueber (siehe EventTile). */}
+                    <EventTile event={event} onSelect={onSelect} showDate={false} />
                   </li>
                 ))}
               </ul>

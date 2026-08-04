@@ -298,6 +298,21 @@ describe("Monatsansicht", () => {
     ).toBeInTheDocument();
   });
 
+  it("wiederholt in der Tagesspalte nicht das Datum der Ueberschrift", () => {
+    zustand.events = [
+      event({ id: "1", date: "2026-08-13", sourcePortfolio: "Trade Republic" }),
+    ];
+    renderPage("month");
+
+    // Das Datum steht als Ueberschrift unmittelbar ueber der Kachel; unter dem
+    // Unternehmensnamen bleibt nur das Depot.
+    const kachel = screen.getByRole("button", { name: /Apple Inc\./ });
+    expect(kachel).toHaveTextContent("Trade Republic");
+    expect(kachel).not.toHaveTextContent("13.08.2026");
+    // In der Liste gibt es keine Ueberschrift je Tag — dort bleibt es stehen.
+    expect(screen.getByRole("heading", { name: /13\.08\.2026/ })).toBeInTheDocument();
+  });
+
   it("kennzeichnet den heutigen Tag auch fuer Sprachausgaben", () => {
     zustand.events = [event({ id: "1", date: "2026-08-13" })];
     renderPage("month");

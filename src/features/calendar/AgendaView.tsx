@@ -66,15 +66,23 @@ export function AgendaView({
 }
 
 /**
- * Terminkachel — dieselbe in der Liste wie unter dem Monatsraster: Ein Termin
- * soll ueberall gleich aussehen.
+ * Terminkachel — dieselbe in der Liste wie in der Tagesspalte des Monats: Ein
+ * Termin soll ueberall gleich aussehen.
+ *
+ * `showDate` ist die eine Ausnahme: In der Tagesspalte steht das Datum bereits
+ * als Ueberschrift unmittelbar darueber. Zweimal dasselbe Datum in zwei
+ * Schriftgroessen liest sich wie zwei Angaben; unter dem Namen bleibt dort nur
+ * das Depot. In der Liste traegt jede Kachel ihr Datum weiterhin selbst — dort
+ * gibt es keine Ueberschrift je Tag.
  */
 export function EventTile({
   event,
   onSelect,
+  showDate = true,
 }: {
   event: CalendarEvent;
   onSelect: (event: CalendarEvent) => void;
+  showDate?: boolean;
 }) {
   const { day, month } = dateTile(event.date);
   const time = eventTime(event);
@@ -84,6 +92,11 @@ export function EventTile({
   const amountLabel = event.expectedAmount
     ? `, erwartet ${formatMoney(event.expectedAmount)}`
     : "";
+  // Eine Zeile aus dem, was es zu sagen gibt — ohne fuehrenden Trenner, wenn
+  // das Datum daruebersteht und Uhrzeit oder Depot fehlen.
+  const meta = [showDate ? shortDate(event.date) : null, time, event.sourcePortfolio]
+    .filter((part): part is string => part !== null)
+    .join(" · ");
 
   return (
     <button
@@ -138,11 +151,7 @@ export function EventTile({
             </Badge>
           )}
           {cancelled && <Badge variant="negative">Abgesagt</Badge>}
-          <span className="text-xs text-muted-foreground">
-            {shortDate(event.date)}
-            {time && ` · ${time}`}
-            {event.sourcePortfolio && ` · ${event.sourcePortfolio}`}
-          </span>
+          {meta && <span className="text-xs text-muted-foreground">{meta}</span>}
         </span>
       </span>
 

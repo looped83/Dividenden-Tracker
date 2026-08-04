@@ -33,6 +33,19 @@ describe("canonicalCompanyKey", () => {
     expect(canonicalCompanyKey("Johnson and Johnson")).toBe("johnson johnson");
   });
 
+  it("laesst Fondsart, Ausschuettungsart und Anteilsklasse am Ende weg", () => {
+    // Der Kalender nennt ETFs in voller Laenge, der eigene Bestand nicht.
+    expect(canonicalCompanyKey("JPM US Equity Premium Income Active UCITS ETF")).toBe(
+      "jpm us equity premium income active",
+    );
+    expect(
+      canonicalCompanyKey("JPM Europe Equity Premium Income Active UCITS ETF EUR (dist)"),
+    ).toBe("jpm europe equity premium income active");
+    expect(canonicalCompanyKey("JPM Nasdaq Equity Premium Income Active")).toBe(
+      "jpm nasdaq equity premium income active",
+    );
+  });
+
   it("behaelt Rechtsformen mitten im Namen", () => {
     // „Co" ist hier keine Rechtsform, sondern der Anfang des Namens.
     expect(canonicalCompanyKey("Co-operative Group")).toBe("co operative group");
@@ -55,6 +68,23 @@ describe("buildCompanyNameResolver", () => {
 
     expect(resolve("Realty Income Corporation")).toBe("Realty Income");
     expect(resolve("Realty Income Corp.")).toBe("Realty Income");
+  });
+
+  it("loest den langen ETF-Namen der Quelle auf den eigenen auf", () => {
+    const resolve = buildCompanyNameResolver([
+      company("JPM Europe Equity Premium Income Active", { id: "s1" }),
+      company("JPM US Equity Premium Income Active", { id: "s2" }),
+    ]);
+
+    expect(resolve("JPM Europe Equity Premium Income Active UCITS ETF EUR (dist)")).toBe(
+      "JPM Europe Equity Premium Income Active",
+    );
+    expect(resolve("JPM US Equity Premium Income Active UCITS ETF USD (dist)")).toBe(
+      "JPM US Equity Premium Income Active",
+    );
+    // Die Fonds unterscheiden sich nur im Regionswort — verwechselt werden
+    // duerfen sie deshalb nicht.
+    expect(resolve("JPM Global Equity Premium Income Active UCITS ETF")).toBeNull();
   });
 
   it("nutzt beim Import bestaetigte Schreibweisen", () => {
