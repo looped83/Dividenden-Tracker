@@ -167,11 +167,19 @@ Pro Wertpapier/Unternehmen:
 - Optionales Standard-Depot als unverbindlicher Vorschlag: füllt beim Anlegen eines
   Dividendeneingangs das Depot-Feld vor und wird beim Excel-Import per Namensabgleich aus
   einer Depot-/Broker-Spalte übernommen — keine feste Bindung (DECISIONS.md D-035)
-- Datenqualitätsstatus (`ok` / `unvollständig` / `prüfen`) — z. B. fehlende ISIN nach Import
+- Datenqualitätsstatus (`ok` / `unvollständig` / `prüfen`) — z. B. fehlende ISIN nach Import.
+  Er entsteht beim Import und beim Speichern und steht dort, wo er hilft: im Importbericht
+  und auf der Unternehmensseite. In der Unternehmensliste trägt er **keine** eigene Spalte
+  und keinen Filter mehr — dort stand an fast jeder Zeile dasselbe Etikett
 - Sämtliche historischen Dividendeneingänge
 - Summe pro Jahr und pro Monat, durchschnittliche Zahlung, Anzahl der Zahlungen
 - Brutto-/Nettoentwicklung, gezahlte Steuern
 - Anteil am gesamten Dividendeneinkommen
+
+Die Liste trägt dieselbe Filterleiste wie die Dividendenliste — Branche, Währung,
+Standard-Depot und rechts die **Sortierung** (Name, Ticker, Branche, Land, Standard-Depot)
+mit Richtungsschalter daneben. Unternehmen ohne den sortierten Wert stehen in beiden
+Richtungen am Ende: Ein Unternehmen ohne Ticker ist keine Antwort auf „sortiere nach Ticker".
 
 Keine zukünftigen Zahlungen, keine erwarteten Dividenden, keine Kurse.
 
@@ -215,6 +223,12 @@ Der Unterbereich Unternehmen blendet in der Tabelle „Unternehmensstatistik" ar
 Unternehmen zunächst aus; unterhalb der Tabelle sind sie zuschaltbar (dasselbe Muster wie in der
 Unternehmensverwaltung). Berechnung und Rangliste bleiben davon unberührt — die Kennzahlen
 umfassen weiterhin alle Unternehmen (CALCULATION_RULES.md §11.5).
+
+Die Tabelle ist auf die Breite eines Schreibtischbildschirms gerechnet, statt rechts aus dem
+Bild zu laufen: Erste und letzte Zahlung stehen als **ein** Zeitraum („14.05.2019 – 08.08.2026"),
+und die größte Einzelzahlung — die Nebenkennzahl der Tabelle — erscheint erst ab 1280 px, wo
+neben der Seitennavigation Platz für sie bleibt. Sie steht unabhängig davon auf der
+Unternehmensseite.
 
 Vollständige Kennzahlenliste mit verbindlichen Definitionen: CALCULATION_RULES.md §6.
 Umfasst mindestens: Netto/Brutto pro Monat und Jahr, Vorjahresvergleich (absolut/prozentual),

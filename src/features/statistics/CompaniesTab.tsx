@@ -25,8 +25,23 @@ import { StatSearch, StatTable, type StatColumn } from "./components/StatTable";
 
 const TOP_COMPANIES = 10;
 
-function dateCell(iso: string | null): React.ReactNode {
-  return iso ? formatIsoDate(iso) : <span className="text-muted-foreground">—</span>;
+/**
+ * Erste und letzte Zahlung in **einer** Spalte.
+ *
+ * Als zwei Spalten („Erste Zahlung", „Letzte Zahlung") lief die Tabelle auf
+ * dem Schreibtisch rechts aus dem Bild — zwei Spaltenkoepfe und vier
+ * Innenabstaende fuer zwei Daten, die ohnehin zusammen gelesen werden. Als
+ * Zeitraum stehen beide weiterhin da und brauchen die Haelfte des Platzes.
+ * Faellt beides auf denselben Tag, steht er einmal.
+ */
+function periodCell(first: string | null, last: string | null): React.ReactNode {
+  const single = first ?? last;
+  if (single === null) return <span className="text-muted-foreground">—</span>;
+  if (first === null || last === null || first === last) return formatIsoDate(single);
+  // Gewoehnliche Leerzeichen um den Halbgeviertstrich: Auf schmalen Geraeten
+  // darf der Zeitraum umbrechen, statt die Spalte auf seine volle Laenge zu
+  // zwingen.
+  return `${formatIsoDate(first)} – ${formatIsoDate(last)}`;
 }
 
 export function CompaniesTab() {
@@ -144,6 +159,10 @@ export function CompaniesTab() {
         header: "Größte Zahlung",
         headerLabel: "Größte Einzelzahlung",
         align: "right",
+        // Die Nebenkennzahl der Tabelle — sie tritt zurueck, wo der Platz nicht
+        // fuer alle Spalten reicht (unter 1280px bleiben neben der Sidebar
+        // keine 700px). Auf der Unternehmensseite steht sie unabhaengig davon.
+        className: "hidden xl:table-cell",
         compare: (a, b) =>
           (a.largestPayment?.toChartNumber() ?? 0) -
           (b.largestPayment?.toChartNumber() ?? 0),
@@ -155,18 +174,13 @@ export function CompaniesTab() {
           ),
       },
       {
-        key: "first",
-        header: "Erste Zahlung",
-        headerLabel: "Erstes Dividendendatum",
-        compare: (a, b) => (a.firstPayDate ?? "").localeCompare(b.firstPayDate ?? ""),
-        render: (row) => dateCell(row.firstPayDate),
-      },
-      {
-        key: "last",
-        header: "Letzte Zahlung",
-        headerLabel: "Letztes Dividendendatum",
+        key: "period",
+        header: "Zeitraum",
+        headerLabel: "Zeitraum, nach letzter Zahlung",
+        // Sortiert wird nach der **letzten** Zahlung: Die Frage an dieser
+        // Spalte ist „wer zahlt noch?", nicht „wer zahlte zuerst?".
         compare: (a, b) => (a.lastPayDate ?? "").localeCompare(b.lastPayDate ?? ""),
-        render: (row) => dateCell(row.lastPayDate),
+        render: (row) => periodCell(row.firstPayDate, row.lastPayDate),
       },
     ],
     [labelOf, securities],
