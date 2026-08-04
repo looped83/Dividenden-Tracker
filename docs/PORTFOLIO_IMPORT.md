@@ -209,6 +209,15 @@ für zwölf Monate nach vorn; ihr Gegenstück sind die zwölf Monate, die am Sti
 Ein Kalenderjahr taugt dafür nicht: Ein angebrochenes ließe die Erwartung zwangsläufig zu
 hoch aussehen, ein abgeschlossenes hinkte bis zu zwölf Monate hinterher.
 
+Der **Unternehmensfilter** wirkt auf beiden Seiten: Ist eines ausgewählt, folgen ihm die
+Depotstände ebenso wie die Zahlungen. Ohne das stünde dessen erhaltene Summe neben der
+erwarteten Jahresdividende des *ganzen* Depots — zwei Zahlen aus verschiedenen
+Grundgesamtheiten, deren Differenz nichts bedeutet. Der **Depotfilter** entfällt hier
+ganz: Der Export fasst alle Depots zusammen und nennt keines (§3); angewandt träfe er nur
+die erhaltenen Zahlungen und ließe die erwarteten unberührt. Die Filterleiste blendet ihn
+deshalb aus, und der Bereich verwirft ihn auch dann, wenn er noch als Suchparameter in der
+Adresse steht.
+
 Die Daten kommen als **Domänentyp** `PortfolioSeries` über den Statistik-Kontext, nicht als
 Snapshot-Zeilen — so bleibt der Kontext frei von Datenbanktypen und die Unterbereiche
 weiterhin ohne Datenzugriffsschicht testbar. Die Aufteilung nutzt für alle Stichtage die

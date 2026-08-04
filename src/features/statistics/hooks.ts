@@ -16,7 +16,11 @@ import {
   type SecurityFacets,
 } from "@/features/securities/snapshots";
 import { useDepots } from "@/features/depots/hooks";
-import { applyStatisticsFilter, parseStatisticsFilter } from "./filterParams";
+import {
+  applyStatisticsFilter,
+  EMPTY_STATISTICS_FILTER,
+  parseStatisticsFilter,
+} from "./filterParams";
 
 interface EntityRow {
   id: string;
@@ -52,7 +56,9 @@ export interface StatisticsData {
  * angewandt (§10); alle Kennzahlen laufen anschliessend ueber die Analytics-
  * Schicht.
  */
-export function useStatisticsData(): StatisticsData {
+export function useStatisticsData(
+  filter: StatisticsFilter = EMPTY_STATISTICS_FILTER,
+): StatisticsData {
   const paymentsQuery = useDashboardPayments();
   const securitiesQuery = useSecurities();
   const depotsQuery = useDepots();
@@ -93,13 +99,28 @@ export function useStatisticsData(): StatisticsData {
     return map;
   }, [securitiesQuery.data]);
 
-  const portfolio = React.useMemo(
-    () =>
-      snapshotsQuery.data
-        ? buildPortfolioSeries(snapshotsQuery.data, facets)
-        : EMPTY_PORTFOLIO_SERIES,
-    [snapshotsQuery.data, facets],
-  );
+  /**
+   * Die Serie folgt dem **Unternehmensfilter**, damit sie zu den ebenfalls
+   * gefilterten Zahlungen passt. Ohne das stuende bei ausgewaehltem Unternehmen
+   * dessen erhaltene Summe neben der erwarteten Jahresdividende des *ganzen*
+   * Depots — zwei Zahlen aus verschiedenen Grundgesamtheiten, deren Differenz
+   * nichts bedeutet.
+   *
+   * Der **Depotfilter** bleibt hier ohne Wirkung, und zwar zwangslaeufig: Der
+   * Portfolio-Export von DivvyDiary fasst alle Depots zusammen und nennt
+   * keines (docs/PORTFOLIO_IMPORT.md §3). Die Unterbereiche, die auf den
+   * Staenden aufsetzen, blenden ihn deshalb aus, statt eine Auswahl anzubieten,
+   * die nur eine Haelfte des Vergleichs traefe.
+   */
+  const portfolio = React.useMemo(() => {
+    const snapshots = snapshotsQuery.data;
+    if (!snapshots) return EMPTY_PORTFOLIO_SERIES;
+    const relevant =
+      filter.securityId === null
+        ? snapshots
+        : snapshots.filter((row) => row.security_id === filter.securityId);
+    return buildPortfolioSeries(relevant, facets);
+  }, [snapshotsQuery.data, facets, filter.securityId]);
 
   return {
     payments,

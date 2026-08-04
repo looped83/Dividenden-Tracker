@@ -33,8 +33,10 @@ function StatisticsSkeleton() {
 }
 
 export function StatisticsPage() {
-  const data = useStatisticsData();
   const { filter, setFilter } = useStatisticsFilter();
+  // Der Filter geht in die Datenbasis hinein, weil die Depotstaende ihm ebenso
+  // folgen muessen wie die Zahlungen (siehe useStatisticsData).
+  const data = useStatisticsData(filter);
   // Zwei Unterbereiche kommen ohne Jahresregler aus: Der Vergleich waehlt seine
   // Zeitraeume selbst (§11.10), der Breakdown stellt grundsaetzlich alle Jahre
   // gegenueber (§11.12) — ein Jahresfilter liesse dort eine einzige Spalte
@@ -126,6 +128,7 @@ export function StatisticsPage() {
         securities={data.securities}
         depots={data.depots}
         showYear={!isComparison && !isBreakdown && !isDevelopment}
+        showDepot={!isDevelopment}
       />
 
       {/* Eigener Ladezustand: Beim Reiterwechsel bleiben Kopfzeile, Reiter und

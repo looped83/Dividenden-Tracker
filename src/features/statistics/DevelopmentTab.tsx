@@ -70,10 +70,11 @@ const HUNDRED = new MoneyDecimal(100);
  * Erwartung zwangslaeufig zu hoch aussehen, und ein abgeschlossenes hinkte bis
  * zu zwoelf Monate hinterher.
  *
- * **Dieser Bereich nutzt die ungefilterten Zahlungen.** Seine Zeitachse sind
- * die Stichtage der Depotstaende; ein Jahresfilter darueber ergaebe leere
- * Zwoelfmonatsfenster. Die Filterleiste blendet den Jahresregler hier deshalb
- * aus (StatisticsPage) — dieselbe Regel wie beim Vergleich und beim Breakdown.
+ * **Der Unternehmensfilter wirkt auf beiden Seiten.** Ist eines ausgewaehlt,
+ * folgen ihm die Depotstaende ebenso wie die Zahlungen (`useStatisticsData`);
+ * sonst stuende dessen erhaltene Summe neben der erwarteten Jahresdividende des
+ * ganzen Depots. Jahres- und Depotregler blendet die Filterleiste hier aus und
+ * dieser Bereich ignoriert sie (siehe unten).
  *
  * Wie ueberall gilt: Kein Wert der Depotstaende geht in eine Kennzahl der
  * uebrigen Statistik ein (PRODUCT_SPEC.md Grundsatz 8). Sie stehen hier
@@ -86,15 +87,22 @@ export function DevelopmentTab() {
   const latest = portfolio.latest;
 
   /**
-   * Unternehmen und Depot wirken hier wie ueberall, das **Jahr** nicht: Die
-   * Zeitachse sind die Stichtage der Depotstaende, und zu jedem gehoert ein
-   * eigenes Zwoelfmonatsfenster. Ein zusaetzlicher Jahresfilter liesse diese
-   * Fenster leer laufen — deshalb blendet die Filterleiste den Jahresregler auf
-   * diesem Reiter aus, und hier wird er auch dann ignoriert, wenn er noch als
-   * Suchparameter in der Adresse steht.
+   * Von den drei Filtern wirkt hier nur das **Unternehmen** — und zwar auf
+   * beiden Seiten des Vergleichs: Die Depotstaende folgen ihm ebenso
+   * (`useStatisticsData`).
+   *
+   * **Jahr** und **Depot** werden ausdruecklich verworfen, auch wenn sie noch
+   * als Suchparameter in der Adresse stehen:
+   *
+   * * Das Jahr, weil die Zeitachse die Stichtage sind und zu jedem ein eigenes
+   *   Zwoelfmonatsfenster gehoert — ein Jahresfilter liesse sie leer laufen.
+   * * Das Depot, weil der Portfolio-Export alle Depots zusammenfasst und keines
+   *   nennt (docs/PORTFOLIO_IMPORT.md §3). Angewandt traefe er nur die
+   *   erhaltenen Zahlungen und liesse die erwarteten unberuehrt — die Differenz
+   *   waere still falsch. Die Filterleiste blendet beide Regler hier aus.
    */
   const payments = React.useMemo(
-    () => filterPayments(allPayments, { ...filter, year: null }),
+    () => filterPayments(allPayments, { ...filter, year: null, depotId: null }),
     [allPayments, filter],
   );
 
@@ -374,18 +382,23 @@ export function DevelopmentTab() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <AllocationCard
-          title="Aufteilung nach Branche"
-          buckets={portfolio.bySector}
-          total={latest.marketValue}
-        />
-        <AllocationCard
-          title="Aufteilung nach Land"
-          buckets={portfolio.byCountry}
-          total={latest.marketValue}
-        />
-      </div>
+      {/* Bei einem einzelnen Unternehmen saehe die Aufteilung immer gleich aus:
+          eine Branche, ein Land, jeweils 100 %. Eine Aussage, die aus der
+          Auswahl folgt statt aus den Daten, ist keine. */}
+      {filter.securityId === null && (
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+          <AllocationCard
+            title="Aufteilung nach Branche"
+            buckets={portfolio.bySector}
+            total={latest.marketValue}
+          />
+          <AllocationCard
+            title="Aufteilung nach Land"
+            buckets={portfolio.byCountry}
+            total={latest.marketValue}
+          />
+        </div>
+      )}
     </div>
   );
 }

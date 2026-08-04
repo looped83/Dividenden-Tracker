@@ -68,6 +68,38 @@ test("setzt zwei Depotstände zu einem Verlauf zusammen", async ({ page }) => {
   await expect(page.getByText("ohne Angabe").first()).toBeVisible();
 });
 
+test("zeigt bei gewähltem Unternehmen dessen Erwartung, nicht die des Depots", async ({
+  page,
+  konto,
+}) => {
+  await importiere(page, NEU);
+
+  // Ungefiltert: 40 € (Muster AG) + 10 € (Beispiel SE).
+  await page.goto("/#/statistiken/entwicklung");
+  await expect(page.getByText("50,00 €").first()).toBeVisible();
+
+  // Der Filter kommt ueber die Adresse — wie in den uebrigen Filtertests und
+  // unabhaengig davon, ob die Leiste auf schmalen Geraeten eingeklappt ist.
+  await page.goto(`/#/statistiken/entwicklung?security=${konto.securityId}`);
+
+  // Gefiltert muessen **beide** Seiten dem Unternehmen folgen. Stuende hier
+  // weiter 50 €, stuende die Erwartung des ganzen Depots neben der erhaltenen
+  // Summe eines einzelnen Papiers.
+  await expect(page.getByText("40,00 €").first()).toBeVisible();
+  await expect(page.getByText("50,00 €")).toHaveCount(0);
+
+  // Die Aufteilung entfaellt: eine Branche, ein Land, jeweils 100 %.
+  await expect(page.getByText("Aufteilung nach Branche")).toHaveCount(0);
+
+  // Ein Depotfilter in der Adresse bleibt wirkungslos, statt nur die erhaltene
+  // Haelfte des Vergleichs zu treffen.
+  await page.goto(
+    `/#/statistiken/entwicklung?security=${konto.securityId}&depot=00000000-0000-0000-0000-000000000000`,
+  );
+  await expect(page.getByText("40,00 €").first()).toBeVisible();
+  await expect(page.getByText("1.570,00 €").first()).toBeVisible();
+});
+
 test("nennt den fehlenden Depotstand, statt eine leere Seite zu zeigen", async ({
   page,
 }) => {
