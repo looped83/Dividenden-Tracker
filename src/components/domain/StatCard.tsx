@@ -42,7 +42,19 @@ export function StatCard({
   return (
     <Card className={cn("flex flex-col text-left", className)}>
       <CardHeader className="pb-2 sm:pb-2">
-        <span className="text-sm text-muted-foreground">{label}</span>
+        {/* Zwei Zeilen Mindesthoehe auf dem Telefon: Dort stehen die Kacheln zu
+            zweit nebeneinander und sind schmal genug, dass die eine
+            Beschriftung umbricht („Groesster Eingang") und die daneben nicht
+            („Zeitraum"). Ohne die Reserve begaennen die Kennzahlen einer Zeile
+            auf verschiedenen Hoehen — in einer Kachelreihe faellt genau das
+            auf.
+
+            Die Reserve endet bei `sm`: Ab da sind die Kacheln in jedem
+            Kachelraster der App breit genug fuer eine einzeilige Beschriftung,
+            und sie waere nur noch Leerraum unter jeder Kachel. */}
+        <span className="block min-h-10 text-sm text-muted-foreground sm:min-h-0">
+          {label}
+        </span>
       </CardHeader>
       <CardContent className="flex flex-1 flex-col justify-between gap-2">
         {onDrillDown ? (

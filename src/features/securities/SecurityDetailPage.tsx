@@ -201,7 +201,9 @@ export function SecurityDetailPage() {
         />
       ) : (
         <>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
+          {/* Dasselbe Raster wie auf der Unternehmensliste und im Kalender:
+              zwei Kacheln je Zeile auf dem Telefon, vier ab `lg`. */}
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <StatCard
               label="Summe insgesamt"
               value={<AmountText amount={stats.net} />}
@@ -220,9 +222,21 @@ export function SecurityDetailPage() {
             <StatCard
               label="Zeitraum"
               value={
+                // Zwei Kacheln je Zeile lassen auf 320px keine 22 Zeichen zu,
+                // der Zeitraum muss dort also umbrechen. **Wo** er umbricht,
+                // entscheidet hier CSS und nicht der Zeilenumbruchalgorithmus:
+                // Ein geschuetztes Leerzeichen hinter dem Halbgeviertstrich
+                // genuegt nicht — Chromium bricht trotzdem nach dem Strich um
+                // und laesst ihn allein auf einer Zeile stehen (nachgemessen:
+                // drei Zeilen). Zwei unteilbare Haelften erzwingen genau einen
+                // Umbruch dazwischen: „15.01.2024" / „– 15.07.2026".
                 <span className="text-base sm:text-lg">
-                  {stats.first ? formatDate(stats.first) : "—"} –{" "}
-                  {stats.last ? formatDate(stats.last) : "—"}
+                  <span className="whitespace-nowrap">
+                    {stats.first ? formatDate(stats.first) : "—"}
+                  </span>{" "}
+                  <span className="whitespace-nowrap">
+                    – {stats.last ? formatDate(stats.last) : "—"}
+                  </span>
                 </span>
               }
               comparison={`${formatCountNumber(stats.perYear.length)} ${
