@@ -184,8 +184,10 @@ Zahltage, jeder vergangene Termin fehlt darin zwangsläufig.
 ### Darstellung
 
 Standard ist die **Liste**: je Termin eine Kachel mit Datumsfeld (Tageszahl und
-Monatskürzel), Unternehmen, Ereignisart und Wochentag; auf breiten Bildschirmen mehrspaltig,
-gruppiert nach „Heute", „Diese Woche" und „Später". Darüber stehen vier Kennzahlkacheln
+Monatskürzel), Unternehmen und Wochentag; auf breiten Bildschirmen mehrspaltig,
+gruppiert nach „Heute", „Diese Woche" und „Später". Ein Etikett trägt nur der **Ex-Tag**:
+„Zahltag" stünde an praktisch jedem Termin dieses Kalenders und sagte damit nichts. Für
+Hilfsmittel wird die Art weiterhin in beiden Fällen angesagt. Darüber stehen vier Kennzahlkacheln
 (`StatCard` wie auf der Übersicht): nächster Zahltag mit Abstand in Tagen, erwartete Summe
 im laufenden Monat, erwartete Summe der nächsten 30 Tage und Anzahl verschiedener
 Unternehmen.

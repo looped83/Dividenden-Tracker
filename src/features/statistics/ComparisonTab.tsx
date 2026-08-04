@@ -24,10 +24,11 @@ import {
 import { useStatisticsContext } from "./context";
 import type { EntityInfo } from "@/features/dashboard/format";
 import {
-  describeComparison,
   entityArchived,
   entityName,
+  formatIsoDate,
   formatPayments,
+  splitComparison,
   statisticsDrillHref,
 } from "./format";
 import {
@@ -120,13 +121,13 @@ export function ComparisonTab() {
     [comparison],
   );
 
-  // Ohne Kontextzusatz: Gegen wen verglichen wird, steht in der Zeile darunter
-  // — in der Kennzahl selbst wuerde es nur umbrechen.
-  const change = describeComparison(comparison.change, "");
   const referenceCaption =
     selection.mode === "rollierend"
       ? "gegenüber den 12 Monaten davor"
       : `gegenüber ${comparison.reference.label}`;
+  // Betrag als Kennzahl, Prozentzahl darunter: In der halbbreiten Kachel des
+  // Telefons stehen sonst beide in einer Zeile und brechen am Mittelpunkt um.
+  const change = splitComparison(comparison.change, referenceCaption);
   const changeTone =
     change.tone === "positive"
       ? "text-positive"
@@ -141,13 +142,18 @@ export function ComparisonTab() {
           <CardTitle>Zeitraumvergleich</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Zwei Spalten schon auf dem Telefon: „Jahr" und „verglichen mit"
+              gehoeren zusammen — sie bilden den Satz, den die Seite beantwortet
+              („2026 verglichen mit 2025"), und untereinander stand zwischen
+              ihnen ein Feld Luft. Vergleichsart und Monat bestimmen, *was*
+              verglichen wird, und behalten die volle Breite. */}
           <div
             className={cn(
-              "grid grid-cols-1 gap-4",
+              "grid grid-cols-2 gap-3 sm:gap-4",
               selection.mode === "monate" ? "sm:grid-cols-4" : "sm:grid-cols-3",
             )}
           >
-            <label className="space-y-1.5">
+            <label className="col-span-2 space-y-1.5 sm:col-span-1">
               <span className="text-sm font-medium">Vergleichsart</span>
               <Select
                 value={selection.mode}
@@ -165,7 +171,7 @@ export function ComparisonTab() {
             </label>
 
             {selection.mode === "monate" && (
-              <label className="space-y-1.5">
+              <label className="col-span-2 space-y-1.5 sm:col-span-1">
                 <span className="text-sm font-medium">Monat</span>
                 <Select
                   value={String(selection.month)}
@@ -256,7 +262,14 @@ export function ComparisonTab() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-3">
+      {/* Vier Kacheln, zwei je Zeile: Die vierte ist keine Fuellung, sondern
+          die Angabe, ohne die die drei anderen in die Irre fuehren koennen —
+          bis wann gerechnet wurde. Laeuft einer der Zeitraeume noch, endet der
+          Vergleich auf **beiden** Seiten am selben Kalendertag; eine Zahl, die
+          „2026" heisst, aber nur bis August reicht, muss das sagen
+          (PRODUCT_SPEC.md §5.5, DECISIONS.md D-7-1). Bisher stand es nur als
+          Sternchen an einzelnen Monatswerten weiter unten. */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <StatCard
           label={comparison.current.label}
           value={<AmountText amount={comparison.current.net} />}
@@ -269,8 +282,25 @@ export function ComparisonTab() {
         />
         <StatCard
           label="Veränderung"
-          value={<span className={changeTone}>{change.text.trim()}</span>}
-          comparison={referenceCaption}
+          value={<span className={changeTone}>{change.value}</span>}
+          comparison={change.caption}
+        />
+        <StatCard
+          label="Zeitausschnitt"
+          value={
+            comparison.truncated ? (
+              <span className="text-base sm:text-xl">
+                bis {formatIsoDate(comparison.cutoff)}
+              </span>
+            ) : (
+              <span className="text-base sm:text-xl">vollständig</span>
+            )
+          }
+          comparison={
+            comparison.truncated
+              ? "beide Zeiträume gleich lang gekappt"
+              : "beide Zeiträume vollständig gezählt"
+          }
         />
       </div>
 

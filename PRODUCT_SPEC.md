@@ -197,9 +197,12 @@ Jahressumme (CALCULATION_RULES.md §11.12).
 
 Der Vergleich stellt zwei Zeiträume gegenüber: Jahr gegen Jahr, Monat gegen denselben Monat des
 Vorjahres (aufgeschlüsselt nach Unternehmen) oder die letzten 12 Monate gegen die 12 davor. Ist eines der Jahre das laufende, endet der Vergleich auf **beiden** Seiten am selben
-Kalendertag; die Zeiträume unter den Kennzahlen nennen ihn — alles andere wäre eine systematische
+Kalendertag; die Kachel „Zeitausschnitt" nennt ihn — alles andere wäre eine systematische
 Untertreibung des laufenden Jahres (CALCULATION_RULES.md §11.10, DECISIONS.md D-7-1). Es wird
 nichts hochgerechnet (Grundsatz 8).
+
+Vier Kennzahlkacheln, auf dem iPhone zwei je Zeile: die beiden Zeiträume, die Veränderung
+(Betrag als Kennzahl, Prozentzahl mit Bezugszeitraum darunter) und der Zeitausschnitt.
 
 Der Unterbereich Unternehmen blendet in der Tabelle „Unternehmensstatistik" archivierte
 Unternehmen zunächst aus; unterhalb der Tabelle sind sie zuschaltbar (dasselbe Muster wie in der

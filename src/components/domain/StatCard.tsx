@@ -30,7 +30,10 @@ export function StatCard({
     <>
       <div className="text-lg sm:text-2xl font-semibold tabular-amount">{value}</div>
       {comparison !== undefined && (
-        <div className="mt-1 text-sm text-muted-foreground">{comparison}</div>
+        // Auf dem Telefon stehen zwei Kacheln nebeneinander; in der halben
+        // Breite braucht die Zusatzzeile die kleinere Stufe, sonst faellt sie
+        // laenger aus als die Kennzahl darueber.
+        <div className="mt-1 text-xs text-muted-foreground sm:text-sm">{comparison}</div>
       )}
     </>
   );

@@ -65,7 +65,10 @@ export function OverviewTab() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Zwei Kacheln je Zeile schon auf dem Telefon — wie in der Uebersicht:
+          Sechs Kennzahlen untereinander schoben Diagramm und Heatmap aus dem
+          Bild. */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
         <StatCard
           label="Historische Gesamtsumme"
           value={<AmountText amount={stats.net} />}
@@ -126,8 +129,9 @@ export function OverviewTab() {
           value={
             stats.firstPayDate && stats.lastPayDate ? (
               // Zwei Daten sind fuer eine Kennzahl viel Text: kleiner gesetzt,
-              // damit die Kachel neben den Betraegen ruhig bleibt.
-              <span className="text-xl">
+              // damit die Kachel neben den Betraegen ruhig bleibt. Auf dem
+              // Telefon bricht der Zeitraum in der halbbreiten Kachel um.
+              <span className="text-sm sm:text-xl">
                 {formatIsoDate(stats.firstPayDate)} – {formatIsoDate(stats.lastPayDate)}
               </span>
             ) : (

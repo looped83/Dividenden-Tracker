@@ -13,6 +13,12 @@ export interface NavItem {
   to: string;
   label: string;
   icon: LucideIcon;
+  /**
+   * Ein Satzteil, der sagt, was der Bereich beantwortet. Sichtbar in der
+   * „Mehr"-Uebersicht des iPhones, wo neben dem Namen Platz dafuer ist —
+   * Sidebar und Bottom-Navigation zeigen weiterhin nur die Beschriftung.
+   */
+  description: string;
 }
 
 /**
@@ -24,16 +30,51 @@ export interface NavItem {
  * Verwaltungsaufgaben, keine taeglichen Arbeitsbereiche.
  */
 export const PRIMARY_NAV_ITEMS: readonly NavItem[] = [
-  { to: "/", label: "Übersicht", icon: LayoutDashboard },
-  { to: "/eingaenge", label: "Dividenden", icon: Wallet },
+  {
+    to: "/",
+    label: "Übersicht",
+    icon: LayoutDashboard,
+    description: "Kennzahlen des Jahres",
+  },
+  {
+    to: "/eingaenge",
+    label: "Dividenden",
+    icon: Wallet,
+    description: "Erhaltene Zahlungen erfassen und prüfen",
+  },
   // Direkt hinter den erfassten Eingaengen: Beide Bereiche beantworten dieselbe
   // Frage entlang der Zeit — was kam an, was ist angekuendigt. Getrennte
   // Datenarten (PRODUCT_SPEC.md Grundsatz 8), benachbarte Wege.
-  { to: "/kalender", label: "Kalender", icon: CalendarDays },
-  { to: "/unternehmen", label: "Unternehmen", icon: Building2 },
-  { to: "/statistiken", label: "Statistiken", icon: BarChart3 },
-  { to: "/ziele", label: "Ziele", icon: Target },
-  { to: "/einstellungen", label: "Einstellungen", icon: Settings },
+  {
+    to: "/kalender",
+    label: "Kalender",
+    icon: CalendarDays,
+    description: "Angekündigte Zahltage",
+  },
+  {
+    to: "/unternehmen",
+    label: "Unternehmen",
+    icon: Building2,
+    description: "Stammdaten und Historie je Position",
+  },
+  {
+    to: "/statistiken",
+    label: "Statistiken",
+    icon: BarChart3,
+    description: "Jahre, Monate, Vergleiche",
+  },
+  {
+    to: "/ziele",
+    label: "Ziele",
+    icon: Target,
+    description: "Zielbeträge und Fortschritt",
+  },
+  {
+    to: "/einstellungen",
+    label: "Einstellungen",
+    icon: Settings,
+    description: "Depots, Import und Datensicherung",
+  },
 ];
 
 function findNavItem(to: string): NavItem {
