@@ -1,6 +1,6 @@
 import {
   BarChart3,
-  Building2,
+  Briefcase,
   CalendarDays,
   LayoutDashboard,
   Settings,
@@ -25,7 +25,7 @@ export interface NavItem {
  * Hauptnavigation (PRODUCT_SPEC.md §4). Einzige Quelle der
  * Navigationsstruktur fuer Sidebar und Bottom-Navigation.
  *
- * Depots, Importe und Datensicherung stehen nicht mehr hier, sondern als
+ * Depotkonten, Importe und Datensicherung stehen nicht mehr hier, sondern als
  * Unterbereiche der Einstellungen (siehe SETTINGS_TABS) — es sind
  * Verwaltungsaufgaben, keine taeglichen Arbeitsbereiche.
  */
@@ -51,11 +51,14 @@ export const PRIMARY_NAV_ITEMS: readonly NavItem[] = [
     icon: CalendarDays,
     description: "Angekündigte Zahltage",
   },
+  // „Depot" statt „Unternehmen": Der Bereich fuehrt laengst nicht nur
+  // Aktiengesellschaften, sondern ebenso ETFs, Fonds und Anleihen — alles, was
+  // im Depot liegt. Der alte Name benannte einen Sonderfall als Ganzes.
   {
-    to: "/unternehmen",
-    label: "Unternehmen",
-    icon: Building2,
-    description: "Stammdaten und Historie je Position",
+    to: "/depot",
+    label: "Depot",
+    icon: Briefcase,
+    description: "Assets, Bestände und Entwicklung",
   },
   {
     to: "/statistiken",
@@ -73,7 +76,7 @@ export const PRIMARY_NAV_ITEMS: readonly NavItem[] = [
     to: "/einstellungen",
     label: "Einstellungen",
     icon: Settings,
-    description: "Depots, Import und Datensicherung",
+    description: "Depotkonten, Import und Datensicherung",
   },
 ];
 
@@ -95,9 +98,25 @@ export const BOTTOM_NAV_PRIMARY_ITEMS: readonly NavItem[] = [
 /** Hinter "Mehr" zusammengefasste Bereiche der Bottom Navigation. */
 export const BOTTOM_NAV_MORE_ITEMS: readonly NavItem[] = [
   findNavItem("/kalender"),
-  findNavItem("/unternehmen"),
+  findNavItem("/depot"),
   findNavItem("/ziele"),
   findNavItem("/einstellungen"),
+];
+
+/**
+ * Unterbereiche des Depots.
+ *
+ * **Assets** fuehrt die Stammdaten aller gehaltenen und ehemaligen Papiere,
+ * **Entwicklung** stellt der erwarteten Jahresausschuettung des heutigen
+ * Bestands gegenueber, was tatsaechlich hereinkam. Die Entwicklung stand
+ * frueher in der Statistik; sie ist als einziger Unterbereich dort auf den
+ * Depotstaenden aufgebaut statt auf den erfassten Zahlungen
+ * (docs/PORTFOLIO_IMPORT.md) und gehoert damit hierher. Ihr alter Pfad leitet
+ * dauerhaft hierauf um (router.tsx).
+ */
+export const DEPOT_TABS: readonly { to: string; label: string; end?: boolean }[] = [
+  { to: "/depot", label: "Assets", end: true },
+  { to: "/depot/entwicklung", label: "Entwicklung" },
 ];
 
 /** Unterbereiche der Statistik (PRODUCT_SPEC.md §11). */
@@ -113,11 +132,9 @@ export const STATISTICS_TABS: readonly { to: string; label: string; end?: boolea
   { to: "/statistiken/breakdown", label: "Breakdown" },
   { to: "/statistiken/vergleich", label: "Vergleich" },
   { to: "/statistiken/unternehmen", label: "Unternehmen" },
-  { to: "/statistiken/depots", label: "Depots" },
-  // „Entwicklung" steht am Ende: Sie ist der einzige Unterbereich, der auf den
-  // Depotstaenden aufsetzt statt allein auf den erhaltenen Zahlungen
-  // (docs/PORTFOLIO_IMPORT.md) — und der einzige, der nach vorn schaut.
-  { to: "/statistiken/entwicklung", label: "Entwicklung" },
+  // „Depotkonten" statt „Depots": Gemeint sind die Konten bei den Brokern, nicht
+  // der Bestand — den fuehrt seit der Umbenennung der Bereich „Depot".
+  { to: "/statistiken/depots", label: "Depotkonten" },
 ];
 
 /**
@@ -127,7 +144,10 @@ export const STATISTICS_TABS: readonly { to: string; label: string; end?: boolea
  */
 export const SETTINGS_TABS: readonly { to: string; label: string; end?: boolean }[] = [
   { to: "/einstellungen", label: "Allgemein", end: true },
-  { to: "/einstellungen/depots", label: "Depots" },
+  // „Depotkonten" statt „Depots": Hier stehen die Konten bei den Brokern. Der
+  // Bestand selbst liegt im Bereich „Depot" — gleicher Wortstamm, andere Sache;
+  // der Zusatz haelt beide auseinander.
+  { to: "/einstellungen/depots", label: "Depotkonten" },
   { to: "/einstellungen/importe", label: "Import" },
   { to: "/einstellungen/datensicherung", label: "Sicherung" },
 ];

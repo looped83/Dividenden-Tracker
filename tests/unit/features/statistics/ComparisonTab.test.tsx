@@ -289,7 +289,7 @@ describe("ComparisonTab — Monat gegen Monat", () => {
     expect(screen.getByText("Nach Unternehmen")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Beta SE" })).toHaveAttribute(
       "href",
-      "/unternehmen/sec-b",
+      "/depot/sec-b",
     );
     expect(screen.queryByText("Monat für Monat")).not.toBeInTheDocument();
   });
@@ -398,7 +398,7 @@ describe("ComparisonTab — Darstellung auf dem Telefon", () => {
     const beta = card("Beta SE");
     expect(within(beta).getByRole("link", { name: "Beta SE" })).toHaveAttribute(
       "href",
-      "/unternehmen/sec-b",
+      "/depot/sec-b",
     );
   });
 });

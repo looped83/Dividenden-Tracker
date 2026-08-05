@@ -258,7 +258,7 @@ export function PaymentDetailPage() {
                 Position — die Detailseite des Unternehmens. */}
               {security ? (
                 <Link
-                  to={`/unternehmen/${security.id}`}
+                  to={`/depot/${security.id}`}
                   className="rounded-sm outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   {security.name}

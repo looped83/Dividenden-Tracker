@@ -95,8 +95,8 @@ Diese 15 Grundsätze sind Abnahmekriterien für jede Phase (siehe IMPLEMENTATION
 | **Übersicht** | Dashboard mit Kernkennzahlen, Entwicklung, Zielfortschritt |
 | **Dividendeneingänge** | Vollständige Zahlungshistorie, Erfassung, Bearbeitung, Detailansicht |
 | **Kalender** | Angekündigte Zahltage aus dem persönlichen DivvyDiary-iCal-Feed |
-| **Unternehmen** | Wertpapier-Stammdaten und Historie je Unternehmen |
-| **Depots** | Depotverwaltung und Auswertung je Depot |
+| **Depot** | Assets (Aktien, ETFs, Fonds, Anleihen): Stammdaten, Bestände, Entwicklung |
+| **Depotkonten** | Verwaltung der Konten bei den Brokern und Auswertung je Konto |
 | **Statistiken** | Vertiefte Auswertungen, Vergleiche, Aufteilungen |
 | **Importe** | Import-Assistent, Importhistorie, Rollback |
 | **Ziele** | Persönliche Jahres- und Langfristziele |
@@ -159,9 +159,24 @@ laufendes Jahr). Die Summe der gefilterten Liste muss exakt der Kennzahl entspre
   endgültiges Entfernen eines **bereits archivierten** Eingangs (enge Ausnahme, DECISIONS.md D-034)
 - Detailansicht mit: allen Feldern, Änderungsverlauf, Herkunft (manuell/Import), Link zum ursprünglichen Import inkl. Dateiname und Zeilennummer
 
-### 5.3 Unternehmen
+### 5.3 Depot
 
-Pro Wertpapier/Unternehmen:
+Der Bereich hieß **Unternehmen**. Er führt aber nicht nur Aktiengesellschaften, sondern alles,
+was im Depot liegt — ETFs, Fonds, Anleihen. Der alte Name benannte einen Sonderfall als Ganzes;
+in der Oberfläche heißen die Einträge deshalb **Assets**. Im Datenmodell bleiben sie
+`securities` (DATA_MODEL.md): Eine Umbenennung der Tabellen brächte niemandem etwas.
+
+Zwei Unterbereiche:
+
+- **Assets** — die Verwaltungsliste samt Kennzahlen des jüngsten Depotstands
+- **Entwicklung** — erwartete gegen tatsächlich erhaltene Jahresdividende (siehe unten). Sie
+  stand früher in der Statistik und ist hierher gewandert: Sie war dort der einzige
+  Unterbereich, der auf den importierten Depotständen aufsetzt statt auf den erfassten
+  Zahlungen — eine Frage des Depots, keine der Historie. Der alte Pfad
+  `/statistiken/entwicklung` leitet dauerhaft auf `/depot/entwicklung` um, ebenso
+  `/unternehmen` auf `/depot`.
+
+Pro Asset:
 
 - Stammdaten: Name, Ticker, ISIN, WKN, Land, Branche, Währung, persönliche Notizen
 - Optionales Standard-Depot als unverbindlicher Vorschlag: füllt beim Anlegen eines
@@ -169,21 +184,52 @@ Pro Wertpapier/Unternehmen:
   einer Depot-/Broker-Spalte übernommen — keine feste Bindung (DECISIONS.md D-035)
 - Datenqualitätsstatus (`ok` / `unvollständig` / `prüfen`) — z. B. fehlende ISIN nach Import.
   Er entsteht beim Import und beim Speichern und steht dort, wo er hilft: im Importbericht
-  und auf der Unternehmensseite. In der Unternehmensliste trägt er **keine** eigene Spalte
+  und auf der Assetseite. In der Assetliste trägt er **keine** eigene Spalte
   und keinen Filter mehr — dort stand an fast jeder Zeile dasselbe Etikett
 - Sämtliche historischen Dividendeneingänge
 - Summe pro Jahr und pro Monat, durchschnittliche Zahlung, Anzahl der Zahlungen
 - Brutto-/Nettoentwicklung, gezahlte Steuern
 - Anteil am gesamten Dividendeneinkommen
 
-Die Liste trägt dieselbe Filterleiste wie die Dividendenliste — Branche, Währung, Depot und
-rechts die **Sortierung** („Nach Name", „Nach Ticker", „Nach Branche", „Nach Land", „Nach
-Depot") mit Richtungsschalter daneben. Unternehmen ohne den sortierten Wert stehen in beiden
-Richtungen am Ende: Ein Unternehmen ohne Ticker ist keine Antwort auf „sortiere nach Ticker".
+Die Liste trägt dieselbe Filterleiste wie die Dividendenliste — Branche, Währung, Depotkonto
+und rechts die **Sortierung** („Nach Name", „Nach Ticker", „Nach Branche", „Nach Land", „Nach
+Depot") mit Richtungsschalter daneben. Assets ohne den sortierten Wert stehen in beiden
+Richtungen am Ende: Ein Asset ohne Ticker ist keine Antwort auf „sortiere nach Ticker".
 
-Keine zukünftigen Zahlungen, keine erwarteten Dividenden, keine Kurse.
+Die Hauptaktion der Kopfzeile heißt **„＋ Neue Assets"** und gilt für den ganzen Bereich, also
+auch aus der Entwicklung heraus.
 
-### 5.4 Depots
+#### Unterbereich Entwicklung
+
+Der Unterbereich **Entwicklung** ist der einzige, der auf den Depotständen aufsetzt statt
+allein auf den erhaltenen Zahlungen (docs/PORTFOLIO_IMPORT.md). Er beantwortet eine Frage:
+*Wächst mein passives Einkommen?* Dafür stellt er die erwartete Jahresdividende dem
+gegenüber, was tatsächlich hereinkam — je Stichtag als Verlauf, je Asset als Tabelle,
+dazu die Aufteilung des Depots nach Branche und Land.
+
+Verglichen werden **zwei Zwölfmonatszeiträume**: Die Erwartung gilt für zwölf Monate nach
+vorn, ihr Gegenstück sind die zwölf Monate, die am Stichtag enden. Bewusst nicht das
+Kalenderjahr — ein angebrochenes ließe die Erwartung zwangsläufig zu hoch aussehen, ein
+abgeschlossenes hinkte bis zu zwölf Monate hinterher.
+
+Ihre Differenz heißt **Zuwachs** und wird als *erwartet minus erhalten* gerechnet. „Erwartet
+p. a." ist kein Ziel, das verfehlt werden könnte, sondern die Ertragskraft des heutigen
+Depots; als Abweichung gelesen stünde dort bei jedem Zukauf eine rote Zahl für genau den
+Vorgang, der gut läuft. Ein negativer Zuwachs bleibt ein echter Rückgang.
+
+Der Jahresregler entfällt hier wie beim Vergleich und beim Breakdown: Die Zeitachse sind
+die Stichtage der Depotstände, und zu jedem gehört ein eigenes Zwölfmonatsfenster. Der
+**Depotkontoregler** entfällt ebenfalls, weil der Portfolio-Export alle Konten zusammenfasst
+und keines nennt — er träfe nur die erhaltenen Zahlungen und ließe die erwarteten unberührt.
+Beide bietet die Filterleiste hier gar nicht erst an; sie trägt allein den **Assetfilter**, und
+der wirkt auf beiden Seiten des Vergleichs. Ein Verlauf entsteht ab dem zweiten Depotstand; bis
+dahin sagt der Bereich das, statt eine Linie durch einen Punkt zu zeichnen. Kein Wert der
+Depotstände geht in eine Kennzahl der Statistik ein (Grundsatz 8).
+
+Keine zukünftigen Zahlungen außerhalb der Depotstände, keine Kurse in den Kennzahlen der
+Historie.
+
+### 5.4 Depotkonten
 
 - Mehrere Depots: Name, Broker, Basiswährung, persönliche Notiz
 - Optionale Gruppierung von Depots zu einem Portfolio (siehe DECISIONS.md, D-006)
@@ -194,10 +240,11 @@ Keine zukünftigen Zahlungen, keine erwarteten Dividenden, keine Kurse.
 ### 5.5 Statistiken
 
 Sieben Unterbereiche: Übersicht, Jahre, Monate, **Breakdown**, **Vergleich**, Unternehmen,
-Depots.
+Depotkonten. Die frühere **Entwicklung** liegt seit der Umbenennung im Bereich Depot (§5.3) —
+sie setzte als einzige auf den Depotständen auf statt auf den erfassten Zahlungen.
 
 Über allen steht dieselbe Filterleiste mit denselben drei Kriterien in derselben Reihenfolge:
-**Jahr, Unternehmen, Depot** (Voreinstellung „Alle …"). Einzige Abweichung ist der
+**Jahr, Unternehmen, Depotkonto** (Voreinstellung „Alle …"). Einzige Abweichung ist der
 Jahresregler, der im Vergleich und im Breakdown fehlt — beide wählen ihre Zeiträume selbst,
 dort wäre er wirkungslos. Datenquelle und Zahlungsart standen einmal daneben; sie sind
 entfallen, weil die Zahlungsliste sie nicht filtern kann und der Drill-down damit mehr zeigte
@@ -229,30 +276,6 @@ Bild zu laufen: Erste und letzte Zahlung stehen als **ein** Zeitraum („14.05.2
 und die größte Einzelzahlung — die Nebenkennzahl der Tabelle — erscheint erst ab 1280 px, wo
 neben der Seitennavigation Platz für sie bleibt. Sie steht unabhängig davon auf der
 Unternehmensseite.
-
-Der Unterbereich **Entwicklung** ist der einzige, der auf den Depotständen aufsetzt statt
-allein auf den erhaltenen Zahlungen (docs/PORTFOLIO_IMPORT.md). Er beantwortet eine Frage:
-*Wächst mein passives Einkommen?* Dafür stellt er die erwartete Jahresdividende dem
-gegenüber, was tatsächlich hereinkam — je Stichtag als Verlauf, je Unternehmen als Tabelle,
-dazu die Aufteilung des Depots nach Branche und Land.
-
-Verglichen werden **zwei Zwölfmonatszeiträume**: Die Erwartung gilt für zwölf Monate nach
-vorn, ihr Gegenstück sind die zwölf Monate, die am Stichtag enden. Bewusst nicht das
-Kalenderjahr — ein angebrochenes ließe die Erwartung zwangsläufig zu hoch aussehen, ein
-abgeschlossenes hinkte bis zu zwölf Monate hinterher.
-
-Ihre Differenz heißt **Zuwachs** und wird als *erwartet minus erhalten* gerechnet. „Erwartet
-p. a." ist kein Ziel, das verfehlt werden könnte, sondern die Ertragskraft des heutigen
-Depots; als Abweichung gelesen stünde dort bei jedem Zukauf eine rote Zahl für genau den
-Vorgang, der gut läuft. Ein negativer Zuwachs bleibt ein echter Rückgang.
-
-Der Jahresregler entfällt hier wie beim Vergleich und beim Breakdown: Die Zeitachse sind
-die Stichtage der Depotstände, und zu jedem gehört ein eigenes Zwölfmonatsfenster. Der
-**Depotregler** entfällt ebenfalls, weil der Portfolio-Export alle Depots zusammenfasst und
-keines nennt — er träfe nur die erhaltenen Zahlungen und ließe die erwarteten unberührt.
-Das **Unternehmen** wirkt und dabei auf beiden Seiten des Vergleichs. Ein Verlauf entsteht ab dem zweiten
-Depotstand; bis dahin sagt der Bereich das, statt eine Linie durch einen Punkt zu zeichnen.
-Kein Wert der Depotstände geht in eine Kennzahl der übrigen Statistik ein (Grundsatz 8).
 
 Vollständige Kennzahlenliste mit verbindlichen Definitionen: CALCULATION_RULES.md §6.
 Umfasst mindestens: Netto/Brutto pro Monat und Jahr, Vorjahresvergleich (absolut/prozentual),
