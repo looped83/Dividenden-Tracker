@@ -593,6 +593,11 @@ stellt sicher, dass das referenzierte Unternehmen dem Schreibenden gehört (der
 Fremdschlüssel allein prüft nur die Existenz); er läuft ohne `security definer`, sodass
 die RLS von `securities` die Prüfung trägt.
 
+Beide Tabellen liegen seit Migration 0031 in der Datensicherung (Formatversion 2,
+BACKUP_AND_RESTORE.md §2.1) — zusammen mit `security_aliases`. Depotstände sind der
+einzige Bestand des Projekts, den die Quelle nicht neu liefern kann: DivvyDiary
+exportiert immer nur den heutigen Stand.
+
 ---
 
 ## Eigentum referenzierter Stammdaten (Migration 0030)

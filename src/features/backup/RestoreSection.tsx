@@ -309,6 +309,17 @@ function ConfirmRestoreDialog({
             <dd className="text-right tabular-nums">
               {formatCountNumber(contents["goals"] ?? 0)}
             </dd>
+            {/* Nur wenn die Datei welche mitbringt: Sicherungen der
+                Formatversion 1 kennen keine Depotstände, und eine Zeile mit
+                „0" beantwortete dort eine Frage, die niemand gestellt hat. */}
+            {(contents["security_snapshots"] ?? 0) > 0 && (
+              <>
+                <dt className="text-muted-foreground">Depotstände</dt>
+                <dd className="text-right tabular-nums">
+                  {formatCountNumber(contents["security_snapshots"] ?? 0)}
+                </dd>
+              </>
+            )}
           </dl>
         )}
 

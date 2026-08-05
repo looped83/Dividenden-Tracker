@@ -34,6 +34,9 @@ import {
   type ImportBackup,
   type ProfileBackup,
   type IntegrityInfo,
+  type SecurityAliasBackup,
+  type SnapshotRunBackup,
+  type SecuritySnapshotBackup,
 } from "./backupFormat";
 
 // ============================================================================
@@ -46,7 +49,7 @@ import {
  * nachziehen — `validateBackupVersion` entscheidet daran, ob eine aeltere
  * Sicherung noch eingespielt werden darf.
  */
-const SCHEMA_VERSION = "0026";
+const SCHEMA_VERSION = "0031";
 
 /**
  * Version der Anwendung, zur Bauzeit aus `package.json` eingesetzt
@@ -63,6 +66,9 @@ type SecurityRow = Tables["securities"]["Row"];
 type DividendPaymentRow = Tables["dividend_payments"]["Row"];
 type GoalRow = Tables["goals"]["Row"];
 type ImportRow = Tables["imports"]["Row"];
+type SecurityAliasRow = Tables["security_aliases"]["Row"];
+type SnapshotRunRow = Tables["security_snapshot_runs"]["Row"];
+type SecuritySnapshotRow = Tables["security_snapshots"]["Row"];
 
 export interface BackupProgress {
   stage:
@@ -197,7 +203,9 @@ function ensureNumberArray(value: unknown): number[] | null {
  * Zaehlt die Zeilen einer Tabelle serverseitig (nur Kopf, keine Daten). Dient
  * ausschliesslich der Gegenprobe zur geladenen Menge — siehe {@link assertComplete}.
  */
-async function countRows(table: "dividend_payments" | "securities"): Promise<number> {
+async function countRows(
+  table: "dividend_payments" | "securities" | "security_snapshots",
+): Promise<number> {
   const { count, error } = await supabase
     .from(table)
     .select("id", { count: "exact", head: true });
@@ -484,6 +492,125 @@ async function fetchImports(): Promise<ImportBackup[]> {
 }
 /* eslint-enable @typescript-eslint/no-unsafe-assignment */
 
+/**
+ * Laedt die beim Import bestaetigten Schreibweisen (IMPORT_SPEC.md §6).
+ *
+ * Sie sind zwar aus den Zahlungen nicht ableitbar, aber ersetzbar — der Nutzer
+ * muesste jede Zuordnung erneut bestaetigen. Genau diese Arbeit soll eine
+ * Sicherung ihm ersparen.
+ */
+async function fetchSecurityAliases(): Promise<SecurityAliasBackup[]> {
+  const data = await fetchAllPages<SecurityAliasRow>((from, to) =>
+    supabase
+      .from("security_aliases")
+      .select("*")
+      .order("created_at", { ascending: true })
+      .order("id", { ascending: true })
+      .range(from, to),
+  );
+
+  return data.map(
+    (a) =>
+      removeNulls({
+        id: a.id,
+        user_id: a.user_id,
+        alias_normalized: a.alias_normalized,
+        security_id: a.security_id,
+        source_import_id: a.source_import_id,
+        created_at: ts(a.created_at),
+      }) as SecurityAliasBackup,
+  );
+}
+
+/**
+ * Laedt die Upload-Laeufe der Depotstaende (docs/PORTFOLIO_IMPORT.md §6).
+ */
+async function fetchSnapshotRuns(): Promise<SnapshotRunBackup[]> {
+  const data = await fetchAllPages<SnapshotRunRow>((from, to) =>
+    supabase
+      .from("security_snapshot_runs")
+      .select("*")
+      .order("as_of", { ascending: true })
+      .order("id", { ascending: true })
+      .range(from, to),
+  );
+
+  return data.map(
+    (r) =>
+      removeNulls({
+        id: r.id,
+        user_id: r.user_id,
+        as_of: formatBusinessDate(r.as_of),
+        source: r.source,
+        file_name: r.file_name,
+        rows_total: r.rows_total,
+        rows_imported: r.rows_imported,
+        rows_skipped: r.rows_skipped,
+        rows_invalid: r.rows_invalid,
+        created_at: ts(r.created_at),
+      }) as SnapshotRunBackup,
+  );
+}
+
+/**
+ * Laedt alle Depotstaende und prueft die Menge gegen die Datenbank.
+ *
+ * Dieselbe strenge Kontrolle wie bei den Dividendeneingaengen, und aus
+ * demselben Grund: DivvyDiary exportiert immer nur den **heutigen** Stand.
+ * Geht die Zeile eines vergangenen Stichtags verloren, ist dieser Tag
+ * endgueltig weg — anders als die Kalendertermine, die ein erneuter
+ * Feed-Abgleich wieder aufbaut, und anders als die Marktdaten von heute, die
+ * der naechste Upload ohnehin liefert.
+ */
+async function fetchSecuritySnapshots(): Promise<SecuritySnapshotBackup[]> {
+  const [expected, data] = await Promise.all([
+    countRows("security_snapshots"),
+    fetchAllPages<SecuritySnapshotRow>((from, to) =>
+      supabase
+        .from("security_snapshots")
+        .select("*")
+        // `as_of` ist nicht eindeutig — `id` als Tiebreaker, sonst kann eine
+        // Zeile ueber die Seitengrenze hinweg doppelt oder gar nicht erscheinen.
+        .order("as_of", { ascending: true })
+        .order("id", { ascending: true })
+        .range(from, to),
+    ),
+  ]);
+  assertComplete(data.length, expected, "Depotstände");
+
+  return data.map(
+    (s) =>
+      removeNulls({
+        id: s.id,
+        user_id: s.user_id,
+        security_id: s.security_id,
+        run_id: s.run_id,
+        as_of: formatBusinessDate(s.as_of),
+        quantity: ensureDecimalString(s.quantity, 6) ?? "0",
+        buyin_per_share: ensureDecimalString(s.buyin_per_share, 6),
+        buyin_total: ensureDecimalString(s.buyin_total, 2),
+        price: ensureDecimalString(s.price, 6),
+        market_value: ensureDecimalString(s.market_value, 2),
+        gain_absolute: ensureDecimalString(s.gain_absolute, 2),
+        gain_relative: ensureDecimalString(s.gain_relative, 6),
+        allocation: ensureDecimalString(s.allocation, 6),
+        dividend_yield: ensureDecimalString(s.dividend_yield, 6),
+        dividend_yield_on_buyin: ensureDecimalString(s.dividend_yield_on_buyin, 6),
+        annual_dividend_total: ensureDecimalString(s.annual_dividend_total, 2),
+        dividend_per_share: ensureDecimalString(s.dividend_per_share, 6),
+        dividend_frequency: s.dividend_frequency,
+        dividend_cagr: ensureDecimalString(s.dividend_cagr, 6),
+        dividend_cagr_period: s.dividend_cagr_period,
+        next_ex_date: s.next_ex_date === null ? null : formatBusinessDate(s.next_ex_date),
+        next_pay_date:
+          s.next_pay_date === null ? null : formatBusinessDate(s.next_pay_date),
+        asset_type: s.asset_type,
+        currency: s.currency,
+        created_at: ts(s.created_at),
+      }) as SecuritySnapshotBackup,
+  );
+}
+
 // ============================================================================
 // Checksum Computation
 // ============================================================================
@@ -531,6 +658,9 @@ async function computeIntegrity(data: BackupData): Promise<IntegrityInfo> {
     dividend_payment: data.dividend_payments.length,
     goal: data.goals.length,
     import: data.imports.length,
+    security_alias: data.security_aliases.length,
+    security_snapshot_run: data.security_snapshot_runs.length,
+    security_snapshot: data.security_snapshots.length,
   };
 
   // Compute total sums for active payments
@@ -565,6 +695,17 @@ async function computeIntegrity(data: BackupData): Promise<IntegrityInfo> {
   }
   if (data.imports.length > 0) {
     checksums["imports"] = await computeChecksum(data.imports);
+  }
+  if (data.security_aliases.length > 0) {
+    checksums["security_aliases"] = await computeChecksum(data.security_aliases);
+  }
+  if (data.security_snapshot_runs.length > 0) {
+    checksums["security_snapshot_runs"] = await computeChecksum(
+      data.security_snapshot_runs,
+    );
+  }
+  if (data.security_snapshots.length > 0) {
+    checksums["security_snapshots"] = await computeChecksum(data.security_snapshots);
   }
 
   return {
@@ -604,15 +745,27 @@ export async function createBackup(
 
     // Fetch all data
     onProgress?.({ stage: "fetching_data" });
-    const [portfolios, depots, securities, dividendPayments, goals, imports] =
-      await Promise.all([
-        fetchPortfolios(),
-        fetchDepots(),
-        fetchSecurities(),
-        fetchDividendPayments(),
-        fetchGoals(),
-        fetchImports(),
-      ]);
+    const [
+      portfolios,
+      depots,
+      securities,
+      dividendPayments,
+      goals,
+      imports,
+      securityAliases,
+      snapshotRuns,
+      securitySnapshots,
+    ] = await Promise.all([
+      fetchPortfolios(),
+      fetchDepots(),
+      fetchSecurities(),
+      fetchDividendPayments(),
+      fetchGoals(),
+      fetchImports(),
+      fetchSecurityAliases(),
+      fetchSnapshotRuns(),
+      fetchSecuritySnapshots(),
+    ]);
 
     // Serialize to backup data structure
     onProgress?.({ stage: "serializing" });
@@ -624,6 +777,9 @@ export async function createBackup(
       dividend_payments: dividendPayments,
       goals,
       imports,
+      security_aliases: securityAliases,
+      security_snapshot_runs: snapshotRuns,
+      security_snapshots: securitySnapshots,
     };
 
     // Compute integrity info

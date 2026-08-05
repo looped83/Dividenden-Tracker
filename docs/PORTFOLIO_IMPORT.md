@@ -44,6 +44,7 @@ Kacheln (/unternehmen) · Positionskarte (Detailseite) · Statistik „Entwicklu
 |---|---|
 | `supabase/migrations/0029_security_snapshots.sql` | Tabellen, Enums, Indizes, RLS |
 | `supabase/migrations/0030_enforce_owned_references.sql` | Eigentumsprüfung der referenzierten Stammdaten |
+| `supabase/migrations/0031_backup_snapshots.sql` | Depotstände in Sicherung und Wiederherstellung (Formatversion 2) |
 | `src/features/securities/divvydiaryCsv.ts` | Einlesen und Normalisieren der CSV |
 | `src/features/securities/portfolioMatch.ts` | Zuordnung zu den eigenen Unternehmen |
 | `src/features/securities/snapshots.ts` | Auswertung (jüngster Stand, Summen, Rendite, Zeitreihe) |
@@ -164,6 +165,19 @@ Stichtag ist damit nicht speicherbar, nicht nur unerwünscht.
 
 Dieselbe Prüfung gilt seit Migration 0030 auch für `dividend_payments.security_id` und
 `.depot_id` (siehe SECURITY_MODEL.md §3.5).
+
+### 7.1 Datensicherung
+
+Depotstände und Läufe gehören seit Formatversion 2 in die JSON-Vollsicherung
+(BACKUP_AND_RESTORE.md §2.1) — als einziger Datenbestand des Projekts, der sich **nicht**
+nachbeschaffen lässt: DivvyDiary exportiert immer nur den heutigen Stand. Ein Stichtag, den
+die Wiederherstellung nicht zurückbringt, ist endgültig verloren. Der Export prüft die
+geladene Menge deshalb gegen die Datenbank, wie bei den Zahlungen; eine unvollständige
+Sicherung entsteht gar nicht erst.
+
+Beim Einspielen gilt die Regel dieses Kapitels weiter: Ein Stichtag wird als Ganzes ersetzt.
+`merge` lässt einen bereits erfassten Tag unberührt, `replace` ersetzt genau die Tage der
+Datei und lässt alle übrigen stehen.
 
 ## 8. Was die Oberfläche zeigt
 

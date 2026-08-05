@@ -25,8 +25,8 @@ SECURITY_MODEL.md §9. Beträge im JSON als Strings (Skalenerhalt, CALCULATION_R
 ```jsonc
 {
   "format": "dividend-tracker-backup",
-  "format_version": 1,               // Backup-Formatversion (dieses Dokument)
-  "schema_version": "0007",           // höchste angewendete DB-Migration
+  "format_version": 2,               // Backup-Formatversion (dieses Dokument)
+  "schema_version": "0031",           // höchste angewendete DB-Migration
   "app_version": "1.4.0",
   "exported_at": "2026-07-19T10:15:00Z",
   "base_currency": "EUR",
@@ -38,6 +38,9 @@ SECURITY_MODEL.md §9. Beträge im JSON als Strings (Skalenerhalt, CALCULATION_R
     "dividend_payments":[ ... ],      // inkl. archivierter Zeilen, Fingerprints, Herkunft
     "goals":            [ ... ],
     "imports":          [ ... ],      // Metadaten, Bilanz, row_report
+    "security_aliases": [ ... ],      // beim Import bestätigte Schreibweisen (ab v2)
+    "security_snapshot_runs": [ ... ],// Uploads des Portfolio-Exports (ab v2)
+    "security_snapshots":     [ ... ],// Depotstände je Unternehmen und Stichtag (ab v2)
     "audit_log":        [ ... ]       // notwendige Auditinformationen
   },
   "integrity": {
@@ -54,6 +57,22 @@ SECURITY_MODEL.md §9. Beträge im JSON als Strings (Skalenerhalt, CALCULATION_R
   Wertpapier → Depot) exakt wieder her.
 - `format_version` wird nur bei Strukturbrüchen erhöht; Lesecode unterstützt alle bisherigen
   Versionen (Migrations-Adapter je Version, getestet mit archivierten Beispieldateien).
+
+### 2.1 Version 2 — Depotstände (seit 2026-08-04)
+
+Version 2 ergänzt drei Bereiche. Version 1 bleibt **einspielbar**: Die Bereiche fehlen dort
+schlicht und bleiben nach dem Einspielen leer. Eine ältere Sicherung abzuweisen, weil das
+Format gewachsen ist, wäre genau der Moment, in dem eine Datensicherung nichts mehr wert ist.
+
+| Bereich | Warum gesichert |
+|---|---|
+| `security_snapshots` | **Nicht rekonstruierbar.** DivvyDiary exportiert immer nur den heutigen Stand; ein verlorener Stichtag ist endgültig weg. Anders als die Kalendertermine (docs/CALENDAR_INTEGRATION.md), die ein erneuter Feed-Abgleich wieder aufbaut — deshalb bleiben jene weiterhin außen vor. |
+| `security_snapshot_runs` | Trägt Stichtag und Bilanz des Uploads. Ohne ihn ließe sich „an diesem Tag kein Upload" nicht von „an diesem Tag keine Positionen" unterscheiden. |
+| `security_aliases` | Rekonstruierbar nur, indem der Nutzer jede beim Import bestätigte Schreibweise erneut bestätigt — genau die Arbeit, die eine Sicherung ihm abnehmen soll. |
+
+Alle drei Tabellen kennen **kein UPDATE-Recht** (Migrationen 0016 und 0029): Ein Alias wird
+angelegt oder gelöscht, ein Stichtag als Ganzes ersetzt, nie zeilenweise umgeschrieben. Die
+Wiederherstellung hält sich daran (§5.2/§5.3).
 
 ## 3. Backup-Erinnerung und Status
 
@@ -103,6 +122,11 @@ Bestätigung im Dialog, die die Folgen benennt.
 - Zeilen aus der Datei gewinnen (`on conflict … do update`).
 - Alles Übrige wird **storniert**, nie gelöscht (`archive_reason = 'Durch Wiederherstellung
   einer Sicherung ersetzt'`) — Grundsatz 6, D-034.
+- Depotstände werden **je Stichtag** ersetzt, nicht pauschal: Gelöscht werden genau die Läufe
+  der Stichtage, die die Datei mitbringt (kaskadierend mit ihren Zeilen), danach wird
+  eingefügt. Ein Stichtag, über den die Datei nichts sagt, bleibt bestehen — ihn zu löschen
+  wäre unwiederbringlich. Ebenso bei den Aliasen: ersetzt werden nur die Schreibweisen, die
+  in der Datei stehen.
 - Die eigene Sicherung einzuspielen stellt den Bestand vollständig wieder her. Das ist durch
   einen Regressionstest abgesichert: Die ursprüngliche Fassung archivierte zuerst alles und
   fügte anschließend nichts ein, weil die IDs bereits existierten.
@@ -111,6 +135,10 @@ Bestätigung im Dialog, die die Folgen benennt.
 
 - Fügt fehlende Datensätze hinzu; vorhandene bleiben unangetastet (`on conflict … do nothing`).
 - Idempotent: dieselbe Datei zweimal einspielen erzeugt keine Duplikate (ID-basiert).
+- Liegt für einen Stichtag bereits ein Lauf vor (etwa ein Upload nach der Sicherung), gewinnt
+  der Bestand — Lauf **und** seine Zeilen werden gemeinsam übersprungen. Lauf und Zeilen
+  gehören zusammen; einzelne Zeilen eines fremden Laufs einzufügen ergäbe einen Stichtag, den
+  keine Datei je beschrieben hat.
 
 ### 5.4 Was bewusst **nicht** umgesetzt ist
 
@@ -141,6 +169,7 @@ veralteter Wert verfälschte die Dublettenerkennung dauerhaft.
 | Speicher-/Netzfehler beim Export | Export gilt als fehlgeschlagen; `last_backup_at` bleibt unverändert |
 | Weniger Zeilen geladen als die Datenbank führt | Sicherung bricht ab, es entsteht **keine** Datei (`assertComplete`, ADR-002) |
 | Unlesbarer Betrag in den Daten | Sicherung bricht ab, statt den Wert als `null` in die Datei zu schreiben |
+| Depotstand ohne sein Unternehmen oder ohne seinen Lauf | Abbruch vor jedem Schreiben mit `missing_security_reference` bzw. `missing_run_reference` (`validate_snapshot_references`, Migration 0031) — sonst schlüge dieselbe Datei eine Anweisung später mit einer Fremdschlüsselverletzung fehl, deren Text den Grund verschweigt |
 
 ## 7. Tests (Verweis)
 

@@ -81,12 +81,21 @@ describe("Backup Format Validation", () => {
 
   describe("validateBackupVersion", () => {
     it("should accept correct format version", () => {
+      const result = validateBackupVersion(2);
+      expect(result.valid).toBe(true);
+    });
+
+    it("nimmt eine Sicherung der Version 1 weiterhin an", () => {
+      // Version 2 ergaenzt die Depotstaende. Eine aeltere Datei enthaelt sie
+      // nicht — das ist kein Fehler, sondern der Stand, den sie beschreibt.
+      // Sie abzuweisen, weil das Format gewachsen ist, waere genau der
+      // Moment, in dem eine Datensicherung nichts mehr wert ist.
       const result = validateBackupVersion(1);
       expect(result.valid).toBe(true);
     });
 
     it("should reject newer format version", () => {
-      const result = validateBackupVersion(2);
+      const result = validateBackupVersion(3);
       expect(result.valid).toBe(false);
       expect(result.message).toContain("newer");
     });
@@ -139,6 +148,9 @@ describe("Backup Format Validation", () => {
         portfolios: [],
         goals: [],
         imports: [],
+        security_aliases: [],
+        security_snapshot_runs: [],
+        security_snapshots: [],
       },
       integrity: {
         record_counts: {
@@ -216,6 +228,9 @@ describe("Backup Format Validation", () => {
         portfolios: [],
         goals: [],
         imports: [],
+        security_aliases: [],
+        security_snapshot_runs: [],
+        security_snapshots: [],
       },
       integrity: {
         record_counts: {
@@ -363,6 +378,142 @@ describe("Backup Format Validation", () => {
       const result = parseBackupSafe(backup);
       expect(result.success).toBe(false);
     });
+  });
+});
+
+describe("Depotstände in der Sicherung (Formatversion 2)", () => {
+  const USER = "550e8400-e29b-41d4-a716-446655440000";
+  const SECURITY = "550e8400-e29b-41d4-a716-446655440002";
+  const RUN = "550e8400-e29b-41d4-a716-446655440010";
+  const SNAPSHOT = "550e8400-e29b-41d4-a716-446655440011";
+  const ALIAS = "550e8400-e29b-41d4-a716-446655440012";
+
+  function datei(data: Record<string, unknown>) {
+    return {
+      format: "dividend-tracker-backup",
+      format_version: 2,
+      schema_version: "0031",
+      exported_at: "2026-08-04T12:00:00Z",
+      base_currency: "EUR",
+      data: {
+        depots: [],
+        securities: [],
+        dividend_payments: [],
+        portfolios: [],
+        goals: [],
+        imports: [],
+        ...data,
+      },
+      integrity: { record_counts: {} },
+    };
+  }
+
+  const lauf = {
+    id: RUN,
+    user_id: USER,
+    as_of: "2026-08-03",
+    source: "divvydiary_csv",
+    file_name: "portfolio-1754236800000.csv",
+    rows_total: 3,
+    rows_imported: 2,
+    rows_skipped: 1,
+    rows_invalid: 0,
+    created_at: "2026-08-03T18:00:00Z",
+  };
+
+  const stand = {
+    id: SNAPSHOT,
+    user_id: USER,
+    security_id: SECURITY,
+    run_id: RUN,
+    as_of: "2026-08-03",
+    quantity: "12.500000",
+    buyin_per_share: "84.120000",
+    buyin_total: "1051.50",
+    price: "96.400000",
+    market_value: "1205.00",
+    gain_absolute: "153.50",
+    gain_relative: "0.146000",
+    allocation: "0.077971",
+    dividend_yield: "0.031200",
+    dividend_yield_on_buyin: "0.035700",
+    annual_dividend_total: "37.60",
+    dividend_per_share: "3.008000",
+    dividend_frequency: "quarterly",
+    dividend_cagr: "0.052000",
+    dividend_cagr_period: "5y",
+    next_ex_date: "2026-08-14",
+    next_pay_date: "2026-09-15",
+    asset_type: "equity",
+    currency: "EUR",
+    created_at: "2026-08-03T18:00:00Z",
+  };
+
+  it("liest Stände, Läufe und bestätigte Schreibweisen ein", () => {
+    const result = parseBackupSafe(
+      datei({
+        security_snapshot_runs: [lauf],
+        security_snapshots: [stand],
+        security_aliases: [
+          {
+            id: ALIAS,
+            user_id: USER,
+            alias_normalized: "coca cola company",
+            security_id: SECURITY,
+            created_at: "2026-03-01T09:00:00Z",
+          },
+        ],
+      }),
+    );
+
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.data.data.security_snapshots[0].annual_dividend_total).toBe("37.60");
+    expect(result.data.data.security_snapshot_runs[0].as_of).toBe("2026-08-03");
+    expect(result.data.data.security_aliases[0].alias_normalized).toBe(
+      "coca cola company",
+    );
+  });
+
+  it("hält eine Datei der Version 1 lesbar", () => {
+    // Der eigentliche Grund für den `default([])` an den drei neuen Feldern:
+    // Ohne ihn wäre jede vor dieser Änderung erstellte Sicherung unlesbar —
+    // also genau die Dateien, die der Nutzer heute besitzt.
+    const result = parseBackupSafe({ ...datei({}), format_version: 1 });
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.data.data.security_snapshots).toEqual([]);
+    expect(result.data.data.security_snapshot_runs).toEqual([]);
+    expect(result.data.data.security_aliases).toEqual([]);
+  });
+
+  it("weist eine Datei ab, deren angekündigte Menge nicht stimmt", () => {
+    const roh = datei({
+      security_snapshot_runs: [lauf],
+      security_snapshots: [stand],
+    });
+    const result = parseBackupSafe({
+      ...roh,
+      integrity: { record_counts: { security_snapshot: 2 } },
+    });
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+
+    const geprüft = validateBackupIntegrity(result.data);
+    expect(geprüft.valid).toBe(false);
+    expect(geprüft.mismatches).toContainEqual(
+      expect.objectContaining({ entity: "security_snapshot", expected: 2, actual: 1 }),
+    );
+  });
+
+  it("weist einen Bestand ohne Menge ab", () => {
+    // `quantity` ist die einzige Zahl, ohne die ein Stand nichts aussagt —
+    // die Datenbank verlangt sie ebenso (0029, NOT NULL und > 0).
+    const ohneMenge = { ...stand, quantity: undefined };
+    const result = parseBackupSafe(
+      datei({ security_snapshot_runs: [lauf], security_snapshots: [ohneMenge] }),
+    );
+    expect(result.success).toBe(false);
   });
 });
 

@@ -252,5 +252,6 @@ export function getBackupContents(backup: BackupRoot): Record<string, number> {
     securities: backup.data.securities.length,
     dividend_payments: backup.data.dividend_payments.length,
     goals: backup.data.goals.length,
+    security_snapshots: backup.data.security_snapshots.length,
   };
 }
