@@ -259,7 +259,7 @@ export function NewAssetButton() {
           setOpen(true);
         }}
       >
-        <Plus /> Neue Assets
+        <Plus /> Neues Asset
       </Button>
       <SecurityFormDialog security={null} open={open} onOpenChange={setOpen} />
     </>
