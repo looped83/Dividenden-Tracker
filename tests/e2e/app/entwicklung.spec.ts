@@ -2,7 +2,7 @@ import { fileURLToPath } from "node:url";
 import { expect, test } from "../support/appTest";
 
 /**
- * Unterbereich „Entwicklung" (docs/PORTFOLIO_IMPORT.md).
+ * Unterbereich „Entwicklung" des Depots (docs/PORTFOLIO_IMPORT.md).
  *
  * Der ganze Weg im Browser: zwei Depotstaende importieren, dann pruefen, dass
  * der Bereich beide zu einem Verlauf zusammensetzt und die erwartete
@@ -31,7 +31,7 @@ test.use({
 });
 
 async function importiere(page: import("@playwright/test").Page, datei: string) {
-  await page.goto("/#/unternehmen");
+  await page.goto("/#/depot");
   await page.getByRole("button", { name: "Depotstand importieren" }).click();
   await page.setInputFiles('input[type="file"]', datei);
   await page.getByRole("button", { name: /Positionen übernehmen/ }).click();
@@ -47,7 +47,7 @@ test("setzt zwei Depotstände zu einem Verlauf zusammen", async ({ page }) => {
   await importiere(page, ALT);
   await importiere(page, NEU);
 
-  await page.goto("/#/statistiken/entwicklung");
+  await page.goto("/#/depot/entwicklung");
 
   // Erwartet aus dem juengsten Stand: 40 + 10 = 50 €.
   await expect(page.getByText("50,00 €").first()).toBeVisible();
@@ -68,21 +68,21 @@ test("setzt zwei Depotstände zu einem Verlauf zusammen", async ({ page }) => {
   await expect(page.getByText("ohne Angabe").first()).toBeVisible();
 });
 
-test("zeigt bei gewähltem Unternehmen dessen Erwartung, nicht die des Depots", async ({
+test("zeigt bei gewähltem Asset dessen Erwartung, nicht die des Depots", async ({
   page,
   konto,
 }) => {
   await importiere(page, NEU);
 
   // Ungefiltert: 40 € (Muster AG) + 10 € (Beispiel SE).
-  await page.goto("/#/statistiken/entwicklung");
+  await page.goto("/#/depot/entwicklung");
   await expect(page.getByText("50,00 €").first()).toBeVisible();
 
   // Der Filter kommt ueber die Adresse — wie in den uebrigen Filtertests und
   // unabhaengig davon, ob die Leiste auf schmalen Geraeten eingeklappt ist.
-  await page.goto(`/#/statistiken/entwicklung?security=${konto.securityId}`);
+  await page.goto(`/#/depot/entwicklung?security=${konto.securityId}`);
 
-  // Gefiltert muessen **beide** Seiten dem Unternehmen folgen. Stuende hier
+  // Gefiltert muessen **beide** Seiten dem Asset folgen. Stuende hier
   // weiter 50 €, stuende die Erwartung des ganzen Depots neben der erhaltenen
   // Summe eines einzelnen Papiers.
   await expect(page.getByText("40,00 €").first()).toBeVisible();
@@ -91,10 +91,10 @@ test("zeigt bei gewähltem Unternehmen dessen Erwartung, nicht die des Depots", 
   // Die Aufteilung entfaellt: eine Branche, ein Land, jeweils 100 %.
   await expect(page.getByText("Aufteilung nach Branche")).toHaveCount(0);
 
-  // Ein Depotfilter in der Adresse bleibt wirkungslos, statt nur die erhaltene
+  // Ein Depotkontofilter in der Adresse bleibt wirkungslos, statt nur die erhaltene
   // Haelfte des Vergleichs zu treffen.
   await page.goto(
-    `/#/statistiken/entwicklung?security=${konto.securityId}&depot=00000000-0000-0000-0000-000000000000`,
+    `/#/depot/entwicklung?security=${konto.securityId}&depot=00000000-0000-0000-0000-000000000000`,
   );
   await expect(page.getByText("40,00 €").first()).toBeVisible();
   await expect(page.getByText("1.570,00 €").first()).toBeVisible();
@@ -103,15 +103,15 @@ test("zeigt bei gewähltem Unternehmen dessen Erwartung, nicht die des Depots", 
 test("nennt den fehlenden Depotstand, statt eine leere Seite zu zeigen", async ({
   page,
 }) => {
-  await page.goto("/#/statistiken/entwicklung");
+  await page.goto("/#/depot/entwicklung");
   await expect(page.getByText("Noch kein Depotstand importiert")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Zu den Unternehmen" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Zu den Assets" })).toBeVisible();
 });
 
 test("läuft auf schmalen Geräten nicht seitlich über", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 900 });
   await importiere(page, NEU);
-  await page.goto("/#/statistiken/entwicklung");
+  await page.goto("/#/depot/entwicklung");
   await expect(page.getByText("Erwartet p. a.").first()).toBeVisible();
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,

@@ -6,7 +6,7 @@ import { expect, test } from "../support/appTest";
  * Depotstand aus dem DivvyDiary-Portfolio-Export (docs/PORTFOLIO_IMPORT.md).
  *
  * Der ganze Weg laeuft hier echt: Datei im Browser lesen, Zuordnung, Anlegen
- * fehlender Unternehmen, Schreiben in die Datenbank durch den **angemeldeten
+ * fehlender Assets, Schreiben in die Datenbank durch den **angemeldeten
  * Nutzer** (anders als beim Kalender gibt es keine Edge Function) — samt RLS,
  * Constraints und Triggern.
  *
@@ -21,7 +21,7 @@ test("importiert einen Depotstand und zeigt seine Kennzahlen", async ({
   page,
   konto,
 }) => {
-  await page.goto("/#/unternehmen");
+  await page.goto("/#/depot");
   await page.getByRole("button", { name: "Depotstand importieren" }).click();
   await page.setInputFiles('input[type="file"]', BEISPIELDATEI);
 
@@ -79,7 +79,7 @@ test("importiert einen Depotstand und zeigt seine Kennzahlen", async ({
   expect(gespeichert.lauf?.rows_imported).toBe(2);
   expect(gespeichert.lauf?.rows_skipped).toBe(1);
 
-  // Das unbekannte Unternehmen ist angelegt — und „mixed" ist dabei **nicht**
+  // Das unbekannte Asset ist angelegt — und „mixed" ist dabei **nicht**
   // als Land oder Branche uebernommen worden.
   const neu = await asUser(konto.userId, async (client) => {
     const result = await client.query<{
@@ -105,9 +105,9 @@ test("importiert einen Depotstand und zeigt seine Kennzahlen", async ({
   expect(ergaenzt?.isin).toBe("DE0001234567");
   expect(ergaenzt?.sector).toBe("Industrials");
 
-  // Die Position steht auf der Detailseite des Unternehmens — mit ihrem
+  // Die Position steht auf der Detailseite des Assets — mit ihrem
   // Stichtag in der Ueberschrift, weil jede Zahl darin nur an diesem Tag galt.
-  await page.goto(`/#/unternehmen/${konto.securityId}`);
+  await page.goto(`/#/depot/${konto.securityId}`);
   const karte = page.getByRole("heading", { name: /^Position Stand 03\.08\.2026$/ });
   await expect(karte).toBeVisible();
   await expect(page.getByText("Erwartet für zwölf Monate")).toBeVisible();
@@ -120,7 +120,7 @@ test("ersetzt einen Stand desselben Tages, statt ihn zu verdoppeln", async ({
   konto,
 }) => {
   const importiere = async () => {
-    await page.goto("/#/unternehmen");
+    await page.goto("/#/depot");
     await page.getByRole("button", { name: "Depotstand importieren" }).click();
     await page.setInputFiles('input[type="file"]', BEISPIELDATEI);
     await page.getByRole("button", { name: /Positionen übernehmen/ }).click();

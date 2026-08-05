@@ -21,12 +21,6 @@ interface FilterBarProps {
    * selbst; dort waere dieser Regler wirkungslos und damit irrefuehrend.
    */
   showYear?: boolean;
-  /**
-   * Depotauswahl anzeigen. Die Entwicklung setzt auf den Depotstaenden auf, und
-   * die kennen kein Depot — der Regler traefe dort nur eine Haelfte des
-   * Vergleichs.
-   */
-  showDepot?: boolean;
 }
 
 function toOptions(map: Map<string, EntityInfo>): EntityOption[] {
@@ -38,8 +32,9 @@ function toOptions(map: Map<string, EntityInfo>): EntityOption[] {
 }
 
 /**
- * Globale, kombinierbare Statistikfilter (§11): **Jahr, Unternehmen, Depot** —
- * in jedem Unterbereich dieselben drei, in derselben Reihenfolge. Der Filter
+ * Globale, kombinierbare Statistikfilter (§11): **Jahr, Unternehmen,
+ * Depotkonto** — in jedem Unterbereich dieselben drei, in derselben
+ * Reihenfolge. Der Filter
  * ist URL-gestuetzt (siehe `useStatisticsFilter`) und wirkt ueberall gleich.
  * Archivierte Unternehmen/Depots bleiben waehlbar (gesondert gruppiert, aber
  * nie ausgeschlossen — {@link EntitySelect}).
@@ -51,16 +46,9 @@ function toOptions(map: Map<string, EntityInfo>): EntityOption[] {
  * Kriterien sind deshalb entfallen; wer nach Herkunft sucht, findet sie in der
  * Datenqualitaet.
  *
- * Zwei Auswahlen entfallen je nach Unterbereich, weil sie dort wirkungslos
- * waeren — und ein wirkungsloses Bedienelement ist schlimmer als keines:
- *
- * * die **Jahresauswahl** im Vergleich und im Breakdown, die ihre Zeitraeume
- *   selbst waehlen ({@link showYear});
- * * die **Depotauswahl** in der Entwicklung, die auf den Depotstaenden
- *   aufsetzt. Der Portfolio-Export fasst alle Depots zusammen und nennt keines
- *   (docs/PORTFOLIO_IMPORT.md §3); eine Depotauswahl traefe dort nur die
- *   erhaltenen Zahlungen und liesse die erwarteten unberuehrt — der Vergleich
- *   waere still falsch ({@link showDepot}).
+ * Die **Jahresauswahl** entfaellt im Vergleich und im Breakdown, die ihre
+ * Zeitraeume selbst waehlen ({@link showYear}) — ein wirkungsloses
+ * Bedienelement ist schlimmer als keines.
  */
 export function FilterBar({
   filter,
@@ -69,7 +57,6 @@ export function FilterBar({
   securities,
   depots,
   showYear = true,
-  showDepot = true,
 }: FilterBarProps) {
   const securityOptions = React.useMemo(() => toOptions(securities), [securities]);
   const depotOptions = React.useMemo(() => toOptions(depots), [depots]);
@@ -77,7 +64,7 @@ export function FilterBar({
   const activeCount = [
     showYear ? filter.year : null,
     filter.securityId,
-    showDepot ? filter.depotId : null,
+    filter.depotId,
   ].filter((value) => value !== null).length;
 
   return (
@@ -114,19 +101,17 @@ export function FilterBar({
         />
       </FilterField>
 
-      {showDepot && (
-        <FilterField id="stats-filter-depot" label="Depot">
-          <EntitySelect
-            id="stats-filter-depot"
-            options={depotOptions}
-            value={filter.depotId ?? ""}
-            onChange={(value) => {
-              setFilter({ ...filter, depotId: value || null });
-            }}
-            allLabel="Alle Depots"
-          />
-        </FilterField>
-      )}
+      <FilterField id="stats-filter-depot" label="Depotkonto">
+        <EntitySelect
+          id="stats-filter-depot"
+          options={depotOptions}
+          value={filter.depotId ?? ""}
+          onChange={(value) => {
+            setFilter({ ...filter, depotId: value || null });
+          }}
+          allLabel="Alle Depotkonten"
+        />
+      </FilterField>
 
       {active && (
         <FilterReset

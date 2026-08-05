@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Link, useParams } from "react-router";
-import { ArrowLeft, Building2, ChevronRight, ShieldAlert } from "lucide-react";
+import { ArrowLeft, Briefcase, ChevronRight, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,7 +37,7 @@ import { formatDate } from "@/features/payments/paymentDisplay";
 const RECENT_LIMIT = 10;
 
 /**
- * Detailseite eines Unternehmens.
+ * Detailseite eines Assets.
  *
  * Beantwortet die Frage „wie hat sich *diese* Position entwickelt?" an einem
  * Ort. Zuvor gab es dafuer keine Route: Die Stammdaten standen in der
@@ -126,16 +126,16 @@ export function SecurityDetailPage() {
   );
 
   // Der Rueckweg steht oben und in **jedem** Zustand — auch waehrend des Ladens
-  // und wenn das Unternehmen nicht existiert. Ein Zurueck, das erst nach dem
-  // Laden erscheint, ist genau dann nicht da, wenn man es braucht.
+  // und wenn das Asset nicht existiert. Ein Zurueck, das erst nach dem Laden
+  // erscheint, ist genau dann nicht da, wenn man es braucht.
   //
-  // Ziel ist die Unternehmensliste statt `history.back()`: Die Seite wird auch
-  // aus der Statistik und von Zahlungen aus erreicht, und ein per Lesezeichen
+  // Ziel ist die Assetliste statt `history.back()`: Die Seite wird auch aus der
+  // Statistik und von Zahlungen aus erreicht, und ein per Lesezeichen
   // geoeffneter Aufruf haette keine Vorgeschichte.
   const backLink = (
     <Button asChild variant="ghost" size="sm" className="-ml-3 w-fit">
-      <Link to="/unternehmen">
-        <ArrowLeft aria-hidden /> Zu den Unternehmen
+      <Link to="/depot">
+        <ArrowLeft aria-hidden /> Zum Depot
       </Link>
     </Button>
   );
@@ -154,12 +154,12 @@ export function SecurityDetailPage() {
       <div className="max-w-2xl space-y-4">
         {backLink}
         <EmptyState
-          icon={Building2}
-          title="Unternehmen nicht gefunden"
-          description="Dieses Unternehmen existiert nicht (mehr)."
+          icon={Briefcase}
+          title="Asset nicht gefunden"
+          description="Dieses Asset existiert nicht (mehr)."
           action={
             <Button asChild>
-              <Link to="/unternehmen">Zurück zu den Unternehmen</Link>
+              <Link to="/depot">Zurück zum Depot</Link>
             </Button>
           }
         />
@@ -190,9 +190,9 @@ export function SecurityDetailPage() {
 
       {stats.count === 0 ? (
         <EmptyState
-          icon={Building2}
+          icon={Briefcase}
           title="Noch kein Dividendeneingang"
-          description="Für dieses Unternehmen ist bisher keine Zahlung erfasst."
+          description="Für dieses Asset ist bisher keine Zahlung erfasst."
           action={
             <Button asChild>
               <Link to="/eingaenge/neu">Eingang erfassen</Link>
@@ -201,7 +201,7 @@ export function SecurityDetailPage() {
         />
       ) : (
         <>
-          {/* Dasselbe Raster wie auf der Unternehmensliste und im Kalender:
+          {/* Dasselbe Raster wie auf der Assetliste und im Kalender:
               zwei Kacheln je Zeile auf dem Telefon, vier ab `lg`. */}
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <StatCard

@@ -654,7 +654,7 @@ function securityRows(
   return comparison.securities.map((row) => ({
     key: row.securityId,
     label: entityName(securities, row.securityId),
-    labelHref: `/unternehmen/${row.securityId}`,
+    labelHref: `/depot/${row.securityId}`,
     archived: entityArchived(securities, row.securityId),
     current: side(row.current, currentYear, row.securityId),
     reference: side(row.reference, referenceYear, row.securityId),

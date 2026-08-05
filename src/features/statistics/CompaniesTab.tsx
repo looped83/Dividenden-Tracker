@@ -118,7 +118,7 @@ export function CompaniesTab() {
                 Zeile beantwortet damit beide Fragen: „welche Zahlungen?" und
                 „wie hat sich diese Position entwickelt?" */}
             <Link
-              to={`/unternehmen/${row.securityId}`}
+              to={`/depot/${row.securityId}`}
               className="truncate rounded-sm font-medium outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
             >
               {entityName(securities, row.securityId)}

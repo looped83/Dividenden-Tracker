@@ -26,7 +26,9 @@ describe("areaNameFor", () => {
     expect(areaNameFor("/eingaenge")).toBe("Dividenden");
     expect(areaNameFor("/eingaenge/neu")).toBe("Neue Dividende");
     expect(areaNameFor("/statistiken/monate")).toBe("Statistik, Monate");
-    expect(areaNameFor("/einstellungen/depots")).toBe("Einstellungen, Depots");
+    expect(areaNameFor("/einstellungen/depots")).toBe("Einstellungen, Depotkonten");
+    expect(areaNameFor("/depot")).toBe("Depot");
+    expect(areaNameFor("/depot/entwicklung")).toBe("Depot, Entwicklung");
   });
 
   it("verwechselt die Uebersicht nicht mit jedem Pfad", () => {

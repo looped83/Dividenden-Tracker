@@ -1,19 +1,21 @@
 import { describe, expect, it } from "vitest";
 import { render, screen, within } from "@testing-library/react";
-import { MemoryRouter, Outlet, Route, Routes } from "react-router";
+import { MemoryRouter } from "react-router";
 import { EUR, Money } from "@/lib/money";
-import type { AnalyticsPayment } from "@/lib/statistics";
+import type { AnalyticsPayment, StatisticsFilter } from "@/lib/statistics";
 import type { EntityInfo } from "@/features/dashboard/format";
-import { DevelopmentTab } from "@/features/statistics/DevelopmentTab";
+import { DevelopmentView } from "@/features/securities/DevelopmentTab";
 import { EMPTY_STATISTICS_FILTER } from "@/features/statistics/filterParams";
 import {
   EMPTY_PORTFOLIO_SERIES,
   type PortfolioSeries,
 } from "@/features/securities/snapshots";
-import type { StatisticsContext } from "@/features/statistics/context";
 
 /**
- * Unterbereich „Entwicklung".
+ * Unterbereich „Entwicklung" des Depots (frueher: der Statistik).
+ *
+ * Geprueft wird die Darstellung ({@link DevelopmentView}) mit fertiger
+ * Datenbasis — die Huelle daneben laedt sie nur und traegt den Assetfilter.
  *
  * Der Kern ist die Gegenueberstellung zweier **Zwoelfmonatszeitraeume**: die
  * erwartete Jahresdividende gegen das, was in den zwoelf Monaten bis zum
@@ -86,40 +88,33 @@ function renderTab(
     // Genau einen Tag zu alt: Das Fenster beginnt am 04.08.2025.
     payment("2025-08-03", "999.00"),
   ],
-  filter: Partial<StatisticsContext["filter"]> = {},
+  filter: Partial<StatisticsFilter> = {},
 ) {
-  const context: StatisticsContext = {
-    payments,
-    allPayments: payments,
-    securities: new Map<string, EntityInfo>([
-      ["sec-a", { name: "Alpha AG", archived: false }],
-      ["sec-b", { name: "Beta SE", archived: false }],
-      ["sec-c", { name: "Gamma GmbH", archived: false }],
-    ]),
-    depots: new Map<string, EntityInfo>([
-      ["dep-1", { name: "Hauptdepot", archived: false }],
-    ]),
-    filter: { ...EMPTY_STATISTICS_FILTER, ...filter },
-    portfolio,
-  };
   return render(
     <MemoryRouter>
-      <Routes>
-        <Route element={<Outlet context={context} />}>
-          <Route index element={<DevelopmentTab />} />
-        </Route>
-      </Routes>
+      <DevelopmentView
+        allPayments={payments}
+        securities={
+          new Map<string, EntityInfo>([
+            ["sec-a", { name: "Alpha AG", archived: false }],
+            ["sec-b", { name: "Beta SE", archived: false }],
+            ["sec-c", { name: "Gamma GmbH", archived: false }],
+          ])
+        }
+        filter={{ ...EMPTY_STATISTICS_FILTER, ...filter }}
+        portfolio={portfolio}
+      />
     </MemoryRouter>,
   );
 }
 
-describe("DevelopmentTab", () => {
+describe("DevelopmentView", () => {
   it("verweist auf den Import, solange kein Depotstand vorliegt", () => {
     renderTab(EMPTY_PORTFOLIO_SERIES);
     expect(screen.getByText("Noch kein Depotstand importiert")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Zu den Unternehmen" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Zu den Assets" })).toHaveAttribute(
       "href",
-      "/unternehmen",
+      "/depot",
     );
   });
 
@@ -165,7 +160,7 @@ describe("DevelopmentTab", () => {
     expect(screen.getByText(/^-12,00/)).toBeInTheDocument();
   });
 
-  it("stellt je Unternehmen erwartet und erhalten gegenüber", () => {
+  it("stellt je Asset erwartet und erhalten gegenüber", () => {
     renderTab();
     const zeile = screen.getByRole("row", { name: /Alpha AG/ });
     // Alpha: 40 € erwartet, 42 € erhalten — zwei Euro weniger als zuletzt.
@@ -174,7 +169,7 @@ describe("DevelopmentTab", () => {
     expect(within(zeile).getByText(/^-2,00/)).toBeInTheDocument();
   });
 
-  it("führt auch Unternehmen ohne Zahlung im Zeitraum auf", () => {
+  it("führt auch Assets ohne Zahlung im Zeitraum auf", () => {
     // Beta ist neu im Depot: 10 € Erwartung, noch nichts gezahlt. Der volle
     // Betrag ist Zuwachs — genau das soll auffallen.
     renderTab();
@@ -202,7 +197,7 @@ describe("DevelopmentTab", () => {
     expect(within(zeile).getAllByText("—").length).toBeGreaterThan(0);
   });
 
-  it("verwirft den Depotfilter, weil die Depotstände kein Depot kennen", () => {
+  it("verwirft den Depotkontofilter, weil die Depotstände kein Konto kennen", () => {
     // Der Portfolio-Export fasst alle Depots zusammen. Angewandt traefe der
     // Filter nur die erhaltenen Zahlungen und liesse die erwarteten unberuehrt —
     // die Differenz waere still falsch. Die Zahlung liegt in „dep-1"; ein
@@ -216,7 +211,7 @@ describe("DevelopmentTab", () => {
     expect(screen.getAllByText(/^42,00/).length).toBeGreaterThan(0);
   });
 
-  it("blendet die Aufteilung aus, wenn ein Unternehmen gewählt ist", () => {
+  it("blendet die Aufteilung aus, wenn ein Asset gewählt ist", () => {
     // Eine Branche, ein Land, jeweils 100 % — eine Aussage, die aus der Auswahl
     // folgt statt aus den Daten.
     const mitAufteilung: PortfolioSeries = {

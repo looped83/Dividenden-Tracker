@@ -332,6 +332,41 @@ scheiterte dadurch auf dem echten Projekt an `digest()`.
 *Nachtrag 2026-07-29:* Die fünf Funktionen aus `0022_restore_backup_rpc.sql`
 hielten sich als einzige nicht daran; Migration 0023 zieht es nach.
 
+## D-8-1: Aus „Unternehmen" wird „Depot", die Einträge heißen „Assets"
+
+**Status:** Accepted · **Scope:** UI/UX
+
+Der Bereich führt nicht nur Aktiengesellschaften, sondern alles, was im Depot
+liegt — ETFs, Fonds, Anleihen. Der alte Name benannte einen Sonderfall als
+Ganzes. Bereich und Route heißen deshalb **Depot** (`/depot`, Detailseite
+`/depot/:id`), die Einträge in der Oberfläche **Assets**, die Hauptaktion
+„＋ Neue Assets".
+
+Mit umgezogen ist der Unterbereich **Entwicklung** aus der Statistik nach
+`/depot/entwicklung`: Er war dort der einzige, der auf den importierten
+Depotständen aufsetzt statt auf den erfassten Zahlungen — eine Frage des
+Depots, keine der Historie.
+
+Damit „Depot" nicht zweierlei heißt, tragen die Konten bei den Brokern in der
+Navigation jetzt **Depotkonten** (Einstellungen und Statistik).
+
+*Guardrails:*
+
+- **Das Datenmodell bleibt unberührt:** Tabellen und Typen heißen weiter
+  `securities` und `depots`. Eine Umbenennung brächte niemandem etwas und
+  riskierte Migrationen, Sicherungen und Importe (Grundsatz: keine Änderung
+  ohne Nutzen).
+- Die alten Pfade `/unternehmen`, `/unternehmen/:id` und
+  `/statistiken/entwicklung` leiten **dauerhaft** um, samt Suchparametern —
+  sonst verlöre ein Lesezeichen auf eine gefilterte Ansicht genau die Auswahl,
+  die es festhalten sollte.
+- Außerhalb des Depotbereichs bleibt „Unternehmen" stehen, wo tatsächlich
+  Unternehmen gemeint sind (Statistik-Unterbereich, Zahlungsformular,
+  Kalender).
+
+*Beleg:* `src/app/navigation.ts`, `src/app/router.tsx`,
+`src/features/securities/DepotPage.tsx`.
+
 ## D-6-2: Archivierung heißt in der Oberfläche „Storno"
 
 **Status:** Accepted · **Scope:** UI/UX

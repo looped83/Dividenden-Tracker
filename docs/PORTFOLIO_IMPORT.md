@@ -1,6 +1,6 @@
 # Depotstand (DivvyDiary-Portfolio-Export)
 
-Der Bereich **Unternehmen** (`/#/unternehmen`) kann den Portfolio-Export von DivvyDiary
+Der Bereich **Depot** (`/#/depot`) kann den Portfolio-Export von DivvyDiary
 einlesen und je Position einen **Depotstand zu einem Stichtag** speichern. Damit bekommt
 die App zum ersten Mal einen Blick auf das, was ein Papier heute wert ist und was es
 künftig ausschütten soll — ohne dass die erfassten, tatsächlich erhaltenen Dividenden
@@ -8,7 +8,7 @@ davon berührt werden.
 
 ## 1. Zweck und Abgrenzung
 
-| | Dividendeneingänge (`/#/eingaenge`) | Depotstände (`/#/unternehmen`) |
+| | Dividendeneingänge (`/#/eingaenge`) | Depotstände (`/#/depot`) |
 |---|---|---|
 | Inhalt | tatsächlich erhaltene Zahlungen | Bestand, Kurs, **erwartete** Ausschüttung |
 | Herkunft | manuell, CSV-/Excel-Import, Wiederherstellung | DivvyDiary-Portfolio-CSV |
@@ -37,7 +37,7 @@ features/securities/portfolioMatch.ts  Zuordnung + Stammdaten-Vorschläge
         ↓
 Supabase  security_snapshot_runs + security_snapshots (RLS, eigene Zeilen)
         ↓
-Kacheln (/unternehmen) · Positionskarte (Detailseite) · Statistik „Entwicklung"
+Kacheln (/depot) · Positionskarte (Detailseite) · Depot „Entwicklung"
 ```
 
 | Datei | Rolle |
@@ -181,7 +181,7 @@ Datei und lässt alle übrigen stehen.
 
 ## 8. Was die Oberfläche zeigt
 
-**`/#/unternehmen`** — vier Kennzahlkacheln unter der Kopfzeile, an derselben Stelle wie in
+**`/#/depot`** — vier Kennzahlkacheln unter Kopfzeile und Reitern, an derselben Stelle wie in
 jedem anderen Bereich: Depotwert (mit Stand), erwartete Jahresdividende, Rendite und
 Anzahl Positionen. Die Verwaltungsliste darunter bleibt unverändert — sie hat bereits acht
 Spalten und scrollt auf dem Telefon seitlich; drei Zahlenspalten mehr hätten sie
@@ -191,17 +191,19 @@ Die Rendite ist **Summe durch Summe**, nicht der Mittelwert der Einzelrenditen. 
 Mittelwert gewichtet eine 43-€-Position genauso wie eine mit 26.000 € und ergibt eine Zahl,
 die zu keinem Depot gehört (in der Kontrollmenge 4,56 % statt korrekt 3,95 %).
 
-**Detailseite eines Unternehmens** — die Karte „Position" mit Stückzahl, Kurs, Marktwert,
+**Detailseite eines Assets** (`/#/depot/:id`) — die Karte „Position" mit Stückzahl, Kurs, Marktwert,
 Einstand, Gewinn, Rendite, Rendite auf Einstand, Dividende je Aktie, Rhythmus und
 Wachstum. Darunter die erwartete Jahresausschüttung neben dem, was im letzten
 **abgeschlossenen** Kalenderjahr tatsächlich eingegangen ist. Bewusst nicht gegen das
 laufende Jahr: Die Erwartung gilt für zwölf Monate, ein angebrochenes Jahr ließe sie
 zwangsläufig zu hoch aussehen.
 
-**`/#/statistiken/entwicklung`** — der Unterbereich, der aus den Ständen eine Zeitreihe
+**`/#/depot/entwicklung`** — der Unterbereich, der aus den Ständen eine Zeitreihe
 macht: vier Kacheln (erwartet p. a., erhalten in den zwölf Monaten bis zum Stichtag, der
 Zuwachs, Rendite auf den Einstand), der Verlauf beider Größen über die Stichtage, die
-Gegenüberstellung je Unternehmen und die Aufteilung nach Branche und Land.
+Gegenüberstellung je Asset und die Aufteilung nach Branche und Land. Er lag bis zur
+Umbenennung des Bereichs unter `/#/statistiken/entwicklung`; der alte Pfad leitet dauerhaft
+hierher um.
 
 Die Differenz wird als **Zuwachs** gerechnet — erwartet minus erhalten —, nicht als
 Abweichung. „Erwartet p. a." ist kein Ziel, das verfehlt werden könnte, sondern die
@@ -212,7 +214,7 @@ eine rote Zahl für genau den Vorgang, der gut läuft. Die Wachstumsrate misst s
 der Zuwachs negativ aus — Verkäufe, gekürzte Dividenden, eine Sonderausschüttung im
 Vorjahr —, ist das ein echter Rückgang und bleibt rot.
 
-Je Unternehmen sind drei Fälle zu unterscheiden: **gehalten mit Betrag** (Zuwachs =
+Je Asset sind drei Fälle zu unterscheiden: **gehalten mit Betrag** (Zuwachs =
 erwartet − erhalten), **nicht mehr gehalten** (trägt künftig nichts bei, der Zuwachs ist
 der Wegfall des Erhaltenen) und **gehalten, aber ohne Betrag der Quelle** (unbekannt, kein
 Wert). Dafür führt die Zeitreihe `heldSecurityIds` mit: Ohne diese Unterscheidung würde

@@ -10,7 +10,7 @@ Alle Funktionsbereiche sind umgesetzt und unter GitHub Pages im Einsatz:
 
 | Bereich | Stand |
 |---|---|
-| Anmeldung, Depots, Unternehmen | in Betrieb |
+| Anmeldung, Depotkonten, Depot (Assets und Entwicklung) | in Betrieb |
 | Dividendeneingänge: erfassen, bearbeiten, stornieren, löschen | in Betrieb |
 | Datenqualität (Dubletten, Auffälligkeiten) | in Betrieb |
 | CSV-/Excel-Import mit Bilanz, Duplikatprüfung und Rollback | in Betrieb |

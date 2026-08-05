@@ -4,8 +4,11 @@ import { TrendingUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { StatCard } from "@/components/domain/StatCard";
 import { AmountText } from "@/components/money/AmountText";
+import { EntitySelect, type EntityOption } from "@/components/domain/EntitySelect";
+import { FilterBar, FilterField, FilterReset } from "@/components/ui/filter-bar";
 import {
   EUR,
   Money,
@@ -19,16 +22,35 @@ import {
   filterPayments,
   trailingYearRange,
   type AnalyticsPayment,
+  type StatisticsFilter,
 } from "@/lib/statistics";
+import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { formatCalendarDate } from "@/lib/utils/formatDate";
-import type { AllocationBucket, PortfolioPoint } from "@/features/securities/snapshots";
-import { useStatisticsContext } from "./context";
-import { entityArchived, entityName, formatCountNumber } from "./format";
-import { ComparisonLineChart, type ComparisonPoint } from "./components/charts";
-import { StatSearch, StatTable, type StatColumn } from "./components/StatTable";
+import type { EntityInfo } from "@/features/dashboard/format";
+import { useStatisticsData, useStatisticsFilter } from "@/features/statistics/hooks";
+import { EMPTY_STATISTICS_FILTER } from "@/features/statistics/filterParams";
+import {
+  entityArchived,
+  entityName,
+  formatCountNumber,
+} from "@/features/statistics/format";
+import {
+  ComparisonLineChart,
+  type ComparisonPoint,
+} from "@/features/statistics/components/charts";
+import {
+  StatSearch,
+  StatTable,
+  type StatColumn,
+} from "@/features/statistics/components/StatTable";
+import type {
+  AllocationBucket,
+  PortfolioPoint,
+  PortfolioSeries,
+} from "@/features/securities/snapshots";
 
-/** Eine Zeile der Gegenueberstellung je Unternehmen. */
-interface CompanyRow {
+/** Eine Zeile der Gegenueberstellung je Asset. */
+interface AssetRow {
   securityId: string;
   name: string;
   archived: boolean;
@@ -50,9 +72,111 @@ interface CompanyRow {
 const HUNDRED = new MoneyDecimal(100);
 
 /**
- * Unterbereich **Entwicklung** (PRODUCT_SPEC.md §11).
+ * Unterbereich **Entwicklung** des Depots.
  *
- * Beantwortet eine Frage: **Waechst mein passives Einkommen?** Dafuer stellt er
+ * Laedt die Datenbasis und traegt den Filter; die Darstellung steht in
+ * {@link DevelopmentView}. Getrennt, weil die Aussagen dieses Bereichs — wie
+ * der Zuwachs gerechnet wird, welches Fenster zaehlt — sich so ohne
+ * Datenzugriffsschicht pruefen lassen.
+ *
+ * **Der Bereich stand frueher in der Statistik.** Er ist der einzige, der auf
+ * den importierten Depotstaenden aufsetzt statt auf den erfassten Zahlungen
+ * (docs/PORTFOLIO_IMPORT.md) — eine Frage des Depots, keine der Historie. Sein
+ * alter Pfad `/statistiken/entwicklung` leitet dauerhaft hierher um.
+ *
+ * Die Datenbasis ist dieselbe wie in Uebersicht und Statistik
+ * (`useStatisticsData`, geteilter Query-Cache) — es entsteht keine zweite
+ * Aggregation, die auseinanderlaufen koennte.
+ */
+export function DevelopmentTab() {
+  const { filter, setFilter } = useStatisticsFilter();
+  // Der Filter geht in die Datenbasis hinein, weil die Depotstaende ihm ebenso
+  // folgen muessen wie die Zahlungen (siehe useStatisticsData).
+  const data = useStatisticsData(filter);
+
+  const assetOptions = React.useMemo<EntityOption[]>(
+    () =>
+      [...data.securities.entries()].map(([id, info]) => ({
+        id,
+        name: info.name,
+        archived: info.archived,
+      })),
+    [data.securities],
+  );
+
+  if (data.isLoading) {
+    return (
+      <div className="space-y-4" aria-busy="true" aria-live="polite">
+        <span className="sr-only">Entwicklung wird geladen …</span>
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <Card key={index}>
+              <CardContent className="p-4 sm:p-6">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="mt-3 h-8 w-32" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (data.isError) {
+    return (
+      <EmptyState
+        icon={TrendingUp}
+        title="Entwicklung konnte nicht geladen werden"
+        description={getErrorMessage(
+          data.error,
+          "Beim Laden der Dividendendaten ist ein Fehler aufgetreten.",
+        )}
+        action={<Button onClick={data.refetch}>Erneut versuchen</Button>}
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Nur **ein** Regler, und zwar der einzige, der hier auf beiden Seiten
+          des Vergleichs wirkt. Jahr und Depotkonto waeren wirkungslos (siehe
+          `DevelopmentView`), und ein wirkungsloses Bedienelement ist schlimmer
+          als keines. */}
+      <FilterBar activeCount={filter.securityId === null ? 0 : 1}>
+        <FilterField id="depot-development-asset" label="Asset">
+          <EntitySelect
+            id="depot-development-asset"
+            options={assetOptions}
+            value={filter.securityId ?? ""}
+            onChange={(value) => {
+              setFilter({ ...filter, securityId: value || null });
+            }}
+            allLabel="Alle Assets"
+          />
+        </FilterField>
+        {filter.securityId !== null && (
+          <FilterReset
+            onClick={() => {
+              setFilter(EMPTY_STATISTICS_FILTER);
+            }}
+          />
+        )}
+      </FilterBar>
+
+      <DevelopmentView
+        allPayments={data.payments}
+        securities={data.securities}
+        filter={filter}
+        portfolio={data.portfolio}
+      />
+    </div>
+  );
+}
+
+/**
+ * Die Darstellung der Entwicklung.
+ *
+ * Beantwortet eine Frage: **Waechst mein passives Einkommen?** Dafuer stellt sie
  * die erwartete Jahresdividende aus den Depotstaenden dem gegenueber, was
  * tatsaechlich hereinkam — und zeigt beides ueber die Zeit, sobald mehrere
  * Staende vorliegen.
@@ -70,36 +194,47 @@ const HUNDRED = new MoneyDecimal(100);
  * Erwartung zwangslaeufig zu hoch aussehen, und ein abgeschlossenes hinkte bis
  * zu zwoelf Monate hinterher.
  *
- * **Der Unternehmensfilter wirkt auf beiden Seiten.** Ist eines ausgewaehlt,
- * folgen ihm die Depotstaende ebenso wie die Zahlungen (`useStatisticsData`);
- * sonst stuende dessen erhaltene Summe neben der erwarteten Jahresdividende des
- * ganzen Depots. Jahres- und Depotregler blendet die Filterleiste hier aus und
- * dieser Bereich ignoriert sie (siehe unten).
+ * **Der Assetfilter wirkt auf beiden Seiten.** Ist eines ausgewaehlt, folgen ihm
+ * die Depotstaende ebenso wie die Zahlungen (`useStatisticsData`); sonst stuende
+ * dessen erhaltene Summe neben der erwarteten Jahresdividende des ganzen
+ * Depots. Jahres- und Depotkontoregler bietet die Filterleiste hier gar nicht
+ * erst an, und diese Ansicht ignoriert sie (siehe unten).
  *
  * Wie ueberall gilt: Kein Wert der Depotstaende geht in eine Kennzahl der
- * uebrigen Statistik ein (PRODUCT_SPEC.md Grundsatz 8). Sie stehen hier
- * *neben* den erhaltenen Betraegen, nicht in ihnen.
+ * Statistik ein (PRODUCT_SPEC.md Grundsatz 8). Sie stehen hier *neben* den
+ * erhaltenen Betraegen, nicht in ihnen.
  */
-export function DevelopmentTab() {
-  const { allPayments, securities, filter, portfolio } = useStatisticsContext();
+export function DevelopmentView({
+  allPayments,
+  securities,
+  filter,
+  portfolio,
+}: {
+  /** Alle aktiven Zahlungen mit effektivem Datum, ungefiltert. */
+  allPayments: readonly AnalyticsPayment[];
+  securities: Map<string, EntityInfo>;
+  filter: StatisticsFilter;
+  portfolio: PortfolioSeries;
+}) {
   const [query, setQuery] = React.useState("");
 
   const latest = portfolio.latest;
 
   /**
-   * Von den drei Filtern wirkt hier nur das **Unternehmen** — und zwar auf
-   * beiden Seiten des Vergleichs: Die Depotstaende folgen ihm ebenso
+   * Von den drei Filtern wirkt hier nur das **Asset** — und zwar auf beiden
+   * Seiten des Vergleichs: Die Depotstaende folgen ihm ebenso
    * (`useStatisticsData`).
    *
-   * **Jahr** und **Depot** werden ausdruecklich verworfen, auch wenn sie noch
-   * als Suchparameter in der Adresse stehen:
+   * **Jahr** und **Depotkonto** werden ausdruecklich verworfen, auch wenn sie
+   * noch als Suchparameter in der Adresse stehen (etwa nach einem Wechsel aus
+   * der Statistik):
    *
    * * Das Jahr, weil die Zeitachse die Stichtage sind und zu jedem ein eigenes
    *   Zwoelfmonatsfenster gehoert — ein Jahresfilter liesse sie leer laufen.
-   * * Das Depot, weil der Portfolio-Export alle Depots zusammenfasst und keines
-   *   nennt (docs/PORTFOLIO_IMPORT.md §3). Angewandt traefe er nur die
+   * * Das Depotkonto, weil der Portfolio-Export alle Konten zusammenfasst und
+   *   keines nennt (docs/PORTFOLIO_IMPORT.md §3). Angewandt traefe er nur die
    *   erhaltenen Zahlungen und liesse die erwarteten unberuehrt — die Differenz
-   *   waere still falsch. Die Filterleiste blendet beide Regler hier aus.
+   *   waere still falsch. Die Filterleiste bietet beide Regler gar nicht an.
    */
   const payments = React.useMemo(
     () => filterPayments(allPayments, { ...filter, year: null, depotId: null }),
@@ -132,7 +267,7 @@ export function DevelopmentTab() {
     [portfolio.points, receivedAt],
   );
 
-  const companyRows = React.useMemo<CompanyRow[]>(() => {
+  const assetRows = React.useMemo<AssetRow[]>(() => {
     if (latest === null) return [];
     const range = trailingYearRange(latest.asOf);
     const ids = new Set<string>([
@@ -172,16 +307,16 @@ export function DevelopmentTab() {
     });
   }, [latest, portfolio, payments, securities]);
 
-  const columns = React.useMemo<StatColumn<CompanyRow>[]>(
+  const columns = React.useMemo<StatColumn<AssetRow>[]>(
     () => [
       {
         key: "name",
-        header: "Unternehmen",
+        header: "Asset",
         headerLabel: "Name (alphabetisch)",
         compare: (a, b) => a.name.localeCompare(b.name, "de"),
         render: (row) => (
           <Link
-            to={`/unternehmen/${row.securityId}`}
+            to={`/depot/${row.securityId}`}
             className="truncate rounded-sm font-medium outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
           >
             {row.name}
@@ -231,7 +366,7 @@ export function DevelopmentTab() {
         align: "right",
         // Nebenkennzahl: tritt zurueck, wo der Platz nicht fuer alle Spalten
         // reicht — dieselbe Regel wie bei der groessten Zahlung im
-        // Unternehmensbereich.
+        // Assetbereich.
         className: "hidden xl:table-cell",
         compare: (a, b) =>
           (a.yieldOnBuyin?.toNumber() ?? 0) - (b.yieldOnBuyin?.toNumber() ?? 0),
@@ -254,7 +389,9 @@ export function DevelopmentTab() {
         description="Dieser Bereich stellt die erwartete Jahresdividende dem gegenüber, was tatsächlich hereinkam. Dafür braucht er mindestens einen Depotstand aus dem DivvyDiary-Portfolio-Export."
         action={
           <Button asChild>
-            <Link to="/unternehmen">Zu den Unternehmen</Link>
+            {/* Der Portfolio-Import steht am Ende der Assetliste — dem
+                Nachbarreiter, nicht irgendwo sonst. */}
+            <Link to="/depot">Zu den Assets</Link>
           </Button>
         }
       />
@@ -361,28 +498,24 @@ export function DevelopmentTab() {
 
       <Card>
         <CardHeader className="gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <CardTitle>Erwartet gegen erhalten je Unternehmen</CardTitle>
-          <StatSearch
-            value={query}
-            onChange={setQuery}
-            placeholder="Unternehmen suchen …"
-          />
+          <CardTitle>Erwartet gegen erhalten je Asset</CardTitle>
+          <StatSearch value={query} onChange={setQuery} placeholder="Asset suchen …" />
         </CardHeader>
         <CardContent>
           <StatTable
-            rows={companyRows}
+            rows={assetRows}
             columns={columns}
             getRowKey={(row) => row.securityId}
             query={query}
             searchOf={(row) => row.name}
             initialSort={{ key: "growth", direction: "desc" }}
-            caption="Erwartete und erhaltene Dividenden je Unternehmen"
-            emptyMessage="Kein Unternehmen mit Bestand oder Zahlung in diesem Zeitraum."
+            caption="Erwartete und erhaltene Dividenden je Asset"
+            emptyMessage="Kein Asset mit Bestand oder Zahlung in diesem Zeitraum."
           />
         </CardContent>
       </Card>
 
-      {/* Bei einem einzelnen Unternehmen saehe die Aufteilung immer gleich aus:
+      {/* Bei einem einzelnen Asset saehe die Aufteilung immer gleich aus:
           eine Branche, ein Land, jeweils 100 %. Eine Aussage, die aus der
           Auswahl folgt statt aus den Daten, ist keine. */}
       {filter.securityId === null && (

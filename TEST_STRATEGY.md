@@ -221,7 +221,7 @@ axe-core über `@axe-core/playwright` auf Anmelden, Registrieren und Passwort-ve
 Stufe A und AA sowie 2.2 Stufe AA. Ein Fund nennt Regel, Beschreibung und betroffenes Element.
 
 **Hinter der Anmeldung ebenfalls umgesetzt** (`tests/e2e/app/barrierefreiheit.spec.ts`): alle
-sechzehn angemeldeten Routen in hell und dunkel, dazu die Zustände, in denen Barrierefreiheit
+siebzehn angemeldeten Routen in hell und dunkel, dazu die Zustände, in denen Barrierefreiheit
 erfahrungsgemäß bricht — geöffneter Dialog, gesetzte Filter, eingeblendete Rückmeldung und der
 Fehlerzustand „nicht gefunden". Die Filterprüfung weist zuerst nach, dass die Filter greifen,
 bevor sie misst; sonst prüfte sie eine Liste, die sie gar nicht gemeint hat.

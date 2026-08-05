@@ -3,7 +3,7 @@
    Seiten. Fast Refresh greift fuer eine Routentabelle ohnehin nicht; dieselbe
    Ausnahme nutzen button.tsx und ThemeProvider.tsx. */
 import * as React from "react";
-import { createHashRouter, Navigate } from "react-router";
+import { createHashRouter, Navigate, useLocation, useParams } from "react-router";
 import { AppShell } from "@/app/AppShell";
 import { NotFoundPage } from "@/app/NotFoundPage";
 import { RequireAuth } from "@/app/auth/RequireAuth";
@@ -44,8 +44,14 @@ const DataQualityPage = React.lazy(async () => ({
 const CalendarPage = React.lazy(async () => ({
   default: (await routeChunks.calendar()).CalendarPage,
 }));
+const DepotPage = React.lazy(async () => ({
+  default: (await routeChunks.depot()).DepotPage,
+}));
 const SecuritiesPage = React.lazy(async () => ({
   default: (await routeChunks.securities()).SecuritiesPage,
+}));
+const DevelopmentTab = React.lazy(async () => ({
+  default: (await routeChunks.depotDevelopment()).DevelopmentTab,
 }));
 const SecurityDetailPage = React.lazy(async () => ({
   default: (await import("@/features/securities/SecurityDetailPage")).SecurityDetailPage,
@@ -70,9 +76,6 @@ const ComparisonTab = React.lazy(async () => ({
 }));
 const CompaniesTab = React.lazy(async () => ({
   default: (await routeChunks.statisticsCompanies()).CompaniesTab,
-}));
-const DevelopmentTab = React.lazy(async () => ({
-  default: (await routeChunks.statisticsDevelopment()).DevelopmentTab,
 }));
 const DepotsTab = React.lazy(async () => ({
   default: (await routeChunks.statisticsDepots()).DepotsTab,
@@ -118,6 +121,22 @@ function standalone(element: React.ReactNode): React.ReactElement {
   return <React.Suspense fallback={<AuthPageSkeleton />}>{element}</React.Suspense>;
 }
 
+/**
+ * Dauerhafte Weiterleitung, die die Suchparameter mitnimmt. `<Navigate>` allein
+ * verwuerfe sie — ein Lesezeichen auf `…/entwicklung?security=…` verloere damit
+ * genau die Auswahl, die es festhalten sollte.
+ */
+function RedirectTo({ pathname }: { pathname: string }): React.ReactElement {
+  const { search } = useLocation();
+  return <Navigate to={{ pathname, search }} replace />;
+}
+
+/** Weiterleitung einer Detailseite: `/unternehmen/:id` → `/depot/:id`. */
+function RedirectToAsset(): React.ReactElement {
+  const { id = "" } = useParams();
+  return <RedirectTo pathname={`/depot/${id}`} />;
+}
+
 export const router = createHashRouter([
   { path: "/login", element: <LoginPage /> },
   { path: "/registrieren", element: standalone(<RegisterPage />) },
@@ -138,8 +157,20 @@ export const router = createHashRouter([
       { path: "eingaenge/:id", element: <PaymentDetailPage /> },
       { path: "eingaenge/:id/bearbeiten", element: <NewPaymentPage /> },
       { path: "kalender", element: <CalendarPage /> },
-      { path: "unternehmen", element: <SecuritiesPage /> },
-      { path: "unternehmen/:id", element: <SecurityDetailPage /> },
+      {
+        path: "depot",
+        element: <DepotPage />,
+        children: [
+          { index: true, element: <SecuritiesPage /> },
+          { path: "entwicklung", element: <DevelopmentTab /> },
+        ],
+      },
+      // Die Detailseite steht **neben** der Reiterhuelle, nicht in ihr: Sie
+      // zeigt eine einzelne Position, und Reiter darueber gehoerten zu einer
+      // Ebene, die sie verlassen hat. Der statische Reiterpfad rankt vor dem
+      // dynamischen Segment; ein Asset mit der Kennung „entwicklung" gibt es
+      // nicht (UUIDs).
+      { path: "depot/:id", element: <SecurityDetailPage /> },
       {
         path: "statistiken",
         element: <StatisticsPage />,
@@ -151,7 +182,6 @@ export const router = createHashRouter([
           { path: "vergleich", element: <ComparisonTab /> },
           { path: "unternehmen", element: <CompaniesTab /> },
           { path: "depots", element: <DepotsTab /> },
-          { path: "entwicklung", element: <DevelopmentTab /> },
         ],
       },
       {
@@ -175,6 +205,16 @@ export const router = createHashRouter([
           { path: "importe", element: <ImportsPage /> },
           { path: "datensicherung", element: <BackupPage /> },
         ],
+      },
+      // Aus „Unternehmen" ist „Depot" geworden, und die „Entwicklung" ist aus
+      // der Statistik dorthin gewandert. Die alten Pfade bleiben als dauerhafte
+      // Weiterleitung bestehen — samt Suchparametern, damit ein Lesezeichen auf
+      // eine gefilterte Ansicht sie nicht unterwegs verliert.
+      { path: "unternehmen", element: <RedirectTo pathname="/depot" /> },
+      { path: "unternehmen/:id", element: <RedirectToAsset /> },
+      {
+        path: "statistiken/entwicklung",
+        element: <RedirectTo pathname="/depot/entwicklung" />,
       },
       // Die drei Bereiche sind in die Einstellungen verschoben. Die alten
       // Pfade bleiben als dauerhafte Weiterleitung bestehen, damit bestehende

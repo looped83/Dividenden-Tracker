@@ -80,16 +80,16 @@ const { SecurityDetailPage } = await import("@/features/securities/SecurityDetai
 
 function renderPage(id = SECURITY_ID) {
   return render(
-    <MemoryRouter initialEntries={[`/unternehmen/${id}`]}>
+    <MemoryRouter initialEntries={[`/depot/${id}`]}>
       <Routes>
-        <Route path="/unternehmen/:id" element={<SecurityDetailPage />} />
+        <Route path="/depot/:id" element={<SecurityDetailPage />} />
       </Routes>
     </MemoryRouter>,
   );
 }
 
 describe("SecurityDetailPage", () => {
-  it("nennt das Unternehmen in der Ueberschrift", () => {
+  it("nennt das Asset in der Ueberschrift", () => {
     renderPage();
     expect(screen.getByRole("heading", { name: /Alpha AG/ })).toBeInTheDocument();
   });
@@ -146,30 +146,28 @@ describe("SecurityDetailPage", () => {
     expect(hrefs.some((href) => href?.startsWith("/eingaenge/pay-"))).toBe(true);
   });
 
-  it("meldet ein unbekanntes Unternehmen, statt eine leere Seite zu zeigen", () => {
+  it("meldet ein unbekanntes Asset, statt eine leere Seite zu zeigen", () => {
     renderPage("gibt-es-nicht");
-    expect(screen.getByText("Unternehmen nicht gefunden")).toBeInTheDocument();
+    expect(screen.getByText("Asset nicht gefunden")).toBeInTheDocument();
   });
 
   describe("Rueckweg", () => {
     /**
-     * Die Seite wird aus drei Richtungen erreicht (Unternehmensliste,
+     * Die Seite wird aus drei Richtungen erreicht (Assetliste,
      * Statistik, Zahlungsdetail) und laesst sich per Lesezeichen direkt
      * oeffnen. Sie braucht deshalb einen eigenen Rueckweg — und zwar in jedem
      * Zustand: Ein Zurueck, das erst nach dem Laden erscheint, fehlt genau
      * dann, wenn man es braucht.
      */
-    it("fuehrt zurueck zu den Unternehmen", () => {
+    it("fuehrt zurueck zum Depot", () => {
       renderPage();
-      const back = screen.getByRole("link", { name: /Zu den Unternehmen/ });
-      expect(back).toHaveAttribute("href", "/unternehmen");
+      const back = screen.getByRole("link", { name: /Zum Depot/ });
+      expect(back).toHaveAttribute("href", "/depot");
     });
 
-    it("steht auch bereit, wenn das Unternehmen nicht existiert", () => {
+    it("steht auch bereit, wenn das Asset nicht existiert", () => {
       renderPage("gibt-es-nicht");
-      expect(
-        screen.getByRole("link", { name: /Zu den Unternehmen/ }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /Zum Depot/ })).toBeInTheDocument();
     });
   });
 });
