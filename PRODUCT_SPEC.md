@@ -204,8 +204,10 @@ auch aus der Entwicklung heraus.
 Der Unterbereich **Entwicklung** ist der einzige, der auf den Depotständen aufsetzt statt
 allein auf den erhaltenen Zahlungen (docs/PORTFOLIO_IMPORT.md). Er beantwortet eine Frage:
 *Wächst mein passives Einkommen?* Dafür stellt er die erwartete Jahresdividende dem
-gegenüber, was tatsächlich hereinkam — je Stichtag als Verlauf, je Asset als Tabelle,
-dazu die Aufteilung des Depots nach Branche und Land.
+gegenüber, was tatsächlich hereinkam — je Stichtag als Verlauf, je gehaltenem Asset als
+Tabelle, dazu die Aufteilung des Depots nach Branche und Land. Die Tabelle führt nur, was im
+jüngsten Stand liegt: Ein verkauftes Papier hat auf die Frage nach der Ertragskraft des
+heutigen Depots keine Antwort mehr; was es beigetragen hat, steht in der Historie.
 
 Verglichen werden **zwei Zwölfmonatszeiträume**: Die Erwartung gilt für zwölf Monate nach
 vorn, ihr Gegenstück sind die zwölf Monate, die am Stichtag enden. Bewusst nicht das

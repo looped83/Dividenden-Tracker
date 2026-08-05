@@ -60,10 +60,8 @@ interface AssetRow {
    * **erwartet − erhalten**: um wie viel die kuenftige Jahresausschuettung ueber
    * dem liegt, was in den letzten zwoelf Monaten tatsaechlich kam.
    *
-   * `null` nur, wenn die Quelle fuer ein **gehaltenes** Papier keinen Betrag
-   * nennt — dann ist der Zuwachs unbekannt, nicht null. Fuer ein verkauftes
-   * Papier steht er dagegen fest: Es traegt kuenftig nichts mehr bei, der
-   * Zuwachs ist also der Wegfall des Erhaltenen.
+   * `null`, wenn die Quelle fuer das Papier keinen Betrag nennt — dann ist der
+   * Zuwachs unbekannt, nicht null.
    */
   growth: Money | null;
   yieldOnBuyin: DecimalInstance | null;
@@ -267,34 +265,35 @@ export function DevelopmentView({
     [portfolio.points, receivedAt],
   );
 
+  /**
+   * Die Tabelle zeigt **nur, was heute im Depot liegt** — die Papiere des
+   * juengsten Stands (`heldSecurityIds`).
+   *
+   * Verkaufte standen frueher mit ihrem Wegfall darin, und das war eine andere
+   * Frage als die dieses Bereichs: Er sagt, ob die Ertragskraft des *heutigen*
+   * Depots waechst. Ein Papier, das nicht mehr gehalten wird, hat darauf keine
+   * Antwort mehr — es fuellte die Liste mit Zeilen, an denen nichts mehr zu
+   * entscheiden ist, und schob mit seinem negativen Zuwachs die Sortierung
+   * nach unten. Was es beigetragen hat, steht weiterhin in der Historie
+   * (Statistik, Detailseite).
+   *
+   * Die Kacheln daruber bleiben unberuehrt: Ihr „Erhalten" ist die volle Summe
+   * der letzten zwoelf Monate, verkaufte Papiere eingeschlossen — sonst
+   * verglichen sie zwei verschieden zusammengesetzte Grundgesamtheiten.
+   */
   const assetRows = React.useMemo<AssetRow[]>(() => {
     if (latest === null) return [];
     const range = trailingYearRange(latest.asOf);
-    const ids = new Set<string>([
-      ...portfolio.expectedBySecurity.keys(),
-      ...payments
-        .filter(
-          (payment) => payment.payDate >= range.start && payment.payDate <= range.end,
-        )
-        .map((payment) => payment.securityId),
-    ]);
 
-    return [...ids].map((securityId) => {
+    return [...portfolio.heldSecurityIds].map((securityId) => {
       const expected = portfolio.expectedBySecurity.get(securityId) ?? null;
       const received = aggregateInRange(
         payments.filter((payment) => payment.securityId === securityId),
         range,
       ).net;
-      // Ein verkauftes Papier traegt kuenftig nichts mehr bei — sein Zuwachs
-      // ist der Wegfall des Erhaltenen. Ein gehaltenes ohne Betrag der Quelle
-      // bleibt dagegen unbekannt; daraus zu rechnen hiesse, das Schweigen der
-      // Quelle als Null zu lesen.
-      const held = portfolio.heldSecurityIds.has(securityId);
-      const growth = expected
-        ? expected.subtract(received)
-        : held
-          ? null
-          : received.negate();
+      // Ohne Betrag der Quelle bleibt der Zuwachs **unbekannt**, nicht null:
+      // Daraus zu rechnen hiesse, das Schweigen der Quelle als Zahl zu lesen.
+      const growth = expected ? expected.subtract(received) : null;
       return {
         securityId,
         name: entityName(securities, securityId),
@@ -509,8 +508,8 @@ export function DevelopmentView({
             query={query}
             searchOf={(row) => row.name}
             initialSort={{ key: "growth", direction: "desc" }}
-            caption="Erwartete und erhaltene Dividenden je Asset"
-            emptyMessage="Kein Asset mit Bestand oder Zahlung in diesem Zeitraum."
+            caption="Erwartete und erhaltene Dividenden je gehaltenem Asset"
+            emptyMessage="Kein Asset im aktuellen Depotstand."
           />
         </CardContent>
       </Card>

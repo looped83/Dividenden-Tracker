@@ -178,12 +178,24 @@ describe("DevelopmentView", () => {
     expect(within(zeile).getByText(/^\+10,00/)).toBeInTheDocument();
   });
 
-  it("verbucht ein verkauftes Papier als Wegfall, nicht als Lücke", () => {
-    // Gamma hat gezahlt, steht aber nicht mehr im juengsten Stand: Es traegt
-    // kuenftig nichts mehr bei, der Zuwachs ist also der Wegfall.
+  it("führt ein verkauftes Papier gar nicht mehr auf", () => {
+    // Gamma hat gezahlt, steht aber nicht mehr im juengsten Stand. Auf die
+    // Frage dieses Bereichs — waechst die Ertragskraft des *heutigen* Depots? —
+    // hat es keine Antwort mehr; was es beigetragen hat, steht in der Historie.
     renderTab(SERIES, [payment("2026-03-01", "25.00", "sec-c")]);
-    const zeile = screen.getByRole("row", { name: /Gamma/ });
-    expect(within(zeile).getByText(/^-25,00/)).toBeInTheDocument();
+    expect(screen.queryByRole("row", { name: /Gamma/ })).not.toBeInTheDocument();
+  });
+
+  it("lässt die Kacheln die volle Summe zeigen, auch mit verkauftem Papier", () => {
+    // Die Tabelle zeigt nur Gehaltenes, die Kachel „Erhalten" weiterhin alles:
+    // Sonst stuenden dort zwei verschieden zusammengesetzte Grundgesamtheiten
+    // nebeneinander. 30 + 12 = 42 aus dem Bestand, dazu 25 von Gamma.
+    renderTab(SERIES, [
+      payment("2025-09-15", "30.00"),
+      payment("2026-07-15", "12.00"),
+      payment("2026-03-01", "25.00", "sec-c"),
+    ]);
+    expect(screen.getAllByText(/^67,00/).length).toBeGreaterThan(0);
   });
 
   it("lässt den Zuwachs offen, wenn die Quelle für ein gehaltenes Papier schweigt", () => {

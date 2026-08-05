@@ -46,9 +46,9 @@ Kacheln (/depot) · Positionskarte (Detailseite) · Depot „Entwicklung"
 | `supabase/migrations/0030_enforce_owned_references.sql` | Eigentumsprüfung der referenzierten Stammdaten |
 | `supabase/migrations/0031_backup_snapshots.sql` | Depotstände in Sicherung und Wiederherstellung (Formatversion 2) |
 | `src/features/securities/divvydiaryCsv.ts` | Einlesen und Normalisieren der CSV |
-| `src/features/securities/portfolioMatch.ts` | Zuordnung zu den eigenen Unternehmen |
+| `src/features/securities/portfolioMatch.ts` | Zuordnung zu den eigenen Assets |
 | `src/features/securities/snapshots.ts` | Auswertung (jüngster Stand, Summen, Rendite, Zeitreihe) |
-| `src/features/statistics/DevelopmentTab.tsx` | Unterbereich „Entwicklung" |
+| `src/features/securities/DevelopmentTab.tsx` | Unterbereich „Entwicklung" |
 | `src/features/securities/PortfolioImportDialog.tsx` | Assistent |
 | `src/features/securities/PortfolioSummary.tsx` | Kennzahlkacheln |
 | `src/features/securities/PositionCard.tsx` | Position auf der Detailseite |
@@ -214,18 +214,24 @@ eine rote Zahl für genau den Vorgang, der gut läuft. Die Wachstumsrate misst s
 der Zuwachs negativ aus — Verkäufe, gekürzte Dividenden, eine Sonderausschüttung im
 Vorjahr —, ist das ein echter Rückgang und bleibt rot.
 
-Je Asset sind drei Fälle zu unterscheiden: **gehalten mit Betrag** (Zuwachs =
-erwartet − erhalten), **nicht mehr gehalten** (trägt künftig nichts bei, der Zuwachs ist
-der Wegfall des Erhaltenen) und **gehalten, aber ohne Betrag der Quelle** (unbekannt, kein
-Wert). Dafür führt die Zeitreihe `heldSecurityIds` mit: Ohne diese Unterscheidung würde
-das Schweigen der Quelle als Null gelesen.
+Die Tabelle listet **nur, was im jüngsten Stand liegt** (`heldSecurityIds`). Verkaufte
+Papiere standen früher mit dem Wegfall ihres Erhaltenen darin — das beantwortet aber eine
+andere Frage als dieser Bereich: Er sagt, ob die Ertragskraft des *heutigen* Depots wächst.
+Was ein verkauftes Papier beigetragen hat, steht weiterhin in der Historie (Statistik,
+Detailseite). Die Kacheln darüber bleiben davon unberührt; ihr „Erhalten" ist die volle
+Summe der letzten zwölf Monate, sonst verglichen sie zwei verschieden zusammengesetzte
+Grundgesamtheiten.
+
+Bleiben zwei Fälle je Zeile: **mit Betrag der Quelle** (Zuwachs = erwartet − erhalten) und
+**ohne** (unbekannt, kein Wert) — daraus zu rechnen hieße, das Schweigen der Quelle als
+Null zu lesen.
 
 Verglichen werden **zwei Zwölfmonatszeiträume** (`trailingYearRange`). Die Erwartung gilt
 für zwölf Monate nach vorn; ihr Gegenstück sind die zwölf Monate, die am Stichtag enden.
 Ein Kalenderjahr taugt dafür nicht: Ein angebrochenes ließe die Erwartung zwangsläufig zu
 hoch aussehen, ein abgeschlossenes hinkte bis zu zwölf Monate hinterher.
 
-Der **Unternehmensfilter** wirkt auf beiden Seiten: Ist eines ausgewählt, folgen ihm die
+Der **Assetfilter** wirkt auf beiden Seiten: Ist eines ausgewählt, folgen ihm die
 Depotstände ebenso wie die Zahlungen. Ohne das stünde dessen erhaltene Summe neben der
 erwarteten Jahresdividende des *ganzen* Depots — zwei Zahlen aus verschiedenen
 Grundgesamtheiten, deren Differenz nichts bedeutet. Der **Depotfilter** entfällt hier
