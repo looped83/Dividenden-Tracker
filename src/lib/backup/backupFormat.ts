@@ -16,7 +16,21 @@ import Decimal from "decimal.js";
 // ============================================================================
 
 export const BACKUP_FORMAT = "dividend-tracker-backup";
-export const BACKUP_FORMAT_VERSION = 1;
+/**
+ * Version 2 ergaenzt die Depotstaende (`security_snapshots`,
+ * `security_snapshot_runs`) und die beim Import bestaetigten Schreibweisen
+ * (`security_aliases`) — siehe docs/PORTFOLIO_IMPORT.md.
+ */
+export const BACKUP_FORMAT_VERSION = 2;
+
+/**
+ * Versionen, die sich **einlesen** lassen. Version 1 bleibt ausdruecklich
+ * dabei: Sie enthaelt die neuen Bereiche schlicht nicht, und die Arrays
+ * bleiben leer. Eine aeltere Sicherung abzuweisen, weil das Format gewachsen
+ * ist, waere genau der Moment, in dem eine Datensicherung nichts mehr wert
+ * ist.
+ */
+export const READABLE_FORMAT_VERSIONS = [1, 2] as const;
 export const MIN_SCHEMA_VERSION = "0022"; // First schema version supporting backups
 
 // ============================================================================
@@ -326,6 +340,84 @@ export type IntegrityInfo = z.infer<typeof integritySchema>;
 // Complete Backup Schema
 // ============================================================================
 
+// ============================================================================
+// Depotstaende und bestaetigte Schreibweisen (Formatversion 2)
+// ============================================================================
+
+/**
+ * Ein Upload des Portfolio-Exports (docs/PORTFOLIO_IMPORT.md §6).
+ *
+ * Ohne ihn liesse sich „an diesem Tag kein Upload" nicht von „an diesem Tag
+ * keine Positionen" unterscheiden — auch nicht nach einer Wiederherstellung.
+ */
+export const snapshotRunBackupSchema = z.object({
+  id: uuidString,
+  user_id: uuidString.optional(),
+  as_of: businessDate,
+  source: z.string().min(1).max(50),
+  file_name: z.string().max(260).optional(),
+  rows_total: z.number().int().min(0),
+  rows_imported: z.number().int().min(0),
+  rows_skipped: z.number().int().min(0),
+  rows_invalid: z.number().int().min(0),
+  created_at: isoTimestamp,
+});
+export type SnapshotRunBackup = z.infer<typeof snapshotRunBackupSchema>;
+
+/**
+ * Ein Depotstand je Unternehmen und Stichtag.
+ *
+ * **Nicht wiederherstellbar aus der Quelle**: DivvyDiary exportiert immer nur
+ * den heutigen Stand. Geht diese Zeile verloren, ist der Tag, den sie
+ * beschreibt, endgueltig weg — anders als die Kalendertermine, die ein
+ * erneuter Feed-Abgleich wieder aufbaut.
+ */
+export const securitySnapshotBackupSchema = z.object({
+  id: uuidString,
+  user_id: uuidString.optional(),
+  security_id: uuidString,
+  run_id: uuidString,
+  as_of: businessDate,
+  quantity: decimalString(6, "Quantity"),
+  buyin_per_share: decimalString(6, "Buy-in per share").optional(),
+  buyin_total: decimalString(2, "Buy-in total").optional(),
+  price: decimalString(6, "Price").optional(),
+  market_value: decimalString(2, "Market value").optional(),
+  gain_absolute: decimalString(2, "Gain").optional(),
+  gain_relative: decimalString(6, "Gain ratio").optional(),
+  allocation: decimalString(6, "Allocation").optional(),
+  dividend_yield: decimalString(6, "Dividend yield").optional(),
+  dividend_yield_on_buyin: decimalString(6, "Yield on buy-in").optional(),
+  annual_dividend_total: decimalString(2, "Annual dividend").optional(),
+  dividend_per_share: decimalString(6, "Dividend per share").optional(),
+  dividend_frequency: z.string().max(20).optional(),
+  dividend_cagr: decimalString(6, "Dividend CAGR").optional(),
+  dividend_cagr_period: z.string().max(10).optional(),
+  next_ex_date: businessDate.optional(),
+  next_pay_date: businessDate.optional(),
+  asset_type: z.string().max(20).optional(),
+  currency: currencyCode,
+  created_at: isoTimestamp,
+});
+export type SecuritySnapshotBackup = z.infer<typeof securitySnapshotBackupSchema>;
+
+/**
+ * Eine beim Import bestaetigte Schreibweise („Coca-Cola Company" meint das
+ * eigene „Coca-Cola", IMPORT_SPEC.md §6).
+ *
+ * Wiederherstellbar waere sie nur, indem der Nutzer jede Zuordnung erneut
+ * bestaetigt — Arbeit, die eine Sicherung ihm abnehmen soll.
+ */
+export const securityAliasBackupSchema = z.object({
+  id: uuidString,
+  user_id: uuidString.optional(),
+  alias_normalized: z.string().min(1).max(200),
+  security_id: uuidString,
+  source_import_id: uuidString.optional(),
+  created_at: isoTimestamp,
+});
+export type SecurityAliasBackup = z.infer<typeof securityAliasBackupSchema>;
+
 export const backupDataSchema = z.object({
   profile: profileBackupSchema.optional(),
   portfolios: z.array(portfolioBackupSchema).default([]),
@@ -334,13 +426,20 @@ export const backupDataSchema = z.object({
   dividend_payments: z.array(dividendPaymentBackupSchema).default([]),
   goals: z.array(goalBackupSchema).default([]),
   imports: z.array(importBackupSchema).default([]),
+  // Ab Formatversion 2. `default([])` haelt Dateien der Version 1 lesbar.
+  security_aliases: z.array(securityAliasBackupSchema).default([]),
+  security_snapshot_runs: z.array(snapshotRunBackupSchema).default([]),
+  security_snapshots: z.array(securitySnapshotBackupSchema).default([]),
   audit_log: z.array(z.record(z.string(), z.any())).optional(),
 });
 export type BackupData = z.infer<typeof backupDataSchema>;
 
 export const backupRootSchema = z.object({
   format: z.literal(BACKUP_FORMAT),
-  format_version: z.literal(BACKUP_FORMAT_VERSION),
+  // Nicht `literal(BACKUP_FORMAT_VERSION)`: Sonst scheiterte eine Datei der
+  // Version 1 schon am Schema, lange bevor `validateBackupVersion` sie
+  // beurteilen koennte.
+  format_version: z.union([z.literal(1), z.literal(2)]),
   schema_version: z.string(),
   app_version: z.string().optional(),
   exported_at: isoTimestamp,
@@ -410,7 +509,13 @@ export function validateBackupVersion(formatVersion: number): {
     };
   }
 
-  // Older version: could be migrated, but for now reject
+  // Aeltere, aber lesbare Version: Die seither hinzugekommenen Bereiche fehlen
+  // in der Datei und bleiben nach dem Einspielen leer. Das ist kein Fehler,
+  // sondern der Stand, den diese Datei beschreibt.
+  if ((READABLE_FORMAT_VERSIONS as readonly number[]).includes(formatVersion)) {
+    return { valid: true };
+  }
+
   return {
     valid: false,
     message: `Backup format version v${String(formatVersion)} is not supported.`,
@@ -453,6 +558,9 @@ export function validateBackupIntegrity(backup: BackupRoot): {
     dividend_payment: backup.data.dividend_payments.length,
     goal: backup.data.goals.length,
     import: backup.data.imports.length,
+    security_alias: backup.data.security_aliases.length,
+    security_snapshot_run: backup.data.security_snapshot_runs.length,
+    security_snapshot: backup.data.security_snapshots.length,
   };
 
   for (const [entity, expected] of Object.entries(expectedCounts)) {

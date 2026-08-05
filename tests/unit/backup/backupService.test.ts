@@ -31,6 +31,43 @@ function uuid(prefix: string, index: number): string {
 const USER_ID = uuid("00000001", 1);
 const DEPOT_ID = uuid("00000002", 1);
 const SECURITY_ID = uuid("00000003", 1);
+const RUN_ID = uuid("00000008", 1);
+
+/**
+ * Ein Depotstand **so, wie PostgREST ihn liefert**: `numeric` kommt als JSON-
+ * **Zahl** an, nicht als String — dieselbe Falle, die den Unternehmensbereich
+ * schon einmal zum Absturz brachte. Die Sicherung muss daraus wieder eine
+ * kanonische Dezimalzeichenkette machen.
+ */
+function snapshotRow() {
+  return {
+    id: uuid("00000009", 1),
+    user_id: USER_ID,
+    security_id: SECURITY_ID,
+    run_id: RUN_ID,
+    as_of: "2026-08-03",
+    quantity: 12.5,
+    buyin_per_share: 84.12,
+    buyin_total: 1051.5,
+    price: 96.4,
+    market_value: 1205,
+    gain_absolute: 153.5,
+    gain_relative: 0.146,
+    allocation: 0.077971,
+    dividend_yield: 0.0312,
+    dividend_yield_on_buyin: 0.0357,
+    annual_dividend_total: 37.6,
+    dividend_per_share: 3.008,
+    dividend_frequency: "quarterly",
+    dividend_cagr: 0.052,
+    dividend_cagr_period: "5y",
+    next_ex_date: "2026-08-14",
+    next_pay_date: "2026-09-15",
+    asset_type: "equity",
+    currency: "EUR",
+    created_at: PG_CREATED,
+  };
+}
 
 /** Baut `count` Zahlungszeilen mit fortlaufender ID und Datum. */
 function paymentRows(count: number) {
@@ -262,6 +299,31 @@ beforeEach(() => {
       rolled_back_at: null,
     },
   ];
+  tables["security_aliases"] = [
+    {
+      id: uuid("0000000a", 1),
+      user_id: USER_ID,
+      alias_normalized: "muster ag inhaber aktien",
+      security_id: SECURITY_ID,
+      source_import_id: uuid("00000005", 1),
+      created_at: PG_CREATED,
+    },
+  ];
+  tables["security_snapshot_runs"] = [
+    {
+      id: RUN_ID,
+      user_id: USER_ID,
+      as_of: "2026-08-03",
+      source: "divvydiary_csv",
+      file_name: "portfolio-1754236800000.csv",
+      rows_total: 2,
+      rows_imported: 1,
+      rows_skipped: 1,
+      rows_invalid: 0,
+      created_at: PG_CREATED,
+    },
+  ];
+  tables["security_snapshots"] = [snapshotRow()];
 });
 
 describe("createBackup — Vollstaendigkeit", () => {
@@ -299,6 +361,9 @@ describe("createBackup — Integritaetsblock", () => {
     expect(counts?.["portfolio"]).toBe(0);
     expect(counts?.["goal"]).toBe(0);
     expect(counts?.["import"]).toBe(2);
+    expect(counts?.["security_alias"]).toBe(1);
+    expect(counts?.["security_snapshot_run"]).toBe(1);
+    expect(counts?.["security_snapshot"]).toBe(1);
   });
 
   it("summiert nur die aktiven Zahlungen in den Gesamtbetraegen", async () => {
@@ -487,6 +552,61 @@ describe("createBackup — leere Felder", () => {
         rolled_back_at: null,
       },
     ];
+    tables["security_aliases"] = [
+      {
+        id: uuid("0000000a", 2),
+        user_id: USER_ID,
+        alias_normalized: "leer ag",
+        security_id: SECURITY_ID,
+        source_import_id: null,
+        created_at: PG_CREATED,
+      },
+    ];
+    tables["security_snapshot_runs"] = [
+      {
+        id: RUN_ID,
+        user_id: USER_ID,
+        as_of: "2026-08-03",
+        source: "divvydiary_csv",
+        file_name: null,
+        rows_total: 0,
+        rows_imported: 0,
+        rows_skipped: 0,
+        rows_invalid: 0,
+        created_at: PG_CREATED,
+      },
+    ];
+    // Ein Stand, bei dem die Quelle ausser der Stueckzahl nichts liefert —
+    // moeglich, weil in 0029 jede weitere Spalte nullbar ist.
+    tables["security_snapshots"] = [
+      {
+        id: uuid("00000009", 2),
+        user_id: USER_ID,
+        security_id: SECURITY_ID,
+        run_id: RUN_ID,
+        as_of: "2026-08-03",
+        quantity: "1.000000",
+        buyin_per_share: null,
+        buyin_total: null,
+        price: null,
+        market_value: null,
+        gain_absolute: null,
+        gain_relative: null,
+        allocation: null,
+        dividend_yield: null,
+        dividend_yield_on_buyin: null,
+        annual_dividend_total: null,
+        dividend_per_share: null,
+        dividend_frequency: null,
+        dividend_cagr: null,
+        dividend_cagr_period: null,
+        next_ex_date: null,
+        next_pay_date: null,
+        asset_type: null,
+        currency: "EUR",
+        created_at: PG_CREATED,
+      },
+    ];
     tables["dividend_payments"] = [
       {
         id: uuid("00000004", 1),
@@ -536,6 +656,56 @@ describe("createBackup — leere Felder", () => {
   });
 });
 
+describe("createBackup — Depotstaende", () => {
+  /**
+   * Depotstaende sind **nicht rekonstruierbar**: DivvyDiary exportiert immer
+   * nur den heutigen Stand. Ein verlorener Stichtag ist endgueltig weg —
+   * anders als die Kalendertermine, die ein erneuter Feed-Abgleich wieder
+   * aufbaut. Deshalb gehoeren sie in die Sicherung, und deshalb gilt fuer sie
+   * dieselbe Mengenkontrolle wie fuer die Zahlungen.
+   */
+  it("nimmt Staende, Laeufe und bestaetigte Schreibweisen auf", async () => {
+    tables["dividend_payments"] = [];
+
+    const backup = (await createBackup()).backup;
+
+    expect(backup?.data.security_snapshots).toHaveLength(1);
+    expect(backup?.data.security_snapshot_runs).toHaveLength(1);
+    expect(backup?.data.security_aliases).toHaveLength(1);
+  });
+
+  it("schreibt Betraege als Zeichenkette, auch wenn PostgREST Zahlen liefert", async () => {
+    tables["dividend_payments"] = [];
+
+    const stand = (await createBackup()).backup?.data.security_snapshots[0];
+
+    // `numeric` kommt als JSON-Zahl an. Uebernommen als Zahl verloere die
+    // Datei Nachkommastellen (1205 statt 1205.00) und mit ihnen die
+    // Genauigkeit, wegen der Betraege im Projekt ueberhaupt als Zeichenkette
+    // gefuehrt werden.
+    expect(stand?.market_value).toBe("1205.00");
+    expect(stand?.quantity).toBe("12.500000");
+    expect(stand?.allocation).toBe("0.077971");
+  });
+
+  it("erzeugt eine Datei, die die eigene Formatpruefung besteht", async () => {
+    tables["dividend_payments"] = paymentRows(3);
+
+    const backup = (await createBackup()).backup;
+    const parsed = parseBackupSafe(JSON.parse(JSON.stringify(backup)));
+
+    if (!parsed.success) {
+      throw new Error(
+        `Die erzeugte Sicherung ist nicht einlesbar: ${parsed.errors
+          .map((e) => `${e.path}: ${e.message}`)
+          .join("; ")}`,
+      );
+    }
+    expect(parsed.data.data.security_snapshots).toHaveLength(1);
+    expect(parsed.data.format_version).toBe(2);
+  });
+});
+
 describe("createBackup — Fehlerfaelle", () => {
   it("liefert keine Sicherung, wenn weniger geladen wurde als vorhanden ist", async () => {
     tables["dividend_payments"] = paymentRows(10);
@@ -547,5 +717,15 @@ describe("createBackup — Fehlerfaelle", () => {
 
     expect(result.success).toBe(false);
     expect(result.errorDetails).toMatch(/von 20 Dividendeneingänge/);
+  });
+
+  it("bricht ab, wenn Depotstaende fehlen", async () => {
+    tables["dividend_payments"] = [];
+    countOverride["security_snapshots"] = 5;
+
+    const result = await createBackup();
+
+    expect(result.success).toBe(false);
+    expect(result.errorDetails).toMatch(/von 5 Depotstände/);
   });
 });

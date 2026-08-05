@@ -17,7 +17,14 @@ import { seedDepot, seedPayment, seedSecurity } from "../support/seed";
  * Nutzertrennung.
  */
 
-/** Minimale, gueltige Sicherungsnutzlast. */
+/**
+ * Minimale, gueltige Sicherungsnutzlast.
+ *
+ * `format_version: 1` bleibt die Vorgabe — nicht aus Traegheit, sondern weil
+ * damit **jeder** Test dieser Datei nebenbei belegt, dass die vorhandenen
+ * Sicherungen des Nutzers weiterhin einspielbar sind. Die Nutzlasten der
+ * Version 2 setzen die Version ausdruecklich.
+ */
 function backupPayload(
   userId: string,
   data: Partial<{
@@ -27,11 +34,15 @@ function backupPayload(
     dividend_payments: unknown[];
     goals: unknown[];
     imports: unknown[];
+    security_aliases: unknown[];
+    security_snapshot_runs: unknown[];
+    security_snapshots: unknown[];
   }> = {},
+  formatVersion = 1,
 ): Record<string, unknown> {
   return {
     format: "dividend-tracker-backup",
-    format_version: 1,
+    format_version: formatVersion,
     schema_version: "0023",
     app_version: "0.1.0",
     exported_at: new Date().toISOString(),
@@ -44,6 +55,11 @@ function backupPayload(
       dividend_payments: data.dividend_payments ?? [],
       goals: data.goals ?? [],
       imports: data.imports ?? [],
+      ...(data.security_aliases ? { security_aliases: data.security_aliases } : {}),
+      ...(data.security_snapshot_runs
+        ? { security_snapshot_runs: data.security_snapshot_runs }
+        : {}),
+      ...(data.security_snapshots ? { security_snapshots: data.security_snapshots } : {}),
     },
     integrity: { record_counts: {} },
   };
@@ -668,5 +684,380 @@ describe("restore_backup — Sicherung aus einem anderen Konto desselben Projekt
     expect(Number(after.count)).toBe(before);
     // Auch der Modus "replace" darf fremde Stammdaten nicht umbenennen.
     expect(after.name).toBe("Unberuehrt AG");
+  });
+});
+
+describe("restore_backup — Depotstände (Formatversion 2)", () => {
+  /**
+   * Depotstaende sind der einzige Datenbestand des Projekts, der sich **nicht**
+   * nachbeschaffen laesst: DivvyDiary exportiert immer nur den heutigen Stand
+   * (docs/PORTFOLIO_IMPORT.md). Ein Stichtag, den die Wiederherstellung nicht
+   * zurueckbringt, ist endgueltig verloren — deshalb hier dieselbe Sorgfalt
+   * wie bei den Zahlungen.
+   */
+  /**
+   * Je Test eigene Kennungen. Eine Sicherung behaelt ihre Original-UUIDs, und
+   * `on conflict do nothing` uebergeht eine bereits vergebene Kennung still —
+   * feste Konstanten liessen den zweiten Test derselben Datei ins Leere
+   * laufen, ohne dass es auffiele.
+   */
+  let seq = 0;
+  function ids(): { run: string; snapshot: string; alias: string } {
+    seq += 1;
+    const tail = (n: number) => String(seq * 10 + n).padStart(12, "0");
+    return {
+      run: `bbbbbbbb-0000-4000-8000-${tail(1)}`,
+      snapshot: `bbbbbbbb-0000-4000-8000-${tail(2)}`,
+      alias: `bbbbbbbb-0000-4000-8000-${tail(3)}`,
+    };
+  }
+
+  function lauf(runId: string, overrides: Record<string, unknown> = {}) {
+    return {
+      id: runId,
+      as_of: "2026-08-03",
+      source: "divvydiary_csv",
+      file_name: "portfolio-1754236800000.csv",
+      rows_total: 1,
+      rows_imported: 1,
+      rows_skipped: 0,
+      rows_invalid: 0,
+      ...overrides,
+    };
+  }
+
+  function stand(
+    { run, snapshot }: { run: string; snapshot: string },
+    securityId: string,
+    overrides: Record<string, unknown> = {},
+  ) {
+    return {
+      id: snapshot,
+      security_id: securityId,
+      run_id: run,
+      as_of: "2026-08-03",
+      quantity: "12.500000",
+      buyin_total: "1051.50",
+      market_value: "1205.00",
+      annual_dividend_total: "37.60",
+      dividend_frequency: "quarterly",
+      asset_type: "equity",
+      currency: "EUR",
+      ...overrides,
+    };
+  }
+
+  /** Alle Staende eines Nutzers, nach Stichtag. */
+  async function readSnapshots(
+    userId: string,
+  ): Promise<{ as_of: string; market_value: string | null; run_id: string }[]> {
+    return asUser(userId, async (client) => {
+      const result = await client.query<{
+        as_of: string;
+        market_value: string | null;
+        run_id: string;
+      }>(
+        `select to_char(as_of, 'YYYY-MM-DD') as as_of, market_value, run_id::text as run_id
+           from security_snapshots order by as_of`,
+      );
+      return result.rows;
+    });
+  }
+
+  it("spielt Läufe, Stände und bestätigte Schreibweisen ein", async () => {
+    const kennung = ids();
+    const user = await createTestUser("restore-snapshots@example.test");
+    const { depotId, securityId } = await asUser(user, async (client) => {
+      const depot = await seedDepot(client, "Staende");
+      const security = await seedSecurity(client, { name: "Stand AG" });
+      return { depotId: depot, securityId: security };
+    });
+
+    const payload = backupPayload(
+      user,
+      {
+        securities: [{ id: securityId, name: "Stand AG" }],
+        depots: [{ id: depotId, name: "Staende", base_currency: "EUR" }],
+        security_aliases: [
+          {
+            id: kennung.alias,
+            alias_normalized: "stand ag inhaber aktien",
+            security_id: securityId,
+          },
+        ],
+        security_snapshot_runs: [lauf(kennung.run)],
+        security_snapshots: [stand(kennung, securityId)],
+      },
+      2,
+    );
+
+    const result = await restore(user, payload, "merge");
+    expect(result.success).toBe(true);
+    expect(result.records_restored.security_snapshot_runs).toBe(1);
+    expect(result.records_restored.security_snapshots).toBe(1);
+    expect(result.records_restored.security_aliases).toBe(1);
+
+    const rows = await readSnapshots(user);
+    // Der Betrag muss die Runde durch JSON unveraendert ueberstehen.
+    expect(rows.map((r) => [r.as_of, r.market_value])).toEqual([
+      ["2026-08-03", "1205.00"],
+    ]);
+  });
+
+  it("nimmt eine Sicherung der Version 1 unverändert an", async () => {
+    // Die Dateien, die der Nutzer heute besitzt. Sie kennen die drei neuen
+    // Bereiche nicht — das darf sie nicht unbrauchbar machen.
+    const user = await createTestUser("restore-v1-still-works@example.test");
+    const { depotId, securityId } = await asUser(user, async (client) => {
+      const depot = await seedDepot(client, "Altformat");
+      const security = await seedSecurity(client, { name: "Alt AG" });
+      return { depotId: depot, securityId: security };
+    });
+
+    const result = await restore(
+      user,
+      backupPayload(user, {
+        securities: [{ id: securityId, name: "Alt AG" }],
+        depots: [{ id: depotId, name: "Altformat", base_currency: "EUR" }],
+      }),
+      "merge",
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.records_restored.security_snapshots).toBe(0);
+  });
+
+  it("lässt einen bereits erfassten Stichtag im Modus „merge“ unberührt", async () => {
+    /**
+     * Der heikle Fall: Nach der Sicherung wurde eine neue CSV hochgeladen.
+     * Fuer denselben Tag liegt damit ein **anderer** Lauf vor, und der Lauf
+     * aus der Datei kann wegen `unique (user_id, source, as_of)` nicht
+     * entstehen. Seine Staende zeigen dann auf eine Lauf-Kennung, die es nicht
+     * gibt — ohne die Absicherung in 0031 braeche die gesamte
+     * Wiederherstellung an einer Fremdschluesselverletzung ab, obwohl mit dem
+     * Bestand alles in Ordnung ist.
+     */
+    const kennung = ids();
+    const user = await createTestUser("restore-snapshot-conflict@example.test");
+    const { depotId, securityId } = await asUser(user, async (client) => {
+      const depot = await seedDepot(client, "Konflikt");
+      const security = await seedSecurity(client, { name: "Konflikt AG" });
+      await client.query(
+        `with r as (
+           insert into security_snapshot_runs (as_of, source, rows_total, rows_imported)
+           values ('2026-08-03', 'divvydiary_csv', 1, 1) returning id
+         )
+         insert into security_snapshots (security_id, run_id, as_of, quantity,
+                                         market_value, currency)
+         select $1, r.id, '2026-08-03', 9, 999.99, 'EUR' from r`,
+        [security],
+      );
+      return { depotId: depot, securityId: security };
+    });
+
+    const result = await restore(
+      user,
+      backupPayload(
+        user,
+        {
+          securities: [{ id: securityId, name: "Konflikt AG" }],
+          depots: [{ id: depotId, name: "Konflikt", base_currency: "EUR" }],
+          security_snapshot_runs: [lauf(kennung.run)],
+          security_snapshots: [stand(kennung, securityId)],
+        },
+        2,
+      ),
+      "merge",
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.records_restored.security_snapshots).toBe(0);
+
+    // Der vorhandene, neuere Stand bleibt — „merge" ergaenzt, es ueberschreibt
+    // nicht.
+    const rows = await readSnapshots(user);
+    expect(rows.map((r) => r.market_value)).toEqual(["999.99"]);
+  });
+
+  it("ersetzt im Modus „replace“ genau die Stichtage der Datei", async () => {
+    const kennung = ids();
+    const user = await createTestUser("restore-snapshot-replace@example.test");
+    const { depotId, securityId } = await asUser(user, async (client) => {
+      const depot = await seedDepot(client, "Ersetzen");
+      const security = await seedSecurity(client, { name: "Ersetz AG" });
+      // Zwei Stichtage im Bestand: einer, den die Datei kennt (03.08.), und
+      // einer, ueber den sie nichts sagt (10.08.).
+      for (const [tag, wert] of [
+        ["2026-08-03", "999.99"],
+        ["2026-08-10", "111.11"],
+      ]) {
+        await client.query(
+          `with r as (
+             insert into security_snapshot_runs (as_of, source, rows_total, rows_imported)
+             values ($2::date, 'divvydiary_csv', 1, 1) returning id
+           )
+           insert into security_snapshots (security_id, run_id, as_of, quantity,
+                                           market_value, currency)
+           select $1, r.id, $2::date, 9, $3::numeric, 'EUR' from r`,
+          [security, tag, wert],
+        );
+      }
+      return { depotId: depot, securityId: security };
+    });
+
+    const result = await restore(
+      user,
+      backupPayload(
+        user,
+        {
+          securities: [{ id: securityId, name: "Ersetz AG" }],
+          depots: [{ id: depotId, name: "Ersetzen", base_currency: "EUR" }],
+          security_snapshot_runs: [lauf(kennung.run)],
+          security_snapshots: [stand(kennung, securityId)],
+        },
+        2,
+      ),
+      "replace",
+    );
+    expect(result.success).toBe(true);
+
+    const rows = await readSnapshots(user);
+    // Der 03.08. traegt jetzt den Wert der Datei, der 10.08. steht unveraendert
+    // da: Ihn zu loeschen waere unwiederbringlich, und die Datei behauptet
+    // ueber ihn nichts.
+    expect(rows.map((r) => [r.as_of, r.market_value])).toEqual([
+      ["2026-08-03", "1205.00"],
+      ["2026-08-10", "111.11"],
+    ]);
+  });
+
+  it("weist einen Stand ab, dessen Unternehmen die Sicherung nicht enthält", async () => {
+    const kennung = ids();
+    const user = await createTestUser("restore-snapshot-no-security@example.test");
+    const { depotId, securityId } = await asUser(user, async (client) => {
+      const depot = await seedDepot(client, "Ohne Unternehmen");
+      const security = await seedSecurity(client, { name: "Ohne AG" });
+      return { depotId: depot, securityId: security };
+    });
+
+    const payload = backupPayload(
+      user,
+      {
+        securities: [{ id: securityId, name: "Ohne AG" }],
+        depots: [{ id: depotId, name: "Ohne Unternehmen", base_currency: "EUR" }],
+        security_snapshot_runs: [lauf(kennung.run)],
+        security_snapshots: [stand(kennung, "cccccccc-0000-4000-8000-000000000009")],
+      },
+      2,
+    );
+
+    await expect(
+      asUser(user, (client) =>
+        client.query("select restore_backup($1::jsonb, $2)", [
+          JSON.stringify(payload),
+          "merge",
+        ]),
+      ),
+    ).rejects.toThrow(/missing_security_reference/);
+  });
+
+  it("weist einen Stand ab, dessen Lauf in der Sicherung fehlt", async () => {
+    // Ohne diese Pruefung schluege dieselbe Datei eine Anweisung spaeter mit
+    // einer Fremdschluesselverletzung fehl, deren Text niemandem sagt, was
+    // mit der Datei nicht stimmt.
+    const kennung = ids();
+    const user = await createTestUser("restore-snapshot-no-run@example.test");
+    const { depotId, securityId } = await asUser(user, async (client) => {
+      const depot = await seedDepot(client, "Ohne Lauf");
+      const security = await seedSecurity(client, { name: "Lauflos AG" });
+      return { depotId: depot, securityId: security };
+    });
+
+    const payload = backupPayload(
+      user,
+      {
+        securities: [{ id: securityId, name: "Lauflos AG" }],
+        depots: [{ id: depotId, name: "Ohne Lauf", base_currency: "EUR" }],
+        security_snapshot_runs: [],
+        security_snapshots: [stand(kennung, securityId)],
+      },
+      2,
+    );
+
+    await expect(
+      asUser(user, (client) =>
+        client.query("select restore_backup($1::jsonb, $2)", [
+          JSON.stringify(payload),
+          "merge",
+        ]),
+      ),
+    ).rejects.toThrow(/missing_run_reference/);
+  });
+
+  it("weist einen Stand ab, dessen Stichtag nicht zu seinem Lauf passt", async () => {
+    // Der zusammengesetzte Fremdschluessel aus 0029 verhindert genau das —
+    // hier soll es aber schon an der lesbaren Pruefung scheitern.
+    const kennung = ids();
+    const user = await createTestUser("restore-snapshot-wrong-day@example.test");
+    const { depotId, securityId } = await asUser(user, async (client) => {
+      const depot = await seedDepot(client, "Falscher Tag");
+      const security = await seedSecurity(client, { name: "Tag AG" });
+      return { depotId: depot, securityId: security };
+    });
+
+    const payload = backupPayload(
+      user,
+      {
+        securities: [{ id: securityId, name: "Tag AG" }],
+        depots: [{ id: depotId, name: "Falscher Tag", base_currency: "EUR" }],
+        security_snapshot_runs: [lauf(kennung.run)],
+        security_snapshots: [stand(kennung, securityId, { as_of: "2026-08-04" })],
+      },
+      2,
+    );
+
+    await expect(
+      asUser(user, (client) =>
+        client.query("select restore_backup($1::jsonb, $2)", [
+          JSON.stringify(payload),
+          "merge",
+        ]),
+      ),
+    ).rejects.toThrow(/missing_run_reference/);
+  });
+
+  it("schreibt Stände dem angemeldeten Konto zu, nicht dem in der Datei", async () => {
+    const kennung = ids();
+    const user = await createTestUser("restore-snapshot-owner@example.test");
+    const fremd = "dddddddd-0000-4000-8000-000000000001";
+    const { depotId, securityId } = await asUser(user, async (client) => {
+      const depot = await seedDepot(client, "Eigentum");
+      const security = await seedSecurity(client, { name: "Eigen AG" });
+      return { depotId: depot, securityId: security };
+    });
+
+    await restore(
+      user,
+      backupPayload(
+        user,
+        {
+          securities: [{ id: securityId, name: "Eigen AG" }],
+          depots: [{ id: depotId, name: "Eigentum", base_currency: "EUR" }],
+          security_snapshot_runs: [lauf(kennung.run, { user_id: fremd })],
+          security_snapshots: [stand(kennung, securityId, { user_id: fremd })],
+        },
+        2,
+      ),
+      "merge",
+    );
+
+    const owner = await asUser(user, async (client) => {
+      const rows = await client.query<{ user_id: string }>(
+        "select user_id::text as user_id from security_snapshots where id = $1",
+        [kennung.snapshot],
+      );
+      return rows.rows[0]?.user_id ?? null;
+    });
+    expect(owner).toBe(user);
   });
 });

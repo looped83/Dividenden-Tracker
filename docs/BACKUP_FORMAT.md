@@ -1,4 +1,4 @@
-# Backup Format Specification v1
+# Backup Format Specification v2
 
 ## Overview
 
@@ -14,8 +14,8 @@ The Dividend Tracker backup format is a self-contained JSON file that captures a
 ```json
 {
   "format": "dividend-tracker-backup",
-  "format_version": 1,
-  "schema_version": "0022",
+  "format_version": 2,
+  "schema_version": "0031",
   "app_version": "0.1.0",
   "exported_at": "2026-07-27T12:00:00Z",
   "base_currency": "EUR",
@@ -33,8 +33,8 @@ The Dividend Tracker backup format is a self-contained JSON file that captures a
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `format` | string | Yes | Always `"dividend-tracker-backup"` for identification |
-| `format_version` | number | Yes | Backup format version (currently `1`) |
-| `schema_version` | string | Yes | Database schema version at export time (e.g., `"0022"`) |
+| `format_version` | number | Yes | Backup format version (currently `2`; `1` is still readable) |
+| `schema_version` | string | Yes | Database schema version at export time (e.g., `"0031"`) |
 | `app_version` | string | No | Application version that created the backup |
 | `exported_at` | string | Yes | ISO-8601 timestamp with Z suffix (UTC) |
 | `base_currency` | string | Yes | 3-letter ISO 4217 currency code (e.g., `"EUR"`, `"USD"`) |
@@ -55,9 +55,16 @@ The `data` section contains the complete user dataset:
   "dividend_payments": [ ... ],
   "goals": [ ... ],
   "imports": [ ... ],
+  "security_aliases": [ ... ],
+  "security_snapshot_runs": [ ... ],
+  "security_snapshots": [ ... ],
   "audit_log": [ ... ]
 }
 ```
+
+The last three arrays were added in format version 2. A version 1 file simply
+does not contain them; they default to `[]` on read, and the restore writes
+nothing for them.
 
 ### Profile
 
@@ -224,6 +231,86 @@ File import history and metadata.
 }
 ```
 
+### Security Aliases
+
+Spellings confirmed during an import ("Coca-Cola Company" means the user's own
+"Coca-Cola", IMPORT_SPEC.md §6). Reconstructing them would mean confirming every
+mapping by hand again — exactly the work a backup is meant to save.
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440007",
+  "user_id": "550e8400-e29b-41d4-a716-446655440000",
+  "alias_normalized": "coca cola company",
+  "security_id": "550e8400-e29b-41d4-a716-446655440002",
+  "source_import_id": "550e8400-e29b-41d4-a716-446655440006",
+  "created_at": "2026-03-01T09:00:00Z"
+}
+```
+
+### Security Snapshot Runs
+
+One upload of the DivvyDiary portfolio export (docs/PORTFOLIO_IMPORT.md §6).
+Without the run, "no upload that day" cannot be told apart from "no positions
+that day".
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440008",
+  "user_id": "550e8400-e29b-41d4-a716-446655440000",
+  "as_of": "2026-08-03",
+  "source": "divvydiary_csv",
+  "file_name": "portfolio-1754236800000.csv",
+  "rows_total": 42,
+  "rows_imported": 40,
+  "rows_skipped": 2,
+  "rows_invalid": 0,
+  "created_at": "2026-08-03T18:00:00Z"
+}
+```
+
+### Security Snapshots
+
+One portfolio position per security and business date. **Not reconstructible
+from the source**: DivvyDiary only ever exports today's state, so a lost
+business date is gone for good — unlike the dividend calendar, which a fresh
+feed sync rebuilds. Every field except `quantity` and `currency` may be absent
+when the source is silent; absent is not zero.
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440009",
+  "user_id": "550e8400-e29b-41d4-a716-446655440000",
+  "security_id": "550e8400-e29b-41d4-a716-446655440002",
+  "run_id": "550e8400-e29b-41d4-a716-446655440008",
+  "as_of": "2026-08-03",
+  "quantity": "12.500000",
+  "buyin_per_share": "84.120000",
+  "buyin_total": "1051.50",
+  "price": "96.400000",
+  "market_value": "1205.00",
+  "gain_absolute": "153.50",
+  "gain_relative": "0.146000",
+  "allocation": "0.077971",
+  "dividend_yield": "0.031200",
+  "dividend_yield_on_buyin": "0.035700",
+  "annual_dividend_total": "37.60",
+  "dividend_per_share": "3.008000",
+  "dividend_frequency": "quarterly",
+  "dividend_cagr": "0.052000",
+  "dividend_cagr_period": "5y",
+  "next_ex_date": "2026-08-14",
+  "next_pay_date": "2026-09-15",
+  "asset_type": "equity",
+  "currency": "EUR",
+  "created_at": "2026-08-03T18:00:00Z"
+}
+```
+
+`run_id` **and** `as_of` together point at the run (composite foreign key,
+migration 0029). A snapshot whose business date differs from its run's is
+rejected before anything is written.
+
 ## Data Types
 
 ### Decimal Strings
@@ -281,7 +368,10 @@ The `integrity` section contains checksums and record counts for validation:
     "security": 15,
     "dividend_payment": 145,
     "goal": 3,
-    "import": 5
+    "import": 5,
+    "security_alias": 12,
+    "security_snapshot_run": 8,
+    "security_snapshot": 320
   },
   "totals": {
     "net_sum": "15234.56",
@@ -293,7 +383,10 @@ The `integrity` section contains checksums and record counts for validation:
     "securities": "c3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "dividend_payments": "d3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "goals": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "imports": "f3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    "imports": "f3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "security_aliases": "0ab0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "security_snapshot_runs": "1ab0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "security_snapshots": "2ab0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
   }
 }
 ```
@@ -302,7 +395,7 @@ The `integrity` section contains checksums and record counts for validation:
 
 Before restoration:
 
-1. **Version Check**: `format_version` must be `1`
+1. **Version Check**: `format_version` must be `1` or `2`
 2. **Schema Compatibility**: `schema_version` must be supported
 3. **Completeness**: Must contain profile, at least one depot and one security
 4. **Record Counts**: Actual entity counts must match `record_counts`
@@ -333,6 +426,17 @@ Removes existing data before restoring:
 
 **Use case:** Complete device replacement, recovery from catastrophic data loss.
 
+**Snapshots are replaced per business date, not wholesale.** `security_snapshot_runs`,
+`security_snapshots` and `security_aliases` carry no UPDATE grant by design: a run is
+replaced as a whole, never rewritten row by row. Replace mode therefore deletes exactly
+what the file brings — the runs for the business dates it contains (cascading to their
+snapshots) and the aliases for the spellings it contains — and then inserts. A business
+date the backup does not mention is left alone: deleting it would be irreversible, and
+the file makes no claim about it.
+
+In merge mode a business date that already exists wins; the file's run and its snapshots
+are skipped together, because a run and its rows belong to each other.
+
 ## Validation Rules
 
 ### Technical Validation
@@ -348,7 +452,8 @@ Removes existing data before restoring:
 
 ### Business Validation
 
-1. Foreign key references intact (security_id → securities, depot_id → depots)
+1. Foreign key references intact (security_id → securities, depot_id → depots,
+   snapshot run_id + as_of → security_snapshot_runs)
 2. Record counts match actual entities
 3. At least one depot and one security for valid backup
 4. No circular references
@@ -356,10 +461,13 @@ Removes existing data before restoring:
 
 ## Version Compatibility
 
-- **Current**: v1 (this specification)
+- **Current**: v2 (this specification)
+- **Readable**: v1 and v2. A v1 file restores exactly what it describes; the
+  three sections added in v2 stay empty. Rejecting an older backup because the
+  format has grown is the moment a backup stops being worth anything.
 - **Migration**: No automatic migration; v0 backups require manual data export
-- **Forward compatibility**: Newer app versions must accept v1 backups
-- **Breaking changes**: Would increment `format_version` to 2 (new feature)
+- **Forward compatibility**: Newer app versions must keep accepting v1 backups
+- **Breaking changes**: Would increment `format_version` to 3
 
 ## File Naming Convention
 
@@ -405,8 +513,8 @@ Example: `dividenden-backup-2026-07-27.json`
 ```json
 {
   "format": "dividend-tracker-backup",
-  "format_version": 1,
-  "schema_version": "0022",
+  "format_version": 2,
+  "schema_version": "0031",
   "exported_at": "2026-07-27T12:00:00Z",
   "base_currency": "EUR",
   "data": {
@@ -442,7 +550,10 @@ Example: `dividenden-backup-2026-07-27.json`
     "dividend_payments": [],
     "portfolios": [],
     "goals": [],
-    "imports": []
+    "imports": [],
+    "security_aliases": [],
+    "security_snapshot_runs": [],
+    "security_snapshots": []
   },
   "integrity": {
     "record_counts": {

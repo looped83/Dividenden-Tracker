@@ -22,15 +22,37 @@ test.use({
 });
 
 interface Sicherung {
+  format_version: number;
   data: {
     dividend_payments: unknown[];
     depots: unknown[];
     securities: unknown[];
+    security_snapshot_runs: { as_of: string }[];
+    security_snapshots: { as_of: string; market_value?: string }[];
   };
   integrity: { record_counts: Record<string, number> };
 }
 
 test("erstellt eine vollständige Sicherungsdatei", async ({ page, konto }) => {
+  // Ein Depotstand im Bestand. Er ist der einzige Datensatz des Projekts, den
+  // niemand nachbeschaffen kann — DivvyDiary liefert immer nur den heutigen
+  // Stand (docs/PORTFOLIO_IMPORT.md). Fehlte er in der Datei, wäre der Verlust
+  // nach einer Wiederherstellung endgültig.
+  await asUser(konto.userId, async (client) => {
+    await client.query(
+      `with r as (
+         insert into security_snapshot_runs (as_of, source, file_name, rows_total,
+                                             rows_imported)
+         values ('2026-08-03', 'divvydiary_csv', 'portfolio-1754236800000.csv', 1, 1)
+         returning id
+       )
+       insert into security_snapshots (security_id, run_id, as_of, quantity, price,
+                                       market_value, annual_dividend_total, currency)
+       select $1, r.id, '2026-08-03', 12.5, 96.40, 1205.00, 37.60, 'EUR' from r`,
+      [konto.securityId],
+    );
+  });
+
   await page.goto("/#/einstellungen/datensicherung");
   await expect(page.getByRole("heading", { name: "Sicherung erstellen" })).toBeVisible();
 
@@ -50,6 +72,15 @@ test("erstellt eine vollständige Sicherungsdatei", async ({ page, konto }) => {
   expect(inhalt.data.dividend_payments).toHaveLength(3);
   expect(inhalt.data.depots).toHaveLength(1);
   expect(inhalt.data.securities).toHaveLength(1);
+
+  // 2b. … einschließlich der Depotstände und ihres Uploads (Formatversion 2).
+  expect(inhalt.format_version).toBe(2);
+  expect(inhalt.data.security_snapshot_runs).toHaveLength(1);
+  expect(inhalt.data.security_snapshots).toHaveLength(1);
+  expect(inhalt.data.security_snapshots[0]?.as_of).toBe("2026-08-03");
+  // `numeric` kommt über PostgREST als JSON-Zahl an; in der Datei muss ein
+  // kanonischer Dezimalstring stehen.
+  expect(inhalt.data.security_snapshots[0]?.market_value).toBe("1205.00");
 
   // 3. … und der Integritätsblock stimmt mit der Datenbank überein.
   const anzahl = await asUser(konto.userId, async (client) => {
