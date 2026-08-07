@@ -82,13 +82,16 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 // einen duennen Rahmen vom Hintergrund und gingen zwischen
                 // Karten unter — eine Rueckmeldung, die niemand bemerkt, ist
                 // keine.
-                "border border-l-4 shadow-lg",
+                "border border-l-4 shadow-xl",
                 "text-sm text-foreground",
-                // Im dunklen Thema traegt derselbe Tint weniger: Der Grund ist
-                // dort ohnehin dunkel, 10 % Farbe darauf sind kaum zu sehen.
+                // Deckende Flaeche, keine Transparenz: Der Toast schwebt ueber
+                // scrollendem Inhalt: Tabellenzeilen, Diagramme, Karten. Mit
+                // einem Alpha-Tint (`bg-positive/10`) schlug all das durch und
+                // der Text stand je nach Scrollposition auf einem anderen
+                // Grund. Die Toenung steckt jetzt in fertig gemischten Tokens.
                 positive
-                  ? "border-positive/30 border-l-positive bg-positive/10 dark:bg-positive/15"
-                  : "border-negative/30 border-l-negative bg-negative/10 dark:bg-negative/15",
+                  ? "border-positive/40 border-l-positive bg-positive-surface"
+                  : "border-negative/40 border-l-negative bg-negative-surface",
                 // Kurz eingeblendet statt uebergangslos gesetzt — die Bewegung
                 // ist es, die den Blick holt. `prefers-reduced-motion` schaltet
                 // sie ab (tw-animate-css).
