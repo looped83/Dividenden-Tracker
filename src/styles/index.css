@@ -39,6 +39,13 @@
   --negative: oklch(0.5 0.16 25);
   --negative-foreground: oklch(0.98 0.004 260);
 
+  /* Deckende, leicht getoente Flaechen fuer schwebende Meldungen (Toast).
+     Ein Tint mit Alpha (`bg-positive/10`) laesst den scrollenden Inhalt
+     durchscheinen — der Text steht dann auf wechselndem Grund und ist kaum
+     zu lesen. Diese Werte sind fertig gemischt und damit undurchsichtig. */
+  --positive-surface: oklch(0.96 0.026 155);
+  --negative-surface: oklch(0.96 0.028 25);
+
   --warning: oklch(0.68 0.15 75);
   --warning-foreground: oklch(0.2 0.02 260);
   /* Textfarbe auf hellem Warn-Tint (bg-warning/10) — in beiden Themes >= 4.5:1. */
@@ -83,6 +90,11 @@
   --negative: oklch(0.72 0.15 25);
   --negative-foreground: oklch(0.18 0.03 25);
 
+  /* Eine Spur heller als `--card` (0.23): Die Meldung soll sich vom dunklen
+     Grund abheben, ohne zu leuchten. */
+  --positive-surface: oklch(0.29 0.042 155);
+  --negative-surface: oklch(0.3 0.05 25);
+
   --warning: oklch(0.78 0.14 80);
   --warning-foreground: oklch(0.2 0.03 80);
   --warning-strong: oklch(0.85 0.12 85);
@@ -118,6 +130,8 @@
   --color-positive-foreground: var(--positive-foreground);
   --color-negative: var(--negative);
   --color-negative-foreground: var(--negative-foreground);
+  --color-positive-surface: var(--positive-surface);
+  --color-negative-surface: var(--negative-surface);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
   --color-warning-strong: var(--warning-strong);
