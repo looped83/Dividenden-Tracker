@@ -152,6 +152,10 @@ export function Combobox({
         ref={inputRef}
         id={id}
         type="text"
+        // Ausdruecklich, nicht implizit: iOS behaelt sonst die Tastatur des
+        // zuvor fokussierten Feldes bei — aus dem Betragsfeld heraus stand im
+        // Suchfeld der Zahlenblock (siehe ui/input.tsx).
+        inputMode="text"
         role="combobox"
         autoComplete="off"
         aria-expanded={open}

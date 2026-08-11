@@ -1,11 +1,25 @@
 import * as React from "react";
 import { cn } from "@/lib/utils/cn";
 
+/**
+ * Feldarten ohne eigene Tastatur: Alle anderen (`email`, `date`, `number`,
+ * `password` …) bringen ihre Tastatur ueber den `type` mit und bleiben
+ * unberuehrt.
+ */
+const PLAIN_TEXT_TYPES = new Set(["text", "search"]);
+
 export const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
-  ({ className, type, ...props }, ref) => {
+  ({ className, type, inputMode, ...props }, ref) => {
     return (
       <input
         type={type}
+        // iOS behaelt die Tastatur des zuvor fokussierten Feldes bei, wenn das
+        // neu fokussierte Feld keinen eigenen `inputmode` nennt: Nach dem
+        // Betragsfeld (`inputMode="decimal"`) blieb im Suchfeld daneben der
+        // Zahlenblock stehen. Textfelder sagen deshalb ausdruecklich „text“.
+        inputMode={
+          inputMode ?? (PLAIN_TEXT_TYPES.has(type ?? "text") ? "text" : undefined)
+        }
         ref={ref}
         className={cn(
           // 16 px auf schmalen Geraeten: iOS Safari zoomt beim Fokussieren jedes

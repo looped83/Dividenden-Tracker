@@ -4,10 +4,14 @@ import { cn } from "@/lib/utils/cn";
 export const Textarea = React.forwardRef<
   HTMLTextAreaElement,
   React.ComponentProps<"textarea">
->(({ className, ...props }, ref) => {
+>(({ className, inputMode, ...props }, ref) => {
   return (
     <textarea
       ref={ref}
+      // Wie beim Input: ohne ausdruecklichen `inputmode` behaelt iOS die
+      // Tastatur des zuvor fokussierten Feldes bei (z. B. den Zahlenblock des
+      // Betragsfeldes) — siehe input.tsx.
+      inputMode={inputMode ?? "text"}
       className={cn(
         // 16 px auf schmalen Geraeten — sonst zoomt iOS Safari beim Fokussieren.
         "flex min-h-24 w-full rounded-md border border-input bg-background px-3 py-2",
