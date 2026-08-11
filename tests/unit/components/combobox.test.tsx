@@ -45,6 +45,23 @@ describe("Combobox", () => {
     expect(screen.getAllByRole("option")).toHaveLength(2);
   });
 
+  // iOS liest den `inputmode` nur beim Setzen des Fokus. Klappt die Liste
+  // schon beim Beruehren auf (pointerdown), aendert sich der Baum mitten in
+  // der Fokusvergabe und die Tastatur des vorherigen Feldes bleibt stehen —
+  // aus dem Betragsfeld heraus der Zahlenblock (siehe combobox.tsx).
+  it("oeffnet die Liste nicht schon beim Beruehren, sondern erst beim Klick", async () => {
+    const user = userEvent.setup();
+    const { field } = renderCombobox();
+
+    await user.pointer({ keys: "[MouseLeft>]", target: field });
+
+    expect(field).toHaveAttribute("aria-expanded", "false");
+
+    await user.pointer({ keys: "[/MouseLeft]", target: field });
+
+    expect(field).toHaveAttribute("aria-expanded", "true");
+  });
+
   it("oeffnet die Liste beim Tippen und filtert", async () => {
     const user = userEvent.setup();
     const { field } = renderCombobox();
