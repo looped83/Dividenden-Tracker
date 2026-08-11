@@ -177,7 +177,17 @@ export function Combobox({
         // sofort vor einer aufgeklappten Liste, die den Rest des Formulars
         // verdeckte. Geoeffnet wird durch Antippen des Feldes, durch Tippen und
         // durch Pfeil-nach-unten (siehe onKeyDown).
-        onPointerDown={() => {
+        //
+        // Und bewusst `onClick` statt `onPointerDown`: iOS liest den
+        // `inputmode` **nur** in dem Moment, in dem der Fokus gesetzt wird.
+        // `pointerdown` faellt dort schon beim Beruehren an — also vor dem
+        // Fokus. Das Aufklappen der Liste aenderte damit den Baum mitten in
+        // der Fokusvergabe, und iOS behielt die Tastatur des vorherigen
+        // Feldes: Aus dem Betragsfeld heraus stand beim ersten Antippen der
+        // Zahlenblock, erst das zweite (das nichts mehr aendert) brachte die
+        // Buchstaben. `click` faellt nach dem Fokus an — die Liste geht auf,
+        // wenn die Tastatur bereits feststeht.
+        onClick={() => {
           if (!open) openList();
         }}
         onKeyDown={onKeyDown}
