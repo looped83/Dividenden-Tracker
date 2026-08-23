@@ -183,9 +183,25 @@ Datei und lässt alle übrigen stehen.
 
 **`/#/depot`** — vier Kennzahlkacheln unter Kopfzeile und Reitern, an derselben Stelle wie in
 jedem anderen Bereich: Depotwert (mit Stand), erwartete Jahresdividende, Rendite und
-Anzahl Positionen. Die Verwaltungsliste darunter bleibt unverändert — sie hat bereits acht
-Spalten und scrollt auf dem Telefon seitlich; drei Zahlenspalten mehr hätten sie
-unbrauchbar gemacht.
+Anzahl Positionen. Die Kacheln beantworten „wie steht mein Depot insgesamt".
+
+Die Liste darunter beantwortet „woraus besteht es" und zeigt dafür je Zeile **Wert** (mit
+Anteil am Depot), **Erwartet p. a.** (mit Rendite) und **Gewinn** (absolut und relativ) aus
+dem jüngsten Stand. Zuvor führte sie ausschließlich Stammdaten — Ticker, ISIN, Land, Status —,
+also Felder, die beim Wiederfinden helfen, aber keine Frage an ein Depot beantworten; Ticker
+und ISIN stehen deshalb jetzt klein unter dem Namen statt in eigenen Spalten. Ohne
+importierten Stand entfallen die drei Zahlenspalten ganz (wie in der Unternehmensstatistik),
+und auf dem Telefon steht an Stelle der Tabelle eine Kartenansicht — sieben Spalten hinter
+einem seitlichen Bildlauf wären dort keine Übersicht.
+
+Bewusst nur der **jüngste** Stand: Der Export beschreibt das ganze Depot, ein darin fehlendes
+Papier ist verkauft. Es zeigt in der Liste deshalb keine Position mehr — den letzten bekannten
+Bestand nennt allein die Detailseite, dort ausdrücklich als solcher ausgewiesen.
+
+Sortierbar ist die Liste zusätzlich nach Wert, erwarteter Jahresdividende, Rendite und Gewinn;
+diese Auswahl erscheint nur mit importiertem Stand. Verglichen werden dabei Beträge über
+Währungsgrenzen hinweg — eine Reihenfolge, keine Rechnung: Es entsteht kein Betrag, der
+angezeigt würde (dieselbe Näherung wie in der Unternehmensstatistik).
 
 Die Rendite ist **Summe durch Summe**, nicht der Mittelwert der Einzelrenditen. Der
 Mittelwert gewichtet eine 43-€-Position genauso wie eine mit 26.000 € und ergibt eine Zahl,

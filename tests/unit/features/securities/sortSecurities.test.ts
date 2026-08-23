@@ -1,37 +1,63 @@
 import { describe, expect, it } from "vitest";
+import { Money, MoneyDecimal, EUR } from "@/lib/money";
 import {
   DEFAULT_SECURITY_SORT,
-  sortSecurities,
+  defaultDirectionFor,
+  securitySortOptions,
+  sortAssetRows,
   type SecuritySort,
 } from "@/features/securities/sortSecurities";
+import type { AssetPosition, AssetRow } from "@/features/securities/assetRows";
 import type { Security } from "@/lib/supabase/repositories/securities";
 
 /**
- * Sortierung der Unternehmensliste. Geprueft wird vor allem, wohin Zeilen
- * **ohne** Wert wandern: „Sortiere nach Ticker" darf ein Unternehmen ohne
- * Ticker nicht an die Spitze setzen.
+ * Sortierung der Assetliste. Geprueft wird vor allem, wohin Zeilen **ohne**
+ * Wert wandern: „Sortiere nach Ticker" darf ein Asset ohne Ticker nicht an die
+ * Spitze setzen, und „Nach Wert" kein Papier ohne Bestand.
  */
-function security(overrides: Partial<Security> & { name: string }): Security {
+function row(
+  overrides: Partial<Security> & { name: string },
+  position: Partial<AssetPosition> | null = null,
+  depotName: string | null = null,
+): AssetRow {
   return {
-    id: overrides.name,
-    ticker: null,
-    sector: null,
-    country: null,
-    default_depot_id: null,
-    archived_at: null,
-    ...overrides,
-  } as Security;
+    security: {
+      id: overrides.name,
+      ticker: null,
+      sector: null,
+      country: null,
+      default_depot_id: null,
+      archived_at: null,
+      ...overrides,
+    } as Security,
+    depotName,
+    position:
+      position === null
+        ? null
+        : {
+            asOf: "2026-08-03",
+            marketValue: null,
+            allocationPercent: null,
+            gain: null,
+            gainPercent: null,
+            annualDividend: null,
+            dividendYield: null,
+            ...position,
+          },
+  };
 }
 
-const APPLE = security({ name: "Apple", ticker: "AAPL", sector: "Technologie" });
-const BASF = security({ name: "BASF", ticker: "BAS", sector: "Chemie" });
-const OHNE = security({ name: "Ohne Angaben" });
+const euro = (value: string) => Money.fromString(value, EUR);
 
-const namesOf = (rows: readonly Security[]) => rows.map((row) => row.name);
+const APPLE = row({ name: "Apple", ticker: "AAPL", sector: "Technologie" });
+const BASF = row({ name: "BASF", ticker: "BAS", sector: "Chemie" });
+const OHNE = row({ name: "Ohne Angaben" });
+
+const namesOf = (rows: readonly AssetRow[]) => rows.map((entry) => entry.security.name);
 const sort = (field: SecuritySort["field"], direction: SecuritySort["direction"]) =>
-  namesOf(sortSecurities([OHNE, BASF, APPLE], { field, direction }, () => null));
+  namesOf(sortAssetRows([OHNE, BASF, APPLE], { field, direction }));
 
-describe("sortSecurities", () => {
+describe("sortAssetRows", () => {
   it("sortiert nach Name in beide Richtungen", () => {
     expect(sort("name", "asc")).toEqual(["Apple", "BASF", "Ohne Angaben"]);
     expect(sort("name", "desc")).toEqual(["Ohne Angaben", "BASF", "Apple"]);
@@ -44,34 +70,99 @@ describe("sortSecurities", () => {
 
   it("sortiert nach dem Namen des Standard-Depots, nicht nach dessen Kennung", () => {
     const rows = [
-      security({ name: "Erstes", default_depot_id: "dep-z" }),
-      security({ name: "Zweites", default_depot_id: "dep-a" }),
+      row({ name: "Erstes", default_depot_id: "dep-z" }, null, "Zweitdepot"),
+      row({ name: "Zweites", default_depot_id: "dep-a" }, null, "Erstdepot"),
     ];
-    const depotName = (row: Security) =>
-      row.default_depot_id === "dep-z" ? "Zweitdepot" : "Erstdepot";
 
     expect(
-      namesOf(sortSecurities(rows, { field: "depot", direction: "asc" }, depotName)),
+      namesOf(sortAssetRows(rows, { field: "depot", direction: "asc" })),
       // Erstdepot vor Zweitdepot — also „Zweites" zuerst.
     ).toEqual(["Zweites", "Erstes"]);
   });
 
-  it("bricht Gleichstand ueber den Namen auf", () => {
+  it("sortiert nach Depotwert, groesste Position zuerst", () => {
     const rows = [
-      security({ name: "Zeta", sector: "Chemie" }),
-      security({ name: "Alpha", sector: "Chemie" }),
+      row({ name: "Klein" }, { marketValue: euro("40.00") }),
+      row({ name: "Gross" }, { marketValue: euro("26000.00") }),
+      row({ name: "Mittel" }, { marketValue: euro("1200.00") }),
     ];
 
-    expect(
-      namesOf(sortSecurities(rows, { field: "sector", direction: "desc" }, () => null)),
-    ).toEqual(["Alpha", "Zeta"]);
+    expect(namesOf(sortAssetRows(rows, { field: "value", direction: "desc" }))).toEqual([
+      "Gross",
+      "Mittel",
+      "Klein",
+    ]);
+  });
+
+  it("stellt Assets ohne Position bei Zahlenfeldern ans Ende", () => {
+    const rows = [
+      row({ name: "Verkauft" }),
+      row({ name: "Gehalten" }, { annualDividend: euro("60.00") }),
+      // Gehalten, aber die Quelle nennt keinen Betrag — auch das ist kein 0.
+      row({ name: "Ohne Betrag" }, {}),
+    ];
+
+    for (const direction of ["asc", "desc"] as const) {
+      const sorted = namesOf(sortAssetRows(rows, { field: "expected", direction }));
+      expect(sorted[0]).toBe("Gehalten");
+      expect(sorted.slice(1)).toEqual(["Ohne Betrag", "Verkauft"]);
+    }
+  });
+
+  it("sortiert nach Rendite und Gewinn", () => {
+    const rows = [
+      row(
+        { name: "Solide" },
+        { dividendYield: new MoneyDecimal("2.5"), gain: euro("10.00") },
+      ),
+      row(
+        { name: "Stark" },
+        { dividendYield: new MoneyDecimal("6.1"), gain: euro("-5.00") },
+      ),
+    ];
+
+    expect(namesOf(sortAssetRows(rows, { field: "yield", direction: "desc" }))).toEqual([
+      "Stark",
+      "Solide",
+    ]);
+    expect(namesOf(sortAssetRows(rows, { field: "gain", direction: "desc" }))).toEqual([
+      "Solide",
+      "Stark",
+    ]);
+  });
+
+  it("bricht Gleichstand ueber den Namen auf", () => {
+    const rows = [
+      row({ name: "Zeta", sector: "Chemie" }),
+      row({ name: "Alpha", sector: "Chemie" }),
+    ];
+
+    expect(namesOf(sortAssetRows(rows, { field: "sector", direction: "desc" }))).toEqual([
+      "Alpha",
+      "Zeta",
+    ]);
   });
 
   it("laesst die Eingabe unveraendert", () => {
     const rows = [BASF, APPLE];
-    const sorted = sortSecurities(rows, DEFAULT_SECURITY_SORT, () => null);
+    const sorted = sortAssetRows(rows, DEFAULT_SECURITY_SORT);
 
     expect(namesOf(rows)).toEqual(["BASF", "Apple"]);
     expect(namesOf(sorted)).toEqual(["Apple", "BASF"]);
+  });
+});
+
+describe("Sortierauswahl", () => {
+  it("bietet Positionsfelder nur mit importiertem Depotstand an", () => {
+    const withoutPositions = securitySortOptions(false).map((option) => option.value);
+    const withPositions = securitySortOptions(true).map((option) => option.value);
+
+    expect(withoutPositions).not.toContain("value");
+    expect(withPositions.slice(0, 4)).toEqual(["value", "expected", "yield", "gain"]);
+  });
+
+  it("beginnt bei Zahlenfeldern absteigend, bei Textfeldern aufsteigend", () => {
+    expect(defaultDirectionFor("value")).toBe("desc");
+    expect(defaultDirectionFor("name")).toBe("asc");
   });
 });

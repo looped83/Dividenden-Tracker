@@ -168,7 +168,7 @@ in der Oberfläche heißen die Einträge deshalb **Assets**. Im Datenmodell blei
 
 Zwei Unterbereiche:
 
-- **Assets** — die Verwaltungsliste samt Kennzahlen des jüngsten Depotstands
+- **Assets** — die Übersicht aller Papiere samt Kennzahlen des jüngsten Depotstands
 - **Entwicklung** — erwartete gegen tatsächlich erhaltene Jahresdividende (siehe unten). Sie
   stand früher in der Statistik und ist hierher gewandert: Sie war dort der einzige
   Unterbereich, der auf den importierten Depotständen aufsetzt statt auf den erfassten
@@ -191,10 +191,31 @@ Pro Asset:
 - Brutto-/Nettoentwicklung, gezahlte Steuern
 - Anteil am gesamten Dividendeneinkommen
 
+**Was die Übersicht zeigt.** Die Liste beantwortet, woraus das Depot besteht — nicht, wie die
+Papiere heißen. Sobald ein Depotstand importiert ist (docs/PORTFOLIO_IMPORT.md), trägt jede
+Zeile die Zahlen ihrer Position: **Wert** (mit Anteil am Depot), **Erwartet p. a.** (mit
+Rendite) und **Gewinn** (absolut und relativ), dazu Ausschüttungsmonate und Depotkonto, sobald
+die Breite dafür reicht. Ticker und ISIN stehen klein unter dem Namen; als eigene Spalten
+kosteten sie Breite, ohne eine Frage an ein Depot zu beantworten. Ohne importierten Stand
+entfallen die Positionsspalten ganz — eine Wand aus Gedankenstrichen ist keine Auskunft —, und
+die Branche rückt an ihre Stelle.
+
+Die Zahlen stammen ausschließlich aus dem **jüngsten** Stand: Ein Papier, das darin fehlt, ist
+verkauft und zeigt keine Position mehr. Kein Wert daraus fließt in Statistik oder Ziele
+(Grundsatz 8).
+
+Der Name führt auf die Detailseite mit Verlauf, Stammdaten und Zahlungshistorie; rechts stehen
+unverändert die Zeilenaktionen (bearbeiten, archivieren, endgültig löschen). Auf dem iPhone
+tritt an die Stelle der Tabelle eine **Kartenansicht** mit denselben Zahlen — wie in der
+Dividendenliste.
+
 Die Liste trägt dieselbe Filterleiste wie die Dividendenliste — Branche, Währung, Depotkonto
-und rechts die **Sortierung** („Nach Name", „Nach Ticker", „Nach Branche", „Nach Land", „Nach
-Depot") mit Richtungsschalter daneben. Assets ohne den sortierten Wert stehen in beiden
-Richtungen am Ende: Ein Asset ohne Ticker ist keine Antwort auf „sortiere nach Ticker".
+und rechts die **Sortierung** mit Richtungsschalter daneben: „Nach Name", „Nach Ticker", „Nach
+Branche", „Nach Land", „Nach Depot" und, sobald ein Depotstand vorliegt, „Nach Wert", „Nach
+Erwartet p. a.", „Nach Rendite" und „Nach Gewinn". Ein frisch gewähltes Zahlenfeld beginnt
+absteigend — die Frage an „Nach Wert" ist „was ist meine größte Position". Assets ohne den
+sortierten Wert stehen in beiden Richtungen am Ende: Ein Asset ohne Ticker ist keine Antwort
+auf „sortiere nach Ticker", und ein Papier ohne Bestand ist kein Depotwert von 0.
 
 Die Hauptaktion der Kopfzeile heißt **„＋ Neue Assets"** und gilt für den ganzen Bereich, also
 auch aus der Entwicklung heraus.
