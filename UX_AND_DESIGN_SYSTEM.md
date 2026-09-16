@@ -22,7 +22,8 @@ Umsetzung als CSS-Variablen (Tailwind-4-`@theme`), Hell- und Dunkelmodus über
 
 | Token | Verwendung | Hell | Dunkel |
 |---|---|---|---|
-| `--background` / `--card` | Flächen | Weiß / sehr helles Grau | tiefes Grau-Blau (kein reines Schwarz) |
+| `--background` | Seitenfläche | Weiß | reines Schwarz (`#000000`, OLED) |
+| `--card` / `--muted` | erhobene Flächen | Weiß / sehr helles Grau | gestuft über Schwarz (`#121417` / `#1e1f22`) |
 | `--foreground` | Text | fast Schwarz | helles Grau |
 | `--muted-foreground` | Sekundärtext, Labels | Grau ≥ 4,5:1 Kontrast | dito |
 | `--primary` | Aktionen, aktive Navigation | gedecktes Tiefblau | helleres Blau |
@@ -50,7 +51,7 @@ zusammengefasst („Sonstige") oder in kleine Einzeldiagramme aufgeteilt.
 | 6 | Violett | `oklch(0.46 0.16 300)` `#673ba2` | `oklch(0.55 0.17 300)` `#8254c4` |
 
 **Gemessen, nicht geschätzt.** Beide Sätze bestehen alle rechnerischen Prüfungen gegen
-die Kartenfläche (`#ffffff` hell, `#181d24` dunkel): Helligkeitsband, Chroma-Untergrenze,
+die Kartenfläche (`#ffffff` hell, `#121417` dunkel): Helligkeitsband, Chroma-Untergrenze,
 CVD-Abstand benachbarter Slots (schlechtestes Paar ΔE 12,1 hell / 10,3 dunkel bei einer
 Schwelle von 8), Normalsicht-Abstand (20,8 hell / 21,9 dunkel bei einer Schwelle von 15)
 und ≥ 3:1 Kontrast. Die ersten **drei** Slots halten die Schwellen zusätzlich über *alle*
@@ -255,8 +256,19 @@ Prüfverfahren: TEST_STRATEGY.md §9.
 ## 8. Dark Mode
 
 Vollständig gleichwertig (kein „nachgereichtes" Theme): eigene Chart- und Statusfarben,
-Kontrastprüfung beider Modi in CI (axe), Manifest-`theme_color` pro Modus, Umschalter in
+Kontrastprüfung beider Modi in CI (axe), `theme-color` pro Modus, Umschalter in
 Einstellungen (hell/dunkel/System).
+
+**Die Seitenfläche ist reines Schwarz.** Auf OLED-Geräten (iPhone, iPad Pro) bleiben die
+Pixel dort aus: kein Grauschleier im Dunkeln, weniger Verbrauch. Die Tiefenwirkung trägt
+deshalb nicht der Hintergrund, sondern die Staffelung darüber — Karte `L 0.19`, gedämpfte
+Fläche `L 0.24`, Akzent `L 0.29`, Rahmen `L 0.30`. Jede Fläche in der Oberfläche ist eine
+dieser Stufen; `--background` bleibt der Grund und wird nie als erhobenes Element benutzt
+(eine schwarze Fläche auf grauem Grund liest sich als Loch, nicht als Auswahl).
+
+Die Tönung ist nahezu neutral (Chroma ≤ 0.008): Neben reinem Schwarz wirkt ein Blaustich
+in den Flächen schmutzig statt kühl. Der Text bleibt bei `L 0.94` statt reinem Weiß —
+maximaler Kontrast auf Schwarz lässt Schrift auf OLED ausfransen.
 
 ## Dashboard (Phase 5A)
 
