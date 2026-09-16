@@ -15,7 +15,7 @@ export function ThemeToggle() {
     <div
       role="radiogroup"
       aria-label="Erscheinungsbild"
-      className="inline-flex items-center rounded-md border border-border bg-muted p-0.5"
+      className="inline-flex items-center rounded-md border border-border bg-card p-0.5"
     >
       {OPTIONS.map(({ value, label, icon: Icon }) => {
         const isActive = theme === value;
@@ -35,7 +35,7 @@ export function ThemeToggle() {
               "pointer-coarse:size-11",
               "focus-visible:ring-2 focus-visible:ring-ring",
               isActive
-                ? "bg-background text-foreground shadow-sm"
+                ? "bg-accent text-accent-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground",
             )}
           >
