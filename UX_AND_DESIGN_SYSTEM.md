@@ -24,6 +24,7 @@ Umsetzung als CSS-Variablen (Tailwind-4-`@theme`), Hell- und Dunkelmodus über
 |---|---|---|---|
 | `--background` | Seitenfläche | Weiß | reines Schwarz (`#000000`, OLED) |
 | `--card` / `--muted` | erhobene Flächen | Weiß / sehr helles Grau | gestuft über Schwarz (`#121417` / `#1e1f22`) |
+| `--input` | Rahmen von Bedienelementen | Grau ≥ 3:1 gegen jede Nachbarfläche | dito, heller gesetzt |
 | `--foreground` | Text | fast Schwarz | helles Grau |
 | `--muted-foreground` | Sekundärtext, Labels | Grau ≥ 4,5:1 Kontrast | dito |
 | `--primary` | Aktionen, aktive Navigation | gedecktes Tiefblau | helleres Blau |
@@ -252,6 +253,14 @@ Fokus-Management in Dialogen/Sheets (Trap + Rückgabe), Screenreader-Labels für
 Icon-Buttons, Tabellen mit korrekten Headern, Live-Regions für asynchrone Ergebnisse
 (Importanalyse fertig), Diagramm-Datentabellen, Reduced Motion, 200-%-Zoom, Touch-Ziele.
 Prüfverfahren: TEST_STRATEGY.md §9.
+
+**Nicht-Text-Kontrast (1.4.11).** Der Rahmen von Eingabefeldern, Auswahllisten,
+Kontrollkästchen und Umriss-Schaltflächen (`--input`) hält 3:1 gegen *jede* Fläche, an
+die er grenzt — Seite, Karte, gedämpfte Fläche, Akzent im Hover, Meldungsflächen. Bei
+einem leeren Feld ist dieser Rahmen das einzige, was das Bedienelement sichtbar macht.
+Strukturlinien (`--border`: Karten, Tabellen, Trenner) fallen nicht darunter und bleiben
+bewusst zurückhaltend; ein Element, das nur durch eine solche Linie erkennbar wäre,
+bekommt stattdessen `--input`.
 
 ## 8. Dark Mode
 

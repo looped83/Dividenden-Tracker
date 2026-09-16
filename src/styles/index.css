@@ -21,7 +21,17 @@
   --card-foreground: oklch(0.2 0.02 260);
 
   --border: oklch(0.9 0.006 260);
-  --input: oklch(0.88 0.006 260);
+  /* Rahmen von Eingabefeldern, Auswahllisten, Kontrollkaestchen und
+     Umriss-Schaltflaechen. Dieser Rahmen ist bei einem leeren Feld das
+     einzige, was die Bedienelemente ueberhaupt sichtbar macht — WCAG 2.2
+     (1.4.11) verlangt dafuer 3:1 gegen jede angrenzende Flaeche. Der frueher
+     helle Wert (0.88) erreichte 1,4:1. Gemessen gegen alle Nachbarflaechen:
+     Karte 3,6:1, Seite 3,6:1, gedaempft 3,2:1, Akzent (Hover) 3,1:1.
+     Deutlich dunkler ginge, wuerde die ruhigen Formulare aber in ein Gitter
+     aus Kaesten verwandeln — 0.62 ist der hellste Wert, der die Schwelle
+     ueberall haelt. Strukturlinien (`--border`) sind davon nicht betroffen:
+     Karten- und Tabellenraender tragen keine Bedienbedeutung. */
+  --input: oklch(0.62 0.008 260);
   --ring: oklch(0.55 0.09 255);
 
   --muted: oklch(0.96 0.004 260);
@@ -76,7 +86,11 @@
   --card-foreground: oklch(0.94 0.004 260);
 
   --border: oklch(0.3 0.008 260);
-  --input: oklch(0.35 0.008 260);
+  /* Wie im hellen Theme 3:1 gegen jede Nachbarflaeche (1.4.11): Seite 4,9:1,
+     Karte 4,3:1, gedaempft 3,8:1, Akzent 3,3:1. Auf schwarzem Grund faellt
+     der hellere Rahmen weniger auf als im hellen Theme — das Feld liest sich
+     als eingelassene Flaeche mit klarer Kante. */
+  --input: oklch(0.58 0.008 260);
   --ring: oklch(0.68 0.1 255);
 
   --muted: oklch(0.24 0.006 260);
