@@ -435,8 +435,11 @@ filtern — Begründung, Abwägung und Auslöser in DECISIONS.md ADR-001.
 ## Phase 6 – Cache-Invalidierung & Query-Struktur
 
 Alle Zahlungsabfragen liegen im Namespace `["payments"]` (Liste
-`["payments","list",includeArchived]`, Detail `["payments","detail",id]`,
-Dashboard `["payments","dashboard"]`, das die Statistik teilt). Jede
+`["payments","list"]` — stornierte eingeschlossen und von Liste und
+Datenqualitätsansicht geteilt, der Statusfilter wirkt clientseitig —, Detail
+`["payments","detail",id]`, Dashboard `["payments","dashboard"]`, das die
+Statistik teilt). Die Liste lädt keine Unternehmensnamen mit; sie stammen aus
+`["securities"]`. Jede
 datenverändernde Mutation (Anlegen, Bearbeiten, Storno, Reaktivierung,
 dauerhaftes Löschen) ruft `invalidateAll` und invalidiert damit
 `["payments"]` **und** `["duplicate-dismissals"]` — Liste, Detail, Dashboard,

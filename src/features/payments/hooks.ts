@@ -32,13 +32,14 @@ function invalidateAll(queryClient: ReturnType<typeof useQueryClient>) {
 }
 
 /**
- * Vollstaendige Eingangsliste (alle Zahlungen, optional inkl. stornierter).
- * Zeitraumfilter/Sortierung erfolgen clientseitig ueber den effektiven Monat.
+ * Vollstaendige Eingangsliste, stornierte eingeschlossen — ein Cache-Eintrag
+ * fuer Liste und Datenqualitaet. Status-, Zeitraumfilter und Sortierung
+ * erfolgen clientseitig ueber den effektiven Monat.
  */
-export function useAllPayments(includeArchived: boolean) {
+export function useAllPayments() {
   return useQuery({
-    queryKey: [...PAYMENTS_KEY, "list", includeArchived],
-    queryFn: () => fetchAllPayments({ includeArchived }),
+    queryKey: [...PAYMENTS_KEY, "list"],
+    queryFn: fetchAllPayments,
   });
 }
 

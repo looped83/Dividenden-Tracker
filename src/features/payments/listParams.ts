@@ -43,7 +43,11 @@ export function parseSort(sort: string | null, direction: string | null): ListSo
   return { field, direction: dir };
 }
 
-/** Der Statusfilter bestimmt, ob stornierte Zeilen überhaupt geladen werden. */
+/**
+ * Ob der Statusfilter stornierte Zeilen einschliesst. Geladen werden sie
+ * immer (ein Abruf fuer alle Filter); der Filter entscheidet, ob sie in
+ * Jahresauswahl und Leerzustand zaehlen.
+ */
 export function statusNeedsArchived(status: StatusFilter): boolean {
   return status !== "active";
 }

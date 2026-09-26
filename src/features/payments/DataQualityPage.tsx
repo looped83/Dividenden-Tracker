@@ -33,7 +33,7 @@ import { DeleteDialog, StornoDialog, type PaymentSummaryData } from "./dialogs";
 export function DataQualityPage() {
   const { data: securities = [] } = useSecurities();
   const { data: depots = [] } = useDepots();
-  const { data: payments = [], isLoading } = useAllPayments(true);
+  const { data: payments = [], isLoading } = useAllPayments();
   const { data: dismissedKeys = [] } = useDuplicateDismissals();
   const dismiss = useDismissDuplicate();
   const archivePayment = useArchivePayment();

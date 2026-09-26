@@ -89,7 +89,7 @@ export function PaymentsPage() {
   const { notify } = useToast();
   const newPayment = useNewPaymentTrigger();
   const { data: depots = [] } = useDepots();
-  const { data: securities = [] } = useSecurities();
+  const { data: securities = [], isLoading: securitiesLoading } = useSecurities();
 
   const [searchParams, setSearchParams] = useSearchParams();
   const [page, setPage] = React.useState(1);
@@ -143,8 +143,19 @@ export function PaymentsPage() {
 
   const isWide = useMediaQuery(MD_BREAKPOINT_QUERY);
 
-  const { data: allPayments = [], isLoading } = useAllPayments(
-    statusNeedsArchived(status),
+  const { data: allPayments = [], isLoading: paymentsLoading } = useAllPayments();
+  // Die Namen der Unternehmen kommen aus den Stammdaten, nicht aus der
+  // Zahlungsabfrage — ohne sie waeren Spalte und Sortierung „Unternehmen" leer.
+  const isLoading = paymentsLoading || securitiesLoading;
+
+  // Geladen werden immer alle Zeilen; was der Statusfilter ausblendet, zaehlt
+  // auch fuer Jahresauswahl und Leerzustand nicht.
+  const statusPayments = React.useMemo(
+    () =>
+      statusNeedsArchived(status)
+        ? allPayments
+        : allPayments.filter((payment) => !payment.archived_at),
+    [allPayments, status],
   );
 
   // Ausschüttungsplan je Unternehmen → effektiver Monat je Zahlung (§10).
@@ -206,9 +217,9 @@ export function PaymentsPage() {
 
   const years = React.useMemo(() => {
     const set = new Set<number>();
-    for (const payment of allPayments) set.add(yearOf(effectiveOf(payment)));
+    for (const payment of statusPayments) set.add(yearOf(effectiveOf(payment)));
     return [...set].sort((a, b) => b - a);
-  }, [allPayments, effectiveOf]);
+  }, [statusPayments, effectiveOf]);
 
   // --- Filtern → in sortierbare Zeilen abbilden → sortieren (§2/§3/§4). ---
   const rows = React.useMemo<Row[]>(() => {
@@ -225,10 +236,7 @@ export function PaymentsPage() {
       if (filterYear && yearOf(effectiveDate) !== filterYear) continue;
       if (filterMonth && monthOf(effectiveDate) !== filterMonth) continue;
 
-      const rel = (
-        payment as unknown as { securities?: { name: string; ticker: string | null } }
-      ).securities;
-      const companyName = rel?.name ?? securityById.get(payment.security_id)?.name ?? "";
+      const companyName = securityById.get(payment.security_id)?.name ?? "";
       const depot = depotById.get(payment.depot_id);
       const depotName = depot?.name ?? "";
 
@@ -443,7 +451,7 @@ export function PaymentsPage() {
 
       {isLoading ? (
         <SkeletonRows rows={8} label="Dividendeneingänge" />
-      ) : allPayments.length === 0 && !hasActiveFilters ? (
+      ) : statusPayments.length === 0 && !hasActiveFilters ? (
         <EmptyState
           icon={Wallet}
           title="Noch kein Dividendeneingang erfasst"
