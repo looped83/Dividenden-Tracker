@@ -24,7 +24,7 @@ Truth**. Es gibt kein eigenes Backend; die Geschäftslogik verteilt sich auf:
 │  ├─ Import (Hauptthread, kein Worker):          │                                 │
 │  │    eigener CSV-Parser · exceljs (XLSX/XLS)   │                                 │
 │  │    Normalisierung · Validierung · Fingerprints                                 │
-│  └─ Service Worker (eigener, ~70 Zeilen):       │                                 │
+│  └─ Service Worker (eigener, ~100 Zeilen):      │                                 │
 │       nur App-Huellen-Cache, niemals Daten      │                                 │
 └─────────────────────────────────────────────────┼─────────────────────────────────┘
                                                   │ HTTPS (supabase-js, PKCE-Auth)
@@ -316,14 +316,22 @@ Details fachlich in IMPORT_SPEC.md; architektonisch:
   maskierbares Icon) und die iOS-Angaben in `index.html`, die Safari statt des Manifests
   auswertet (`apple-touch-icon`, `apple-mobile-web-app-*`). Damit landet die App mit Icon und
   eigenem Fenster auf dem Home-Bildschirm.
-- Eigener Service Worker (`public/sw.js`, rund 70 Zeilen) **ohne** zusätzliche Abhängigkeit —
+- Eigener Service Worker (`public/sw.js`, rund 100 Zeilen) **ohne** zusätzliche Abhängigkeit —
   `vite-plugin-pwa` samt Workbox wäre für diesen Umfang unverhältnismäßig. Registriert wird er
   nur im Produktionsbuild (`import.meta.env.PROD`), mit `BASE_URL` als Geltungsbereich, damit er
   unter dem Pages-Unterpfad ebenso greift.
 - Strategien: Navigation **Netz zuerst, Cache als Rückfall** (neue Fassungen kommen sofort an,
   offline erscheint trotzdem die Hülle); statische Dateien **Cache zuerst** — ihre Namen tragen
-  einen Hash, veraltete Antworten kann es also nicht geben. Versionierter Cache-Name, alte
-  Bestände werden beim Aktivieren entfernt.
+  einen Hash, veraltete Antworten kann es also nicht geben.
+- **Eine Fassung, ein Cache.** `public/sw.js` ist eine Vorlage; der Build
+  (`vite.config.ts`, `src/lib/config/serviceWorkerBuild.ts`) setzt die Kennung der Fassung
+  (Dateiname des Einstiegs-Bundles mit Inhalts-Hash) und die Dateien des Startpakets ein. Erst
+  dadurch unterscheidet sich `sw.js` nach jedem Deploy, und der Browser bemerkt die neue
+  Fassung. Sie legt bei der Installation Dokument und Startpaket in ihrem eigenen Cache ab — ist
+  also auch offline vollständig, bevor sie übernimmt — und löscht beim Aktivieren die Caches
+  früherer Fassungen, und zwar nur die eigenen (Präfix `dividend-tracker-shell-`): Auf GitHub
+  Pages teilen sich alle Projektseiten eines Kontos eine Herkunft. Ein Rauchtest prüft, dass
+  genau eine Fassung samt Startpaket vorliegt.
 - **Nichts von Supabase wird zwischengespeichert:** Anfragen an eine fremde Herkunft rührt der
   Service Worker nicht an (SECURITY_MODEL.md §7).
 
@@ -331,7 +339,11 @@ Details fachlich in IMPORT_SPEC.md; architektonisch:
   greift nur bei der Erstinstallation, wo es nichts zu unterbrechen gibt); die Oberfläche weist
   darauf hin (`UpdatePrompt`), und erst auf Klick übernimmt der neue Service Worker und die
   Seite lädt neu. Eine Finanzanwendung soll nicht mitten in einer Erfassung die Fassung
-  wechseln.
+  wechseln. Ausnahme: Läuft die Seite bereits auf der wartenden Fassung — nach einem Deploy
+  frisch geöffnet, denn die Navigation holt zuerst das Netz —, fragt sie den wartenden Service
+  Worker nach seiner Kennung und lässt ihn still übernehmen; es gibt nichts neu zu laden.
+  Beim Zurückkehren in die App (`visibilitychange`, höchstens stündlich) fragt sie nach einer
+  neuen Fassung — eine installierte App bleibt auf dem iPhone oft tagelang im Speicher.
 
 **Bewusst nicht umgesetzt:**
 

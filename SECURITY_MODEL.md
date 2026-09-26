@@ -163,8 +163,9 @@ Keine externen CDNs, Fonts oder Skripte (Grundsatz 15) — alles wird gebundelt.
 Der Service Worker (`public/sw.js`) speichert ausschließlich **eigene statische Dateien**
 (Dokument, JS, CSS, Icons). Anfragen an fremde Herkünfte — insbesondere die Supabase-API und
 alles Auth-Bezogene — werden nicht abgefangen und damit nie zwischengespeichert. Finanzdaten
-und Sitzungen überleben so kein geteiltes Gerät im Cache. Der Cache trägt eine Version im
-Namen; beim Aktivieren einer neuen Fassung werden alte Bestände gelöscht.
+und Sitzungen überleben so kein geteiltes Gerät im Cache. Der Cache trägt die Kennung der
+Fassung im Namen; beim Aktivieren einer neuen Fassung werden die Bestände früherer Fassungen
+gelöscht (nur die eigenen, erkennbar am Präfix `dividend-tracker-shell-`).
 
 ## 8. Audit Log
 
