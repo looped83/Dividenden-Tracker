@@ -71,12 +71,12 @@ manuelle Review (persönliches Projekt, Nachvollziehbarkeit vor Bequemlichkeit).
 | Formulare | `react-hook-form` | 7.83.0 | |
 | Validierung | `zod` | 4.4.3 | + `@hookform/resolvers` 5.5.7 (Zod-4-kompatibel) — K-3 |
 | CSV | eigener Parser | — | `src/lib/import/parseCsv.ts`; Papa Parse waere fuer den Umfang eine Abhaengigkeit zu viel |
-| Excel | `exceljs` | ^4.4.0 | Dynamisch nachgeladen (~930 kB, eigener Chunk); loest SheetJS ab — K-4 |
+| Excel | `exceljs` | 4.4.0 | Dynamisch nachgeladen (~930 kB, eigener Chunk); loest SheetJS ab — K-4 |
 | Dezimalarithmetik | `decimal.js` | 10.6.0 | Konfiguration in CALCULATION_RULES.md §2 |
 | Diagramme | `recharts` | 3.10.1 | React-19-kompatibel; nachgeladen (~103 kB gzip) |
 | Unit-Tests | `vitest` | 4.1.10 | + `@testing-library/react` 16.3.2 |
 | E2E-Tests | `@playwright/test` | 1.56.1 | Chromium/WebKit (WebKit ≈ iOS Safari) |
-| Backend-SDK | `@supabase/supabase-js` | 2.111.0 | PKCE-Flow |
+| Backend-SDK | `@supabase/auth-js`, `postgrest-js`, `functions-js` | 2.111.0 | PKCE-Flow; ohne Realtime/Storage — K-8 |
 | PWA | eigener Service Worker | — | `public/sw.js`; `vite-plugin-pwa` samt Workbox waere unverhaeltnismaessig (§6) |
 | Supabase CLI | `supabase` | aktuell (≥ 2.x) | Lokale DB, Migrationen, Typen-Generierung |
 
@@ -117,6 +117,15 @@ manuelle Review (persönliches Projekt, Nachvollziehbarkeit vor Bequemlichkeit).
   Accessibility-Layer (Tastatur/ARIA) von v3 wird genutzt.
 - **K-7 Vitest 4 + Vite 8:** Major-Versionen sind aufeinander abgestimmt (gleiche
   Rollup/esbuild-Basis); Playwright unabhängig davon versioniert.
+- **K-8 Supabase-Client aus Einzelpaketen statt `createClient`:** `lib/supabase/client.ts`
+  setzt Anmeldung (`auth-js`), Datenbank (`postgrest-js`) und Edge Functions
+  (`functions-js`) selbst zusammen. Das Sammelpaket `@supabase/supabase-js` brächte Realtime
+  und Storage mit, die die Anwendung nie nutzt — rund 24 kB gzip, gut ein Zehntel des
+  Startpakets (220,8 → 197,2 kB gzip, gemessen am 2026-09-26). Nachgebildet ist genau das,
+  was `createClient` für diese Teile tut: Adressen, Speicherschlüssel der Sitzung
+  (`sb-<projekt>-auth-token`, bestehende Anmeldungen bleiben gültig) und Kopfzeilen je
+  Anfrage (`tests/unit/lib/supabase/client.test.ts`). Die drei Pakete erscheinen im
+  Gleichschritt und werden gemeinsam auf eine Version gehoben.
 
 ---
 
@@ -366,7 +375,7 @@ Details fachlich in IMPORT_SPEC.md; architektonisch:
   (`PaymentComposerDialog`, Radix-Dialog ≈ 12 kB gzip): Es wird beim ersten Öffnen eingehängt
   und beim Zeigen auf bzw. Fokussieren von „Neue Dividende" vorab geladen.
 - **Die Anmeldeprüfung umschließt den Inhalt, nicht die Hülle** (`RequireAuth` in
-  `AppShell`). Nach längerer Pause erneuert supabase-js beim Start zuerst das Token über das
+  `AppShell`). Nach längerer Pause erneuert der Auth-Client beim Start zuerst das Token über das
   Netz; währenddessen stehen Navigation und `PageSkeleton` bereits. Die Navigation zeigt keine
   Daten, und geschützte Seiten samt ihren Abfragen hängen erst mit gültiger Sitzung ein.
 - **Dunkles Design vor dem ersten Zeichnen:** Ein Inline-Skript in `index.html` setzt `.dark`,

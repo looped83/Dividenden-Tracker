@@ -29,7 +29,7 @@ D-014).
 - Supabase Auth, E-Mail + Passwort, **PKCE-Flow**; optionale spätere Erweiterung Passkeys.
 - Registrierung nur mit E-Mail-Bestätigung; Passwort-Mindestlänge 12, Prüfung gegen
   Leaked-Password-Schutz von Supabase Auth.
-- Session: Access-Token kurzlebig (Standard 1 h), Auto-Refresh durch supabase-js; Logout
+- Session: Access-Token kurzlebig (Standard 1 h), Auto-Refresh durch den Auth-Client (`@supabase/auth-js`); Logout
   invalidiert Refresh-Token und **löscht den lokalen Query-Persist-Cache und alle
   Auth-Artefakte** (Finanzdaten dürfen nicht für den nächsten Gerätenutzer lesbar bleiben).
 - Anmeldeversuche sind durch Supabase-Rate-Limits begrenzt; keine eigene Implementierung.
