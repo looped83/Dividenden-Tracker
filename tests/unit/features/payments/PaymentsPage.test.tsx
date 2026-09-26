@@ -1,4 +1,12 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+  type MockInstance,
+} from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -61,6 +69,7 @@ function zahlung(overrides: Partial<PaymentListRow> = {}): PaymentListRow {
     depot_id: "d1",
     pay_date: "2026-03-10",
     net_amount: "50.00",
+    gross_amount: "50.00",
     original_currency: "EUR",
     payment_type: "regular",
     source: "manual",
@@ -92,9 +101,32 @@ function renderList(rows: PaymentListRow[], route = "/eingaenge") {
   );
 }
 
+/** Schaltet zwischen Karten (Telefon, Standard) und Tabelle (ab `md`) um. */
+function setWide(matches: boolean) {
+  window.matchMedia = (query: string): MediaQueryList => ({
+    matches,
+    media: query,
+    onchange: null,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+    addListener: () => undefined,
+    removeListener: () => undefined,
+    dispatchEvent: () => false,
+  });
+}
+
 describe("PaymentsPage", () => {
+  // jsdom kennt kein Rollen; das Blaettern ruft es auf.
+  let scrollTo: MockInstance<typeof window.scrollTo>;
+
   beforeEach(() => {
     zahlungen.current = [];
+    scrollTo = vi.spyOn(window, "scrollTo").mockImplementation(() => undefined);
+  });
+
+  afterEach(() => {
+    scrollTo.mockRestore();
+    setWide(false);
   });
 
   it("zeigt die Eingaenge mit Unternehmen und Betrag", () => {
@@ -110,8 +142,8 @@ describe("PaymentsPage", () => {
 
     // Ueber die Rolle, nicht ueber den Text: Die Namen stehen auch in den
     // Auswahllisten der Filterleiste.
-    expect(screen.getByRole("link", { name: "Apple Inc." })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Allianz SE" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Apple Inc\./ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Allianz SE/ })).toBeInTheDocument();
     expect(screen.getByText("50,00 €")).toBeInTheDocument();
     expect(screen.getByText("120,00 €")).toBeInTheDocument();
   });
@@ -126,8 +158,8 @@ describe("PaymentsPage", () => {
     await user.selectOptions(screen.getByLabelText("Unternehmen"), "s1");
 
     expect(screen.getByText("1 Eingang gefunden.")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Apple Inc." })).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Allianz SE" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Apple Inc\./ })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Allianz SE/ })).not.toBeInTheDocument();
   });
 
   it("blendet stornierte Eingaenge aus, bis man sie anfordert", async () => {
@@ -137,11 +169,11 @@ describe("PaymentsPage", () => {
       zahlung({ id: "b", security_id: "s2", archived_at: "2026-04-01T00:00:00Z" }),
     ]);
 
-    expect(screen.queryByRole("link", { name: "Allianz SE" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Allianz SE/ })).not.toBeInTheDocument();
 
     await user.click(screen.getByLabelText("Stornierte anzeigen"));
 
-    expect(screen.getByRole("link", { name: "Allianz SE" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Allianz SE/ })).toBeInTheDocument();
     expect(screen.getByText("Storniert")).toBeInTheDocument();
   });
 
@@ -162,15 +194,73 @@ describe("PaymentsPage", () => {
     expect(screen.getByText(/26–30 von 30/)).toBeInTheDocument();
   });
 
-  it("bietet je Zeile Bearbeiten, Stornieren und Löschen — ohne Auswahl", () => {
+  it("beginnt eine neue Seite oben", async () => {
+    const user = userEvent.setup();
+    renderList(
+      Array.from({ length: 30 }, (_, index) => zahlung({ id: `p${String(index)}` })),
+    );
+
+    await user.click(screen.getByRole("button", { name: "Weiter" }));
+
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0 });
+  });
+
+  it("oeffnet die Seite aus der Adresse — der Weg zurueck von einem Eingang endet dort", () => {
+    renderList(
+      Array.from({ length: 30 }, (_, index) => zahlung({ id: `p${String(index)}` })),
+      "/eingaenge?page=2",
+    );
+
+    expect(screen.getByText(/26–30 von 30/)).toBeInTheDocument();
+    // Beim Zurueckkehren stellt der Router die Position wieder her; die
+    // Seite darf sie nicht nach oben reissen.
+    expect(scrollTo).not.toHaveBeenCalled();
+  });
+
+  it("springt bei einem Filterwechsel auf Seite 1 zurueck", async () => {
+    const user = userEvent.setup();
+    renderList(
+      Array.from({ length: 30 }, (_, index) =>
+        zahlung({ id: `p${String(index)}`, security_id: index < 28 ? "s1" : "s2" }),
+      ),
+      "/eingaenge?page=2",
+    );
+
+    await user.selectOptions(screen.getByLabelText("Unternehmen"), "s1");
+
+    expect(screen.getByText(/1–25 von 28/)).toBeInTheDocument();
+  });
+
+  it("fuehrt auf dem Telefon mit einer Tippflaeche je Karte zur Detailseite", () => {
+    renderList([zahlung({ id: "a" })]);
+
+    // Eine Karte, ein Ziel: Die Aktionen stehen auf der Detailseite.
+    const karte = screen.getByRole("link", { name: /Apple Inc\./ });
+    expect(karte).toHaveAttribute("href", "/eingaenge/a");
+    expect(screen.queryByRole("button", { name: /stornieren/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /löschen/ })).not.toBeInTheDocument();
+  });
+
+  it("bietet auf breiten Schirmen je Zeile Bearbeiten, Stornieren und Löschen", () => {
+    setWide(true);
     renderList([zahlung({ id: "a" })]);
 
     // Die Liste kennt keine Mehrfachauswahl mehr: Was zu tun ist, steht an
     // der Zeile selbst.
     expect(screen.queryByLabelText(/auswählen/)).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Bearbeiten" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Stornieren" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Dauerhaft löschen" })).toBeInTheDocument();
+    // Die Namen nennen den Eingang: 25 gleichlautende „Bearbeiten" liessen
+    // sich per Screenreader nicht auseinanderhalten.
+    expect(
+      screen.getByRole("link", { name: "Apple Inc. vom 10.03.2026 bearbeiten" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Apple Inc. vom 10.03.2026 stornieren" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: "Apple Inc. vom 10.03.2026 dauerhaft löschen",
+      }),
+    ).toBeInTheDocument();
   });
 
   it("zaehlt nur stornierte Eingaenge nicht als Bestand", () => {

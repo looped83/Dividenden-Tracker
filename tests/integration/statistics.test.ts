@@ -10,8 +10,8 @@ import { seedDepot, seedPayment, seedSecurity } from "./support/seed";
  * Zahlungen. Die Client-Aggregationen selbst (yearStatistics,
  * securityStatistics, depotStatistics, …) sind in
  * `tests/unit/lib/statistics/statistics.test.ts` decimal-genau abgedeckt; hier
- * wird sichergestellt, dass die zugrunde liegende Zeilenmenge (identische Query
- * wie `fetchDashboardPayments`) mit unabhaengigen SQL-`GROUP BY`-Summen
+ * wird sichergestellt, dass die zugrunde liegende Zeilenmenge (die aktiven
+ * Zeilen aus `fetchAllPayments`) mit unabhaengigen SQL-`GROUP BY`-Summen
  * uebereinstimmt und RLS eingehalten wird.
  *
  * Voraussetzung: lokale Postgres-Testdatenbank (`npm run test:integration`).

@@ -71,12 +71,12 @@ manuelle Review (persönliches Projekt, Nachvollziehbarkeit vor Bequemlichkeit).
 | Formulare | `react-hook-form` | 7.83.0 | |
 | Validierung | `zod` | 4.4.3 | + `@hookform/resolvers` 5.5.7 (Zod-4-kompatibel) — K-3 |
 | CSV | eigener Parser | — | `src/lib/import/parseCsv.ts`; Papa Parse waere fuer den Umfang eine Abhaengigkeit zu viel |
-| Excel | `exceljs` | ^4.4.0 | Dynamisch nachgeladen (~930 kB, eigener Chunk); loest SheetJS ab — K-4 |
+| Excel | `exceljs` | 4.4.0 | Dynamisch nachgeladen (~930 kB, eigener Chunk); loest SheetJS ab — K-4 |
 | Dezimalarithmetik | `decimal.js` | 10.6.0 | Konfiguration in CALCULATION_RULES.md §2 |
 | Diagramme | `recharts` | 3.10.1 | React-19-kompatibel; nachgeladen (~103 kB gzip) |
 | Unit-Tests | `vitest` | 4.1.10 | + `@testing-library/react` 16.3.2 |
 | E2E-Tests | `@playwright/test` | 1.56.1 | Chromium/WebKit (WebKit ≈ iOS Safari) |
-| Backend-SDK | `@supabase/supabase-js` | 2.111.0 | PKCE-Flow |
+| Backend-SDK | `@supabase/auth-js`, `postgrest-js`, `functions-js` | 2.111.0 | PKCE-Flow; ohne Realtime/Storage — K-8 |
 | PWA | eigener Service Worker | — | `public/sw.js`; `vite-plugin-pwa` samt Workbox waere unverhaeltnismaessig (§6) |
 | Supabase CLI | `supabase` | aktuell (≥ 2.x) | Lokale DB, Migrationen, Typen-Generierung |
 
@@ -117,6 +117,15 @@ manuelle Review (persönliches Projekt, Nachvollziehbarkeit vor Bequemlichkeit).
   Accessibility-Layer (Tastatur/ARIA) von v3 wird genutzt.
 - **K-7 Vitest 4 + Vite 8:** Major-Versionen sind aufeinander abgestimmt (gleiche
   Rollup/esbuild-Basis); Playwright unabhängig davon versioniert.
+- **K-8 Supabase-Client aus Einzelpaketen statt `createClient`:** `lib/supabase/client.ts`
+  setzt Anmeldung (`auth-js`), Datenbank (`postgrest-js`) und Edge Functions
+  (`functions-js`) selbst zusammen. Das Sammelpaket `@supabase/supabase-js` brächte Realtime
+  und Storage mit, die die Anwendung nie nutzt — rund 24 kB gzip, gut ein Zehntel des
+  Startpakets (220,8 → 197,2 kB gzip, gemessen am 2026-09-26). Nachgebildet ist genau das,
+  was `createClient` für diese Teile tut: Adressen, Speicherschlüssel der Sitzung
+  (`sb-<projekt>-auth-token`, bestehende Anmeldungen bleiben gültig) und Kopfzeilen je
+  Anfrage (`tests/unit/lib/supabase/client.test.ts`). Die drei Pakete erscheinen im
+  Gleichschritt und werden gemeinsam auf eine Version gehoben.
 
 ---
 
@@ -210,10 +219,13 @@ Client-seitige Mehrfach-Inserts ohne Transaktion sind für diese Fälle verboten
 
 Das Dashboard folgt bewusst dem Prinzip aus §4.1 Punkt 3:
 
-- **Eine logische Ladung, alle Kennzahlen.** `fetchDashboardPayments()`
-  (`lib/supabase/repositories/payments.ts`) lädt die gesamte aktive Historie
-  (`archived_at is null`), reduziert auf die von der Analytics-Schicht benötigten Spalten
-  (`id, pay_date, net/gross_amount, security_id, depot_id, payment_type, source, created_at`).
+- **Eine logische Ladung, alle Kennzahlen — und die Liste.** `fetchAllPayments()`
+  (`lib/supabase/repositories/payments.ts`) lädt die gesamte Historie samt stornierter Zeilen,
+  reduziert auf die Spalten, die Liste, Datenqualität und Analytics-Schicht lesen. Liste und
+  Auswertungen teilen damit **einen** Abruf und Cache-Eintrag; die Auswertungen nehmen per
+  `select` nur die aktiven Zeilen (`activeAnalyticsPayments`, `archived_at is null`). Zuvor
+  holten beide die Historie mit eigener Projektion, ein Wechsel zwischen Übersicht und Liste
+  übertrug sie zweimal (DECISIONS.md ADR-001).
   Da PostgREST eine Antwort auf `db-max-rows` (Supabase-Default 1000) begrenzt, wird
   **seitenweise** (`.range()`, 1000er-Seiten) mit stabiler, eindeutiger Sortierung
   (`pay_date desc, id asc`) bis zur Vollständigkeit paginiert — sonst würden bei > 1000
@@ -239,7 +251,8 @@ Das Dashboard folgt bewusst dem Prinzip aus §4.1 Punkt 3:
 - **Jahresauswahl clientseitig.** Der ausgewählte Zeitraum (`?year=…`) wird auf den bereits
   geladenen Datensatz angewandt — ein Jahreswechsel löst **keine** neue Abfrage und keine
   Seitenneuladung aus (schnelle Umschaltung, memoisierte Aggregate).
-- **Query-Key unter dem `payments`-Namespace:** `['payments','dashboard']`. Dadurch invalidieren
+- **Query-Key unter dem `payments`-Namespace:** `['payments','list']` (`PAYMENT_HISTORY_KEY`),
+  derselbe wie die Eingangsliste. Dadurch invalidieren
   alle bestehenden Zahlungs-Mutationen (Anlegen, Bearbeiten, Storno, Reaktivierung) sowie
   Import-Commit/-Rollback über `invalidateQueries(['payments'])` (Präfix-Match) automatisch auch
   die Dashboard-Daten. Namen/Archivstatus von Unternehmen und Depots stammen aus
@@ -256,7 +269,7 @@ Der Statistikbereich (`src/features/statistics`) baut vollständig auf 5A auf un
 eigene Query oder Berechnung ein:
 
 - **Geteilter Cache, keine zweite Ladung.** `useStatisticsData()` nutzt denselben Query-Key
-  `['payments','dashboard']` wie das Dashboard (`useDashboardPayments`). Dashboard und Statistik
+  `['payments','list']` wie das Dashboard (`useDashboardPayments`). Dashboard und Statistik
   teilen sich damit einen Cache-Eintrag; es entsteht keine zusätzliche Übertragung und keine
   parallele Aggregation. Der effektive Ausschüttungsmonat (§4.4) wird einmal angewandt.
 - **Analytics-Schicht als einzige Quelle.** Sämtliche Statistik-Kennzahlen (`overviewStatistics`,
@@ -362,7 +375,7 @@ Details fachlich in IMPORT_SPEC.md; architektonisch:
   (`PaymentComposerDialog`, Radix-Dialog ≈ 12 kB gzip): Es wird beim ersten Öffnen eingehängt
   und beim Zeigen auf bzw. Fokussieren von „Neue Dividende" vorab geladen.
 - **Die Anmeldeprüfung umschließt den Inhalt, nicht die Hülle** (`RequireAuth` in
-  `AppShell`). Nach längerer Pause erneuert supabase-js beim Start zuerst das Token über das
+  `AppShell`). Nach längerer Pause erneuert der Auth-Client beim Start zuerst das Token über das
   Netz; währenddessen stehen Navigation und `PageSkeleton` bereits. Die Navigation zeigt keine
   Daten, und geschützte Seiten samt ihren Abfragen hängen erst mit gültiger Sitzung ein.
 - **Dunkles Design vor dem ersten Zeichnen:** Ein Inline-Skript in `index.html` setzt `.dark`,
@@ -434,11 +447,11 @@ filtern — Begründung, Abwägung und Auslöser in DECISIONS.md ADR-001.
 
 ## Phase 6 – Cache-Invalidierung & Query-Struktur
 
-Alle Zahlungsabfragen liegen im Namespace `["payments"]` (Liste
-`["payments","list"]` — stornierte eingeschlossen und von Liste und
-Datenqualitätsansicht geteilt, der Statusfilter wirkt clientseitig —, Detail
-`["payments","detail",id]`, Dashboard `["payments","dashboard"]`, das die
-Statistik teilt). Die Liste lädt keine Unternehmensnamen mit; sie stammen aus
+Alle Zahlungsabfragen liegen im Namespace `["payments"]` (Historie
+`["payments","list"]` — stornierte eingeschlossen und von Liste,
+Datenqualitätsansicht, Dashboard, Statistik und Zielen geteilt; der Statusfilter
+der Liste wirkt clientseitig, die Auswertungen nehmen nur aktive Zeilen —, Detail
+`["payments","detail",id]`). Die Liste lädt keine Unternehmensnamen mit; sie stammen aus
 `["securities"]`. Jede
 datenverändernde Mutation (Anlegen, Bearbeiten, Storno, Reaktivierung,
 dauerhaftes Löschen) ruft `invalidateAll` und invalidiert damit
@@ -472,7 +485,7 @@ RLS-geschützte `goals`-Tabelle, mapt `numeric` einmal in `Money`, wirft
 `updated_at`, wie bei Zahlungen).
 
 **Query-Strategie.** Der Zielfortschritt leitet sich aus derselben aktiven
-Dividendenhistorie ab, die das Dashboard bereits lädt (`["payments","dashboard"]`,
+Dividendenhistorie ab, die das Dashboard bereits lädt (`["payments","list"]`,
 geteilter Cache, keine zusätzliche Roh-Abfrage je Zielkarte, kein N+1). Es gibt
 bewusst keine neue SECURITY-DEFINER-Funktion oder materialisierte View für die
 aktuelle Datenmenge; die Berechnung ist rein und clientseitig auf der bereits

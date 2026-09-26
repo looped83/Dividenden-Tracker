@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import * as React from "react";
-import type { Session } from "@supabase/supabase-js";
+import type { Session } from "@supabase/auth-js";
 import { supabase } from "@/lib/supabase/client";
 
 interface SessionContextValue {
@@ -13,7 +13,7 @@ const SessionContext = React.createContext<SessionContextValue | null>(null);
 /**
  * Haelt den Supabase-Auth-Session-Zustand fuer die gesamte App bereit
  * (ARCHITECTURE.md §7, IMPLEMENTATION_PLAN.md Phase 2 "Session-Handling").
- * supabase-js verwaltet Token-Refresh und Persistenz selbst (PKCE); dieser
+ * Der Auth-Client verwaltet Token-Refresh und Persistenz selbst (PKCE); dieser
  * Provider synchronisiert lediglich den React-Zustand mit `onAuthStateChange`.
  */
 export function SessionProvider({ children }: { children: React.ReactNode }) {

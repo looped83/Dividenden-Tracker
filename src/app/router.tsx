@@ -150,7 +150,7 @@ export const router = createHashRouter([
   {
     path: "/",
     // Die Anmeldepruefung sitzt in der Huelle um den Inhalt (AppShell), nicht
-    // um die Huelle: So steht die Navigation sofort, waehrend supabase-js die
+    // um die Huelle: So steht die Navigation sofort, waehrend der Auth-Client die
     // Sitzung prueft bzw. ein abgelaufenes Token erneuert.
     element: <AppShell />,
     children: [

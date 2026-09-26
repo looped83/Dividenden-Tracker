@@ -34,7 +34,7 @@ test("erfasst eine Dividende und zeigt sie in Liste und Übersicht", async ({
 
   // Und die Übersicht rechnet den neuen Eingang mit.
   await page.goto("/#/?year=2026");
-  await expect(page.getByRole("heading", { name: "Übersicht" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Übersicht", level: 1 })).toBeVisible();
   await expect(page.getByText("123,45").first()).toBeVisible();
 });
 

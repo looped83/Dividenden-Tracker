@@ -29,7 +29,7 @@ D-014).
 - Supabase Auth, E-Mail + Passwort, **PKCE-Flow**; optionale spätere Erweiterung Passkeys.
 - Registrierung nur mit E-Mail-Bestätigung; Passwort-Mindestlänge 12, Prüfung gegen
   Leaked-Password-Schutz von Supabase Auth.
-- Session: Access-Token kurzlebig (Standard 1 h), Auto-Refresh durch supabase-js; Logout
+- Session: Access-Token kurzlebig (Standard 1 h), Auto-Refresh durch den Auth-Client (`@supabase/auth-js`); Logout
   invalidiert Refresh-Token und **löscht den lokalen Query-Persist-Cache und alle
   Auth-Artefakte** (Finanzdaten dürfen nicht für den nächsten Gerätenutzer lesbar bleiben).
 - Anmeldeversuche sind durch Supabase-Rate-Limits begrenzt; keine eigene Implementierung.
@@ -251,7 +251,7 @@ Mit **zwei Testnutzern A und B** gegen lokale Supabase-Instanz (Details TEST_STR
 ## Dashboard (Phase 5A)
 
 - Das Dashboard führt **keine neuen RLS-Policies** ein. Der Lesezugriff
-  (`fetchDashboardPayments`) läuft über die bestehende Policy
+  (`fetchAllPayments`, derselbe Abruf wie die Zahlungsliste) läuft über die bestehende Policy
   `dividend_payments_select_own` (`user_id = auth.uid()`); die
   Nutzertrennung ist damit serverseitig identisch zur Zahlungsliste.
 - Der Ausschluss stornierter/zurückgerollter Zahlungen (`archived_at is null`)

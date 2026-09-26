@@ -1,24 +1,39 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import {
+  activeAnalyticsPayments,
+  type RawAnalyticsRow,
+} from "@/lib/statistics/mapPayment";
 import { asUser, closePool, createTestUser } from "./support/db";
 import { seedDepot, seedPayment, seedSecurity } from "./support/seed";
 
 /**
  * Integrationstests fuer die Dashboard-Datenbasis (Phase 5A). Sie pruefen die
- * SQL-Ebene von `fetchDashboardPayments`: aktive Eingaenge des angemeldeten
+ * Abfrage von `fetchAllPayments` samt der Auswahl, die die Auswertungen daraus
+ * treffen (`activeAnalyticsPayments`): aktive Eingaenge des angemeldeten
  * Nutzers, Ausschluss stornierter/zurueckgerollter (archivierter) Zahlungen und
  * Einbeziehung archivierter Unternehmen/Depots ueber ihre aktiven Zahlungen.
  *
  * Voraussetzung: lokale Postgres-Testdatenbank (`npm run test:integration`).
  */
 
-// Exakt die Query aus src/lib/supabase/repositories/payments.ts (fetchDashboardPayments).
-const DASHBOARD_SELECT = `
-  select id, pay_date, net_amount, gross_amount, security_id, depot_id,
-         payment_type, source, created_at
+// Exakt die Query aus src/lib/supabase/repositories/payments.ts (fetchAllPayments).
+// Stornierte Zeilen kommen mit — die Eingangsliste braucht sie; die
+// Auswertungen sortieren sie clientseitig aus.
+const HISTORY_SELECT = `
+  select id, security_id, depot_id, pay_date, net_amount::text, gross_amount::text,
+         original_currency, payment_type, source, import_id, archived_at::text,
+         created_at::text, updated_at::text
   from dividend_payments
-  where archived_at is null
-  order by pay_date desc
+  order by pay_date desc, id asc
 `;
+
+/** Ids, die die Auswertungen aus der Historie des Nutzers zaehlen. */
+async function dashboardIds(userId: string): Promise<string[]> {
+  const result = await asUser(userId, (client) =>
+    client.query<RawAnalyticsRow & { archived_at: string | null }>(HISTORY_SELECT),
+  );
+  return activeAnalyticsPayments(result.rows).map((payment) => payment.id);
+}
 
 let userA: string;
 let userB: string;
@@ -94,16 +109,14 @@ afterAll(async () => {
 
 describe("Dashboard-Datenbasis", () => {
   it("liefert aktive Zahlungen des Nutzers und schliesst stornierte aus", async () => {
-    const result = await asUser(userA, (client) => client.query(DASHBOARD_SELECT));
-    const ids = result.rows.map((r: { id: string }) => r.id);
+    const ids = await dashboardIds(userA);
 
     expect(ids).toContain(activePaymentId);
     expect(ids).not.toContain(archivedPaymentId);
   });
 
   it("behält historische Zahlungen archivierter Unternehmen im Dashboard", async () => {
-    const result = await asUser(userA, (client) => client.query(DASHBOARD_SELECT));
-    const ids = result.rows.map((r: { id: string }) => r.id);
+    const ids = await dashboardIds(userA);
 
     expect(ids).toContain(archivedCompanyPaymentId);
   });
@@ -118,7 +131,6 @@ describe("Dashboard-Datenbasis", () => {
   });
 
   it("isoliert Nutzer: B sieht keine Dashboard-Daten von A", async () => {
-    const result = await asUser(userB, (client) => client.query(DASHBOARD_SELECT));
-    expect(result.rows).toHaveLength(0);
+    expect(await dashboardIds(userB)).toHaveLength(0);
   });
 });

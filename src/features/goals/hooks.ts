@@ -18,7 +18,7 @@ import { useEffectivePayments } from "@/features/dashboard/hooks";
  * Zentraler Query-Key-Namespace aller Zielabfragen (Auftrag §30/§32). Jede
  * Zielmutation invalidiert `["goals"]` und aktualisiert damit Zielübersicht,
  * Detailansicht und Dashboard-Zielsektion gemeinsam. Der Fortschritt selbst
- * leitet sich aus den Zahlungsdaten (`["payments","dashboard"]`) ab; deren
+ * leitet sich aus der Zahlungshistorie (`PAYMENT_HISTORY_KEY`) ab; deren
  * Invalidierung durch Zahlungs-/Import-Mutationen aktualisiert die Zielstände
  * automatisch, ohne dass Ziele hier zusätzlich invalidiert werden müssen.
  */
@@ -100,10 +100,10 @@ export function useDeleteGoal() {
 
 /**
  * Datenbasis der Zielfortschritte: dieselbe aktive Dividendenhistorie wie das
- * Dashboard (`["payments","dashboard"]`, geteilter Cache), angereichert um den
+ * Dashboard (`useDashboardPayments`, geteilter Cache), angereichert um den
  * effektiven Monat je Ausschuettungsplan (§10). Dadurch stimmen Zielstand,
- * Dashboard, Statistik und der gefilterte Drill-down exakt überein. Es werden
- * ausschliesslich gueltige, aktive Eingaenge geladen — stornierte/geloeschte
+ * Dashboard, Statistik und der gefilterte Drill-down exakt überein. Es zaehlen
+ * ausschliesslich gueltige, aktive Eingaenge — stornierte/geloeschte
  * Zahlungen sind ausgeschlossen, archivierte Unternehmen/Depots enthalten.
  */
 export function useGoalProgressPayments(): {

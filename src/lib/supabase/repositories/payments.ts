@@ -10,58 +10,23 @@ export type DividendPaymentUpdate =
   Database["public"]["Tables"]["dividend_payments"]["Update"];
 
 /**
- * Schlanke Datenbasis fuer das Dashboard (Phase 5A): ausschliesslich aktive
- * Eingaenge (`archived_at is null`) des angemeldeten Nutzers (RLS), reduziert
- * auf die von der Analytics-Schicht benoetigten Spalten. Es wird **einmal** die
- * gesamte aktive Historie uebertragen und clientseitig fuer alle Kennzahlen
- * aggregiert (ARCHITECTURE.md, Query-Strategie 5A) — keine Uebertragung roher
- * Daten je KPI und kein N+1. Stornierte und zurueckgerollte (archivierte)
- * Zahlungen sind damit standardmaessig ausgeschlossen; archivierte Unternehmen
- * und Depots bleiben ueber ihre weiterhin aktiven Zahlungen enthalten.
- */
-export type DashboardPaymentRow = Pick<
-  DividendPayment,
-  | "id"
-  | "pay_date"
-  | "net_amount"
-  | "gross_amount"
-  | "security_id"
-  | "depot_id"
-  | "payment_type"
-  | "source"
-  | "created_at"
->;
-
-const DASHBOARD_COLUMNS =
-  "id, pay_date, net_amount, gross_amount, security_id, depot_id, payment_type, source, created_at";
-
-export async function fetchDashboardPayments(): Promise<DashboardPaymentRow[]> {
-  return fetchAllPages<DashboardPaymentRow>((from, to) =>
-    supabase
-      .from("dividend_payments")
-      .select(DASHBOARD_COLUMNS)
-      .is("archived_at", null)
-      // Stabile, eindeutige Sortierung ueber Seitengrenzen hinweg: `pay_date`
-      // ist nicht eindeutig, daher `id` als Tiebreaker (keine doppelten/fehlenden
-      // Zeilen bei der Paginierung).
-      .order("pay_date", { ascending: false })
-      .order("id", { ascending: true })
-      .range(from, to),
-  );
-}
-
-/**
- * Spalten, die Liste und Datenqualitaet tatsaechlich lesen — bewusst nicht
- * `*`: Von den 30 Spalten der Tabelle braucht die Liste neun, die
- * Datenqualitaet drei weitere. Die uebrigen sind ueberwiegend `null`
- * (Steuern, Fremdwaehrung, Stueckzahl, Importherkunft) und kosteten bei
- * vierstelliger Historie mehrere hundert Kilobyte reines `"spalte":null` je
- * Ladevorgang.
+ * Die Zahlungshistorie, wie Eingangsliste, Datenqualitaet **und** alle
+ * Auswertungen (Uebersicht, Statistik, Ziele) sie lesen — ein Abruf fuer alle.
+ * Frueher luden Liste und Auswertungen die Historie unter zwei Schluesseln mit
+ * je eigener Projektion; ein Wechsel zwischen „Uebersicht" und „Dividenden"
+ * uebertrug sie zweimal. Die gemeinsame Projektion kostet die Auswertungen
+ * gepackt rund 2 KiB mehr (stornierte Zeilen, vier Spalten), spart aber jeden
+ * zweiten Abruf ganz (ARCHITECTURE.md §4.4).
+ *
+ * Bewusst nicht `*`: Von den 30 Spalten der Tabelle werden dreizehn gelesen.
+ * Die uebrigen sind ueberwiegend `null` (Steuern, Fremdwaehrung, Stueckzahl,
+ * Importherkunft) und kosteten bei vierstelliger Historie mehrere hundert
+ * Kilobyte reines `"spalte":null` je Ladevorgang.
  *
  * Ohne Join auf `securities`: Name und Ticker standen sonst in jeder Zeile
  * erneut (rund 12 % der Antwort, bei 1.441 Zahlungen gut 80 KiB), obwohl
- * beide Seiten die Unternehmen ohnehin ueber `useSecurities` geladen haben
- * und die Namen von dort aufloesen.
+ * alle Seiten die Unternehmen ohnehin ueber `useSecurities` laden und die
+ * Namen von dort aufloesen.
  *
  * Beim Erweitern hier **und** im Typ `PaymentListRow` nachziehen, sonst
  * verspricht der Typ ein Feld, das die Antwort nicht enthaelt.
@@ -70,9 +35,9 @@ export async function fetchDashboardPayments(): Promise<DashboardPaymentRow[]> {
 // Ergebnistyp aus dem Text der Auswahl ab; eine Verkettung waere fuer die
 // Typebene undurchsichtig.
 // prettier-ignore
-const LIST_COLUMNS = "id, security_id, depot_id, pay_date, net_amount, original_currency, payment_type, source, import_id, archived_at, created_at, updated_at";
+const LIST_COLUMNS = "id, security_id, depot_id, pay_date, net_amount, gross_amount, original_currency, payment_type, source, import_id, archived_at, created_at, updated_at";
 
-/** Zeile der Eingangsliste — die Projektion von {@link LIST_COLUMNS}. */
+/** Zeile der Zahlungshistorie — die Projektion von {@link LIST_COLUMNS}. */
 export type PaymentListRow = Pick<
   DividendPayment,
   | "id"
@@ -80,6 +45,7 @@ export type PaymentListRow = Pick<
   | "depot_id"
   | "pay_date"
   | "net_amount"
+  | "gross_amount"
   | "original_currency"
   | "payment_type"
   | "source"
@@ -90,17 +56,20 @@ export type PaymentListRow = Pick<
 >;
 
 /**
- * Vollstaendige Eingangsliste (Phase-5A-Erweiterung): laedt seitenweise **alle**
- * Zahlungen, stornierte eingeschlossen. Liste und Datenqualitaet teilen sich
- * damit einen Abruf; der Statusfilter der Liste wirkt clientseitig. Frueher
- * waren „aktiv" und „alle" zwei Abfragen, und jeder Wechsel des Filters oder
- * zur Datenqualitaet uebertrug die ganze Historie erneut — fuer eine
- * Handvoll stornierter Zeilen Unterschied.
+ * Vollstaendige Zahlungshistorie: laedt seitenweise **alle** Zahlungen,
+ * stornierte eingeschlossen. Liste und Datenqualitaet filtern den Status
+ * clientseitig, die Auswertungen nehmen nur die aktiven
+ * (`activeAnalyticsPayments`). Frueher waren „aktiv" und „alle" zwei
+ * Abfragen, und jeder Wechsel des Filters oder zur Datenqualitaet uebertrug
+ * die ganze Historie erneut — fuer eine Handvoll stornierter Zeilen
+ * Unterschied.
  *
  * Die fachliche Filterung nach Zeitraum erfolgt clientseitig ueber den
  * effektiven Monat (Ausschuettungsplan je Unternehmen, CALCULATION_RULES.md
- * §10), daher kein serverseitiger Datumsfilter. Wie beim Dashboard wird ueber
- * das PostgREST-1000er-Limit hinweg paginiert.
+ * §10), daher kein serverseitiger Datumsfilter. Paginiert wird ueber das
+ * PostgREST-1000er-Limit hinweg, mit eindeutiger Sortierung: `pay_date` ist
+ * nicht eindeutig, daher `id` als Tiebreaker (keine doppelten/fehlenden
+ * Zeilen an Seitengrenzen).
  */
 export async function fetchAllPayments(): Promise<PaymentListRow[]> {
   const rows = await fetchAllPages<PaymentListRow>((from, to) =>

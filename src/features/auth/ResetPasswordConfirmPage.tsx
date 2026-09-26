@@ -14,7 +14,7 @@ import {
 
 /**
  * Wird ueber den Link aus der Passwort-zuruecksetzen-E-Mail erreicht.
- * supabase-js richtet dank `detectSessionInUrl` bereits eine temporaere
+ * Der Auth-Client richtet dank `detectSessionInUrl` bereits eine temporaere
  * Recovery-Session ein; `updateUser` setzt darauf das neue Passwort.
  */
 export function ResetPasswordConfirmPage() {

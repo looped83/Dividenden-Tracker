@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import { Link, useLocation, useNavigate, useParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Ban, Pencil, RotateCcw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -48,6 +48,12 @@ function DetailRow({ label, children }: { label: string; children: React.ReactNo
 export function PaymentDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  // Die Liste gibt ihre Adresse samt Filter und Seite mit. Zurueck, nach dem
+  // Loeschen und nach dem Bearbeiten geht es dorthin — auf dem Telefon laufen
+  // alle Aktionen ueber diese Seite, und die Liste soll danach dort stehen,
+  // wo man sie verlassen hat. Direkt aufgerufen bleibt es die ganze Liste.
+  const from = (useLocation().state as { from?: string } | null)?.from;
+  const listUrl = from ?? "/eingaenge";
   const { data: payment, isLoading, isError } = usePayment(id);
   const { data: depots = [] } = useDepots();
   const { data: securities = [] } = useSecurities();
@@ -80,7 +86,7 @@ export function PaymentDetailPage() {
   // dieselbe Handlung statt dreier.
   const backLink = (
     <Button asChild variant="ghost" size="sm" className="-ml-3 w-fit">
-      <Link to="/eingaenge">
+      <Link to={listUrl}>
         <ArrowLeft aria-hidden /> Zu den Dividenden
       </Link>
     </Button>
@@ -161,7 +167,7 @@ export function PaymentDetailPage() {
     setDeleteError(null);
     try {
       await deletePayment.mutateAsync(payment.id);
-      void navigate("/eingaenge");
+      void navigate(listUrl);
     } catch (error) {
       setDeleteError(
         getErrorMessage(
@@ -174,6 +180,7 @@ export function PaymentDetailPage() {
 
   return (
     <div className="space-y-6">
+      {backLink}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">
@@ -191,7 +198,10 @@ export function PaymentDetailPage() {
           )}
           {!cancelled && (
             <Button variant="outline" size="icon" asChild aria-label="Bearbeiten">
-              <Link to={`/eingaenge/${payment.id}/bearbeiten`}>
+              <Link
+                to={`/eingaenge/${payment.id}/bearbeiten`}
+                state={from ? { from } : undefined}
+              >
                 <Pencil />
               </Link>
             </Button>

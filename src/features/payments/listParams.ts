@@ -1,6 +1,6 @@
 /**
  * Reine Parse-/Serialisierungslogik für den URL-Zustand der Verwaltungsliste
- * (Phase 6 §2/§4): Sortierung und Statusfilter. Ungültige Parameter fallen
+ * (Phase 6 §2/§4): Sortierung, Statusfilter und Seite. Ungültige Parameter fallen
  * sicher auf den jeweiligen Standard zurück (§4).
  */
 
@@ -50,4 +50,16 @@ export function parseSort(sort: string | null, direction: string | null): ListSo
  */
 export function statusNeedsArchived(status: StatusFilter): boolean {
   return status !== "active";
+}
+
+/**
+ * Seite der Liste (`?page=`), 1-basiert. Sie steht in der Adresse, damit der
+ * Weg zurück von einem Eingang auf derselben Seite endet — als lokaler Zustand
+ * fiel sie beim Verlassen der Liste auf 1 zurück, während die Bildlaufposition
+ * die der verlassenen Seite blieb. Eine Seite jenseits des Endes begrenzt die
+ * Liste selbst; hier zählt nur, dass es eine ganze Zahl ab 1 ist.
+ */
+export function parsePage(value: string | null): number {
+  if (!value || !/^[1-9]\d{0,5}$/.test(value)) return 1;
+  return Number.parseInt(value, 10);
 }

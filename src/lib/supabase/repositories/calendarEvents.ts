@@ -120,8 +120,9 @@ async function readBody(response: Response | undefined): Promise<SyncResponseBod
  *
  * Der Client kennt die Feed-Adresse nicht und sieht sie nie: Er ruft nur die
  * Edge Function auf, die das Secret serverseitig liest. Das Zugangstoken der
- * Sitzung haengt supabase-js selbst an — eine `user_id` wird bewusst **nicht**
- * mitgeschickt, sie stammt serverseitig aus dem geprueften JWT.
+ * Sitzung haengt `lib/supabase/client.ts` selbst an — eine `user_id` wird
+ * bewusst **nicht** mitgeschickt, sie stammt serverseitig aus dem geprueften
+ * JWT.
  */
 export async function triggerCalendarSync(): Promise<CalendarSyncSummary> {
   const invocation = await supabase.functions.invoke<SyncResponseBody>(

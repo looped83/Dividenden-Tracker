@@ -1,8 +1,15 @@
 import * as React from "react";
 import { Link, useSearchParams } from "react-router";
-// `Plus` fuer „Neue Dividende" in der Kopfzeile (aus main); die Pfeile und das
-// Kreuz stecken jetzt in `FilterSort` bzw. `FilterReset`.
-import { Ban, Pencil, Plus, RotateCcw, ShieldCheck, Trash2, Wallet } from "lucide-react";
+import {
+  Ban,
+  ChevronRight,
+  Pencil,
+  Plus,
+  RotateCcw,
+  ShieldCheck,
+  Trash2,
+  Wallet,
+} from "lucide-react";
 import {
   effectivePayDate,
   monthNameDe,
@@ -51,6 +58,7 @@ import {
 } from "@/features/payments/hooks";
 import type { PaymentListRow } from "@/lib/supabase/repositories/payments";
 import {
+  parsePage,
   parseSort,
   parseStatus,
   statusNeedsArchived,
@@ -92,26 +100,23 @@ export function PaymentsPage() {
   const { data: securities = [], isLoading: securitiesLoading } = useSecurities();
 
   const [searchParams, setSearchParams] = useSearchParams();
-  const [page, setPage] = React.useState(1);
-  // Mehrfachauswahl (§14): früh deklariert, damit Filteränderungen die Auswahl
-  // zurücksetzen können.
 
-  // --- URL-Zustand (§2/§4): Filter, Suche und Sortierung bleiben nach Reload,
-  // Browser-Zurück/-Vorwärts erhalten. ---
+  // --- URL-Zustand (§2/§4): Filter, Sortierung und Seite bleiben nach Reload,
+  // Browser-Zurück/-Vorwärts und dem Weg über einen Eingang zurück erhalten. ---
   const depotId = searchParams.get("depot") ?? "";
   const securityId = searchParams.get("security") ?? "";
   const yearRaw = searchParams.get("year");
   const monthRaw = searchParams.get("month");
   const status = parseStatus(searchParams.get("status"));
   const sort = parseSort(searchParams.get("sort"), searchParams.get("direction"));
+  const page = parsePage(searchParams.get("page"));
   const filterYear =
     yearRaw && /^\d{4}$/.test(yearRaw) ? Number.parseInt(yearRaw, 10) : null;
   const filterMonth =
     monthRaw && /^(1[0-2]|[1-9])$/.test(monthRaw) ? Number.parseInt(monthRaw, 10) : null;
 
-  const updateParams = React.useCallback(
+  const setParams = React.useCallback(
     (updates: Record<string, string | null>) => {
-      setPage(1);
       setSearchParams((prev) => {
         const params = new URLSearchParams(prev);
         for (const [key, value] of Object.entries(updates)) {
@@ -123,6 +128,30 @@ export function PaymentsPage() {
     },
     [setSearchParams],
   );
+
+  // Jede Filter- oder Sortieränderung beginnt wieder auf Seite 1.
+  const updateParams = React.useCallback(
+    (updates: Record<string, string | null>) => {
+      setParams({ ...updates, page: null });
+    },
+    [setParams],
+  );
+
+  // Blättern führt an den Anfang der Liste. Von selbst geschieht das nicht:
+  // Die Bildlaufposition hängt am Pfad (AppShell), und der bleibt beim
+  // Blättern gleich — man sähe sonst das Ende der neuen Seite. Das Rollen
+  // folgt erst nach dem Wechsel, weil die Wiederherstellung des Routers es
+  // sonst überschriebe; der Weg zurück von einem Eingang behält seine Position.
+  const scrollToTopAfterPaging = React.useRef(false);
+  const goToPage = (next: number) => {
+    scrollToTopAfterPaging.current = true;
+    setParams({ page: next > 1 ? String(next) : null });
+  };
+  React.useEffect(() => {
+    if (!scrollToTopAfterPaging.current) return;
+    scrollToTopAfterPaging.current = false;
+    window.scrollTo({ top: 0 });
+  }, [page]);
 
   const hasActiveFilters =
     depotId !== "" ||
@@ -516,16 +545,6 @@ export function PaymentsPage() {
                   row={row}
                   comparison={yearOverYear.get(row.id)}
                   listUrl={listUrl}
-                  onStorno={() => {
-                    setStornoReason("");
-                    setStornoError(null);
-                    setStornoTarget(row);
-                  }}
-                  onReactivate={() => void reactivate(row.payment.id)}
-                  onDelete={() => {
-                    setDeleteError(null);
-                    setDeleteTarget(row);
-                  }}
                 />
               ))}
             </ul>
@@ -547,7 +566,7 @@ export function PaymentsPage() {
               size="sm"
               disabled={currentPage <= 1}
               onClick={() => {
-                setPage((v) => Math.max(1, v - 1));
+                goToPage(currentPage - 1);
               }}
             >
               Zurück
@@ -561,7 +580,7 @@ export function PaymentsPage() {
               size="sm"
               disabled={currentPage >= pageCount}
               onClick={() => {
-                setPage((v) => Math.min(pageCount, v + 1));
+                goToPage(currentPage + 1);
               }}
             >
               Weiter
@@ -619,8 +638,6 @@ export function PaymentsPage() {
   );
 }
 
-/** Aktiver Filter als Label mit eigener Entfernen-Schaltflaeche. */
-
 interface RowActionProps {
   row: Row;
   comparison: YearOverYearComparison | undefined;
@@ -628,6 +645,16 @@ interface RowActionProps {
   onStorno: () => void;
   onReactivate: () => void;
   onDelete: () => void;
+}
+
+/**
+ * Wen eine Zeilenaktion betrifft — fuer die Namen der Symbolschaltflaechen.
+ * Nur „Bearbeiten" hiesse auf jeder Zeile gleich: Wer die Liste per
+ * Screenreader oder Sprachsteuerung durchgeht, koennte die 25 Schaltflaechen
+ * einer Seite nicht auseinanderhalten.
+ */
+function actionSubject({ companyName, effectiveDate }: Row): string {
+  return `${companyName || "Eingang"} vom ${formatDate(effectiveDate)}`;
 }
 
 function PaymentRow({
@@ -641,6 +668,7 @@ function PaymentRow({
   const { payment, effectiveDate, companyName, depotName, currency } = row;
   const shifted = effectiveDate !== payment.pay_date;
   const cancelled = Boolean(payment.archived_at);
+  const subject = actionSubject(row);
   return (
     <TableRow>
       <TableCell>
@@ -659,6 +687,7 @@ function PaymentRow({
             das Datum tut das nicht. */}
         <Link
           to={`/eingaenge/${payment.id}`}
+          state={{ from: listUrl }}
           className="rounded-sm outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
         >
           {companyName || "—"}
@@ -686,14 +715,19 @@ function PaymentRow({
             <Button
               variant="outline"
               size="icon"
-              aria-label="Reaktivieren"
+              aria-label={`${subject} reaktivieren`}
               onClick={onReactivate}
             >
               <RotateCcw />
             </Button>
           ) : (
             <>
-              <Button variant="outline" size="icon" aria-label="Bearbeiten" asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label={`${subject} bearbeiten`}
+                asChild
+              >
                 <Link
                   to={`/eingaenge/${payment.id}/bearbeiten`}
                   state={{ from: listUrl }}
@@ -704,7 +738,7 @@ function PaymentRow({
               <Button
                 variant="outline"
                 size="icon"
-                aria-label="Stornieren"
+                aria-label={`${subject} stornieren`}
                 onClick={onStorno}
               >
                 <Ban />
@@ -714,7 +748,7 @@ function PaymentRow({
           <Button
             variant="outline"
             size="icon"
-            aria-label="Dauerhaft löschen"
+            aria-label={`${subject} dauerhaft löschen`}
             onClick={onDelete}
           >
             <Trash2 />
@@ -725,99 +759,66 @@ function PaymentRow({
   );
 }
 
+/**
+ * Karte der schmalen Darstellung: eine einzige Tippflaeche zur Detailseite.
+ *
+ * Zuvor trug jede Karte Bearbeiten, Stornieren und Loeschen als Symbole —
+ * 75 Schaltflaechen je Seite, das Loeschen einen Daumen breit neben dem
+ * Bearbeiten. Die Aktionen stehen jetzt dort, wo der Eingang vollstaendig
+ * zu sehen ist; die Detailseite fuehrt samt Filter und Seite zurueck
+ * (`state.from`). Auf breiten Schirmen bleiben sie in der Tabellenzeile —
+ * dort zielt der Zeiger genau, und die Spalte kostet keine Zeile.
+ *
+ * Alle Abstaende folgen einem Raster: 12px Kachelrand (= Abstand zwischen den
+ * Karten), 8px zwischen den Zeilen und zwischen den Elementen einer Zeile.
+ */
 function PaymentCard({
   row,
   comparison,
   listUrl,
-  onStorno,
-  onReactivate,
-  onDelete,
-}: RowActionProps) {
+}: {
+  row: Row;
+  comparison: YearOverYearComparison | undefined;
+  listUrl: string;
+}) {
   const { payment, effectiveDate, companyName, currency } = row;
   const cancelled = Boolean(payment.archived_at);
-  // Zwei Zeilen statt vier: Betrag neben dem Namen, Aktionen neben dem Datum.
-  // Die Aktionen tragen dieselben Symbole und Namen wie in der Tabelle —
-  // beschriftet nur fuer Hilfsmittel, da drei Wortschaltflaechen die Karte um
-  // eine ganze Zeile verlaengerten. Alle Abstaende folgen einem Raster: 12px
-  // Kachelrand (= Abstand zwischen den Karten), 8px zwischen den Zeilen und
-  // zwischen den Elementen einer Zeile.
   return (
-    <li className="rounded-lg border border-border p-3">
-      <div className="flex items-baseline justify-between gap-2">
-        <Link
-          to={`/eingaenge/${payment.id}`}
-          className="min-w-0 truncate rounded-sm font-medium outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          {companyName || "—"}
-        </Link>
-        {/* Der Betrag ist die Kernaussage der Karte und traegt deshalb mehr
-            Gewicht als der Name. Der Indikator steht wie in der Tabelle links
-            davon. */}
-        <span className="flex shrink-0 items-center gap-1.5">
-          {comparison && <YearOverYearIndicator comparison={comparison} />}
-          <AmountText
-            amount={Money.fromString(payment.net_amount, currency)}
-            className="text-lg font-semibold"
-          />
-        </span>
-      </div>
-      <div className="mt-2 flex items-center justify-between gap-2">
-        {/* Ohne Depot: Wer die Liste nach Depot filtert oder nur eines
-            fuehrt, gewinnt daraus nichts. Die Detailansicht nennt es. */}
-        <div className="flex min-w-0 items-center gap-2">
-          <DateText className="text-sm text-muted-foreground">
-            {formatDate(effectiveDate)}
-          </DateText>
-          {cancelled && (
-            <Badge variant="warning" className="shrink-0">
-              Storniert
-            </Badge>
-          )}
+    <li>
+      <Link
+        to={`/eingaenge/${payment.id}`}
+        state={{ from: listUrl }}
+        className="flex items-center gap-2 rounded-lg border border-border p-3 outline-none transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring active:bg-accent motion-reduce:transition-none"
+      >
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline justify-between gap-2">
+            <span className="min-w-0 truncate font-medium">{companyName || "—"}</span>
+            {/* Der Betrag ist die Kernaussage der Karte und traegt deshalb mehr
+                Gewicht als der Name. Der Indikator steht wie in der Tabelle
+                links davon. */}
+            <span className="flex shrink-0 items-center gap-1.5">
+              {comparison && <YearOverYearIndicator comparison={comparison} />}
+              <AmountText
+                amount={Money.fromString(payment.net_amount, currency)}
+                className="text-lg font-semibold"
+              />
+            </span>
+          </div>
+          {/* Ohne Depot: Wer die Liste nach Depot filtert oder nur eines
+              fuehrt, gewinnt daraus nichts. Die Detailansicht nennt es. */}
+          <div className="mt-2 flex min-w-0 items-center gap-2">
+            <DateText className="text-sm text-muted-foreground">
+              {formatDate(effectiveDate)}
+            </DateText>
+            {cancelled && (
+              <Badge variant="warning" className="shrink-0">
+                Storniert
+              </Badge>
+            )}
+          </div>
         </div>
-        {/* Die negativen Raender holen die Luft zurueck, die in den 44px-Touch-
-            zielen ohnehin steckt: Die Schaltflaechenzeile misst optisch so viel
-            wie die Textzeile daneben, oben und unten bleibt derselbe
-            Kachelrand. */}
-        <div className="-my-2 -mr-2 flex shrink-0 items-center gap-1">
-          {cancelled ? (
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Reaktivieren"
-              onClick={onReactivate}
-            >
-              <RotateCcw />
-            </Button>
-          ) : (
-            <>
-              <Button variant="ghost" size="icon" aria-label="Bearbeiten" asChild>
-                <Link
-                  to={`/eingaenge/${payment.id}/bearbeiten`}
-                  state={{ from: listUrl }}
-                >
-                  <Pencil />
-                </Link>
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Stornieren"
-                onClick={onStorno}
-              >
-                <Ban />
-              </Button>
-            </>
-          )}
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Dauerhaft löschen"
-            onClick={onDelete}
-          >
-            <Trash2 />
-          </Button>
-        </div>
-      </div>
+        <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+      </Link>
     </li>
   );
 }

@@ -17,12 +17,17 @@ import {
 } from "@/lib/supabase/repositories/duplicateDismissals";
 
 /**
- * Zentraler Query-Key-Namespace aller Zahlungsabfragen. Dashboard
- * (`["payments","dashboard"]`) und Statistik teilen ihn, sodass jede
+ * Zentraler Query-Key-Namespace aller Zahlungsabfragen, sodass jede
  * datenverändernde Mutation über `invalidateQueries(["payments"])` Liste,
  * Detail, Dashboard und Statistik gemeinsam aktualisiert (§22).
  */
 export const PAYMENTS_KEY = ["payments"] as const;
+
+/**
+ * Die vollständige Historie — **ein** Cache-Eintrag für Liste,
+ * Datenqualität und alle Auswertungen (`useDashboardPayments`).
+ */
+export const PAYMENT_HISTORY_KEY = [...PAYMENTS_KEY, "list"] as const;
 export const DUPLICATE_DISMISSALS_KEY = ["duplicate-dismissals"] as const;
 
 /** Invalidiert alle von einer Zahlungsänderung betroffenen Caches (§22). */
@@ -32,13 +37,13 @@ function invalidateAll(queryClient: ReturnType<typeof useQueryClient>) {
 }
 
 /**
- * Vollstaendige Eingangsliste, stornierte eingeschlossen — ein Cache-Eintrag
- * fuer Liste und Datenqualitaet. Status-, Zeitraumfilter und Sortierung
- * erfolgen clientseitig ueber den effektiven Monat.
+ * Vollstaendige Historie, stornierte eingeschlossen — derselbe Cache-Eintrag
+ * wie die Auswertungen. Status-, Zeitraumfilter und Sortierung erfolgen
+ * clientseitig ueber den effektiven Monat.
  */
 export function useAllPayments() {
   return useQuery({
-    queryKey: [...PAYMENTS_KEY, "list"],
+    queryKey: PAYMENT_HISTORY_KEY,
     queryFn: fetchAllPayments,
   });
 }

@@ -406,9 +406,13 @@ erkannt.
 
 **Keine Mehrfachauswahl.** Die Liste kennt keine Auswahlkästchen und keine
 Massenaktionen. Bearbeiten, Stornieren/Reaktivieren und dauerhaftes Löschen
-stehen je Eingang in seiner Zeile bzw. Karte — für einen persönlichen Bestand
-ist das der kürzere Weg, und die Liste bleibt frei von einer Spalte und einem
-Modus, die sonst dauerhaft mitliefen.
+stehen auf breiten Schirmen je Eingang in seiner Tabellenzeile — für einen
+persönlichen Bestand ist das der kürzere Weg, und die Liste bleibt frei von
+einer Spalte und einem Modus, die sonst dauerhaft mitliefen. Auf dem iPhone
+ist jede Karte eine einzige Tippfläche zur Detailseite, die alle Aktionen
+trägt: drei Symbole je Karte ergaben 75 Schaltflächen pro Seite, das Löschen
+einen Daumen breit neben dem Bearbeiten. Die Detailseite führt samt Filter und
+Seite zur Liste zurück, ebenso nach dem Bearbeiten und Löschen.
 
 **Datenqualität** (`/eingaenge/datenqualitaet`). Mögliche Dubletten (gewichtet:
 hohe Wahrscheinlichkeit vs. mögliche Dublette) und regelbasierte Auffälligkeiten

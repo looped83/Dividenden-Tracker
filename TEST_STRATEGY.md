@@ -392,7 +392,7 @@ weiterhin über Unit- und Integrationstests abgedeckt.
   begonnener Monat gar nicht erst zur Auswahl steht.
 
 **Integration (`tests/integration/statistics.test.ts`, benötigt lokale Postgres-DB):** SQL-Ebene
-der Statistik-Datenbasis (identische Query wie `fetchDashboardPayments`): Jahres-, Unternehmens-
+der Statistik-Datenbasis (die aktiven Zeilen aus `fetchAllPayments`): Jahres-, Unternehmens-
 und Depotaggregation per `GROUP BY`, Einbeziehung archivierter Unternehmen/Depots über aktive
 Zahlungen, Ausschluss stornierter (archivierter) Zahlungen, Nutzerisolation (RLS). Die
 decimal-genaue Client-Aggregation ist über die Unit-Tests abgedeckt (Statistik-Abgleich §4).

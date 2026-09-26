@@ -8,7 +8,7 @@ import { PageSkeleton } from "@/components/layout/PageSkeleton";
  * `from`-State mitgegeben, um nach dem Login dorthin zurueckzukehren.
  *
  * Er umschliesst den Inhalt, nicht die App-Huelle (siehe AppShell): Waehrend
- * die Sitzung geprueft wird — nach laengerer Pause erneuert supabase-js dabei
+ * die Sitzung geprueft wird — nach laengerer Pause erneuert der Auth-Client dabei
  * erst das Token uebers Netz —, steht die Navigation schon, und der Inhalt
  * zeigt dasselbe Geruest wie beim Nachladen eines Bereichs. Geschuetzte
  * Seiten (und damit ihre Abfragen) werden erst mit gueltiger Sitzung
