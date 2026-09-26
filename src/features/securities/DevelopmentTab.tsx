@@ -361,6 +361,7 @@ export function DevelopmentView({
       },
       {
         key: "yieldOnBuyin",
+        listHidden: true,
         header: "Auf Einstand",
         headerLabel: "Rendite auf den Einstand",
         align: "right",
@@ -518,22 +519,36 @@ export function DevelopmentView({
       {/* Bei einem einzelnen Asset saehe die Aufteilung immer gleich aus:
           eine Branche, ein Land, jeweils 100 %. Eine Aussage, die aus der
           Auswahl folgt statt aus den Daten, ist keine. */}
-      {filter.securityId === null && (
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-          <AllocationCard
-            title="Aufteilung nach Branche"
-            buckets={portfolio.bySector}
-            total={latest.marketValue}
-          />
-          <AllocationCard
-            title="Aufteilung nach Land"
-            buckets={portfolio.byCountry}
-            total={latest.marketValue}
-          />
-        </div>
-      )}
+      {filter.securityId === null &&
+        // Traegt der Depotstand weder Branche noch Land, bestuende jede Karte
+        // aus einem einzigen Balken „ohne Angabe" zu 100 % — zwei Karten ohne
+        // Aussage. Dann steht dort ein Satz.
+        (hasKnownKey(portfolio.bySector) || hasKnownKey(portfolio.byCountry) ? (
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+            <AllocationCard
+              title="Aufteilung nach Branche"
+              buckets={portfolio.bySector}
+              total={latest.marketValue}
+            />
+            <AllocationCard
+              title="Aufteilung nach Land"
+              buckets={portfolio.byCountry}
+              total={latest.marketValue}
+            />
+          </div>
+        ) : (
+          <p className="px-1 text-sm text-muted-foreground">
+            Der Depotstand nennt weder Branche noch Land — eine Aufteilung danach
+            entfällt.
+          </p>
+        ))}
     </div>
   );
+}
+
+/** Gibt es mindestens eine Angabe ausser „ohne Angabe" (leerer Schluessel)? */
+function hasKnownKey(buckets: readonly AllocationBucket[]): boolean {
+  return buckets.some((bucket) => bucket.key !== "");
 }
 
 /**

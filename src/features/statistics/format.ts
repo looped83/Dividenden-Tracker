@@ -55,11 +55,14 @@ export function statisticsTabHref(
   path: string,
   filter: StatisticsFilter,
   overrides: Partial<StatisticsFilter> = {},
+  /** Weitere Parameter des Ziels, etwa die Ebene des Verlaufs (`nach`). */
+  extra: Record<string, string> = {},
 ): string {
   const params = applyStatisticsFilter(new URLSearchParams(), {
     ...filter,
     ...overrides,
   });
+  for (const [key, value] of Object.entries(extra)) params.set(key, value);
   const query = params.toString();
   return query ? `${path}?${query}` : path;
 }

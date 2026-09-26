@@ -14,7 +14,10 @@ export const Textarea = React.forwardRef<
       inputMode={inputMode ?? "text"}
       className={cn(
         // 16 px auf schmalen Geraeten — sonst zoomt iOS Safari beim Fokussieren.
-        "flex min-h-24 w-full rounded-md border border-input bg-background px-3 py-2",
+        // Zwei Zeilen hoch: Notizen und Begruendungen sind in diesem Programm
+        // Ausnahmen; vier leere Zeilen schoben auf dem Telefon die Aktionen aus
+        // dem Bild. Das Feld laesst sich aufziehen.
+        "flex min-h-16 w-full rounded-md border border-input bg-background px-3 py-2",
         "text-base sm:text-sm",
         "placeholder:text-muted-foreground outline-none",
         "focus-visible:ring-2 focus-visible:ring-ring",

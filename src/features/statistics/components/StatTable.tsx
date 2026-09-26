@@ -26,6 +26,12 @@ export interface StatColumn<T> {
   headerLabel?: string;
   /** Nur fuer die Tabellenzelle (z. B. `hidden xl:table-cell`), nicht fuer die Liste. */
   className?: string;
+  /**
+   * Nebenkennzahl, die in der Liste des Telefons entfaellt — meist dieselben,
+   * die auch in schmalen Tabellen zuruecktreten. Sieben beschriftete Werte je
+   * Zeile machten aus vier Jahren zwei Bildschirme.
+   */
+  listHidden?: boolean;
 }
 
 interface StatTableProps<T> {
@@ -431,7 +437,7 @@ function StatList<T>({
 }) {
   const nameColumn = columns.at(0);
   const valueColumn = columns.at(1);
-  const detailColumns = columns.slice(2);
+  const detailColumns = columns.slice(2).filter((column) => !column.listHidden);
   if (!nameColumn) return null;
 
   return (
@@ -467,7 +473,9 @@ function StatList<T>({
                       key={column.key}
                       className="flex items-baseline justify-between gap-3"
                     >
-                      <dt className="text-muted-foreground">{columnName(column)}</dt>
+                      <dt className="shrink-0 text-muted-foreground">
+                        {columnName(column)}
+                      </dt>
                       <dd className="text-right tabular-amount">{column.render(row)}</dd>
                     </div>
                   ))}

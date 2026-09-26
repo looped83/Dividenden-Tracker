@@ -65,18 +65,19 @@ export function CalendarToolbar({
             Heute
           </Button>
         </div>
-      ) : (
-        <span />
-      )}
+      ) : null}
 
       {/* Die Liste steht links: Sie ist die Voreinstellung und die Ansicht,
           mit der die meisten Wege beginnen — das Monatsraster ist der
           Nebenweg und sitzt deshalb rechts daneben. */}
+      {/* Auf dem Telefon ueber die volle Breite — wie der Umschalter im
+          Statistik-Verlauf; zwei Haelften sind leichter zu treffen. */}
       <SegmentedControl
         label="Darstellung"
         options={VIEW_OPTIONS}
         value={mode}
         onChange={onModeChange}
+        className="w-full sm:ml-auto sm:w-auto"
       />
     </div>
   );

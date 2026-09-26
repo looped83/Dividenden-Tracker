@@ -4,8 +4,9 @@ import { AlertTriangle, CheckCircle2, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageSkeleton } from "@/components/layout/PageSkeleton";
 import { Badge } from "@/components/ui/badge";
+import { DetailBackLink, DetailHeader } from "@/components/layout/DetailHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { EmptyState } from "@/components/ui/empty-state";
+import { ListGroup, ListItemBody, ListRow } from "@/components/ui/list";
 import { AmountText } from "@/components/money/AmountText";
 import { DateText } from "@/components/DateText";
 import { formatCountNumber } from "@/lib/utils/formatNumber";
@@ -138,24 +139,36 @@ export function DataQualityPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight">Datenqualität</h1>
-        <p className="text-sm text-muted-foreground">
-          Hinweise zu möglichen Dubletten und auffälligen Datensätzen. Es wird niemals
-          automatisch storniert, gelöscht oder zusammengeführt — jede Entscheidung triffst
-          du bewusst.
-        </p>
-      </div>
+      {/* Ein Unterbereich der Dividendenliste — mit Rueckweg dorthin, wie eine
+          Detailseite. Ohne ihn fuehrte auf dem Telefon nur die Navigation
+          zurueck. */}
+      <DetailHeader
+        back={<DetailBackLink to="/eingaenge" label="Zu den Dividenden" />}
+        title="Datenqualität"
+        subtitle="Hinweise zu möglichen Dubletten und auffälligen Datensätzen. Es wird niemals automatisch storniert, gelöscht oder zusammengeführt — jede Entscheidung triffst du bewusst."
+      />
 
-      {/* Übersicht (§17) */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
-        <OverviewTile label="Mögliche Dubletten" value={overview.duplicates} />
-        <OverviewTile label="Auffällige Datensätze" value={overview.anomalies} />
-        <OverviewTile label="Stornierte" value={overview.cancelled} />
-        <OverviewTile label="Importe mit Änderung" value={overview.importedModified} />
-        <OverviewTile label="Archivierte Unternehmen" value={overview.archivedCompany} />
-        <OverviewTile label="Archivierte Depots" value={overview.archivedDepot} />
-      </div>
+      {/* Übersicht (§17) — eine Karte statt sechs: Die Zahlen sind meist null
+          und brauchten als einzelne Kacheln untereinander einen ganzen
+          Bildschirm. */}
+      <Card>
+        <CardContent className="p-4 sm:p-6">
+          <dl className="grid grid-cols-2 gap-x-4 gap-y-4 sm:grid-cols-3 lg:grid-cols-6">
+            <OverviewItem label="Mögliche Dubletten" value={overview.duplicates} />
+            <OverviewItem label="Auffällige Datensätze" value={overview.anomalies} />
+            <OverviewItem label="Stornierte" value={overview.cancelled} />
+            <OverviewItem
+              label="Importe mit Änderung"
+              value={overview.importedModified}
+            />
+            <OverviewItem
+              label="Archivierte Unternehmen"
+              value={overview.archivedCompany}
+            />
+            <OverviewItem label="Archivierte Depots" value={overview.archivedDepot} />
+          </dl>
+        </CardContent>
+      </Card>
 
       {isLoading ? (
         <PageSkeleton header={false} />
@@ -167,11 +180,9 @@ export function DataQualityPage() {
               <Copy className="size-5" aria-hidden /> Mögliche Dubletten
             </h2>
             {duplicatePairs.length === 0 ? (
-              <EmptyState
-                icon={CheckCircle2}
+              <AllClear
                 title="Keine möglichen Dubletten"
-                description="Es wurden keine Zahlungen mit gleichem Unternehmen, Depot und Zahlungsdatum gefunden."
-                className="py-8"
+                description="Keine Zahlungen mit gleichem Unternehmen, Depot und Zahlungsdatum."
               />
             ) : (
               <ul className="space-y-4">
@@ -206,37 +217,33 @@ export function DataQualityPage() {
               <AlertTriangle className="size-5" aria-hidden /> Auffällige Datensätze
             </h2>
             {anomalies.length === 0 ? (
-              <EmptyState
-                icon={CheckCircle2}
-                title="Keine Auffälligkeiten"
-                className="py-8"
-              />
+              <AllClear title="Keine Auffälligkeiten" />
             ) : (
-              <ul className="space-y-2">
+              // Dieselbe Listenform wie die Eingaenge: eine Zeile je Befund, die
+              // als Ganzes zum Eingang fuehrt — statt Name als Link und einer
+              // zweiten Schaltflaeche „Öffnen" mit demselben Ziel.
+              <ListGroup>
                 {anomalies.map((anomaly) => (
-                  <li
-                    key={`${anomaly.payment.id}-${anomaly.code}`}
-                    className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border p-3 text-sm"
-                  >
-                    <div>
-                      <Link
-                        to={`/eingaenge/${anomaly.payment.id}`}
-                        className="font-medium hover:underline"
-                      >
-                        {securityName(anomaly.payment.security_id)}
+                  <li key={`${anomaly.payment.id}-${anomaly.code}`}>
+                    <ListRow asChild>
+                      <Link to={`/eingaenge/${anomaly.payment.id}`}>
+                        <ListItemBody
+                          title={securityName(anomaly.payment.security_id)}
+                          meta={
+                            <>
+                              <DateText className="shrink-0">
+                                {formatDate(anomaly.payment.pay_date)}
+                              </DateText>
+                              <span className="basis-full">{anomaly.message}</span>
+                            </>
+                          }
+                          chevron
+                        />
                       </Link>
-                      <span className="text-muted-foreground">
-                        {" "}
-                        · {formatDate(anomaly.payment.pay_date)}
-                      </span>
-                      <p className="text-muted-foreground">{anomaly.message}</p>
-                    </div>
-                    <Button variant="outline" size="sm" asChild>
-                      <Link to={`/eingaenge/${anomaly.payment.id}`}>Öffnen</Link>
-                    </Button>
+                    </ListRow>
                   </li>
                 ))}
-              </ul>
+              </ListGroup>
             )}
           </section>
         </>
@@ -269,14 +276,29 @@ export function DataQualityPage() {
   );
 }
 
-function OverviewTile({ label, value }: { label: string; value: number }) {
+/**
+ * „Nichts zu tun" als eine Zeile statt als grosser Leerzustand: Die Zahl steht
+ * schon in der Uebersicht darueber, und zwei leere Kaesten schoben auf dem
+ * Telefon die Seite um einen Bildschirm in die Laenge.
+ */
+function AllClear({ title, description }: { title: string; description?: string }) {
   return (
-    <Card>
-      <CardContent className="p-4 sm:p-6">
-        <p className="text-2xl font-semibold tabular-nums">{formatCountNumber(value)}</p>
-        <p className="text-xs text-muted-foreground">{label}</p>
-      </CardContent>
-    </Card>
+    <p className="flex items-start gap-2 rounded-lg border border-border bg-card p-3 text-sm">
+      <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-positive" aria-hidden />
+      <span>
+        <span className="font-medium">{title}</span>
+        {description && <span className="text-muted-foreground"> — {description}</span>}
+      </span>
+    </p>
+  );
+}
+
+function OverviewItem({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="flex flex-col-reverse">
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="text-xl font-semibold tabular-nums">{formatCountNumber(value)}</dd>
+    </div>
   );
 }
 

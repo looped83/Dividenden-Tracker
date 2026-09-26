@@ -119,17 +119,18 @@ export const DEPOT_TABS: readonly { to: string; label: string; end?: boolean }[]
   { to: "/depot/entwicklung", label: "Entwicklung" },
 ];
 
-/** Unterbereiche der Statistik (PRODUCT_SPEC.md §11). */
+/**
+ * Unterbereiche der Statistik (PRODUCT_SPEC.md §11).
+ *
+ * Fuenf statt sieben: „Jahre" und „Monate" sind der Reiter „Verlauf" mit einem
+ * Umschalter, der „Breakdown" ist als Matrix in die Uebersicht gezogen (dort
+ * lag die Heatmap derselben Zahlen). Sieben Reiter liefen auf dem Telefon zur
+ * Haelfte aus dem Bild. Der Vergleich folgt dem Verlauf: Er beantwortet
+ * dieselbe zeitliche Frage fuer zwei gewaehlte Zeitraeume.
+ */
 export const STATISTICS_TABS: readonly { to: string; label: string; end?: boolean }[] = [
   { to: "/statistiken", label: "Übersicht", end: true },
-  { to: "/statistiken/jahre", label: "Jahre" },
-  { to: "/statistiken/monate", label: "Monate" },
-  // Der Breakdown fuehrt beide Zeitachsen in einer Tabelle zusammen und steht
-  // deshalb direkt hinter ihnen. Der Vergleich folgt: Er beantwortet dieselbe
-  // zeitliche Frage („laufe ich besser als im Vorjahr?") fuer zwei gewaehlte
-  // Zeitraeume und gehoert damit zu den Zeitbereichen, nicht zu den
-  // Aufschluesselungen danach.
-  { to: "/statistiken/breakdown", label: "Breakdown" },
+  { to: "/statistiken/verlauf", label: "Verlauf" },
   { to: "/statistiken/vergleich", label: "Vergleich" },
   { to: "/statistiken/unternehmen", label: "Unternehmen" },
   // „Depotkonten" statt „Depots": Gemeint sind die Konten bei den Brokern, nicht

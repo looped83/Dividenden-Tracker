@@ -92,6 +92,7 @@ export function YearsTab() {
       },
       {
         key: "securities",
+        listHidden: true,
         header: "Unternehmen",
         headerLabel: "Anzahl Unternehmen",
         align: "right",
@@ -100,6 +101,7 @@ export function YearsTab() {
       },
       {
         key: "depots",
+        listHidden: true,
         header: "Depots",
         headerLabel: "Anzahl Depots",
         align: "right",
@@ -171,7 +173,12 @@ export function YearsTab() {
             initialSort={{ key: "year", direction: "desc" }}
             onRowClick={(row) =>
               void navigate(
-                statisticsTabHref("/statistiken/monate", filter, { year: row.year }),
+                statisticsTabHref(
+                  "/statistiken/verlauf",
+                  filter,
+                  { year: row.year },
+                  { nach: "monate" },
+                ),
               )
             }
             rowLabel={(row) => `Monate von ${String(row.year)} anzeigen`}

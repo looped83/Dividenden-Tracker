@@ -37,13 +37,12 @@ export function StatisticsPage() {
   // Der Filter geht in die Datenbasis hinein, weil die Depotstaende ihm ebenso
   // folgen muessen wie die Zahlungen (siehe useStatisticsData).
   const data = useStatisticsData(filter);
-  // Zwei Unterbereiche kommen ohne Jahresregler aus: Der Vergleich waehlt seine
-  // Zeitraeume selbst (§11.10), der Breakdown stellt grundsaetzlich alle Jahre
-  // gegenueber (§11.12) — ein Jahresfilter liesse dort eine einzige Spalte
-  // uebrig. Ein wirkungsloses Bedienelement ist schlimmer als keines. Die
-  // uebrigen Filter — Unternehmen und Depotkonto — wirken auch dort.
+  // Der Vergleich kommt ohne Jahresregler aus: Er waehlt seine Zeitraeume
+  // selbst (§11.10), ein wirkungsloses Bedienelement ist schlimmer als keines.
+  // In der Uebersicht wirkt er auf die Kennzahlen; die Matrix darunter stellt
+  // grundsaetzlich alle Jahre gegenueber (§11.12) und sagt das, solange ein
+  // Jahr gewaehlt ist. Unternehmen und Depotkonto wirken ueberall.
   const isComparison = useMatch("/statistiken/vergleich") !== null;
-  const isBreakdown = useMatch("/statistiken/breakdown") !== null;
 
   const years = React.useMemo(() => availableYears(data.payments), [data.payments]);
   const filteredPayments = React.useMemo(
@@ -123,7 +122,7 @@ export function StatisticsPage() {
         years={years}
         securities={data.securities}
         depots={data.depots}
-        showYear={!isComparison && !isBreakdown}
+        showYear={!isComparison}
       />
 
       {/* Eigener Ladezustand: Beim Reiterwechsel bleiben Kopfzeile, Reiter und

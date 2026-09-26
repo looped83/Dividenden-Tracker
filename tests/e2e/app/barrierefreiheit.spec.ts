@@ -34,8 +34,12 @@ const ROUTEN = [
   // barrierefrei sein, und er ist der erste, den jemand hier zu sehen bekommt.
   { pfad: "/#/depot/entwicklung", name: "Depot Entwicklung", warten: "Depot" },
   { pfad: "/#/statistiken", name: "Statistiken", warten: "Statistik" },
-  { pfad: "/#/statistiken/jahre", name: "Statistik Jahre", warten: "Statistik" },
-  { pfad: "/#/statistiken/breakdown", name: "Statistik Breakdown", warten: "Statistik" },
+  { pfad: "/#/statistiken/verlauf", name: "Statistik Verlauf", warten: "Statistik" },
+  {
+    pfad: "/#/statistiken/verlauf?nach=monate",
+    name: "Statistik Verlauf nach Monaten",
+    warten: "Statistik",
+  },
   { pfad: "/#/statistiken/vergleich", name: "Statistik Vergleich", warten: "Statistik" },
   { pfad: "/#/ziele", name: "Ziele", warten: "Ziele" },
   { pfad: "/#/ziele/beendet", name: "Ziele beendet", warten: "Ziele" },

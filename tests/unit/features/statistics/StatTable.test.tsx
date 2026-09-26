@@ -171,6 +171,23 @@ describe("StatTable auf dem Telefon", () => {
     expect(within(alpha).getByText("Kennung")).toBeInTheDocument();
   });
 
+  it("laesst Nebenkennzahlen in der Liste weg", () => {
+    render(
+      <StatTable
+        rows={rows}
+        columns={[
+          ...columns,
+          { key: "id", header: "Kennung", render: (r) => r.id },
+          { key: "neben", header: "Nebenwert", listHidden: true, render: () => "x" },
+        ]}
+        getRowKey={(r) => r.id}
+        caption="Test"
+      />,
+    );
+    expect(screen.getAllByText("Kennung").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Nebenwert")).not.toBeInTheDocument();
+  });
+
   it("sortiert über die Auswahl samt Richtungsschalter", async () => {
     const user = userEvent.setup();
     render(

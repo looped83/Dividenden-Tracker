@@ -1,11 +1,12 @@
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Outlet, Route, Routes } from "react-router";
 import { EUR, Money } from "@/lib/money";
 import type { AnalyticsPayment } from "@/lib/statistics";
 import { filterPayments } from "@/lib/statistics";
 import type { EntityInfo } from "@/features/dashboard/format";
-import { BreakdownTab } from "@/features/statistics/BreakdownTab";
+import { YearMonthMatrix } from "@/features/statistics/YearMonthMatrix";
+import { setViewportWide } from "../../support/viewport";
 import { EMPTY_STATISTICS_FILTER } from "@/features/statistics/filterParams";
 import { EMPTY_PORTFOLIO_SERIES } from "@/features/securities/snapshots";
 import type { StatisticsContext } from "@/features/statistics/context";
@@ -44,7 +45,7 @@ const PAYMENTS = [
   p("2026-03-10", "180.00"),
 ];
 
-function renderBreakdown(
+function renderMatrix(
   payments: AnalyticsPayment[] = PAYMENTS,
   filter = EMPTY_STATISTICS_FILTER,
 ) {
@@ -64,16 +65,20 @@ function renderBreakdown(
     <MemoryRouter>
       <Routes>
         <Route element={<Outlet context={context} />}>
-          <Route index element={<BreakdownTab />} />
+          <Route index element={<YearMonthMatrix />} />
         </Route>
       </Routes>
     </MemoryRouter>,
   );
 }
 
-describe("BreakdownTab", () => {
+describe("YearMonthMatrix ab md", () => {
+  beforeEach(() => {
+    setViewportWide(true);
+  });
+
   it("stellt alle Jahre als Zeilen dar, neueste zuerst", () => {
-    renderBreakdown();
+    renderMatrix();
     const table = screen.getByRole("table");
     const jahre = within(table)
       .getAllByRole("rowheader")
@@ -82,7 +87,7 @@ describe("BreakdownTab", () => {
   });
 
   it("stellt die zwölf Monate als Spalten dar", () => {
-    renderBreakdown();
+    renderMatrix();
     const table = screen.getByRole("table");
     expect(
       within(table).getByRole("columnheader", { name: "Januar" }),
@@ -97,14 +102,14 @@ describe("BreakdownTab", () => {
   });
 
   it("verlinkt jeden Betrag in die zugehörigen Dividendeneingänge", () => {
-    renderBreakdown();
+    renderMatrix();
     const link = screen.getByRole("link", { name: /März 2025/ });
     expect(link).toHaveAttribute("href", expect.stringContaining("year=2025"));
     expect(link).toHaveAttribute("href", expect.stringContaining("month=3"));
   });
 
   it("zeigt Jahressummen am Zeilenende und Monatssummen in der Fußzeile", () => {
-    renderBreakdown();
+    renderMatrix();
     const table = screen.getByRole("table");
     // 2024: 100 + 300 = 400 €.
     expect(within(table).getAllByText(/400,00\s?€/).length).toBeGreaterThan(0);
@@ -113,7 +118,7 @@ describe("BreakdownTab", () => {
   });
 
   it("wechselt die Ansicht auf die Veränderung zum Vorjahresmonat", () => {
-    renderBreakdown();
+    renderMatrix();
     fireEvent.change(screen.getByLabelText("Ansicht"), {
       target: { value: "veraenderung" },
     });
@@ -124,7 +129,7 @@ describe("BreakdownTab", () => {
   });
 
   it('summiert in der Ansicht „Aufgelaufen" über das Jahr', () => {
-    renderBreakdown();
+    renderMatrix();
     fireEvent.change(screen.getByLabelText("Ansicht"), {
       target: { value: "kumuliert" },
     });
@@ -133,17 +138,51 @@ describe("BreakdownTab", () => {
   });
 
   it("ignoriert den Jahresfilter und sagt das ausdrücklich", () => {
-    renderBreakdown(PAYMENTS, { ...EMPTY_STATISTICS_FILTER, year: 2025 });
+    renderMatrix(PAYMENTS, { ...EMPTY_STATISTICS_FILTER, year: 2025 });
     const table = screen.getByRole("table");
     expect(within(table).getByRole("rowheader", { name: /2024/ })).toBeInTheDocument();
     expect(
-      screen.getByText(/Jahresfilter \(2025\) wirkt in diesem Bereich nicht/),
+      screen.getByText(/Jahresfilter \(2025\) wirkt in dieser Tabelle nicht/),
     ).toBeInTheDocument();
   });
 
-  it("zeigt ohne Daten einen leeren Zustand statt einer leeren Tabelle", () => {
-    renderBreakdown([]);
-    expect(screen.getByText("Keine Daten für den Breakdown")).toBeInTheDocument();
+  it("zeigt ohne Daten keine leere Tabelle", () => {
+    renderMatrix([]);
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
+  });
+
+  it("toent die Monate nach der Hoehe ihres Betrags (fruehere Heatmap)", () => {
+    renderMatrix();
+    const zelle = screen.getByRole("link", { name: /März 2025/ }).closest("td");
+    expect(zelle?.getAttribute("style")).toMatch(/color-mix/);
+  });
+});
+
+describe("YearMonthMatrix auf dem Telefon", () => {
+  beforeEach(() => {
+    setViewportWide(false);
+  });
+
+  it("dreht die Matrix: Monate als Zeilen, Jahre als Spalten, neueste zuerst", () => {
+    renderMatrix();
+    const table = screen.getByRole("table");
+    const jahre = within(table)
+      .getAllByRole("columnheader")
+      .map((zelle) => zelle.textContent);
+    expect(jahre).toEqual(["Monat", "2026* (laufendes Jahr)", "2025", "2024"]);
+    expect(within(table).getByRole("rowheader", { name: "Gesamt" })).toBeInTheDocument();
+    // Zwoelf Monatszeilen plus Kopf- und Summenzeile.
+    expect(within(table).getAllByRole("row")).toHaveLength(14);
+    expect(
+      within(table).getByRole("rowheader", { name: "Dezember" }),
+    ).toBeInTheDocument();
+  });
+
+  it("nennt die Waehrung einmal statt in jeder Zelle — vorgelesen wird der volle Betrag", () => {
+    renderMatrix();
+    expect(screen.getByText(/Beträge in €/)).toBeInTheDocument();
+    const link = screen.getByRole("link", { name: /März 2025/ });
+    expect(link).toHaveTextContent(/150,00\s€/);
+    expect(link.querySelector("[aria-hidden]")?.textContent).toBe("150,00");
   });
 });

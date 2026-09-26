@@ -18,7 +18,6 @@ import type {
   ComparisonResult,
   DepotStatistics,
   GroupBucket,
-  HeatmapRow,
   HistoricalSummary,
   MonthAcrossYearsStatistics,
   MonthBucket,
@@ -706,12 +705,4 @@ export function depotStatistics(
     if (byNet !== 0) return byNet;
     return b.count - a.count;
   });
-}
-
-/** Zahlungs-Heatmap Jahr × Monat: eine Zeile je Jahr, neueste zuerst (§11.7). */
-export function heatmapByYearMonth(payments: readonly AnalyticsPayment[]): HeatmapRow[] {
-  return availableYears(payments).map((year) => ({
-    year,
-    months: monthlyBuckets(payments, year),
-  }));
 }

@@ -112,7 +112,7 @@ describe("buildAgenda", () => {
       "2026-10",
     ]);
     expect(sections.map((section) => section.label)).toEqual([
-      "Später",
+      "Später im August",
       "September 2026",
       "Oktober 2026",
     ]);

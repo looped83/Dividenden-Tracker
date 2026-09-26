@@ -48,6 +48,23 @@ export function formatMoney(money: Money, locale = "de-DE"): string {
 }
 
 /**
+ * Betrag ohne Waehrungszeichen: „1.234,56". Fuer dichte Tabellen, in denen
+ * die Waehrung einmal fuer alle Zellen genannt wird — wie an den
+ * Diagrammachsen (UX_AND_DESIGN_SYSTEM.md §3). Sonst immer `formatMoney`.
+ */
+export function formatAmount(money: Money, locale = "de-DE"): string {
+  const formatter = numberFormat(
+    `amount|${locale}`,
+    () =>
+      new Intl.NumberFormat(locale, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }),
+  );
+  return formatter.format(money.toStringValue() as unknown as number);
+}
+
+/**
  * Waehrungszeichen eines ISO-Codes in der Anzeigesprache — „€" fuer EUR,
  * „$" fuer USD. Faellt die Laufzeit auf den Code zurueck (unbekannte oder
  * zeichenlose Waehrung), steht eben dieser da; erfunden wird nichts.

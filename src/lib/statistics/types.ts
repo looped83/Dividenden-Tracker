@@ -190,11 +190,5 @@ export interface DepotStatistics {
   perMonth: MonthBucket[];
 }
 
-/** Eine Jahreszeile der Zahlungs-Heatmap (§11.7): zwoelf Monatseimer eines Jahres. */
-export interface HeatmapRow {
-  year: number;
-  months: MonthBucket[];
-}
-
 /** Sortierkriterien der Unternehmensstatistik (§11.5). */
 export type SecuritySortKey = "net" | "count" | "name" | "lastPayment";

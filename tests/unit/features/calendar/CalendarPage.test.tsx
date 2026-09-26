@@ -342,7 +342,7 @@ describe("Listenansicht", () => {
     expect(
       screen.getByRole("heading", { name: "September 2026", level: 2 }),
     ).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Später" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /^Später/ })).not.toBeInTheDocument();
   });
 
   it("traegt das Datum an jeder Kachel — als Zahl und als vollstaendige Angabe", () => {

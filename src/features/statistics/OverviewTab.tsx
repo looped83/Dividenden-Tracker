@@ -1,14 +1,8 @@
 import * as React from "react";
 import { useNavigate } from "react-router";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard, StatGrid } from "@/components/domain/StatCard";
 import { AmountText } from "@/components/money/AmountText";
-import {
-  MONTH_NAMES_DE_SHORT,
-  overviewStatistics,
-  yearlyBuckets,
-  heatmapByYearMonth,
-} from "@/lib/statistics";
+import { overviewStatistics } from "@/lib/statistics";
 import { useStatisticsContext } from "./context";
 import {
   formatCountNoun,
@@ -17,7 +11,7 @@ import {
   formatPayments,
   statisticsDrillHref,
 } from "./format";
-import { CategoryBarChart, PaymentsHeatmap } from "./components/charts";
+import { YearMonthMatrix } from "./YearMonthMatrix";
 import { formatDateRange, formatYearSpan } from "@/lib/utils/formatDate";
 
 export function OverviewTab() {
@@ -26,42 +20,6 @@ export function OverviewTab() {
 
   const stats = React.useMemo(() => overviewStatistics(payments), [payments]);
   const { bestMonth, bestYear } = stats;
-
-  const yearData = React.useMemo(
-    () =>
-      yearlyBuckets(payments).map((bucket) => ({
-        key: String(bucket.year),
-        label: String(bucket.year),
-        value: bucket.net.toChartNumber(),
-        money: bucket.net,
-        count: bucket.count,
-        href: statisticsDrillHref(filter, { year: bucket.year }),
-      })),
-    [payments, filter],
-  );
-
-  const heatmap = React.useMemo(() => {
-    const rows = heatmapByYearMonth(payments);
-    let maxValue = 0;
-    for (const row of rows) {
-      for (const cell of row.months) {
-        const value = cell.net.toChartNumber();
-        if (value > maxValue) maxValue = value;
-      }
-    }
-    return {
-      rows: rows.map((row) => ({
-        year: row.year,
-        cells: row.months.map((month) => ({
-          month: month.month,
-          net: month.net,
-          count: month.count,
-          value: month.net.toChartNumber(),
-        })),
-      })),
-      maxValue,
-    };
-  }, [payments]);
 
   return (
     <div className="space-y-6">
@@ -152,32 +110,11 @@ export function OverviewTab() {
         />
       </StatGrid>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Jährliche Entwicklung</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <CategoryBarChart
-            data={yearData}
-            ariaLabel="Netto-Dividenden je Jahr"
-            categoryHeader="Jahr"
-          />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Zahlungs-Heatmap</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <PaymentsHeatmap
-            rows={heatmap.rows}
-            maxValue={heatmap.maxValue}
-            monthLabels={MONTH_NAMES_DE_SHORT}
-            hrefOf={(year, month) => statisticsDrillHref(filter, { year, month })}
-          />
-        </CardContent>
-      </Card>
+      {/* Die Matrix aus Jahren und Monaten — hier trifft sich die fruehere
+          Heatmap (Toenung) mit dem frueheren Reiter „Breakdown" (Zahlen). Das
+          Jahresdiagramm stand zuvor hier **und** unter „Jahre"; es steht jetzt
+          nur noch unter „Verlauf". */}
+      <YearMonthMatrix />
     </div>
   );
 }

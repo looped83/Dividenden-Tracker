@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Outlet, Route, Routes } from "react-router";
 import { EUR, Money } from "@/lib/money";
 import type { AnalyticsPayment } from "@/lib/statistics";
@@ -67,10 +67,13 @@ describe("OverviewTab (Render-Smoke)", () => {
     expect(screen.getByText("Bestes Jahr")).toBeInTheDocument();
   });
 
-  it("zeigt die jährliche Datentabelle als Diagramm-Alternative", () => {
+  it("zeigt Jahre und Monate als Matrix statt Jahresdiagramm und Heatmap", () => {
     renderOverview([p("2024-05-10", "100.00"), p("2025-05-10", "200.00")]);
-    // Datentabelle des Jahresdiagramms enthält beide Jahre.
-    expect(screen.getAllByText("2024").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("2025").length).toBeGreaterThan(0);
+    // Das Jahresdiagramm steht unter „Verlauf"; hier die Matrix mit beiden Jahren.
+    expect(screen.getByRole("heading", { name: "Jahre × Monate" })).toBeInTheDocument();
+    const table = screen.getByRole("table");
+    expect(within(table).getAllByText("2024").length).toBeGreaterThan(0);
+    expect(within(table).getAllByText("2025").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Jährliche Entwicklung")).not.toBeInTheDocument();
   });
 });

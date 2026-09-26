@@ -64,14 +64,8 @@ const StatisticsPage = React.lazy(async () => ({
 const OverviewTab = React.lazy(async () => ({
   default: (await routeChunks.statisticsOverview()).OverviewTab,
 }));
-const YearsTab = React.lazy(async () => ({
-  default: (await routeChunks.statisticsYears()).YearsTab,
-}));
-const MonthsTab = React.lazy(async () => ({
-  default: (await routeChunks.statisticsMonths()).MonthsTab,
-}));
-const BreakdownTab = React.lazy(async () => ({
-  default: (await routeChunks.statisticsBreakdown()).BreakdownTab,
+const HistoryTab = React.lazy(async () => ({
+  default: (await routeChunks.statisticsHistory()).HistoryTab,
 }));
 const ComparisonTab = React.lazy(async () => ({
   default: (await routeChunks.statisticsComparison()).ComparisonTab,
@@ -131,9 +125,19 @@ function standalone(element: React.ReactNode): React.ReactElement {
  * verwuerfe sie — ein Lesezeichen auf `…/entwicklung?security=…` verloere damit
  * genau die Auswahl, die es festhalten sollte.
  */
-function RedirectTo({ pathname }: { pathname: string }): React.ReactElement {
+function RedirectTo({
+  pathname,
+  set,
+}: {
+  pathname: string;
+  /** Suchparameter, die das neue Ziel zusaetzlich braucht. */
+  set?: Record<string, string>;
+}): React.ReactElement {
   const { search } = useLocation();
-  return <Navigate to={{ pathname, search }} replace />;
+  const params = new URLSearchParams(search);
+  for (const [key, value] of Object.entries(set ?? {})) params.set(key, value);
+  const query = params.toString();
+  return <Navigate to={{ pathname, search: query ? `?${query}` : "" }} replace />;
 }
 
 /** Weiterleitung einer Detailseite: `/unternehmen/:id` → `/depot/:id`. */
@@ -180,9 +184,7 @@ export const router = createHashRouter([
         element: <StatisticsPage />,
         children: [
           { index: true, element: <OverviewTab /> },
-          { path: "jahre", element: <YearsTab /> },
-          { path: "monate", element: <MonthsTab /> },
-          { path: "breakdown", element: <BreakdownTab /> },
+          { path: "verlauf", element: <HistoryTab /> },
           { path: "vergleich", element: <ComparisonTab /> },
           { path: "unternehmen", element: <CompaniesTab /> },
           { path: "depots", element: <DepotsTab /> },
@@ -220,6 +222,17 @@ export const router = createHashRouter([
         path: "statistiken/entwicklung",
         element: <RedirectTo pathname="/depot/entwicklung" />,
       },
+      // „Jahre" und „Monate" sind der Reiter „Verlauf", der „Breakdown" ist die
+      // Matrix der Uebersicht. Die alten Pfade leiten samt Filtern dorthin.
+      {
+        path: "statistiken/jahre",
+        element: <RedirectTo pathname="/statistiken/verlauf" />,
+      },
+      {
+        path: "statistiken/monate",
+        element: <RedirectTo pathname="/statistiken/verlauf" set={{ nach: "monate" }} />,
+      },
+      { path: "statistiken/breakdown", element: <RedirectTo pathname="/statistiken" /> },
       // Die drei Bereiche sind in die Einstellungen verschoben. Die alten
       // Pfade bleiben als dauerhafte Weiterleitung bestehen, damit bestehende
       // Links, Lesezeichen und der Verlauf weiter funktionieren.

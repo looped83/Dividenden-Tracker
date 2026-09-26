@@ -4,7 +4,8 @@ import { useForm } from "react-hook-form";
 import { Landmark, Pencil, Plus, RotateCcw, Archive as ArchiveIcon } from "lucide-react";
 import { emptyToNull } from "@/lib/utils/emptyToNull";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
-import { formatCountNumber } from "@/lib/utils/formatNumber";
+import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
+import { MD_BREAKPOINT_QUERY, useMediaQuery } from "@/lib/hooks/useMediaQuery";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SkeletonRows } from "@/components/ui/skeleton";
+import { ListGroup, ListRow } from "@/components/ui/list";
 import {
   Dialog,
   DialogContent,
@@ -248,6 +250,41 @@ function DepotFormDialog({
   );
 }
 
+/**
+ * Eine Zeile der Verwaltungslisten auf dem Telefon: Name (und nur der
+ * Sonderfall „Archiviert" als Etikett), darunter die Angaben, rechts die
+ * Aktionen. Anders als Eingaenge und Assets haben Depots und Portfolios keine
+ * Detailseite — die Aktionen bleiben deshalb an der Zeile.
+ */
+function ManagedRow({
+  name,
+  archived,
+  meta,
+  actions,
+}: {
+  name: string;
+  archived: boolean;
+  meta: string;
+  actions: React.ReactNode;
+}) {
+  return (
+    <ListRow className="pr-1">
+      <span className="min-w-0 flex-1">
+        <span className="font-medium [overflow-wrap:anywhere]">
+          {name}
+          {archived && (
+            <Badge variant="neutral" className="ml-2 align-middle">
+              Archiviert
+            </Badge>
+          )}
+        </span>
+        {meta && <span className="block text-sm text-muted-foreground">{meta}</span>}
+      </span>
+      <span className="-my-2 flex shrink-0 items-center">{actions}</span>
+    </ListRow>
+  );
+}
+
 export function DepotsPage() {
   const { data: portfolios = [] } = usePortfolios();
   const { data: depots = [], isLoading } = useDepots();
@@ -270,6 +307,75 @@ export function DepotsPage() {
   const visibleDepots = depots.filter((depot) => showArchived || !depot.archived_at);
   const visiblePortfolios = portfolios.filter((p) => showArchived || !p.archived_at);
   const portfolioNameById = new Map(portfolios.map((p) => [p.id, p.name]));
+
+  // Tabelle ab `md`, darunter eine Liste: Sechs Spalten liefen auf dem Telefon
+  // seitlich aus dem Bild, sichtbar blieben Name und Portfolio. Die Aktionen
+  // sind in beiden Fassungen dieselben.
+  const isWide = useMediaQuery(MD_BREAKPOINT_QUERY);
+
+  const portfolioActions = (portfolio: Portfolio) => (
+    <>
+      <Button
+        variant="ghost"
+        size="icon"
+        aria-label={`Portfolio ${portfolio.name} bearbeiten`}
+        onClick={() => {
+          setPortfolioDialog({ open: true, portfolio });
+        }}
+      >
+        <Pencil />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        aria-label={
+          portfolio.archived_at
+            ? `Portfolio ${portfolio.name} reaktivieren`
+            : `Portfolio ${portfolio.name} archivieren`
+        }
+        onClick={() =>
+          void archivePortfolio.mutateAsync({
+            id: portfolio.id,
+            archived: Boolean(portfolio.archived_at),
+          })
+        }
+      >
+        {portfolio.archived_at ? <RotateCcw /> : <ArchiveIcon />}
+      </Button>
+    </>
+  );
+
+  const depotActions = (depot: Depot) => (
+    <>
+      <Button
+        variant="ghost"
+        size="icon"
+        aria-label={`Depot ${depot.name} bearbeiten`}
+        onClick={() => {
+          setDepotDialog({ open: true, depot });
+        }}
+      >
+        <Pencil />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        aria-label={
+          depot.archived_at
+            ? `Depot ${depot.name} reaktivieren`
+            : `Depot ${depot.name} archivieren`
+        }
+        onClick={() =>
+          void archiveDepot.mutateAsync({
+            id: depot.id,
+            archived: Boolean(depot.archived_at),
+          })
+        }
+      >
+        {depot.archived_at ? <RotateCcw /> : <ArchiveIcon />}
+      </Button>
+    </>
+  );
 
   return (
     <div className="space-y-6">
@@ -298,6 +404,23 @@ export function DepotsPage() {
             <p className="text-sm text-muted-foreground">
               Noch keine Portfolios angelegt.
             </p>
+          ) : !isWide ? (
+            <ListGroup inset aria-label="Portfolios">
+              {visiblePortfolios.map((portfolio) => (
+                <li key={portfolio.id}>
+                  <ManagedRow
+                    name={portfolio.name}
+                    archived={Boolean(portfolio.archived_at)}
+                    meta={formatCountNoun(
+                      depots.filter((d) => d.portfolio_id === portfolio.id).length,
+                      "Depot",
+                      "Depots",
+                    )}
+                    actions={portfolioActions(portfolio)}
+                  />
+                </li>
+              ))}
+            </ListGroup>
           ) : (
             <Table>
               <TableHeader>
@@ -326,33 +449,7 @@ export function DepotsPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label={`Portfolio ${portfolio.name} bearbeiten`}
-                          onClick={() => {
-                            setPortfolioDialog({ open: true, portfolio });
-                          }}
-                        >
-                          <Pencil />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label={
-                            portfolio.archived_at
-                              ? `Portfolio ${portfolio.name} reaktivieren`
-                              : `Portfolio ${portfolio.name} archivieren`
-                          }
-                          onClick={() =>
-                            void archivePortfolio.mutateAsync({
-                              id: portfolio.id,
-                              archived: Boolean(portfolio.archived_at),
-                            })
-                          }
-                        >
-                          {portfolio.archived_at ? <RotateCcw /> : <ArchiveIcon />}
-                        </Button>
+                        {portfolioActions(portfolio)}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -394,6 +491,27 @@ export function DepotsPage() {
                 </Button>
               }
             />
+          ) : !isWide ? (
+            <ListGroup inset aria-label="Depots">
+              {visibleDepots.map((depot) => (
+                <li key={depot.id}>
+                  <ManagedRow
+                    name={depot.name}
+                    archived={Boolean(depot.archived_at)}
+                    meta={[
+                      depot.portfolio_id
+                        ? portfolioNameById.get(depot.portfolio_id)
+                        : undefined,
+                      depot.broker,
+                      depot.base_currency,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                    actions={depotActions(depot)}
+                  />
+                </li>
+              ))}
+            </ListGroup>
           ) : (
             <Table>
               <TableHeader>
@@ -427,35 +545,7 @@ export function DepotsPage() {
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label={`Depot ${depot.name} bearbeiten`}
-                          onClick={() => {
-                            setDepotDialog({ open: true, depot });
-                          }}
-                        >
-                          <Pencil />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label={
-                            depot.archived_at
-                              ? `Depot ${depot.name} reaktivieren`
-                              : `Depot ${depot.name} archivieren`
-                          }
-                          onClick={() =>
-                            void archiveDepot.mutateAsync({
-                              id: depot.id,
-                              archived: Boolean(depot.archived_at),
-                            })
-                          }
-                        >
-                          {depot.archived_at ? <RotateCcw /> : <ArchiveIcon />}
-                        </Button>
-                      </div>
+                      <div className="flex justify-end gap-1">{depotActions(depot)}</div>
                     </TableCell>
                   </TableRow>
                 ))}
