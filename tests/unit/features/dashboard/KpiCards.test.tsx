@@ -117,7 +117,7 @@ describe("KpiCards (Render-Smoke)", () => {
       payment("2026-04-10", "30.00", "sec-b"),
     ]);
     expect(screen.getByText("Zahlungen 2026")).toBeInTheDocument();
-    expect(screen.getByText("von 2 Unternehmen")).toBeInTheDocument();
+    expect(screen.getByText("2 Unternehmen")).toBeInTheDocument();
     expect(screen.getByText("1 Depot")).toBeInTheDocument();
   });
 });

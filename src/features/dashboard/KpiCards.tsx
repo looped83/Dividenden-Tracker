@@ -258,7 +258,7 @@ export function KpiCards({ payments, selection, today }: KpiCardsProps) {
         // halbbreiten Kachel mitten im Satz um.
         footnote={
           <>
-            <p>von {formatCountNoun(cards.companies, "Unternehmen", "Unternehmen")}</p>
+            <p>{formatCountNoun(cards.companies, "Unternehmen", "Unternehmen")}</p>
             <p>{formatCountNoun(cards.depots, "Depot", "Depots")}</p>
           </>
         }
