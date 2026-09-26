@@ -2,7 +2,7 @@ import * as React from "react";
 import { useNavigate } from "react-router";
 import { Bar, BarChart, CartesianGrid, Tooltip, XAxis, YAxis } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils/cn";
 import { ChartLegend } from "@/components/charts/ChartLegend";
 import {
   ChartCanvas,
@@ -154,32 +154,34 @@ export function MonthlyChart({ payments, selection, today }: MonthlyChartProps) 
 
   return (
     <Card>
-      <CardHeader className="flex-row flex-wrap items-center justify-between gap-x-4 gap-y-3">
+      {/* Mobil stehen Titel und Umschalter untereinander, der Umschalter
+          ueber die volle Breite: Nebeneinander passten sie nicht, und die
+          zwei losen Knoepfe brachen linksbuendig unter den Titel. Als ein
+          Segment wie im Kalender liest er sich als eine Wahl. */}
+      <CardHeader className="gap-3 sm:flex-row sm:items-center sm:justify-between">
         <CardTitle className="min-w-0">{title}</CardTitle>
         {!isAll && (
-          <div className="-my-2 flex gap-1" role="group" aria-label="Darstellung">
-            <Button
-              type="button"
-              size="sm"
-              variant={mode === "monthly" ? "default" : "outline"}
-              aria-pressed={mode === "monthly"}
+          <div
+            role="group"
+            aria-label="Darstellung"
+            className="flex rounded-md border border-border p-0.5 sm:-my-2"
+          >
+            <ModeButton
+              active={mode === "monthly"}
               onClick={() => {
                 setMode("monthly");
               }}
             >
               Monatswerte
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant={mode === "cumulative" ? "default" : "outline"}
-              aria-pressed={mode === "cumulative"}
+            </ModeButton>
+            <ModeButton
+              active={mode === "cumulative"}
               onClick={() => {
                 setMode("cumulative");
               }}
             >
               Kumuliert
-            </Button>
+            </ModeButton>
           </div>
         )}
       </CardHeader>
@@ -407,5 +409,32 @@ function YearTable({ rows }: { rows: YearRow[] }) {
         ))}
       </TableBody>
     </Table>
+  );
+}
+
+function ModeButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={cn(
+        "inline-flex min-h-9 flex-1 items-center justify-center rounded px-3 text-sm font-medium outline-none sm:flex-none",
+        "pointer-coarse:min-h-11 focus-visible:ring-2 focus-visible:ring-ring",
+        active
+          ? "bg-accent text-accent-foreground"
+          : "text-muted-foreground hover:text-foreground",
+      )}
+    >
+      {children}
+    </button>
   );
 }
