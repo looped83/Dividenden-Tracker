@@ -101,6 +101,20 @@ function renderList(rows: PaymentListRow[], route = "/eingaenge") {
   );
 }
 
+/** Schaltet zwischen Karten (Telefon, Standard) und Tabelle (ab `md`) um. */
+function setWide(matches: boolean) {
+  window.matchMedia = (query: string): MediaQueryList => ({
+    matches,
+    media: query,
+    onchange: null,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+    addListener: () => undefined,
+    removeListener: () => undefined,
+    dispatchEvent: () => false,
+  });
+}
+
 describe("PaymentsPage", () => {
   // jsdom kennt kein Rollen; das Blaettern ruft es auf.
   let scrollTo: MockInstance<typeof window.scrollTo>;
@@ -112,6 +126,7 @@ describe("PaymentsPage", () => {
 
   afterEach(() => {
     scrollTo.mockRestore();
+    setWide(false);
   });
 
   it("zeigt die Eingaenge mit Unternehmen und Betrag", () => {
@@ -127,8 +142,8 @@ describe("PaymentsPage", () => {
 
     // Ueber die Rolle, nicht ueber den Text: Die Namen stehen auch in den
     // Auswahllisten der Filterleiste.
-    expect(screen.getByRole("link", { name: "Apple Inc." })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Allianz SE" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Apple Inc\./ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Allianz SE/ })).toBeInTheDocument();
     expect(screen.getByText("50,00 €")).toBeInTheDocument();
     expect(screen.getByText("120,00 €")).toBeInTheDocument();
   });
@@ -143,8 +158,8 @@ describe("PaymentsPage", () => {
     await user.selectOptions(screen.getByLabelText("Unternehmen"), "s1");
 
     expect(screen.getByText("1 Eingang gefunden.")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Apple Inc." })).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Allianz SE" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Apple Inc\./ })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Allianz SE/ })).not.toBeInTheDocument();
   });
 
   it("blendet stornierte Eingaenge aus, bis man sie anfordert", async () => {
@@ -154,11 +169,11 @@ describe("PaymentsPage", () => {
       zahlung({ id: "b", security_id: "s2", archived_at: "2026-04-01T00:00:00Z" }),
     ]);
 
-    expect(screen.queryByRole("link", { name: "Allianz SE" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Allianz SE/ })).not.toBeInTheDocument();
 
     await user.click(screen.getByLabelText("Stornierte anzeigen"));
 
-    expect(screen.getByRole("link", { name: "Allianz SE" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Allianz SE/ })).toBeInTheDocument();
     expect(screen.getByText("Storniert")).toBeInTheDocument();
   });
 
@@ -216,7 +231,18 @@ describe("PaymentsPage", () => {
     expect(screen.getByText(/1–25 von 28/)).toBeInTheDocument();
   });
 
-  it("bietet je Zeile Bearbeiten, Stornieren und Löschen — ohne Auswahl", () => {
+  it("fuehrt auf dem Telefon mit einer Tippflaeche je Karte zur Detailseite", () => {
+    renderList([zahlung({ id: "a" })]);
+
+    // Eine Karte, ein Ziel: Die Aktionen stehen auf der Detailseite.
+    const karte = screen.getByRole("link", { name: /Apple Inc\./ });
+    expect(karte).toHaveAttribute("href", "/eingaenge/a");
+    expect(screen.queryByRole("button", { name: /stornieren/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /löschen/ })).not.toBeInTheDocument();
+  });
+
+  it("bietet auf breiten Schirmen je Zeile Bearbeiten, Stornieren und Löschen", () => {
+    setWide(true);
     renderList([zahlung({ id: "a" })]);
 
     // Die Liste kennt keine Mehrfachauswahl mehr: Was zu tun ist, steht an

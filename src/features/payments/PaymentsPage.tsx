@@ -1,8 +1,15 @@
 import * as React from "react";
 import { Link, useSearchParams } from "react-router";
-// `Plus` fuer „Neue Dividende" in der Kopfzeile (aus main); die Pfeile und das
-// Kreuz stecken jetzt in `FilterSort` bzw. `FilterReset`.
-import { Ban, Pencil, Plus, RotateCcw, ShieldCheck, Trash2, Wallet } from "lucide-react";
+import {
+  Ban,
+  ChevronRight,
+  Pencil,
+  Plus,
+  RotateCcw,
+  ShieldCheck,
+  Trash2,
+  Wallet,
+} from "lucide-react";
 import {
   effectivePayDate,
   monthNameDe,
@@ -538,16 +545,6 @@ export function PaymentsPage() {
                   row={row}
                   comparison={yearOverYear.get(row.id)}
                   listUrl={listUrl}
-                  onStorno={() => {
-                    setStornoReason("");
-                    setStornoError(null);
-                    setStornoTarget(row);
-                  }}
-                  onReactivate={() => void reactivate(row.payment.id)}
-                  onDelete={() => {
-                    setDeleteError(null);
-                    setDeleteTarget(row);
-                  }}
                 />
               ))}
             </ul>
@@ -690,6 +687,7 @@ function PaymentRow({
             das Datum tut das nicht. */}
         <Link
           to={`/eingaenge/${payment.id}`}
+          state={{ from: listUrl }}
           className="rounded-sm outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
         >
           {companyName || "—"}
@@ -761,105 +759,66 @@ function PaymentRow({
   );
 }
 
+/**
+ * Karte der schmalen Darstellung: eine einzige Tippflaeche zur Detailseite.
+ *
+ * Zuvor trug jede Karte Bearbeiten, Stornieren und Loeschen als Symbole —
+ * 75 Schaltflaechen je Seite, das Loeschen einen Daumen breit neben dem
+ * Bearbeiten. Die Aktionen stehen jetzt dort, wo der Eingang vollstaendig
+ * zu sehen ist; die Detailseite fuehrt samt Filter und Seite zurueck
+ * (`state.from`). Auf breiten Schirmen bleiben sie in der Tabellenzeile —
+ * dort zielt der Zeiger genau, und die Spalte kostet keine Zeile.
+ *
+ * Alle Abstaende folgen einem Raster: 12px Kachelrand (= Abstand zwischen den
+ * Karten), 8px zwischen den Zeilen und zwischen den Elementen einer Zeile.
+ */
 function PaymentCard({
   row,
   comparison,
   listUrl,
-  onStorno,
-  onReactivate,
-  onDelete,
-}: RowActionProps) {
+}: {
+  row: Row;
+  comparison: YearOverYearComparison | undefined;
+  listUrl: string;
+}) {
   const { payment, effectiveDate, companyName, currency } = row;
   const cancelled = Boolean(payment.archived_at);
-  const subject = actionSubject(row);
-  // Zwei Zeilen statt vier: Betrag neben dem Namen, Aktionen neben dem Datum.
-  // Die Aktionen tragen dieselben Symbole und Namen wie in der Tabelle —
-  // beschriftet nur fuer Hilfsmittel, da drei Wortschaltflaechen die Karte um
-  // eine ganze Zeile verlaengerten. Alle Abstaende folgen einem Raster: 12px
-  // Kachelrand (= Abstand zwischen den Karten), 8px zwischen den Zeilen und
-  // zwischen den Elementen einer Zeile.
   return (
-    <li className="rounded-lg border border-border p-3">
-      <div className="flex items-baseline justify-between gap-2">
-        <Link
-          to={`/eingaenge/${payment.id}`}
-          className="min-w-0 truncate rounded-sm font-medium outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          {companyName || "—"}
-        </Link>
-        {/* Der Betrag ist die Kernaussage der Karte und traegt deshalb mehr
-            Gewicht als der Name. Der Indikator steht wie in der Tabelle links
-            davon. */}
-        <span className="flex shrink-0 items-center gap-1.5">
-          {comparison && <YearOverYearIndicator comparison={comparison} />}
-          <AmountText
-            amount={Money.fromString(payment.net_amount, currency)}
-            className="text-lg font-semibold"
-          />
-        </span>
-      </div>
-      <div className="mt-2 flex items-center justify-between gap-2">
-        {/* Ohne Depot: Wer die Liste nach Depot filtert oder nur eines
-            fuehrt, gewinnt daraus nichts. Die Detailansicht nennt es. */}
-        <div className="flex min-w-0 items-center gap-2">
-          <DateText className="text-sm text-muted-foreground">
-            {formatDate(effectiveDate)}
-          </DateText>
-          {cancelled && (
-            <Badge variant="warning" className="shrink-0">
-              Storniert
-            </Badge>
-          )}
+    <li>
+      <Link
+        to={`/eingaenge/${payment.id}`}
+        state={{ from: listUrl }}
+        className="flex items-center gap-2 rounded-lg border border-border p-3 outline-none transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring active:bg-accent motion-reduce:transition-none"
+      >
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline justify-between gap-2">
+            <span className="min-w-0 truncate font-medium">{companyName || "—"}</span>
+            {/* Der Betrag ist die Kernaussage der Karte und traegt deshalb mehr
+                Gewicht als der Name. Der Indikator steht wie in der Tabelle
+                links davon. */}
+            <span className="flex shrink-0 items-center gap-1.5">
+              {comparison && <YearOverYearIndicator comparison={comparison} />}
+              <AmountText
+                amount={Money.fromString(payment.net_amount, currency)}
+                className="text-lg font-semibold"
+              />
+            </span>
+          </div>
+          {/* Ohne Depot: Wer die Liste nach Depot filtert oder nur eines
+              fuehrt, gewinnt daraus nichts. Die Detailansicht nennt es. */}
+          <div className="mt-2 flex min-w-0 items-center gap-2">
+            <DateText className="text-sm text-muted-foreground">
+              {formatDate(effectiveDate)}
+            </DateText>
+            {cancelled && (
+              <Badge variant="warning" className="shrink-0">
+                Storniert
+              </Badge>
+            )}
+          </div>
         </div>
-        {/* Die negativen Raender holen die Luft zurueck, die in den 44px-Touch-
-            zielen ohnehin steckt: Die Schaltflaechenzeile misst optisch so viel
-            wie die Textzeile daneben, oben und unten bleibt derselbe
-            Kachelrand. */}
-        <div className="-my-2 -mr-2 flex shrink-0 items-center gap-1">
-          {cancelled ? (
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label={`${subject} reaktivieren`}
-              onClick={onReactivate}
-            >
-              <RotateCcw />
-            </Button>
-          ) : (
-            <>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label={`${subject} bearbeiten`}
-                asChild
-              >
-                <Link
-                  to={`/eingaenge/${payment.id}/bearbeiten`}
-                  state={{ from: listUrl }}
-                >
-                  <Pencil />
-                </Link>
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label={`${subject} stornieren`}
-                onClick={onStorno}
-              >
-                <Ban />
-              </Button>
-            </>
-          )}
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label={`${subject} dauerhaft löschen`}
-            onClick={onDelete}
-          >
-            <Trash2 />
-          </Button>
-        </div>
-      </div>
+        <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+      </Link>
     </li>
   );
 }

@@ -73,3 +73,26 @@ test("Blaettern beginnt oben, der Weg zurueck endet auf derselben Seite", async 
   await expect(page.getByText(/26–40 von 40/)).toBeVisible();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(unten);
 });
+
+test("auf dem Telefon fuehrt die Karte zur Detailseite und diese samt Seite zurueck", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/#/eingaenge?page=2");
+  await expect(page.getByText(/26–40 von 40/)).toBeVisible();
+
+  // Eine Tippflaeche je Karte, keine Aktionen darauf.
+  await expect(page.getByRole("button", { name: /stornieren/i })).toHaveCount(0);
+  await page
+    .getByRole("link", { name: /Muster AG/ })
+    .first()
+    .click();
+
+  // Die Aktionen stehen auf der Detailseite …
+  await expect(
+    page.getByRole("button", { name: "Stornieren", exact: true }),
+  ).toBeVisible();
+  // … und ihr Rueckweg kennt Filter und Seite der Liste.
+  await page.getByRole("link", { name: "Zu den Dividenden" }).click();
+  await expect(page.getByText(/26–40 von 40/)).toBeVisible();
+});

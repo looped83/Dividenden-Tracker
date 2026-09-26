@@ -127,7 +127,7 @@ Eigene zusammengesetzte Komponenten (fachlich):
 |---|---|
 | `AmountText` | Betragsdarstellung: tabular-nums, Währung, Vorzeichen, Farbe (semantisch), niemals Rundung in der Komponente |
 | `StatCard` | Kennzahl: Wert, Label, Vergleichswert (Δ absolut + %), Drill-down-Link; max. 4 primäre StatCards pro Ansicht (Hierarchie statt Kennzahlflut) |
-| `PaymentTable` / `PaymentCardList` | Tabelle (Desktop/iPad) bzw. Kartenliste (iPhone) mit identischer Datenquelle und Filterzustand |
+| `PaymentTable` / `PaymentCardList` | Tabelle (Desktop/iPad, Aktionen je Zeile) bzw. Kartenliste (iPhone, jede Karte eine Tippfläche zur Detailseite) mit identischer Datenquelle und Filterzustand |
 | `FilterBar` / `FilterField` / `FilterSort` / `FilterReset` | **Eine** Filterleiste für alle Bereiche (Dividenden, Depot, Statistik) — dieselben Bausteine, dieselben Abstände. Ab `sm` dauerhaft sichtbar, darunter eine aufklappbare Zeile mit der Zahl wirkender Filter. Regeln unten |
 | `ComparisonBreakdown` | Gegenüberstellung Zeile für Zeile (Monate oder Unternehmen): ab `md` eine Tabelle mit vier Spalten, darunter eine Liste — je Zeile Name und Differenz, darunter beide Zeiträume. Vier Spalten passen bei 390 px nicht nebeneinander, und die Seite soll auf dem Telefon nicht seitlich verschiebbar sein |
 | `EntitySelect` | **Die** Auswahlliste für Unternehmen und Depots — überall dieselbe: neutrale Auswahl („Alle Unternehmen"), darunter die Gruppen „Aktiv" und „Archiviert" (leere Gruppe entfällt), sortiert nach deutschem Alphabet. Archivierte bleiben wählbar, stehen aber nicht zwischen den aktiven. Neue Unternehmens-/Depotauswahlen in Filterleisten verwenden ausschließlich diese Komponente |
