@@ -102,6 +102,22 @@ export function withEffectiveDates(
   });
 }
 
+/**
+ * Ausschuettungsplan je Unternehmen als Nachschlagetabelle fuer
+ * {@link withEffectiveDates} und {@link effectivePayDate}. Unternehmen ohne
+ * gueltigen Plan fehlen darin — fuer sie gilt das echte Zahlungsdatum.
+ */
+export function payoutMonthsBySecurity(
+  securities: readonly { id: string; payout_months: readonly number[] | null }[],
+): Map<string, number[]> {
+  const map = new Map<string, number[]>();
+  for (const security of securities) {
+    const months = normalizePayoutMonths(security.payout_months);
+    if (months.length > 0) map.set(security.id, months);
+  }
+  return map;
+}
+
 /** Entfernt Duplikate und ungueltige Werte, sortiert aufsteigend. */
 export function normalizePayoutMonths(
   payoutMonths: readonly number[] | null | undefined,

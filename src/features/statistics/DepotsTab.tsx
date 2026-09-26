@@ -12,6 +12,7 @@ import {
   MONTH_NAMES_DE_SHORT,
   type DepotStatistics,
 } from "@/lib/statistics";
+import { compareGerman } from "@/lib/utils/compareText";
 import { RankedBars, type RankedBarItem } from "@/features/dashboard/RankedBars";
 import { useStatisticsContext } from "./context";
 import {
@@ -62,10 +63,7 @@ export function DepotsTab() {
         header: "Depot",
         headerLabel: "Depotname",
         compare: (a, b) =>
-          entityName(depots, a.depotId).localeCompare(
-            entityName(depots, b.depotId),
-            "de",
-          ),
+          compareGerman(entityName(depots, a.depotId), entityName(depots, b.depotId)),
         render: (row) => (
           <span className="flex min-w-0 items-center gap-1.5">
             <span className="truncate font-medium">

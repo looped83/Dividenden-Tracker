@@ -1,4 +1,3 @@
-import * as React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createGoal,
@@ -8,16 +7,12 @@ import {
   mapGoal,
   updateGoal,
   type GoalInsert,
+  type GoalRow,
   type GoalUpdate,
 } from "@/lib/supabase/repositories/goals";
 import type { Goal } from "@/lib/goals";
-import {
-  normalizePayoutMonths,
-  withEffectiveDates,
-  type AnalyticsPayment,
-} from "@/lib/statistics";
-import { useDashboardPayments } from "@/features/dashboard/hooks";
-import { useSecurities } from "@/features/securities/hooks";
+import type { AnalyticsPayment } from "@/lib/statistics";
+import { useEffectivePayments } from "@/features/dashboard/hooks";
 
 /**
  * Zentraler Query-Key-Namespace aller Zielabfragen (Auftrag §30/§32). Jede
@@ -34,12 +29,21 @@ export interface GoalWithMeta extends Goal {
   updatedAt: string;
 }
 
+// Ausserhalb der Hooks, damit `select` eine stabile Referenz hat und nicht bei
+// jedem Rendern erneut laeuft (siehe `useDashboardPayments`).
+function toGoalWithMeta(row: GoalRow): GoalWithMeta {
+  return { ...mapGoal(row), updatedAt: row.updated_at };
+}
+
+function toGoalsWithMeta(rows: GoalRow[]): GoalWithMeta[] {
+  return rows.map(toGoalWithMeta);
+}
+
 export function useGoals() {
   return useQuery({
     queryKey: GOALS_KEY,
     queryFn: fetchGoals,
-    select: (rows): GoalWithMeta[] =>
-      rows.map((row) => ({ ...mapGoal(row), updatedAt: row.updated_at })),
+    select: toGoalsWithMeta,
   });
 }
 
@@ -48,7 +52,7 @@ export function useGoal(id: string | undefined) {
     queryKey: [...GOALS_KEY, "detail", id],
     queryFn: () => fetchGoalById(id ?? ""),
     enabled: Boolean(id),
-    select: (row): GoalWithMeta => ({ ...mapGoal(row), updatedAt: row.updated_at }),
+    select: toGoalWithMeta,
   });
 }
 
@@ -108,22 +112,7 @@ export function useGoalProgressPayments(): {
   isError: boolean;
   error: Error | null;
 } {
-  const paymentsQuery = useDashboardPayments();
-  const securitiesQuery = useSecurities();
-
-  const payoutBySecurity = React.useMemo(() => {
-    const map = new Map<string, number[]>();
-    for (const security of securitiesQuery.data ?? []) {
-      const months = normalizePayoutMonths(security.payout_months);
-      if (months.length > 0) map.set(security.id, months);
-    }
-    return map;
-  }, [securitiesQuery.data]);
-
-  const payments = React.useMemo(
-    () => withEffectiveDates(paymentsQuery.data ?? [], payoutBySecurity),
-    [paymentsQuery.data, payoutBySecurity],
-  );
+  const { payments, paymentsQuery, securitiesQuery } = useEffectivePayments();
 
   return {
     payments,

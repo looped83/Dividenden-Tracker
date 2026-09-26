@@ -1,4 +1,5 @@
 import { EUR, Money, sumMoney, type DecimalInstance } from "@/lib/money";
+import { compareGerman } from "@/lib/utils/compareText";
 import {
   isInRange,
   isoDate,
@@ -150,7 +151,7 @@ export function rankGroups(
     const byNet = b.net.compareTo(a.net);
     if (byNet !== 0) return byNet;
     if (b.count !== a.count) return b.count - a.count;
-    return labelOf(a.key).localeCompare(labelOf(b.key), "de");
+    return compareGerman(labelOf(a.key), labelOf(b.key));
   });
 }
 
@@ -654,7 +655,7 @@ export function sortSecurityStatistics(
   labelOf: (securityId: string) => string,
 ): SecurityStatistics[] {
   const byName = (a: SecurityStatistics, b: SecurityStatistics) =>
-    labelOf(a.securityId).localeCompare(labelOf(b.securityId), "de");
+    compareGerman(labelOf(a.securityId), labelOf(b.securityId));
   return [...stats].sort((a, b) => {
     switch (sortKey) {
       case "net": {

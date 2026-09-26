@@ -223,12 +223,18 @@ Das Dashboard folgt bewusst dem Prinzip aus §4.1 Punkt 3:
 - **Analytics-Schicht** (`lib/statistics`): geparste `AnalyticsPayment`-Datensätze (Beträge
   einmalig zu `Money`), rein funktional und decimal-sicher. Einzige Quelle aller
   Dashboard-Kennzahlen und in Phase 5B für den Statistikbereich wiederverwendbar.
+  „Einmalig" wörtlich: Die `select`-Funktion der Query steht auf Modulebene. Eine
+  Inline-Funktion ist bei jedem Rendern eine neue Referenz, React Query führte sie dann jedes
+  Mal erneut aus — und weil `Money`-Instanzen sich dem strukturellen Teilen entziehen,
+  entstand jedes Mal eine neue Liste, die sämtliche memoisierten Aggregate verwarf.
 - **Effektiver Ausschüttungsmonat:** Vor der Aggregation wird über `withEffectiveDates` je
   Zahlung ein effektives Datum aus dem Unternehmensplan (`securities.payout_months`) gesetzt
   (fälliger geplanter Monat, ein Monat Vorlauf für vorgezogene Zahlungen, inkl.
   Jahresverschiebung — CALCULATION_RULES.md §10). Alle
   Auswertungen und die Eingangsliste rechnen auf diesem effektiven Datum; das echte `pay_date`
-  bleibt erhalten. Die Eingangsliste lädt dafür alle Zahlungen paginiert und filtert/sortiert
+  bleibt erhalten. Übersicht, Statistik und Ziele beziehen die so angereicherte Historie aus
+  **einem** Hook (`useEffectivePayments`), die Eingangsliste nutzt dieselbe Nachschlagetabelle
+  (`payoutMonthsBySecurity`). Die Eingangsliste lädt dafür alle Zahlungen paginiert und filtert/sortiert
   clientseitig (kein serverseitiger Datumsfilter, da der Plan clientseitige Stammdaten sind).
 - **Jahresauswahl clientseitig.** Der ausgewählte Zeitraum (`?year=…`) wird auf den bereits
   geladenen Datensatz angewandt — ein Jahreswechsel löst **keine** neue Abfrage und keine

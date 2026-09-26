@@ -1,14 +1,9 @@
 import * as React from "react";
 import { useSearchParams } from "react-router";
-import {
-  normalizePayoutMonths,
-  withEffectiveDates,
-  type AnalyticsPayment,
-  type StatisticsFilter,
-} from "@/lib/statistics";
-import type { EntityInfo } from "@/features/dashboard/format";
-import { useDashboardPayments } from "@/features/dashboard/hooks";
-import { useSecurities, useSecuritySnapshots } from "@/features/securities/hooks";
+import type { AnalyticsPayment, StatisticsFilter } from "@/lib/statistics";
+import { buildEntityMap, type EntityInfo } from "@/features/dashboard/format";
+import { useEffectivePayments } from "@/features/dashboard/hooks";
+import { useSecuritySnapshots } from "@/features/securities/hooks";
 import {
   buildPortfolioSeries,
   EMPTY_PORTFOLIO_SERIES,
@@ -21,18 +16,6 @@ import {
   EMPTY_STATISTICS_FILTER,
   parseStatisticsFilter,
 } from "./filterParams";
-
-interface EntityRow {
-  id: string;
-  name: string;
-  archived_at: string | null;
-}
-
-function buildEntityMap(rows: readonly EntityRow[]): Map<string, EntityInfo> {
-  return new Map(
-    rows.map((row) => [row.id, { name: row.name, archived: row.archived_at !== null }]),
-  );
-}
 
 export interface StatisticsData {
   /** Alle aktiven Eingaenge mit effektivem Datum (§10), ungefiltert. */
@@ -59,26 +42,9 @@ export interface StatisticsData {
 export function useStatisticsData(
   filter: StatisticsFilter = EMPTY_STATISTICS_FILTER,
 ): StatisticsData {
-  const paymentsQuery = useDashboardPayments();
-  const securitiesQuery = useSecurities();
+  const { payments, paymentsQuery, securitiesQuery } = useEffectivePayments();
   const depotsQuery = useDepots();
   const snapshotsQuery = useSecuritySnapshots();
-
-  const rawPayments = React.useMemo(() => paymentsQuery.data ?? [], [paymentsQuery.data]);
-
-  const payoutBySecurity = React.useMemo(() => {
-    const map = new Map<string, number[]>();
-    for (const security of securitiesQuery.data ?? []) {
-      const months = normalizePayoutMonths(security.payout_months);
-      if (months.length > 0) map.set(security.id, months);
-    }
-    return map;
-  }, [securitiesQuery.data]);
-
-  const payments = React.useMemo(
-    () => withEffectiveDates(rawPayments, payoutBySecurity),
-    [rawPayments, payoutBySecurity],
-  );
 
   const securities = React.useMemo(
     () => buildEntityMap(securitiesQuery.data ?? []),

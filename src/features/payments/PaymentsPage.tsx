@@ -7,7 +7,7 @@ import {
   effectivePayDate,
   monthNameDe,
   monthOf,
-  normalizePayoutMonths,
+  payoutMonthsBySecurity,
   yearOf,
 } from "@/lib/statistics";
 import { Button } from "@/components/ui/button";
@@ -148,14 +148,10 @@ export function PaymentsPage() {
   );
 
   // Ausschüttungsplan je Unternehmen → effektiver Monat je Zahlung (§10).
-  const payoutBySecurity = React.useMemo(() => {
-    const map = new Map<string, number[]>();
-    for (const security of securities) {
-      const months = normalizePayoutMonths(security.payout_months);
-      if (months.length > 0) map.set(security.id, months);
-    }
-    return map;
-  }, [securities]);
+  const payoutBySecurity = React.useMemo(
+    () => payoutMonthsBySecurity(securities),
+    [securities],
+  );
   const effectiveOf = React.useCallback(
     (payment: { pay_date: string; security_id: string }) =>
       effectivePayDate(payment.pay_date, payoutBySecurity.get(payment.security_id)),

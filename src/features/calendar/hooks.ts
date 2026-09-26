@@ -5,7 +5,11 @@ import {
   fetchCalendarSyncStatus,
   triggerCalendarSync,
 } from "@/lib/supabase/repositories/calendarEvents";
-import { mapCalendarEvent, type CalendarEvent } from "@/lib/calendar/types";
+import {
+  mapCalendarEvent,
+  type CalendarEvent,
+  type CalendarEventRow,
+} from "@/lib/calendar/types";
 
 /**
  * Zentraler Query-Key-Namespace des Kalenders. Ein erfolgreicher Lauf
@@ -21,11 +25,17 @@ export const CALENDAR_KEY = ["calendar"] as const;
 /** Nach dieser Zeit gilt der Bestand als veraltet und wird erneuert. */
 export const CALENDAR_STALE_AFTER_MS = 12 * 60 * 60 * 1000;
 
+// Ausserhalb des Hooks, damit `select` eine stabile Referenz hat und nicht bei
+// jedem Rendern erneut laeuft (siehe `useDashboardPayments`).
+function toCalendarEvents(rows: CalendarEventRow[]): CalendarEvent[] {
+  return rows.map(mapCalendarEvent);
+}
+
 export function useCalendarEvents() {
   return useQuery({
     queryKey: [...CALENDAR_KEY, "events"],
     queryFn: fetchCalendarEvents,
-    select: (rows): CalendarEvent[] => rows.map(mapCalendarEvent),
+    select: toCalendarEvents,
   });
 }
 
