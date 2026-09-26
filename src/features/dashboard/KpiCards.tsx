@@ -189,7 +189,7 @@ export function KpiCards({ payments, selection, today }: KpiCardsProps) {
           Seite gerade gar nicht zeigt. */}
       {cards.showCurrentMonth && (
         <KpiCard
-          label={`Aktueller Monat (${currentMonthLabel})`}
+          label={currentMonthLabel}
           value={<AmountText amount={cards.monthAgg.net} />}
           comparison={cards.monthComparison}
           comparisonHint={`Gegenüber dem gleichen Zeitraum des Vorjahresmonats (1. bis ${String(today.day)}.)`}

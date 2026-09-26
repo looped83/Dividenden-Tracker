@@ -75,7 +75,9 @@ describe("KpiCards (Render-Smoke)", () => {
       new Map([["sec-plan", [7]]]),
     );
     renderCards(2026, payments);
-    expect(screen.getByText("Aktueller Monat (Juli 2026)")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Zahlungen des aktuellen Monats anzeigen" }),
+    ).toBeInTheDocument();
     expect(screen.getAllByText(/80,00\s?€/).length).toBeGreaterThan(0);
   });
 
@@ -83,12 +85,16 @@ describe("KpiCards (Render-Smoke)", () => {
     const payments = [payment("2024-03-10", "50.00"), payment("2026-07-10", "80.00")];
     // Laufendes Jahr: Der aktuelle Monat gehört zum Zeitraum.
     const { unmount } = renderCards(2026, payments);
-    expect(screen.getByText("Aktueller Monat (Juli 2026)")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Zahlungen des aktuellen Monats anzeigen" }),
+    ).toBeInTheDocument();
     unmount();
 
     // 2024: Juli 2026 läge außerhalb dessen, was die Seite gerade zeigt.
     renderCards(2024, payments);
-    expect(screen.queryByText(/Aktueller Monat/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Zahlungen des aktuellen Monats anzeigen" }),
+    ).not.toBeInTheDocument();
   });
 
   it("ordnet die Kacheln vom gewählten Zeitraum zur Historie", () => {
@@ -97,7 +103,7 @@ describe("KpiCards (Render-Smoke)", () => {
     // Ableitungen daraus — die Historie steht zuletzt.
     erwarteReihenfolge([
       "Dividenden 2026",
-      "Aktueller Monat (Juli 2026)",
+      "Juli 2026",
       "Bester Monat",
       "Ø pro Monat",
       "Historisch erhaltene Dividenden",
