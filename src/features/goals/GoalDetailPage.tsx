@@ -152,13 +152,11 @@ export function GoalDetailPage() {
         }
         // Die Zielart als Text (nur hier; Karte und Uebersicht tragen sie als
         // Zeichen), dazu wie weit der Zeitraum ist.
-        subtitle={
-          <>
-            <span>{goalTypeBadgeLabel(goal)}</span>
-            <span>·</span>
-            <span>{isUpcoming ? startsAtLabel(goal) : timeProgressText(progress)}</span>
-          </>
-        }
+        // Ein Satz statt dreier Teile: Getrennt blieb der Punkt beim Umbruch
+        // allein am Zeilenende stehen.
+        subtitle={`${goalTypeBadgeLabel(goal)}\u00A0· ${
+          isUpcoming ? startsAtLabel(goal) : timeProgressText(progress)
+        }`}
       />
 
       <Card>

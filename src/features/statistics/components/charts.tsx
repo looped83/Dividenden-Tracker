@@ -32,10 +32,10 @@ import {
   CHART_GRID_PROPS,
   CHART_LINE_CURSOR,
   CHART_MARGIN,
+  CHART_SERIES_PROPS,
   CHART_X_AXIS_PROPS,
   CHART_Y_AXIS_PROPS,
 } from "@/components/charts/chartTheme";
-import { useReducedMotion } from "@/lib/hooks/useReducedMotion";
 import { formatMoney, type Money } from "@/lib/money";
 import { formatPayments } from "../format";
 import { formatCountNumber } from "@/lib/utils/formatNumber";
@@ -90,7 +90,6 @@ export function CategoryBarChart({
   categoryHeader,
   emptyMessage = "Keine Daten für die aktuelle Auswahl.",
 }: CategoryBarChartProps) {
-  const reducedMotion = useReducedMotion();
   const navigate = useNavigate();
 
   if (data.length === 0 || data.every((row) => row.value === 0)) {
@@ -110,7 +109,7 @@ export function CategoryBarChart({
             name="Nettodividende"
             fill="var(--chart-1)"
             radius={CHART_BAR_RADIUS}
-            isAnimationActive={!reducedMotion}
+            {...CHART_SERIES_PROPS}
             cursor="pointer"
             onClick={(entry) => {
               const row = (entry as unknown as { payload?: CategoryDatum }).payload;
@@ -338,8 +337,6 @@ export function ComparisonLineChart({
   referenceLabel,
   ariaLabel,
 }: ComparisonLineChartProps) {
-  const reducedMotion = useReducedMotion();
-
   if (points.length === 0) {
     return <ChartEmpty>Keine Daten für die aktuelle Auswahl.</ChartEmpty>;
   }
@@ -371,7 +368,7 @@ export function ComparisonLineChart({
             strokeDasharray="6 4"
             dot={false}
             activeDot={{ r: 5 }}
-            isAnimationActive={!reducedMotion}
+            {...CHART_SERIES_PROPS}
           />
           <Line
             type="monotone"
@@ -381,7 +378,7 @@ export function ComparisonLineChart({
             strokeWidth={2}
             dot={false}
             activeDot={{ r: 5 }}
-            isAnimationActive={!reducedMotion}
+            {...CHART_SERIES_PROPS}
           />
         </LineChart>
       </ChartCanvas>

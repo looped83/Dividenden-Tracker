@@ -199,10 +199,7 @@ describe("Voreinstellung der Ansicht", () => {
       </ToastProvider>,
     );
 
-    expect(screen.getByRole("button", { name: "Liste" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
+    expect(screen.getByRole("radio", { name: "Liste" })).toBeChecked();
     expect(
       screen.queryByRole("columnheader", { name: "Montag" }),
     ).not.toBeInTheDocument();
@@ -368,7 +365,7 @@ describe("Listenansicht", () => {
     const user = userEvent.setup();
     renderPage("agenda");
 
-    await user.click(screen.getByRole("button", { name: "Monat", pressed: false }));
+    await user.click(screen.getByRole("radio", { name: "Monat", checked: false }));
 
     expect(screen.getByRole("heading", { name: "August 2026" })).toBeInTheDocument();
   });

@@ -1,6 +1,6 @@
 import { Plus, MoreHorizontal } from "lucide-react";
-import { NavLink } from "react-router";
-import { BOTTOM_NAV_PRIMARY_ITEMS } from "@/app/navigation";
+import { NavLink, useLocation } from "react-router";
+import { BOTTOM_NAV_MORE_ITEMS, BOTTOM_NAV_PRIMARY_ITEMS } from "@/app/navigation";
 import { prefetchProps } from "@/app/routeChunks";
 import { cn } from "@/lib/utils/cn";
 
@@ -11,6 +11,14 @@ import { cn } from "@/lib/utils/cn";
  * Home-Indicator. Sichtbar unterhalb der `md`-Breite (< 768px).
  */
 export function BottomNav() {
+  // „Mehr" steht fuer alle Bereiche dahinter: In Kalender, Depot, Zielen oder
+  // Einstellungen war zuvor kein Eintrag markiert, und man verlor die
+  // Orientierung, wo man sich befindet.
+  const { pathname } = useLocation();
+  const inMoreArea = BOTTOM_NAV_MORE_ITEMS.some(
+    (item) => pathname === item.to || pathname.startsWith(`${item.to}/`),
+  );
+
   return (
     <nav
       aria-label="Hauptnavigation"
@@ -50,7 +58,7 @@ export function BottomNav() {
           cn(
             "flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-xs outline-none",
             "focus-visible:ring-2 focus-visible:ring-ring",
-            isActive ? "text-primary" : "text-muted-foreground",
+            isActive || inMoreArea ? "text-primary" : "text-muted-foreground",
           )
         }
       >
