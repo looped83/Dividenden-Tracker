@@ -2,6 +2,8 @@ import * as React from "react";
 import { useNavigate } from "react-router";
 import { Bar, BarChart, CartesianGrid, Tooltip, XAxis, YAxis } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { TrendingUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
 import { ChartLegend } from "@/components/charts/ChartLegend";
 import {
@@ -154,35 +156,30 @@ export function MonthlyChart({ payments, selection, today }: MonthlyChartProps) 
 
   return (
     <Card>
-      {/* Mobil stehen Titel und Umschalter untereinander, der Umschalter
-          ueber die volle Breite: Nebeneinander passten sie nicht, und die
-          zwei losen Knoepfe brachen linksbuendig unter den Titel. Als ein
-          Segment wie im Kalender liest er sich als eine Wahl. */}
-      <CardHeader className="gap-3 sm:flex-row sm:items-center sm:justify-between">
+      {/* Ein Symbol statt zweier Textknoepfe: Neben „Dividendenverlauf 2026"
+          passten diese auf dem Telefon nicht und brachen in eine eigene
+          Zeile. Monatswerte sind die Voreinstellung; das Symbol schaltet
+          die kumulierte Linie zu und zeigt gedrueckt, dass sie aktiv ist. */}
+      <CardHeader className="flex-row items-center justify-between gap-4">
         <CardTitle className="min-w-0">{title}</CardTitle>
         {!isAll && (
-          <div
-            role="group"
-            aria-label="Darstellung"
-            className="flex rounded-md border border-border p-0.5 sm:-my-2"
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className={cn(
+              "-my-2 shrink-0",
+              mode === "cumulative" && "bg-accent text-accent-foreground",
+            )}
+            aria-pressed={mode === "cumulative"}
+            aria-label="Kumuliert anzeigen"
+            title={mode === "cumulative" ? "Monatswerte anzeigen" : "Kumuliert anzeigen"}
+            onClick={() => {
+              setMode(mode === "cumulative" ? "monthly" : "cumulative");
+            }}
           >
-            <ModeButton
-              active={mode === "monthly"}
-              onClick={() => {
-                setMode("monthly");
-              }}
-            >
-              Monatswerte
-            </ModeButton>
-            <ModeButton
-              active={mode === "cumulative"}
-              onClick={() => {
-                setMode("cumulative");
-              }}
-            >
-              Kumuliert
-            </ModeButton>
-          </div>
+            <TrendingUp aria-hidden />
+          </Button>
         )}
       </CardHeader>
       <CardContent className="space-y-4">
@@ -409,32 +406,5 @@ function YearTable({ rows }: { rows: YearRow[] }) {
         ))}
       </TableBody>
     </Table>
-  );
-}
-
-function ModeButton({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={cn(
-        "inline-flex min-h-9 flex-1 items-center justify-center rounded px-3 text-sm font-medium outline-none sm:flex-none",
-        "pointer-coarse:min-h-11 focus-visible:ring-2 focus-visible:ring-ring",
-        active
-          ? "bg-accent text-accent-foreground"
-          : "text-muted-foreground hover:text-foreground",
-      )}
-    >
-      {children}
-    </button>
   );
 }
