@@ -14,6 +14,7 @@ import { MemoryRouter } from "react-router";
 import { ToastProvider } from "@/components/ui/toast";
 import { PaymentComposerProvider } from "@/features/payments/PaymentComposer";
 import type { PaymentListRow } from "@/lib/supabase/repositories/payments";
+import { setViewportWide } from "../../support/viewport";
 
 // Die Seite haengt an drei Abfragen; sie werden hier durch Fixtures ersetzt,
 // damit der Test die Ansicht prueft und nicht das Netz.
@@ -101,20 +102,6 @@ function renderList(rows: PaymentListRow[], route = "/eingaenge") {
   );
 }
 
-/** Schaltet zwischen Karten (Telefon, Standard) und Tabelle (ab `md`) um. */
-function setWide(matches: boolean) {
-  window.matchMedia = (query: string): MediaQueryList => ({
-    matches,
-    media: query,
-    onchange: null,
-    addEventListener: () => undefined,
-    removeEventListener: () => undefined,
-    addListener: () => undefined,
-    removeListener: () => undefined,
-    dispatchEvent: () => false,
-  });
-}
-
 describe("PaymentsPage", () => {
   // jsdom kennt kein Rollen; das Blaettern ruft es auf.
   let scrollTo: MockInstance<typeof window.scrollTo>;
@@ -126,7 +113,7 @@ describe("PaymentsPage", () => {
 
   afterEach(() => {
     scrollTo.mockRestore();
-    setWide(false);
+    setViewportWide(false);
   });
 
   it("zeigt die Eingaenge mit Unternehmen und Betrag", () => {
@@ -242,7 +229,7 @@ describe("PaymentsPage", () => {
   });
 
   it("bietet auf breiten Schirmen je Zeile Bearbeiten, Stornieren und Löschen", () => {
-    setWide(true);
+    setViewportWide(true);
     renderList([zahlung({ id: "a" })]);
 
     // Die Liste kennt keine Mehrfachauswahl mehr: Was zu tun ist, steht an

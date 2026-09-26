@@ -170,11 +170,13 @@ describe("portfolioTotals", () => {
     // 5,00 %) waere 4,375 % — eine Zahl, die zu keinem Depot gehoert, weil sie
     // eine kleine Position genauso gewichtet wie eine grosse.
     const totals = portfolioTotals(snapshots);
-    expect(totals.yieldPercent && formatPercent(totals.yieldPercent, 2)).toBe("4,00 %");
+    expect(totals.yieldPercent && formatPercent(totals.yieldPercent, 2)).toBe(
+      "4,00\u00A0%",
+    );
     // Auf den Einstand: 400 / 8.000 = 5,00 %.
     expect(
       totals.yieldOnBuyinPercent && formatPercent(totals.yieldOnBuyinPercent, 2),
-    ).toBe("5,00 %");
+    ).toBe("5,00\u00A0%");
   });
 
   it("liefert für einen leeren Bestand keine Rendite statt einer 0", () => {
@@ -195,7 +197,7 @@ describe("portfolioTotals", () => {
 describe("ratioToPercent", () => {
   it("rechnet den Bruchteil der Quelle in Prozentpunkte um", () => {
     const percent = ratioToPercent("0.029164");
-    expect(percent && formatPercent(percent, 2)).toBe("2,92 %");
+    expect(percent && formatPercent(percent, 2)).toBe("2,92\u00A0%");
   });
 
   it("lässt eine fehlende Angabe fehlend", () => {

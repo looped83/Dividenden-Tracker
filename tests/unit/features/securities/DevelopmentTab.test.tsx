@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { EUR, Money } from "@/lib/money";
@@ -10,6 +10,7 @@ import {
   EMPTY_PORTFOLIO_SERIES,
   type PortfolioSeries,
 } from "@/features/securities/snapshots";
+import { setViewportWide } from "../../support/viewport";
 
 /**
  * Unterbereich „Entwicklung" des Depots (frueher: der Statistik).
@@ -107,6 +108,11 @@ function renderTab(
     </MemoryRouter>,
   );
 }
+
+// Die Tabelle ab `md`; die Listenfassung des Telefons prueft StatTable.test.tsx.
+beforeEach(() => {
+  setViewportWide(true);
+});
 
 describe("DevelopmentView", () => {
   it("verweist auf den Import, solange kein Depotstand vorliegt", () => {

@@ -7,10 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageSkeleton } from "@/components/layout/PageSkeleton";
-import { StatCard } from "@/components/domain/StatCard";
+import { StatCard, StatGrid } from "@/components/domain/StatCard";
 import { AmountText } from "@/components/money/AmountText";
 import { DateText } from "@/components/DateText";
 import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
+import { formatDateRange, formatYearSpan } from "@/lib/utils/formatDate";
 import {
   aggregate,
   averagePayment,
@@ -203,11 +204,11 @@ export function SecurityDetailPage() {
         <>
           {/* Dasselbe Raster wie auf der Assetliste und im Kalender:
               zwei Kacheln je Zeile auf dem Telefon, vier ab `lg`. */}
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <StatGrid>
             <StatCard
               label="Summe insgesamt"
               value={<AmountText amount={stats.net} />}
-              comparison={formatCountNoun(stats.count, "Eingang", "Eingänge")}
+              caption={formatCountNoun(stats.count, "Eingang", "Eingänge")}
             />
             <StatCard
               label="Durchschnitt je Eingang"
@@ -222,28 +223,19 @@ export function SecurityDetailPage() {
             <StatCard
               label="Zeitraum"
               value={
-                // Zwei Kacheln je Zeile lassen auf 320px keine 22 Zeichen zu,
-                // der Zeitraum muss dort also umbrechen. **Wo** er umbricht,
-                // entscheidet hier CSS und nicht der Zeilenumbruchalgorithmus:
-                // Ein geschuetztes Leerzeichen hinter dem Halbgeviertstrich
-                // genuegt nicht — Chromium bricht trotzdem nach dem Strich um
-                // und laesst ihn allein auf einer Zeile stehen (nachgemessen:
-                // drei Zeilen). Zwei unteilbare Haelften erzwingen genau einen
-                // Umbruch dazwischen: „15.01.2024" / „– 15.07.2026".
-                <span className="text-base sm:text-lg">
-                  <span className="whitespace-nowrap">
-                    {stats.first ? formatDate(stats.first) : "—"}
-                  </span>{" "}
-                  <span className="whitespace-nowrap">
-                    – {stats.last ? formatDate(stats.last) : "—"}
-                  </span>
-                </span>
+                stats.first && stats.last ? (
+                  formatYearSpan(stats.first, stats.last)
+                ) : (
+                  <span>—</span>
+                )
               }
-              comparison={`${formatCountNumber(stats.perYear.length)} ${
-                stats.perYear.length === 1 ? "Jahr" : "Jahre"
-              }`}
+              caption={
+                stats.first && stats.last
+                  ? formatDateRange(stats.first, stats.last)
+                  : undefined
+              }
             />
-          </div>
+          </StatGrid>
 
           <Card>
             <CardHeader>

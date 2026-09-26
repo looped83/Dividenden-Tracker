@@ -1,5 +1,5 @@
 import * as React from "react";
-import { StatCard } from "@/components/domain/StatCard";
+import { StatCard, StatGrid } from "@/components/domain/StatCard";
 import { AmountText } from "@/components/money/AmountText";
 import { formatPercent } from "@/lib/money";
 import { formatCalendarDate } from "@/lib/utils/formatDate";
@@ -43,11 +43,11 @@ export function PortfolioSummary({
     // sie hier als vier volle Bloecke untereinander und schoben die Liste weit
     // nach unten — und sahen anders aus als dieselben Kacheln zwei Bereiche
     // weiter.
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <StatGrid>
       <StatCard
         label="Depotwert"
         value={<SumValue sum={totals.marketValue} />}
-        comparison={`Stand ${formatCalendarDate(totals.asOf)}`}
+        caption={`Stand ${formatCalendarDate(totals.asOf)}`}
       />
       {/* „Erwartet p. a." statt „Erwartete Jahresdividende": Der laengere Name
           bricht in der Kachel auf zwei Zeilen um und schiebt seine Kennzahl
@@ -57,7 +57,7 @@ export function PortfolioSummary({
       <StatCard
         label="Erwartet p. a."
         value={<SumValue sum={dividend} />}
-        comparison={dividendGaps}
+        caption={dividendGaps}
       />
       <StatCard
         label="Rendite"
@@ -68,7 +68,7 @@ export function PortfolioSummary({
             <span>{formatPercent(totals.yieldPercent, 2)}</span>
           )
         }
-        comparison={
+        caption={
           totals.yieldOnBuyinPercent === null
             ? undefined
             : `auf den Einstand ${formatPercent(totals.yieldOnBuyinPercent, 2)}`
@@ -77,7 +77,7 @@ export function PortfolioSummary({
       <StatCard
         label="Positionen"
         value={<span>{formatCountNumber(totals.positions)}</span>}
-        comparison={
+        caption={
           totals.buyinTotal.kind === "amount" ? (
             <span>
               Einstand <AmountText amount={totals.buyinTotal.value} />
@@ -85,7 +85,7 @@ export function PortfolioSummary({
           ) : undefined
         }
       />
-    </div>
+    </StatGrid>
   );
 }
 

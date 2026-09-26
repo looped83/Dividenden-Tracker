@@ -44,3 +44,20 @@ export function formatTimestampDate(value: string | Date): string {
 export function formatTimestamp(value: string | Date): string {
   return DATE_TIME.format(typeof value === "string" ? new Date(value) : value);
 }
+
+/**
+ * Zeitraum zweier Kalendertage als Jahresspanne: „2023 – 2026", innerhalb
+ * eines Jahres nur „2026". Die Kennzahl einer Kachel — die genauen Tage stehen
+ * als Zusatz darunter ({@link formatDateRange}); beide Daten in
+ * Kennzahlgroesse brachen in der halbbreiten Kachel auf zwei Zeilen um.
+ */
+export function formatYearSpan(firstIso: string, lastIso: string): string {
+  const first = firstIso.slice(0, 4);
+  const last = lastIso.slice(0, 4);
+  return first === last ? first : `${first} – ${last}`;
+}
+
+/** Zeitraum zweier Kalendertage: `10.01.2023 – 23.09.2026`. */
+export function formatDateRange(firstIso: string, lastIso: string): string {
+  return `${formatCalendarDate(firstIso)} – ${formatCalendarDate(lastIso)}`;
+}

@@ -115,26 +115,7 @@ function renderPage(ansicht: "month" | "agenda" = "month") {
   );
 }
 
-/**
- * jsdom kennt `matchMedia` nicht. Der Kalender selbst fragt sie nicht mehr ab —
- * die Monatsansicht unterscheidet ihre beiden Anordnungen in CSS —, ein
- * Bestandteil des Designsystems koennte es aber tun.
- */
-function stubMatchMedia() {
-  window.matchMedia = (query: string): MediaQueryList => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addEventListener: () => undefined,
-    removeEventListener: () => undefined,
-    addListener: () => undefined,
-    removeListener: () => undefined,
-    dispatchEvent: () => false,
-  });
-}
-
 beforeEach(() => {
-  stubMatchMedia();
   vi.useFakeTimers({ shouldAdvanceTime: true });
   vi.setSystemTime(HEUTE);
   zustand.events = [];

@@ -68,6 +68,10 @@ export function currencySymbol(currency: string, locale = "de-DE"): string {
  * kaufmaennisch auf `fractionDigits` Nachkommastellen gerundet. `value` ist
  * bereits in Prozentpunkten skaliert (z. B. 12.3 fuer "12,3 Prozent"),
  * passend zu den Kennzahlformeln in CALCULATION_RULES.md Paragraph 6 (u. a. "x 100").
+ *
+ * Zwischen Zahl und Zeichen steht ein geschuetztes Leerzeichen — wie beim
+ * Betrag, den `Intl` ebenso setzt. Mit einem gewoehnlichen brach „5,11 %" in
+ * einer schmalen Kachel zwischen Zahl und Prozentzeichen um.
  */
 export function formatPercent(
   value: DecimalInstance,
@@ -86,7 +90,7 @@ export function formatPercent(
   const formattedNumber = formatter.format(
     rounded.toFixed(fractionDigits) as unknown as number,
   );
-  return formattedNumber + " %";
+  return formattedNumber + "\u00A0%";
 }
 
 /** Darstellung eines fehlenden Vergleichswerts (R-6.6/6.9/6.11: Gedankenstrich, nie 0 oder unendlich). */

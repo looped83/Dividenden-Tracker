@@ -133,7 +133,7 @@ describe("Fortschrittsbalken-Begrenzung und Zeitfortschritt", () => {
   it("Zeitfortschritt ist rein beschreibend", () => {
     const progress = computeGoalProgress(goal(), [], midYear);
     // 1. Juli 2027 = Tag 182 von 365 ~ 50 %.
-    expect(timeProgressText(progress)).toBe("50 % des Jahres vergangen");
+    expect(timeProgressText(progress)).toBe("50\u00A0% des Jahres vergangen");
   });
 });
 

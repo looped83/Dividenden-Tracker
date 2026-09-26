@@ -54,7 +54,7 @@ describe("GoalCard – Zustände", () => {
     renderCard(goal(), [payment("2027-03-01", "9000.00")]);
     const bar = screen.getByRole("progressbar");
     expect(bar).toHaveAttribute("aria-valuenow", "75");
-    expect(bar.getAttribute("aria-valuetext")).toMatch(/75,0 %/);
+    expect(bar.getAttribute("aria-valuetext")).toMatch(/75,0\s%/);
     expect(screen.getByText("Aktiv")).toBeInTheDocument();
     expect(screen.getByText(/Noch .*3\.000,00.*€ bis zum Ziel/)).toBeInTheDocument();
   });
@@ -63,7 +63,7 @@ describe("GoalCard – Zustände", () => {
     renderCard(goal(), [payment("2027-03-01", "13200.00")]);
     const bar = screen.getByRole("progressbar");
     expect(bar).toHaveAttribute("aria-valuenow", "100");
-    expect(bar.getAttribute("aria-valuetext")).toMatch(/110,0 %/);
+    expect(bar.getAttribute("aria-valuetext")).toMatch(/110,0\s%/);
     expect(screen.getByText("Übertroffen")).toBeInTheDocument();
     expect(screen.getByText(/übertroffen/)).toBeInTheDocument();
   });

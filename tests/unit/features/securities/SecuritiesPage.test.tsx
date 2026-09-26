@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router";
 import { ToastProvider } from "@/components/ui/toast";
 import type { SecuritySnapshot } from "@/lib/supabase/repositories/securitySnapshots";
+import { setViewportWide } from "../../support/viewport";
 
 /**
  * Die Uebersicht des Depots.
@@ -93,21 +94,6 @@ function snapshot(partial: Partial<SecuritySnapshot> = {}): SecuritySnapshot {
   };
 }
 
-/** Schaltet zwischen Tabelle (ab `md`) und Karten um. */
-function setViewport(breite: "breit" | "schmal") {
-  const matches = breite === "breit";
-  window.matchMedia = (query: string): MediaQueryList => ({
-    matches,
-    media: query,
-    onchange: null,
-    addEventListener: () => undefined,
-    removeEventListener: () => undefined,
-    addListener: () => undefined,
-    removeListener: () => undefined,
-    dispatchEvent: () => false,
-  });
-}
-
 function renderPage(snapshots: SecuritySnapshot[] = []) {
   staende.current = snapshots;
   const client = new QueryClient({
@@ -125,7 +111,7 @@ function renderPage(snapshots: SecuritySnapshot[] = []) {
 }
 
 beforeEach(() => {
-  setViewport("breit");
+  setViewportWide(true);
 });
 
 describe("SecuritiesPage", () => {
@@ -183,7 +169,7 @@ describe("SecuritiesPage", () => {
   });
 
   it("zeigt auf dem Telefon dieselben Zahlen als Karte, samt Aktionen", () => {
-    setViewport("schmal");
+    setViewportWide(false);
     renderPage([snapshot()]);
 
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
