@@ -254,7 +254,14 @@ export function KpiCards({ payments, selection, today }: KpiCardsProps) {
       <KpiCard
         label={`Zahlungen ${selectionLabel}`}
         value={formatCountNumber(cards.periodCount)}
-        caption={`von ${formatCountNoun(cards.companies, "Unternehmen", "Unternehmen")} · ${formatCountNoun(cards.depots, "Depot", "Depots")}`}
+        // Je eine Zeile: Mit „·" verbunden brach die Angabe in der
+        // halbbreiten Kachel mitten im Satz um.
+        footnote={
+          <>
+            <p>von {formatCountNoun(cards.companies, "Unternehmen", "Unternehmen")}</p>
+            <p>{formatCountNoun(cards.depots, "Depot", "Depots")}</p>
+          </>
+        }
         to={paymentsListHref({ year: selection })}
         drillLabel={`Zahlungen ${selectionLabel} anzeigen`}
       />
