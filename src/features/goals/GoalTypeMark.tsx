@@ -1,7 +1,6 @@
 import { CalendarDays, CalendarRange } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import type { Goal } from "@/lib/goals";
-import { goalTypeBadgeLabel } from "./format";
 
 /**
  * Das Erkennungszeichen der Zielart: Symbolkachel plus Beschriftung samt
@@ -39,13 +38,4 @@ export function GoalTypeMark({
       <Icon className="size-5" />
     </span>
   );
-}
-
-/** Die Beschriftung zur Kachel, z. B. „Jahresziel 2026". */
-export function GoalTypeLabel({
-  goal,
-}: {
-  goal: Pick<Goal, "goalType" | "year" | "month">;
-}) {
-  return <p className="text-xs text-muted-foreground">{goalTypeBadgeLabel(goal)}</p>;
 }

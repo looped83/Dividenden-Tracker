@@ -296,7 +296,7 @@ export function PaymentForm({
 
         <div className="space-y-1.5">
           <Label htmlFor="payment-note">Notiz (optional)</Label>
-          <Textarea id="payment-note" rows={3} {...register("note")} />
+          <Textarea id="payment-note" rows={2} {...register("note")} />
           {errors.note && <p className="text-sm text-negative">{errors.note.message}</p>}
         </div>
 
@@ -306,11 +306,20 @@ export function PaymentForm({
           </p>
         )}
 
-        <div className="flex items-center gap-3">
-          <Button type="submit" disabled={isSubmitting}>
+        {/* Auf dem Telefon beide Aktionen in voller Breite, Speichern zuoberst —
+            dieselbe Anordnung wie in jedem Dialog (`DialogFooter`). Ein kleiner
+            Knopf links unten war die einzige Stelle, an der der Daumen zielen
+            musste. */}
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+          <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
             {isSubmitting ? "Wird gespeichert …" : "Speichern"}
           </Button>
-          <Button type="button" variant="ghost" onClick={onCancel}>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={onCancel}
+            className="w-full sm:w-auto"
+          >
             Abbrechen
           </Button>
         </div>

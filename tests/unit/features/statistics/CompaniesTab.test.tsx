@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Outlet, Route, Routes } from "react-router";
 import { EUR, Money } from "@/lib/money";
@@ -8,6 +8,7 @@ import { CompaniesTab } from "@/features/statistics/CompaniesTab";
 import { EMPTY_STATISTICS_FILTER } from "@/features/statistics/filterParams";
 import { EMPTY_PORTFOLIO_SERIES } from "@/features/securities/snapshots";
 import type { StatisticsContext } from "@/features/statistics/context";
+import { setViewportWide } from "../../support/viewport";
 
 let seq = 0;
 function p(securityId: string, payDate: string, net: string): AnalyticsPayment {
@@ -59,6 +60,11 @@ function tableNames() {
     .getAllByRole("link")
     .map((link) => link.textContent);
 }
+
+// Die Tabelle ab `md`; die Listenfassung des Telefons prueft StatTable.test.tsx.
+beforeEach(() => {
+  setViewportWide(true);
+});
 
 describe("CompaniesTab", () => {
   it("blendet archivierte Unternehmen in der Statistik zunächst aus", () => {

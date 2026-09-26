@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
-import { StatCard } from "@/components/domain/StatCard";
+import { StatCard, StatGrid } from "@/components/domain/StatCard";
 import { AmountText } from "@/components/money/AmountText";
 import { EntitySelect, type EntityOption } from "@/components/domain/EntitySelect";
 import { FilterBar, FilterField, FilterReset } from "@/components/ui/filter-bar";
@@ -107,7 +107,7 @@ export function DevelopmentTab() {
     return (
       <div className="space-y-4" aria-busy="true" aria-live="polite">
         <span className="sr-only">Entwicklung wird geladen …</span>
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatGrid>
           {Array.from({ length: 4 }).map((_, index) => (
             <Card key={index}>
               <CardContent className="p-4 sm:p-6">
@@ -116,7 +116,7 @@ export function DevelopmentTab() {
               </CardContent>
             </Card>
           ))}
-        </div>
+        </StatGrid>
       </div>
     );
   }
@@ -361,6 +361,7 @@ export function DevelopmentView({
       },
       {
         key: "yieldOnBuyin",
+        listHidden: true,
         header: "Auf Einstand",
         headerLabel: "Rendite auf den Einstand",
         align: "right",
@@ -435,17 +436,17 @@ export function DevelopmentView({
         <StatCard
           label="Erwartet p. a."
           value={expected ? <AmountText amount={expected} /> : <span>—</span>}
-          comparison={`Stand ${formatCalendarDate(latest.asOf)}`}
+          caption={`Stand ${formatCalendarDate(latest.asOf)}`}
         />
         <StatCard
           label="Erhalten"
           value={<AmountText amount={received} />}
-          comparison={`${formatCalendarDate(range.start)} – ${formatCalendarDate(range.end)}`}
+          caption={`${formatCalendarDate(range.start)} – ${formatCalendarDate(range.end)}`}
         />
         <StatCard
           label="Zuwachs"
           value={growth ? <AmountText amount={growth} showSign /> : <span>—</span>}
-          comparison={
+          caption={
             growthPercent
               ? // Vorzeichen wie beim Betrag darueber, damit beide Zeilen
                 // dasselbe sagen.
@@ -461,7 +462,7 @@ export function DevelopmentView({
           value={
             yieldOnBuyin ? <span>{formatPercent(yieldOnBuyin, 2)}</span> : <span>—</span>
           }
-          comparison={
+          caption={
             latest.buyinTotal ? (
               <span>
                 Einstand <AmountText amount={latest.buyinTotal} />
@@ -518,22 +519,36 @@ export function DevelopmentView({
       {/* Bei einem einzelnen Asset saehe die Aufteilung immer gleich aus:
           eine Branche, ein Land, jeweils 100 %. Eine Aussage, die aus der
           Auswahl folgt statt aus den Daten, ist keine. */}
-      {filter.securityId === null && (
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-          <AllocationCard
-            title="Aufteilung nach Branche"
-            buckets={portfolio.bySector}
-            total={latest.marketValue}
-          />
-          <AllocationCard
-            title="Aufteilung nach Land"
-            buckets={portfolio.byCountry}
-            total={latest.marketValue}
-          />
-        </div>
-      )}
+      {filter.securityId === null &&
+        // Traegt der Depotstand weder Branche noch Land, bestuende jede Karte
+        // aus einem einzigen Balken „ohne Angabe" zu 100 % — zwei Karten ohne
+        // Aussage. Dann steht dort ein Satz.
+        (hasKnownKey(portfolio.bySector) || hasKnownKey(portfolio.byCountry) ? (
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+            <AllocationCard
+              title="Aufteilung nach Branche"
+              buckets={portfolio.bySector}
+              total={latest.marketValue}
+            />
+            <AllocationCard
+              title="Aufteilung nach Land"
+              buckets={portfolio.byCountry}
+              total={latest.marketValue}
+            />
+          </div>
+        ) : (
+          <p className="px-1 text-sm text-muted-foreground">
+            Der Depotstand nennt weder Branche noch Land — eine Aufteilung danach
+            entfällt.
+          </p>
+        ))}
     </div>
   );
+}
+
+/** Gibt es mindestens eine Angabe ausser „ohne Angabe" (leerer Schluessel)? */
+function hasKnownKey(buckets: readonly AllocationBucket[]): boolean {
+  return buckets.some((bucket) => bucket.key !== "");
 }
 
 /**

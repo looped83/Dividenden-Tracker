@@ -115,26 +115,7 @@ function renderPage(ansicht: "month" | "agenda" = "month") {
   );
 }
 
-/**
- * jsdom kennt `matchMedia` nicht. Der Kalender selbst fragt sie nicht mehr ab —
- * die Monatsansicht unterscheidet ihre beiden Anordnungen in CSS —, ein
- * Bestandteil des Designsystems koennte es aber tun.
- */
-function stubMatchMedia() {
-  window.matchMedia = (query: string): MediaQueryList => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addEventListener: () => undefined,
-    removeEventListener: () => undefined,
-    addListener: () => undefined,
-    removeListener: () => undefined,
-    dispatchEvent: () => false,
-  });
-}
-
 beforeEach(() => {
-  stubMatchMedia();
   vi.useFakeTimers({ shouldAdvanceTime: true });
   vi.setSystemTime(HEUTE);
   zustand.events = [];
@@ -218,10 +199,7 @@ describe("Voreinstellung der Ansicht", () => {
       </ToastProvider>,
     );
 
-    expect(screen.getByRole("button", { name: "Liste" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
+    expect(screen.getByRole("radio", { name: "Liste" })).toBeChecked();
     expect(
       screen.queryByRole("columnheader", { name: "Montag" }),
     ).not.toBeInTheDocument();
@@ -364,7 +342,7 @@ describe("Listenansicht", () => {
     expect(
       screen.getByRole("heading", { name: "September 2026", level: 2 }),
     ).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Später" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /^Später/ })).not.toBeInTheDocument();
   });
 
   it("traegt das Datum an jeder Kachel — als Zahl und als vollstaendige Angabe", () => {
@@ -387,7 +365,7 @@ describe("Listenansicht", () => {
     const user = userEvent.setup();
     renderPage("agenda");
 
-    await user.click(screen.getByRole("button", { name: "Monat", pressed: false }));
+    await user.click(screen.getByRole("radio", { name: "Monat", checked: false }));
 
     expect(screen.getByRole("heading", { name: "August 2026" })).toBeInTheDocument();
   });

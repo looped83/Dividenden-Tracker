@@ -74,10 +74,7 @@ test("Liste ist die Standardansicht und zeigt Kacheln je Termin", async ({ page 
   ).toBeVisible();
 
   // Ohne eigene Wahl steht die Liste bereits — kein Klick noetig.
-  await expect(page.getByRole("button", { name: "Liste", exact: true })).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
+  await expect(page.getByRole("radio", { name: "Liste", exact: true })).toBeChecked();
 
   // Jeder kommende Monat traegt seine eigene Ueberschrift. „Später" endet mit
   // dem laufenden Monat und bleibt hier deshalb leer — die gesetzten Termine
@@ -113,7 +110,7 @@ test("Monatsraster stellt mehrere Termine eines Tages dar und blättert", async 
   page,
 }) => {
   await page.goto("/#/kalender");
-  await page.getByRole("button", { name: "Monat", exact: true }).click();
+  await page.getByRole("radio", { name: "Monat", exact: true }).click();
 
   // Vom laufenden Monat in den März 2099 blättern wäre absurd viele Klicks;
   // stattdessen prüft der Test die Navigation an sich und danach den Monat der
@@ -130,7 +127,7 @@ test("Monatsraster stellt mehrere Termine eines Tages dar und blättert", async 
 
 test("Detailansicht öffnet per Tastatur und schließt mit Escape", async ({ page }) => {
   await page.goto("/#/kalender");
-  await page.getByRole("button", { name: "Liste", exact: true }).click();
+  await page.getByRole("radio", { name: "Liste", exact: true }).click();
 
   const eintrag = page.getByRole("button", { name: /Apple Inc\./ });
   await eintrag.focus();
@@ -152,7 +149,7 @@ test("Detailansicht öffnet per Tastatur und schließt mit Escape", async ({ pag
 
 test("Fokus kehrt nach dem Schließen an den Eintrag zurück", async ({ page }) => {
   await page.goto("/#/kalender");
-  await page.getByRole("button", { name: "Liste", exact: true }).click();
+  await page.getByRole("radio", { name: "Liste", exact: true }).click();
 
   const eintrag = page.getByRole("button", { name: /Apple Inc\./ });
   await eintrag.focus();
@@ -172,7 +169,7 @@ test("keine waagerechte Bildlaufleiste auf schmalen Geräten", async ({ page }) 
   ).toBeVisible();
 
   for (const ansicht of ["Liste", "Monat"] as const) {
-    await page.getByRole("button", { name: ansicht, exact: true }).click();
+    await page.getByRole("radio", { name: ansicht, exact: true }).click();
     const ueberlauf = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
     );

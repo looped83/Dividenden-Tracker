@@ -5,7 +5,7 @@ import type { CalendarEvent } from "./types";
 /**
  * Gliederung der Listenansicht (Auftrag §10).
  *
- * „Heute", „Diese Woche", „Später" — und danach **je Monat ein eigener
+ * „Heute", „Diese Woche", „Später im …" — und danach **je Monat ein eigener
  * Abschnitt**. „Später" trug zuvor alles, was nach dieser Woche kam: In einem
  * gut gefuellten Kalender standen darin die Termine eines halben Jahres
  * untereinander, ohne dass ein Monatswechsel sichtbar wurde. Jetzt endet
@@ -52,6 +52,7 @@ export function buildAgenda(
 ): AgendaSection[] {
   const endOfWeek = addDays(today, 6 - weekdayIndex(today));
   const currentMonth = today.slice(0, 7);
+  const laterLabel = `Später im ${monthNameDe(Number.parseInt(today.slice(5, 7), 10))}`;
   const upcoming = events
     .filter((event) => event.date >= today)
     .slice()
@@ -71,7 +72,10 @@ export function buildAgenda(
     const day = { date, events: dayEvents };
     if (date === today) add("today", "Heute", day);
     else if (date <= endOfWeek) add("week", "Diese Woche", day);
-    else if (date.slice(0, 7) === currentMonth) add("later", "Später", day);
+    // „Später im September" statt „Später": Allein liess die Ueberschrift offen,
+    // dass sie nur den Rest des laufenden Monats meint — die Monate danach
+    // tragen ihren eigenen Abschnitt.
+    else if (date.slice(0, 7) === currentMonth) add("later", laterLabel, day);
     else add(date.slice(0, 7), monthLabel(date), day);
   }
 

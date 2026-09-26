@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { EUR, Money } from "@/lib/money";
@@ -43,7 +43,7 @@ function renderCard(g: Goal, payments: AnalyticsPayment[], ref: RefDate = midYea
   const progress = computeGoalProgress(g, payments, ref);
   render(
     <MemoryRouter>
-      <GoalCard progress={progress} onEdit={vi.fn()} onDelete={vi.fn()} />
+      <GoalCard progress={progress} />
     </MemoryRouter>,
   );
   return progress;
@@ -54,7 +54,7 @@ describe("GoalCard – Zustände", () => {
     renderCard(goal(), [payment("2027-03-01", "9000.00")]);
     const bar = screen.getByRole("progressbar");
     expect(bar).toHaveAttribute("aria-valuenow", "75");
-    expect(bar.getAttribute("aria-valuetext")).toMatch(/75,0 %/);
+    expect(bar.getAttribute("aria-valuetext")).toMatch(/75,0\s%/);
     expect(screen.getByText("Aktiv")).toBeInTheDocument();
     expect(screen.getByText(/Noch .*3\.000,00.*€ bis zum Ziel/)).toBeInTheDocument();
   });
@@ -63,7 +63,7 @@ describe("GoalCard – Zustände", () => {
     renderCard(goal(), [payment("2027-03-01", "13200.00")]);
     const bar = screen.getByRole("progressbar");
     expect(bar).toHaveAttribute("aria-valuenow", "100");
-    expect(bar.getAttribute("aria-valuetext")).toMatch(/110,0 %/);
+    expect(bar.getAttribute("aria-valuetext")).toMatch(/110,0\s%/);
     expect(screen.getByText("Übertroffen")).toBeInTheDocument();
     expect(screen.getByText(/übertroffen/)).toBeInTheDocument();
   });
@@ -73,10 +73,23 @@ describe("GoalCard – Zustände", () => {
     expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
     expect(screen.getByText("Beginnt am 01.01.2030")).toBeInTheDocument();
     expect(screen.getByText("Bevorstehend")).toBeInTheDocument();
+    // Ein Ziel, das noch nicht begonnen hat, hat nichts erhalten.
+    expect(screen.queryByText("Erhalten")).not.toBeInTheDocument();
   });
 
   it("beendetes, nicht erreichtes Ziel wird als solches gekennzeichnet", () => {
     renderCard(goal({ year: 2020 }), [payment("2020-03-01", "5000.00")]);
     expect(screen.getByText("Nicht erreicht")).toBeInTheDocument();
+  });
+});
+
+describe("GoalCard – Bedienung", () => {
+  it("fuehrt als Ganzes zur Detailseite und traegt selbst keine Aktionen", () => {
+    renderCard(goal(), [payment("2027-03-01", "9000.00")]);
+    expect(screen.getByRole("link", { name: "Dividendenziel 2027" })).toHaveAttribute(
+      "href",
+      "/ziele/g1",
+    );
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
 });

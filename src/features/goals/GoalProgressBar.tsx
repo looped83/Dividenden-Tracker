@@ -48,12 +48,11 @@ export function GoalProgressBar({ progress, className }: GoalProgressBarProps) {
           style={{ width: `${String(barValue)}%` }}
         />
       </div>
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span className="tabular-nums">{achievementText(progress.percent)}</span>
-        <span aria-hidden className="tabular-nums">
-          Ziel 100 %
-        </span>
-      </div>
+      {/* Nur der erreichte Anteil: „Ziel 100 %" am rechten Ende stand unter
+          jedem Balken und sagte immer dasselbe. */}
+      <p className="text-xs tabular-nums text-muted-foreground">
+        {achievementText(progress.percent)}
+      </p>
     </div>
   );
 }

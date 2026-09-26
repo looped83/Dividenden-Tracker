@@ -1,9 +1,10 @@
 import * as React from "react";
 import { Link, useSearchParams } from "react-router";
 import { Info } from "lucide-react";
+import { ListGroup } from "@/components/ui/list";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select } from "@/components/ui/select";
-import { StatCard } from "@/components/domain/StatCard";
+import { StatCard, StatGrid } from "@/components/domain/StatCard";
 import { AmountText } from "@/components/money/AmountText";
 import { cn } from "@/lib/utils/cn";
 import { MD_BREAKPOINT_QUERY, useMediaQuery } from "@/lib/hooks/useMediaQuery";
@@ -258,6 +259,18 @@ export function ComparisonTab() {
             )}
           </div>
 
+          {/* Bis wann gerechnet wurde — ohne diese Angabe fuehren die Kacheln
+              darunter in die Irre: Laeuft einer der Zeitraeume noch, endet der
+              Vergleich auf **beiden** Seiten am selben Kalendertag (PRODUCT_SPEC.md
+              §5.5, DECISIONS.md D-7-1). Eine eigene Kachel dafuer kostete auf
+              dem Telefon eine halbe Reihe; als Satz unter der Auswahl steht
+              sie dort, wo der Zeitraum gewaehlt wird. */}
+          <p className="text-sm text-muted-foreground">
+            {comparison.truncated
+              ? `Gerechnet bis ${formatIsoDate(comparison.cutoff)} — beide Seiten am selben Kalendertag gekappt.`
+              : `Volle Zeiträume, gerechnet bis ${formatIsoDate(comparison.cutoff)}.`}
+          </p>
+
           {filter.year !== null && (
             <p className="flex items-start gap-2 rounded-md bg-muted/50 p-3 text-sm text-muted-foreground">
               <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
@@ -271,43 +284,26 @@ export function ComparisonTab() {
         </CardContent>
       </Card>
 
-      {/* Vier Kacheln, zwei je Zeile: Die vierte ist keine Fuellung, sondern
-          die Angabe, ohne die die drei anderen in die Irre fuehren koennen —
-          bis wann gerechnet wurde. Laeuft einer der Zeitraeume noch, endet der
-          Vergleich auf **beiden** Seiten am selben Kalendertag; eine Zahl, die
-          „2026" heisst, aber nur bis August reicht, muss das sagen
-          (PRODUCT_SPEC.md §5.5, DECISIONS.md D-7-1). Bisher stand es nur als
-          Sternchen an einzelnen Monatswerten weiter unten. */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+      <StatGrid columns={3}>
         <StatCard
           label={comparison.current.label}
           value={<AmountText amount={comparison.current.net} />}
-          comparison={formatPayments(comparison.current.count)}
+          caption={formatPayments(comparison.current.count)}
         />
         <StatCard
           label={comparison.reference.label}
           value={<AmountText amount={comparison.reference.net} />}
-          comparison={formatPayments(comparison.reference.count)}
+          caption={formatPayments(comparison.reference.count)}
         />
+        {/* Die Aussage des Vergleichs: auf dem Telefon ueber die volle Breite,
+            statt allein in einer halben Reihe zu stehen. */}
         <StatCard
           label="Veränderung"
           value={<span className={changeTone}>{change.value}</span>}
-          comparison={change.caption}
+          caption={change.caption}
+          className="col-span-2 lg:col-span-1"
         />
-        <StatCard
-          label="Zeitausschnitt"
-          value={
-            <span className="text-base sm:text-xl">
-              bis {formatIsoDate(comparison.cutoff)}
-            </span>
-          }
-          // Einzeilig: In der halbbreiten Kachel des Telefons brach der
-          // vollstaendige Satz auf drei Zeilen um und machte die Kachel hoeher
-          // als ihre Nachbarn. Der Stichtag steht als Wert darueber, die Zeile
-          // sagt nur noch, ob dafuer etwas abgeschnitten wurde.
-          comparison={comparison.truncated ? "beide Seiten gekappt" : "volle Zeiträume"}
-        />
-      </div>
+      </StatGrid>
 
       {"months" in comparison ? (
         <>
@@ -473,10 +469,7 @@ function ComparisonBreakdown({
           </TableBody>
         </Table>
       ) : (
-        <ul
-          className="divide-y divide-border rounded-lg border border-border"
-          aria-label={caption}
-        >
+        <ListGroup inset aria-label={caption}>
           {rows.map((row) => {
             // Ein Monat ohne Zahlungen auf beiden Seiten braucht keine drei
             // Zeilen mit Gedankenstrichen — er braucht einen Satz.
@@ -486,7 +479,7 @@ function ComparisonBreakdown({
               row.current.money.isZero() &&
               row.reference.money.isZero();
             return (
-              <li key={row.key} className="space-y-1.5 p-3">
+              <li key={row.key} className="space-y-1.5 px-3 py-2.5">
                 {/* Zuerst Name und Differenz: Das ist die Aussage der Zeile. */}
                 <div className="flex items-baseline justify-between gap-3">
                   <span className="font-medium">
@@ -519,7 +512,7 @@ function ComparisonBreakdown({
               </li>
             );
           })}
-        </ul>
+        </ListGroup>
       )}
 
       {hasPartial && (

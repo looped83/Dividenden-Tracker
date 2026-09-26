@@ -158,6 +158,9 @@ export function CalendarPage() {
     <PageHeader
       title="Dividendenkalender"
       actions={
+        // Auf dem Telefon als Symbol neben dem Titel — beschriftet brach die
+        // Schaltflaeche in eine eigene Zeile unter „Dividendenkalender" um.
+        // Ab `sm` mit Text, wie die Datenqualitaet in der Dividendenliste.
         <Button
           variant="outline"
           onClick={() => {
@@ -165,9 +168,13 @@ export function CalendarPage() {
           }}
           disabled={isSyncing}
           aria-busy={isSyncing}
+          aria-label={isSyncing ? "Wird aktualisiert …" : "Aktualisieren"}
+          className="w-11 px-0 sm:w-auto sm:px-4"
         >
           <RefreshCw className={cn(isSyncing && "animate-spin")} aria-hidden />
-          {isSyncing ? "Wird aktualisiert …" : "Aktualisieren"}
+          <span className="hidden sm:inline">
+            {isSyncing ? "Wird aktualisiert …" : "Aktualisieren"}
+          </span>
         </Button>
       }
     />

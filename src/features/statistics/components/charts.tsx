@@ -1,4 +1,3 @@
-import * as React from "react";
 import { Link, useNavigate } from "react-router";
 import {
   Bar,
@@ -32,10 +31,10 @@ import {
   CHART_GRID_PROPS,
   CHART_LINE_CURSOR,
   CHART_MARGIN,
+  CHART_SERIES_PROPS,
   CHART_X_AXIS_PROPS,
   CHART_Y_AXIS_PROPS,
 } from "@/components/charts/chartTheme";
-import { useReducedMotion } from "@/lib/hooks/useReducedMotion";
 import { formatMoney, type Money } from "@/lib/money";
 import { formatPayments } from "../format";
 import { formatCountNumber } from "@/lib/utils/formatNumber";
@@ -90,7 +89,6 @@ export function CategoryBarChart({
   categoryHeader,
   emptyMessage = "Keine Daten für die aktuelle Auswahl.",
 }: CategoryBarChartProps) {
-  const reducedMotion = useReducedMotion();
   const navigate = useNavigate();
 
   if (data.length === 0 || data.every((row) => row.value === 0)) {
@@ -110,7 +108,7 @@ export function CategoryBarChart({
             name="Nettodividende"
             fill="var(--chart-1)"
             radius={CHART_BAR_RADIUS}
-            isAnimationActive={!reducedMotion}
+            {...CHART_SERIES_PROPS}
             cursor="pointer"
             onClick={(entry) => {
               const row = (entry as unknown as { payload?: CategoryDatum }).payload;
@@ -166,131 +164,6 @@ export function CategoryBarChart({
   );
 }
 
-export interface HeatmapCell {
-  month: number;
-  net: Money;
-  count: number;
-  value: number;
-}
-
-export interface HeatmapRowData {
-  year: number;
-  cells: HeatmapCell[];
-}
-
-interface PaymentsHeatmapProps {
-  rows: HeatmapRowData[];
-  monthLabels: readonly string[];
-  /** Groesster Monatswert ueber alle Zellen (Intensitaetsskala). */
-  maxValue: number;
-  /** Drill-down je Zelle. */
-  hrefOf?: (year: number, month: number) => string;
-}
-
-/**
- * Heatmap der Nettodividenden nach Jahr (Zeile) und Monat (Spalte, §11.7). Die
- * Farbintensitaet ist rein visuell; die zugrunde liegenden Betraege stammen aus
- * der Analytics-Schicht. Jede Zelle ist per Titel und Screenreader-Text
- * beschriftet und optional als Drill-down verlinkt.
- */
-export function PaymentsHeatmap({
-  rows,
-  monthLabels,
-  maxValue,
-  hrefOf,
-}: PaymentsHeatmapProps) {
-  const navigate = useNavigate();
-
-  if (rows.length === 0) {
-    return <ChartEmpty>Keine Daten für die aktuelle Auswahl.</ChartEmpty>;
-  }
-
-  const intensity = (value: number): number => {
-    if (maxValue <= 0 || value <= 0) return 0;
-    // Wurzelskalierung, damit auch kleinere Monate sichtbar bleiben.
-    return Math.min(1, Math.sqrt(value / maxValue));
-  };
-
-  return (
-    <div className="relative overflow-x-auto rounded-lg border border-border">
-      <table className="w-full border-separate border-spacing-1 text-sm">
-        <caption className="sr-only">
-          Netto-Dividenden nach Jahr (Zeile) und Monat (Spalte)
-        </caption>
-        <thead>
-          <tr>
-            <th scope="col" className="px-2 py-1 text-left text-xs text-muted-foreground">
-              Jahr
-            </th>
-            {monthLabels.map((label, index) => (
-              <th
-                key={index}
-                scope="col"
-                className="px-1 py-1 text-center text-xs font-medium text-muted-foreground"
-              >
-                {label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.year}>
-              <th scope="row" className="px-2 py-1 text-left text-xs font-medium">
-                {row.year}
-              </th>
-              {row.cells.map((cell) => {
-                const alpha = intensity(cell.value);
-                const label = `${monthLabels[cell.month - 1] ?? ""} ${String(row.year)}: ${formatMoney(cell.net)}, ${formatPayments(cell.count)}`;
-                const href = cell.count > 0 ? hrefOf?.(row.year, cell.month) : undefined;
-                const style: React.CSSProperties = {
-                  backgroundColor:
-                    alpha > 0
-                      ? `color-mix(in srgb, var(--chart-1) ${String(Math.round(alpha * 100))}%, transparent)`
-                      : "var(--muted)",
-                };
-                return (
-                  <td key={cell.month} className="p-0">
-                    {/* Die Beschriftung steht als echter, versteckter Text in
-                        der Zelle — nicht als `aria-label`. Auf einem schlichten
-                        `div` (Rolle `generic`) ist `aria-label` unzulaessig und
-                        wird schlicht nicht vorgelesen: Monate ohne Drill-down
-                        waren damit fuer Screenreader stumm. */}
-                    <div
-                      title={label}
-                      {...(href
-                        ? {
-                            role: "button",
-                            tabIndex: 0,
-                            onClick: () => void navigate(href),
-                            onKeyDown: (event: React.KeyboardEvent) => {
-                              if (event.key === "Enter" || event.key === " ") {
-                                event.preventDefault();
-                                void navigate(href);
-                              }
-                            },
-                            className:
-                              "relative flex h-9 min-w-9 cursor-pointer items-center justify-center rounded-sm text-[10px] tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                          }
-                        : {
-                            className:
-                              "relative flex h-9 min-w-9 items-center justify-center rounded-sm text-[10px] tabular-nums",
-                          })}
-                      style={style}
-                    >
-                      <span className="sr-only">{label}</span>
-                    </div>
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
 // ============================================================================
 // Zeitraumvergleich (zwei Reihen)
 // ============================================================================
@@ -338,8 +211,6 @@ export function ComparisonLineChart({
   referenceLabel,
   ariaLabel,
 }: ComparisonLineChartProps) {
-  const reducedMotion = useReducedMotion();
-
   if (points.length === 0) {
     return <ChartEmpty>Keine Daten für die aktuelle Auswahl.</ChartEmpty>;
   }
@@ -371,7 +242,7 @@ export function ComparisonLineChart({
             strokeDasharray="6 4"
             dot={false}
             activeDot={{ r: 5 }}
-            isAnimationActive={!reducedMotion}
+            {...CHART_SERIES_PROPS}
           />
           <Line
             type="monotone"
@@ -381,7 +252,7 @@ export function ComparisonLineChart({
             strokeWidth={2}
             dot={false}
             activeDot={{ r: 5 }}
-            isAnimationActive={!reducedMotion}
+            {...CHART_SERIES_PROPS}
           />
         </LineChart>
       </ChartCanvas>

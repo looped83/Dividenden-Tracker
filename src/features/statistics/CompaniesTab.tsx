@@ -183,6 +183,7 @@ export function CompaniesTab() {
       },
       {
         key: "largest",
+        listHidden: true,
         header: "Größte Zahlung",
         headerLabel: "Größte Einzelzahlung",
         align: "right",

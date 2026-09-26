@@ -72,5 +72,13 @@ export const CHART_LINE_CURSOR = {
   strokeDasharray: "3 3",
 } as const;
 
+/**
+ * Keine Einblendanimation — fuer alle, nicht nur bei `prefers-reduced-motion`
+ * (UX_AND_DESIGN_SYSTEM.md §1: „Diagramme ohne Intro-Animation"). Die Reihen
+ * wuchsen rund 1,5 s aus der Nulllinie; so lange stand auf jeder Seite ein
+ * leeres Diagramm, und das Rechnen je Bild kostete auf dem Telefon Akku.
+ */
+export const CHART_SERIES_PROPS = { isAnimationActive: false } as const;
+
 /** Radius der Balkenoberkante — ueberall derselbe. */
 export const CHART_BAR_RADIUS: [number, number, number, number] = [4, 4, 0, 0];

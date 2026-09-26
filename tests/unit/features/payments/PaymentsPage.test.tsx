@@ -14,6 +14,7 @@ import { MemoryRouter } from "react-router";
 import { ToastProvider } from "@/components/ui/toast";
 import { PaymentComposerProvider } from "@/features/payments/PaymentComposer";
 import type { PaymentListRow } from "@/lib/supabase/repositories/payments";
+import { setViewportWide } from "../../support/viewport";
 
 // Die Seite haengt an drei Abfragen; sie werden hier durch Fixtures ersetzt,
 // damit der Test die Ansicht prueft und nicht das Netz.
@@ -101,22 +102,9 @@ function renderList(rows: PaymentListRow[], route = "/eingaenge") {
   );
 }
 
-/** Schaltet zwischen Karten (Telefon, Standard) und Tabelle (ab `md`) um. */
-function setWide(matches: boolean) {
-  window.matchMedia = (query: string): MediaQueryList => ({
-    matches,
-    media: query,
-    onchange: null,
-    addEventListener: () => undefined,
-    removeEventListener: () => undefined,
-    addListener: () => undefined,
-    removeListener: () => undefined,
-    dispatchEvent: () => false,
-  });
-}
-
 describe("PaymentsPage", () => {
-  // jsdom kennt kein Rollen; das Blaettern ruft es auf.
+  // jsdom kennt kein Rollen. Die Liste darf es nicht aufrufen: Nachgeladenes
+  // wird angehaengt, und der Router stellt die Position selbst wieder her.
   let scrollTo: MockInstance<typeof window.scrollTo>;
 
   beforeEach(() => {
@@ -126,7 +114,7 @@ describe("PaymentsPage", () => {
 
   afterEach(() => {
     scrollTo.mockRestore();
-    setWide(false);
+    setViewportWide(false);
   });
 
   it("zeigt die Eingaenge mit Unternehmen und Betrag", () => {
@@ -142,10 +130,51 @@ describe("PaymentsPage", () => {
 
     // Ueber die Rolle, nicht ueber den Text: Die Namen stehen auch in den
     // Auswahllisten der Filterleiste.
-    expect(screen.getByRole("link", { name: /Apple Inc\./ })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Allianz SE/ })).toBeInTheDocument();
-    expect(screen.getByText("50,00 €")).toBeInTheDocument();
-    expect(screen.getByText("120,00 €")).toBeInTheDocument();
+    // Name, Datum, Depot und Betrag stehen in einer Zeile, die als Ganzes
+    // zur Detailseite fuehrt.
+    expect(
+      screen.getByRole("link", { name: /Apple Inc\..*10\.03\.2026.*Depot A.*50,00\s€/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /Allianz SE.*02\.05\.2026.*120,00\s€/ }),
+    ).toBeInTheDocument();
+  });
+
+  it("gruppiert nach Monat und nennt je Monat die Summe", () => {
+    renderList([
+      zahlung({ id: "a", pay_date: "2026-05-02", net_amount: "20.00" }),
+      zahlung({ id: "b", pay_date: "2026-05-20", net_amount: "30.00" }),
+      zahlung({ id: "c", pay_date: "2026-03-10", net_amount: "50.00" }),
+    ]);
+
+    const mai = screen.getByRole("heading", { name: /Mai 2026/ });
+    expect(mai).toHaveTextContent("50,00 €");
+    expect(screen.getByRole("heading", { name: /März 2026/ })).toHaveTextContent(
+      "50,00 €",
+    );
+    // Neueste zuerst: Mai steht vor Maerz.
+    const monate = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
+    expect(monate[0]).toMatch(/^Mai 2026/);
+    expect(monate[1]).toMatch(/^März 2026/);
+  });
+
+  it("verzichtet auf Monatsgruppen, wenn nicht nach Datum sortiert wird", () => {
+    renderList(
+      [
+        zahlung({ id: "a", pay_date: "2026-05-02" }),
+        zahlung({ id: "c", pay_date: "2026-03-10" }),
+      ],
+      "/eingaenge?sort=amount",
+    );
+    expect(screen.queryByRole("heading", { name: /Mai 2026/ })).not.toBeInTheDocument();
+  });
+
+  it("nennt Anzahl und Summe der Auswahl", () => {
+    renderList([
+      zahlung({ id: "a", net_amount: "20.00" }),
+      zahlung({ id: "b", net_amount: "30.50" }),
+    ]);
+    expect(screen.getByText(/^2 Eingänge/)).toHaveTextContent("2 Eingänge · 50,50 €");
   });
 
   it("filtert nach Unternehmen und nennt die Trefferzahl", async () => {
@@ -157,7 +186,7 @@ describe("PaymentsPage", () => {
 
     await user.selectOptions(screen.getByLabelText("Unternehmen"), "s1");
 
-    expect(screen.getByText("1 Eingang gefunden.")).toBeInTheDocument();
+    expect(screen.getByText(/^1 Eingang/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Apple Inc\./ })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Allianz SE/ })).not.toBeInTheDocument();
   });
@@ -171,13 +200,14 @@ describe("PaymentsPage", () => {
 
     expect(screen.queryByRole("link", { name: /Allianz SE/ })).not.toBeInTheDocument();
 
-    await user.click(screen.getByLabelText("Stornierte anzeigen"));
+    // Der Status ist ein Filter der Leiste, kein Kontrollkaestchen am Seitenende.
+    await user.selectOptions(screen.getByLabelText("Status"), "all");
 
     expect(screen.getByRole("link", { name: /Allianz SE/ })).toBeInTheDocument();
     expect(screen.getByText("Storniert")).toBeInTheDocument();
   });
 
-  it("blaettert erst ab der zweiten Seite und zeigt die Spanne", async () => {
+  it("laedt weitere Eingaenge nach, statt zu blaettern", async () => {
     const user = userEvent.setup();
     const viele = Array.from({ length: 30 }, (_, index) =>
       zahlung({
@@ -187,37 +217,29 @@ describe("PaymentsPage", () => {
     );
     renderList(viele);
 
-    expect(screen.getByText(/1–25 von 30/)).toBeInTheDocument();
+    expect(screen.getByText("25 von 30 angezeigt")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Weiter" }));
+    await user.click(screen.getByRole("button", { name: "5 weitere laden" }));
 
-    expect(screen.getByText(/26–30 von 30/)).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: /Apple Inc\./ })).toHaveLength(30);
+    expect(
+      screen.queryByRole("button", { name: /weitere laden/ }),
+    ).not.toBeInTheDocument();
+    // Angehaengt, nicht umgeblaettert: Die Position bleibt, wo sie ist.
+    expect(scrollTo).not.toHaveBeenCalled();
   });
 
-  it("beginnt eine neue Seite oben", async () => {
-    const user = userEvent.setup();
-    renderList(
-      Array.from({ length: 30 }, (_, index) => zahlung({ id: `p${String(index)}` })),
-    );
-
-    await user.click(screen.getByRole("button", { name: "Weiter" }));
-
-    expect(scrollTo).toHaveBeenCalledWith({ top: 0 });
-  });
-
-  it("oeffnet die Seite aus der Adresse — der Weg zurueck von einem Eingang endet dort", () => {
+  it("oeffnet die geladene Menge aus der Adresse — der Weg zurueck von einem Eingang endet dort", () => {
     renderList(
       Array.from({ length: 30 }, (_, index) => zahlung({ id: `p${String(index)}` })),
       "/eingaenge?page=2",
     );
 
-    expect(screen.getByText(/26–30 von 30/)).toBeInTheDocument();
-    // Beim Zurueckkehren stellt der Router die Position wieder her; die
-    // Seite darf sie nicht nach oben reissen.
+    expect(screen.getAllByRole("link", { name: /Apple Inc\./ })).toHaveLength(30);
     expect(scrollTo).not.toHaveBeenCalled();
   });
 
-  it("springt bei einem Filterwechsel auf Seite 1 zurueck", async () => {
+  it("zeigt nach einem Filterwechsel wieder die ersten Eingaenge", async () => {
     const user = userEvent.setup();
     renderList(
       Array.from({ length: 30 }, (_, index) =>
@@ -228,7 +250,7 @@ describe("PaymentsPage", () => {
 
     await user.selectOptions(screen.getByLabelText("Unternehmen"), "s1");
 
-    expect(screen.getByText(/1–25 von 28/)).toBeInTheDocument();
+    expect(screen.getByText("25 von 28 angezeigt")).toBeInTheDocument();
   });
 
   it("fuehrt auf dem Telefon mit einer Tippflaeche je Karte zur Detailseite", () => {
@@ -242,7 +264,7 @@ describe("PaymentsPage", () => {
   });
 
   it("bietet auf breiten Schirmen je Zeile Bearbeiten, Stornieren und Löschen", () => {
-    setWide(true);
+    setViewportWide(true);
     renderList([zahlung({ id: "a" })]);
 
     // Die Liste kennt keine Mehrfachauswahl mehr: Was zu tun ist, steht an
@@ -283,7 +305,7 @@ describe("PaymentsPage", () => {
       );
     expect(jahre()).toEqual(["", "2026"]);
 
-    await user.click(screen.getByLabelText("Stornierte anzeigen"));
+    await user.selectOptions(screen.getByLabelText("Status"), "all");
 
     expect(jahre()).toEqual(["", "2026", "2024"]);
   });

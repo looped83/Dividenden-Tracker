@@ -48,14 +48,15 @@ function erwarteReihenfolge(labels: string[]) {
 }
 
 describe("KpiCards (Render-Smoke)", () => {
-  it("rendert die historische Gesamtsumme aus den echten Daten", () => {
+  it("zeigt die Gesamtsumme aller Jahre nicht als Kachel", () => {
+    // Sie steht in der historischen Uebersicht am Seitenende; oben zaehlt der
+    // gewaehlte Zeitraum (hoechstens vier primaere Kennzahlen).
     renderCards(2026, [
       payment("2026-03-10", "50.00"),
       payment("2020-05-10", "70.00", "sec-b"),
     ]);
-    expect(screen.getByText("Dividenden gesamt")).toBeInTheDocument();
-    // Summe 120,00 € erscheint als historischer Gesamtwert.
-    expect(screen.getAllByText(/120,00\s?€/).length).toBeGreaterThan(0);
+    expect(screen.queryByText("Dividenden gesamt")).not.toBeInTheDocument();
+    expect(screen.queryByText(/120,00\s?€/)).not.toBeInTheDocument();
   });
 
   it("zeigt bei Einzeljahr die Ø-pro-Monat-Karte, bei 'Alle Jahre' nicht", () => {
@@ -97,26 +98,32 @@ describe("KpiCards (Render-Smoke)", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("ordnet die Kacheln vom gewählten Zeitraum zur Historie", () => {
+  it("ordnet die vier Kacheln vom gewählten Zeitraum zu den Ableitungen", () => {
     renderCards(2026, [payment("2026-03-10", "50.00"), payment("2024-05-10", "70.00")]);
-    // Erst der gewählte Zeitraum, dann der laufende Monat, dann die
-    // Ableitungen daraus — die Historie steht zuletzt.
-    erwarteReihenfolge([
-      "Dividenden 2026",
-      "Juli 2026",
-      "Bester Monat",
-      "Ø pro Monat",
-      "Dividenden gesamt",
-      "Zahlungen 2026",
-    ]);
+    erwarteReihenfolge(["Dividenden 2026", "Juli 2026", "Bester Monat", "Ø pro Monat"]);
+    expect(screen.getAllByRole("link")).toHaveLength(3);
   });
 
-  it("zaehlt die Zahlungen des Zeitraums und nennt ihre Herkunft", () => {
+  it("nennt im laufenden Jahr die Zahl der Zahlungen in der Jahreskachel", () => {
     renderCards(2026, [
       payment("2026-03-10", "50.00", "sec-a"),
       payment("2026-04-10", "30.00", "sec-b"),
     ]);
-    expect(screen.getByText("Zahlungen 2026")).toBeInTheDocument();
+    expect(screen.getByText("2 Zahlungen")).toBeInTheDocument();
+    expect(screen.queryByText("Zahlungen 2026")).not.toBeInTheDocument();
+  });
+
+  it("füllt in einem anderen Jahr die vierte Kachel mit Zahlungen und Herkunft", () => {
+    renderCards(2024, [
+      payment("2024-03-10", "50.00", "sec-a"),
+      payment("2024-04-10", "30.00", "sec-b"),
+    ]);
+    erwarteReihenfolge([
+      "Dividenden 2024",
+      "Bester Monat",
+      "Ø pro Monat",
+      "Zahlungen 2024",
+    ]);
     expect(screen.getByText("2 Unternehmen")).toBeInTheDocument();
     expect(screen.getByText("1 Depot")).toBeInTheDocument();
   });

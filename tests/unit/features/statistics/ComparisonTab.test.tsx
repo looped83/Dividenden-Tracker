@@ -12,6 +12,7 @@ import { ComparisonTab } from "@/features/statistics/ComparisonTab";
 import { EMPTY_STATISTICS_FILTER } from "@/features/statistics/filterParams";
 import { EMPTY_PORTFOLIO_SERIES } from "@/features/securities/snapshots";
 import type { StatisticsContext } from "@/features/statistics/context";
+import { setViewportWide } from "../../support/viewport";
 
 /**
  * Zeitraumvergleich.
@@ -35,27 +36,9 @@ afterAll(() => {
   vi.useRealTimers();
 });
 
-/**
- * Schaltet zwischen Tabelle (ab `md`) und Liste um. `useMediaQuery` liest
- * `matchMedia` bei jedem Rendern, ein Austausch vor `render` genuegt also.
- */
-function setViewport(breite: "breit" | "schmal") {
-  const matches = breite === "breit";
-  window.matchMedia = (query: string): MediaQueryList => ({
-    matches,
-    media: query,
-    onchange: null,
-    addEventListener: () => undefined,
-    removeEventListener: () => undefined,
-    addListener: () => undefined,
-    removeListener: () => undefined,
-    dispatchEvent: () => false,
-  });
-}
-
 // Standard ist die breite Darstellung; die Telefonansicht wird eigens geprueft.
 beforeEach(() => {
-  setViewport("breit");
+  setViewportWide(true);
 });
 
 let seq = 0;
@@ -153,13 +136,16 @@ describe("ComparisonTab — gleicher Ausschnitt", () => {
     expect(screen.getByText("2 Zahlungen")).toBeInTheDocument();
   });
 
-  it("nennt den Stichtag genau einmal, in einer eigenen Kachel", () => {
+  it("nennt den Stichtag genau einmal, als Satz unter der Auswahl", () => {
     renderTab();
     // Zusage 1 der Oberflaeche: Die Kappung wird benannt. Genau einmal — je
     // Kachel wiederholt waere es wieder die Spanne von frueher.
-    expect(screen.getByText("Zeitausschnitt")).toBeInTheDocument();
     expect(screen.getAllByText(/29\.07\.2026/)).toHaveLength(1);
-    expect(screen.getByText("beide Seiten gekappt")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Gerechnet bis 29.07.2026 — beide Seiten am selben Kalendertag gekappt.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("weist die Veraenderung gegenueber dem Vergleichsjahr aus", () => {
@@ -175,10 +161,11 @@ describe("ComparisonTab — gleicher Ausschnitt", () => {
     // Volles Jahr 2025: 200 + 1.000 = 1.200 € — die 1.000 € aus September und
     // Dezember zaehlen mit, weil hier nichts gekappt wird.
     expect(screen.getAllByText("1.200,00 €").length).toBeGreaterThan(0);
-    // Und die Kachel sagt es: Hier ist nichts gekappt, gezaehlt wurde bis zum
-    // letzten Tag des Jahres.
-    expect(screen.getByText(/31\.12\.2025/)).toBeInTheDocument();
-    expect(screen.getByText("volle Zeiträume")).toBeInTheDocument();
+    // Und der Satz unter der Auswahl sagt es: Hier ist nichts gekappt,
+    // gezaehlt wurde bis zum letzten Tag des Jahres.
+    expect(
+      screen.getByText("Volle Zeiträume, gerechnet bis 31.12.2025."),
+    ).toBeInTheDocument();
   });
 });
 
@@ -354,7 +341,7 @@ describe("ComparisonTab — Darstellung auf dem Telefon", () => {
    * Zeiträume.
    */
   beforeEach(() => {
-    setViewport("schmal");
+    setViewportWide(false);
   });
 
   it("stellt die Monate als Liste dar, nicht als Tabelle", () => {

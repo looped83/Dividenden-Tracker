@@ -240,7 +240,7 @@ p. a." ist kein Ziel, das verfehlt werden könnte, sondern die Ertragskraft des 
 Depots; als Abweichung gelesen stünde dort bei jedem Zukauf eine rote Zahl für genau den
 Vorgang, der gut läuft. Ein negativer Zuwachs bleibt ein echter Rückgang.
 
-Der Jahresregler entfällt hier wie beim Vergleich und beim Breakdown: Die Zeitachse sind
+Der Jahresregler entfällt hier wie beim Vergleich: Die Zeitachse sind
 die Stichtage der Depotstände, und zu jedem gehört ein eigenes Zwölfmonatsfenster. Der
 **Depotkontoregler** entfällt ebenfalls, weil der Portfolio-Export alle Konten zusammenfasst
 und keines nennt — er träfe nur die erhaltenen Zahlungen und ließe die erwarteten unberührt.
@@ -262,32 +262,41 @@ Historie.
 
 ### 5.5 Statistiken
 
-Sieben Unterbereiche: Übersicht, Jahre, Monate, **Breakdown**, **Vergleich**, Unternehmen,
-Depotkonten. Die frühere **Entwicklung** liegt seit der Umbenennung im Bereich Depot (§5.3) —
-sie setzte als einzige auf den Depotständen auf statt auf den erfassten Zahlungen.
+Fünf Unterbereiche: Übersicht, **Verlauf**, **Vergleich**, Unternehmen, Depotkonten. Die
+frühere **Entwicklung** liegt seit der Umbenennung im Bereich Depot (§5.3) — sie setzte als
+einzige auf den Depotständen auf statt auf den erfassten Zahlungen.
+
+Es waren einmal sieben: „Jahre" und „Monate" sind zum **Verlauf** mit einem Umschalter
+zusammengelegt (`?nach=monate`), der „Breakdown" ist als Matrix in die Übersicht gezogen, wo
+die Heatmap derselben Zahlen lag. Sieben Reiter liefen auf dem iPhone zur Hälfte aus dem Bild,
+und das Jahresdiagramm stand in der Übersicht und unter „Jahre" doppelt. Die alten Adressen
+leiten samt Filtern auf die neuen um.
 
 Über allen steht dieselbe Filterleiste mit denselben drei Kriterien in derselben Reihenfolge:
 **Jahr, Unternehmen, Depotkonto** (Voreinstellung „Alle …"). Einzige Abweichung ist der
-Jahresregler, der im Vergleich und im Breakdown fehlt — beide wählen ihre Zeiträume selbst,
-dort wäre er wirkungslos. Datenquelle und Zahlungsart standen einmal daneben; sie sind
+Jahresregler, der im Vergleich fehlt — er wählt seine Zeiträume selbst, dort wäre er
+wirkungslos. In der Übersicht wirkt er auf die Kennzahlen; die Matrix darunter stellt
+grundsätzlich alle Jahre gegenüber und sagt das, solange ein Jahr gewählt ist. Datenquelle und Zahlungsart standen einmal daneben; sie sind
 entfallen, weil die Zahlungsliste sie nicht filtern kann und der Drill-down damit mehr zeigte
 als die Kennzahl, aus der er kam (CALCULATION_RULES.md §11.8).
 
-Der Breakdown zeigt alle Jahre und Monate in **einer** Tabelle: eine Zeile je Kalenderjahr
-(neueste zuerst), eine Spalte je Monat, dazu Jahressummen, Monatssummen über alle Jahre und die
-Veränderung zum Vorjahr. Bewusst rein zahlengetrieben und ohne Diagramm — hier geht es um den
-Abgleich Zahl gegen Zahl (Januar 2024 gegen Januar 2025 gegen Januar 2026), nicht um die Form
-einer Kurve. Umschaltbar zwischen Monatssumme, Veränderung zum Vorjahresmonat und aufgelaufener
-Jahressumme (CALCULATION_RULES.md §11.12).
+Die Übersicht trägt unter den Kennzahlen die Matrix **Jahre × Monate**: alle Jahre und Monate
+in **einer** Tabelle — eine Zeile je Kalenderjahr (neueste zuerst), eine Spalte je Monat, dazu
+Jahressummen, Monatssummen über alle Jahre und die Veränderung zum Vorjahr. Hier geht es um den
+Abgleich Zahl gegen Zahl (Januar 2024 gegen Januar 2025 gegen Januar 2026). In der Ansicht
+„Summe je Monat" sind die Zellen nach der Höhe ihres Betrags getönt — das ist die frühere
+Heatmap. Umschaltbar zwischen Monatssumme, Veränderung zum Vorjahresmonat und aufgelaufener
+Jahressumme (CALCULATION_RULES.md §11.12). Auf dem iPhone steht die Matrix gedreht: Monate als
+Zeilen, Jahre als Spalten, das jüngste Jahr vorn.
 
 Der Vergleich stellt zwei Zeiträume gegenüber: Jahr gegen Jahr, Monat gegen denselben Monat des
 Vorjahres (aufgeschlüsselt nach Unternehmen) oder die letzten 12 Monate gegen die 12 davor. Ist eines der Jahre das laufende, endet der Vergleich auf **beiden** Seiten am selben
-Kalendertag; die Kachel „Zeitausschnitt" nennt ihn — alles andere wäre eine systematische
+Kalendertag; ein Satz unter der Auswahl nennt ihn — alles andere wäre eine systematische
 Untertreibung des laufenden Jahres (CALCULATION_RULES.md §11.10, DECISIONS.md D-7-1). Es wird
 nichts hochgerechnet (Grundsatz 8).
 
-Vier Kennzahlkacheln, auf dem iPhone zwei je Zeile: die beiden Zeiträume, die Veränderung
-(Betrag als Kennzahl, Prozentzahl mit Bezugszeitraum darunter) und der Zeitausschnitt.
+Drei Kennzahlkacheln: die beiden Zeiträume und die Veränderung (Betrag als Kennzahl,
+Prozentzahl mit Bezugszeitraum darunter), auf dem iPhone die Veränderung über die volle Breite.
 
 Der Unterbereich Unternehmen blendet in der Tabelle „Unternehmensstatistik" archivierte
 Unternehmen zunächst aus; unterhalb der Tabelle sind sie zuschaltbar (dasselbe Muster wie in der

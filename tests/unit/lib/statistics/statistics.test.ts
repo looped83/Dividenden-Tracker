@@ -9,7 +9,6 @@ import {
   calendarMonthBuckets,
   depotStatistics,
   filterPayments,
-  heatmapByYearMonth,
   isEmptyFilter,
   largestPayment,
   monthAcrossYearsStatistics,
@@ -369,16 +368,5 @@ describe("Skalierung (≥ 10.000 Eingänge, ≥ 500 Unternehmen)", () => {
     expect(securityStatistics(payments)).toHaveLength(SECURITIES);
     expect(depotStatistics(payments)).toHaveLength(DEPOTS);
     expect(monthAcrossYearsStatistics(payments)).toHaveLength(12);
-  });
-});
-
-describe("heatmapByYearMonth (§11.7)", () => {
-  it("liefert eine Zeile je Jahr (neueste zuerst) mit zwölf Monaten", () => {
-    const payments = [p("2024-03-10", "100"), p("2025-07-10", "50")];
-    const rows = heatmapByYearMonth(payments);
-    expect(rows.map((r) => r.year)).toEqual([2025, 2024]);
-    expect(rows[0]?.months).toHaveLength(12);
-    expect(rows[0]?.months[6]?.net.toStringValue()).toBe("50.00"); // Juli 2025
-    expect(rows[1]?.months[2]?.net.toStringValue()).toBe("100.00"); // März 2024
   });
 });

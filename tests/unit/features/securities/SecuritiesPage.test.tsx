@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router";
 import { ToastProvider } from "@/components/ui/toast";
 import type { SecuritySnapshot } from "@/lib/supabase/repositories/securitySnapshots";
+import { setViewportWide } from "../../support/viewport";
 
 /**
  * Die Uebersicht des Depots.
@@ -93,21 +94,6 @@ function snapshot(partial: Partial<SecuritySnapshot> = {}): SecuritySnapshot {
   };
 }
 
-/** Schaltet zwischen Tabelle (ab `md`) und Karten um. */
-function setViewport(breite: "breit" | "schmal") {
-  const matches = breite === "breit";
-  window.matchMedia = (query: string): MediaQueryList => ({
-    matches,
-    media: query,
-    onchange: null,
-    addEventListener: () => undefined,
-    removeEventListener: () => undefined,
-    addListener: () => undefined,
-    removeListener: () => undefined,
-    dispatchEvent: () => false,
-  });
-}
-
 function renderPage(snapshots: SecuritySnapshot[] = []) {
   staende.current = snapshots;
   const client = new QueryClient({
@@ -125,7 +111,7 @@ function renderPage(snapshots: SecuritySnapshot[] = []) {
 }
 
 beforeEach(() => {
-  setViewport("breit");
+  setViewportWide(true);
 });
 
 describe("SecuritiesPage", () => {
@@ -182,22 +168,22 @@ describe("SecuritiesPage", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("zeigt auf dem Telefon dieselben Zahlen als Karte, samt Aktionen", () => {
-    setViewport("schmal");
+  it("zeigt auf dem Telefon dieselben Zahlen als Zeile, die zur Detailseite fuehrt", () => {
+    setViewportWide(false);
     renderPage([snapshot()]);
 
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
-    // Die Kennzahlkacheln nennen dieselben Betraege — geprueft wird die Karte.
-    const karte = screen.getByRole("link", { name: "Alpha AG" }).closest("li");
-    expect(karte).not.toBeNull();
-    const inKarte = within(karte as HTMLElement);
-    expect(inKarte.getByText(/1\.200,00\s€/)).toBeInTheDocument();
-    expect(inKarte.getByText(/4,5\s%\sAnteil/)).toBeInTheDocument();
-    expect(inKarte.getByText(/60,00\s€/)).toBeInTheDocument();
-    expect(inKarte.getByText(/\+200,00\s€/)).toBeInTheDocument();
+    // Die Kennzahlkacheln nennen dieselben Betraege — geprueft wird die Zeile.
+    const zeile = screen.getByRole("link", { name: /^Alpha AG/ });
+    expect(zeile).toHaveAttribute("href", "/depot/sec-a");
+    const inZeile = within(zeile);
+    expect(inZeile.getByText(/1\.200,00\s€/)).toBeInTheDocument();
+    expect(inZeile.getByText(/60,00\s€/)).toBeInTheDocument();
+    expect(inZeile.getByText(/\+200,00\s€/)).toBeInTheDocument();
+    // Bearbeiten und Archivieren stehen auf der Detailseite, nicht in der Zeile.
     expect(
-      screen.getByRole("button", { name: "Alpha AG archivieren" }),
-    ).toBeInTheDocument();
+      screen.queryByRole("button", { name: "Alpha AG archivieren" }),
+    ).not.toBeInTheDocument();
   });
 
   it("bietet die Sortierung nach Wert nur mit Depotstand an", () => {

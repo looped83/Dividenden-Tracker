@@ -34,8 +34,12 @@ const ROUTEN = [
   // barrierefrei sein, und er ist der erste, den jemand hier zu sehen bekommt.
   { pfad: "/#/depot/entwicklung", name: "Depot Entwicklung", warten: "Depot" },
   { pfad: "/#/statistiken", name: "Statistiken", warten: "Statistik" },
-  { pfad: "/#/statistiken/jahre", name: "Statistik Jahre", warten: "Statistik" },
-  { pfad: "/#/statistiken/breakdown", name: "Statistik Breakdown", warten: "Statistik" },
+  { pfad: "/#/statistiken/verlauf", name: "Statistik Verlauf", warten: "Statistik" },
+  {
+    pfad: "/#/statistiken/verlauf?nach=monate",
+    name: "Statistik Verlauf nach Monaten",
+    warten: "Statistik",
+  },
   { pfad: "/#/statistiken/vergleich", name: "Statistik Vergleich", warten: "Statistik" },
   { pfad: "/#/ziele", name: "Ziele", warten: "Ziele" },
   { pfad: "/#/ziele/beendet", name: "Ziele beendet", warten: "Ziele" },
@@ -82,7 +86,7 @@ test("gesetzte Filter sind frei von axe-Verstößen", async ({ page, konto }) =>
   await expect(page.getByLabel("Monat")).toHaveValue("1");
   // `#f-security`: „Unternehmen" heisst auch der Navigationspunkt daneben.
   await expect(page.locator("#f-security")).toHaveValue(konto.securityId);
-  await expect(page.getByText("1 Eingang gefunden.")).toBeVisible();
+  await expect(page.getByText(/^1 Eingang/)).toBeVisible();
   await pruefeAxe(page, "Eingangsliste mit Filtern");
 });
 

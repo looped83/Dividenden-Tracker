@@ -1,48 +1,26 @@
 import { Monitor, Moon, Sun } from "lucide-react";
 import { useTheme, type Theme } from "@/app/theme/ThemeProvider";
-import { cn } from "@/lib/utils/cn";
+import { SegmentedControl, type SegmentOption } from "@/components/ui/segmented";
 
-const OPTIONS: { value: Theme; label: string; icon: typeof Sun }[] = [
+const OPTIONS: readonly SegmentOption<Theme>[] = [
   { value: "light", label: "Hell", icon: Sun },
   { value: "dark", label: "Dunkel", icon: Moon },
   { value: "system", label: "System", icon: Monitor },
 ];
 
+/**
+ * Wahl des Erscheinungsbilds. Mit Beschriftung statt nur Symbolen: Ein
+ * Bildschirm fuer „System" ist nicht selbsterklaerend, und die Einstellung
+ * wird selten genug besucht, dass man es sich nicht merkt.
+ */
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
-
   return (
-    <div
-      role="radiogroup"
-      aria-label="Erscheinungsbild"
-      className="inline-flex items-center rounded-md border border-border bg-card p-0.5"
-    >
-      {OPTIONS.map(({ value, label, icon: Icon }) => {
-        const isActive = theme === value;
-        return (
-          <button
-            key={value}
-            type="button"
-            role="radio"
-            aria-checked={isActive}
-            aria-label={label}
-            title={label}
-            onClick={() => {
-              setTheme(value);
-            }}
-            className={cn(
-              "inline-flex size-9 items-center justify-center rounded-sm outline-none",
-              "pointer-coarse:size-11",
-              "focus-visible:ring-2 focus-visible:ring-ring",
-              isActive
-                ? "bg-accent text-accent-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            <Icon className="size-4" aria-hidden />
-          </button>
-        );
-      })}
-    </div>
+    <SegmentedControl
+      label="Erscheinungsbild"
+      options={OPTIONS}
+      value={theme}
+      onChange={setTheme}
+    />
   );
 }

@@ -5,8 +5,10 @@ import { expect, test } from "../support/appTest";
  *
  * Was breiter ist als das Fenster, scrollt innerhalb seines eigenen Rahmens —
  * die Seite selbst nicht (dieselbe Zusage wie in `tests/e2e/mobile.spec.ts`,
- * dort für die öffentlichen Routen). Der Breakdown ist der Härtefall: zwölf
- * Monatsspalten mit Beträgen werden breiter als jeder Inhaltsbereich.
+ * dort für die öffentlichen Routen). Die Matrix aus Jahren und Monaten in der
+ * Statistik-Übersicht ist der Härtefall: zwölf Monatsspalten mit Beträgen
+ * werden breiter als jeder Inhaltsbereich. Auf dem Telefon steht sie gedreht
+ * (Monate als Zeilen) — auch dort darf die Seite nicht seitlich laufen.
  *
  * Diese Prüfung geht nur im Browser: Der Überlauf entstand nicht durch die
  * sichtbare Tabelle, sondern durch die absolut positionierten `sr-only`-Texte
@@ -34,12 +36,12 @@ test.use({
   },
 });
 
-test("Breakdown: die Seite läuft nicht seitlich über", async ({ page }) => {
+test("Matrix: die Seite läuft nicht seitlich über", async ({ page }) => {
   // Feste, schmale Fenstergröße statt der Vorgabe des jeweiligen Projekts:
   // Die Prüfung soll am selben Verhältnis von Tabelle zu Inhaltsbereich
   // hängen, nicht an der Geometrie eines Geräts.
   await page.setViewportSize({ width: 900, height: 800 });
-  await page.goto("/#/statistiken/breakdown");
+  await page.goto("/#/statistiken");
   await expect(page.getByRole("table")).toBeVisible();
 
   // Die Matrix scrollt sehr wohl — sonst wäre die eigentliche Prüfung darunter
@@ -49,6 +51,22 @@ test("Breakdown: die Seite läuft nicht seitlich über", async ({ page }) => {
     return element ? element.scrollWidth - element.clientWidth : 0;
   });
   expect(kasten).toBeGreaterThan(0);
+
+  const ueberlauf = await page.evaluate(
+    () => document.documentElement.scrollWidth - window.innerWidth,
+  );
+  expect(ueberlauf).toBeLessThanOrEqual(0);
+});
+
+test("Matrix auf dem Telefon: gedreht, ohne seitlichen Überlauf der Seite", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/#/statistiken");
+  const tabelle = page.getByRole("table");
+  await expect(tabelle).toBeVisible();
+  // Monate als Zeilen: Der Dezember steht als Zeilenkopf da.
+  await expect(tabelle.getByRole("rowheader", { name: "Dezember" })).toBeVisible();
 
   const ueberlauf = await page.evaluate(
     () => document.documentElement.scrollWidth - window.innerWidth,

@@ -1,4 +1,4 @@
-import { StatCard } from "@/components/domain/StatCard";
+import { StatCard, StatGrid } from "@/components/domain/StatCard";
 import { AmountText } from "@/components/money/AmountText";
 import { monthNameDe } from "@/lib/statistics";
 import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
@@ -26,11 +26,11 @@ export function CalendarSummaryTiles({
   const month = monthNameDe(Number.parseInt(today.slice(5, 7), 10));
 
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <StatGrid>
       <StatCard
         label="Nächster Zahltag"
         value={summary.next ? formatCalendarDate(summary.next.date) : <span>–</span>}
-        comparison={
+        caption={
           summary.next
             ? // Die Anzahl nur, wenn an diesem Tag mehr als ein Termin liegt —
               // sonst waere die Zeile dreizeilig und die Kachel hoeher als ihre
@@ -44,19 +44,19 @@ export function CalendarSummaryTiles({
       <StatCard
         label="Diesen Monat"
         value={<TotalValue total={summary.thisMonth} />}
-        comparison={`${month} · ${captionFor(summary.thisMonth)}`}
+        caption={`${month} · ${captionFor(summary.thisMonth)}`}
       />
       <StatCard
         label="Nächste 30 Tage"
         value={<TotalValue total={summary.next30Days} />}
-        comparison={captionFor(summary.next30Days)}
+        caption={captionFor(summary.next30Days)}
       />
       <StatCard
         label="Unternehmen"
         value={formatCountNumber(summary.companies)}
-        comparison="mit kommenden Zahltagen"
+        caption="mit kommenden Zahltagen"
       />
-    </div>
+    </StatGrid>
   );
 }
 

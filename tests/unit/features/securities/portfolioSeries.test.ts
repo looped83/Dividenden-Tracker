@@ -139,7 +139,7 @@ describe("buildPortfolioSeries", () => {
   it("rechnet die Rendite auf den Einstand in Prozentpunkte um", () => {
     const series = buildPortfolioSeries([snapshot()], FACETS);
     const onBuyin = series.yieldOnBuyinBySecurity.get("sec-a");
-    expect(onBuyin && formatPercent(onBuyin, 2)).toBe("4,38 %");
+    expect(onBuyin && formatPercent(onBuyin, 2)).toBe("4,38\u00A0%");
   });
 
   it("teilt nach Branche und Land auf, größter Anteil zuerst", () => {

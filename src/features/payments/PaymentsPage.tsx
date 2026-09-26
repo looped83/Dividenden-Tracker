@@ -1,15 +1,6 @@
 import * as React from "react";
 import { Link, useSearchParams } from "react-router";
-import {
-  Ban,
-  ChevronRight,
-  Pencil,
-  Plus,
-  RotateCcw,
-  ShieldCheck,
-  Trash2,
-  Wallet,
-} from "lucide-react";
+import { Ban, Pencil, Plus, RotateCcw, ShieldCheck, Trash2, Wallet } from "lucide-react";
 import {
   effectivePayDate,
   monthNameDe,
@@ -30,8 +21,8 @@ import {
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useNewPaymentTrigger } from "@/features/payments/PaymentComposer";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ListGroup, ListSection } from "@/components/ui/list";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import {
   Table,
@@ -42,7 +33,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { AmountText } from "@/components/money/AmountText";
-import { DateText } from "@/components/DateText";
 import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
 import { MD_BREAKPOINT_QUERY, useMediaQuery } from "@/lib/hooks/useMediaQuery";
 import { useToast } from "@/components/ui/toast";
@@ -75,6 +65,8 @@ import {
   type YearOverYearComparison,
 } from "@/features/payments/yearOverYear";
 import { YearOverYearIndicator } from "@/features/payments/YearOverYearIndicator";
+import { PaymentListItem } from "@/features/payments/PaymentListItem";
+import { groupByMonth, monthTotals, totalOrNull } from "@/features/payments/monthGroups";
 
 type Row = {
   payment: PaymentListRow;
@@ -116,7 +108,7 @@ export function PaymentsPage() {
     monthRaw && /^(1[0-2]|[1-9])$/.test(monthRaw) ? Number.parseInt(monthRaw, 10) : null;
 
   const setParams = React.useCallback(
-    (updates: Record<string, string | null>) => {
+    (updates: Record<string, string | null>, options?: { replace: boolean }) => {
       setSearchParams((prev) => {
         const params = new URLSearchParams(prev);
         for (const [key, value] of Object.entries(updates)) {
@@ -124,12 +116,12 @@ export function PaymentsPage() {
           else params.delete(key);
         }
         return params;
-      });
+      }, options);
     },
     [setSearchParams],
   );
 
-  // Jede Filter- oder Sortieränderung beginnt wieder auf Seite 1.
+  // Jede Filter- oder Sortieränderung zeigt wieder die ersten Eingänge.
   const updateParams = React.useCallback(
     (updates: Record<string, string | null>) => {
       setParams({ ...updates, page: null });
@@ -137,21 +129,15 @@ export function PaymentsPage() {
     [setParams],
   );
 
-  // Blättern führt an den Anfang der Liste. Von selbst geschieht das nicht:
-  // Die Bildlaufposition hängt am Pfad (AppShell), und der bleibt beim
-  // Blättern gleich — man sähe sonst das Ende der neuen Seite. Das Rollen
-  // folgt erst nach dem Wechsel, weil die Wiederherstellung des Routers es
-  // sonst überschriebe; der Weg zurück von einem Eingang behält seine Position.
-  const scrollToTopAfterPaging = React.useRef(false);
-  const goToPage = (next: number) => {
-    scrollToTopAfterPaging.current = true;
-    setParams({ page: next > 1 ? String(next) : null });
+  // „Mehr laden" haengt die naechsten Eingaenge an, statt die Seite zu
+  // wechseln: Man bleibt im Lesefluss, und eine Monatsgruppe reisst nicht an
+  // einer Seitengrenze ab. Wie viel geladen ist, steht in der Adresse — der
+  // Weg zurueck von einem Eingang findet dieselbe Liste samt Position wieder.
+  // Ersetzt statt angehaengt: „Zurück" im Browser soll die vorige Seite
+  // oeffnen, nicht die Liste Schritt fuer Schritt wieder kuerzen.
+  const loadMore = () => {
+    setParams({ page: String(page + 1) }, { replace: true });
   };
-  React.useEffect(() => {
-    if (!scrollToTopAfterPaging.current) return;
-    scrollToTopAfterPaging.current = false;
-    window.scrollTo({ top: 0 });
-  }, [page]);
 
   const hasActiveFilters =
     depotId !== "" ||
@@ -221,7 +207,7 @@ export function PaymentsPage() {
     depotId,
     filterYear,
     filterMonth,
-    status === "all" ? "status" : null,
+    status === "active" ? null : status,
   ].filter((value) => value !== null && value !== "").length;
 
   // Vergleich mit dem Vorjahr ueber den gesamten Bestand — nicht ueber die
@@ -295,10 +281,25 @@ export function PaymentsPage() {
     sort,
   ]);
 
-  const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
-  const currentPage = Math.min(page, pageCount);
-  const pageStart = (currentPage - 1) * PAGE_SIZE;
-  const pageRows = rows.slice(pageStart, pageStart + PAGE_SIZE);
+  const visibleRows = rows.slice(0, page * PAGE_SIZE);
+  const remaining = rows.length - visibleRows.length;
+
+  // Anzahl und Summe der Auswahl — die Frage hinter fast jedem Filter („wie
+  // viel kam von …?"). Ueber verschiedene Waehrungen wird nicht addiert.
+  const amountOf = React.useCallback(
+    (row: Row) => Money.fromString(row.payment.net_amount, row.currency),
+    [],
+  );
+  const total = React.useMemo(() => totalOrNull(rows.map(amountOf)), [rows, amountOf]);
+
+  // Nach Datum sortiert gruppiert die Liste nach Monat, mit der Monatssumme im
+  // Kopf — ueber alle Eingaenge des Monats, nicht nur die bereits geladenen.
+  const groupedByMonth = sort.field === "payment_date";
+  const effectiveDateOf = React.useCallback((row: Row) => row.effectiveDate, []);
+  const totalsByMonth = React.useMemo(
+    () => (groupedByMonth ? monthTotals(rows, effectiveDateOf, amountOf) : null),
+    [groupedByMonth, rows, effectiveDateOf, amountOf],
+  );
 
   // --- Einzelaktionen: Storno / Reaktivieren / Löschen. ---
   const archivePayment = useArchivePayment();
@@ -382,9 +383,20 @@ export function PaymentsPage() {
       <PageHeader
         title="Dividenden"
         actions={
-          <Button className="hidden md:inline-flex" {...newPayment}>
-            <Plus /> Neue Dividende
-          </Button>
+          <>
+            {/* Die Pruefung der Daten gehoert zur Liste, steht aber nicht in
+                ihrem Weg: oben als Symbol, ab `md` beschriftet. Zuvor lag sie
+                am Seitenende, hinter allen Eingaengen. */}
+            <Button variant="outline" asChild className="w-11 px-0 md:w-auto md:px-4">
+              <Link to="/eingaenge/datenqualitaet" aria-label="Datenqualität">
+                <ShieldCheck />
+                <span className="hidden md:inline">Datenqualität</span>
+              </Link>
+            </Button>
+            <Button className="hidden md:inline-flex" {...newPayment}>
+              <Plus /> Neue Dividende
+            </Button>
+          </>
         }
       />
 
@@ -452,6 +464,23 @@ export function PaymentsPage() {
           </Select>
         </FilterField>
 
+        {/* Stornierte sind ein Filter wie jeder andere und stehen deshalb in
+            der Leiste — nicht mehr als Kontrollkaestchen unter 25 Eingaengen
+            und dem Blaettern am Seitenende. */}
+        <FilterField id="f-status" label="Status">
+          <Select
+            id="f-status"
+            value={status === "active" ? "" : status}
+            onChange={(event) => {
+              updateParams({ status: event.target.value || null });
+            }}
+          >
+            <option value="">Ohne Stornierte</option>
+            <option value="all">Mit Stornierten</option>
+            <option value="cancelled">Nur Stornierte</option>
+          </Select>
+        </FilterField>
+
         {/* Die Optionen benennen die Sortierung selbst („Nach Datum"), da die
             Beschriftung nur noch fuer Screenreader existiert. */}
         <FilterSort
@@ -472,9 +501,15 @@ export function PaymentsPage() {
         {hasActiveFilters && <FilterReset onClick={resetFilters} />}
       </FilterBar>
 
-      {hasActiveFilters && (
-        <p className="text-sm text-muted-foreground" aria-live="polite">
-          {formatCountNoun(rows.length, "Eingang", "Eingänge")} gefunden.
+      {!isLoading && rows.length > 0 && (
+        <p className="px-1 text-sm text-muted-foreground" aria-live="polite">
+          {formatCountNoun(rows.length, "Eingang", "Eingänge")}
+          {total && (
+            <>
+              {" · "}
+              <AmountText amount={total} className="font-medium text-foreground" />
+            </>
+          )}
         </p>
       )}
 
@@ -500,7 +535,7 @@ export function PaymentsPage() {
       ) : (
         <>
           {/* Eine Darstellung statt zweier per CSS versteckter: Tabelle und
-              Karten zeigen dieselben Zeilen, standen aber beide im DOM — jede
+              Liste zeigen dieselben Zeilen, standen aber beide im DOM — jede
               Zeile wurde doppelt gerendert, samt doppelt gebauter
               Money-Objekte. */}
           {isWide ? (
@@ -516,7 +551,7 @@ export function PaymentsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {pageRows.map((row) => (
+                  {visibleRows.map((row) => (
                     <PaymentRow
                       key={row.id}
                       row={row}
@@ -537,79 +572,61 @@ export function PaymentsPage() {
                 </TableBody>
               </Table>
             </div>
+          ) : groupedByMonth ? (
+            <div className="space-y-6">
+              {groupByMonth(visibleRows, effectiveDateOf).map((group) => {
+                const monthTotal = totalsByMonth?.get(group.key);
+                return (
+                  <ListSection
+                    key={group.key}
+                    title={`${monthNameDe(group.month)} ${String(group.year)}`}
+                    aside={monthTotal ? <AmountText amount={monthTotal} /> : undefined}
+                  >
+                    <ListGroup>
+                      {group.rows.map((row) => (
+                        <PaymentItem
+                          key={row.id}
+                          row={row}
+                          comparison={yearOverYear.get(row.id)}
+                          listUrl={listUrl}
+                        />
+                      ))}
+                    </ListGroup>
+                  </ListSection>
+                );
+              })}
+            </div>
           ) : (
-            <ul className="space-y-3">
-              {pageRows.map((row) => (
-                <PaymentCard
+            <ListGroup>
+              {visibleRows.map((row) => (
+                <PaymentItem
                   key={row.id}
                   row={row}
                   comparison={yearOverYear.get(row.id)}
                   listUrl={listUrl}
                 />
               ))}
-            </ul>
+            </ListGroup>
           )}
         </>
       )}
 
-      {!isLoading && rows.length > PAGE_SIZE && (
-        <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
-          <span aria-live="polite">
-            {formatCountNumber(pageStart + 1)}–
-            {formatCountNumber(Math.min(pageStart + PAGE_SIZE, rows.length))} von{" "}
-            {formatCountNumber(rows.length)}
-          </span>
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={currentPage <= 1}
-              onClick={() => {
-                goToPage(currentPage - 1);
-              }}
-            >
-              Zurück
-            </Button>
-            <span aria-hidden>
-              Seite {formatCountNumber(currentPage)} / {formatCountNumber(pageCount)}
-            </span>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={currentPage >= pageCount}
-              onClick={() => {
-                goToPage(currentPage + 1);
-              }}
-            >
-              Weiter
-            </Button>
-          </div>
+      {!isLoading && remaining > 0 && (
+        <div className="space-y-2 text-center">
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full sm:w-auto"
+            onClick={loadMore}
+          >
+            {formatCountNumber(Math.min(PAGE_SIZE, remaining))} weitere laden
+          </Button>
+          <p className="text-xs text-muted-foreground" aria-live="polite">
+            {formatCountNumber(visibleRows.length)} von {formatCountNumber(rows.length)}{" "}
+            angezeigt
+          </p>
         </div>
       )}
-
-      {/* Seltener gebrauchte Nebenaktionen am Seitenende, abgesetzt durch eine
-          Trennlinie (gleiches Muster wie bei den Unternehmen): oben bleibt die
-          Primaeraktion, die Liste bestimmt den Rest. Stornierte sind sonst
-          nirgends auffindbar — Reaktivieren geht nur aus dieser Liste oder per
-          Direktlink. */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border pt-4">
-        <label className="flex min-h-11 items-center gap-2 text-sm text-muted-foreground">
-          <Checkbox
-            checked={status === "all"}
-            onChange={(event) => {
-              updateParams({ status: event.target.checked ? "all" : null });
-            }}
-          />
-          Stornierte anzeigen
-        </label>
-        <Button variant="outline" asChild>
-          <Link to="/eingaenge/datenqualitaet">
-            <ShieldCheck /> Datenqualität
-          </Link>
-        </Button>
-      </div>
 
       <StornoDialog
         open={stornoTarget !== null}
@@ -760,20 +777,11 @@ function PaymentRow({
 }
 
 /**
- * Karte der schmalen Darstellung: eine einzige Tippflaeche zur Detailseite.
- *
- * Zuvor trug jede Karte Bearbeiten, Stornieren und Loeschen als Symbole —
- * 75 Schaltflaechen je Seite, das Loeschen einen Daumen breit neben dem
- * Bearbeiten. Die Aktionen stehen jetzt dort, wo der Eingang vollstaendig
- * zu sehen ist; die Detailseite fuehrt samt Filter und Seite zurueck
- * (`state.from`). Auf breiten Schirmen bleiben sie in der Tabellenzeile —
- * dort zielt der Zeiger genau, und die Spalte kostet keine Zeile.
- *
- * Zeile 1 traegt nur den Namen, Zeile 2 Datum links und Betrag rechts. 12px
- * Kachelrand (= Abstand zwischen den Karten), rechts 16px, damit Betrag und
- * Chevron nicht am Rand kleben.
+ * Ein Eingang auf dem Telefon — die gemeinsame Zeile aus `PaymentListItem`,
+ * dieselbe wie auf der Uebersicht und der Assetseite. Aktionen stehen auf der
+ * Detailseite: Die Zeile ist eine Tippflaeche, keine Sammlung kleiner Ziele.
  */
-function PaymentCard({
+function PaymentItem({
   row,
   comparison,
   listUrl,
@@ -782,47 +790,17 @@ function PaymentCard({
   comparison: YearOverYearComparison | undefined;
   listUrl: string;
 }) {
-  const { payment, effectiveDate, companyName, currency } = row;
-  const cancelled = Boolean(payment.archived_at);
+  const { payment, effectiveDate, companyName, depotName, currency } = row;
   return (
-    <li>
-      <Link
-        to={`/eingaenge/${payment.id}`}
-        state={{ from: listUrl }}
-        className="flex items-center gap-3 rounded-lg border border-border py-3 pl-3 pr-4 outline-none transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring active:bg-accent motion-reduce:transition-none"
-      >
-        <div className="min-w-0 flex-1">
-          {/* Der Name hat die erste Zeile fuer sich: Neben dem Betrag blieb auf
-              dem Telefon kaum Platz, laengere Namen brachen nach wenigen
-              Zeichen ab. */}
-          <div className="truncate font-medium">{companyName || "—"}</div>
-          {/* Ohne Depot: Wer die Liste nach Depot filtert oder nur eines
-              fuehrt, gewinnt daraus nichts. Die Detailansicht nennt es. */}
-          <div className="mt-1 flex items-center justify-between gap-2">
-            <span className="flex min-w-0 items-center gap-2">
-              <DateText className="text-sm text-muted-foreground">
-                {formatDate(effectiveDate)}
-              </DateText>
-              {cancelled && (
-                <Badge variant="warning" className="shrink-0">
-                  Storniert
-                </Badge>
-              )}
-            </span>
-            {/* Der Betrag ist die Kernaussage der Karte und traegt deshalb mehr
-                Gewicht als der Name. Der Indikator steht wie in der Tabelle
-                links davon. */}
-            <span className="flex shrink-0 items-center gap-1.5">
-              {comparison && <YearOverYearIndicator comparison={comparison} />}
-              <AmountText
-                amount={Money.fromString(payment.net_amount, currency)}
-                className="text-lg font-semibold"
-              />
-            </span>
-          </div>
-        </div>
-        <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-      </Link>
-    </li>
+    <PaymentListItem
+      to={`/eingaenge/${payment.id}`}
+      state={{ from: listUrl }}
+      title={companyName || "—"}
+      date={formatDate(effectiveDate)}
+      depot={depotName}
+      amount={Money.fromString(payment.net_amount, currency)}
+      cancelled={Boolean(payment.archived_at)}
+      indicator={comparison && <YearOverYearIndicator comparison={comparison} />}
+    />
   );
 }

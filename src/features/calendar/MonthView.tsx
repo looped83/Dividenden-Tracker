@@ -9,6 +9,7 @@ import {
 } from "@/lib/calendar/month";
 import { dayCellLabel, longDate } from "@/lib/calendar/format";
 import type { CalendarEvent } from "@/lib/calendar/types";
+import { ListGroup } from "@/components/ui/list";
 import { EventTile } from "./AgendaView";
 
 /**
@@ -153,7 +154,7 @@ export function MonthView({
                 Keine angekündigten Zahltage an diesem Tag.
               </p>
             ) : (
-              <ul className="space-y-2">
+              <ListGroup>
                 {selectedEvents.map((event) => (
                   <li key={event.id}>
                     {/* Ohne Datum: Es steht als Ueberschrift unmittelbar
@@ -161,7 +162,7 @@ export function MonthView({
                     <EventTile event={event} onSelect={onSelect} showDate={false} />
                   </li>
                 ))}
-              </ul>
+              </ListGroup>
             )}
           </>
         )}

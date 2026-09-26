@@ -1,24 +1,18 @@
 import * as React from "react";
 import { useNavigate } from "react-router";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { StatCard } from "@/components/domain/StatCard";
+import { StatCard, StatGrid } from "@/components/domain/StatCard";
 import { AmountText } from "@/components/money/AmountText";
-import {
-  MONTH_NAMES_DE_SHORT,
-  overviewStatistics,
-  yearlyBuckets,
-  heatmapByYearMonth,
-} from "@/lib/statistics";
+import { overviewStatistics } from "@/lib/statistics";
 import { useStatisticsContext } from "./context";
 import {
   formatCountNoun,
   formatCountNumber,
-  formatIsoDate,
   formatMonthYear,
   formatPayments,
   statisticsDrillHref,
 } from "./format";
-import { CategoryBarChart, PaymentsHeatmap } from "./components/charts";
+import { YearMonthMatrix } from "./YearMonthMatrix";
+import { formatDateRange, formatYearSpan } from "@/lib/utils/formatDate";
 
 export function OverviewTab() {
   const { payments, filter } = useStatisticsContext();
@@ -27,63 +21,38 @@ export function OverviewTab() {
   const stats = React.useMemo(() => overviewStatistics(payments), [payments]);
   const { bestMonth, bestYear } = stats;
 
-  const yearData = React.useMemo(
-    () =>
-      yearlyBuckets(payments).map((bucket) => ({
-        key: String(bucket.year),
-        label: String(bucket.year),
-        value: bucket.net.toChartNumber(),
-        money: bucket.net,
-        count: bucket.count,
-        href: statisticsDrillHref(filter, { year: bucket.year }),
-      })),
-    [payments, filter],
-  );
-
-  const heatmap = React.useMemo(() => {
-    const rows = heatmapByYearMonth(payments);
-    let maxValue = 0;
-    for (const row of rows) {
-      for (const cell of row.months) {
-        const value = cell.net.toChartNumber();
-        if (value > maxValue) maxValue = value;
-      }
-    }
-    return {
-      rows: rows.map((row) => ({
-        year: row.year,
-        cells: row.months.map((month) => ({
-          month: month.month,
-          net: month.net,
-          count: month.count,
-          value: month.net.toChartNumber(),
-        })),
-      })),
-      maxValue,
-    };
-  }, [payments]);
-
   return (
     <div className="space-y-6">
       {/* Zwei Kacheln je Zeile schon auf dem Telefon — wie in der Uebersicht:
           Sechs Kennzahlen untereinander schoben Diagramm und Heatmap aus dem
           Bild. */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
+      <StatGrid columns={3}>
         <StatCard
           label="Gesamtsumme"
           value={<AmountText amount={stats.net} />}
-          comparison={formatPayments(stats.count)}
+          // Die Zahl der Zahlungen nennt „Ø Zahlung" daneben; hier steht die
+          // Breite, aus der die Summe stammt.
+          // Je eine Zeile: Mit „·" verbunden brach die Angabe in der
+          // halbbreiten Kachel mitten im Satz um (wie in der Uebersicht).
+          caption={
+            <>
+              <p>
+                {formatCountNoun(stats.distinctSecurities, "Unternehmen", "Unternehmen")}
+              </p>
+              <p>{formatCountNoun(stats.distinctDepots, "Depot", "Depots")}</p>
+            </>
+          }
           onDrillDown={() => void navigate(statisticsDrillHref(filter))}
         />
         <StatCard
           label="Ø Zahlung"
           value={<AmountText amount={stats.averagePayment} />}
-          comparison={`aus ${formatPayments(stats.count)}`}
+          caption={`aus ${formatPayments(stats.count)}`}
         />
         <StatCard
           label="Ø Monat"
           value={<AmountText amount={stats.averageMonth} />}
-          comparison={`${formatCountNumber(stats.activeMonths)} Monate`}
+          caption={`${formatCountNumber(stats.activeMonths)} Monate`}
         />
         <StatCard
           label="Bester Monat"
@@ -96,7 +65,7 @@ export function OverviewTab() {
           }
           {...(bestMonth
             ? {
-                comparison: formatMonthYear(bestMonth.year, bestMonth.month),
+                caption: formatMonthYear(bestMonth.year, bestMonth.month),
                 onDrillDown: () =>
                   void navigate(
                     statisticsDrillHref(filter, {
@@ -118,7 +87,7 @@ export function OverviewTab() {
           }
           {...(bestYear
             ? {
-                comparison: String(bestYear.year),
+                caption: String(bestYear.year),
                 onDrillDown: () =>
                   void navigate(statisticsDrillHref(filter, { year: bestYear.year })),
               }
@@ -128,49 +97,24 @@ export function OverviewTab() {
           label="Zeitraum"
           value={
             stats.firstPayDate && stats.lastPayDate ? (
-              // Eine Stufe kleiner als die Betraege — aber nur ab `sm`, und nur
-              // hier: Zwei Daten sind rund 23 Zeichen, in Kennzahlgroesse waere
-              // die Kachel als einzige zweizeilig und ihre Reihe damit hoeher
-              // als die uebrigen. Auf dem Telefon bricht der Zeitraum ohnehin
-              // um; die Zusatzzeile steht trotzdem auf derselben Hoehe wie
-              // nebenan, weil sie am Kachelboden sitzt.
-              <span className="sm:text-xl">
-                {formatIsoDate(stats.firstPayDate)} – {formatIsoDate(stats.lastPayDate)}
-              </span>
+              formatYearSpan(stats.firstPayDate, stats.lastPayDate)
             ) : (
               <span className="text-muted-foreground">—</span>
             )
           }
-          comparison={`${formatCountNoun(stats.distinctSecurities, "Unternehmen", "Unternehmen")} · ${formatCountNoun(stats.distinctDepots, "Depot", "Depots")}`}
+          caption={
+            stats.firstPayDate && stats.lastPayDate
+              ? formatDateRange(stats.firstPayDate, stats.lastPayDate)
+              : undefined
+          }
         />
-      </div>
+      </StatGrid>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Jährliche Entwicklung</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <CategoryBarChart
-            data={yearData}
-            ariaLabel="Netto-Dividenden je Jahr"
-            categoryHeader="Jahr"
-          />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Zahlungs-Heatmap</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <PaymentsHeatmap
-            rows={heatmap.rows}
-            maxValue={heatmap.maxValue}
-            monthLabels={MONTH_NAMES_DE_SHORT}
-            hrefOf={(year, month) => statisticsDrillHref(filter, { year, month })}
-          />
-        </CardContent>
-      </Card>
+      {/* Die Matrix aus Jahren und Monaten — hier trifft sich die fruehere
+          Heatmap (Toenung) mit dem frueheren Reiter „Breakdown" (Zahlen). Das
+          Jahresdiagramm stand zuvor hier **und** unter „Jahre"; es steht jetzt
+          nur noch unter „Verlauf". */}
+      <YearMonthMatrix />
     </div>
   );
 }

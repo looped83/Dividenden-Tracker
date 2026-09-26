@@ -30,5 +30,5 @@ export function useMediaQuery(query: string): boolean {
   return React.useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
-/** Tailwind-Haltepunkt `md` (>= 768px) — Tabelle statt Karten. */
+/** Tailwind-Haltepunkt `md` (>= 768px) — Tabelle statt Liste. */
 export const MD_BREAKPOINT_QUERY = "(min-width: 768px)";

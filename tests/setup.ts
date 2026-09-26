@@ -1,7 +1,8 @@
 import "@testing-library/jest-dom/vitest";
 
-// jsdom implementiert `matchMedia` nicht; Diagramm-/Reduced-Motion-Logik
-// (recharts, useReducedMotion) fragt es aber ab. Minimaler No-Op-Stub.
+// jsdom implementiert `matchMedia` nicht; recharts und `useMediaQuery` fragen es
+// aber ab. Minimaler No-Op-Stub: Jede Abfrage antwortet mit „nein" — die
+// Telefonfassung (siehe tests/unit/support/viewport.ts).
 if (typeof window !== "undefined" && typeof window.matchMedia !== "function") {
   window.matchMedia = (query: string): MediaQueryList => ({
     matches: false,

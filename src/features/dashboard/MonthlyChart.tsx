@@ -26,10 +26,10 @@ import {
   CHART_BAR_RADIUS,
   CHART_GRID_PROPS,
   CHART_MARGIN,
+  CHART_SERIES_PROPS,
   CHART_X_AXIS_PROPS,
   CHART_Y_AXIS_PROPS,
 } from "@/components/charts/chartTheme";
-import { useReducedMotion } from "@/lib/hooks/useReducedMotion";
 import { EUR, Money, formatMoney } from "@/lib/money";
 import {
   comparePeriods,
@@ -78,7 +78,6 @@ interface MonthlyChartProps {
  * Diagramm gibt es eine zugaengliche Datentabelle (§17).
  */
 export function MonthlyChart({ payments, selection, today }: MonthlyChartProps) {
-  const reducedMotion = useReducedMotion();
   const navigate = useNavigate();
   const [mode, setMode] = React.useState<ChartMode>("monthly");
   const isAll = selection === "all";
@@ -203,7 +202,7 @@ export function MonthlyChart({ payments, selection, today }: MonthlyChartProps) 
                     name="Nettodividende"
                     fill="var(--chart-1)"
                     radius={CHART_BAR_RADIUS}
-                    isAnimationActive={!reducedMotion}
+                    {...CHART_SERIES_PROPS}
                     onClick={(data) => {
                       const row = (data as unknown as { payload?: YearRow }).payload;
                       if (row) void navigate(paymentsListHref({ year: row.year }));
@@ -230,14 +229,14 @@ export function MonthlyChart({ payments, selection, today }: MonthlyChartProps) 
                     name={priorYearLabel}
                     fill="var(--chart-2)"
                     radius={CHART_BAR_RADIUS}
-                    isAnimationActive={!reducedMotion}
+                    {...CHART_SERIES_PROPS}
                   />
                   <Bar
                     dataKey="selected"
                     name={selectedYearLabel}
                     fill="var(--chart-1)"
                     radius={CHART_BAR_RADIUS}
-                    isAnimationActive={!reducedMotion}
+                    {...CHART_SERIES_PROPS}
                     onClick={(data) => {
                       const row = (data as unknown as { payload?: MonthRow }).payload;
                       if (row && !row.isFuture && typeof selection === "number") {

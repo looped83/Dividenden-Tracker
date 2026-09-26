@@ -1,8 +1,13 @@
 import { CalendarDays, ChevronLeft, ChevronRight, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils/cn";
+import { SegmentedControl, type SegmentOption } from "@/components/ui/segmented";
 import { monthNameDe } from "@/lib/statistics";
 import type { CalendarViewMode } from "./viewMode";
+
+const VIEW_OPTIONS: readonly SegmentOption<CalendarViewMode>[] = [
+  { value: "agenda", label: "Liste", icon: List },
+  { value: "month", label: "Monat", icon: CalendarDays },
+];
 
 /**
  * Bedienleiste des Kalenders: Monatsnavigation links, Wahl der Darstellung
@@ -60,65 +65,20 @@ export function CalendarToolbar({
             Heute
           </Button>
         </div>
-      ) : (
-        <span />
-      )}
+      ) : null}
 
-      <div
-        role="group"
-        aria-label="Darstellung"
-        className="flex items-center gap-1 rounded-md border border-border p-0.5"
-      >
-        {/* Die Liste steht links: Sie ist die Voreinstellung und die Ansicht,
-            mit der die meisten Wege beginnen — das Monatsraster ist der
-            Nebenweg und sitzt deshalb rechts daneben. */}
-        <ModeButton
-          active={mode === "agenda"}
-          icon={List}
-          label="Liste"
-          onClick={() => {
-            onModeChange("agenda");
-          }}
-        />
-        <ModeButton
-          active={mode === "month"}
-          icon={CalendarDays}
-          label="Monat"
-          onClick={() => {
-            onModeChange("month");
-          }}
-        />
-      </div>
+      {/* Die Liste steht links: Sie ist die Voreinstellung und die Ansicht,
+          mit der die meisten Wege beginnen — das Monatsraster ist der
+          Nebenweg und sitzt deshalb rechts daneben. */}
+      {/* Auf dem Telefon ueber die volle Breite — wie der Umschalter im
+          Statistik-Verlauf; zwei Haelften sind leichter zu treffen. */}
+      <SegmentedControl
+        label="Darstellung"
+        options={VIEW_OPTIONS}
+        value={mode}
+        onChange={onModeChange}
+        className="w-full sm:ml-auto sm:w-auto"
+      />
     </div>
-  );
-}
-
-function ModeButton({
-  active,
-  icon: Icon,
-  label,
-  onClick,
-}: {
-  active: boolean;
-  icon: typeof CalendarDays;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={cn(
-        "inline-flex min-h-9 items-center gap-1.5 rounded px-2.5 text-sm font-medium outline-none",
-        "pointer-coarse:min-h-11 focus-visible:ring-2 focus-visible:ring-ring",
-        active
-          ? "bg-accent text-accent-foreground"
-          : "text-muted-foreground hover:text-foreground",
-      )}
-    >
-      <Icon className="size-4" aria-hidden />
-      {label}
-    </button>
   );
 }

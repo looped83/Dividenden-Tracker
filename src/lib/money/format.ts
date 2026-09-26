@@ -48,6 +48,23 @@ export function formatMoney(money: Money, locale = "de-DE"): string {
 }
 
 /**
+ * Betrag ohne Waehrungszeichen: „1.234,56". Fuer dichte Tabellen, in denen
+ * die Waehrung einmal fuer alle Zellen genannt wird — wie an den
+ * Diagrammachsen (UX_AND_DESIGN_SYSTEM.md §3). Sonst immer `formatMoney`.
+ */
+export function formatAmount(money: Money, locale = "de-DE"): string {
+  const formatter = numberFormat(
+    `amount|${locale}`,
+    () =>
+      new Intl.NumberFormat(locale, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }),
+  );
+  return formatter.format(money.toStringValue() as unknown as number);
+}
+
+/**
  * Waehrungszeichen eines ISO-Codes in der Anzeigesprache — „€" fuer EUR,
  * „$" fuer USD. Faellt die Laufzeit auf den Code zurueck (unbekannte oder
  * zeichenlose Waehrung), steht eben dieser da; erfunden wird nichts.
@@ -68,6 +85,10 @@ export function currencySymbol(currency: string, locale = "de-DE"): string {
  * kaufmaennisch auf `fractionDigits` Nachkommastellen gerundet. `value` ist
  * bereits in Prozentpunkten skaliert (z. B. 12.3 fuer "12,3 Prozent"),
  * passend zu den Kennzahlformeln in CALCULATION_RULES.md Paragraph 6 (u. a. "x 100").
+ *
+ * Zwischen Zahl und Zeichen steht ein geschuetztes Leerzeichen — wie beim
+ * Betrag, den `Intl` ebenso setzt. Mit einem gewoehnlichen brach „5,11 %" in
+ * einer schmalen Kachel zwischen Zahl und Prozentzeichen um.
  */
 export function formatPercent(
   value: DecimalInstance,
@@ -86,7 +107,7 @@ export function formatPercent(
   const formattedNumber = formatter.format(
     rounded.toFixed(fractionDigits) as unknown as number,
   );
-  return formattedNumber + " %";
+  return formattedNumber + "\u00A0%";
 }
 
 /** Darstellung eines fehlenden Vergleichswerts (R-6.6/6.9/6.11: Gedankenstrich, nie 0 oder unendlich). */
