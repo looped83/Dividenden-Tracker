@@ -6,9 +6,7 @@ import * as React from "react";
 import { createHashRouter, Navigate, useLocation, useParams } from "react-router";
 import { AppShell } from "@/app/AppShell";
 import { NotFoundPage } from "@/app/NotFoundPage";
-import { RequireAuth } from "@/app/auth/RequireAuth";
 import { AuthPageSkeleton } from "@/components/layout/PageSkeleton";
-import { LoginPage } from "@/features/auth/LoginPage";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
 import { routeChunks } from "@/app/routeChunks";
 
@@ -20,11 +18,15 @@ import { routeChunks } from "@/app/routeChunks";
  * server-seitiges SPA-Fallback fuer direkt aufgerufene/neu geladene Routen
  * (DECISIONS.md D-030). URLs haben dadurch die Form `/#/login` statt `/login`.
  *
- * Nachgeladen wird alles ausser dem Geruest, der Anmeldung und der Uebersicht:
- * Diese drei entscheiden den ersten Bildschirm, alles andere waere Ballast im
- * Startpaket. `React.lazy` statt der `lazy`-Route-Eigenschaft, weil der
- * Ladezustand so sichtbar bleibt (Suspense-Rahmen in der App-Huelle) statt die
- * Navigation stumm zu verzoegern.
+ * Nachgeladen wird alles ausser dem Geruest und der Uebersicht: Beide
+ * entscheiden den ersten Bildschirm, alles andere waere Ballast im Startpaket.
+ * Auch die Anmeldung wird nachgeladen — sie zieht Formular- und
+ * Pruefbibliotheken (react-hook-form, zod) nach sich, und wer die installierte
+ * App oeffnet, ist fast immer schon angemeldet.
+ *
+ * `React.lazy` statt der `lazy`-Route-Eigenschaft, weil der Ladezustand so
+ * sichtbar bleibt (Suspense-Rahmen in der App-Huelle) statt die Navigation
+ * stumm zu verzoegern.
  *
  * Die `import()`-Aufrufe stehen in `routeChunks.ts`, damit das Vorausladen der
  * Navigation dieselben Teile anfordert wie die Routentabelle.
@@ -107,6 +109,9 @@ const BackupPage = React.lazy(async () => ({
 const MorePage = React.lazy(async () => ({
   default: (await routeChunks.more()).MorePage,
 }));
+const LoginPage = React.lazy(async () => ({
+  default: (await routeChunks.login()).LoginPage,
+}));
 const RegisterPage = React.lazy(async () => ({
   default: (await routeChunks.register()).RegisterPage,
 }));
@@ -138,17 +143,16 @@ function RedirectToAsset(): React.ReactElement {
 }
 
 export const router = createHashRouter([
-  { path: "/login", element: <LoginPage /> },
+  { path: "/login", element: standalone(<LoginPage />) },
   { path: "/registrieren", element: standalone(<RegisterPage />) },
   { path: "/passwort-vergessen", element: standalone(<ResetPasswordRequestPage />) },
   { path: "/passwort-zuruecksetzen", element: standalone(<ResetPasswordConfirmPage />) },
   {
     path: "/",
-    element: (
-      <RequireAuth>
-        <AppShell />
-      </RequireAuth>
-    ),
+    // Die Anmeldepruefung sitzt in der Huelle um den Inhalt (AppShell), nicht
+    // um die Huelle: So steht die Navigation sofort, waehrend supabase-js die
+    // Sitzung prueft bzw. ein abgelaufenes Token erneuert.
+    element: <AppShell />,
     children: [
       { index: true, element: <DashboardPage /> },
       { path: "eingaenge", element: <PaymentsPage /> },

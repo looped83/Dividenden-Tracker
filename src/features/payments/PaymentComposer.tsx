@@ -2,17 +2,37 @@
    Anbieter und Hook gehoeren zusammen; die Trennung in zwei Dateien braechte
    nur einen Import mehr. Dieselbe Ausnahme nutzt ToastProvider.tsx. */
 import * as React from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Skeleton } from "@/components/ui/skeleton";
 
-// Das Formular haengt an Formular-, Waehrungs- und Datenschicht und wiegt
-// entsprechend. Nachgeladen faellt es aus dem Startpaket heraus — geoeffnet
-// wird es ohnehin erst auf Klick (ARCHITECTURE.md §6.1).
-const PaymentForm = React.lazy(async () => ({
-  default: (await import("@/features/payments/PaymentForm")).PaymentForm,
+// Dialog und Formular haengen an Radix, Formular-, Waehrungs- und Datenschicht
+// und wiegen entsprechend. Nachgeladen fallen sie aus dem Startpaket heraus —
+// geoeffnet wird das Overlay ohnehin erst auf Klick (ARCHITECTURE.md §6.1).
+function loadDialog() {
+  return import("@/features/payments/PaymentComposerDialog");
+}
+
+const PaymentComposerDialog = React.lazy(async () => ({
+  default: (await loadDialog()).PaymentComposerDialog,
 }));
 
-const ComposerContext = React.createContext<(() => void) | null>(null);
+/**
+ * Holt Dialog und Formular, sobald sich die Absicht zeigt (Zeigen,
+ * Fokussieren) — bis zum Klick sind beide dann meist schon da, und das
+ * Overlay erscheint ohne Wartezeit. Fehler bleiben still: Der Klick laedt
+ * regulaer nach.
+ */
+function prefetchComposer(): void {
+  void loadDialog().catch(() => undefined);
+  void import("@/features/payments/PaymentForm").catch(() => undefined);
+}
+
+/** Eigenschaften einer Schaltflaeche, die das Overlay oeffnet. */
+interface NewPaymentTrigger {
+  onClick: () => void;
+  onPointerEnter: () => void;
+  onFocus: () => void;
+}
+
+const ComposerContext = React.createContext<NewPaymentTrigger | null>(null);
 
 /**
  * Öffnet das Erfassungsformular als Overlay über der aktuellen Seite.
@@ -31,55 +51,46 @@ const ComposerContext = React.createContext<(() => void) | null>(null);
  */
 export function PaymentComposerProvider({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = React.useState(false);
-  const openComposer = React.useCallback(() => {
-    setOpen(true);
-  }, []);
+  // Einmal geoeffnet, bleibt der Dialog eingehaengt: So laeuft beim Schliessen
+  // die Ausblendung, und ein zweites Oeffnen braucht kein Nachladen.
+  const [requested, setRequested] = React.useState(false);
+
+  const trigger = React.useMemo<NewPaymentTrigger>(
+    () => ({
+      onClick: () => {
+        setRequested(true);
+        setOpen(true);
+      },
+      onPointerEnter: prefetchComposer,
+      onFocus: prefetchComposer,
+    }),
+    [],
+  );
 
   return (
-    <ComposerContext.Provider value={openComposer}>
+    <ComposerContext.Provider value={trigger}>
       {children}
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Neue Dividende</DialogTitle>
-          </DialogHeader>
-          <React.Suspense
-            fallback={
-              <div className="space-y-4" aria-busy="true">
-                <span className="sr-only">Formular wird geladen …</span>
-                <Skeleton className="h-11 w-full" />
-                <Skeleton className="h-11 w-full" />
-                <Skeleton className="h-11 w-2/3" />
-              </div>
-            }
-          >
-            {/* Erst beim Öffnen einhängen: Ein geschlossener Dialog soll weder
-                Stammdaten laden noch ein Formular vorhalten. */}
-            {open && (
-              <PaymentForm
-                onDone={() => {
-                  setOpen(false);
-                }}
-                onCancel={() => {
-                  setOpen(false);
-                }}
-              />
-            )}
-          </React.Suspense>
-        </DialogContent>
-      </Dialog>
+      {requested && (
+        // Ohne Platzhalter: Bis der Dialog geladen ist, vergehen nach dem
+        // Vorausladen praktisch null Millisekunden; ein eigener Rahmen davor
+        // bliebe hoechstens als Flackern sichtbar.
+        <React.Suspense fallback={null}>
+          <PaymentComposerDialog open={open} onOpenChange={setOpen} />
+        </React.Suspense>
+      )}
     </ComposerContext.Provider>
   );
 }
 
 /**
- * Öffnet das Overlay. Steht nur innerhalb der App-Hülle zur Verfügung — dort,
- * wo es auch etwas zu überlagern gibt.
+ * Eigenschaften fuer die Schaltflaeche „Neue Dividende": oeffnet das Overlay
+ * und laedt es beim Zeigen oder Fokussieren vorab. Steht nur innerhalb der
+ * App-Hülle zur Verfügung — dort, wo es auch etwas zu überlagern gibt.
  */
-export function useNewPayment(): () => void {
-  const open = React.useContext(ComposerContext);
-  if (!open) {
-    throw new Error("useNewPayment benötigt den PaymentComposerProvider.");
+export function useNewPaymentTrigger(): NewPaymentTrigger {
+  const trigger = React.useContext(ComposerContext);
+  if (!trigger) {
+    throw new Error("useNewPaymentTrigger benötigt den PaymentComposerProvider.");
   }
-  return open;
+  return trigger;
 }

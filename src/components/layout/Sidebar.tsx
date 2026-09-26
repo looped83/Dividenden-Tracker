@@ -3,7 +3,7 @@ import { Plus } from "lucide-react";
 import { PRIMARY_NAV_ITEMS } from "@/app/navigation";
 import { prefetchProps } from "@/app/routeChunks";
 import { Button } from "@/components/ui/button";
-import { useNewPayment } from "@/features/payments/PaymentComposer";
+import { useNewPaymentTrigger } from "@/features/payments/PaymentComposer";
 import { cn } from "@/lib/utils/cn";
 
 /**
@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils/cn";
  * mobile Optimierung) vollstaendig ausgebaut.
  */
 export function Sidebar() {
-  const newPayment = useNewPayment();
+  const newPayment = useNewPaymentTrigger();
   return (
     <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-card lg:flex">
       <div className="flex h-16 items-center px-6">
@@ -26,7 +26,7 @@ export function Sidebar() {
           erreichbar. Auf dieser Breite oeffnet sie ein Overlay ueber der
           aktuellen Seite, statt sie zu verlassen. */}
       <div className="px-3 pb-3">
-        <Button className="w-full" onClick={newPayment}>
+        <Button className="w-full" {...newPayment}>
           <Plus aria-hidden /> Neue Dividende
         </Button>
       </div>
@@ -61,7 +61,7 @@ export function Sidebar() {
  * adaptive Sidebar (UX_AND_DESIGN_SYSTEM.md #4 "iPad").
  */
 export function CompactSidebar() {
-  const newPayment = useNewPayment();
+  const newPayment = useNewPaymentTrigger();
   return (
     <aside className="hidden w-16 shrink-0 flex-col items-center border-r border-border bg-card py-4 md:flex lg:hidden">
       {/* Gegenstueck zur hervorgehobenen Erfassen-Aktion der Bottom-Navigation. */}
@@ -70,7 +70,7 @@ export function CompactSidebar() {
         className="mb-3 rounded-full"
         title="Neue Dividende"
         aria-label="Neue Dividende erfassen"
-        onClick={newPayment}
+        {...newPayment}
       >
         <Plus className="size-5" aria-hidden />
       </Button>

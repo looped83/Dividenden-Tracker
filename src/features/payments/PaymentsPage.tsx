@@ -21,7 +21,7 @@ import {
   type FilterSortOption,
 } from "@/components/ui/filter-bar";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { useNewPayment } from "@/features/payments/PaymentComposer";
+import { useNewPaymentTrigger } from "@/features/payments/PaymentComposer";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -87,7 +87,7 @@ const SORT_OPTIONS: readonly FilterSortOption[] = [
 
 export function PaymentsPage() {
   const { notify } = useToast();
-  const newPayment = useNewPayment();
+  const newPayment = useNewPaymentTrigger();
   const { data: depots = [] } = useDepots();
   const { data: securities = [] } = useSecurities();
 
@@ -345,7 +345,7 @@ export function PaymentsPage() {
       <PageHeader
         title="Dividenden"
         actions={
-          <Button className="hidden md:inline-flex" onClick={newPayment}>
+          <Button className="hidden md:inline-flex" {...newPayment}>
             <Plus /> Neue Dividende
           </Button>
         }

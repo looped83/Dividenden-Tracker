@@ -342,9 +342,20 @@ Details fachlich in IMPORT_SPEC.md; architektonisch:
 
 ### 6.1 Ladeverhalten der Bereiche
 
-- **Nachgeladen wird alles außer Hülle, Anmeldung und Übersicht.** Diese drei entscheiden den
-  ersten Bildschirm, alles andere wäre Ballast im Startpaket (`React.lazy` in `app/router.tsx`;
-  der Rauchtest „das Startpaket bleibt schlank" hält die Grenze fest).
+- **Nachgeladen wird alles außer Hülle und Übersicht.** Beide entscheiden den ersten
+  Bildschirm, alles andere wäre Ballast im Startpaket (`React.lazy` in `app/router.tsx`; der
+  Rauchtest „das Startpaket bleibt schlank" hält die Grenze fest). Auch die Anmeldung wird
+  nachgeladen: Sie zieht react-hook-form und zod nach sich (≈ 28 kB gzip), und wer die
+  installierte App öffnet, ist fast immer schon angemeldet. Ebenso das Erfassungs-Overlay
+  (`PaymentComposerDialog`, Radix-Dialog ≈ 12 kB gzip): Es wird beim ersten Öffnen eingehängt
+  und beim Zeigen auf bzw. Fokussieren von „Neue Dividende" vorab geladen.
+- **Die Anmeldeprüfung umschließt den Inhalt, nicht die Hülle** (`RequireAuth` in
+  `AppShell`). Nach längerer Pause erneuert supabase-js beim Start zuerst das Token über das
+  Netz; währenddessen stehen Navigation und `PageSkeleton` bereits. Die Navigation zeigt keine
+  Daten, und geschützte Seiten samt ihren Abfragen hängen erst mit gültiger Sitzung ein.
+- **Dunkles Design vor dem ersten Zeichnen:** Ein Inline-Skript in `index.html` setzt `.dark`,
+  bevor das Startpaket läuft (sonst weißer Blitz bei jedem Start). Die CSP gibt genau dieses
+  Skript per Hash frei (SECURITY_MODEL.md §7).
 - **Die `import()`-Aufrufe stehen gebündelt in `app/routeChunks.ts`**, nicht in der
   Routentabelle. Grund: Dieselbe Aufrufstelle bedeutet dasselbe Modul in der Registry des
   Browsers — zwei Aufrufstellen ergäben zwei Teile, und das Vorausladen liefe ins Leere.
