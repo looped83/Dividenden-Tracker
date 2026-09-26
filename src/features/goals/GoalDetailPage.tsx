@@ -1,25 +1,26 @@
 import * as React from "react";
 import { Link, useNavigate, useParams } from "react-router";
-import { ArrowLeft, ExternalLink, Pencil, Target, Trash2 } from "lucide-react";
+import { ExternalLink, Pencil, Target, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { DetailBackLink, DetailHeader } from "@/components/layout/DetailHeader";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { refDateFromDate } from "@/lib/statistics";
 import { computeGoalProgress } from "@/lib/goals";
 import { useDeleteGoal, useGoal, useGoalProgressPayments } from "./hooks";
 import { GoalProgressBar } from "./GoalProgressBar";
-import { GoalTypeLabel, GoalTypeMark } from "./GoalTypeMark";
+import { GoalTypeMark } from "./GoalTypeMark";
 import { GoalFormDialog } from "./GoalFormDialog";
 import { DeleteGoalDialog } from "./DeleteGoalDialog";
 import {
-  achievementText,
   drillDownHref,
   goalDisplayTitle,
+  goalTypeBadgeLabel,
   money,
-  remainderText,
+  startsAtLabel,
   statusLabel,
   statusTone,
   timeProgressText,
@@ -52,17 +53,11 @@ export function GoalDetailPage() {
 
   const goal = goalQuery.data ?? null;
 
-  const backLink = (
-    <Button asChild variant="ghost" size="sm" className="-ml-3 w-fit">
-      <Link to="/ziele">
-        <ArrowLeft aria-hidden /> Zur Zielübersicht
-      </Link>
-    </Button>
-  );
+  const backLink = <DetailBackLink to="/ziele" label="Zur Zielübersicht" />;
 
   if (goalQuery.isLoading || paymentsLoading) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-6">
         {backLink}
         <Card>
           <CardContent className="space-y-4 p-4 sm:p-6" aria-busy="true">
@@ -78,7 +73,7 @@ export function GoalDetailPage() {
 
   if (goalQuery.isError || !goal) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-6">
         {backLink}
         <EmptyState
           icon={Target}
@@ -114,99 +109,101 @@ export function GoalDetailPage() {
     });
   };
 
-  return (
-    <div className="space-y-4">
-      {backLink}
+  // Kein eigener Wert fuer die Zielerreichung: Den Prozentsatz nennt der
+  // Balken, und „Noch bis zum Ziel: Noch … bis zum Ziel" sagte dasselbe zweimal.
+  const remainder =
+    progress.status === "exceeded"
+      ? { label: "Übertroffen um", value: money(progress.overshoot) }
+      : { label: "Noch bis zum Ziel", value: money(progress.remaining) };
 
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex items-start gap-3">
-          <GoalTypeMark goal={goal} className="mt-0.5" />
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-xl font-semibold tracking-tight">
-                {goalDisplayTitle(goal)}
-              </h1>
-              <Badge variant={badgeVariantByTone[tone]}>
-                {statusLabel(progress.status)}
-              </Badge>
-            </div>
-            <GoalTypeLabel goal={goal} />
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setEditOpen(true);
-            }}
-          >
-            <Pencil aria-hidden /> Bearbeiten
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-negative hover:text-negative"
-            onClick={() => {
-              setDeleteError(null);
-              setDeleteOpen(true);
-            }}
-          >
-            <Trash2 aria-hidden /> Löschen
-          </Button>
-        </div>
-      </div>
+  return (
+    <div className="space-y-6">
+      <DetailHeader
+        back={backLink}
+        actions={
+          <>
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label="Bearbeiten"
+              onClick={() => {
+                setEditOpen(true);
+              }}
+            >
+              <Pencil />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label="Löschen"
+              onClick={() => {
+                setDeleteError(null);
+                setDeleteOpen(true);
+              }}
+            >
+              <Trash2 />
+            </Button>
+          </>
+        }
+        leading={<GoalTypeMark goal={goal} className="mt-0.5" />}
+        title={goalDisplayTitle(goal)}
+        badge={
+          <Badge variant={badgeVariantByTone[tone]}>{statusLabel(progress.status)}</Badge>
+        }
+        // Die Zielart als Text (nur hier; Karte und Uebersicht tragen sie als
+        // Zeichen), dazu wie weit der Zeitraum ist.
+        subtitle={
+          <>
+            <span>{goalTypeBadgeLabel(goal)}</span>
+            <span>·</span>
+            <span>{isUpcoming ? startsAtLabel(goal) : timeProgressText(progress)}</span>
+          </>
+        }
+      />
 
       <Card>
         <CardContent className="space-y-6 p-4 sm:p-6">
           {!isUpcoming && <GoalProgressBar progress={progress} />}
 
-          <dl className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
+          {/* Zwei Spalten schon auf dem Telefon: Vier Werte untereinander
+              fuellten den halben Bildschirm. */}
+          <dl className="grid grid-cols-2 gap-x-4 gap-y-4">
             <div>
               <dt className="text-xs text-muted-foreground">Zielbetrag</dt>
               <dd className="tabular-nums text-lg font-semibold">
                 {money(progress.target)}
               </dd>
             </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">Tatsächlich erhalten</dt>
-              <dd className="tabular-nums text-lg font-semibold">
-                {money(progress.actual)}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">Zielerreichung</dt>
-              <dd className="tabular-nums text-lg font-semibold">
-                {achievementText(progress.percent)}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">
-                {progress.status === "exceeded" ? "Übertroffen um" : "Noch bis zum Ziel"}
-              </dt>
-              <dd className="tabular-nums text-lg font-semibold">
-                {remainderText(progress)}
-              </dd>
-            </div>
+            {!isUpcoming && (
+              <>
+                <div>
+                  <dt className="text-xs text-muted-foreground">Erhalten</dt>
+                  <dd className="tabular-nums text-lg font-semibold">
+                    {money(progress.actual)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-muted-foreground">{remainder.label}</dt>
+                  <dd className="tabular-nums text-lg font-semibold">
+                    {remainder.value}
+                  </dd>
+                </div>
+              </>
+            )}
           </dl>
 
-          <p className="text-sm text-muted-foreground">{timeProgressText(progress)}</p>
-
-          <div>
-            <Button
-              asChild
-              variant="outline"
-              size="sm"
-              // Das Label ist zu lang fuer schmale Viewports; Buttons sind
-              // standardmaessig whitespace-nowrap und wuerden sonst ueberstehen.
-              className="h-auto min-h-11 whitespace-normal py-2 text-left"
-            >
-              <Link to={drillDownHref(goal)}>
-                <ExternalLink aria-hidden className="shrink-0" /> Dividendeneingänge des
-                Zeitraums anzeigen
-              </Link>
-            </Button>
-          </div>
+          <Button
+            asChild
+            variant="outline"
+            // Das Label ist zu lang fuer schmale Viewports; Buttons sind
+            // standardmaessig whitespace-nowrap und wuerden sonst ueberstehen.
+            className="h-auto min-h-11 w-full whitespace-normal py-2 sm:w-auto"
+          >
+            <Link to={drillDownHref(goal)}>
+              <ExternalLink aria-hidden className="shrink-0" /> Eingänge des Zeitraums
+              anzeigen
+            </Link>
+          </Button>
 
           {goal.note && (
             <div>
@@ -215,7 +212,7 @@ export function GoalDetailPage() {
             </div>
           )}
 
-          <dl className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2 border-t border-border pt-4 text-xs text-muted-foreground">
+          <dl className="grid grid-cols-2 gap-3 border-t border-border pt-4 text-xs text-muted-foreground sm:gap-4">
             <div>
               <dt>Erstellt</dt>
               <dd>{formatTimestamp(goal.createdAt)}</dd>

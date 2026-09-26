@@ -19,7 +19,7 @@ const EMPTY_TEXT: Record<TimeStatus, string> = {
  * Adresse benennt, was man gerade sieht.
  */
 export function GoalsTab({ status }: { status: TimeStatus }) {
-  const { byStatus, onEdit, onDelete } = useGoalsContext();
+  const { byStatus } = useGoalsContext();
   const items = byStatus[status];
 
   if (items.length === 0) {
@@ -29,12 +29,7 @@ export function GoalsTab({ status }: { status: TimeStatus }) {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
       {items.map((progress) => (
-        <GoalCard
-          key={progress.goal.id}
-          progress={progress}
-          onEdit={onEdit}
-          onDelete={onDelete}
-        />
+        <GoalCard key={progress.goal.id} progress={progress} />
       ))}
     </div>
   );

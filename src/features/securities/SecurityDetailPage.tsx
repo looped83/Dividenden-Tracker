@@ -1,11 +1,12 @@
 import * as React from "react";
-import { Link, useParams } from "react-router";
-import { ArrowLeft, Briefcase, ChevronRight, ShieldAlert } from "lucide-react";
+import { Link, useNavigate, useParams } from "react-router";
+import { Archive, Briefcase, Pencil, RotateCcw, ShieldAlert, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { PageHeader } from "@/components/layout/PageHeader";
+import { DetailBackLink, DetailHeader } from "@/components/layout/DetailHeader";
+import { ListGroup } from "@/components/ui/list";
 import { PageSkeleton } from "@/components/layout/PageSkeleton";
 import { StatCard, StatGrid } from "@/components/domain/StatCard";
 import { AmountText } from "@/components/money/AmountText";
@@ -27,15 +28,25 @@ import {
   CategoryBarChart,
   type CategoryDatum,
 } from "@/features/statistics/components/charts";
-import { useSecurities, useSecuritySnapshots } from "@/features/securities/hooks";
+import {
+  useArchiveSecurity,
+  useSecurities,
+  useSecuritySnapshots,
+} from "@/features/securities/hooks";
+import { SecurityFormDialog } from "@/features/securities/SecurityFormDialog";
+import { DeleteSecurityDialog } from "@/features/securities/DeleteSecurityDialog";
+import { PaymentListItem } from "@/features/payments/PaymentListItem";
 import { PositionCard } from "@/features/securities/PositionCard";
 import { latestAsOf, statusOf } from "@/features/securities/snapshots";
 import { useDepots } from "@/features/depots/hooks";
 import { deriveDataQuality } from "@/features/securities/dataQuality";
 import { formatDate } from "@/features/payments/paymentDisplay";
 
-/** Wie viele Zahlungen die Seite direkt zeigt, bevor sie in die Liste verweist. */
-const RECENT_LIMIT = 10;
+/**
+ * Wie viele Zahlungen die Seite direkt zeigt — so viele wie die Uebersicht.
+ * Die ganze Liste liegt einen Tipp entfernt.
+ */
+const RECENT_LIMIT = 5;
 
 /**
  * Detailseite eines Assets.
@@ -58,6 +69,10 @@ const RECENT_LIMIT = 10;
  */
 export function SecurityDetailPage() {
   const { id = "" } = useParams();
+  const navigate = useNavigate();
+  const archiveSecurity = useArchiveSecurity();
+  const [editOpen, setEditOpen] = React.useState(false);
+  const [deleteOpen, setDeleteOpen] = React.useState(false);
   const { payments, isLoading } = useStatisticsData();
   const { data: securities = [], isLoading: securitiesLoading } = useSecurities();
   const { data: snapshots = [] } = useSecuritySnapshots();
@@ -133,13 +148,7 @@ export function SecurityDetailPage() {
   // Ziel ist die Assetliste statt `history.back()`: Die Seite wird auch aus der
   // Statistik und von Zahlungen aus erreicht, und ein per Lesezeichen
   // geoeffneter Aufruf haette keine Vorgeschichte.
-  const backLink = (
-    <Button asChild variant="ghost" size="sm" className="-ml-3 w-fit">
-      <Link to="/depot">
-        <ArrowLeft aria-hidden /> Zum Depot
-      </Link>
-    </Button>
-  );
+  const backLink = <DetailBackLink to="/depot" label="Zum Depot" />;
 
   if (isLoading || securitiesLoading) {
     return (
@@ -172,21 +181,56 @@ export function SecurityDetailPage() {
   const quality = deriveDataQuality(security);
   const archived = Boolean(security.archived_at);
 
+  const identity = [security.ticker, security.isin]
+    .filter((part): part is string => Boolean(part?.trim()))
+    .join(" · ");
+
   return (
     <div className="space-y-6">
-      {backLink}
-      <PageHeader
-        title={
-          <span className="flex flex-wrap items-center gap-2">
-            {security.name}
-            {archived && <Badge variant="warning">Archiviert</Badge>}
-          </span>
-        }
+      {/* Bearbeiten, Archivieren und (nur archiviert) Loeschen stehen hier,
+          nicht mehr in jeder Zeile der Assetliste — dasselbe Muster wie bei
+          einem Dividendeneingang. */}
+      <DetailHeader
+        back={backLink}
         actions={
-          <Button variant="outline" asChild>
-            <Link to={`/eingaenge?security=${id}`}>Alle Eingänge</Link>
-          </Button>
+          <>
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label="Bearbeiten"
+              onClick={() => {
+                setEditOpen(true);
+              }}
+            >
+              <Pencil />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label={archived ? "Reaktivieren" : "Archivieren"}
+              onClick={() =>
+                void archiveSecurity.mutateAsync({ id: security.id, archived })
+              }
+            >
+              {archived ? <RotateCcw /> : <Archive />}
+            </Button>
+            {archived && (
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label="Endgültig löschen"
+                onClick={() => {
+                  setDeleteOpen(true);
+                }}
+              >
+                <Trash2 />
+              </Button>
+            )}
+          </>
         }
+        title={security.name}
+        badge={archived ? <Badge variant="warning">Archiviert</Badge> : undefined}
+        subtitle={identity || undefined}
       />
 
       {stats.count === 0 ? (
@@ -345,54 +389,50 @@ export function SecurityDetailPage() {
 
       {recent.length > 0 && (
         <Card>
-          <CardHeader>
+          {/* Kopf wie „Letzte Eingänge" auf der Uebersicht: der Weg zur ganzen
+              Liste rechts neben der Ueberschrift. */}
+          <CardHeader className="flex-row items-center justify-between gap-3">
             <CardTitle>Letzte Eingänge</CardTitle>
+            <Button asChild variant="ghost" size="sm" className="-my-2 -mr-3 shrink-0">
+              <Link to={`/eingaenge?security=${id}`}>
+                Alle {formatCountNumber(stats.count)}
+              </Link>
+            </Button>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <ul className="divide-y divide-border">
-              {recent.map((payment) => {
-                const shifted = payment.payDate !== payment.actualPayDate;
-                return (
-                  <li key={payment.id}>
-                    <Link
-                      to={`/eingaenge/${payment.id}`}
-                      className="flex items-center justify-between gap-3 rounded-sm py-2 outline-none hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      <span className="min-w-0">
-                        <DateText className="text-sm">
-                          {formatDate(payment.payDate)}
-                        </DateText>
-                        {shifted && (
-                          <span className="block text-xs text-muted-foreground">
-                            tatsächlich {formatDate(payment.actualPayDate)}
-                          </span>
-                        )}
-                        <span className="block text-xs text-muted-foreground">
-                          {depotName(payment.depotId)}
-                        </span>
-                      </span>
-                      <span className="flex shrink-0 items-center gap-1">
-                        <AmountText amount={payment.netAmount} className="font-medium" />
-                        <ChevronRight
-                          className="size-4 text-muted-foreground"
-                          aria-hidden
-                        />
-                      </span>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-            {stats.count > RECENT_LIMIT && (
-              <Button variant="outline" asChild>
-                <Link to={`/eingaenge?security=${id}`}>
-                  Alle {formatCountNumber(stats.count)} Eingänge anzeigen
-                </Link>
-              </Button>
-            )}
+          <CardContent>
+            {/* Der Name stuende in jeder Zeile wie in der Ueberschrift; hier
+                ist das Datum der Titel. */}
+            <ListGroup inset>
+              {recent.map((payment) => (
+                <PaymentListItem
+                  key={payment.id}
+                  to={`/eingaenge/${payment.id}`}
+                  title={
+                    <DateText>
+                      {formatDate(payment.payDate)}
+                      {payment.payDate !== payment.actualPayDate &&
+                        ` (tatsächlich ${formatDate(payment.actualPayDate)})`}
+                    </DateText>
+                  }
+                  depot={depotName(payment.depotId)}
+                  amount={payment.netAmount}
+                />
+              ))}
+            </ListGroup>
           </CardContent>
         </Card>
       )}
+
+      <SecurityFormDialog
+        security={security}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+      />
+      <DeleteSecurityDialog
+        security={deleteOpen ? security : null}
+        onOpenChange={setDeleteOpen}
+        onDeleted={() => void navigate("/depot")}
+      />
     </div>
   );
 }

@@ -1,9 +1,10 @@
 import * as React from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Ban, ChevronDown, Pencil, RotateCcw, Trash2 } from "lucide-react";
+import { Ban, ChevronDown, Pencil, RotateCcw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageSkeleton } from "@/components/layout/PageSkeleton";
+import { DetailBackLink, DetailHeader } from "@/components/layout/DetailHeader";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -86,13 +87,7 @@ export function PaymentDetailPage() {
   // ist ein Zurueck unter dem letzten Abschnitt praktisch unauffindbar, und die
   // Ziel- und Unternehmensseiten fuehren ihn ohnehin oben. Eine Anordnung fuer
   // dieselbe Handlung statt dreier.
-  const backLink = (
-    <Button asChild variant="ghost" size="sm" className="-ml-3 w-fit">
-      <Link to={listUrl}>
-        <ArrowLeft aria-hidden /> Zu den Dividenden
-      </Link>
-    </Button>
-  );
+  const backLink = <DetailBackLink to={listUrl} label="Zu den Dividenden" />;
 
   if (isLoading) {
     return (
@@ -182,73 +177,76 @@ export function PaymentDetailPage() {
 
   return (
     <div className="space-y-6">
-      {/* Die Aktionen stehen in der Zeile des Rueckwegs oben rechts: Unter
-          dem Titel rutschten sie auf dem Telefon in eine eigene Zeile, und
-          der Titel musste sich den Platz mit ihnen teilen. */}
-      <div className="flex items-center justify-between gap-2">
-        {backLink}
-        <div className="flex shrink-0 items-center gap-2">
-          {!cancelled && (
-            <Button variant="outline" size="icon" asChild aria-label="Bearbeiten">
-              <Link
-                to={`/eingaenge/${payment.id}/bearbeiten`}
-                state={from ? { from } : undefined}
-              >
-                <Pencil />
-              </Link>
-            </Button>
-          )}
-          {cancelled ? (
-            <Button
-              variant="outline"
-              size="icon"
-              aria-label="Reaktivieren"
-              onClick={() => {
-                void unarchivePayment.mutateAsync(payment.id);
-              }}
-            >
-              <RotateCcw />
-            </Button>
-          ) : (
-            <Button
-              variant="outline"
-              size="icon"
-              aria-label="Stornieren"
-              onClick={() => {
-                setStornoReason("");
-                setStornoError(null);
-                setStornoOpen(true);
-              }}
-            >
-              <Ban />
-            </Button>
-          )}
-          <Button
-            variant="outline"
-            size="icon"
-            aria-label="Dauerhaft löschen"
-            onClick={() => {
-              setDeleteError(null);
-              setDeleteOpen(true);
-            }}
-          >
-            <Trash2 />
-          </Button>
-        </div>
-      </div>
       {/* Nur der Ausnahmezustand traegt ein Abzeichen: „Aktiv" ist der
-          Normalfall und sagte nichts, was die Seite nicht ohnehin zeigt. */}
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight break-words">
-          {security?.name ?? "Dividendeneingang"}
-        </h1>
-        <div className="mt-1 flex items-center gap-2">
-          <DateText className="text-sm text-muted-foreground">
-            {formatDate(payment.pay_date)}
-          </DateText>
-          {cancelled && <Badge variant="warning">Storniert</Badge>}
-        </div>
-      </div>
+          Normalfall und sagte nichts, was die Seite nicht ohnehin zeigt. Datum,
+          Depot und Betrag stehen im Kopf — die Karte „Details" wiederholt sie
+          nicht mehr. */}
+      <DetailHeader
+        back={backLink}
+        actions={
+          <>
+            {!cancelled && (
+              <Button variant="outline" size="icon" asChild aria-label="Bearbeiten">
+                <Link
+                  to={`/eingaenge/${payment.id}/bearbeiten`}
+                  state={from ? { from } : undefined}
+                >
+                  <Pencil />
+                </Link>
+              </Button>
+            )}
+            {cancelled ? (
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label="Reaktivieren"
+                onClick={() => {
+                  void unarchivePayment.mutateAsync(payment.id);
+                }}
+              >
+                <RotateCcw />
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label="Stornieren"
+                onClick={() => {
+                  setStornoReason("");
+                  setStornoError(null);
+                  setStornoOpen(true);
+                }}
+              >
+                <Ban />
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label="Dauerhaft löschen"
+              onClick={() => {
+                setDeleteError(null);
+                setDeleteOpen(true);
+              }}
+            >
+              <Trash2 />
+            </Button>
+          </>
+        }
+        title={security?.name ?? "Dividendeneingang"}
+        badge={cancelled ? <Badge variant="warning">Storniert</Badge> : undefined}
+        subtitle={
+          <>
+            <DateText>{formatDate(payment.pay_date)}</DateText>
+            <span>·</span>
+            <span>
+              {depot?.name ?? "—"}
+              {depot?.archived_at ? " (archiviert)" : ""}
+            </span>
+          </>
+        }
+        figure={<AmountText amount={Money.fromString(payment.net_amount, currency)} />}
+      />
 
       {/* Zwei Spalten ab `lg` statt einer schmalen Saeule: Die Seite war als
           einzige auf `max-w-2xl` begrenzt und wirkte neben den uebrigen
@@ -267,7 +265,6 @@ export function PaymentDetailPage() {
             <CardTitle>Details</CardTitle>
           </CardHeader>
           <CardContent>
-            <DetailRow label="Zahlungsdatum">{formatDate(payment.pay_date)}</DetailRow>
             <DetailRow label="Unternehmen">
               {/* Von einer einzelnen Zahlung zur Entwicklung der ganzen
                 Position — die Detailseite des Unternehmens. */}
@@ -282,13 +279,6 @@ export function PaymentDetailPage() {
               ) : (
                 "—"
               )}
-            </DetailRow>
-            <DetailRow label="Depot">
-              {depot?.name ?? "—"}
-              {depot?.archived_at ? " (archiviert)" : ""}
-            </DetailRow>
-            <DetailRow label="Nettobetrag">
-              <AmountText amount={Money.fromString(payment.net_amount, currency)} />
             </DetailRow>
             <DetailRow label="Währung">{payment.original_currency}</DetailRow>
             <DetailRow label="Datenquelle">{sourceLabel(payment.source)}</DetailRow>

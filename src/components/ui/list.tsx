@@ -122,7 +122,7 @@ export function ListItemBody({
       <span className="min-w-0 flex-1">
         <span className="line-clamp-2 font-medium [overflow-wrap:anywhere]">{title}</span>
         {(meta !== undefined || trailing !== undefined) && (
-          <span className="mt-0.5 flex items-center justify-between gap-3">
+          <span className="mt-0.5 flex items-baseline justify-between gap-3">
             <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-muted-foreground">
               {meta}
             </span>

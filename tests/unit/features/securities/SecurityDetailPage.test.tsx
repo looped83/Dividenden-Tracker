@@ -71,6 +71,11 @@ vi.mock("@/features/securities/hooks", () => ({
   // diese Tests pruefen weiterhin ausschliesslich die Zahlen aus den
   // erhaltenen Eingaengen.
   useSecuritySnapshots: () => ({ data: [], isLoading: false }),
+  // Bearbeiten, Archivieren und Loeschen stehen im Kopf der Seite.
+  useArchiveSecurity: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useDeleteSecurity: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useCreateSecurity: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useUpdateSecurity: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 vi.mock("@/features/depots/hooks", () => ({
   useDepots: () => ({ data: [{ id: "dep-1", name: "Hauptdepot", archived_at: null }] }),
@@ -144,6 +149,23 @@ describe("SecurityDetailPage", () => {
     renderPage();
     const hrefs = screen.getAllByRole("link").map((l) => l.getAttribute("href"));
     expect(hrefs.some((href) => href?.startsWith("/eingaenge/pay-"))).toBe(true);
+  });
+
+  it("fuehrt von den letzten Eingaengen zur ganzen, gefilterten Liste", () => {
+    renderPage();
+    expect(screen.getByRole("link", { name: "Alle 3" })).toHaveAttribute(
+      "href",
+      `/eingaenge?security=${SECURITY_ID}`,
+    );
+  });
+
+  it("traegt Bearbeiten und Archivieren im Kopf, Loeschen erst archiviert", () => {
+    renderPage();
+    expect(screen.getByRole("button", { name: "Bearbeiten" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Archivieren" })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Endgültig löschen" }),
+    ).not.toBeInTheDocument();
   });
 
   it("meldet ein unbekanntes Asset, statt eine leere Seite zu zeigen", () => {

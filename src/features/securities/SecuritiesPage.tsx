@@ -2,18 +2,19 @@ import * as React from "react";
 import { Link } from "react-router";
 import {
   Briefcase,
+  ChevronRight,
   Pencil,
   RotateCcw,
   Trash2,
   Archive as ArchiveIcon,
 } from "lucide-react";
-import { useErrorState } from "@/lib/hooks/useErrorState";
 import { MD_BREAKPOINT_QUERY, useMediaQuery } from "@/lib/hooks/useMediaQuery";
 import { monthNameDeShort, normalizePayoutMonths } from "@/lib/statistics";
 import { SecurityImportButton } from "@/features/securities/SecurityImportDialog";
 import { PortfolioImportButton } from "@/features/securities/PortfolioImportDialog";
 import { PortfolioSummary } from "@/features/securities/PortfolioSummary";
 import { SecurityFormDialog } from "@/features/securities/SecurityFormDialog";
+import { DeleteSecurityDialog } from "@/features/securities/DeleteSecurityDialog";
 import { AmountText } from "@/components/money/AmountText";
 import { formatPercent, type DecimalInstance } from "@/lib/money";
 import { Button } from "@/components/ui/button";
@@ -26,21 +27,14 @@ import {
   FilterSort,
 } from "@/components/ui/filter-bar";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 import { formatCountNumber } from "@/lib/utils/formatNumber";
 import { formatCalendarDate } from "@/lib/utils/formatDate";
 import { compareGerman } from "@/lib/utils/compareText";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SkeletonRows } from "@/components/ui/skeleton";
+import { ListGroup, ListRow } from "@/components/ui/list";
 import { cn } from "@/lib/utils/cn";
 import { useDepots } from "@/features/depots/hooks";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -51,7 +45,6 @@ import {
 } from "@/components/ui/table";
 import {
   useArchiveSecurity,
-  useDeleteSecurity,
   useSecurities,
   useSecuritySnapshots,
 } from "@/features/securities/hooks";
@@ -102,8 +95,6 @@ export function SecuritiesPage() {
     [depots],
   );
   const archiveSecurity = useArchiveSecurity();
-  const deleteSecurity = useDeleteSecurity();
-  const { error: deleteError, showError, clearError } = useErrorState();
   const [showArchived, setShowArchived] = React.useState(false);
   const [sectorFilter, setSectorFilter] = React.useState("");
   const [currencyFilter, setCurrencyFilter] = React.useState("");
@@ -183,26 +174,19 @@ export function SecuritiesPage() {
     return sortAssetRows(filtered, effectiveSort);
   }, [rows, showArchived, sectorFilter, currencyFilter, depotFilter, effectiveSort]);
 
-  const activeFilterCount = [sectorFilter, currencyFilter, depotFilter].filter(
-    (value) => value !== "",
-  ).length;
+  const activeFilterCount = [
+    sectorFilter,
+    currencyFilter,
+    depotFilter,
+    showArchived ? "archived" : "",
+  ].filter((value) => value !== "").length;
   const hasActiveFilters = activeFilterCount > 0;
 
   const resetFilters = () => {
     setSectorFilter("");
     setCurrencyFilter("");
     setDepotFilter("");
-  };
-
-  const handleDelete = async () => {
-    if (!deleteTarget) return;
-    clearError();
-    try {
-      await deleteSecurity.mutateAsync(deleteTarget.id);
-      setDeleteTarget(null);
-    } catch (error) {
-      showError(error, "Löschen fehlgeschlagen.");
-    }
+    setShowArchived(false);
   };
 
   // Die Zeilenaktionen sind fuer Tabelle und Karte dieselben — ein Aufbau, ein
@@ -220,7 +204,6 @@ export function SecuritiesPage() {
         })
       }
       onDelete={() => {
-        clearError();
         setDeleteTarget(security);
       }}
     />
@@ -286,6 +269,21 @@ export function SecuritiesPage() {
             onChange={setDepotFilter}
             allLabel="Alle Depotkonten"
           />
+        </FilterField>
+
+        {/* Archivierte sind ein Filter wie jeder andere — dieselbe Stelle wie
+            „Stornierte" in der Dividendenliste. */}
+        <FilterField id="sec-status" label="Status">
+          <Select
+            id="sec-status"
+            value={showArchived ? "all" : ""}
+            onChange={(event) => {
+              setShowArchived(event.target.value === "all");
+            }}
+          >
+            <option value="">Ohne Archivierte</option>
+            <option value="all">Mit Archivierten</option>
+          </Select>
         </FilterField>
 
         {/* Sortierung wie in der Dividendenliste: rechts in der Leiste, vor dem
@@ -432,29 +430,16 @@ export function SecuritiesPage() {
           </TableBody>
         </Table>
       ) : (
-        <ul className="space-y-3">
+        <ListGroup>
           {visible.map((row) => (
-            <AssetCard
-              key={row.security.id}
-              row={row}
-              actions={actionsFor(row.security)}
-            />
+            <AssetItem key={row.security.id} row={row} />
           ))}
-        </ul>
+        </ListGroup>
       )}
 
-      {/* Seltener gebrauchte Nebenaktionen am Seitenende: die Liste selbst
-          soll den oberen Bereich bestimmen. */}
+      {/* Seltener gebrauchte Importe am Seitenende: die Liste selbst soll den
+          oberen Bereich bestimmen. Archivierte blendet der Filter ein. */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border pt-4">
-        <label className="flex min-h-11 items-center gap-2 text-sm text-muted-foreground">
-          <Checkbox
-            checked={showArchived}
-            onChange={(event) => {
-              setShowArchived(event.target.checked);
-            }}
-          />
-          Archivierte anzeigen
-        </label>
         <SecurityImportButton />
         <PortfolioImportButton />
       </div>
@@ -467,40 +452,12 @@ export function SecuritiesPage() {
         }}
       />
 
-      <Dialog
-        open={deleteTarget !== null}
+      <DeleteSecurityDialog
+        security={deleteTarget}
         onOpenChange={(open) => {
-          if (!open) {
-            setDeleteTarget(null);
-            clearError();
-          }
+          if (!open) setDeleteTarget(null);
         }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Asset endgültig löschen</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            {deleteTarget?.name} wird unwiderruflich entfernt und kann nicht
-            wiederhergestellt werden. Das ist nur möglich, solange keine
-            Dividendeneingänge mehr auf dieses Asset verweisen.
-          </p>
-          {deleteError && (
-            <p role="alert" className="text-sm text-negative">
-              {deleteError}
-            </p>
-          )}
-          <DialogFooter>
-            <Button
-              variant="destructive"
-              disabled={deleteSecurity.isPending}
-              onClick={() => void handleDelete()}
-            >
-              {deleteSecurity.isPending ? "Wird gelöscht …" : "Endgültig löschen"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      />
     </div>
   );
 }
@@ -589,83 +546,81 @@ function Metric({ value, detail }: { value: React.ReactNode; detail?: string | n
 }
 
 /**
- * Ein Asset auf dem Telefon. Dieselben Zahlen wie in der Tabelle, in der
- * Reihenfolge, in der sie gelesen werden: Was ist es, was ist es wert, was
- * bringt es — und was kann ich damit tun.
+ * Ein Asset auf dem Telefon: eine Zeile, die als Ganzes zur Detailseite
+ * fuehrt. Oben Name (mit Ticker) und Wert, darunter erwartete Ausschuettung
+ * und Gewinn — dieselbe Form wie eine Zeile der Statistiklisten: was es ist
+ * und was es wert ist oben, die Ableitungen darunter.
+ *
+ * Bearbeiten und Archivieren stehen auf der Detailseite. Als Symbole in jeder
+ * Karte verlaengerten sie sie um eine Zeile, und die Karte hatte drei kleine
+ * Ziele statt eines grossen — dasselbe Muster wie bei den Eingaengen. Der
+ * Anteil am Depot steht in der Tabelle; auf dem Telefon traegt die Zeile nur,
+ * was man beim Durchsehen vergleicht.
  */
-function AssetCard({ row, actions }: { row: AssetRow; actions: React.ReactNode }) {
+function AssetItem({ row }: { row: AssetRow }) {
   const { security, position } = row;
   const payout = payoutLabel(security);
-  const meta = [row.depotName, payout === "—" ? null : payout]
-    .filter(Boolean)
-    .join(" · ");
+
   return (
-    <li className="rounded-lg border border-border p-3">
-      <div className="flex items-start justify-between gap-2">
-        <AssetName row={row} />
-        {position?.marketValue && (
-          <span className="flex shrink-0 flex-col items-end">
-            <AmountText amount={position.marketValue} className="text-lg font-semibold" />
-            {position.allocationPercent && (
-              <span className="text-xs text-muted-foreground">
-                {formatPercent(position.allocationPercent, 1)} Anteil
+    <li>
+      <ListRow asChild>
+        <Link to={`/depot/${security.id}`}>
+          <span className="min-w-0 flex-1 space-y-0.5">
+            <span className="flex items-baseline justify-between gap-3">
+              <span className="min-w-0 font-medium [overflow-wrap:anywhere]">
+                {security.name}
+                {security.ticker && (
+                  <span className="ml-1.5 text-sm font-normal text-muted-foreground">
+                    {security.ticker}
+                  </span>
+                )}
+                {security.archived_at && (
+                  <Badge variant="neutral" className="ml-2 align-middle">
+                    Archiviert
+                  </Badge>
+                )}
               </span>
-            )}
+              {position?.marketValue && (
+                <AmountText
+                  amount={position.marketValue}
+                  className="shrink-0 font-semibold"
+                />
+              )}
+            </span>
+            <span className="flex items-baseline justify-between gap-3 text-sm text-muted-foreground">
+              {position ? (
+                <>
+                  <span className="min-w-0">
+                    {position.annualDividend ? (
+                      <>
+                        <AmountText amount={position.annualDividend} /> p. a.
+                        {position.dividendYield &&
+                          ` · ${formatPercent(position.dividendYield, 2)}`}
+                      </>
+                    ) : (
+                      "keine Ausschüttung erwartet"
+                    )}
+                  </span>
+                  {position.gain && (
+                    <span className="shrink-0">
+                      <AmountText amount={position.gain} showSign />
+                      {position.gainPercent &&
+                        ` · ${formatPercent(position.gainPercent, 1)}`}
+                    </span>
+                  )}
+                </>
+              ) : (
+                <span className="min-w-0 truncate">
+                  {[row.depotName, payout === "—" ? null : payout]
+                    .filter(Boolean)
+                    .join(" · ") || "—"}
+                </span>
+              )}
+            </span>
           </span>
-        )}
-      </div>
-
-      {position && (
-        <dl className="mt-3 grid grid-cols-2 gap-3 border-t border-border pt-3 text-sm">
-          <div>
-            <dt className="text-xs text-muted-foreground">Erwartet p. a.</dt>
-            <dd className="mt-0.5">
-              {position.annualDividend ? (
-                <span className="flex flex-wrap items-baseline gap-1.5">
-                  <AmountText amount={position.annualDividend} />
-                  {position.dividendYield && (
-                    <span className="text-xs text-muted-foreground">
-                      {formatPercent(position.dividendYield, 2)}
-                    </span>
-                  )}
-                </span>
-              ) : (
-                <span className="text-muted-foreground">—</span>
-              )}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-xs text-muted-foreground">Gewinn</dt>
-            <dd className="mt-0.5">
-              {position.gain ? (
-                <span className="flex flex-wrap items-baseline gap-1.5">
-                  <AmountText amount={position.gain} showSign />
-                  {position.gainPercent && (
-                    <span className="text-xs text-muted-foreground">
-                      {formatPercent(position.gainPercent, 1)}
-                    </span>
-                  )}
-                </span>
-              ) : (
-                <span className="text-muted-foreground">—</span>
-              )}
-            </dd>
-          </div>
-        </dl>
-      )}
-
-      {/* Die negativen Raender holen die Luft zurueck, die in den 44px-Touch-
-          zielen ohnehin steckt — dasselbe Raster wie in der Dividendenliste. */}
-      <div className="mt-2 flex items-center justify-between gap-2">
-        {/* Nur, wenn es etwas zu sagen gibt — ein einzelner Gedankenstrich
-            unter einer Karte ist eine Zeile ohne Inhalt. */}
-        {meta && (
-          <span className="min-w-0 truncate text-xs text-muted-foreground">{meta}</span>
-        )}
-        <div className="-my-2 -mr-2 ml-auto flex shrink-0 items-center gap-1">
-          {actions}
-        </div>
-      </div>
+          <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+        </Link>
+      </ListRow>
     </li>
   );
 }

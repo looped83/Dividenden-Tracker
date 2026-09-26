@@ -1,8 +1,7 @@
 import { Link } from "react-router";
-import { CalendarClock, Pencil, Trash2 } from "lucide-react";
+import { CalendarClock } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import type { GoalProgress } from "@/lib/goals";
 import { GoalProgressBar } from "./GoalProgressBar";
 import { GoalTypeMark } from "./GoalTypeMark";
@@ -18,13 +17,6 @@ import {
 
 interface GoalCardProps {
   progress: GoalProgress;
-  /**
-   * Bearbeiten und Loeschen. Beides fehlt auf der Uebersicht — dort gibt es die
-   * Dialoge nicht. Ohne die beiden entfaellt die Schaltflaechenzeile; alles
-   * darueber bleibt Zeile fuer Zeile dieselbe Karte.
-   */
-  onEdit?: (goalId: string) => void;
-  onDelete?: (goalId: string) => void;
 }
 
 const badgeVariantByTone = {
@@ -42,15 +34,18 @@ const badgeVariantByTone = {
  * dar (bevorstehend, aktiv, erreicht, uebertroffen, beendet und nicht
  * erreicht); Lade-, Fehler- und Leerzustaende gehoeren auf die Seite. Alle
  * Werte stammen aus der Ziel-Domaenenschicht — hier wird nichts gerechnet.
+ *
+ * **Die ganze Karte fuehrt zur Detailseite**; dort stehen Bearbeiten und
+ * Loeschen — wie bei Eingaengen und Assets. Die Schaltflaechenzeile unter
+ * jeder Karte kostete eine Zeile und gab der Karte drei Ziele statt eines.
  */
-export function GoalCard({ progress, onEdit, onDelete }: GoalCardProps) {
+export function GoalCard({ progress }: GoalCardProps) {
   const { goal, status } = progress;
   const tone = statusTone(status);
   const isUpcoming = status === "upcoming";
-  const hasActions = Boolean(onEdit ?? onDelete);
 
   return (
-    <Card className="flex flex-col">
+    <Card className="relative flex flex-col transition-colors hover:bg-accent/50 active:bg-accent motion-reduce:transition-none">
       <CardContent className="flex flex-1 flex-col gap-4 p-4 sm:p-6">
         {/* Der Titel nennt Zielart und Zeitraum bereits („Dividendenziel 2026",
             „Monatsziel Juli 2026") — eine Zeile darunter, die dasselbe noch
@@ -71,9 +66,10 @@ export function GoalCard({ progress, onEdit, onDelete }: GoalCardProps) {
             >
               {statusLabel(status)}
             </Badge>
+            {/* Der Link dehnt sich per `::after` ueber die ganze Karte. */}
             <Link
               to={`/ziele/${goal.id}`}
-              className="block rounded-sm outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+              className="block rounded-sm outline-none after:absolute after:inset-0 after:rounded-lg focus-visible:after:ring-2 focus-visible:after:ring-ring"
             >
               <h3 className="text-base font-semibold tracking-tight">
                 {goalDisplayTitle(goal)}
@@ -97,53 +93,23 @@ export function GoalCard({ progress, onEdit, onDelete }: GoalCardProps) {
         )}
 
         {/* Zwei Spalten schon auf dem Telefon — wie in der Historischen
-            Uebersicht. Untereinander brauchten zwei kurze Zahlen vier Zeilen. */}
+            Uebersicht. Untereinander brauchten zwei kurze Zahlen vier Zeilen.
+            Ein Ziel, das noch nicht begonnen hat, hat nichts erhalten; „0,00 €"
+            waere eine Zeile ohne Auskunft. */}
         <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
           <div>
             <dt className="text-xs text-muted-foreground">Zielbetrag</dt>
             <dd className="tabular-nums font-medium">{money(progress.target)}</dd>
           </div>
-          <div>
-            <dt className="text-xs text-muted-foreground">Erhalten</dt>
-            <dd className="tabular-nums font-medium">{money(progress.actual)}</dd>
-          </div>
+          {!isUpcoming && (
+            <div>
+              <dt className="text-xs text-muted-foreground">Erhalten</dt>
+              <dd className="tabular-nums font-medium">{money(progress.actual)}</dd>
+            </div>
+          )}
         </dl>
 
         {!isUpcoming && <p className="text-sm font-medium">{remainderText(progress)}</p>}
-
-        {/* „Öffnen" gab es hier zusaetzlich; der Titel fuehrt bereits dorthin,
-            und drei Schaltflaechen brachen die Zeile um. */}
-        {hasActions && (
-          // `-mb-2` neben `-ml-3`: In den Schaltflaechen steckt bereits Luft
-          // (44px Zielflaeche um eine 20px hohe Zeile). Ohne den Ausgleich sass
-          // unter der letzten Zeile sichtbar mehr Rand als an den Seiten, und
-          // die Kachel wirkte unten ausgefranst.
-          <div className="-mb-2 -ml-3 mt-auto flex flex-wrap gap-2">
-            {onEdit && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  onEdit(goal.id);
-                }}
-              >
-                <Pencil aria-hidden /> Bearbeiten
-              </Button>
-            )}
-            {onDelete && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-negative hover:text-negative"
-                onClick={() => {
-                  onDelete(goal.id);
-                }}
-              >
-                <Trash2 aria-hidden /> Löschen
-              </Button>
-            )}
-          </div>
-        )}
       </CardContent>
     </Card>
   );
