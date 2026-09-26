@@ -16,7 +16,7 @@ test("meldet an und wieder ab", async ({ page, konto }) => {
   await page.getByLabel("Passwort", { exact: true }).fill("passwort-egal");
   await page.getByRole("button", { name: "Anmelden" }).click();
 
-  await expect(page.getByRole("heading", { name: "Übersicht" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Übersicht", level: 1 })).toBeVisible();
 
   await page.goto("/#/einstellungen");
   await expect(page.getByText(`Angemeldet als ${konto.email}`)).toBeVisible();

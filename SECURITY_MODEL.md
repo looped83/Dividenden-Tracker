@@ -251,7 +251,7 @@ Mit **zwei Testnutzern A und B** gegen lokale Supabase-Instanz (Details TEST_STR
 ## Dashboard (Phase 5A)
 
 - Das Dashboard führt **keine neuen RLS-Policies** ein. Der Lesezugriff
-  (`fetchDashboardPayments`) läuft über die bestehende Policy
+  (`fetchAllPayments`, derselbe Abruf wie die Zahlungsliste) läuft über die bestehende Policy
   `dividend_payments_select_own` (`user_id = auth.uid()`); die
   Nutzertrennung ist damit serverseitig identisch zur Zahlungsliste.
 - Der Ausschluss stornierter/zurückgerollter Zahlungen (`archived_at is null`)

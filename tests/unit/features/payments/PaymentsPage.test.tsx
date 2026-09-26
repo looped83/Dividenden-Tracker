@@ -1,4 +1,12 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+  type MockInstance,
+} from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -61,6 +69,7 @@ function zahlung(overrides: Partial<PaymentListRow> = {}): PaymentListRow {
     depot_id: "d1",
     pay_date: "2026-03-10",
     net_amount: "50.00",
+    gross_amount: "50.00",
     original_currency: "EUR",
     payment_type: "regular",
     source: "manual",
@@ -93,8 +102,16 @@ function renderList(rows: PaymentListRow[], route = "/eingaenge") {
 }
 
 describe("PaymentsPage", () => {
+  // jsdom kennt kein Rollen; das Blaettern ruft es auf.
+  let scrollTo: MockInstance<typeof window.scrollTo>;
+
   beforeEach(() => {
     zahlungen.current = [];
+    scrollTo = vi.spyOn(window, "scrollTo").mockImplementation(() => undefined);
+  });
+
+  afterEach(() => {
+    scrollTo.mockRestore();
   });
 
   it("zeigt die Eingaenge mit Unternehmen und Betrag", () => {
@@ -162,15 +179,62 @@ describe("PaymentsPage", () => {
     expect(screen.getByText(/26–30 von 30/)).toBeInTheDocument();
   });
 
+  it("beginnt eine neue Seite oben", async () => {
+    const user = userEvent.setup();
+    renderList(
+      Array.from({ length: 30 }, (_, index) => zahlung({ id: `p${String(index)}` })),
+    );
+
+    await user.click(screen.getByRole("button", { name: "Weiter" }));
+
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0 });
+  });
+
+  it("oeffnet die Seite aus der Adresse — der Weg zurueck von einem Eingang endet dort", () => {
+    renderList(
+      Array.from({ length: 30 }, (_, index) => zahlung({ id: `p${String(index)}` })),
+      "/eingaenge?page=2",
+    );
+
+    expect(screen.getByText(/26–30 von 30/)).toBeInTheDocument();
+    // Beim Zurueckkehren stellt der Router die Position wieder her; die
+    // Seite darf sie nicht nach oben reissen.
+    expect(scrollTo).not.toHaveBeenCalled();
+  });
+
+  it("springt bei einem Filterwechsel auf Seite 1 zurueck", async () => {
+    const user = userEvent.setup();
+    renderList(
+      Array.from({ length: 30 }, (_, index) =>
+        zahlung({ id: `p${String(index)}`, security_id: index < 28 ? "s1" : "s2" }),
+      ),
+      "/eingaenge?page=2",
+    );
+
+    await user.selectOptions(screen.getByLabelText("Unternehmen"), "s1");
+
+    expect(screen.getByText(/1–25 von 28/)).toBeInTheDocument();
+  });
+
   it("bietet je Zeile Bearbeiten, Stornieren und Löschen — ohne Auswahl", () => {
     renderList([zahlung({ id: "a" })]);
 
     // Die Liste kennt keine Mehrfachauswahl mehr: Was zu tun ist, steht an
     // der Zeile selbst.
     expect(screen.queryByLabelText(/auswählen/)).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Bearbeiten" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Stornieren" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Dauerhaft löschen" })).toBeInTheDocument();
+    // Die Namen nennen den Eingang: 25 gleichlautende „Bearbeiten" liessen
+    // sich per Screenreader nicht auseinanderhalten.
+    expect(
+      screen.getByRole("link", { name: "Apple Inc. vom 10.03.2026 bearbeiten" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Apple Inc. vom 10.03.2026 stornieren" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: "Apple Inc. vom 10.03.2026 dauerhaft löschen",
+      }),
+    ).toBeInTheDocument();
   });
 
   it("zaehlt nur stornierte Eingaenge nicht als Bestand", () => {

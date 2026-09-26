@@ -226,8 +226,11 @@ Laufzeit aus `dividend_payments` abgeleitet (Analytics-Schicht `lib/statistics`)
   Jahresauswahl.
 - **Archivstatus (Anzeige)** — `securities.archived_at` / `depots.archived_at ≠ null` liefern das
   „Archiviert"-Label; die zugehörigen aktiven Zahlungen bleiben in allen Kennzahlen enthalten.
-- **`DashboardPaymentRow`** — reduzierte Projektion (`id, pay_date, net_amount, gross_amount,
-  security_id, depot_id, payment_type, source, created_at`) für die einmalige Übertragung.
+- **`PaymentListRow`** — die gemeinsame Projektion der Zahlungshistorie (`id, security_id,
+  depot_id, pay_date, net_amount, gross_amount, original_currency, payment_type, source,
+  import_id, archived_at, created_at, updated_at`), einmal übertragen für Liste,
+  Datenqualität und alle Auswertungen. Die Auswertungen nehmen daraus nur die aktiven Zeilen
+  (`activeAnalyticsPayments`).
 
 ## Statistik-abgeleitete Werte (Phase 5B)
 

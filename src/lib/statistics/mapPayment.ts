@@ -29,6 +29,26 @@ function toDecimalString(value: string | number): string {
   return typeof value === "string" ? value : String(value);
 }
 
+/**
+ * Die Datenbasis aller Auswertungen: nur aktive Eingaenge, geparst. Stornierte
+ * und zurueckgerollte (archivierte) Zahlungen zaehlen nirgends mit; archivierte
+ * Unternehmen und Depots bleiben ueber ihre weiterhin aktiven Zahlungen
+ * enthalten.
+ *
+ * Der Filter steht hier statt in der Abfrage, weil Auswertungen und
+ * Eingangsliste **einen** Abruf teilen — die Liste braucht die stornierten
+ * Zeilen (ARCHITECTURE.md §4.4).
+ */
+export function activeAnalyticsPayments(
+  rows: readonly (RawAnalyticsRow & { archived_at: string | null })[],
+): AnalyticsPayment[] {
+  const active: AnalyticsPayment[] = [];
+  for (const row of rows) {
+    if (row.archived_at === null) active.push(mapAnalyticsPayment(row));
+  }
+  return active;
+}
+
 export function mapAnalyticsPayment(row: RawAnalyticsRow): AnalyticsPayment {
   return {
     id: row.id,

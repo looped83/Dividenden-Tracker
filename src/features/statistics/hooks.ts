@@ -32,7 +32,7 @@ export interface StatisticsData {
 
 /**
  * Zentrale Datenbasis des Statistikbereichs. Sie nutzt dieselbe Query wie das
- * Dashboard (`useDashboardPayments`, Schluessel `["payments","dashboard"]`) —
+ * Dashboard (`useDashboardPayments`, Schluessel `PAYMENT_HISTORY_KEY`) —
  * dadurch teilen sich Dashboard und Statistik **einen** Cache-Eintrag, es
  * entsteht keine zweite Uebertragung und keine parallele Aggregation. Der
  * Ausschuettungsplan je Unternehmen wird einmal auf das effektive Datum

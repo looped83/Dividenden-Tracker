@@ -604,9 +604,9 @@ TEST_STRATEGY.md §8.1, CI-Job `e2e-app`.
 
 ### Decision
 
-Dividendenliste, Übersicht und Statistik laden die **gesamte** aktive Historie einmal in den
-Client (`fetchAllPayments` bzw. `fetchDashboardPayments`, jeweils in 1.000er-Seiten) und
-filtern, sortieren, aggregieren und blättern dort. Das bleibt so, solange ein Konto weniger als
+Dividendenliste, Übersicht und Statistik laden die **gesamte** Historie einmal in den Client
+(`fetchAllPayments`, in 1.000er-Seiten, ein gemeinsamer Cache-Eintrag) und filtern, sortieren,
+aggregieren und blättern dort. Das bleibt so, solange ein Konto weniger als
 **10.000 Zahlungen** führt.
 
 ### Rationale
@@ -630,16 +630,19 @@ Die Schwelle ist damit belegt und nicht geschätzt: Bei 10.000 Zahlungen wird di
 
 - Übertragung und Verarbeitung wachsen linear mit der Historie; jede Zahlung wird beim Laden zu
   einem `Money`-Objekt.
-- Liste und Auswertungen holen die Historie unter zwei Query-Keys getrennt (vollständige Zeilen
-  bzw. schlanke Projektion) — bei einem Wechsel zwischen den Bereichen also zweimal.
+- Liste und Auswertungen teilen **eine** Projektion (Schritt 1 der Guardrails, vorgezogen am
+  2026-09-26): Zuvor holten sie die Historie unter zwei Query-Keys getrennt, ein Wechsel
+  zwischen den Bereichen übertrug sie zweimal. Gemessen bei 1.224 Zahlungen, gepackt: 45 KiB
+  (Auswertungen) + 42 KiB (Liste) vorher, 47 KiB einmal nachher — die Auswertungen tragen die
+  stornierten Zeilen und vier Spalten mit, das kostet sie rund 2 KiB.
 
 ### Guardrails
 
 - Kein serverseitiges Filtern/Paginieren einführen, solange die Schwelle nicht erreicht ist —
   es zerteilte die Auswertungen ohne Not.
-- Bei Überschreiten in dieser Reihenfolge vorgehen: (1) beide Abfragen auf **eine** schlanke
-  Projektion vereinheitlichen, (2) Aggregate serverseitig vorrechnen (RPC), (3) erst danach
-  Liste serverseitig filtern und blättern.
+- Bei Überschreiten in dieser Reihenfolge vorgehen: (1) ~~beide Abfragen auf **eine** schlanke
+  Projektion vereinheitlichen~~ (erledigt, siehe Trade-offs), (2) Aggregate serverseitig
+  vorrechnen (RPC), (3) erst danach Liste serverseitig filtern und blättern.
 - Jede Abfrage, die eine vollständige Tabelle lädt, läuft über `lib/supabase/fetchAllPages`.
   Eine Abfrage ohne `range()` liefert stillschweigend höchstens 1.000 Zeilen (siehe ADR-002).
 

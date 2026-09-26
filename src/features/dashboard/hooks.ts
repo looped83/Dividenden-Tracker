@@ -1,52 +1,40 @@
 import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router";
+import { fetchAllPayments } from "@/lib/supabase/repositories/payments";
 import {
-  fetchDashboardPayments,
-  type DashboardPaymentRow,
-} from "@/lib/supabase/repositories/payments";
-import {
-  mapAnalyticsPayment,
+  activeAnalyticsPayments,
   payoutMonthsBySecurity,
   withEffectiveDates,
-  type AnalyticsPayment,
   type YearSelection,
 } from "@/lib/statistics";
 import { useSecurities } from "@/features/securities/hooks";
+import { PAYMENT_HISTORY_KEY } from "@/features/payments/hooks";
 import { parseYearSelection, serializeYearSelection } from "./yearParam";
 
 /**
- * Schluessel unter dem `payments`-Namespace: dadurch invalidieren alle
- * bestehenden Zahlungs-Mutationen (Anlegen, Bearbeiten, Storno, Reaktivierung)
- * sowie Import-Commit/-Rollback ueber `invalidateQueries(["payments"])` auch die
- * Dashboard-Daten (ARCHITECTURE.md, Cache-Invalidierung 5A).
- */
-const DASHBOARD_PAYMENTS_KEY = ["payments", "dashboard"] as const;
-
-/**
- * Ausserhalb der Komponente, damit die Referenz stabil bleibt: React Query
- * fuehrt `select` erneut aus, sobald sich die Funktion aendert — eine
- * Inline-Funktion ist bei jedem Rendern eine neue. Dann wurde bei jedem
- * Rendern die gesamte Historie erneut in `Money` geparst, und weil
- * `Money`-Instanzen keine einfachen Objekte sind, konnte auch das
- * strukturelle Teilen die alte Liste nicht wiederverwenden: Jede
- * nachgelagerte Auswertung (Kennzahlen, Diagramme, Statistik) rechnete neu.
- */
-function toAnalyticsPayments(rows: DashboardPaymentRow[]): AnalyticsPayment[] {
-  return rows.map(mapAnalyticsPayment);
-}
-
-/**
- * Laedt die aktive Dividendenhistorie **einmal** und liefert sie als bereits
- * geparste, decimal-sichere Analytics-Datensaetze. Die Jahresauswahl wird
+ * Laedt die Dividendenhistorie **einmal** und liefert die aktiven Eingaenge als
+ * bereits geparste, decimal-sichere Analytics-Datensaetze. Derselbe
+ * Cache-Eintrag wie die Eingangsliste (`PAYMENT_HISTORY_KEY`): Ein Wechsel
+ * zwischen Uebersicht, Statistik, Zielen und Liste laedt nichts erneut, und
+ * jede Zahlungs-Mutation invalidiert ueber den `payments`-Namespace alle
+ * zugleich (ARCHITECTURE.md, Cache-Invalidierung 5A). Die Jahresauswahl wird
  * ausschliesslich clientseitig angewandt, sodass ein Jahreswechsel keine neue
  * Abfrage ausloest (schnelle Jahresumschaltung, §18).
+ *
+ * `select` ist eine Funktion auf Modulebene, damit die Referenz stabil bleibt:
+ * React Query fuehrt `select` erneut aus, sobald sich die Funktion aendert —
+ * eine Inline-Funktion ist bei jedem Rendern eine neue. Dann wurde bei jedem
+ * Rendern die gesamte Historie erneut in `Money` geparst, und weil
+ * `Money`-Instanzen keine einfachen Objekte sind, konnte auch das strukturelle
+ * Teilen die alte Liste nicht wiederverwenden: Jede nachgelagerte Auswertung
+ * (Kennzahlen, Diagramme, Statistik) rechnete neu.
  */
 export function useDashboardPayments() {
   return useQuery({
-    queryKey: DASHBOARD_PAYMENTS_KEY,
-    queryFn: fetchDashboardPayments,
-    select: toAnalyticsPayments,
+    queryKey: PAYMENT_HISTORY_KEY,
+    queryFn: fetchAllPayments,
+    select: activeAnalyticsPayments,
   });
 }
 

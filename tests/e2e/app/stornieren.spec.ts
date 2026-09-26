@@ -44,7 +44,7 @@ test("storniert einen Eingang mit Grund und reaktiviert ihn wieder", async ({
 
   // Der stornierte Eingang zählt in der Übersicht nicht mehr mit.
   await page.goto("/#/?year=2026");
-  await expect(page.getByRole("heading", { name: "Übersicht" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Übersicht", level: 1 })).toBeVisible();
   await expect(page.getByText("64,00")).toHaveCount(0);
 
   // Reaktivieren stellt ihn wieder her.

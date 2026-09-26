@@ -70,7 +70,7 @@ export function StatisticsPage() {
     ],
   );
 
-  const heading = <PageHeader title="Statistik" />;
+  const heading = <PageHeader title="Statistiken" />;
 
   if (data.isLoading) {
     return (

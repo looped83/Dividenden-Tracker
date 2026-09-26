@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_SORT,
+  parsePage,
   parseSort,
   parseStatus,
   statusNeedsArchived,
@@ -40,5 +41,20 @@ describe("statusNeedsArchived", () => {
     expect(statusNeedsArchived("active")).toBe(false);
     expect(statusNeedsArchived("cancelled")).toBe(true);
     expect(statusNeedsArchived("all")).toBe(true);
+  });
+});
+
+describe("parsePage", () => {
+  it("liest ganze Seitenzahlen ab 1", () => {
+    expect(parsePage("1")).toBe(1);
+    expect(parsePage("12")).toBe(12);
+  });
+  it("fällt bei fehlenden oder ungültigen Werten auf Seite 1 zurück", () => {
+    expect(parsePage(null)).toBe(1);
+    expect(parsePage("0")).toBe(1);
+    expect(parsePage("-2")).toBe(1);
+    expect(parsePage("2.5")).toBe(1);
+    expect(parsePage("abc")).toBe(1);
+    expect(parsePage("9999999")).toBe(1);
   });
 });
