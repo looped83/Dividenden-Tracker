@@ -29,6 +29,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatCountNumber } from "@/lib/utils/formatNumber";
 import { formatCalendarDate } from "@/lib/utils/formatDate";
+import { compareGerman } from "@/lib/utils/compareText";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils/cn";
@@ -132,9 +133,7 @@ export function SecuritiesPage() {
 
   const options = React.useMemo(() => {
     const uniqueSorted = (values: (string | null)[]) =>
-      [...new Set(values.filter((v): v is string => Boolean(v)))].sort((a, b) =>
-        a.localeCompare(b, "de"),
-      );
+      [...new Set(values.filter((v): v is string => Boolean(v)))].sort(compareGerman);
     return {
       sectors: uniqueSorted(securities.map((s) => s.sector)),
       currencies: uniqueSorted(securities.map((s) => s.currency)),

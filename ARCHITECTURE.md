@@ -24,7 +24,7 @@ Truth**. Es gibt kein eigenes Backend; die Geschäftslogik verteilt sich auf:
 │  ├─ Import (Hauptthread, kein Worker):          │                                 │
 │  │    eigener CSV-Parser · exceljs (XLSX/XLS)   │                                 │
 │  │    Normalisierung · Validierung · Fingerprints                                 │
-│  └─ Service Worker (eigener, ~70 Zeilen):       │                                 │
+│  └─ Service Worker (eigener, ~100 Zeilen):      │                                 │
 │       nur App-Huellen-Cache, niemals Daten      │                                 │
 └─────────────────────────────────────────────────┼─────────────────────────────────┘
                                                   │ HTTPS (supabase-js, PKCE-Auth)
@@ -223,12 +223,18 @@ Das Dashboard folgt bewusst dem Prinzip aus §4.1 Punkt 3:
 - **Analytics-Schicht** (`lib/statistics`): geparste `AnalyticsPayment`-Datensätze (Beträge
   einmalig zu `Money`), rein funktional und decimal-sicher. Einzige Quelle aller
   Dashboard-Kennzahlen und in Phase 5B für den Statistikbereich wiederverwendbar.
+  „Einmalig" wörtlich: Die `select`-Funktion der Query steht auf Modulebene. Eine
+  Inline-Funktion ist bei jedem Rendern eine neue Referenz, React Query führte sie dann jedes
+  Mal erneut aus — und weil `Money`-Instanzen sich dem strukturellen Teilen entziehen,
+  entstand jedes Mal eine neue Liste, die sämtliche memoisierten Aggregate verwarf.
 - **Effektiver Ausschüttungsmonat:** Vor der Aggregation wird über `withEffectiveDates` je
   Zahlung ein effektives Datum aus dem Unternehmensplan (`securities.payout_months`) gesetzt
   (fälliger geplanter Monat, ein Monat Vorlauf für vorgezogene Zahlungen, inkl.
   Jahresverschiebung — CALCULATION_RULES.md §10). Alle
   Auswertungen und die Eingangsliste rechnen auf diesem effektiven Datum; das echte `pay_date`
-  bleibt erhalten. Die Eingangsliste lädt dafür alle Zahlungen paginiert und filtert/sortiert
+  bleibt erhalten. Übersicht, Statistik und Ziele beziehen die so angereicherte Historie aus
+  **einem** Hook (`useEffectivePayments`), die Eingangsliste nutzt dieselbe Nachschlagetabelle
+  (`payoutMonthsBySecurity`). Die Eingangsliste lädt dafür alle Zahlungen paginiert und filtert/sortiert
   clientseitig (kein serverseitiger Datumsfilter, da der Plan clientseitige Stammdaten sind).
 - **Jahresauswahl clientseitig.** Der ausgewählte Zeitraum (`?year=…`) wird auf den bereits
   geladenen Datensatz angewandt — ein Jahreswechsel löst **keine** neue Abfrage und keine
@@ -310,14 +316,22 @@ Details fachlich in IMPORT_SPEC.md; architektonisch:
   maskierbares Icon) und die iOS-Angaben in `index.html`, die Safari statt des Manifests
   auswertet (`apple-touch-icon`, `apple-mobile-web-app-*`). Damit landet die App mit Icon und
   eigenem Fenster auf dem Home-Bildschirm.
-- Eigener Service Worker (`public/sw.js`, rund 70 Zeilen) **ohne** zusätzliche Abhängigkeit —
+- Eigener Service Worker (`public/sw.js`, rund 100 Zeilen) **ohne** zusätzliche Abhängigkeit —
   `vite-plugin-pwa` samt Workbox wäre für diesen Umfang unverhältnismäßig. Registriert wird er
   nur im Produktionsbuild (`import.meta.env.PROD`), mit `BASE_URL` als Geltungsbereich, damit er
   unter dem Pages-Unterpfad ebenso greift.
 - Strategien: Navigation **Netz zuerst, Cache als Rückfall** (neue Fassungen kommen sofort an,
   offline erscheint trotzdem die Hülle); statische Dateien **Cache zuerst** — ihre Namen tragen
-  einen Hash, veraltete Antworten kann es also nicht geben. Versionierter Cache-Name, alte
-  Bestände werden beim Aktivieren entfernt.
+  einen Hash, veraltete Antworten kann es also nicht geben.
+- **Eine Fassung, ein Cache.** `public/sw.js` ist eine Vorlage; der Build
+  (`vite.config.ts`, `src/lib/config/serviceWorkerBuild.ts`) setzt die Kennung der Fassung
+  (Dateiname des Einstiegs-Bundles mit Inhalts-Hash) und die Dateien des Startpakets ein. Erst
+  dadurch unterscheidet sich `sw.js` nach jedem Deploy, und der Browser bemerkt die neue
+  Fassung. Sie legt bei der Installation Dokument und Startpaket in ihrem eigenen Cache ab — ist
+  also auch offline vollständig, bevor sie übernimmt — und löscht beim Aktivieren die Caches
+  früherer Fassungen, und zwar nur die eigenen (Präfix `dividend-tracker-shell-`): Auf GitHub
+  Pages teilen sich alle Projektseiten eines Kontos eine Herkunft. Ein Rauchtest prüft, dass
+  genau eine Fassung samt Startpaket vorliegt.
 - **Nichts von Supabase wird zwischengespeichert:** Anfragen an eine fremde Herkunft rührt der
   Service Worker nicht an (SECURITY_MODEL.md §7).
 
@@ -325,7 +339,11 @@ Details fachlich in IMPORT_SPEC.md; architektonisch:
   greift nur bei der Erstinstallation, wo es nichts zu unterbrechen gibt); die Oberfläche weist
   darauf hin (`UpdatePrompt`), und erst auf Klick übernimmt der neue Service Worker und die
   Seite lädt neu. Eine Finanzanwendung soll nicht mitten in einer Erfassung die Fassung
-  wechseln.
+  wechseln. Ausnahme: Läuft die Seite bereits auf der wartenden Fassung — nach einem Deploy
+  frisch geöffnet, denn die Navigation holt zuerst das Netz —, fragt sie den wartenden Service
+  Worker nach seiner Kennung und lässt ihn still übernehmen; es gibt nichts neu zu laden.
+  Beim Zurückkehren in die App (`visibilitychange`, höchstens stündlich) fragt sie nach einer
+  neuen Fassung — eine installierte App bleibt auf dem iPhone oft tagelang im Speicher.
 
 **Bewusst nicht umgesetzt:**
 
@@ -336,9 +354,20 @@ Details fachlich in IMPORT_SPEC.md; architektonisch:
 
 ### 6.1 Ladeverhalten der Bereiche
 
-- **Nachgeladen wird alles außer Hülle, Anmeldung und Übersicht.** Diese drei entscheiden den
-  ersten Bildschirm, alles andere wäre Ballast im Startpaket (`React.lazy` in `app/router.tsx`;
-  der Rauchtest „das Startpaket bleibt schlank" hält die Grenze fest).
+- **Nachgeladen wird alles außer Hülle und Übersicht.** Beide entscheiden den ersten
+  Bildschirm, alles andere wäre Ballast im Startpaket (`React.lazy` in `app/router.tsx`; der
+  Rauchtest „das Startpaket bleibt schlank" hält die Grenze fest). Auch die Anmeldung wird
+  nachgeladen: Sie zieht react-hook-form und zod nach sich (≈ 28 kB gzip), und wer die
+  installierte App öffnet, ist fast immer schon angemeldet. Ebenso das Erfassungs-Overlay
+  (`PaymentComposerDialog`, Radix-Dialog ≈ 12 kB gzip): Es wird beim ersten Öffnen eingehängt
+  und beim Zeigen auf bzw. Fokussieren von „Neue Dividende" vorab geladen.
+- **Die Anmeldeprüfung umschließt den Inhalt, nicht die Hülle** (`RequireAuth` in
+  `AppShell`). Nach längerer Pause erneuert supabase-js beim Start zuerst das Token über das
+  Netz; währenddessen stehen Navigation und `PageSkeleton` bereits. Die Navigation zeigt keine
+  Daten, und geschützte Seiten samt ihren Abfragen hängen erst mit gültiger Sitzung ein.
+- **Dunkles Design vor dem ersten Zeichnen:** Ein Inline-Skript in `index.html` setzt `.dark`,
+  bevor das Startpaket läuft (sonst weißer Blitz bei jedem Start). Die CSP gibt genau dieses
+  Skript per Hash frei (SECURITY_MODEL.md §7).
 - **Die `import()`-Aufrufe stehen gebündelt in `app/routeChunks.ts`**, nicht in der
   Routentabelle. Grund: Dieselbe Aufrufstelle bedeutet dasselbe Modul in der Registry des
   Browsers — zwei Aufrufstellen ergäben zwei Teile, und das Vorausladen liefe ins Leere.
@@ -406,8 +435,11 @@ filtern — Begründung, Abwägung und Auslöser in DECISIONS.md ADR-001.
 ## Phase 6 – Cache-Invalidierung & Query-Struktur
 
 Alle Zahlungsabfragen liegen im Namespace `["payments"]` (Liste
-`["payments","list",includeArchived]`, Detail `["payments","detail",id]`,
-Dashboard `["payments","dashboard"]`, das die Statistik teilt). Jede
+`["payments","list"]` — stornierte eingeschlossen und von Liste und
+Datenqualitätsansicht geteilt, der Statusfilter wirkt clientseitig —, Detail
+`["payments","detail",id]`, Dashboard `["payments","dashboard"]`, das die
+Statistik teilt). Die Liste lädt keine Unternehmensnamen mit; sie stammen aus
+`["securities"]`. Jede
 datenverändernde Mutation (Anlegen, Bearbeiten, Storno, Reaktivierung,
 dauerhaftes Löschen) ruft `invalidateAll` und invalidiert damit
 `["payments"]` **und** `["duplicate-dismissals"]` — Liste, Detail, Dashboard,

@@ -173,6 +173,31 @@ describe("PaymentsPage", () => {
     expect(screen.getByRole("button", { name: "Dauerhaft löschen" })).toBeInTheDocument();
   });
 
+  it("zaehlt nur stornierte Eingaenge nicht als Bestand", () => {
+    // Geladen wird immer alles; der Leerzustand folgt trotzdem dem Filter.
+    renderList([zahlung({ id: "a", archived_at: "2026-04-01T00:00:00Z" })]);
+    expect(screen.getByText("Noch kein Dividendeneingang erfasst")).toBeInTheDocument();
+  });
+
+  it("bietet Jahre nur stornierter Eingaenge erst mit den Stornierten an", async () => {
+    const user = userEvent.setup();
+    renderList([
+      zahlung({ id: "a", pay_date: "2026-03-10" }),
+      zahlung({ id: "b", pay_date: "2024-03-10", archived_at: "2026-04-01T00:00:00Z" }),
+    ]);
+
+    const jahre = () =>
+      Array.from(
+        screen.getByLabelText<HTMLSelectElement>("Jahr").options,
+        (option) => option.value,
+      );
+    expect(jahre()).toEqual(["", "2026"]);
+
+    await user.click(screen.getByLabelText("Stornierte anzeigen"));
+
+    expect(jahre()).toEqual(["", "2026", "2024"]);
+  });
+
   it("erklaert den leeren Zustand ohne Eingaenge", () => {
     renderList([]);
     expect(screen.getByText("Noch kein Dividendeneingang erfasst")).toBeInTheDocument();

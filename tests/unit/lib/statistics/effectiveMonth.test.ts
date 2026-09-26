@@ -4,6 +4,7 @@ import type { AnalyticsPayment } from "@/lib/statistics";
 import {
   effectivePayDate,
   normalizePayoutMonths,
+  payoutMonthsBySecurity,
   withEffectiveDates,
 } from "@/lib/statistics";
 
@@ -67,6 +68,18 @@ describe("normalizePayoutMonths", () => {
   it("entfernt Duplikate/Ungültiges und sortiert", () => {
     expect(normalizePayoutMonths([6, 3, 3, 13, 0, 12])).toEqual([3, 6, 12]);
     expect(normalizePayoutMonths(null)).toEqual([]);
+  });
+});
+
+describe("payoutMonthsBySecurity", () => {
+  it("fuehrt nur Unternehmen mit gueltigem Plan, normalisiert", () => {
+    const map = payoutMonthsBySecurity([
+      { id: "a", payout_months: [12, 6, 6] },
+      { id: "b", payout_months: [] },
+      { id: "c", payout_months: null },
+      { id: "d", payout_months: [0, 13] },
+    ]);
+    expect([...map]).toEqual([["a", [6, 12]]]);
   });
 });
 

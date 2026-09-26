@@ -51,20 +51,17 @@ export async function fetchDashboardPayments(): Promise<DashboardPaymentRow[]> {
 }
 
 /**
- * Vollstaendige Eingangsliste (Phase-5A-Erweiterung): laedt seitenweise **alle**
- * Zahlungen (optional inkl. archivierter) mit verknuepftem Wertpapiernamen. Die
- * fachliche Filterung nach Zeitraum erfolgt clientseitig ueber den effektiven
- * Monat (Ausschuettungsplan je Unternehmen, CALCULATION_RULES.md §10), daher
- * kein serverseitiger Datumsfilter. Wie beim Dashboard wird ueber das
- * PostgREST-1000er-Limit hinweg paginiert.
- */
-/**
  * Spalten, die Liste und Datenqualitaet tatsaechlich lesen — bewusst nicht
  * `*`: Von den 30 Spalten der Tabelle braucht die Liste neun, die
  * Datenqualitaet drei weitere. Die uebrigen sind ueberwiegend `null`
  * (Steuern, Fremdwaehrung, Stueckzahl, Importherkunft) und kosteten bei
  * vierstelliger Historie mehrere hundert Kilobyte reines `"spalte":null` je
  * Ladevorgang.
+ *
+ * Ohne Join auf `securities`: Name und Ticker standen sonst in jeder Zeile
+ * erneut (rund 12 % der Antwort, bei 1.441 Zahlungen gut 80 KiB), obwohl
+ * beide Seiten die Unternehmen ohnehin ueber `useSecurities` geladen haben
+ * und die Namen von dort aufloesen.
  *
  * Beim Erweitern hier **und** im Typ `PaymentListRow` nachziehen, sonst
  * verspricht der Typ ein Feld, das die Antwort nicht enthaelt.
@@ -73,7 +70,7 @@ export async function fetchDashboardPayments(): Promise<DashboardPaymentRow[]> {
 // Ergebnistyp aus dem Text der Auswahl ab; eine Verkettung waere fuer die
 // Typebene undurchsichtig.
 // prettier-ignore
-const LIST_COLUMNS = "id, security_id, depot_id, pay_date, net_amount, original_currency, payment_type, source, import_id, archived_at, created_at, updated_at, securities!inner(name, ticker)";
+const LIST_COLUMNS = "id, security_id, depot_id, pay_date, net_amount, original_currency, payment_type, source, import_id, archived_at, created_at, updated_at";
 
 /** Zeile der Eingangsliste — die Projektion von {@link LIST_COLUMNS}. */
 export type PaymentListRow = Pick<
@@ -90,20 +87,30 @@ export type PaymentListRow = Pick<
   | "archived_at"
   | "created_at"
   | "updated_at"
-> & { securities?: { name: string; ticker: string | null } | null };
+>;
 
-export async function fetchAllPayments(opts: {
-  includeArchived: boolean;
-}): Promise<PaymentListRow[]> {
-  const rows = await fetchAllPages<PaymentListRow>((from, to) => {
-    const query = supabase
+/**
+ * Vollstaendige Eingangsliste (Phase-5A-Erweiterung): laedt seitenweise **alle**
+ * Zahlungen, stornierte eingeschlossen. Liste und Datenqualitaet teilen sich
+ * damit einen Abruf; der Statusfilter der Liste wirkt clientseitig. Frueher
+ * waren „aktiv" und „alle" zwei Abfragen, und jeder Wechsel des Filters oder
+ * zur Datenqualitaet uebertrug die ganze Historie erneut — fuer eine
+ * Handvoll stornierter Zeilen Unterschied.
+ *
+ * Die fachliche Filterung nach Zeitraum erfolgt clientseitig ueber den
+ * effektiven Monat (Ausschuettungsplan je Unternehmen, CALCULATION_RULES.md
+ * §10), daher kein serverseitiger Datumsfilter. Wie beim Dashboard wird ueber
+ * das PostgREST-1000er-Limit hinweg paginiert.
+ */
+export async function fetchAllPayments(): Promise<PaymentListRow[]> {
+  const rows = await fetchAllPages<PaymentListRow>((from, to) =>
+    supabase
       .from("dividend_payments")
       .select(LIST_COLUMNS)
       .order("pay_date", { ascending: false })
       .order("id", { ascending: true })
-      .range(from, to);
-    return opts.includeArchived ? query : query.is("archived_at", null);
-  });
+      .range(from, to),
+  );
   return rows.map(normalizeAmountFields);
 }
 

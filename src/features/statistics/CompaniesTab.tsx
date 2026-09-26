@@ -12,6 +12,7 @@ import {
   sortSecurityStatistics,
   type SecurityStatistics,
 } from "@/lib/statistics";
+import { compareGerman } from "@/lib/utils/compareText";
 import { RankedBars, type RankedBarItem } from "@/features/dashboard/RankedBars";
 import { useStatisticsContext } from "./context";
 import {
@@ -109,8 +110,7 @@ export function CompaniesTab() {
         key: "name",
         header: "Unternehmen",
         headerLabel: "Name (alphabetisch)",
-        compare: (a, b) =>
-          labelOf(a.securityId).localeCompare(labelOf(b.securityId), "de"),
+        compare: (a, b) => compareGerman(labelOf(a.securityId), labelOf(b.securityId)),
         render: (row) => (
           <span className="flex min-w-0 items-center gap-1.5">
             {/* Der Name fuehrt auf die Detailseite des Unternehmens; die

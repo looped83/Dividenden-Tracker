@@ -39,10 +39,11 @@ const DEFAULT_CONNECTION =
 const RESERVED_PARAMS = new Set(["select", "order", "limit", "offset"]);
 
 /**
- * Eingebettete Beziehungen, die die Anwendung tatsaechlich abfragt
- * (`securities!inner(name, ticker)` in der Eingangsliste). Absichtlich eine
- * kurze, ausdrueckliche Liste statt einer Fremdschluessel-Ermittlung: Was hier
- * fehlt, faellt als 501 auf.
+ * Eingebettete Beziehungen, die die Bruecke nachbildet. Die Anwendung fragt
+ * derzeit keine ab (die Eingangsliste loest Unternehmensnamen aus den
+ * Stammdaten auf); die Liste bleibt fuer kuenftige Abfragen. Absichtlich kurz
+ * und ausdruecklich statt einer Fremdschluessel-Ermittlung: Was hier fehlt,
+ * faellt als 501 auf.
  */
 const EMBEDS: Record<string, Record<string, { table: string; fk: string }>> = {
   dividend_payments: {

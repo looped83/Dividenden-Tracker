@@ -111,4 +111,62 @@ test.describe("Rauchtest", () => {
     expect(manifest.icons.map((icon) => icon.sizes)).toContain("512x512");
     expect(manifest.icons.some((icon) => icon.purpose === "maskable")).toBe(true);
   });
+
+  test("der Service Worker haelt genau diese Fassung samt Startpaket vor", async ({
+    page,
+  }) => {
+    await page.goto("/#/login");
+    await expect(page.getByRole("heading", { name: "Anmelden" })).toBeVisible();
+    test.skip(
+      !(await page.evaluate(() => "serviceWorker" in navigator)),
+      "Browser ohne Service Worker",
+    );
+
+    // Der Build setzt Kennung und Startpaket in sw.js ein; ohne das schlaegt
+    // die Installation fehl und die Seite bekaeme nie einen Controller.
+    await page.waitForFunction(() => navigator.serviceWorker.controller !== null);
+
+    // Erwartet wird, was die ausgelieferte index.html laedt — nicht das
+    // Live-DOM: Vites Nachlade-Helfer haengt dort zur Laufzeit weitere
+    // `modulepreload`-Links fuer nachgeladene Teile an.
+    const html = await (await page.request.get("/")).text();
+    const expected = await page.evaluate((source) => {
+      const doc = new DOMParser().parseFromString(source, "text/html");
+      const entry = doc.querySelector<HTMLScriptElement>('script[type="module"][src]');
+      const files = [
+        ...doc.querySelectorAll(
+          'script[type="module"][src], link[rel="modulepreload"], link[rel="stylesheet"]',
+        ),
+      ].map(
+        (element) =>
+          new URL(
+            element.getAttribute("src") ?? element.getAttribute("href") ?? "",
+            location.href,
+          ).pathname,
+      );
+      return {
+        cache: `dividend-tracker-shell-${entry?.getAttribute("src")?.split("/").pop() ?? ""}`,
+        files,
+      };
+    }, html);
+
+    await expect
+      .poll(() =>
+        page.evaluate(async () =>
+          (await caches.keys()).filter((key) =>
+            key.startsWith("dividend-tracker-shell-"),
+          ),
+        ),
+      )
+      .toEqual([expected.cache]);
+
+    const cached = await page.evaluate(
+      async (name) =>
+        (await (await caches.open(name)).keys()).map(
+          (request) => new URL(request.url).pathname,
+        ),
+      expected.cache,
+    );
+    expect(cached).toEqual(expect.arrayContaining(["/", ...expected.files]));
+  });
 });

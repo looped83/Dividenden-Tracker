@@ -9,6 +9,15 @@ export interface EntityInfo {
   archived: boolean;
 }
 
+/** Unternehmen oder Depots als Nachschlagetabelle Kennung → {@link EntityInfo}. */
+export function buildEntityMap(
+  rows: readonly { id: string; name: string; archived_at: string | null }[],
+): Map<string, EntityInfo> {
+  return new Map(
+    rows.map((row) => [row.id, { name: row.name, archived: row.archived_at !== null }]),
+  );
+}
+
 const SOURCE_LABELS: Record<PaymentSource, string> = {
   manual: "Manuell",
   csv_import: "CSV-Import",

@@ -15,12 +15,28 @@
          wird. -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' %VITE_SUPABASE_URL% wss://*.supabase.co; worker-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
+      content="default-src 'self'; script-src 'self' 'sha256-iKLLarS4u/b5B7Pi5oVUkOr5epvGZirc8mNF5/qfSi8='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' %VITE_SUPABASE_URL% wss://*.supabase.co; worker-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
     />
     <meta name="referrer" content="no-referrer" />
     <meta name="color-scheme" content="light dark" />
     <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
+    <!-- Dunkles Design vor dem ersten Zeichnen setzen. Ohne dies stand bis zum
+         Start von React eine weisse Seite da — auf dem schwarzen Dunkelmodus
+         ein greller Blitz bei jedem Oeffnen. Dieselbe Regel wie
+         ThemeProvider.readStoredTheme. Inline, damit keine zusaetzliche
+         Anfrage den ersten Bildschirm aufhaelt; die CSP erlaubt genau dieses
+         Skript ueber seinen Hash (Pruefung: tests/unit/app/themeBootstrap). -->
+    <script>
+      try {
+        var t = localStorage.getItem("dividend-tracker:theme");
+        if (
+          t === "dark" ||
+          (t !== "light" && matchMedia("(prefers-color-scheme: dark)").matches)
+        )
+          document.documentElement.classList.add("dark");
+      } catch {}
+    </script>
     <link
       rel="icon"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%23274972'/%3E%3Ctext x='12' y='17' font-size='13' font-family='sans-serif' font-weight='700' fill='%23ffffff' text-anchor='middle'%3E€%3C/text%3E%3C/svg%3E"

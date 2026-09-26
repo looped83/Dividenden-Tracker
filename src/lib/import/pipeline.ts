@@ -1,4 +1,5 @@
 import { MoneyDecimal } from "@/lib/money/decimalConfig";
+import { compareGerman } from "@/lib/utils/compareText";
 import { parseDateValue, type DateFormat } from "./parseDate";
 import { parseAmount, type NumberFormat } from "./parseAmount";
 import { rowFingerprint } from "./fingerprint";
@@ -232,7 +233,7 @@ export function groupCompanies(
         defaultDecision,
       };
     })
-    .sort((a, b) => a.sourceName.localeCompare(b.sourceName, "de"));
+    .sort((a, b) => compareGerman(a.sourceName, b.sourceName));
 }
 
 /** Gruppiert gueltige Zeilen nach Broker (Task §9). */
@@ -279,5 +280,5 @@ export function groupBrokers(
         defaultDecision,
       };
     })
-    .sort((a, b) => a.sourceName.localeCompare(b.sourceName, "de"));
+    .sort((a, b) => compareGerman(a.sourceName, b.sourceName));
 }

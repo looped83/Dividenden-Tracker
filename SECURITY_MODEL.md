@@ -120,7 +120,7 @@ Auslieferung des Frontends mit:
 ```
 Content-Security-Policy:
   default-src 'self';
-  script-src 'self';
+  script-src 'self' 'sha256-…';           # plus genau ein Inline-Skript, per Hash (s. u.)
   style-src 'self' 'unsafe-inline';        # Tailwind-Injektion; keine externen Styles
   img-src 'self' data:;
   font-src 'self';
@@ -142,6 +142,13 @@ ein. Als Meta-Element wirksam sind `default-src`, `script-src`, `style-src`, `im
 `font-src`, `connect-src`, `worker-src`, `manifest-src`, `base-uri`, `form-action` und
 `object-src`; die Referrer-Regel steht als `<meta name="referrer">` daneben.
 
+**Ein Inline-Skript, per Hash freigegeben.** `index.html` setzt das dunkle Design vor dem ersten
+Zeichnen (sonst blitzte bei jedem Start eine weiße Seite auf). `script-src` erlaubt dafür nicht
+`'unsafe-inline'`, sondern ausschließlich dieses eine Skript über seinen SHA-256-Hash; jede
+Änderung am Skript, auch an Einrückung oder Zeilenumbruch, macht den Hash ungültig. Ein
+Unit-Test (`tests/unit/app/themeBootstrap.test.ts`) prüft, dass Hash und Skript
+zusammenpassen, und nennt bei Abweichung den neuen Wert.
+
 **Nicht abbildbar und offen:** `frame-ancestors`, `Strict-Transport-Security`,
 `X-Content-Type-Options` und `Permissions-Policy` wirken ausschließlich als echte Kopfzeile.
 Sie bleiben offen, solange über GitHub Pages ausgeliefert wird — mit einem Hosting, das Header
@@ -156,8 +163,9 @@ Keine externen CDNs, Fonts oder Skripte (Grundsatz 15) — alles wird gebundelt.
 Der Service Worker (`public/sw.js`) speichert ausschließlich **eigene statische Dateien**
 (Dokument, JS, CSS, Icons). Anfragen an fremde Herkünfte — insbesondere die Supabase-API und
 alles Auth-Bezogene — werden nicht abgefangen und damit nie zwischengespeichert. Finanzdaten
-und Sitzungen überleben so kein geteiltes Gerät im Cache. Der Cache trägt eine Version im
-Namen; beim Aktivieren einer neuen Fassung werden alte Bestände gelöscht.
+und Sitzungen überleben so kein geteiltes Gerät im Cache. Der Cache trägt die Kennung der
+Fassung im Namen; beim Aktivieren einer neuen Fassung werden die Bestände früherer Fassungen
+gelöscht (nur die eigenen, erkennbar am Präfix `dividend-tracker-shell-`).
 
 ## 8. Audit Log
 

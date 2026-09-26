@@ -33,6 +33,7 @@ export const routeChunks = {
   settingsImports: () => import("@/features/imports/ImportsPage"),
   settingsBackup: () => import("@/features/backup/BackupPage"),
   more: () => import("@/app/MorePage"),
+  login: () => import("@/features/auth/LoginPage"),
   register: () => import("@/features/auth/RegisterPage"),
   resetPasswordRequest: () => import("@/features/auth/ResetPasswordRequestPage"),
   resetPasswordConfirm: () => import("@/features/auth/ResetPasswordConfirmPage"),

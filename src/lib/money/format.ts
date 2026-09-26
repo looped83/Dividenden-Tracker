@@ -2,6 +2,25 @@ import type { DecimalInstance } from "./decimalConfig";
 import { roundHalfUp } from "./rounding";
 import type { Money } from "./money";
 
+const formatters = new Map<string, Intl.NumberFormat>();
+
+/**
+ * Ein Formatierer je Einstellung, einmal gebaut und danach wiederverwendet.
+ * Einen `Intl.NumberFormat` einzurichten kostet ein Vielfaches des
+ * Formatierens selbst (gemessen: Faktor ~60) — eine Tabelle mit einigen
+ * hundert Betraegen richtete sonst bei jedem Zeichnen einige hundert
+ * Formatierer ein. Die Zahl der Schluessel ist klein (Sprache × Waehrung bzw.
+ * Nachkommastellen), der Speicher waechst also nicht mit den Daten.
+ */
+function numberFormat(key: string, create: () => Intl.NumberFormat): Intl.NumberFormat {
+  let formatter = formatters.get(key);
+  if (!formatter) {
+    formatter = create();
+    formatters.set(key, formatter);
+  }
+  return formatter;
+}
+
 /**
  * R-5: Formatiert einen bereits gerundeten Money-Wert fuer die Anzeige.
  * Der kanonische Dezimalstring wird direkt an Intl.NumberFormat uebergeben
@@ -15,12 +34,16 @@ import type { Money } from "./money";
  * bereits exakt auf 2 Nachkommastellen normalisiert ist.
  */
 export function formatMoney(money: Money, locale = "de-DE"): string {
-  const formatter = new Intl.NumberFormat(locale, {
-    style: "currency",
-    currency: money.currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+  const formatter = numberFormat(
+    `money|${locale}|${money.currency}`,
+    () =>
+      new Intl.NumberFormat(locale, {
+        style: "currency",
+        currency: money.currency,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }),
+  );
   return formatter.format(money.toStringValue() as unknown as number);
 }
 
@@ -33,10 +56,10 @@ export function formatMoney(money: Money, locale = "de-DE"): string {
  * Zeichen ueber `formatMoney` mit.
  */
 export function currencySymbol(currency: string, locale = "de-DE"): string {
-  const parts = new Intl.NumberFormat(locale, {
-    style: "currency",
-    currency,
-  }).formatToParts(0);
+  const parts = numberFormat(
+    `symbol|${locale}|${currency}`,
+    () => new Intl.NumberFormat(locale, { style: "currency", currency }),
+  ).formatToParts(0);
   return parts.find((part) => part.type === "currency")?.value ?? currency;
 }
 
@@ -52,10 +75,14 @@ export function formatPercent(
   locale = "de-DE",
 ): string {
   const rounded = roundHalfUp(value, fractionDigits);
-  const formatter = new Intl.NumberFormat(locale, {
-    minimumFractionDigits: fractionDigits,
-    maximumFractionDigits: fractionDigits,
-  });
+  const formatter = numberFormat(
+    `percent|${locale}|${String(fractionDigits)}`,
+    () =>
+      new Intl.NumberFormat(locale, {
+        minimumFractionDigits: fractionDigits,
+        maximumFractionDigits: fractionDigits,
+      }),
+  );
   const formattedNumber = formatter.format(
     rounded.toFixed(fractionDigits) as unknown as number,
   );

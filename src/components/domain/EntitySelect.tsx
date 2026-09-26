@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Select } from "@/components/ui/select";
+import { compareGerman } from "@/lib/utils/compareText";
 
 /** Ein wählbarer Eintrag — Unternehmen oder Depot. */
 export interface EntityOption {
@@ -34,7 +35,7 @@ interface EntitySelectProps {
  * Existiert keine der beiden Gruppen, entfällt die jeweilige Überschrift —
  * eine Gruppe „Archiviert" ohne Inhalt wäre nur Rauschen.
  *
- * Sortiert wird nach deutschem Alphabet (`localeCompare`), damit Umlaute dort
+ * Sortiert wird nach deutschem Alphabet (`compareGerman`), damit Umlaute dort
  * stehen, wo sie erwartet werden.
  */
 export function EntitySelect({
@@ -45,7 +46,7 @@ export function EntitySelect({
   allLabel,
 }: EntitySelectProps) {
   const groups = React.useMemo(() => {
-    const sorted = [...options].sort((a, b) => a.name.localeCompare(b.name, "de"));
+    const sorted = [...options].sort((a, b) => compareGerman(a.name, b.name));
     return {
       active: sorted.filter((option) => !option.archived),
       archived: sorted.filter((option) => option.archived),

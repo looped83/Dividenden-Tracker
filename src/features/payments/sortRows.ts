@@ -1,4 +1,5 @@
 import { MoneyDecimal } from "@/lib/money";
+import { compareGermanLoose } from "@/lib/utils/compareText";
 import type { ListSort } from "./listParams";
 
 /**
@@ -47,13 +48,10 @@ export function sortRows<T extends SortableRow>(rows: readonly T[], sort: ListSo
           factor;
         break;
       case "company":
-        primary =
-          a.companyName.localeCompare(b.companyName, "de", { sensitivity: "base" }) *
-          factor;
+        primary = compareGermanLoose(a.companyName, b.companyName) * factor;
         break;
       case "depot":
-        primary =
-          a.depotName.localeCompare(b.depotName, "de", { sensitivity: "base" }) * factor;
+        primary = compareGermanLoose(a.depotName, b.depotName) * factor;
         break;
       case "updated":
         primary = compareStrings(a.updatedAt, b.updatedAt) * factor;

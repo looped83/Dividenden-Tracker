@@ -1,10 +1,12 @@
 /// <reference types="vitest/config" />
-import { defineConfig, loadEnv } from "vite";
+import { defineConfig, loadEnv, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "node:path";
+import { readFileSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { findMissingEnv, missingEnvMessage } from "./src/lib/config/requiredEnv";
+import { injectServiceWorkerBuild } from "./src/lib/config/serviceWorkerBuild";
 
 // Die Anwendungsversion steht an genau einer Stelle (package.json) und wird zur
 // Bauzeit eingesetzt. Sie landet in jeder Sicherungsdatei und in den
@@ -32,6 +34,31 @@ function assertRequiredEnv(mode: string): void {
   }
 }
 
+/**
+ * Setzt Kennung der Fassung und Startpaket in den ausgelieferten Service Worker
+ * ein — nach dem Schreiben des Bundles, wenn `index.html` und die aus
+ * `public/` kopierte Vorlage `sw.js` im Ausgabeordner liegen. Warum, steht in
+ * `src/lib/config/serviceWorkerBuild.ts`.
+ */
+function serviceWorkerBuild(): Plugin {
+  let outDir = "";
+  return {
+    name: "dividend-tracker:service-worker",
+    apply: "build",
+    configResolved(config) {
+      outDir = path.resolve(config.root, config.build.outDir);
+    },
+    closeBundle() {
+      const swPath = path.join(outDir, "sw.js");
+      const indexHtml = readFileSync(path.join(outDir, "index.html"), "utf8");
+      writeFileSync(
+        swPath,
+        injectServiceWorkerBuild(readFileSync(swPath, "utf8"), indexHtml),
+      );
+    },
+  };
+}
+
 export default defineConfig(({ command, mode }) => {
   if (command === "build") {
     assertRequiredEnv(mode);
@@ -42,7 +69,7 @@ export default defineConfig(({ command, mode }) => {
     define: {
       __APP_VERSION__: JSON.stringify(appVersion),
     },
-    plugins: [react(), tailwindcss()],
+    plugins: [react(), tailwindcss(), serviceWorkerBuild()],
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),

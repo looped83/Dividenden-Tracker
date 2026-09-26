@@ -6,6 +6,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { RouteAnnouncer } from "@/components/layout/RouteAnnouncer";
 import { PageSkeleton } from "@/components/layout/PageSkeleton";
 import { PaymentComposerProvider } from "@/features/payments/PaymentComposer";
+import { RequireAuth } from "@/app/auth/RequireAuth";
 
 /**
  * Responsive App-Shell (IMPLEMENTATION_PLAN.md Phase 1):
@@ -50,9 +51,13 @@ export function AppShell() {
             >
               <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
                 {/* Bereiche werden erst beim Aufruf geladen (siehe router.tsx);
-                  der Rahmen der App steht dabei bereits. */}
+                  der Rahmen der App steht dabei bereits. Dasselbe gilt fuer die
+                  Anmeldepruefung: Erst sie gibt den Inhalt frei, die
+                  Navigation zeigt keine Daten und steht vorher. */}
                 <React.Suspense fallback={<PageSkeleton />}>
-                  <Outlet />
+                  <RequireAuth>
+                    <Outlet />
+                  </RequireAuth>
                 </React.Suspense>
               </div>
             </main>

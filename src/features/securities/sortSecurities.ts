@@ -1,4 +1,5 @@
 import type { AssetRow } from "@/features/securities/assetRows";
+import { compareGermanLoose } from "@/lib/utils/compareText";
 
 /**
  * Sortierung der Assetliste — dasselbe Muster wie in der Dividendenliste
@@ -84,10 +85,6 @@ export function defaultDirectionFor(field: SecuritySortField): SortDirection {
   return isPositionSortField(field) ? "desc" : "asc";
 }
 
-function compareText(a: string, b: string): number {
-  return a.localeCompare(b, "de", { sensitivity: "base" });
-}
-
 /** Stammdatenfeld als Text; Leerstrings zaehlen wie „nicht gesetzt". */
 function textValue(row: AssetRow, field: SecurityTextSortField): string | null {
   const value = (() => {
@@ -156,12 +153,17 @@ export function sortAssetRows(rows: readonly AssetRow[], sort: SecuritySort): As
           x === y ? 0 : x < y ? -1 : 1,
         )
     : (a: AssetRow, b: AssetRow) =>
-        compareNullable(textValue(a, field), textValue(b, field), factor, compareText);
+        compareNullable(
+          textValue(a, field),
+          textValue(b, field),
+          factor,
+          compareGermanLoose,
+        );
 
   return [...rows].sort((a, b) => {
     const primary = compareField(a, b);
     // Bei Gleichstand entscheidet der Name — sonst haenge die Reihenfolge vom
     // Zufall der Eingabe ab.
-    return primary !== 0 ? primary : compareText(a.security.name, b.security.name);
+    return primary !== 0 ? primary : compareGermanLoose(a.security.name, b.security.name);
   });
 }

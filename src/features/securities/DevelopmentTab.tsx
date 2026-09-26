@@ -26,6 +26,7 @@ import {
 } from "@/lib/statistics";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { formatCalendarDate } from "@/lib/utils/formatDate";
+import { compareGerman } from "@/lib/utils/compareText";
 import type { EntityInfo } from "@/features/dashboard/format";
 import { useStatisticsData, useStatisticsFilter } from "@/features/statistics/hooks";
 import { EMPTY_STATISTICS_FILTER } from "@/features/statistics/filterParams";
@@ -312,7 +313,7 @@ export function DevelopmentView({
         key: "name",
         header: "Asset",
         headerLabel: "Name (alphabetisch)",
-        compare: (a, b) => a.name.localeCompare(b.name, "de"),
+        compare: (a, b) => compareGerman(a.name, b.name),
         render: (row) => (
           <Link
             to={`/depot/${row.securityId}`}

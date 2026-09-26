@@ -7,7 +7,7 @@ import {
   effectivePayDate,
   monthNameDe,
   monthOf,
-  normalizePayoutMonths,
+  payoutMonthsBySecurity,
   yearOf,
 } from "@/lib/statistics";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,7 @@ import {
   type FilterSortOption,
 } from "@/components/ui/filter-bar";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { useNewPayment } from "@/features/payments/PaymentComposer";
+import { useNewPaymentTrigger } from "@/features/payments/PaymentComposer";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -87,9 +87,9 @@ const SORT_OPTIONS: readonly FilterSortOption[] = [
 
 export function PaymentsPage() {
   const { notify } = useToast();
-  const newPayment = useNewPayment();
+  const newPayment = useNewPaymentTrigger();
   const { data: depots = [] } = useDepots();
-  const { data: securities = [] } = useSecurities();
+  const { data: securities = [], isLoading: securitiesLoading } = useSecurities();
 
   const [searchParams, setSearchParams] = useSearchParams();
   const [page, setPage] = React.useState(1);
@@ -143,19 +143,26 @@ export function PaymentsPage() {
 
   const isWide = useMediaQuery(MD_BREAKPOINT_QUERY);
 
-  const { data: allPayments = [], isLoading } = useAllPayments(
-    statusNeedsArchived(status),
+  const { data: allPayments = [], isLoading: paymentsLoading } = useAllPayments();
+  // Die Namen der Unternehmen kommen aus den Stammdaten, nicht aus der
+  // Zahlungsabfrage — ohne sie waeren Spalte und Sortierung „Unternehmen" leer.
+  const isLoading = paymentsLoading || securitiesLoading;
+
+  // Geladen werden immer alle Zeilen; was der Statusfilter ausblendet, zaehlt
+  // auch fuer Jahresauswahl und Leerzustand nicht.
+  const statusPayments = React.useMemo(
+    () =>
+      statusNeedsArchived(status)
+        ? allPayments
+        : allPayments.filter((payment) => !payment.archived_at),
+    [allPayments, status],
   );
 
   // Ausschüttungsplan je Unternehmen → effektiver Monat je Zahlung (§10).
-  const payoutBySecurity = React.useMemo(() => {
-    const map = new Map<string, number[]>();
-    for (const security of securities) {
-      const months = normalizePayoutMonths(security.payout_months);
-      if (months.length > 0) map.set(security.id, months);
-    }
-    return map;
-  }, [securities]);
+  const payoutBySecurity = React.useMemo(
+    () => payoutMonthsBySecurity(securities),
+    [securities],
+  );
   const effectiveOf = React.useCallback(
     (payment: { pay_date: string; security_id: string }) =>
       effectivePayDate(payment.pay_date, payoutBySecurity.get(payment.security_id)),
@@ -210,9 +217,9 @@ export function PaymentsPage() {
 
   const years = React.useMemo(() => {
     const set = new Set<number>();
-    for (const payment of allPayments) set.add(yearOf(effectiveOf(payment)));
+    for (const payment of statusPayments) set.add(yearOf(effectiveOf(payment)));
     return [...set].sort((a, b) => b - a);
-  }, [allPayments, effectiveOf]);
+  }, [statusPayments, effectiveOf]);
 
   // --- Filtern → in sortierbare Zeilen abbilden → sortieren (§2/§3/§4). ---
   const rows = React.useMemo<Row[]>(() => {
@@ -229,10 +236,7 @@ export function PaymentsPage() {
       if (filterYear && yearOf(effectiveDate) !== filterYear) continue;
       if (filterMonth && monthOf(effectiveDate) !== filterMonth) continue;
 
-      const rel = (
-        payment as unknown as { securities?: { name: string; ticker: string | null } }
-      ).securities;
-      const companyName = rel?.name ?? securityById.get(payment.security_id)?.name ?? "";
+      const companyName = securityById.get(payment.security_id)?.name ?? "";
       const depot = depotById.get(payment.depot_id);
       const depotName = depot?.name ?? "";
 
@@ -349,7 +353,7 @@ export function PaymentsPage() {
       <PageHeader
         title="Dividenden"
         actions={
-          <Button className="hidden md:inline-flex" onClick={newPayment}>
+          <Button className="hidden md:inline-flex" {...newPayment}>
             <Plus /> Neue Dividende
           </Button>
         }
@@ -447,7 +451,7 @@ export function PaymentsPage() {
 
       {isLoading ? (
         <SkeletonRows rows={8} label="Dividendeneingänge" />
-      ) : allPayments.length === 0 && !hasActiveFilters ? (
+      ) : statusPayments.length === 0 && !hasActiveFilters ? (
         <EmptyState
           icon={Wallet}
           title="Noch kein Dividendeneingang erfasst"
