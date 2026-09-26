@@ -769,8 +769,9 @@ function PaymentRow({
  * (`state.from`). Auf breiten Schirmen bleiben sie in der Tabellenzeile —
  * dort zielt der Zeiger genau, und die Spalte kostet keine Zeile.
  *
- * Alle Abstaende folgen einem Raster: 12px Kachelrand (= Abstand zwischen den
- * Karten), 8px zwischen den Zeilen und zwischen den Elementen einer Zeile.
+ * Zeile 1 traegt nur den Namen, Zeile 2 Datum links und Betrag rechts. 12px
+ * Kachelrand (= Abstand zwischen den Karten), rechts 16px, damit Betrag und
+ * Chevron nicht am Rand kleben.
  */
 function PaymentCard({
   row,
@@ -788,11 +789,26 @@ function PaymentCard({
       <Link
         to={`/eingaenge/${payment.id}`}
         state={{ from: listUrl }}
-        className="flex items-center gap-2 rounded-lg border border-border p-3 outline-none transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring active:bg-accent motion-reduce:transition-none"
+        className="flex items-center gap-3 rounded-lg border border-border py-3 pl-3 pr-4 outline-none transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring active:bg-accent motion-reduce:transition-none"
       >
         <div className="min-w-0 flex-1">
-          <div className="flex items-baseline justify-between gap-2">
-            <span className="min-w-0 truncate font-medium">{companyName || "—"}</span>
+          {/* Der Name hat die erste Zeile fuer sich: Neben dem Betrag blieb auf
+              dem Telefon kaum Platz, laengere Namen brachen nach wenigen
+              Zeichen ab. */}
+          <div className="truncate font-medium">{companyName || "—"}</div>
+          {/* Ohne Depot: Wer die Liste nach Depot filtert oder nur eines
+              fuehrt, gewinnt daraus nichts. Die Detailansicht nennt es. */}
+          <div className="mt-1 flex items-center justify-between gap-2">
+            <span className="flex min-w-0 items-center gap-2">
+              <DateText className="text-sm text-muted-foreground">
+                {formatDate(effectiveDate)}
+              </DateText>
+              {cancelled && (
+                <Badge variant="warning" className="shrink-0">
+                  Storniert
+                </Badge>
+              )}
+            </span>
             {/* Der Betrag ist die Kernaussage der Karte und traegt deshalb mehr
                 Gewicht als der Name. Der Indikator steht wie in der Tabelle
                 links davon. */}
@@ -803,18 +819,6 @@ function PaymentCard({
                 className="text-lg font-semibold"
               />
             </span>
-          </div>
-          {/* Ohne Depot: Wer die Liste nach Depot filtert oder nur eines
-              fuehrt, gewinnt daraus nichts. Die Detailansicht nennt es. */}
-          <div className="mt-2 flex min-w-0 items-center gap-2">
-            <DateText className="text-sm text-muted-foreground">
-              {formatDate(effectiveDate)}
-            </DateText>
-            {cancelled && (
-              <Badge variant="warning" className="shrink-0">
-                Storniert
-              </Badge>
-            )}
           </div>
         </div>
         <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
