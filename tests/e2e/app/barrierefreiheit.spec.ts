@@ -86,7 +86,7 @@ test("gesetzte Filter sind frei von axe-Verstößen", async ({ page, konto }) =>
   await expect(page.getByLabel("Monat")).toHaveValue("1");
   // `#f-security`: „Unternehmen" heisst auch der Navigationspunkt daneben.
   await expect(page.locator("#f-security")).toHaveValue(konto.securityId);
-  await expect(page.getByText("1 Eingang gefunden.")).toBeVisible();
+  await expect(page.getByText(/^1 Eingang/)).toBeVisible();
   await pruefeAxe(page, "Eingangsliste mit Filtern");
 });
 

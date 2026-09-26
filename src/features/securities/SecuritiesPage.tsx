@@ -83,8 +83,9 @@ import type { Security } from "@/lib/supabase/repositories/securities";
  *
  * Alles Weitere — Stueckzahl, Kurs, Einstand, Rhythmus, Verlauf und die
  * Zahlungshistorie — steht eine Ebene tiefer auf der Detailseite, die der Name
- * oeffnet. Die Zeilenaktionen rechts bleiben unveraendert: bearbeiten,
- * archivieren und (nur archiviert) endgueltig loeschen.
+ * oeffnet. In der Tabelle stehen rechts die Zeilenaktionen (bearbeiten,
+ * archivieren, nur archiviert endgueltig loeschen); auf dem Telefon traegt sie
+ * der Kopf der Detailseite.
  */
 export function SecuritiesPage() {
   const { data: securities = [], isLoading } = useSecurities();
@@ -109,7 +110,7 @@ export function SecuritiesPage() {
   });
   const [deleteTarget, setDeleteTarget] = React.useState<Security | null>(null);
 
-  // Karten statt Tabelle auf dem Telefon — dasselbe Muster wie in der
+  // Listenzeilen statt Tabelle auf dem Telefon — dasselbe Muster wie in der
   // Dividendenliste. Sieben Spalten hinter einem seitlichen Bildlauf sind auf
   // 390px keine Uebersicht, sondern ein Versteck.
   const isWide = useMediaQuery(MD_BREAKPOINT_QUERY);
@@ -132,7 +133,7 @@ export function SecuritiesPage() {
   }, [securities]);
 
   // Stammdaten, Depotkonto und die Position aus dem juengsten Depotstand in
-  // einer Zeile. Bewusst **ein** Aufbau fuer Tabelle und Karten: Beide zeigen
+  // einer Zeile. Bewusst **ein** Aufbau fuer Tabelle und Liste: Beide zeigen
   // dieselben Zahlen, und zwei Ableitungen liefen frueher oder spaeter
   // auseinander.
   const rows = React.useMemo(
@@ -189,8 +190,9 @@ export function SecuritiesPage() {
     setShowArchived(false);
   };
 
-  // Die Zeilenaktionen sind fuer Tabelle und Karte dieselben — ein Aufbau, ein
-  // Verhalten (bearbeiten, archivieren/reaktivieren, endgueltig loeschen).
+  // Die Zeilenaktionen der Tabelle (bearbeiten, archivieren/reaktivieren,
+  // endgueltig loeschen). Auf dem Telefon stehen dieselben im Kopf der
+  // Detailseite; die Zeile ist dort eine Tippflaeche.
   const actionsFor = (security: Security) => (
     <AssetActions
       security={security}
@@ -626,9 +628,9 @@ function AssetItem({ row }: { row: AssetRow }) {
 }
 
 /**
- * Zeilenaktionen: bearbeiten, archivieren bzw. reaktivieren und — nur bei
- * archivierten Assets — endgueltig loeschen. Unveraendert gegenueber der
- * frueheren Liste und in Tabelle wie Karte dieselben.
+ * Zeilenaktionen der Tabelle: bearbeiten, archivieren bzw. reaktivieren und —
+ * nur bei archivierten Assets — endgueltig loeschen. Dieselben Aktionen traegt
+ * der Kopf der Detailseite.
  */
 function AssetActions({
   security,

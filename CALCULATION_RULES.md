@@ -365,15 +365,17 @@ Je Depot (auch archivierte): Dividendensumme, Anzahl Zahlungen, Anzahl Unternehm
 Entwicklung je Jahr (`yearlyBuckets`) und je Kalendermonat über alle Jahre
 (`calendarMonthBuckets`, zwölf Eimer). Grundordnung: Summe ↓, dann Anzahl ↓.
 
-### 11.7 Heatmap und Diagramme
+### 11.7 Diagramme und Tönung der Matrix
 
-- **Heatmap** (`heatmapByYearMonth`): eine Zeile je Jahr (neueste zuerst), je zwölf
-  Monatseimer (`monthlyBuckets`). Die Farbintensität ist rein visuell (Wurzelskalierung der
-  Nettosumme); Betrag und Anzahl je Zelle sind zusätzlich als Text (Titel/Screenreader) verfügbar.
-- Alle Diagramme (Jahres-/Monatsentwicklung, Unternehmen nach Summe, Depotverteilung, Heatmap)
-  erhalten die aggregierten Werte fertig aus der Analytics-Schicht und enthalten **keine** eigene
-  Berechnung. Balkenhöhen/Zellintensitäten nutzen `Money.toChartNumber()` ausschließlich visuell
-  (§1/§8); alle angezeigten Beträge stammen aus `formatMoney`.
+- Die frühere **Heatmap** ist in der Matrix Jahre × Monate aufgegangen (§11.12): In der Ansicht
+  „Summe je Monat" ist jede Zelle nach der Höhe ihres Betrags getönt. Die Tönung ist rein
+  visuell (Wurzelskalierung der Nettosumme, höchstens 40 % Deckkraft); Betrag und Anzahl stehen
+  als Text in der Zelle.
+- Alle Diagramme (Jahres-/Monatsentwicklung, Unternehmen nach Summe, Depotverteilung) erhalten
+  die aggregierten Werte fertig aus der Analytics-Schicht und enthalten **keine** eigene
+  Berechnung. Balkenhöhen/Zelltönungen nutzen `Money.toChartNumber()` ausschließlich visuell
+  (§1/§8); alle angezeigten Beträge stammen aus `formatMoney` bzw. — in der gedrehten Matrix
+  des iPhones, deren Währung einmal darunter steht — aus `formatAmount`.
 
 ### 11.8 Filter (`filterPayments`)
 
@@ -391,9 +393,9 @@ Parameter wirken nur nicht mehr.
 
 ### 11.9 Drill-down-Garantie
 
-Jede Kennzahl, jeder Diagrammbalken, jede Heatmap-Zelle und jede Tabellenzeile navigiert in die
+Jede Kennzahl, jeder Diagrammbalken, jede Matrixzelle und jede Tabellenzeile navigiert in die
 gefilterte Zahlungsliste (`/eingaenge`) bzw. — bei „Jahr → Monate dieses Jahres" — in den
-Monats-Unterbereich mit gesetztem Jahresfilter. Der aktive Statistikfilter (Unternehmen/Depot/Jahr)
+Verlauf nach Monaten (`/statistiken/verlauf?nach=monate`) mit gesetztem Jahresfilter. Der aktive Statistikfilter (Unternehmen/Depot/Jahr)
 wird dabei mit dem konkreten Drill-Kriterium zusammengeführt, sodass die Zielliste dieselbe
 Teilmenge zeigt (Grundsatz 6). `source`/`payment_type` sind in der Zahlungsliste nicht filterbar
 und bleiben beim Drill-down unberücksichtigt.
@@ -487,11 +489,12 @@ Jede Zahlung in `/eingaenge` trägt einen Indikator, wie sie zur Zahlung desselb
 
 ## 11.12 Breakdown — Jahre × Monate (`breakdownMatrix`)
 
-Alle Jahre und Monate in **einer** Matrix (`/statistiken/breakdown`): eine Zeile je
-Kalenderjahr mit Zahlungen (**absteigend**, neueste zuerst), eine Spalte je Kalendermonat
-(1..12). Rein zahlengetrieben, ohne Diagramm — die Frage lautet „Wie steht dieser Monat
-gegenüber demselben Monat der Vorjahre?", und darauf antwortet eine Tabelle genauer als eine
-Kurve.
+Alle Jahre und Monate in **einer** Matrix (Statistik-Übersicht `/statistiken`; die frühere
+Adresse `/statistiken/breakdown` leitet dorthin): eine Zeile je Kalenderjahr mit Zahlungen
+(**absteigend**, neueste zuerst), eine Spalte je Kalendermonat (1..12). Zahlengetrieben, ohne
+Diagramm — die Frage lautet „Wie steht dieser Monat gegenüber demselben Monat der Vorjahre?",
+und darauf antwortet eine Tabelle genauer als eine Kurve. Auf dem iPhone steht dieselbe Matrix
+gedreht (Monate als Zeilen, Jahre als Spalten); die Rechnung ist dieselbe.
 
 **Jahre als Zeilen, nicht als Spalten.** Monate sind zwölf und bleiben zwölf; Jahre kommen
 jedes Jahr eines dazu. Die Breite der Tabelle steht damit dauerhaft fest, sie wächst nur nach

@@ -108,7 +108,9 @@ als Serienfarbe benutzt — auch dann nicht, wenn ein Farbton ähnlich aussieht.
 - Radius 8 px (Karten 12 px); Schatten nur eine dezente Stufe für schwebende Elemente
   (Dialoge, Popover) — Karten trennen sich per Fläche und 1-px-Border, nicht per Schatten.
 - Animationen: nur funktionale Übergänge ≤ 200 ms (Panel auf/zu, Fokus); Diagramme ohne
-  Intro-Animation; `prefers-reduced-motion` schaltet alles ab.
+  Intro-Animation — für alle, nicht nur bei `prefers-reduced-motion` (`CHART_SERIES_PROPS` in
+  `chartTheme.ts`): Die Reihen wuchsen rund 1,5 s aus der Nulllinie, so lange stand ein leeres
+  Diagramm auf der Seite. `prefers-reduced-motion` schaltet die übrigen Übergänge ab.
 
 ## 2. Komponentenbibliothek (shadcn/ui-Basis)
 
@@ -126,8 +128,13 @@ Eigene zusammengesetzte Komponenten (fachlich):
 | Komponente | Zweck |
 |---|---|
 | `AmountText` | Betragsdarstellung: tabular-nums, Währung, Vorzeichen, Farbe (semantisch), niemals Rundung in der Komponente |
-| `StatCard` | Kennzahl: Wert, Label, Vergleichswert (Δ absolut + %), Drill-down-Link; max. 4 primäre StatCards pro Ansicht (Hierarchie statt Kennzahlflut) |
-| `PaymentTable` / `PaymentCardList` | Tabelle (Desktop/iPad, Aktionen je Zeile) bzw. Kartenliste (iPhone, jede Karte eine Tippfläche zur Detailseite) mit identischer Datenquelle und Filterzustand |
+| `StatCard` / `StatGrid` | **Eine** Kennzahlkachel für alle Bereiche (die Übersicht hatte eine eigene Fassung): Beschriftung, Wert, Zusatz am Kachelboden. Zwei je Zeile schon auf dem Telefon; die Kacheln einer Reihe teilen sich ihre Zeilen per CSS-Subgrid, sodass Beschriftung, Wert und Zusatz nebeneinander auf einer Linie stehen, ohne Platz für eine zweite Beschriftungszeile zu reservieren. Ein Drill-down macht die **ganze Kachel** zur Tippfläche (Link auf dem Wert, per `::after` gedehnt). Max. 4 primäre StatCards pro Ansicht (Hierarchie statt Kennzahlflut) |
+| `ListGroup` / `ListRow` / `ListItemBody` / `ListSection` | **Eine Listenform** für Einträge (`components/ui/list.tsx`): eine Fläche mit Trennlinien statt einzelner Karten — auf der Seite ist die Liste selbst die Karte, in einer Karte trägt sie keinen zweiten Rahmen (`inset`). Zeile 1 der Name (höchstens zwei Zeilen), Zeile 2 Angaben links und Wert rechts; `asChild` macht die ganze Zeile zur Tippfläche. `ListSection` gruppiert (Monat, „Diese Woche") mit Kennzahl im Kopf |
+| `PaymentListItem` | Ein Dividendeneingang als Zeile — dieselbe in Dividendenliste, Übersicht und Assetseite: Name, Datum · Depot, Betrag (Depot wird gekürzt, nie umbrochen). Auf der Assetseite ist das Datum der Titel |
+| `PaymentTable` / Liste | Tabelle ab `md` (Aktionen je Zeile) bzw. `PaymentListItem`-Liste auf dem Telefon, nach Datum sortiert nach Monat gruppiert mit Monatssumme im Kopf; darüber Anzahl und Summe der Auswahl; „weitere laden" statt Blättern (die geladene Menge steht in der Adresse, der Weg zurück findet sie wieder) |
+| `DetailHeader` | **Ein** Kopf für Zahlung, Asset und Ziel: Rückweg links und Symbolaktionen rechts in einer Zeile, darunter Titel samt Zustand (nur der Sonderfall), Zusatzzeile und — wo es eine gibt — die Kennzahl (Betrag der Zahlung). Bearbeiten, Stornieren/Archivieren, Löschen stehen hier und nicht in den Listen: Eine Zeile ist **eine** Tippfläche |
+| `SegmentedControl` | Umschalter zwischen wenigen Zuständen (Erscheinungsbild, Kalenderansicht, Verlauf nach Jahren/Monaten) — immer Symbol **und** Text, als Optionsgruppe (`radiogroup`); auf dem Telefon in voller Breite |
+| `StatTable` | Statistiktabelle ab `md`; auf dem Telefon eine Liste (Name und Kennzahl oben, weitere Spalten beschriftet darunter, Sortierung als `FilterSort`). Nebenkennzahlen (`listHidden`) entfallen dort |
 | `FilterBar` / `FilterField` / `FilterSort` / `FilterReset` | **Eine** Filterleiste für alle Bereiche (Dividenden, Depot, Statistik) — dieselben Bausteine, dieselben Abstände. Ab `sm` dauerhaft sichtbar, darunter eine aufklappbare Zeile mit der Zahl wirkender Filter. Regeln unten |
 | `ComparisonBreakdown` | Gegenüberstellung Zeile für Zeile (Monate oder Unternehmen): ab `md` eine Tabelle mit vier Spalten, darunter eine Liste — je Zeile Name und Differenz, darunter beide Zeiträume. Vier Spalten passen bei 390 px nicht nebeneinander, und die Seite soll auf dem Telefon nicht seitlich verschiebbar sein |
 | `EntitySelect` | **Die** Auswahlliste für Unternehmen und Depots — überall dieselbe: neutrale Auswahl („Alle Unternehmen"), darunter die Gruppen „Aktiv" und „Archiviert" (leere Gruppe entfällt), sortiert nach deutschem Alphabet. Archivierte bleiben wählbar, stehen aber nicht zwischen den aktiven. Neue Unternehmens-/Depotauswahlen in Filterleisten verwenden ausschließlich diese Komponente |
@@ -163,6 +170,9 @@ ein anderer Platz fürs Zurücksetzen fallen beim Wechsel sofort auf.
   technische Zusätze („Nach Depot", nicht „Nach Standard-Depot").
 - **Auf dem Telefon** steht ein Bedienelement je Zeile, in voller Breite — auch das
   Zurücksetzen.
+- **Status ist ein Filter.** „Stornierte" (Dividenden) und „Archivierte" (Assets) stehen als
+  Auswahl in der Leiste („Ohne Stornierte" / „Mit Stornierten" / „Nur Stornierte"), vor der
+  Sortierung — nicht mehr als Kontrollkästchen am Seitenende unter der ganzen Liste.
 
 ## 3. Diagramm-Richtlinien
 
@@ -210,12 +220,18 @@ ein anderer Platz fürs Zurücksetzen fallen beim Wechsel sofort auf.
 
 - Bottom Navigation (5 Slots): Übersicht · Eingänge · **＋ Erfassen** (zentral, hervorgehoben)
   · Statistiken · Mehr (Kalender, Depot, Ziele, Einstellungen).
-- Karten statt breiter Tabellen: je Zahlung eine Karte (Unternehmen, Datum, Netto prominent,
-  Typ-Badge); unendliches Scrollen mit Jahres-Sprungmarken.
+- Listen statt breiter Tabellen: je Zahlung eine Zeile (`PaymentListItem`), nach Monat
+  gruppiert mit Monatssumme; „weitere laden" statt Blättern. Tabellen der Statistik werden zu
+  Listen (`StatTable`), die Matrix Jahre × Monate steht gedreht (Monate als Zeilen).
+- Dialoge als Panel am unteren Rand (Sheet): Aktionen in voller Breite in einer Fußzeile, die
+  beim Scrollen stehen bleibt; Schließen mit 44-px-Fläche.
+- Unterbereiche hinter „Mehr" (Kalender, Depot, Ziele, Einstellungen) markieren „Mehr" in der
+  Bottom-Navigation.
 - Schnelle manuelle Erfassung: Formular als Full-Screen-Sheet, sinnvolle Defaults (heutiges
   Datum, zuletzt genutztes Depot), Wertpapier-Suchfeld mit Zuletzt-Liste, numerische
   Tastatur (`inputmode="decimal"`), Einhandbedienung (primäre Aktionen unten).
-- Kompakte Statistiken: horizontal blätterbare StatCards, Diagramme volle Breite.
+- Kompakte Statistiken: StatCards zwei je Zeile, Diagramme volle Breite, fünf Reiter
+  (Übersicht, Verlauf, Vergleich, Unternehmen, Depotkonten).
 - Progressive Offenlegung komplexer Filter (FilterBar-Sheet); keine Hover-Abhängigkeiten
   (alle Aktionen tapbar, Kontextmenüs als Long-Press mit sichtbarer Alternative).
 - Touch-Ziele ≥ 44×44 pt; Safe Areas (`env(safe-area-inset-*)`) für Notch/Home-Indicator;
@@ -286,7 +302,8 @@ Verlauf → Top-Unternehmen + Depotverteilung (nebeneinander ab `lg`) → letzte
 historische Übersicht. Ruhig, datenorientiert; keine dekorativen Visualisierungen, keine
 3D-Diagramme, keine dauerhafte grün/rot-Bewertung saisonaler Schwankungen.
 
-**Responsive:** KPI-Raster 1 → 2 → 3 Spalten (iPhone/iPad/Desktop); Diagramm füllt die Breite
+**Responsive:** vier KPI-Kacheln, Raster 2 → 4 Spalten (iPhone/Desktop); die Gesamtsumme aller
+Jahre steht nur in der historischen Übersicht am Seitenende, nicht zusätzlich als Kachel; Diagramm füllt die Breite
 (`ResponsiveContainer`), Top-Listen/Depotverteilung als horizontale Balken (auf schmalen Geräten
 untereinander). Touch-Ziele ≥ 44 px (Buttons `size="sm"`/`default`), `overflow-x` nur innerhalb
 scrollbarer Container (Datentabellen).
@@ -312,11 +329,11 @@ und Datenquelle, weist auf die dauerhafte Wirkung hin und nennt die Aktion
 „Dauerhaft löschen" (kein generisches „OK"); Alternative „Abbrechen".
 
 **Responsive.** Desktop: tabellarische Liste mit Filterleiste und sortierbaren
-Optionen. Mobile: kompakte Karten statt gequetschter Tabelle
-— Betrag als hervorgehobene Kernaussage, Aktionen als Symbolschaltflächen mit
-denselben Symbolen und Namen wie in der Tabelle (`aria-label`, 44-px-Ziel);
-Filter/Sortierung als Selects. Drei beschriftete Schaltflächen verlängerten die
-Karte um zwei Zeilen, ohne mehr auszusagen.
+Optionen. Mobile: Listenzeilen statt gequetschter Tabelle (`PaymentListItem`) —
+jede Zeile eine Tippfläche zur Detailseite; die Aktionen stehen dort im Kopf als
+Symbolschaltflächen mit denselben Symbolen und Namen wie in der Tabelle
+(`aria-label`, 44-px-Ziel). Filter/Sortierung als Selects. Dasselbe Muster gilt für
+Assets und Ziele.
 
 **Keine Mehrfachauswahl.** Die Liste hat weder Kästchen noch Aktionsleiste.
 Jede Zeile trägt ihre Aktionen selbst (Bearbeiten, Stornieren/Reaktivieren,
@@ -345,8 +362,9 @@ liefen die Zeiträume durcheinander.
 
 **Zielkarte.** `GoalCard` ist **eine** Komponente für Zielseite und Übersicht;
 eine zweite, kürzere Fassung für das Dashboard gab es, und dieselbe Sache sah an
-zwei Stellen unterschiedlich aus. Auf der Übersicht entfällt allein die Zeile
-mit „Bearbeiten"/„Löschen" — die Dialoge dafür liegen auf der Zielseite.
+zwei Stellen unterschiedlich aus. Die ganze Karte führt zur Detailseite;
+„Bearbeiten" und „Löschen" stehen dort im Kopf (`DetailHeader`) — wie bei
+Eingängen und Assets.
 
 **Zielart erkennbar machen.** Jahres- und Monatsziel tragen dieselbe Karte und
 waren dadurch kaum zu unterscheiden. Eine 36-px-Symbolkachel trennt sie
@@ -367,10 +385,13 @@ Restbetragssatz. Eine Zeile, die Zielart und Zeitraum wiederholt, gibt es nicht
 `role="progressbar"` mit `aria-valuemin/max/now` und aussagekräftigem
 `aria-valuetext` (Betrag + Prozent, bei Überschreitung inkl. übertroffenem
 Betrag). Der Balken ist visuell auf 100 % begrenzt; der reale Prozentwert steht
-zusätzlich als Text. Information nie nur über Farbe (Status-Badge mit Text).
+zusätzlich als Text; ein „Ziel 100 %" am Balkenende entfällt, es sagte immer
+dasselbe. Information nie nur über Farbe (Status-Badge mit Text).
 Fortschrittsanimation nur dezent und `motion-reduce`-fest. Bevorstehende Ziele
 zeigen „Beginnt am …" statt Fortschritt (keine negative Bewertung, keine
-Prognose).
+Prognose) und kein „Erhalten 0,00 €". Die Detailseite zeigt Zielbetrag, Erhaltenes
+und Restbetrag als 2×2-Raster; die Zielerreichung in Prozent nennt der Balken, ein
+eigener Wert dafür wiederholte ihn.
 
 **Formular.** Dialog mit React Hook Form + Zod, deutsche Betragseingabe
 (decimal-sicher), verständliche, an Felder gebundene Fehlermeldungen, Schutz vor

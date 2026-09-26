@@ -333,8 +333,9 @@ GUI-Wizard-Schicht ist eine dünne Hülle über exakt diesen getesteten Funktion
   Monatsvergleich, decimal-sichere Summe (0,1 + 0,2 = 0,30).
 - `yearSelection.test.ts` — URL-Parameter: „all", gültige Jahre, sichere Rückfälle bei
   ungültigem Parameter.
-- `KpiCards.test.tsx` — Render-Smoke mit echter Analytics-Verdrahtung (historische Summe,
-  Ø-pro-Monat nur bei Einzeljahr, ausschüttende Unternehmen).
+- `KpiCards.test.tsx` — Render-Smoke mit echter Analytics-Verdrahtung: vier Kacheln (die
+  Gesamtsumme aller Jahre steht nicht mehr darunter), Ø-pro-Monat nur bei Einzeljahr, Zahl der
+  Zahlungen als Zusatz der Jahreskachel bzw. als vierte Kachel samt Herkunft.
 
 **Integration (`tests/integration/dashboard.test.ts`, benötigt lokale Postgres-DB):**
 aktive Zahlungen des Nutzers, Ausschluss stornierter/archivierter Zahlungen, Einbeziehung
@@ -356,20 +357,25 @@ weiterhin über Unit- und Integrationstests abgedeckt.
   Monat/bestes Jahr, erstes/letztes Datum), Jahresstatistik (Sortierung neueste zuerst, bester/
   schwächster Monat, Vorjahresvergleich inkl. fehlendem Vorjahr), Monatsstatistik (12 Monate,
   Entwicklung über Jahre), Unternehmensstatistik + vier Sortierkriterien (Summe/Anzahl/Name/
-  letzte Zahlung), Depotstatistik (Jahres-/Monatsentwicklung), Heatmap, sowie ein
+  letzte Zahlung), Depotstatistik (Jahres-/Monatsentwicklung), sowie ein
   Skalierungstest (≥ 10.000 Eingänge / ≥ 500 Unternehmen / mehrere Depots) auf Korrektheit
   und lineare Aggregation.
 - `filterParams.test.ts` — URL-Parameter des Statistikfilters: Parsen gültiger/ungültiger Werte,
   Verwerfen unbekannter Enum-Werte und von Zukunftsjahren, Round-Trip Serialisierung↔Parsing,
   Erhalt nach Reload, Unversehrtheit fremder Parameter.
 - `StatTable.test.tsx` — generische Tabelle: Ausgangsreihenfolge, Sortierung per Spaltenkopf
-  (desc→asc), `initialSort`, Suche, Paginierung, Tastatur-Drill-down (`Enter`).
+  (desc→asc), `initialSort`, Suche, Paginierung, Tastatur-Drill-down (`Enter`). Dazu die
+  Listenfassung des Telefons: keine Tabelle, beschriftete Werte je Zeile, Nebenkennzahlen
+  (`listHidden`) entfallen, Sortierung über Auswahl und Richtungsschalter, ein Link in der
+  Zeile löst den Drill-down der Zeile nicht zusätzlich aus.
 - `OverviewTab.test.tsx` — Render-Smoke des Übersichts-Unterbereichs mit echter
-  Analytics-Verdrahtung über den Outlet-Kontext (historische Summe, Kernkennzahlen,
-  Diagramm-Datentabelle).
-- `PaymentsHeatmap.test.tsx` — Heatmap-Zellen: Ein Monat **ohne** Zahlungen nennt seinen Wert
-  als Text (er stand zuvor in einem `aria-label` auf einem `div` und wurde dort nicht
-  vorgelesen), ein Monat **mit** Zahlungen ist bedienbar und benannt, und nur er.
+  Analytics-Verdrahtung über den Outlet-Kontext (Kernkennzahlen, Matrix statt Jahresdiagramm
+  und Heatmap).
+- `YearMonthMatrix.test.tsx` — Matrix Jahre × Monate ab `md` (Jahre als Zeilen, Monate als
+  Spalten, Drill-down je Betrag, Ansichten, Tönung der früheren Heatmap, Jahresfilter wirkt
+  nicht) und gedreht auf dem Telefon (Monate als Zeilen, jüngstes Jahr vorn, Währung einmal
+  statt je Zelle, vorgelesen wird der volle Betrag).
+- `historyParams.test.ts` — Ebene des Verlaufs in der Adresse (`?nach=monate`).
 - `comparison.test.ts` — Zeitraumvergleich (CALCULATION_RULES.md §11.10). Schwerpunkt
   **Teiljahr**, weil dort der teuerste Fehler dieser Auswertungsart sitzt: Kappung in beide
   Richtungen (laufendes Jahr im Vordergrund **und** als Vergleichsseite), 250 € gegen 200 €

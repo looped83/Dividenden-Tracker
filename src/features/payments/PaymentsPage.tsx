@@ -535,7 +535,7 @@ export function PaymentsPage() {
       ) : (
         <>
           {/* Eine Darstellung statt zweier per CSS versteckter: Tabelle und
-              Karten zeigen dieselben Zeilen, standen aber beide im DOM — jede
+              Liste zeigen dieselben Zeilen, standen aber beide im DOM — jede
               Zeile wurde doppelt gerendert, samt doppelt gebauter
               Money-Objekte. */}
           {isWide ? (

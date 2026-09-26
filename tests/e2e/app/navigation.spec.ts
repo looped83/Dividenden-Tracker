@@ -44,18 +44,22 @@ test("ein Wechsel des Bereichs beginnt oben, der Weg zurueck an Ort und Stelle",
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(unten);
 });
 
-test("Blaettern beginnt oben, der Weg zurueck endet auf derselben Seite", async ({
+test("weitere laden haengt an, der Weg zurueck endet an derselben Stelle", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1280, height: 700 });
   await page.goto("/#/eingaenge");
-  await expect(page.getByText(/1–25 von 40/)).toBeVisible();
+  await expect(page.getByText("25 von 40 angezeigt")).toBeVisible();
 
-  // Die Schaltflaeche steht unter der Liste; ohne Zutun saehe man danach das
-  // Ende der neuen Seite.
-  await page.getByRole("button", { name: "Weiter" }).click();
-  await expect(page.getByText(/26–40 von 40/)).toBeVisible();
-  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+  // Angehaengt statt umgeblaettert: Die Position bleibt, wo sie war — man
+  // liest einfach weiter.
+  await page.evaluate(() => {
+    window.scrollTo(0, document.body.scrollHeight);
+  });
+  const vorher = await page.evaluate(() => window.scrollY);
+  await page.getByRole("button", { name: "15 weitere laden" }).click();
+  await expect(page.getByRole("button", { name: /weitere laden/ })).toHaveCount(0);
+  expect(await page.evaluate(() => window.scrollY)).toBe(vorher);
 
   await page.evaluate(() => {
     window.scrollTo(0, document.body.scrollHeight);
@@ -67,21 +71,23 @@ test("Blaettern beginnt oben, der Weg zurueck endet auf derselben Seite", async 
     .click();
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 
-  // Frueher lag die Seite im Komponentenzustand: Zurueck landete auf Seite 1,
-  // aber an der Bildlaufposition von Seite 2.
+  // Die geladene Menge steht in der Adresse: Zurueck zeigt wieder alle 40
+  // Eingaenge an derselben Stelle, nicht die ersten 25.
   await page.goBack();
-  await expect(page.getByText(/26–40 von 40/)).toBeVisible();
+  await expect(page.getByRole("button", { name: /weitere laden/ })).toHaveCount(0);
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(unten);
 });
 
-test("auf dem Telefon fuehrt die Karte zur Detailseite und diese samt Seite zurueck", async ({
+test("auf dem Telefon fuehrt die Zeile zur Detailseite und diese samt Liste zurueck", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/#/eingaenge?page=2");
-  await expect(page.getByText(/26–40 von 40/)).toBeVisible();
+  // Zwei „Seiten" geladen: alle 40 Eingaenge, nichts mehr nachzuladen.
+  await expect(page.getByRole("link", { name: /Muster AG/ })).toHaveCount(40);
+  await expect(page.getByRole("button", { name: /weitere laden/ })).toHaveCount(0);
 
-  // Eine Tippflaeche je Karte, keine Aktionen darauf.
+  // Eine Tippflaeche je Zeile, keine Aktionen darauf.
   await expect(page.getByRole("button", { name: /stornieren/i })).toHaveCount(0);
   await page
     .getByRole("link", { name: /Muster AG/ })
@@ -92,7 +98,7 @@ test("auf dem Telefon fuehrt die Karte zur Detailseite und diese samt Seite zuru
   await expect(
     page.getByRole("button", { name: "Stornieren", exact: true }),
   ).toBeVisible();
-  // … und ihr Rueckweg kennt Filter und Seite der Liste.
+  // … und ihr Rueckweg kennt Filter und geladene Menge der Liste.
   await page.getByRole("link", { name: "Zu den Dividenden" }).click();
-  await expect(page.getByText(/26–40 von 40/)).toBeVisible();
+  await expect(page.getByRole("link", { name: /Muster AG/ })).toHaveCount(40);
 });
