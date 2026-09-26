@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Ban, Pencil, RotateCcw, Trash2 } from "lucide-react";
+import { ArrowLeft, Ban, ChevronDown, Pencil, RotateCcw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageSkeleton } from "@/components/layout/PageSkeleton";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ import { AmountText } from "@/components/money/AmountText";
 import { DateText } from "@/components/DateText";
 import { AuditTrail } from "@/components/audit/AuditTrail";
 import { Money, toCurrencyCode, toGermanDecimalString } from "@/lib/money";
+import { cn } from "@/lib/utils/cn";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { useDepots } from "@/features/depots/hooks";
 import { useSecurities } from "@/features/securities/hooks";
@@ -66,6 +67,7 @@ export function PaymentDetailPage() {
   const [stornoError, setStornoError] = React.useState<string | null>(null);
   const [deleteOpen, setDeleteOpen] = React.useState(false);
   const [deleteError, setDeleteError] = React.useState<string | null>(null);
+  const [historyOpen, setHistoryOpen] = React.useState(false);
 
   // Provenance importierter Eingänge (§6): Herkunftszeile + Importlauf.
   const imported = payment ? isImported(payment.source) : false;
@@ -180,22 +182,12 @@ export function PaymentDetailPage() {
 
   return (
     <div className="space-y-6">
-      {backLink}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">
-            {security?.name ?? "Dividendeneingang"}
-          </h1>
-          <DateText className="text-sm text-muted-foreground">
-            {formatDate(payment.pay_date)}
-          </DateText>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {cancelled ? (
-            <Badge variant="warning">Storniert</Badge>
-          ) : (
-            <Badge variant="positive">Aktiv</Badge>
-          )}
+      {/* Die Aktionen stehen in der Zeile des Rueckwegs oben rechts: Unter
+          dem Titel rutschten sie auf dem Telefon in eine eigene Zeile, und
+          der Titel musste sich den Platz mit ihnen teilen. */}
+      <div className="flex items-center justify-between gap-2">
+        {backLink}
+        <div className="flex shrink-0 items-center gap-2">
           {!cancelled && (
             <Button variant="outline" size="icon" asChild aria-label="Bearbeiten">
               <Link
@@ -244,6 +236,19 @@ export function PaymentDetailPage() {
           </Button>
         </div>
       </div>
+      {/* Nur der Ausnahmezustand traegt ein Abzeichen: „Aktiv" ist der
+          Normalfall und sagte nichts, was die Seite nicht ohnehin zeigt. */}
+      <div>
+        <h1 className="text-xl font-semibold tracking-tight break-words">
+          {security?.name ?? "Dividendeneingang"}
+        </h1>
+        <div className="mt-1 flex items-center gap-2">
+          <DateText className="text-sm text-muted-foreground">
+            {formatDate(payment.pay_date)}
+          </DateText>
+          {cancelled && <Badge variant="warning">Storniert</Badge>}
+        </div>
+      </div>
 
       {/* Zwei Spalten ab `lg` statt einer schmalen Saeule: Die Seite war als
           einzige auf `max-w-2xl` begrenzt und wirkte neben den uebrigen
@@ -286,7 +291,6 @@ export function PaymentDetailPage() {
               <AmountText amount={Money.fromString(payment.net_amount, currency)} />
             </DetailRow>
             <DetailRow label="Währung">{payment.original_currency}</DetailRow>
-            <DetailRow label="Status">{cancelled ? "Storniert" : "Aktiv"}</DetailRow>
             <DetailRow label="Datenquelle">{sourceLabel(payment.source)}</DetailRow>
             {payment.note && <DetailRow label="Notiz">{payment.note}</DetailRow>}
             <DetailRow label="Erstellt">{formatDateTime(payment.created_at)}</DetailRow>
@@ -359,12 +363,36 @@ export function PaymentDetailPage() {
         )}
 
         <Card className={imported ? "lg:col-span-2" : undefined}>
-          <CardHeader>
-            <CardTitle>Änderungsverlauf</CardTitle>
+          {/* Eingeklappt: Der Verlauf ist Nachschlagewerk, keine Kernaussage.
+              Er wird erst beim Aufklappen gerendert und damit auch erst dann
+              geladen — die Seite spart die Abfrage, solange niemand fragt. */}
+          <CardHeader className="p-0 sm:p-0">
+            <CardTitle>
+              <button
+                type="button"
+                aria-expanded={historyOpen}
+                aria-controls="payment-history"
+                onClick={() => {
+                  setHistoryOpen((open) => !open);
+                }}
+                className="flex min-h-11 w-full items-center justify-between gap-2 rounded-lg p-4 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring sm:p-6"
+              >
+                Änderungsverlauf
+                <ChevronDown
+                  className={cn(
+                    "size-4 shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none",
+                    historyOpen && "rotate-180",
+                  )}
+                  aria-hidden
+                />
+              </button>
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <AuditTrail entityType="dividend_payment" entityId={payment.id} />
-          </CardContent>
+          {historyOpen && (
+            <CardContent id="payment-history">
+              <AuditTrail entityType="dividend_payment" entityId={payment.id} />
+            </CardContent>
+          )}
         </Card>
       </div>
 

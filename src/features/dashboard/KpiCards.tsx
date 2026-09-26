@@ -2,6 +2,7 @@ import * as React from "react";
 import { Link } from "react-router";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { AmountText } from "@/components/money/AmountText";
+import { NOT_AVAILABLE } from "@/lib/money";
 import { cn } from "@/lib/utils/cn";
 import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
 import type { AnalyticsPayment, YearSelection } from "@/lib/statistics";
@@ -21,12 +22,12 @@ import {
   type RefDate,
 } from "@/lib/statistics";
 import {
-  describeComparison,
   describeSelection,
   formatIsoDate,
   formatMonthYear,
   paymentsListHref,
   type ComparisonTone,
+  splitComparison,
 } from "./format";
 
 const toneClass: Record<ComparisonTone, string> = {
@@ -40,7 +41,7 @@ interface KpiCardProps {
   value: React.ReactNode;
   caption?: string | undefined;
   footnote?: React.ReactNode | undefined;
-  comparison?: { text: string; tone: ComparisonTone } | undefined;
+  comparison?: { value: string; caption: string; tone: ComparisonTone } | undefined;
   /** Genaue Bedeutung des Vergleichs (Titel der Vergleichszeile). */
   comparisonHint?: string | undefined;
   to?: string | undefined;
@@ -86,12 +87,16 @@ function KpiCard({
             dem iPhone einzeilig; der volle Satz steht im Titel. */}
         <div className="space-y-0.5">
           {comparison && (
-            <p
-              className={cn("text-xs", toneClass[comparison.tone])}
+            // Betrag und Prozent je in eigener Zeile: Hintereinander brach
+            // „+12,34 € · +5,0 % ggü. Vorjahr" in der halbbreiten Kachel mitten
+            // im Satz um.
+            <div
+              className={cn("space-y-0.5 text-xs", toneClass[comparison.tone])}
               title={comparisonHint}
             >
-              {comparison.text}
-            </p>
+              {comparison.value !== NOT_AVAILABLE && <p>{comparison.value}</p>}
+              <p>{comparison.caption}</p>
+            </div>
           )}
           {caption && <p className="text-xs text-muted-foreground">{caption}</p>}
           {footnote && <div className="text-xs text-muted-foreground">{footnote}</div>}
@@ -119,7 +124,7 @@ export function KpiCards({ payments, selection, today }: KpiCardsProps) {
     const { current, prior } = selectedYearComparison(payments, selection, ref);
     const selectedComparison = isAll
       ? undefined
-      : describeComparison(comparePeriods(current, prior), "ggü. Vorjahr");
+      : splitComparison(comparePeriods(current, prior), "ggü. Vorjahr");
     const selectedComparisonHint = isCurrentYear
       ? "Gegenüber dem gleichen Zeitraum des Vorjahres"
       : "Gegenüber dem Vorjahr";
@@ -127,7 +132,7 @@ export function KpiCards({ payments, selection, today }: KpiCardsProps) {
     // 5.2 Aktueller Monat (immer, unabhaengig von der Jahresauswahl)
     const monthAgg = currentMonthAggregate(payments, ref);
     const monthCompare = currentMonthComparison(payments, ref);
-    const monthComparison = describeComparison(
+    const monthComparison = splitComparison(
       comparePeriods(monthCompare.current, monthCompare.prior),
       "ggü. Vorjahr",
     );
@@ -234,7 +239,7 @@ export function KpiCards({ payments, selection, today }: KpiCardsProps) {
 
       {/* 5.3 Historische Gesamtsumme */}
       <KpiCard
-        label="Historisch erhaltene Dividenden"
+        label="Dividenden gesamt"
         value={<AmountText amount={cards.history.net} />}
         footnote={
           cards.history.firstPayDate && cards.history.lastPayDate

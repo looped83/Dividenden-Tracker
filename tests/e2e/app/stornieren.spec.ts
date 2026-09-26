@@ -17,9 +17,12 @@ test("storniert einen Eingang mit Grund und reaktiviert ihn wieder", async ({
 }) => {
   const id = konto.paymentIds[0] ?? "";
   await page.goto(`/#/eingaenge/${id}`);
-  // Der Zustand steht als Kennzeichen oben und nochmals in der Datenzeile.
-  const kennzeichen = page.getByText("Aktiv").first();
-  await expect(kennzeichen).toBeVisible();
+  // Aktiv ist der Normalfall und traegt kein Kennzeichen; nur „Storniert"
+  // wird ausgewiesen.
+  await expect(
+    page.getByRole("button", { name: "Stornieren", exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText("Storniert")).toHaveCount(0);
 
   await page.getByRole("button", { name: "Stornieren", exact: true }).click();
   const dialog = page.getByRole("dialog");
@@ -50,7 +53,9 @@ test("storniert einen Eingang mit Grund und reaktiviert ihn wieder", async ({
   // Reaktivieren stellt ihn wieder her.
   await page.goto(`/#/eingaenge/${id}`);
   await page.getByRole("button", { name: "Reaktivieren" }).click();
-  await expect(page.getByText("Aktiv").first()).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Stornieren", exact: true }),
+  ).toBeVisible();
 
   await page.goto("/#/?year=2026");
   await expect(page.getByText("64,00").first()).toBeVisible();

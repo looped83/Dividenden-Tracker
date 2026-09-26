@@ -53,7 +53,7 @@ describe("KpiCards (Render-Smoke)", () => {
       payment("2026-03-10", "50.00"),
       payment("2020-05-10", "70.00", "sec-b"),
     ]);
-    expect(screen.getByText("Historisch erhaltene Dividenden")).toBeInTheDocument();
+    expect(screen.getByText("Dividenden gesamt")).toBeInTheDocument();
     // Summe 120,00 € erscheint als historischer Gesamtwert.
     expect(screen.getAllByText(/120,00\s?€/).length).toBeGreaterThan(0);
   });
@@ -106,7 +106,7 @@ describe("KpiCards (Render-Smoke)", () => {
       "Juli 2026",
       "Bester Monat",
       "Ø pro Monat",
-      "Historisch erhaltene Dividenden",
+      "Dividenden gesamt",
       "Zahlungen 2026",
     ]);
   });
