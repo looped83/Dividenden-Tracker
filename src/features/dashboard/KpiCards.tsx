@@ -12,7 +12,6 @@ import {
   comparePeriods,
   currentMonthAggregate,
   currentMonthComparison,
-  distinctDepots,
   distinctSecurities,
   selectedPeriodAggregate,
   selectedYearComparison,
@@ -91,15 +90,14 @@ export function KpiCards({ payments, selection, today }: KpiCardsProps) {
       ? bestMonthAllTime(payments)
       : bestMonthInYear(payments, selection);
 
-    // 5.6 Aktivitaet im Zeitraum: Wie viele Zahlungen kamen herein — und aus
-    // wie vielen Quellen? Die blosse Zahl ausschuettender Unternehmen sagte
-    // nichts ueber das Jahr aus; die Anzahl der Eingaenge schon, und die
+    // 5.6 Aktivitaet im Zeitraum: Wie viele Zahlungen kamen herein — und von
+    // wie vielen Unternehmen? Die blosse Zahl ausschuettender Unternehmen
+    // sagte nichts ueber das Jahr aus; die Anzahl der Eingaenge schon, und die
     // Breite steht als Zusatz daneben.
     const periodPayments = isAll
       ? payments
       : payments.filter((p) => yearOf(p.payDate) === selection);
     const companies = distinctSecurities(periodPayments);
-    const depots = distinctDepots(periodPayments);
 
     return {
       isAll,
@@ -113,7 +111,6 @@ export function KpiCards({ payments, selection, today }: KpiCardsProps) {
       monthComparison,
       best,
       companies,
-      depots,
     };
   }, [payments, selection, today]);
 
@@ -200,14 +197,7 @@ export function KpiCards({ payments, selection, today }: KpiCardsProps) {
         <StatCard
           label={`Zahlungen ${selectionLabel}`}
           value={formatCountNumber(cards.periodCount)}
-          // Je eine Zeile: Mit „·" verbunden brach die Angabe in der
-          // halbbreiten Kachel mitten im Satz um.
-          caption={
-            <>
-              <p>{formatCountNoun(cards.companies, "Unternehmen", "Unternehmen")}</p>
-              <p>{formatCountNoun(cards.depots, "Depot", "Depots")}</p>
-            </>
-          }
+          caption={formatCountNoun(cards.companies, "Unternehmen", "Unternehmen")}
           to={paymentsListHref({ year: selection })}
           drillLabel={`Zahlungen ${selectionLabel} anzeigen`}
         />

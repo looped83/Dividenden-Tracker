@@ -125,6 +125,6 @@ describe("KpiCards (Render-Smoke)", () => {
       "Zahlungen 2024",
     ]);
     expect(screen.getByText("2 Unternehmen")).toBeInTheDocument();
-    expect(screen.getByText("1 Depot")).toBeInTheDocument();
+    expect(screen.queryByText("1 Depot")).not.toBeInTheDocument();
   });
 });

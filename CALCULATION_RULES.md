@@ -227,8 +227,8 @@ Differenz stammt aus `Money.subtract` (exakt, R-3).
 - **Historische Gesamtsumme (§5.3/§12):** immer über die gesamte aktive Historie, unabhängig von
   der Jahresauswahl; als historischer Gesamtwert gekennzeichnet.
 - **Zahlungen im Zeitraum:** Anzahl der Eingänge des gewählten Zeitraums, mit Anzahl der
-  ausschüttenden Unternehmen und Depots als Zusatz. Die reine Zahl ausschüttender Unternehmen
-  stand vorher allein — sie sagte nichts über das Jahr aus.
+  ausschüttenden Unternehmen als Zusatz. Die reine Zahl ausschüttender Unternehmen stand vorher
+  allein — sie sagte nichts über das Jahr aus.
 - **Reihenfolge der Kacheln:** gewählter Zeitraum → laufender Monat → bester Monat →
   Ø pro Monat → Historie → Zahlungen. Vom Zeitraum, den die Seite zeigt, zu dem, was ihn
   einordnet.
