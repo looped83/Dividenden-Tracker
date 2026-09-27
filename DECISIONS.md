@@ -597,6 +597,39 @@ TEST_STRATEGY.md §8.1, CI-Job `e2e-app`.
 
 ---
 
+## D-8-3: Runner fest auf Ubuntu 24.04, Playwright auf 1.56
+
+**Status:** Accepted · **Scope:** Tooling / Infrastructure
+
+Alle Workflows laufen auf `ubuntu-24.04` statt `ubuntu-latest`; Playwright
+bleibt auf 1.56.1 (`package.json`, inklusive Override für `playwright-core`).
+Beides wird nur **gemeinsam** angehoben.
+
+*Warum:* `ubuntu-latest` wandert ab 19.10.2026 zu Ubuntu 26.04, das erst
+Playwright ab 1.61 unterstützt. Ein Update auf eine solche Version bricht aber
+die lokalen Browsertests in Claude-Sessions: Die Umgebung bringt nur den zu
+1.56 passenden Chromium mit, und ihre Netzwerkregeln sperren die
+Playwright-Downloadserver (`cdn.playwright.dev`,
+`playwright.download.prss.microsoft.com`).
+
+*Verworfene Alternative:* Update jetzt und Browser beim Sessionstart laden —
+setzt die Freigabe der beiden Adressen voraus und lädt pro Session gut 100 MB,
+ohne dass die Tests dadurch mehr prüfen.
+
+*Leitplanke:* Dependabot hält nur die GitHub Actions aktuell
+(`.github/dependabot.yml`), nicht npm — sonst schlüge es das Playwright-Update
+vor, das diese Entscheidung zurückstellt.
+
+*Neu bewerten, wenn:* die Claude-Umgebung einen neueren Chromium mitbringt oder
+die Playwright-Downloadserver freigegeben sind, oder GitHub das
+24.04-Image abkündigt. Dann Playwright, Override und `runs-on` in einem PR
+anheben.
+
+*Beleg:* `.github/workflows/*.yml` (Kommentar in `ci.yml`),
+`playwright.config.ts`.
+
+---
+
 ## ADR-001: Historie vollständig im Client, Schwelle bei 10.000 Zahlungen
 
 **Status:** Accepted  
