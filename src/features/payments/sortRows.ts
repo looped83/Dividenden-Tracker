@@ -1,4 +1,4 @@
-import { MoneyDecimal } from "@/lib/money";
+import type { Money } from "@/lib/money";
 import { compareGermanLoose } from "@/lib/utils/compareText";
 import type { ListSort } from "./listParams";
 
@@ -12,7 +12,8 @@ export interface SortableRow {
   id: string;
   /** Effektives (angezeigtes) Zahlungsdatum, ISO. */
   effectiveDate: string;
-  netAmount: string;
+  /** Nettobetrag — einmal beim Aufbau der Zeile geparst, nicht je Vergleich. */
+  amount: Money;
   createdAt: string;
   updatedAt: string;
   companyName: string;
@@ -43,9 +44,10 @@ export function sortRows<T extends SortableRow>(rows: readonly T[], sort: ListSo
         primary = compareStrings(a.effectiveDate, b.effectiveDate) * factor;
         break;
       case "amount":
-        primary =
-          new MoneyDecimal(a.netAmount).comparedTo(new MoneyDecimal(b.netAmount)) *
-          factor;
+        // Ueber den Zahlenwert, nicht `compareTo`: Die Liste fuehrt Depots
+        // verschiedener Waehrungen nebeneinander, und `compareTo` wiese einen
+        // Vergleich ueber Waehrungen hinweg ab.
+        primary = a.amount.toDecimal().comparedTo(b.amount.toDecimal()) * factor;
         break;
       case "company":
         primary = compareGermanLoose(a.companyName, b.companyName) * factor;

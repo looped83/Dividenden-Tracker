@@ -71,10 +71,14 @@ import { groupByMonth, monthTotals, totalOrNull } from "@/features/payments/mont
 type Row = {
   payment: PaymentListRow;
   effectiveDate: string;
-  currency: ReturnType<typeof toCurrencyCode>;
 } & SortableRow;
 
 const PAGE_SIZE = 25;
+
+// Auf Modulebene, damit die Referenzen stabil bleiben (Abhaengigkeiten der
+// Memos unten).
+const amountOf = (row: Row): Money => row.amount;
+const effectiveDateOf = (row: Row): string => row.effectiveDate;
 
 /** Sortierkriterien der Liste — dieselbe Benennung wie in der Unternehmensliste. */
 const SORT_OPTIONS: readonly FilterSortOption[] = [
@@ -258,9 +262,12 @@ export function PaymentsPage() {
       mapped.push({
         payment,
         effectiveDate,
-        currency: toCurrencyCode(depot?.base_currency ?? "EUR"),
         id: payment.id,
-        netAmount: payment.net_amount,
+        // Einmal geparst, fuer Sortierung, Summen und alle Darstellungen.
+        amount: Money.fromString(
+          payment.net_amount,
+          toCurrencyCode(depot?.base_currency ?? "EUR"),
+        ),
         createdAt: payment.created_at,
         updatedAt: payment.updated_at,
         companyName,
@@ -286,19 +293,14 @@ export function PaymentsPage() {
 
   // Anzahl und Summe der Auswahl — die Frage hinter fast jedem Filter („wie
   // viel kam von …?"). Ueber verschiedene Waehrungen wird nicht addiert.
-  const amountOf = React.useCallback(
-    (row: Row) => Money.fromString(row.payment.net_amount, row.currency),
-    [],
-  );
-  const total = React.useMemo(() => totalOrNull(rows.map(amountOf)), [rows, amountOf]);
+  const total = React.useMemo(() => totalOrNull(rows.map(amountOf)), [rows]);
 
   // Nach Datum sortiert gruppiert die Liste nach Monat, mit der Monatssumme im
   // Kopf — ueber alle Eingaenge des Monats, nicht nur die bereits geladenen.
   const groupedByMonth = sort.field === "payment_date";
-  const effectiveDateOf = React.useCallback((row: Row) => row.effectiveDate, []);
   const totalsByMonth = React.useMemo(
     () => (groupedByMonth ? monthTotals(rows, effectiveDateOf, amountOf) : null),
-    [groupedByMonth, rows, effectiveDateOf, amountOf],
+    [groupedByMonth, rows],
   );
 
   // --- Einzelaktionen: Storno / Reaktivieren / Löschen. ---
@@ -324,18 +326,13 @@ export function PaymentsPage() {
   const [deleteTarget, setDeleteTarget] = React.useState<Row | null>(null);
   const [deleteError, setDeleteError] = React.useState<string | null>(null);
 
-  const summaryOf = (row: Row): PaymentSummaryData => {
-    const currency = toCurrencyCode(
-      depotById.get(row.payment.depot_id)?.base_currency ?? "EUR",
-    );
-    return {
-      company: row.companyName || "—",
-      depot: row.depotName || "—",
-      payDate: row.payment.pay_date,
-      amount: <AmountText amount={Money.fromString(row.payment.net_amount, currency)} />,
-      source: sourceLabel(row.payment.source),
-    };
-  };
+  const summaryOf = (row: Row): PaymentSummaryData => ({
+    company: row.companyName || "—",
+    depot: row.depotName || "—",
+    payDate: row.payment.pay_date,
+    amount: <AmountText amount={row.amount} />,
+    source: sourceLabel(row.payment.source),
+  });
 
   const handleStorno = async () => {
     if (!stornoTarget) return;
@@ -682,7 +679,7 @@ function PaymentRow({
   onReactivate,
   onDelete,
 }: RowActionProps) {
-  const { payment, effectiveDate, companyName, depotName, currency } = row;
+  const { payment, effectiveDate, companyName, depotName, amount } = row;
   const shifted = effectiveDate !== payment.pay_date;
   const cancelled = Boolean(payment.archived_at);
   const subject = actionSubject(row);
@@ -723,7 +720,7 @@ function PaymentRow({
             buendig bleiben. */}
         <span className="inline-flex items-center justify-end gap-1.5">
           {comparison && <YearOverYearIndicator comparison={comparison} />}
-          <AmountText amount={Money.fromString(payment.net_amount, currency)} />
+          <AmountText amount={amount} />
         </span>
       </TableCell>
       <TableCell className="text-right">
@@ -790,7 +787,7 @@ function PaymentItem({
   comparison: YearOverYearComparison | undefined;
   listUrl: string;
 }) {
-  const { payment, effectiveDate, companyName, depotName, currency } = row;
+  const { payment, effectiveDate, companyName, depotName, amount } = row;
   return (
     <PaymentListItem
       to={`/eingaenge/${payment.id}`}
@@ -798,7 +795,7 @@ function PaymentItem({
       title={companyName || "—"}
       date={formatDate(effectiveDate)}
       depot={depotName}
-      amount={Money.fromString(payment.net_amount, currency)}
+      amount={amount}
       cancelled={Boolean(payment.archived_at)}
       indicator={comparison && <YearOverYearIndicator comparison={comparison} />}
     />

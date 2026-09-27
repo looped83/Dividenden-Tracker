@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { sortRows, type SortableRow } from "@/features/payments/sortRows";
+import { EUR, Money, toCurrencyCode } from "@/lib/money";
+
+const eur = (value: string) => Money.fromString(value, EUR);
 
 function row(partial: Partial<SortableRow> & { id: string }): SortableRow {
   return {
     effectiveDate: "2026-01-15",
-    netAmount: "10.00",
+    amount: eur("10.00"),
     createdAt: "2026-01-15T10:00:00Z",
     updatedAt: "2026-01-15T10:00:00Z",
     companyName: "Alpha",
@@ -35,12 +38,21 @@ describe("sortRows (§2)", () => {
 
   it("sortiert Beträge decimal-sicher", () => {
     const rows = [
-      row({ id: "a", netAmount: "9.90" }),
-      row({ id: "b", netAmount: "100.00" }),
-      row({ id: "c", netAmount: "12.34" }),
+      row({ id: "a", amount: eur("9.90") }),
+      row({ id: "b", amount: eur("100.00") }),
+      row({ id: "c", amount: eur("12.34") }),
     ];
     const desc = sortRows(rows, { field: "amount", direction: "desc" });
     expect(desc.map((r) => r.id)).toEqual(["b", "c", "a"]);
+  });
+
+  it("sortiert Beträge auch über Depots verschiedener Währungen", () => {
+    const rows = [
+      row({ id: "a", amount: eur("9.90") }),
+      row({ id: "b", amount: Money.fromString("50.00", toCurrencyCode("USD")) }),
+    ];
+    const asc = sortRows(rows, { field: "amount", direction: "asc" });
+    expect(asc.map((r) => r.id)).toEqual(["a", "b"]);
   });
 
   it("sortiert Unternehmen alphabetisch", () => {
