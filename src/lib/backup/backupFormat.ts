@@ -461,14 +461,6 @@ export type BackupRoot = z.infer<typeof backupRootSchema>;
 // ============================================================================
 
 /**
- * Parse and validate a backup from JSON
- * Throws ZodError with detailed field-level errors if invalid
- */
-export function parseBackup(input: unknown): BackupRoot {
-  return backupRootSchema.parse(input);
-}
-
-/**
  * Safely parse backup with error details
  */
 export function parseBackupSafe(

@@ -94,17 +94,6 @@ export interface BackupResult {
   errorDetails?: string;
 }
 
-export interface BackupSummary {
-  portfolios: number;
-  depots: number;
-  securities: number;
-  dividendPayments: number;
-  goals: number;
-  imports: number;
-  totalSize: string; // Human readable
-  exportedAt: string;
-}
-
 // ============================================================================
 // Helpers: Type conversions and formatting
 // ============================================================================
@@ -894,40 +883,4 @@ export async function fetchLastBackupAt(): Promise<string | null> {
     .single();
   if (error) throw new Error(error.message);
   return data.last_backup_at;
-}
-
-// ============================================================================
-// Summary Generation
-// ============================================================================
-
-/**
- * Generate human-readable backup summary
- */
-export function generateBackupSummary(backup: BackupRoot): BackupSummary {
-  const json = JSON.stringify(backup);
-  const sizeBytes = new Blob([json]).size;
-
-  const counts = backup.integrity.record_counts;
-
-  return {
-    portfolios: counts["portfolio"] ?? 0,
-    depots: counts["depot"] ?? 0,
-    securities: counts["security"] ?? 0,
-    dividendPayments: counts["dividend_payment"] ?? 0,
-    goals: counts["goal"] ?? 0,
-    imports: counts["import"] ?? 0,
-    totalSize: formatBytes(sizeBytes),
-    exportedAt: backup.exported_at,
-  };
-}
-
-/**
- * Format bytes as human-readable string
- */
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return "0 B";
-  const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${String(Math.round((bytes / Math.pow(k, i)) * 100) / 100)} ${sizes[i]}`;
 }

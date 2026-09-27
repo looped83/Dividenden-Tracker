@@ -1,7 +1,6 @@
 import { formatMoney, formatPercent, NOT_AVAILABLE } from "@/lib/money";
 import type { ComparisonResult, YearSelection } from "@/lib/statistics";
 import { monthNameDe } from "@/lib/statistics";
-import type { PaymentSource } from "@/lib/supabase/database.types";
 
 /** Anzeigeinfo zu Unternehmen/Depot fuer Namensaufloesung und Archivstatus. */
 export interface EntityInfo {
@@ -16,17 +15,6 @@ export function buildEntityMap(
   return new Map(
     rows.map((row) => [row.id, { name: row.name, archived: row.archived_at !== null }]),
   );
-}
-
-const SOURCE_LABELS: Record<PaymentSource, string> = {
-  manual: "Manuell",
-  csv_import: "CSV-Import",
-  excel_import: "Excel-Import",
-  restore: "Wiederherstellung",
-};
-
-export function describeSource(source: PaymentSource): string {
-  return SOURCE_LABELS[source];
 }
 
 /** Kalenderdatum als `29.07.2026` ({@link formatCalendarDate}). */
