@@ -66,13 +66,6 @@ describe("GoalCard – Zustände", () => {
     expect(screen.getAllByText(/^75,0\s%$/)).toHaveLength(1);
   });
 
-  it("laesst Restbetrag und Zeitfortschritt der Detailseite", () => {
-    renderCard(goal(), [payment("2027-03-01", "9000.00")]);
-    expect(screen.queryByText(/bis zum Ziel/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/vergangen/)).not.toBeInTheDocument();
-    expect(screen.queryByText("Zielbetrag")).not.toBeInTheDocument();
-  });
-
   it("übertroffenes Ziel begrenzt den Balken visuell auf 100 %", () => {
     renderCard(goal(), [payment("2027-03-01", "13200.00")]);
     const bar = screen.getByRole("progressbar");

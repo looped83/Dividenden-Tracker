@@ -388,26 +388,6 @@ describe("createBackup — Integritaetsblock", () => {
   });
 });
 
-describe("createBackup — Formatgueltigkeit", () => {
-  it("erzeugt eine Datei, die die eigene Formatpruefung besteht", async () => {
-    tables["dividend_payments"] = paymentRows(5);
-
-    const backup = (await createBackup()).backup;
-    // Ueber JSON, wie beim spaeteren Einlesen — so faellt auf, wenn ein Feld
-    // die Serialisierung nicht uebersteht.
-    const parsed = parseBackupSafe(JSON.parse(JSON.stringify(backup)));
-
-    if (!parsed.success) {
-      throw new Error(
-        `Die erzeugte Sicherung ist nicht einlesbar: ${parsed.errors
-          .map((e) => `${e.path}: ${e.message}`)
-          .join("; ")}`,
-      );
-    }
-    expect(parsed.data.data.dividend_payments).toHaveLength(5);
-  });
-});
-
 describe("createBackup — Zeitstempel", () => {
   it("schreibt kanonische Zeitstempel mit Z, nicht die Rohform der Datenbank", async () => {
     tables["dividend_payments"] = paymentRows(3);
@@ -692,6 +672,8 @@ describe("createBackup — Depotstaende", () => {
     tables["dividend_payments"] = paymentRows(3);
 
     const backup = (await createBackup()).backup;
+    // Ueber JSON, wie beim spaeteren Einlesen — so faellt auf, wenn ein Feld
+    // die Serialisierung nicht uebersteht.
     const parsed = parseBackupSafe(JSON.parse(JSON.stringify(backup)));
 
     if (!parsed.success) {
@@ -701,6 +683,7 @@ describe("createBackup — Depotstaende", () => {
           .join("; ")}`,
       );
     }
+    expect(parsed.data.data.dividend_payments).toHaveLength(3);
     expect(parsed.data.data.security_snapshots).toHaveLength(1);
     expect(parsed.data.format_version).toBe(2);
   });

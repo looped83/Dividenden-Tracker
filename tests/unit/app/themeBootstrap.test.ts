@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+// Fuehrt das Inline-Skript aus index.html gegen ein echtes `document` aus.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import indexHtml from "../../../index.html?raw";
 

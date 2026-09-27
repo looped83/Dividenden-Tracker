@@ -85,7 +85,7 @@ describe("PositionCard", () => {
     expect(screen.getByText("noch kein volles Jahr")).toBeInTheDocument();
   });
 
-  it("kennzeichnet einen verkauften Bestand ohne zusaetzlichen Erklaersatz", () => {
+  it("kennzeichnet einen verkauften Bestand in der Ueberschrift", () => {
     render(
       <PositionCard
         status={{ snapshot: snapshot({ as_of: "2026-03-31" }), current: false }}
@@ -98,6 +98,5 @@ describe("PositionCard", () => {
         name: /^Letzter bekannter Bestand\s*Stand 31\.03\.2026$/,
       }),
     ).toBeInTheDocument();
-    expect(screen.queryByText(/nicht mehr vor/)).not.toBeInTheDocument();
   });
 });

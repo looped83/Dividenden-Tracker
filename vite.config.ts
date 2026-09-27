@@ -76,10 +76,8 @@ export default defineConfig(({ command, mode }) => {
       },
     },
     test: {
-      environment: "jsdom",
       globals: true,
       setupFiles: ["./tests/setup.ts"],
-      include: ["tests/unit/**/*.test.ts", "tests/unit/**/*.test.tsx"],
       css: false,
       // Platzhalter-Zugangsdaten: `supabase/client.ts` wirft ohne diese Werte
       // beim Import auf Modulebene. Ohne sie liesse sich kein Modul testen,
@@ -90,6 +88,29 @@ export default defineConfig(({ command, mode }) => {
         VITE_SUPABASE_URL: "https://test.supabase.co",
         VITE_SUPABASE_ANON_KEY: "test-anon-key",
       },
+      // Zwei Umgebungen: Reine Logik (`.test.ts`) laeuft in Node, nur
+      // Komponenten (`.test.tsx`) brauchen den nachgebauten Browser. Zuvor lief
+      // alles in jsdom — dessen Aufbau je Datei kostete bei den Logiktests
+      // rund zwei Drittel ihrer Laufzeit (30 s statt 9,5 s). Eine Logikdatei,
+      // die doch `window` braucht, sagt es selbst per `@vitest-environment`.
+      projects: [
+        {
+          extends: true,
+          test: {
+            name: "logik",
+            environment: "node",
+            include: ["tests/unit/**/*.test.ts"],
+          },
+        },
+        {
+          extends: true,
+          test: {
+            name: "oberflaeche",
+            environment: "jsdom",
+            include: ["tests/unit/**/*.test.tsx"],
+          },
+        },
+      ],
     },
   };
 });
