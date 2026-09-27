@@ -1,13 +1,13 @@
 import * as React from "react";
 import { cn } from "@/lib/utils/cn";
 
-export const Textarea = React.forwardRef<
-  HTMLTextAreaElement,
-  React.ComponentProps<"textarea">
->(({ className, inputMode, ...props }, ref) => {
+export function Textarea({
+  className,
+  inputMode,
+  ...props
+}: React.ComponentProps<"textarea">) {
   return (
     <textarea
-      ref={ref}
       // Wie beim Input: ohne ausdruecklichen `inputmode` behaelt iOS die
       // Tastatur des zuvor fokussierten Feldes bei (z. B. den Zahlenblock des
       // Betragsfeldes) — siehe input.tsx.
@@ -27,5 +27,4 @@ export const Textarea = React.forwardRef<
       {...props}
     />
   );
-});
-Textarea.displayName = "Textarea";
+}

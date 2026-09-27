@@ -2,10 +2,7 @@ import * as React from "react";
 import { Check, Minus } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
-interface CheckboxProps extends Omit<
-  React.InputHTMLAttributes<HTMLInputElement>,
-  "type"
-> {
+interface CheckboxProps extends Omit<React.ComponentProps<"input">, "type"> {
   onCheckedChange?: (checked: boolean | "indeterminate") => void;
   /** Layoutklassen des Kaestchens (z. B. `mt-0.5`); die Optik ist fest. */
   className?: string;
@@ -23,12 +20,16 @@ interface CheckboxProps extends Omit<
  * Die Trefferflaeche waechst auf Zeigegeraeten ohne feine Steuerung auf 24px
  * (WCAG 2.5.8).
  */
-const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
-  ({ className, onCheckedChange, onChange, ...props }, ref) => (
+export function Checkbox({
+  className,
+  onCheckedChange,
+  onChange,
+  ...props
+}: CheckboxProps) {
+  return (
     <span className={cn("relative inline-flex shrink-0", className)}>
       <input
         type="checkbox"
-        ref={ref}
         className={cn(
           "peer size-4 shrink-0 appearance-none rounded-sm border border-input bg-background",
           "pointer-coarse:size-6 pointer-coarse:rounded-md",
@@ -62,8 +63,5 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
         aria-hidden
       />
     </span>
-  ),
-);
-Checkbox.displayName = "Checkbox";
-
-export { Checkbox };
+  );
+}
