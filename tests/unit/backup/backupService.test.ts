@@ -173,7 +173,8 @@ function makeQuery(table: string, options?: { count?: string; head?: boolean }) 
 vi.mock("@/lib/supabase/client", () => ({
   supabase: {
     auth: {
-      getUser: () => Promise.resolve({ data: { user: { id: USER_ID } }, error: null }),
+      getSession: () =>
+        Promise.resolve({ data: { session: { user: { id: USER_ID } } }, error: null }),
     },
     from: (table: string) => ({
       select: (_columns: string, options?: { count?: string; head?: boolean }) =>

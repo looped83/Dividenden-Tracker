@@ -233,7 +233,7 @@ in der Implementierungsumgebung nicht erreichbar (D-026).
 **Abgelöst:** Das Projekt verwendet `exceljs` aus npm, dynamisch nachgeladen
 (rund 930 kB, eigener Chunk). Damit entfällt die externe Registry vollständig.
 
-*Beleg:* `lib/xlsx/parseWorkbook.ts`, `package.json`.
+*Beleg:* `lib/import/parseWorkbook.ts`, `package.json`.
 
 ## D-017: `numeric`-Spalten sind im Typsystem `string`
 

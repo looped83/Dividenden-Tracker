@@ -65,7 +65,9 @@ net_amount = gross_amount
   Steuererstattung: brutto = netto, Steuerfelder negativ zulässig? **Nein** — Erstattungen
   werden als positiver Netto-Eingang mit `payment_type='refund'` und Steuerfeldern = 0 erfasst;
   die Herkunft gehört in die Notiz. Siehe DECISIONS.md D-005).
-- Als CHECK-Constraint in Postgres hinterlegt (Toleranzform), zusätzlich Zod-seitig geprüft.
+- Als CHECK-Constraint in Postgres hinterlegt (Toleranzform). Eine clientseitige
+  Vorabprüfung gibt es nicht: Die App erfasst keine Steuerfelder (brutto = netto), die
+  Invariante kann aus ihren Eingaben nicht verletzt werden.
 
 ## 5. Fingerprint-Berechnung (normativ)
 

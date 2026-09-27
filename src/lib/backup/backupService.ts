@@ -94,17 +94,6 @@ export interface BackupResult {
   errorDetails?: string;
 }
 
-export interface BackupSummary {
-  portfolios: number;
-  depots: number;
-  securities: number;
-  dividendPayments: number;
-  goals: number;
-  imports: number;
-  totalSize: string; // Human readable
-  exportedAt: string;
-}
-
 // ============================================================================
 // Helpers: Type conversions and formatting
 // ============================================================================
@@ -233,16 +222,29 @@ function assertComplete(loaded: number, expected: number, label: string): void {
 }
 
 /**
+ * Kennung des angemeldeten Nutzers aus der lokalen Sitzung.
+ *
+ * Bewusst nicht `getUser()`: Das fragt bei jedem Aufruf den Auth-Server und
+ * stellte jeder Profilabfrage einen zusaetzlichen Umlauf voran. Die Kennung
+ * dient hier nur als Filter; welche Zeilen gelesen und geschrieben werden
+ * duerfen, entscheidet ohnehin RLS (`profiles.id = auth.uid()`).
+ */
+async function currentUserId(): Promise<string | null> {
+  const { data } = await supabase.auth.getSession();
+  return data.session?.user.id ?? null;
+}
+
+/**
  * Laedt das Profil des angemeldeten Nutzers.
  */
 async function fetchProfile(): Promise<ProfileBackup | null> {
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) return null;
+  const userId = await currentUserId();
+  if (!userId) return null;
 
   const { data, error } = await supabase
     .from("profiles")
     .select("*")
-    .eq("id", auth.user.id)
+    .eq("id", userId)
     .single();
 
   if (error) throw new Error(error.message);
@@ -857,64 +859,28 @@ export function downloadBackup(backup: BackupRoot, fileName: string): void {
  * behandelt.
  */
 export async function markBackupCompleted(): Promise<{ at: string } | null> {
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) return null;
+  const userId = await currentUserId();
+  if (!userId) return null;
 
   const at = getCurrentTimestamp();
   const { error } = await supabase
     .from("profiles")
     .update({ last_backup_at: at })
-    .eq("id", auth.user.id);
+    .eq("id", userId);
   if (error) return null;
   return { at };
 }
 
 /** Liest den Zeitpunkt der letzten Sicherung fuer die Anzeige im Bereich. */
 export async function fetchLastBackupAt(): Promise<string | null> {
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) return null;
+  const userId = await currentUserId();
+  if (!userId) return null;
 
   const { data, error } = await supabase
     .from("profiles")
     .select("last_backup_at")
-    .eq("id", auth.user.id)
+    .eq("id", userId)
     .single();
   if (error) throw new Error(error.message);
   return data.last_backup_at;
-}
-
-// ============================================================================
-// Summary Generation
-// ============================================================================
-
-/**
- * Generate human-readable backup summary
- */
-export function generateBackupSummary(backup: BackupRoot): BackupSummary {
-  const json = JSON.stringify(backup);
-  const sizeBytes = new Blob([json]).size;
-
-  const counts = backup.integrity.record_counts;
-
-  return {
-    portfolios: counts["portfolio"] ?? 0,
-    depots: counts["depot"] ?? 0,
-    securities: counts["security"] ?? 0,
-    dividendPayments: counts["dividend_payment"] ?? 0,
-    goals: counts["goal"] ?? 0,
-    imports: counts["import"] ?? 0,
-    totalSize: formatBytes(sizeBytes),
-    exportedAt: backup.exported_at,
-  };
-}
-
-/**
- * Format bytes as human-readable string
- */
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return "0 B";
-  const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${String(Math.round((bytes / Math.pow(k, i)) * 100) / 100)} ${sizes[i]}`;
 }

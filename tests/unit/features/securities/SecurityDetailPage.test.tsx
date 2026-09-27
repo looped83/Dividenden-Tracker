@@ -62,8 +62,8 @@ const securities = [
   },
 ];
 
-vi.mock("@/features/statistics/hooks", () => ({
-  useStatisticsData: () => ({ payments, isLoading: false }),
+vi.mock("@/features/dashboard/hooks", () => ({
+  useEffectivePayments: () => ({ payments, paymentsQuery: { isLoading: false } }),
 }));
 vi.mock("@/features/securities/hooks", () => ({
   useSecurities: () => ({ data: securities, isLoading: false }),

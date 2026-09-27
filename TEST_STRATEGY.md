@@ -64,7 +64,10 @@ CI blockiert Merges bei jedem roten Test; Sicherheitstests (§6) sind nie „ski
 **Finanzberechnungen & Rundungen** (`lib/money`)
 - R-1 aus CALCULATION_RULES.md mit Tabellenfällen inkl. Grenzwerten (0,005 → 0,01;
   negative Beträge; 0; sehr große Beträge)
-- Betragsinvariante §4 inkl. Toleranzgrenzen (0,02 ok / 0,021 Warnung)
+- Keine clientseitige Prüfung der Betragsinvariante §4: Die App erfasst keine Steuerfelder
+  (brutto = netto), die Vorabprüfung war ungenutzt und ist entfernt (2026-09-27). Die
+  Invariante samt Toleranzgrenzen sichert die Datenbank (CHECK, Integrationstest
+  `constraints.test.ts`).
 - Keine eigenen Wertobjekte für Stückzahl, Wechselkurs, Originalbetrag und Betrag je Aktie
   (R-2, R-7): Die App erfasst keine Fremdwährung, die Klassen waren ungenutzt und sind
   entfernt (2026-09-27). Die Grenzen dieser Spalten sichert die Datenbank (CHECK).

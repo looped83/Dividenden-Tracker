@@ -24,7 +24,7 @@ import {
   normalizePayoutMonths,
   yearlyBuckets,
 } from "@/lib/statistics";
-import { useStatisticsData } from "@/features/statistics/hooks";
+import { useEffectivePayments } from "@/features/dashboard/hooks";
 import {
   CategoryBarChart,
   type CategoryDatum,
@@ -57,12 +57,14 @@ const RECENT_LIMIT = 5;
  * Verwaltungsliste, die Entwicklung im Statistikbereich, die Zahlungen in der
  * Eingangsliste — drei Bereiche fuer eine Frage.
  *
- * **Datenquelle ist bewusst `useStatisticsData`**, dieselbe wie Uebersicht und
- * Statistik. Damit stimmen die Jahressummen hier zwangslaeufig mit dem
- * Statistikbereich ueberein, statt nur zufaellig: Es gibt keine zweite
- * Aggregation, die auseinanderlaufen koennte (ARCHITECTURE.md §4.5). Wie dort
- * zaehlen ausschliesslich aktive Eingaenge, und die Zuordnung folgt dem
- * effektiven Datum (CALCULATION_RULES.md §10).
+ * **Datenquelle ist bewusst `useEffectivePayments`**, dieselbe Grundlage wie
+ * Uebersicht, Statistik und Ziele. Damit stimmen die Jahressummen hier
+ * zwangslaeufig mit dem Statistikbereich ueberein, statt nur zufaellig: Es gibt
+ * keine zweite Aggregation, die auseinanderlaufen koennte (ARCHITECTURE.md
+ * §4.5). Wie dort zaehlen ausschliesslich aktive Eingaenge, und die Zuordnung
+ * folgt dem effektiven Datum (CALCULATION_RULES.md §10). Nicht
+ * `useStatisticsData`: Das baute zusaetzlich die Zeitreihe aller Depotstaende
+ * und die Namenstabellen auf, die diese Seite nicht braucht.
  *
  * Die vollstaendige Zahlungsliste wird **nicht** nachgebaut. Sie existiert
  * bereits unter `/eingaenge?security=…` samt Filtern, Sortierung und Storno;
@@ -74,7 +76,8 @@ export function SecurityDetailPage() {
   const archiveSecurity = useArchiveSecurity();
   const [editOpen, setEditOpen] = React.useState(false);
   const [deleteOpen, setDeleteOpen] = React.useState(false);
-  const { payments, isLoading } = useStatisticsData();
+  const { payments, paymentsQuery } = useEffectivePayments();
+  const isLoading = paymentsQuery.isLoading;
   const { data: securities = [], isLoading: securitiesLoading } = useSecurities();
   const { data: snapshots = [] } = useSecuritySnapshots();
   const { data: depots = [] } = useDepots();

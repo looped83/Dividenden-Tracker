@@ -463,6 +463,11 @@ veralteter Cache). Suche/Filter/Sortierung der Liste arbeiten clientseitig auf
 der einmal geladenen, decimal-sicheren Historie (D-6-6), konsistent mit der
 Lade-/Aggregationsstrategie aus Phase 5A.
 
+Der Cache gehört genau einem Nutzer: `SessionProvider` leert ihn, sobald sich
+die Nutzerkennung der Sitzung ändert — Abmelden, abgelaufene Sitzung oder ein
+anderes Konto (SECURITY_MODEL.md §2). Ein erneuertes Token desselben Nutzers
+lässt ihn unberührt.
+
 ---
 
 ## Phase 7 — Ziele und Fortschritt
