@@ -26,12 +26,18 @@ test("legt ein Monatsziel an und oeffnet es zum Bearbeiten mit gefuellten Felder
   await page.getByLabel("Kalendermonat").selectOption(monat);
   await page.getByLabel("Zielbetrag (€)").fill("500,00");
   await page.getByRole("button", { name: "Ziel anlegen", exact: true }).click();
+  // Erst warten, bis gespeichert ist: Sonst entschied ein Wettlauf zwischen
+  // Speichern und dem Seitenwechsel darunter, wo der Test landet.
+  await expect(page).toHaveURL(/#\/ziele\/[0-9a-f-]{36}$/);
 
+  // Bearbeiten steht auf der Detailseite, die die Zielkarte oeffnet — die
+  // Liste selbst hat keine Schaltflaechen mehr.
   await page.goto("/#/ziele");
   await page
-    .getByRole("button", { name: /Bearbeiten/ })
+    .getByRole("link", { name: /^Monatsziel/ })
     .first()
     .click();
+  await page.getByRole("button", { name: "Bearbeiten", exact: true }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
 
   // Nicht das Auswahlfeld: Sonst klappt dessen Liste sofort auf.
