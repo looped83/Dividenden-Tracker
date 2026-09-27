@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { mapWorksheetToSecurities } from "@/features/securities/xlsxImport";
-import type { WorksheetTable } from "@/lib/xlsx/parseWorkbook";
+import type { WorksheetTable } from "@/lib/import/parseWorkbook";
 
 function table(headers: string[], rows: (string | number | null)[][]): WorksheetTable {
   return { headers, rows };

@@ -19,7 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { parseFirstWorksheet } from "@/lib/xlsx/parseWorkbook";
+import { parseFirstWorksheet } from "@/lib/import/parseWorkbook";
 import { checkImportFile } from "@/lib/import/fileLimits";
 import {
   mapWorksheetToSecurities,

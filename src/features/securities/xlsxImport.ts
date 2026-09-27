@@ -1,4 +1,4 @@
-import type { WorksheetTable } from "@/lib/xlsx/parseWorkbook";
+import type { WorksheetTable } from "@/lib/import/parseWorkbook";
 import { ISIN_PATTERN, TICKER_PATTERN, WKN_PATTERN } from "@/features/securities/schemas";
 import { deriveDataQuality } from "@/features/securities/dataQuality";
 import type { DataQuality } from "@/lib/supabase/database.types";
