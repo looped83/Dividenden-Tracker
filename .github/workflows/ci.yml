@@ -7,7 +7,7 @@ on:
 
 # Runner-Image fest auf 24.04 statt `ubuntu-latest`: Das Label wandert ab
 # 19.10.2026 zu Ubuntu 26.04, das Playwright 1.56 nicht unterstuetzt. Der
-# Wechsel erfolgt bewusst zusammen mit einem Playwright-Update.
+# Wechsel erfolgt bewusst zusammen mit einem Playwright-Update (DECISIONS.md D-8-3).
 jobs:
   quality:
     runs-on: ubuntu-24.04
