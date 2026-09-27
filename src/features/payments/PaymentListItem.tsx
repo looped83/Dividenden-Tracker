@@ -36,7 +36,7 @@ export function PaymentListItem({
   to: string;
   state?: unknown;
   title: React.ReactNode;
-  /** Bereits formatiertes Datum (`formatDate`) — entfaellt, wenn es der Titel ist. */
+  /** Bereits formatiertes Datum (`formatCalendarDate`) — entfaellt, wenn es der Titel ist. */
   date?: React.ReactNode;
   depot?: string | null | undefined;
   amount: Money;

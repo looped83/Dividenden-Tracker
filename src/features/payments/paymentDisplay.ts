@@ -15,8 +15,3 @@ export function sourceLabel(source: PaymentSource): string {
 export function isImported(source: PaymentSource): boolean {
   return source === "csv_import" || source === "excel_import";
 }
-
-export {
-  formatTimestampDate as formatDate,
-  formatTimestamp as formatDateTime,
-} from "@/lib/utils/formatDate";

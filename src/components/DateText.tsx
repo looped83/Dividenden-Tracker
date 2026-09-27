@@ -14,8 +14,8 @@ import { cn } from "@/lib/utils/cn";
  * mit). Rein dekorativ, deshalb `aria-hidden` — das Datum steht als Text
  * daneben.
  *
- * Formatiert wird bewusst nicht hier: Zahlungsdaten und Zeitstempel haben
- * eigene Formatierer (`formatDate`, `formatIsoDate`, `formatDateTime`).
+ * Formatiert wird bewusst nicht hier: Kalendertage und Zeitpunkte haben
+ * eigene Formatierer (`formatCalendarDate`, `formatTimestamp`).
  */
 export function DateText({
   children,

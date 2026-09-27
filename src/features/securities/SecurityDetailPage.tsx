@@ -13,7 +13,11 @@ import { StatCard, StatGrid } from "@/components/domain/StatCard";
 import { AmountText } from "@/components/money/AmountText";
 import { DateText } from "@/components/DateText";
 import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
-import { formatDateRange, formatYearSpan } from "@/lib/utils/formatDate";
+import {
+  formatCalendarDate,
+  formatDateRange,
+  formatYearSpan,
+} from "@/lib/utils/formatDate";
 import {
   aggregate,
   averagePayment,
@@ -41,7 +45,6 @@ import { PositionCard } from "@/features/securities/PositionCard";
 import { latestAsOf, statusOf } from "@/features/securities/snapshots";
 import { useDepots } from "@/features/depots/hooks";
 import { deriveDataQuality } from "@/features/securities/dataQuality";
-import { formatDate } from "@/features/payments/paymentDisplay";
 
 /**
  * Wie viele Zahlungen die Seite direkt zeigt — so viele wie die Uebersicht.
@@ -418,9 +421,9 @@ export function SecurityDetailPage() {
                   to={`/eingaenge/${payment.id}`}
                   title={
                     <DateText>
-                      {formatDate(payment.payDate)}
+                      {formatCalendarDate(payment.payDate)}
                       {payment.payDate !== payment.actualPayDate &&
-                        ` (tatsächlich ${formatDate(payment.actualPayDate)})`}
+                        ` (tatsächlich ${formatCalendarDate(payment.actualPayDate)})`}
                     </DateText>
                   }
                   depot={depotName(payment.depotId)}

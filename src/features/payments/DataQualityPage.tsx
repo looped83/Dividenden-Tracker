@@ -12,7 +12,7 @@ import { ListGroup, ListItemBody, ListRow } from "@/components/ui/list";
 import { AmountText } from "@/components/money/AmountText";
 import { DateText } from "@/components/DateText";
 import { formatCountNumber } from "@/lib/utils/formatNumber";
-import { formatCalendarDate } from "@/lib/utils/formatDate";
+import { formatCalendarDate, formatTimestamp } from "@/lib/utils/formatDate";
 import { Money, toCurrencyCode } from "@/lib/money";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { useDepots } from "@/features/depots/hooks";
@@ -32,7 +32,7 @@ import {
   type DuplicatePair,
 } from "@/lib/payments/dataQuality";
 import { todayIso } from "@/features/payments/schemas";
-import { formatDate, formatDateTime, isImported, sourceLabel } from "./paymentDisplay";
+import { isImported, sourceLabel } from "./paymentDisplay";
 import { DeleteDialog, StornoDialog, type PaymentSummaryData } from "./dialogs";
 
 export function DataQualityPage() {
@@ -317,7 +317,7 @@ export function DataQualityPage() {
                           meta={
                             <>
                               <DateText className="shrink-0">
-                                {formatDate(anomaly.payment.pay_date)}
+                                {formatCalendarDate(anomaly.payment.pay_date)}
                               </DateText>
                               <span className="basis-full">{anomaly.message}</span>
                             </>
@@ -420,14 +420,16 @@ function DuplicateCard({
             {[pair.a, pair.b].map((p) => (
               <div key={p.id} className="rounded-md border border-border p-3 text-sm">
                 <div className="flex items-center justify-between">
-                  <DateText className="font-medium">{formatDate(p.pay_date)}</DateText>
+                  <DateText className="font-medium">
+                    {formatCalendarDate(p.pay_date)}
+                  </DateText>
                   <AmountText
                     amount={Money.fromString(p.net_amount, currencyOf(p.depot_id))}
                   />
                 </div>
                 <p className="text-muted-foreground">{depotName(p.depot_id)}</p>
                 <p className="text-xs text-muted-foreground">
-                  {sourceLabel(p.source)} · erstellt {formatDateTime(p.created_at)}
+                  {sourceLabel(p.source)} · erstellt {formatTimestamp(p.created_at)}
                 </p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   <Button variant="outline" size="sm" asChild>
