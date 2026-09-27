@@ -283,6 +283,7 @@ Unterbereiche wie bisher ohne Datenzugriffsschicht gerendert (und getestet) werd
 | Datei ohne Position mit Bestand | Hinweis, kein leerer Stichtag in der Datenbank |
 | Einzelne Zeile ohne Name oder mit ungültiger ISIN | Zeile wird ausgewiesen, der Rest läuft durch; die Bilanz nennt sie |
 | Zweiter Upload desselben Tages | Der vorhandene Stand wird ersetzt, nicht verdoppelt |
+| Stand mit falschem Stichtag | Unter Einstellungen → Importe → „Depotstände" einzeln löschbar; der Dialog nennt, welcher Stand danach gilt |
 | Abbruch nach dem Lauf, vor den Zeilen | Ein Lauf ohne Zeilen bleibt sichtbar und lässt sich entfernen — PostgREST kennt keine Transaktion über mehrere Anfragen |
 | Verkauftes Papier | Fehlt im jüngsten Stand; die Detailseite sagt „Letzter bekannter Bestand" |
 | Verschiedene Währungen im Stand | Es wird **nicht** addiert; die Kachel weist „verschiedene Währungen" aus |
@@ -306,5 +307,3 @@ Repository, auch nicht in ein privates.
   Die bessere Quelle liegt ohnehin im Haus: die eigene Zahlungshistorie.
 - **Keine Performance-Kennzahl** (TWR/IRR). Dafür bräuchte es einzelne Transaktionen mit
   Datum und Betrag; die CSV nennt nur deren Anzahl.
-- **Keine Standsverwaltung in der Oberfläche.** `security_snapshot_runs` trägt alles dafür
-  Nötige; eine Liste zum Entfernen einzelner Stichtage fehlt noch.

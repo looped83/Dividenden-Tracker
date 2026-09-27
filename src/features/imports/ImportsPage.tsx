@@ -19,6 +19,7 @@ import { formatMoney } from "@/lib/money/format";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { formatCountNumber } from "@/lib/utils/formatNumber";
 import { ImportWizard } from "@/features/imports/ImportWizard";
+import { SnapshotRunsCard } from "@/features/securities/SnapshotRunsCard";
 import {
   useDiscardImport,
   useImports,
@@ -199,6 +200,8 @@ export function ImportsPage() {
           )}
         </CardContent>
       </Card>
+
+      <SnapshotRunsCard />
     </div>
   );
 }

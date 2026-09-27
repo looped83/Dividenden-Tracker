@@ -152,3 +152,49 @@ test("ersetzt einen Stand desselben Tages, statt ihn zu verdoppeln", async ({
   expect(anzahl.staende).toBe("2");
   expect(anzahl.laeufe).toBe("1");
 });
+
+/**
+ * Ein Stand mit falschem Stichtag laesst sich entfernen. Lag er in der
+ * Zukunft, galt er sonst dauerhaft als juengster Stand und verdeckte jeden
+ * spaeteren echten Import.
+ */
+test("löscht einen Depotstand und nennt, welcher Stand danach gilt", async ({
+  page,
+  konto,
+}) => {
+  await asUser(konto.userId, async (client) => {
+    for (const asOf of ["2026-06-30", "2026-12-31"]) {
+      const lauf = await client.query<{ id: string }>(
+        `insert into security_snapshot_runs (user_id, as_of, file_name, rows_total, rows_imported)
+         values ($1, $2, 'portfolio.csv', 1, 1) returning id`,
+        [konto.userId, asOf],
+      );
+      await client.query(
+        `insert into security_snapshots (user_id, security_id, run_id, as_of, quantity, currency)
+         values ($1, $2, $3, $4, 10, 'EUR')`,
+        [konto.userId, konto.securityId, lauf.rows[0]?.id, asOf],
+      );
+    }
+  });
+
+  await page.goto("/#/einstellungen/importe");
+  await page.getByRole("button", { name: "Depotstand vom 31.12.2026 löschen" }).click();
+
+  const dialog = page.getByRole("dialog");
+  await expect(
+    dialog.getByText(/Danach zeigt das Depot den Stand vom 30\.06\.2026\./),
+  ).toBeVisible();
+  await dialog.getByRole("button", { name: "Depotstand löschen" }).click();
+
+  await expect(page.getByText("Depotstand vom 31.12.2026 gelöscht.")).toBeVisible();
+  await expect(page.getByText("Stand vom 31.12.2026", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Stand vom 30.06.2026", { exact: true })).toBeVisible();
+
+  const verbleibend = await asUser(konto.userId, async (client) => {
+    const result = await client.query<{ as_of: string }>(
+      "select to_char(as_of, 'YYYY-MM-DD') as as_of from security_snapshots",
+    );
+    return result.rows.map((row) => row.as_of);
+  });
+  expect(verbleibend).toEqual(["2026-06-30"]);
+});
