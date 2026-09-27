@@ -389,9 +389,10 @@ Anwendung einen Konflikt und lädt neu, statt still zu überschreiben.
 
 **Status:** Accepted · **Scope:** Product
 
-Ein einmal geprüftes Paar verschwindet dauerhaft aus der Datenqualitätsansicht
-(`duplicate_dismissals`), widerrufbar. Sonst müsste dieselbe Entscheidung bei
-jedem Aufruf neu getroffen werden.
+Ein einmal geprüftes Paar verschwindet dauerhaft aus den offenen Dubletten der
+Datenqualitätsansicht (`duplicate_dismissals`). Sonst müsste dieselbe Entscheidung
+bei jedem Aufruf neu getroffen werden. Widerrufbar: Markierte Paare stehen eingeklappt
+darunter und lassen sich einzeln zurücknehmen.
 
 *Beleg:* `0020_phase6_delete_and_duplicate_review.sql`,
 `repositories/duplicateDismissals.ts`.

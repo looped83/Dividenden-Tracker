@@ -6,10 +6,13 @@ import { PageSkeleton } from "@/components/layout/PageSkeleton";
 import { Badge } from "@/components/ui/badge";
 import { DetailBackLink, DetailHeader } from "@/components/layout/DetailHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Disclosure } from "@/components/ui/disclosure";
+import { useToast } from "@/components/ui/toast";
 import { ListGroup, ListItemBody, ListRow } from "@/components/ui/list";
 import { AmountText } from "@/components/money/AmountText";
 import { DateText } from "@/components/DateText";
 import { formatCountNumber } from "@/lib/utils/formatNumber";
+import { formatCalendarDate } from "@/lib/utils/formatDate";
 import { Money, toCurrencyCode } from "@/lib/money";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { useDepots } from "@/features/depots/hooks";
@@ -20,6 +23,7 @@ import {
   useDeletePayment,
   useDismissDuplicate,
   useDuplicateDismissals,
+  useUndismissDuplicate,
 } from "@/features/payments/hooks";
 import type { PaymentListRow } from "@/lib/supabase/repositories/payments";
 import {
@@ -37,6 +41,8 @@ export function DataQualityPage() {
   const { data: payments = [], isLoading } = useAllPayments();
   const { data: dismissedKeys = [] } = useDuplicateDismissals();
   const dismiss = useDismissDuplicate();
+  const undismiss = useUndismissDuplicate();
+  const { notify } = useToast();
   const archivePayment = useArchivePayment();
   const deletePayment = useDeletePayment();
 
@@ -54,11 +60,18 @@ export function DataQualityPage() {
     [depots],
   );
 
-  const dismissedSet = React.useMemo(() => new Set(dismissedKeys), [dismissedKeys]);
-  const duplicatePairs = React.useMemo(
-    () => findDuplicatePairs(payments, dismissedSet),
-    [payments, dismissedSet],
-  );
+  // Einmal ohne Ausblendung erkennen, dann aufteilen: offene Paare stehen oben,
+  // bewusst als „keine Dublette" markierte eingeklappt darunter — dort laesst
+  // sich die Markierung zuruecknehmen. Markierungen, deren Paar nicht mehr als
+  // Dublette gilt (storniert, geloescht, geaendert), erscheinen nicht.
+  const { duplicatePairs, dismissedPairs } = React.useMemo(() => {
+    const dismissedSet = new Set(dismissedKeys);
+    const all = findDuplicatePairs(payments);
+    return {
+      duplicatePairs: all.filter((pair) => !dismissedSet.has(pair.key)),
+      dismissedPairs: all.filter((pair) => dismissedSet.has(pair.key)),
+    };
+  }, [payments, dismissedKeys]);
   const anomalies = React.useMemo(
     () => detectAnomalies(payments, todayIso()),
     [payments],
@@ -207,6 +220,79 @@ export function DataQualityPage() {
                   />
                 ))}
               </ul>
+            )}
+            {dismissedPairs.length > 0 && (
+              <Disclosure
+                summary={`Als keine Dublette markiert (${formatCountNumber(dismissedPairs.length)})`}
+              >
+                <ListGroup>
+                  {dismissedPairs.map((pair) => {
+                    const company = securityName(pair.a.security_id);
+                    // Ein Zahltag ist ein Kalendertag, kein Zeitpunkt.
+                    const date = formatCalendarDate(pair.a.pay_date);
+                    return (
+                      <li key={pair.key}>
+                        <ListRow className="pr-1">
+                          <span className="min-w-0 flex-1">
+                            <span className="font-medium [overflow-wrap:anywhere]">
+                              {company}
+                            </span>
+                            <span className="flex flex-wrap gap-x-2 text-sm text-muted-foreground">
+                              <DateText>{date}</DateText>
+                              <span>{depotName(pair.a.depot_id)}</span>
+                              <span>
+                                <AmountText
+                                  amount={Money.fromString(
+                                    pair.a.net_amount,
+                                    currencyOf(pair.a.depot_id),
+                                  )}
+                                />
+                                {" / "}
+                                <AmountText
+                                  amount={Money.fromString(
+                                    pair.b.net_amount,
+                                    currencyOf(pair.b.depot_id),
+                                  )}
+                                />
+                              </span>
+                            </span>
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="-my-2 shrink-0"
+                            aria-label={`Markierung für ${company} vom ${date} zurücknehmen`}
+                            disabled={undismiss.isPending}
+                            onClick={() => {
+                              undismiss.mutate(
+                                { idA: pair.a.id, idB: pair.b.id },
+                                {
+                                  onSuccess: () => {
+                                    notify(
+                                      "Das Paar steht wieder unter den möglichen Dubletten.",
+                                    );
+                                  },
+                                  onError: (error) => {
+                                    notify(
+                                      getErrorMessage(
+                                        error,
+                                        "Die Markierung konnte nicht zurückgenommen werden.",
+                                      ),
+                                      "negative",
+                                    );
+                                  },
+                                },
+                              );
+                            }}
+                          >
+                            Zurücknehmen
+                          </Button>
+                        </ListRow>
+                      </li>
+                    );
+                  })}
+                </ListGroup>
+              </Disclosure>
             )}
           </section>
 

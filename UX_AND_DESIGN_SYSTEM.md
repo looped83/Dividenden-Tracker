@@ -345,7 +345,8 @@ Spalte und jeder Klick einen Modus mitschleppt.
 
 **Datenqualitätsansicht.** Übersichtszahlen, Dublettenvergleich (nebeneinander,
 mit Kategorie-Badge) und Auffälligkeitsliste; Aktion „Keine Dublette" wird
-persistiert. Zugänglich: Dialoge mit Titel/Fokusfalle, Statusinformation nicht
+persistiert. Markierte Paare stehen eingeklappt darunter („Als keine Dublette markiert (n)")
+und lassen sich dort zurücknehmen. Zugänglich: Dialoge mit Titel/Fokusfalle, Statusinformation nicht
 nur über Farbe (Text-Badges), tastaturbedienbare Auswahl.
 
 ---

@@ -132,6 +132,7 @@ export function useDismissDuplicate() {
   });
 }
 
+/** Nimmt eine „keine Dublette"-Markierung zurueck (Datenqualitaet). */
 export function useUndismissDuplicate() {
   const queryClient = useQueryClient();
   return useMutation({
