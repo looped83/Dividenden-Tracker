@@ -1,5 +1,5 @@
-import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "../support/appTest";
+import { pruefeAxe } from "../support/axe";
 
 /**
  * Dividendenkalender hinter der Anmeldung (Auftrag §20).
@@ -57,15 +57,6 @@ test.use({
     ],
   },
 });
-
-async function pruefeAxe(page: import("@playwright/test").Page, kontext: string) {
-  const ergebnis = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
-    .analyze();
-  expect(
-    ergebnis.violations.map((v) => ({ kontext, regel: v.id, hilfe: v.help })),
-  ).toEqual([]);
-}
 
 test("Liste ist die Standardansicht und zeigt Kacheln je Termin", async ({ page }) => {
   await page.goto("/#/kalender");
