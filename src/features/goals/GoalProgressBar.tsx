@@ -9,6 +9,11 @@ import {
 
 interface GoalProgressBarProps {
   progress: GoalProgress;
+  /**
+   * Prozentwert als Text unter dem Balken. Die Zielkarte nennt ihn bereits in
+   * der Betragszeile daneben und blendet ihn hier aus.
+   */
+  showPercent?: boolean;
   className?: string;
 }
 
@@ -25,7 +30,11 @@ const trackToneClass: Record<"positive" | "neutral" | "negative", string> = {
  * begrenzt; der tatsaechliche Prozentwert steht zusaetzlich als Text daneben.
  * Die Information funktioniert nicht ausschliesslich ueber Farbe.
  */
-export function GoalProgressBar({ progress, className }: GoalProgressBarProps) {
+export function GoalProgressBar({
+  progress,
+  showPercent = true,
+  className,
+}: GoalProgressBarProps) {
   const barValue = cappedBarPercent(progress.percent);
   const tone = statusTone(progress.status);
   const label = accessibleProgressLabel(progress);
@@ -50,9 +59,11 @@ export function GoalProgressBar({ progress, className }: GoalProgressBarProps) {
       </div>
       {/* Nur der erreichte Anteil: „Ziel 100 %" am rechten Ende stand unter
           jedem Balken und sagte immer dasselbe. */}
-      <p className="text-xs tabular-nums text-muted-foreground">
-        {achievementText(progress.percent)}
-      </p>
+      {showPercent && (
+        <p className="text-xs tabular-nums text-muted-foreground">
+          {achievementText(progress.percent)}
+        </p>
+      )}
     </div>
   );
 }

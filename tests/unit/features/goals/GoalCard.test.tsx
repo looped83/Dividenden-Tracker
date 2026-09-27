@@ -56,7 +56,21 @@ describe("GoalCard – Zustände", () => {
     expect(bar).toHaveAttribute("aria-valuenow", "75");
     expect(bar.getAttribute("aria-valuetext")).toMatch(/75,0\s%/);
     expect(screen.getByText("Aktiv")).toBeInTheDocument();
-    expect(screen.getByText(/Noch .*3\.000,00.*€ bis zum Ziel/)).toBeInTheDocument();
+  });
+
+  it("nennt Stand und Ziel in einer Zeile, den Prozentwert daneben", () => {
+    renderCard(goal(), [payment("2027-03-01", "9000.00")]);
+    expect(screen.getByText(/^9\.000,00\s€$/)).toBeInTheDocument();
+    expect(screen.getByText(/^von 12\.000,00\s€$/)).toBeInTheDocument();
+    // Genau einmal: in der Betragszeile, nicht noch einmal unter dem Balken.
+    expect(screen.getAllByText(/^75,0\s%$/)).toHaveLength(1);
+  });
+
+  it("laesst Restbetrag und Zeitfortschritt der Detailseite", () => {
+    renderCard(goal(), [payment("2027-03-01", "9000.00")]);
+    expect(screen.queryByText(/bis zum Ziel/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/vergangen/)).not.toBeInTheDocument();
+    expect(screen.queryByText("Zielbetrag")).not.toBeInTheDocument();
   });
 
   it("übertroffenes Ziel begrenzt den Balken visuell auf 100 %", () => {
@@ -65,7 +79,9 @@ describe("GoalCard – Zustände", () => {
     expect(bar).toHaveAttribute("aria-valuenow", "100");
     expect(bar.getAttribute("aria-valuetext")).toMatch(/110,0\s%/);
     expect(screen.getByText("Übertroffen")).toBeInTheDocument();
-    expect(screen.getByText(/übertroffen/)).toBeInTheDocument();
+    // Der reale Prozentwert steht als Text, auch ueber 100 %.
+    expect(screen.getByText(/^110,0\s%$/)).toBeInTheDocument();
+    expect(screen.getByText(/^13\.200,00\s€$/)).toBeInTheDocument();
   });
 
   it("bevorstehendes Ziel zeigt Beginn statt Fortschritt", () => {
@@ -73,8 +89,9 @@ describe("GoalCard – Zustände", () => {
     expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
     expect(screen.getByText("Beginnt am 01.01.2030")).toBeInTheDocument();
     expect(screen.getByText("Bevorstehend")).toBeInTheDocument();
+    expect(screen.getByText(/^12\.000,00\s€$/)).toBeInTheDocument();
     // Ein Ziel, das noch nicht begonnen hat, hat nichts erhalten.
-    expect(screen.queryByText("Erhalten")).not.toBeInTheDocument();
+    expect(screen.queryByText(/^von /)).not.toBeInTheDocument();
   });
 
   it("beendetes, nicht erreichtes Ziel wird als solches gekennzeichnet", () => {

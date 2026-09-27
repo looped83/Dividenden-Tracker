@@ -374,19 +374,25 @@ waren dadurch kaum zu unterscheiden. Eine 36-px-Symbolkachel trennt sie
 allein. Dasselbe Zeichen erscheint auf Übersicht, Zielseite und Detailseite; nur
 die Detailseite nennt die Zielart zusätzlich als Text.
 
-**Aufbau der Zielkarte.** Symbolkachel, Titel, darunter der Zeitfortschritt
-(„58 % des Jahres vergangen"); die Statusmarke steht in der oberen rechten Ecke
-und wird vom Titel umflossen, statt als eigene Spalte dauerhaft Breite zu
-belegen. Darunter Fortschrittsbalken, Zielbetrag und Erhaltenes, zuletzt der
-Restbetragssatz. Eine Zeile, die Zielart und Zeitraum wiederholt, gibt es nicht
-— das steht schon im Titel.
+**Aufbau der Zielkarte.** Die Karte beantwortet auf einen Blick nur zwei
+Fragen: Wie hoch ist das Ziel, und wo stehe ich? Oben Symbolkachel und Titel;
+die Statusmarke steht in der oberen rechten Ecke und wird vom Titel umflossen,
+statt als eigene Spalte dauerhaft Breite zu belegen. Darunter eine Zeile
+„2.487,35 € von 3.600,00 €" (Stand hervorgehoben, Ziel gedämpft) mit dem
+Prozentwert rechts, darunter der Balken. Zeitfortschritt, Restbetrag und die
+Beträge als eigene Felder standen früher zusätzlich in der Karte; sie war fast
+doppelt so hoch, und die zwei entscheidenden Zahlen gingen darin unter. Beides
+steht auf der Detailseite. Bevorstehende Ziele zeigen den Zielbetrag und
+„Beginnt am …" statt der Betragszeile. Eine Zeile, die Zielart und Zeitraum
+wiederholt, gibt es nicht — das steht schon im Titel.
 
 **Fortschrittsanzeige.** `GoalProgressBar` ist ein zugängliches
 `role="progressbar"` mit `aria-valuemin/max/now` und aussagekräftigem
 `aria-valuetext` (Betrag + Prozent, bei Überschreitung inkl. übertroffenem
 Betrag). Der Balken ist visuell auf 100 % begrenzt; der reale Prozentwert steht
-zusätzlich als Text; ein „Ziel 100 %" am Balkenende entfällt, es sagte immer
-dasselbe. Information nie nur über Farbe (Status-Badge mit Text).
+zusätzlich als Text (auf der Detailseite unter dem Balken, auf der Zielkarte in
+der Betragszeile daneben); ein „Ziel 100 %" am Balkenende entfällt, es sagte
+immer dasselbe. Information nie nur über Farbe (Status-Badge mit Text).
 Fortschrittsanimation nur dezent und `motion-reduce`-fest. Bevorstehende Ziele
 zeigen „Beginnt am …" statt Fortschritt (keine negative Bewertung, keine
 Prognose) und kein „Erhalten 0,00 €". Die Detailseite zeigt Zielbetrag, Erhaltenes

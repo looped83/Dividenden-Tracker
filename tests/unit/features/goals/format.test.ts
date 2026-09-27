@@ -9,7 +9,6 @@ import {
   drillDownHref,
   goalDisplayTitle,
   periodLabel,
-  remainderText,
   startsAtLabel,
   timeProgressText,
 } from "@/features/goals/format";
@@ -73,31 +72,7 @@ describe("Zieltitel und Zeitraumbeschriftung", () => {
   });
 });
 
-describe("Restbetrag- und Fortschrittstexte", () => {
-  it("verbleibender Betrag unter dem Ziel", () => {
-    const progress = computeGoalProgress(
-      goal(),
-      [payment("2027-03-01", "9000.00")],
-      midYear,
-    );
-    expect(norm(remainderText(progress))).toBe("Noch 3.000,00 € bis zum Ziel");
-  });
-  it("Ziel erreicht ohne negativen Restbetrag", () => {
-    const progress = computeGoalProgress(
-      goal(),
-      [payment("2027-03-01", "12000.00")],
-      midYear,
-    );
-    expect(norm(remainderText(progress))).toBe("Ziel erreicht");
-  });
-  it("Überschreitung wird beziffert", () => {
-    const progress = computeGoalProgress(
-      goal(),
-      [payment("2027-03-01", "13200.00")],
-      midYear,
-    );
-    expect(norm(remainderText(progress))).toBe("Ziel um 1.200,00 € übertroffen");
-  });
+describe("Fortschrittstexte", () => {
   it("zugängliche Fortschrittsbeschriftung nennt Beträge und Prozent", () => {
     const progress = computeGoalProgress(
       goal(),

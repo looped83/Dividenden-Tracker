@@ -110,12 +110,9 @@ describe("GoalSection — zeigt nur Ziele des gewählten Zeitraums", () => {
     // Die Übersicht hatte eine eigene, kürzere Karte; dasselbe Ziel sah an
     // zwei Stellen unterschiedlich aus.
     renderSection(2026, [JAHRESZIEL_2026, MONATSZIEL_JULI_2026]);
-    expect(screen.getAllByText("Zielbetrag")).toHaveLength(2);
-    expect(screen.getAllByText("Erhalten")).toHaveLength(2);
-    // Unter dem Titel steht der Zeitfortschritt — nicht noch einmal die
-    // Zielart, die der Titel bereits nennt.
-    expect(screen.getByText(/% des Jahres vergangen$/)).toBeInTheDocument();
-    expect(screen.getByText(/% des Monats vergangen$/)).toBeInTheDocument();
+    // Beide Karten nennen Stand und Ziel in derselben Zeile.
+    expect(screen.getAllByText(/^von 1\.000,00\s€$/)).toHaveLength(2);
+    expect(screen.getAllByRole("progressbar")).toHaveLength(2);
     // Genau einmal: die Überschrift. Die Zielart stand darunter ein zweites
     // Mal — der Titel nennt sie bereits.
     expect(screen.getAllByText("Jahresziel 2026")).toHaveLength(1);
