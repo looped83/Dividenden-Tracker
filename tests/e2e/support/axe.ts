@@ -21,6 +21,20 @@ const STUFEN = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
  * verstehen.
  */
 export async function pruefeAxe(page: Page, kontext: string): Promise<void> {
+  // Erst messen, wenn Einblendungen fertig sind: Mitten im Einblenden eines
+  // Toasts ist dessen Text noch halb durchsichtig, und axe meldete einen
+  // Kontrastfehler, den es im fertigen Bild nicht gibt. Endlose Animationen
+  // (Ladeanzeigen) enden nie und bleiben aussen vor.
+  await page.evaluate(() =>
+    Promise.allSettled(
+      document
+        .getAnimations()
+        .filter(
+          (animation) => animation.effect?.getComputedTiming().iterations !== Infinity,
+        )
+        .map((animation) => animation.finished),
+    ),
+  );
   const ergebnis = await new AxeBuilder({ page }).withTags(STUFEN).analyze();
 
   expect(
