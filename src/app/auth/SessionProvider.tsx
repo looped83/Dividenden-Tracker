@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import * as React from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import type { Session } from "@supabase/auth-js";
 import { supabase } from "@/lib/supabase/client";
 
@@ -15,32 +16,48 @@ const SessionContext = React.createContext<SessionContextValue | null>(null);
  * (ARCHITECTURE.md §7, IMPLEMENTATION_PLAN.md Phase 2 "Session-Handling").
  * Der Auth-Client verwaltet Token-Refresh und Persistenz selbst (PKCE); dieser
  * Provider synchronisiert lediglich den React-Zustand mit `onAuthStateChange`.
+ *
+ * Der Abfrage-Cache gehoert genau einem Nutzer: Wechselt er — Abmelden,
+ * abgelaufene Sitzung, ein anderes Konto —, wird der Cache geleert
+ * (SECURITY_MODEL.md §2). Ohne das saehe ein im selben Tab angemeldetes
+ * zweites Konto bis zum Ablauf der Frische (5 Minuten) die Finanzdaten des
+ * ersten. Geleert wird beim Wechsel der Nutzerkennung, nicht nur beim
+ * Abmelden: Laeuft zwischen Abmelden und neuer Anmeldung noch eine Abfrage
+ * ohne Sitzung, stuende sonst ihr leeres Ergebnis als frisch im Cache.
  */
 export function SessionProvider({ children }: { children: React.ReactNode }) {
+  const queryClient = useQueryClient();
   const [session, setSession] = React.useState<Session | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
 
   React.useEffect(() => {
     let isMounted = true;
+    // `undefined`: noch keine Sitzung bekannt — der erste Stand ist kein Wechsel.
+    let userId: string | null | undefined;
+
+    const apply = (nextSession: Session | null) => {
+      const nextUserId = nextSession?.user.id ?? null;
+      if (userId !== undefined && nextUserId !== userId) queryClient.clear();
+      userId = nextUserId;
+      setSession(nextSession);
+      setIsLoading(false);
+    };
 
     void supabase.auth.getSession().then(({ data }) => {
-      if (!isMounted) return;
-      setSession(data.session);
-      setIsLoading(false);
+      if (isMounted) apply(data.session);
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
-      setIsLoading(false);
+      apply(nextSession);
     });
 
     return () => {
       isMounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [queryClient]);
 
   const value = React.useMemo(() => ({ session, isLoading }), [session, isLoading]);
 
