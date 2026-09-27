@@ -73,3 +73,70 @@ test("importiert eine CSV-Datei und rollt sie wieder zurück", async ({ page, ko
   });
   expect(danach?.anzahl).toBe("0");
 });
+
+/**
+ * Ein gescheiterter Import hinterlaesst keinen Entwurf. Frueher stand danach
+ * dauerhaft „Wartet auf Bestätigung" in der Historie, ohne dass sich der
+ * Eintrag entfernen liess. Das Scheitern wird an der RPC erzwungen — die
+ * Datenbank selbst weist eine stimmige Datei nicht ab.
+ */
+test("räumt den Entwurf auf, wenn der Import scheitert", async ({ page, konto }) => {
+  await page.route("**/rest/v1/rpc/commit_import", (route) =>
+    route.fulfill({
+      status: 400,
+      contentType: "application/json",
+      body: JSON.stringify({
+        code: "P0001",
+        message: "Kontrollsumme Zeilenanzahl weicht ab",
+        details: null,
+        hint: null,
+      }),
+    }),
+  );
+
+  await page.goto("/#/einstellungen/importe");
+  await page.getByRole("button", { name: "Neuer Import" }).click();
+  await page.setInputFiles('input[type="file"]', BEISPIELDATEI);
+  await page.getByRole("checkbox").check();
+  await page.getByRole("button", { name: "Weiter zur Zuordnung" }).click();
+  await page.getByRole("button", { name: "Weiter zur Vorschau" }).click();
+  await page.getByRole("button", { name: /Eingänge endgültig importieren/ }).click();
+
+  await expect(page.getByText("Kontrollsumme Zeilenanzahl weicht ab")).toBeVisible();
+  await expect
+    .poll(() =>
+      asUser(konto.userId, async (client) => {
+        const result = await client.query<{ anzahl: string }>(
+          "select count(*)::text as anzahl from imports",
+        );
+        return result.rows[0]?.anzahl;
+      }),
+    )
+    .toBe("0");
+});
+
+test("löscht einen liegengebliebenen Entwurf aus der Importübersicht", async ({
+  page,
+  konto,
+}) => {
+  await asUser(konto.userId, (client) =>
+    client.query(
+      `insert into imports (user_id, file_name, file_hash, file_size_bytes, file_type, status)
+       values ($1, 'alt.csv', repeat('a', 64), 100, 'csv', 'pending_confirmation')`,
+      [konto.userId],
+    ),
+  );
+
+  await page.goto("/#/einstellungen/importe");
+  await expect(page.getByText("Wartet auf Bestätigung")).toBeVisible();
+  await page.getByRole("button", { name: "Entwurf alt.csv löschen" }).click();
+
+  await expect(page.getByText("Noch keine Importe")).toBeVisible();
+  const verbleibend = await asUser(konto.userId, async (client) => {
+    const result = await client.query<{ anzahl: string }>(
+      "select count(*)::text as anzahl from imports",
+    );
+    return result.rows[0]?.anzahl;
+  });
+  expect(verbleibend).toBe("0");
+});

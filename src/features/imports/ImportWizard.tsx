@@ -24,6 +24,7 @@ import { useDepots } from "@/features/depots/hooks";
 import { useCommitImport } from "@/features/imports/hooks";
 import {
   createImport,
+  discardImport,
   findCommittedImportByHash,
   fetchSecurityAliases,
   type Import,
@@ -270,6 +271,7 @@ export function ImportWizard({ onFinished }: { onFinished: () => void }) {
   async function handleCommit() {
     if (!data) return;
     setPhase("importing");
+    let draftId: string | null = null;
     try {
       const payload = buildCommitPayload({
         rows,
@@ -287,10 +289,17 @@ export function ImportWizard({ onFinished }: { onFinished: () => void }) {
         status: "pending_confirmation",
         column_mapping: data.mapping,
       });
+      draftId = imp.id;
       const committed = await commit.mutateAsync({ importId: imp.id, payload });
       setResult(committed);
       setPhase("done");
     } catch (err) {
+      // Der Entwurf traegt keine Zahlungen — ohne ihn stuende in der Historie
+      // dauerhaft „Wartet auf Bestätigung". Einen doch abgeschlossenen Import
+      // (Antwort unterwegs verloren) schuetzt RLS: Geloescht werden duerfen
+      // nur Entwuerfe. Scheitert das Aufraeumen, bleibt der Entwurf in der
+      // Importuebersicht loeschbar.
+      if (draftId) await discardImport(draftId).catch(() => undefined);
       fail(
         getErrorMessage(
           err,

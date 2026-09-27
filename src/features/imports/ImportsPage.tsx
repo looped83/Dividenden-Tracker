@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Plus, RotateCcw } from "lucide-react";
+import { Plus, RotateCcw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,7 +19,11 @@ import { formatMoney } from "@/lib/money/format";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { formatCountNumber } from "@/lib/utils/formatNumber";
 import { ImportWizard } from "@/features/imports/ImportWizard";
-import { useImports, useRollbackImport } from "@/features/imports/hooks";
+import {
+  useDiscardImport,
+  useImports,
+  useRollbackImport,
+} from "@/features/imports/hooks";
 import type { Import } from "@/lib/supabase/repositories/imports";
 import type { ImportStatus } from "@/lib/supabase/database.types";
 import { formatTimestampDate } from "@/lib/utils/formatDate";
@@ -35,6 +39,16 @@ const STATUS_LABELS: Record<
   discarded: { label: "Verworfen", variant: "neutral" },
 };
 
+/**
+ * Nicht abgeschlossene Importe — dieselben Status, die RLS loeschen laesst
+ * (`imports_delete_draft_own`). Sie tragen keine Zahlungen.
+ */
+const DRAFT_STATUSES: ReadonlySet<ImportStatus> = new Set([
+  "analyzing",
+  "pending_confirmation",
+  "discarded",
+]);
+
 function checksumTotal(imp: Import): string | null {
   const checksums = imp.checksums as { total_net?: string; row_count?: number } | null;
   if (!checksums?.total_net) return null;
@@ -45,7 +59,8 @@ export function ImportsPage() {
   const [wizardOpen, setWizardOpen] = React.useState(false);
   const { data: imports = [], isLoading } = useImports();
   const rollback = useRollbackImport();
-  const [rollbackError, setRollbackError] = React.useState("");
+  const discard = useDiscardImport();
+  const [actionError, setActionError] = React.useState("");
 
   async function handleRollback(imp: Import) {
     const checksums = imp.checksums as { row_count?: number } | null;
@@ -61,11 +76,20 @@ export function ImportsPage() {
     ) {
       return;
     }
-    setRollbackError("");
+    setActionError("");
     try {
       await rollback.mutateAsync(imp.id);
     } catch (err) {
-      setRollbackError(getErrorMessage(err, "Rollback fehlgeschlagen."));
+      setActionError(getErrorMessage(err, "Rollback fehlgeschlagen."));
+    }
+  }
+
+  async function handleDiscard(imp: Import) {
+    setActionError("");
+    try {
+      await discard.mutateAsync(imp.id);
+    } catch (err) {
+      setActionError(getErrorMessage(err, "Der Entwurf konnte nicht gelöscht werden."));
     }
   }
 
@@ -103,9 +127,9 @@ export function ImportsPage() {
           </Button>
         </CardHeader>
         <CardContent className="space-y-3">
-          {rollbackError && (
+          {actionError && (
             <p role="alert" className="text-sm text-negative">
-              {rollbackError}
+              {actionError}
             </p>
           )}
 
@@ -151,6 +175,20 @@ export function ImportsPage() {
                           disabled={rollback.isPending}
                         >
                           <RotateCcw /> Rollback
+                        </Button>
+                      )}
+                      {/* Entwuerfe bleiben nach einem gescheiterten Import
+                          zurueck; sie tragen keine Zahlungen und lassen sich
+                          ohne Rueckfrage entfernen. */}
+                      {DRAFT_STATUSES.has(imp.status) && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          aria-label={`Entwurf ${imp.file_name} löschen`}
+                          onClick={() => void handleDiscard(imp)}
+                          disabled={discard.isPending}
+                        >
+                          <Trash2 /> Löschen
                         </Button>
                       )}
                     </TableCell>

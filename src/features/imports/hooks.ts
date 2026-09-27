@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   commitImport,
+  discardImport,
   fetchImports,
   rollbackImport,
   type Import,
@@ -45,5 +46,17 @@ export function useRollbackImport() {
   return useMutation<Import, Error, string>({
     mutationFn: (importId) => rollbackImport(importId),
     onSuccess: invalidate,
+  });
+}
+
+/**
+ * Loescht einen nicht abgeschlossenen Import-Entwurf. Er traegt keine
+ * Zahlungen, deshalb betrifft das nur die Importuebersicht.
+ */
+export function useDiscardImport() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (importId: string) => discardImport(importId),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: IMPORTS_KEY }),
   });
 }
