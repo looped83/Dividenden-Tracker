@@ -299,11 +299,14 @@ maximaler Kontrast auf Schwarz lässt Schrift auf OLED ausfransen.
 
 **Aufbau (von oben):** Seitenüberschrift → Zeitraumsteuerung → KPI-Karten → monatlicher
 Verlauf → Top-Unternehmen + Depotverteilung (nebeneinander ab `lg`) → letzte Eingänge →
-historische Übersicht. Ruhig, datenorientiert; keine dekorativen Visualisierungen, keine
+Summe seit Beginn. Ruhig, datenorientiert; keine dekorativen Visualisierungen, keine
 3D-Diagramme, keine dauerhafte grün/rot-Bewertung saisonaler Schwankungen.
 
 **Responsive:** vier KPI-Kacheln, Raster 2 → 4 Spalten (iPhone/Desktop); die Gesamtsumme aller
-Jahre steht nur in der historischen Übersicht am Seitenende, nicht zusätzlich als Kachel; Diagramm füllt die Breite
+Jahre steht als eine Zeile „Gesamt seit März 2019 · 412 Zahlungen" am Seitenende (wie die
+Eingänge darüber, führt zur Statistik), nicht zusätzlich als Kachel. Bei „Alle Jahre" entfällt
+die Zeile, weil die Kennzahlen oben dann dieselbe Summe nennen. Früher stand dort eine Karte mit
+sechs Eckdaten, die fast alle schon auf der Seite oder in der Statistik standen. Diagramm füllt die Breite
 (`ResponsiveContainer`), Top-Listen/Depotverteilung als horizontale Balken (auf schmalen Geräten
 untereinander). Touch-Ziele ≥ 44 px (Buttons `size="sm"`/`default`), `overflow-x` nur innerhalb
 scrollbarer Container (Datentabellen).

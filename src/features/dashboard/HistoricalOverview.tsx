@@ -1,58 +1,55 @@
-import type { ReactNode } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Link } from "react-router";
 import { AmountText } from "@/components/money/AmountText";
-import { historicalSummary, type AnalyticsPayment } from "@/lib/statistics";
-import { formatIsoDate } from "./format";
-
-const countFormatter = new Intl.NumberFormat("de-DE");
+import { ListGroup, ListItemBody, ListRow } from "@/components/ui/list";
+import { formatCountNoun } from "@/lib/utils/formatNumber";
+import {
+  historicalSummary,
+  monthOf,
+  yearOf,
+  type AnalyticsPayment,
+  type YearSelection,
+} from "@/lib/statistics";
+import { formatMonthYear } from "./format";
 
 interface HistoricalOverviewProps {
   payments: AnalyticsPayment[];
-}
-
-function Item({ label, value }: { label: string; value: ReactNode }) {
-  return (
-    <div>
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="mt-0.5 text-sm font-medium tabular-nums">{value}</dd>
-    </div>
-  );
+  selection: YearSelection;
 }
 
 /**
- * §12 Historische Uebersicht: kompakte Eckdaten der gesamten aktiven Historie,
- * immer unabhaengig von der Jahresauswahl.
+ * §12 Historische Gesamtsumme: eine Zeile mit der Summe der gesamten aktiven
+ * Historie, unabhaengig von der Jahresauswahl; antippen oeffnet die Statistik.
+ *
+ * Zuvor stand hier eine Karte mit sechs Eckdaten. Fast alle standen schon
+ * anderswo: der letzte Eingang direkt darueber in „Letzte Eingänge", Zahlungen
+ * und Unternehmen in den Kennzahlen, Summe und Zeitraum in der Statistik. Was
+ * nur hier stand, ist die Summe seit Beginn, solange ein einzelnes Jahr gewaehlt
+ * ist — genau das zeigt die Zeile. Sie sieht aus wie die Eingaenge darueber.
+ *
+ * Bei „Alle Jahre" entfaellt sie: Die Kennzahlen oben nennen dann dieselbe
+ * Summe und dieselbe Zahl der Zahlungen.
  */
-export function HistoricalOverview({ payments }: HistoricalOverviewProps) {
+export function HistoricalOverview({ payments, selection }: HistoricalOverviewProps) {
+  if (selection === "all") return null;
+
   const summary = historicalSummary(payments);
+  const first = summary.firstPayDate;
+  if (first === null) return null;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Historische Übersicht</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {/* Zwei Spalten schon auf dem Telefon: Sechs kurze Werte
-            untereinander sind eine halbe Bildschirmlaenge fuer Zahlen, die
-            nebeneinander genauso lesbar sind. */}
-        <dl className="grid grid-cols-2 gap-x-4 gap-y-3 md:grid-cols-3 lg:grid-cols-6">
-          <Item label="Gesamtsumme" value={<AmountText amount={summary.net} />} />
-          <Item label="Zahlungen" value={countFormatter.format(summary.count)} />
-          <Item
-            label="Erster Eingang"
-            value={summary.firstPayDate ? formatIsoDate(summary.firstPayDate) : "—"}
-          />
-          <Item
-            label="Letzter Eingang"
-            value={summary.lastPayDate ? formatIsoDate(summary.lastPayDate) : "—"}
-          />
-          <Item
-            label="Unternehmen"
-            value={countFormatter.format(summary.distinctSecurities)}
-          />
-          <Item label="Depots" value={countFormatter.format(summary.distinctDepots)} />
-        </dl>
-      </CardContent>
-    </Card>
+    <ListGroup aria-label="Historische Gesamtsumme">
+      <li>
+        <ListRow asChild>
+          <Link to="/statistiken">
+            <ListItemBody
+              title={`Gesamt seit ${formatMonthYear(yearOf(first), monthOf(first))}`}
+              meta={formatCountNoun(summary.count, "Zahlung", "Zahlungen")}
+              trailing={<AmountText amount={summary.net} />}
+              chevron
+            />
+          </Link>
+        </ListRow>
+      </li>
+    </ListGroup>
   );
 }

@@ -186,7 +186,7 @@ export function DashboardPage() {
 
       <RecentPayments payments={payments} securities={securities} depots={depots} />
 
-      <HistoricalOverview payments={payments} />
+      <HistoricalOverview payments={payments} selection={selection} />
     </div>
   );
 }

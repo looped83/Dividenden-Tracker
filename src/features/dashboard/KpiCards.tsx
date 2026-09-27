@@ -60,7 +60,7 @@ interface KpiCardsProps {
   today: RefDate;
 }
 
-/** Vier primaere Kennzahlkarten (§5); die Historie steht in `HistoricalOverview`. */
+/** Vier primaere Kennzahlkarten (§5); die Summe seit Beginn steht in `HistoricalOverview`. */
 export function KpiCards({ payments, selection, today }: KpiCardsProps) {
   const cards = React.useMemo(() => {
     const ref = today;

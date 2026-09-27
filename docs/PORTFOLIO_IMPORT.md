@@ -98,7 +98,13 @@ Daraus folgt eine Regel, die die App ableitet statt sie zu speichern:
 
 Die Detailseite zeigt dann „Letzter bekannter Bestand" statt eines Bestands, den es nicht
 mehr gibt. Ohne diese Unterscheidung bliebe eine verkaufte Position dauerhaft mit ihrem
-letzten Stand stehen — still falsch, und das ist die schlimmste Art falsch.
+letzten Stand stehen — still falsch, und das ist die schlimmste Art falsch. Überschrift und
+gelbe Datumsmarke sagen das allein; ein zusätzlicher Erklärsatz entfällt.
+
+Die Karte „Position" zeigt oben vier Kennzahlen: erwartete Jahresdividende neben dem tatsächlich
+Erhaltenen des letzten abgeschlossenen Kalenderjahres, darunter Marktwert (mit Gewinn) und
+Rendite (mit Rendite auf Einstand). Stückzahl, Kurs, Einstand, Dividende je Aktie, Rhythmus und
+Wachstum stehen unter „Alle Kennzahlen".
 
 ## 5. Zuordnung und Stammdaten
 
