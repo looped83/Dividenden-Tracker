@@ -42,21 +42,15 @@ const toneClass: Record<ComparisonTone, string> = {
 function TrendCaption({
   comparison,
   hint,
-  extra,
 }: {
   comparison: { value: string; caption: string; tone: ComparisonTone } | undefined;
   hint: string;
-  extra?: string | undefined;
 }) {
+  if (!comparison) return null;
   return (
-    <div className="space-y-0.5">
-      {comparison && (
-        <div className={cn("space-y-0.5", toneClass[comparison.tone])} title={hint}>
-          {comparison.value !== NOT_AVAILABLE && <p>{comparison.value}</p>}
-          <p>{comparison.caption}</p>
-        </div>
-      )}
-      {extra && <p>{extra}</p>}
+    <div className={cn("space-y-0.5", toneClass[comparison.tone])} title={hint}>
+      {comparison.value !== NOT_AVAILABLE && <p>{comparison.value}</p>}
+      <p>{comparison.caption}</p>
     </div>
   );
 }
@@ -128,9 +122,8 @@ export function KpiCards({ payments, selection, today }: KpiCardsProps) {
   const showAverage = !cards.isAll && typeof selection === "number";
   // Vier Kacheln, zwei Reihen: Wo die Monats- oder die Durchschnittskachel
   // entfaellt (anderes Jahr, „Alle Jahre"), fuellt die Zahl der Zahlungen den
-  // Platz. Sonst steht sie als Zusatz in der Kachel des Zeitraums.
+  // Platz.
   const showPaymentsCard = !(cards.showCurrentMonth && showAverage);
-  const paymentsCaption = formatCountNoun(cards.periodCount, "Zahlung", "Zahlungen");
 
   return (
     // Hoechstens vier primaere Kennzahlen (UX_AND_DESIGN_SYSTEM.md #2): Die
@@ -146,7 +139,6 @@ export function KpiCards({ payments, selection, today }: KpiCardsProps) {
           <TrendCaption
             comparison={cards.selectedComparison}
             hint={cards.selectedComparisonHint}
-            extra={showPaymentsCard ? undefined : paymentsCaption}
           />
         }
         to={paymentsListHref({ year: selection })}
@@ -197,11 +189,9 @@ export function KpiCards({ payments, selection, today }: KpiCardsProps) {
         <StatCard
           label="Ø pro Monat"
           value={<AmountText amount={averagePerMonth(payments, selection, today)} />}
-          caption={
-            cards.isCurrentYear
-              ? "Durchschnitt pro begonnenem Monat"
-              : "Durchschnitt pro Monat"
-          }
+          // Kurz, damit der Zusatz in der halbbreiten Kachel einzeilig bleibt;
+          // „Durchschnitt" steht schon in der Beschriftung.
+          caption={cards.isCurrentYear ? "pro begonnenem Monat" : "über 12 Monate"}
         />
       )}
 

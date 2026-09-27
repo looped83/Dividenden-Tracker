@@ -32,22 +32,17 @@ export function OverviewTab() {
           value={<AmountText amount={stats.net} />}
           // Die Zahl der Zahlungen nennt „Ø Zahlung" daneben; hier steht die
           // Breite, aus der die Summe stammt.
-          // Je eine Zeile: Mit „·" verbunden brach die Angabe in der
-          // halbbreiten Kachel mitten im Satz um (wie in der Uebersicht).
-          caption={
-            <>
-              <p>
-                {formatCountNoun(stats.distinctSecurities, "Unternehmen", "Unternehmen")}
-              </p>
-              <p>{formatCountNoun(stats.distinctDepots, "Depot", "Depots")}</p>
-            </>
-          }
+          caption={formatCountNoun(
+            stats.distinctSecurities,
+            "Unternehmen",
+            "Unternehmen",
+          )}
           onDrillDown={() => void navigate(statisticsDrillHref(filter))}
         />
         <StatCard
           label="Ø Zahlung"
           value={<AmountText amount={stats.averagePayment} />}
-          caption={`aus ${formatPayments(stats.count)}`}
+          caption={formatPayments(stats.count)}
         />
         <StatCard
           label="Ø Monat"

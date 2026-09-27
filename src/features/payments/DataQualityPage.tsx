@@ -145,7 +145,6 @@ export function DataQualityPage() {
       <DetailHeader
         back={<DetailBackLink to="/eingaenge" label="Zu den Dividenden" />}
         title="Datenqualität"
-        subtitle="Hinweise zu möglichen Dubletten und auffälligen Datensätzen. Es wird niemals automatisch storniert, gelöscht oder zusammengeführt — jede Entscheidung triffst du bewusst."
       />
 
       {/* Übersicht (§17) — eine Karte statt sechs: Die Zahlen sind meist null
