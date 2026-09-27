@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mapAnalyticsPayment } from "@/lib/statistics";
+import { activeAnalyticsPayments, mapAnalyticsPayment } from "@/lib/statistics";
 
 const base = {
   id: "p1",
@@ -31,5 +31,30 @@ describe("mapAnalyticsPayment", () => {
     });
     expect(mapped.netAmount.toStringValue()).toBe("85.00");
     expect(mapped.grossAmount.toStringValue()).toBe("100.50");
+  });
+});
+
+describe("activeAnalyticsPayments", () => {
+  const row = (id: string, archived_at: string | null) => ({
+    ...base,
+    id,
+    net_amount: "10.00",
+    gross_amount: "10.00",
+    archived_at,
+  });
+
+  it("nimmt nur aktive Eingaenge", () => {
+    const active = activeAnalyticsPayments([row("p1", null), row("p2", "2026-04-01")]);
+    expect(active.map((payment) => payment.id)).toEqual(["p1"]);
+  });
+
+  it("parst dieselbe geladene Liste nur einmal, eine neue erneut", () => {
+    // Uebersicht, Statistik und Ziele sind je eigene Beobachter derselben
+    // Abfrage; sie teilen sich das Ergebnis, statt es neu zu parsen.
+    const loaded = [row("p1", null)];
+    expect(activeAnalyticsPayments(loaded)).toBe(activeAnalyticsPayments(loaded));
+    expect(activeAnalyticsPayments([row("p1", null)])).not.toBe(
+      activeAnalyticsPayments(loaded),
+    );
   });
 });
