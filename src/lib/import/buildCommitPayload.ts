@@ -195,7 +195,6 @@ export function buildCommitPayload(input: BuildPayloadInput): CommitPayload {
       imported: importable.length,
       invalid: rows.filter((r) => r.status === "invalid").length,
       excluded: rows.filter((r) => r.status === "excluded").length,
-      needs_dedupe: rows.filter((r) => r.status === "needs_dedupe").length,
     },
   };
 }

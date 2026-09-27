@@ -628,6 +628,27 @@ anheben.
 *Beleg:* `.github/workflows/*.yml` (Kommentar in `ci.yml`),
 `playwright.config.ts`.
 
+## D-8-4: Der Import prüft Dubletten nur auf Dateiebene
+
+**Status:** Accepted · **Scope:** Product
+
+Der Import erkennt eine bereits importierte **Datei** (Stufe 1, IMPORT_SPEC.md §7).
+Überschneidungen einzelner Zeilen mit dem Bestand (Stufen 2–4) prüft er nicht; sie
+findet anschließend die Datenqualitätsansicht.
+
+*Warum:* Die Datenqualitätsansicht erkennt Dubletten unabhängig von ihrer Herkunft —
+auch zwischen manuell erfassten und importierten Eingängen, was ein Zeilen-Fingerprint
+nicht könnte. Eine zweite, schwächere Prüfung im Import brächte eine weitere
+Entscheidungsoberfläche für denselben Befund. Die vorbereitete Stufe 2
+(`markExactDuplicates`) war nie angebunden; die Vorschau wies deshalb stets
+„0 Duplikate" aus, ohne geprüft zu haben. Beides ist entfernt.
+
+*Neu bewerten, wenn:* Importe regelmäßig große Überschneidungen erzeugen, deren
+Bereinigung im Nachhinein mühsam wird. Die Zeilen-Fingerprints liegen dafür
+weiterhin in `dividend_payments.row_fingerprint`.
+
+*Beleg:* `lib/import/pipeline.ts`, `lib/payments/dataQuality.ts`.
+
 ---
 
 ## ADR-001: Historie vollständig im Client, Schwelle bei 10.000 Zahlungen

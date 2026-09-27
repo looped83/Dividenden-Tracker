@@ -322,7 +322,6 @@ export function ImportWizard({ onFinished }: { onFinished: () => void }) {
     [importable],
   );
   const invalidCount = rows.filter((r) => r.status === "invalid").length;
-  const dedupeCount = rows.filter((r) => r.status === "needs_dedupe").length;
   const newCompanyCount = [...companyDecisions.values()].filter(
     (d) => d.kind === "new",
   ).length;
@@ -613,8 +612,8 @@ export function ImportWizard({ onFinished }: { onFinished: () => void }) {
               value={`${checksums.minDate ?? "—"} – ${checksums.maxDate ?? "—"}`}
             />
             <Stat
-              label="Fehler / Duplikate"
-              value={`${formatCountNumber(invalidCount)} / ${formatCountNumber(dedupeCount)}`}
+              label="Ungültige Zeilen"
+              value={formatCountNumber(invalidCount)}
               variant={invalidCount > 0 ? "negative" : "neutral"}
             />
           </div>
@@ -814,7 +813,6 @@ function RowStatusBadge({ status }: { status: NormalizedRow["status"] }) {
     valid: { label: "Gültig", variant: "positive" },
     valid_warning: { label: "Warnung", variant: "warning" },
     needs_mapping: { label: "Zuordnung", variant: "warning" },
-    needs_dedupe: { label: "Duplikat prüfen", variant: "warning" },
     invalid: { label: "Ungültig", variant: "negative" },
     excluded: { label: "Ausgeschlossen", variant: "neutral" },
   };
