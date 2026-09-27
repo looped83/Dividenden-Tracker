@@ -12,7 +12,6 @@ import {
   comparePeriods,
   currentMonthAggregate,
   currentMonthComparison,
-  distinctDepots,
   distinctSecurities,
   selectedPeriodAggregate,
   selectedYearComparison,
@@ -42,21 +41,15 @@ const toneClass: Record<ComparisonTone, string> = {
 function TrendCaption({
   comparison,
   hint,
-  extra,
 }: {
   comparison: { value: string; caption: string; tone: ComparisonTone } | undefined;
   hint: string;
-  extra?: string | undefined;
 }) {
+  if (!comparison) return null;
   return (
-    <div className="space-y-0.5">
-      {comparison && (
-        <div className={cn("space-y-0.5", toneClass[comparison.tone])} title={hint}>
-          {comparison.value !== NOT_AVAILABLE && <p>{comparison.value}</p>}
-          <p>{comparison.caption}</p>
-        </div>
-      )}
-      {extra && <p>{extra}</p>}
+    <div className={cn("space-y-0.5", toneClass[comparison.tone])} title={hint}>
+      {comparison.value !== NOT_AVAILABLE && <p>{comparison.value}</p>}
+      <p>{comparison.caption}</p>
     </div>
   );
 }
@@ -97,15 +90,14 @@ export function KpiCards({ payments, selection, today }: KpiCardsProps) {
       ? bestMonthAllTime(payments)
       : bestMonthInYear(payments, selection);
 
-    // 5.6 Aktivitaet im Zeitraum: Wie viele Zahlungen kamen herein — und aus
-    // wie vielen Quellen? Die blosse Zahl ausschuettender Unternehmen sagte
-    // nichts ueber das Jahr aus; die Anzahl der Eingaenge schon, und die
+    // 5.6 Aktivitaet im Zeitraum: Wie viele Zahlungen kamen herein — und von
+    // wie vielen Unternehmen? Die blosse Zahl ausschuettender Unternehmen
+    // sagte nichts ueber das Jahr aus; die Anzahl der Eingaenge schon, und die
     // Breite steht als Zusatz daneben.
     const periodPayments = isAll
       ? payments
       : payments.filter((p) => yearOf(p.payDate) === selection);
     const companies = distinctSecurities(periodPayments);
-    const depots = distinctDepots(periodPayments);
 
     return {
       isAll,
@@ -119,7 +111,6 @@ export function KpiCards({ payments, selection, today }: KpiCardsProps) {
       monthComparison,
       best,
       companies,
-      depots,
     };
   }, [payments, selection, today]);
 
@@ -128,9 +119,8 @@ export function KpiCards({ payments, selection, today }: KpiCardsProps) {
   const showAverage = !cards.isAll && typeof selection === "number";
   // Vier Kacheln, zwei Reihen: Wo die Monats- oder die Durchschnittskachel
   // entfaellt (anderes Jahr, „Alle Jahre"), fuellt die Zahl der Zahlungen den
-  // Platz. Sonst steht sie als Zusatz in der Kachel des Zeitraums.
+  // Platz.
   const showPaymentsCard = !(cards.showCurrentMonth && showAverage);
-  const paymentsCaption = formatCountNoun(cards.periodCount, "Zahlung", "Zahlungen");
 
   return (
     // Hoechstens vier primaere Kennzahlen (UX_AND_DESIGN_SYSTEM.md #2): Die
@@ -146,7 +136,6 @@ export function KpiCards({ payments, selection, today }: KpiCardsProps) {
           <TrendCaption
             comparison={cards.selectedComparison}
             hint={cards.selectedComparisonHint}
-            extra={showPaymentsCard ? undefined : paymentsCaption}
           />
         }
         to={paymentsListHref({ year: selection })}
@@ -197,11 +186,9 @@ export function KpiCards({ payments, selection, today }: KpiCardsProps) {
         <StatCard
           label="Ø pro Monat"
           value={<AmountText amount={averagePerMonth(payments, selection, today)} />}
-          caption={
-            cards.isCurrentYear
-              ? "Durchschnitt pro begonnenem Monat"
-              : "Durchschnitt pro Monat"
-          }
+          // Kurz, damit der Zusatz in der halbbreiten Kachel einzeilig bleibt;
+          // „Durchschnitt" steht schon in der Beschriftung.
+          caption={cards.isCurrentYear ? "pro begonnenem Monat" : "über 12 Monate"}
         />
       )}
 
@@ -210,14 +197,7 @@ export function KpiCards({ payments, selection, today }: KpiCardsProps) {
         <StatCard
           label={`Zahlungen ${selectionLabel}`}
           value={formatCountNumber(cards.periodCount)}
-          // Je eine Zeile: Mit „·" verbunden brach die Angabe in der
-          // halbbreiten Kachel mitten im Satz um.
-          caption={
-            <>
-              <p>{formatCountNoun(cards.companies, "Unternehmen", "Unternehmen")}</p>
-              <p>{formatCountNoun(cards.depots, "Depot", "Depots")}</p>
-            </>
-          }
+          caption={formatCountNoun(cards.companies, "Unternehmen", "Unternehmen")}
           to={paymentsListHref({ year: selection })}
           drillLabel={`Zahlungen ${selectionLabel} anzeigen`}
         />

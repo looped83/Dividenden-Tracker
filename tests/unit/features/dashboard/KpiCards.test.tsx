@@ -104,12 +104,12 @@ describe("KpiCards (Render-Smoke)", () => {
     expect(screen.getAllByRole("link")).toHaveLength(3);
   });
 
-  it("nennt im laufenden Jahr die Zahl der Zahlungen in der Jahreskachel", () => {
+  it("zeigt im laufenden Jahr keine Zahl der Zahlungen", () => {
     renderCards(2026, [
       payment("2026-03-10", "50.00", "sec-a"),
       payment("2026-04-10", "30.00", "sec-b"),
     ]);
-    expect(screen.getByText("2 Zahlungen")).toBeInTheDocument();
+    expect(screen.queryByText("2 Zahlungen")).not.toBeInTheDocument();
     expect(screen.queryByText("Zahlungen 2026")).not.toBeInTheDocument();
   });
 
@@ -125,6 +125,6 @@ describe("KpiCards (Render-Smoke)", () => {
       "Zahlungen 2024",
     ]);
     expect(screen.getByText("2 Unternehmen")).toBeInTheDocument();
-    expect(screen.getByText("1 Depot")).toBeInTheDocument();
+    expect(screen.queryByText("1 Depot")).not.toBeInTheDocument();
   });
 });
