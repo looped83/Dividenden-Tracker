@@ -133,17 +133,6 @@ beforeEach(() => {
 });
 
 describe("Kopf und Zustaende", () => {
-  it("zeigt die Ueberschrift — ohne Unterzeile, die sie wiederholt", () => {
-    renderPage();
-
-    expect(
-      screen.getByRole("heading", { name: "Dividendenkalender", level: 1 }),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByText(/Alle angekündigten Zahltage deiner Dividenden/),
-    ).not.toBeInTheDocument();
-  });
-
   it("zeigt beim ersten Laden ein Geruest statt eines leeren Bildschirms", () => {
     zustand.eventsLoading = true;
     renderPage();

@@ -10,10 +10,18 @@ reines PostgreSQL 16 für Integrations-, RLS- und Restore-Tests (DECISIONS.md D-
 | Stufe | Umfang | Läuft in CI |
 |---|---|---|
 | Lint + Typecheck + Format | ESLint inkl. Geld-Verbotsliste, `tsc --noEmit` strict | ✅ Job `quality` |
-| Unit (Vitest) | 708 Tests / 72 Dateien | ✅ Job `quality` |
+| Unit (Vitest) | 894 Tests / 92 Dateien (Stand 2026-09-27) | ✅ Job `quality` |
 | Integration (PostgreSQL 16) | 118 Tests: Constraints, Trigger, RLS, Import, Statistik, Ziele, Restore | ✅ Job `db-integration` |
 | E2E öffentlich (Playwright) | 33 Tests: Rauchtests, axe und Telefonverhalten (Schriftgröße der Felder, kein seitlicher Überlauf, Pinch-Zoom bleibt erlaubt) | ✅ Job `e2e-smoke` |
 | E2E angemeldet (Playwright + PostgreSQL) | 54 Tests je Projekt (Desktop + iPhone): die fünf Kernabläufe und axe auf allen Routen hinter der Anmeldung | ✅ Job `e2e-app` |
+
+**Zwei Umgebungen:** Logiktests (`.test.ts`) laufen in Node, Komponententests
+(`.test.tsx`) in jsdom (`vite.config.ts`, `projects`). Die Suite braucht damit rund 31 s
+statt 48 s; eine Logikdatei, die doch `window` braucht, setzt `// @vitest-environment jsdom`.
+
+**Keine Tests für entfernte Texte:** Ein Test, der nur prüft, dass eine früher entfernte
+Formulierung nicht zurückkehrt, schlägt allein bei exakt diesem Wortlaut an. Solche Tests
+sind entfernt; geprüft wird Verhalten (was wann erscheint), nicht Designgeschichte.
 
 **Bekannte Lücken** — bewusst benannt statt stillschweigend hingenommen:
 
@@ -54,11 +62,12 @@ CI blockiert Merges bei jedem roten Test; Sicherheitstests (§6) sind nie „ski
 ## 2. Unit Tests
 
 **Finanzberechnungen & Rundungen** (`lib/money`)
-- R-1–R-7 aus CALCULATION_RULES.md mit Tabellenfällen inkl. Grenzwerten (0,005 → 0,01;
-  negative Beträge; 0; sehr große Beträge; 6/8-stellige Skalen)
+- R-1 aus CALCULATION_RULES.md mit Tabellenfällen inkl. Grenzwerten (0,005 → 0,01;
+  negative Beträge; 0; sehr große Beträge)
 - Betragsinvariante §4 inkl. Toleranzgrenzen (0,02 ok / 0,021 Warnung)
-- Währungsumrechnung R-2 (Hin-/Rückrechnung, keine Float-Drift; Property-Test: Ergebnis
-  unabhängig von Additionsreihenfolge)
+- Keine eigenen Wertobjekte für Stückzahl, Wechselkurs, Originalbetrag und Betrag je Aktie
+  (R-2, R-7): Die App erfasst keine Fremdwährung, die Klassen waren ungenutzt und sind
+  entfernt (2026-09-27). Die Grenzen dieser Spalten sichert die Datenbank (CHECK).
 
 **Zahlenparser** (`lib/parsing/number`)
 - `1.234,56` / `1,234.56` / `1234.56` / `1'234.56` / `(123,45)` / `−12,34` / `12,3456`

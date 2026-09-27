@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Disclosure } from "@/components/ui/disclosure";
 import { AmountText } from "@/components/money/AmountText";
 import { Money, formatPercent, toCurrencyCode } from "@/lib/money";
 import { formatCalendarDate } from "@/lib/utils/formatDate";
@@ -26,6 +27,14 @@ const FREQUENCY_LABELS: Readonly<Record<DividendFrequency, string>> = {
  * fehlendes Papier ist also verkauft. Ohne diese Unterscheidung stuende hier
  * dauerhaft ein Bestand, den es nicht mehr gibt — still falsch, und das ist die
  * schlimmste Art falsch.
+ *
+ * **Oben vier Kennzahlen, der Rest zum Aufklappen.** Zuvor standen zehn Werte
+ * untereinander und die Erwartung ganz unten — die hoechste Karte der App. Die
+ * Frage einer Dividendenstrategie ist dieselbe wie bei den Zielen: Was erwarte
+ * ich im Jahr, und was kam tatsaechlich? Beides steht jetzt nebeneinander vorn,
+ * darunter Marktwert (mit Gewinn) und Rendite (mit Rendite auf Einstand).
+ * Stueckzahl, Kurs, Einstand, Dividende je Aktie, Rhythmus und Wachstum stehen
+ * unter „Alle Kennzahlen".
  *
  * Kein Wert dieser Karte fliesst in Statistik oder Ziele (PRODUCT_SPEC.md
  * Grundsatz 8); es sind Marktdaten und **erwartete** Ausschuettungen einer
@@ -83,95 +92,74 @@ export function PositionCard({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {!current && (
-          <p className="text-sm text-muted-foreground">
-            Im jüngsten Depotstand kommt dieses Unternehmen nicht mehr vor — die Position
-            ist verkauft. Die Zahlen unten sind der letzte bekannte Stand.
-          </p>
-        )}
-
-        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
-          <Row label="Stückzahl" value={formatQuantity(snapshot.quantity)} />
-          <Row label="Kurs" value={price ? <AmountText amount={price} /> : null} />
-          <Row
+        {/* Verkauft: Ueberschrift „Letzter bekannter Bestand" und die gelbe
+            Datumsmarke sagen es; ein Satz darunter wiederholte es nur. */}
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-4">
+          <KeyFigure
+            label="Erwartet p. a."
+            value={annualDividend ? <AmountText amount={annualDividend} /> : null}
+          />
+          {/* Verglichen wird mit dem letzten abgeschlossenen Kalenderjahr (s. o.). */}
+          <KeyFigure
+            label={reference ? `Erhalten ${String(reference.year)}` : "Erhalten"}
+            value={reference ? <AmountText amount={reference.net} /> : null}
+            caption={reference ? undefined : "noch kein volles Jahr"}
+          />
+          <KeyFigure
             label="Marktwert"
             value={marketValue ? <AmountText amount={marketValue} /> : null}
-          />
-          <Row
-            label="Einstand"
-            value={buyinTotal ? <AmountText amount={buyinTotal} /> : null}
-          />
-          <Row
-            label="Gewinn"
-            value={
+            caption={
               gain ? (
-                <span>
+                <>
                   <AmountText amount={gain} showSign />
-                  {gainRelative && (
-                    <span className="ml-1 text-muted-foreground">
-                      ({formatPercent(gainRelative, 1)})
-                    </span>
-                  )}
-                </span>
-              ) : null
+                  {gainRelative && ` (${formatPercent(gainRelative, 1)})`}
+                </>
+              ) : undefined
             }
           />
-        </dl>
-
-        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 border-t border-border pt-3 text-sm">
-          <Row
+          <KeyFigure
             label="Rendite"
             value={dividendYield ? formatPercent(dividendYield, 2) : null}
-          />
-          <Row
-            label="Rendite auf Einstand"
-            value={yieldOnBuyin ? formatPercent(yieldOnBuyin, 2) : null}
-          />
-          <Row
-            label="Dividende je Aktie"
-            value={dividendPerShare ? <AmountText amount={dividendPerShare} /> : null}
-          />
-          <Row
-            label="Rhythmus"
-            value={
-              snapshot.dividend_frequency
-                ? FREQUENCY_LABELS[snapshot.dividend_frequency]
-                : null
-            }
-          />
-          <Row
-            label="Wachstum"
-            value={
-              cagr
-                ? `${formatPercent(cagr, 1)} p. a.${
-                    snapshot.dividend_cagr_period
-                      ? ` über ${snapshot.dividend_cagr_period.replace("Y", " Jahre")}`
-                      : ""
-                  }`
-                : null
+            caption={
+              yieldOnBuyin ? `auf Einstand ${formatPercent(yieldOnBuyin, 2)}` : undefined
             }
           />
         </dl>
 
-        {annualDividend && (
-          <div className="border-t border-border pt-3">
-            <p className="text-sm text-muted-foreground">Erwartet für zwölf Monate</p>
-            <p className="text-lg font-semibold">
-              <AmountText amount={annualDividend} />
-            </p>
-            {reference ? (
-              <p className="mt-1 text-sm text-muted-foreground">
-                Tatsächlich erhalten {reference.year}:{" "}
-                <AmountText amount={reference.net} className="font-medium" />
-              </p>
-            ) : (
-              <p className="mt-1 text-sm text-muted-foreground">
-                Für einen Vergleich fehlt noch ein abgeschlossenes Kalenderjahr mit
-                Eingängen.
-              </p>
-            )}
-          </div>
-        )}
+        <Disclosure summary="Alle Kennzahlen">
+          <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2">
+            <Row label="Stückzahl" value={formatQuantity(snapshot.quantity)} />
+            <Row label="Kurs" value={price ? <AmountText amount={price} /> : null} />
+            <Row
+              label="Einstand"
+              value={buyinTotal ? <AmountText amount={buyinTotal} /> : null}
+            />
+            <Row
+              label="Dividende je Aktie"
+              value={dividendPerShare ? <AmountText amount={dividendPerShare} /> : null}
+            />
+            <Row
+              label="Rhythmus"
+              value={
+                snapshot.dividend_frequency
+                  ? FREQUENCY_LABELS[snapshot.dividend_frequency]
+                  : null
+              }
+            />
+            <Row
+              label="Wachstum"
+              value={
+                cagr
+                  ? `${formatPercent(cagr, 1)} p. a.${
+                      snapshot.dividend_cagr_period
+                        ? ` über ${snapshot.dividend_cagr_period.replace("Y", " Jahre")}`
+                        : ""
+                    }`
+                  : null
+              }
+            />
+          </dl>
+        </Disclosure>
       </CardContent>
     </Card>
   );
@@ -186,6 +174,32 @@ function formatQuantity(value: string): string {
     ? value.replace(/0+$/, "").replace(/\.$/, "")
     : value;
   return trimmed.replace(".", ",");
+}
+
+/**
+ * Eine der vier Kennzahlen: Beschriftung, Wert, optional ein Zusatz darunter —
+ * derselbe Satz wie die Betraege der Zieldetailseite.
+ */
+function KeyFigure({
+  label,
+  value,
+  caption,
+}: {
+  label: string;
+  value: React.ReactNode;
+  caption?: React.ReactNode;
+}) {
+  return (
+    <div>
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="text-lg font-semibold tabular-amount">
+        {value ?? <span className="text-muted-foreground">—</span>}
+      </dd>
+      {caption !== undefined && (
+        <dd className="text-xs text-muted-foreground">{caption}</dd>
+      )}
+    </div>
+  );
 }
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {

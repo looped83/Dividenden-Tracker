@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+// Die Sitzung liegt im `localStorage` des Browsers.
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 /**

@@ -1,4 +1,4 @@
-import { ChevronRight } from "lucide-react";
+import { Disclosure } from "@/components/ui/disclosure";
 import type * as React from "react";
 import { ResponsiveContainer } from "recharts";
 
@@ -57,20 +57,9 @@ export function ChartEmpty({ children }: { children: React.ReactNode }) {
  */
 export function ChartDataTable({ children }: { children: React.ReactNode }) {
   return (
-    // 44px Tippflaeche: Als blosse Textzeile war der Schalter 20px hoch. Der
-    // negative Rand haelt die Kachel dabei so hoch wie zuvor
-    // (UX_AND_DESIGN_SYSTEM.md §1). Das eigene Zeichen ersetzt das des
-    // Browsers, das eine Flex-Zusammenfassung nicht mehr zeigt.
-    <details className="group text-sm">
-      <summary className="-my-3 flex min-h-11 w-fit cursor-pointer list-none items-center gap-1.5 rounded-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
-        <ChevronRight
-          className="size-4 transition-transform group-open:rotate-90 motion-reduce:transition-none"
-          aria-hidden
-        />
-        Datentabelle anzeigen
-      </summary>
-      <div className="mt-6">{children}</div>
-    </details>
+    <Disclosure summary="Datentabelle anzeigen" contentClassName="mt-6">
+      {children}
+    </Disclosure>
   );
 }
 

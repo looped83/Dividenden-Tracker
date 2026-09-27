@@ -49,13 +49,12 @@ function erwarteReihenfolge(labels: string[]) {
 
 describe("KpiCards (Render-Smoke)", () => {
   it("zeigt die Gesamtsumme aller Jahre nicht als Kachel", () => {
-    // Sie steht in der historischen Uebersicht am Seitenende; oben zaehlt der
+    // Sie steht als Zeile „Gesamt seit …" am Seitenende; oben zaehlt der
     // gewaehlte Zeitraum (hoechstens vier primaere Kennzahlen).
     renderCards(2026, [
       payment("2026-03-10", "50.00"),
       payment("2020-05-10", "70.00", "sec-b"),
     ]);
-    expect(screen.queryByText("Dividenden gesamt")).not.toBeInTheDocument();
     expect(screen.queryByText(/120,00\s?€/)).not.toBeInTheDocument();
   });
 

@@ -98,23 +98,6 @@ export function achievementText(percent: DecimalInstance): string {
 }
 
 /**
- * Kurzer Restbetrag-/Überschreitungssatz (Auftrag §11): fehlender Betrag,
- * „Ziel erreicht" oder „Ziel um X übertroffen".
- */
-export function remainderText(progress: GoalProgress): string {
-  if (progress.status === "exceeded") {
-    return `Ziel um ${formatMoney(progress.overshoot)} übertroffen`;
-  }
-  if (progress.status === "reached") {
-    return "Ziel erreicht";
-  }
-  if (progress.remaining.isZero()) {
-    return "Ziel erreicht";
-  }
-  return `Noch ${formatMoney(progress.remaining)} bis zum Ziel`;
-}
-
-/**
  * Zugaengliche Beschriftung der Fortschrittsanzeige (Auftrag §19), z. B.
  * „9.000,00 € von 12.000,00 € erreicht, entsprechend 75,0 %". Bei Überschreitung
  * wird der übertroffene Betrag ergänzt.

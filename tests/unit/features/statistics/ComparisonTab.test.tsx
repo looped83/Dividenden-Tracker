@@ -318,13 +318,6 @@ describe("ComparisonTab — Monat gegen Monat", () => {
     ]);
   });
 
-  it("verzichtet auf den kumulierten Verlauf", () => {
-    // Eine Kurve ueber die Tage eines Monats mit zwei, drei Zahlungen sagt
-    // nichts, was die Zahlen daneben nicht schon sagen.
-    renderTab("?modus=monate&monat=3");
-    expect(screen.queryByText("Kumulierter Verlauf")).not.toBeInTheDocument();
-  });
-
   it("meldet einen Monat ohne Zahlungen, statt eine leere Tabelle zu zeigen", () => {
     renderTab("?modus=monate&monat=2&basis=2026&referenz=2025");
     expect(

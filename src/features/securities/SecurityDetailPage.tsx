@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Disclosure } from "@/components/ui/disclosure";
 import { DetailBackLink, DetailHeader } from "@/components/layout/DetailHeader";
 import { ListGroup } from "@/components/ui/list";
 import { PageSkeleton } from "@/components/layout/PageSkeleton";
@@ -376,11 +377,16 @@ export function SecurityDetailPage() {
                     );
                   })}
                 </ul>
-                <p className="text-sm text-muted-foreground">
-                  Eine später eingetroffene Zahlung zählt für den geplanten Monat, für den
-                  sie fällig war. Eine Zahlung im Monat direkt davor zählt für den
-                  kommenden geplanten Monat — beides auch über den Jahreswechsel hinweg.
-                </p>
+                {/* Die Zaehlregel gilt fuer jeden Plan gleich; ausgeschrieben
+                    stand sie dreizeilig unter jeder Monatsreihe und war laenger
+                    als der Plan selbst. */}
+                <Disclosure summary="Wie wird gezählt?">
+                  <p className="text-muted-foreground">
+                    Eine später eingetroffene Zahlung zählt für den geplanten Monat, für
+                    den sie fällig war. Eine Zahlung im Monat direkt davor zählt für den
+                    kommenden geplanten Monat — beides auch über den Jahreswechsel hinweg.
+                  </p>
+                </Disclosure>
               </div>
             )}
           </CardContent>

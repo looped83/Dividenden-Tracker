@@ -110,8 +110,9 @@ test("importiert einen Depotstand und zeigt seine Kennzahlen", async ({
   await page.goto(`/#/depot/${konto.securityId}`);
   const karte = page.getByRole("heading", { name: /^Position Stand 03\.08\.2026$/ });
   await expect(karte).toBeVisible();
-  await expect(page.getByText("Erwartet für zwölf Monate")).toBeVisible();
-  // 10 Stueck zu 4 € erwarteter Jahresdividende je Aktie.
+  await expect(page.getByText("Erwartet p. a.", { exact: true })).toBeVisible();
+  // Rhythmus und die uebrigen Detailwerte stehen unter „Alle Kennzahlen".
+  await page.getByText("Alle Kennzahlen").click();
   await expect(page.getByText("vierteljährlich")).toBeVisible();
 });
 
