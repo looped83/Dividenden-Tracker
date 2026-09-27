@@ -1,7 +1,7 @@
 import { ArrowDown, ArrowUp, Circle } from "lucide-react";
 import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils/cn";
-import { formatDate } from "@/features/payments/paymentDisplay";
+import { formatCalendarDate } from "@/lib/utils/formatDate";
 import type { YearOverYearComparison } from "@/features/payments/yearOverYear";
 
 /**
@@ -21,7 +21,7 @@ export function YearOverYearIndicator({
   className?: string;
 }) {
   const { direction, previousAmount, previousDate, difference } = comparison;
-  const reference = `Vorjahr: ${formatMoney(previousAmount)} am ${formatDate(previousDate)}`;
+  const reference = `Vorjahr: ${formatMoney(previousAmount)} am ${formatCalendarDate(previousDate)}`;
   const label =
     direction === "same"
       ? `Unverändert — ${reference}`

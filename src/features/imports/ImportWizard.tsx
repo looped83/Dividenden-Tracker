@@ -24,6 +24,7 @@ import { useDepots } from "@/features/depots/hooks";
 import { useCommitImport } from "@/features/imports/hooks";
 import {
   createImport,
+  discardImport,
   findCommittedImportByHash,
   fetchSecurityAliases,
   type Import,
@@ -270,6 +271,7 @@ export function ImportWizard({ onFinished }: { onFinished: () => void }) {
   async function handleCommit() {
     if (!data) return;
     setPhase("importing");
+    let draftId: string | null = null;
     try {
       const payload = buildCommitPayload({
         rows,
@@ -287,10 +289,17 @@ export function ImportWizard({ onFinished }: { onFinished: () => void }) {
         status: "pending_confirmation",
         column_mapping: data.mapping,
       });
+      draftId = imp.id;
       const committed = await commit.mutateAsync({ importId: imp.id, payload });
       setResult(committed);
       setPhase("done");
     } catch (err) {
+      // Der Entwurf traegt keine Zahlungen — ohne ihn stuende in der Historie
+      // dauerhaft „Wartet auf Bestätigung". Einen doch abgeschlossenen Import
+      // (Antwort unterwegs verloren) schuetzt RLS: Geloescht werden duerfen
+      // nur Entwuerfe. Scheitert das Aufraeumen, bleibt der Entwurf in der
+      // Importuebersicht loeschbar.
+      if (draftId) await discardImport(draftId).catch(() => undefined);
       fail(
         getErrorMessage(
           err,
@@ -322,7 +331,6 @@ export function ImportWizard({ onFinished }: { onFinished: () => void }) {
     [importable],
   );
   const invalidCount = rows.filter((r) => r.status === "invalid").length;
-  const dedupeCount = rows.filter((r) => r.status === "needs_dedupe").length;
   const newCompanyCount = [...companyDecisions.values()].filter(
     (d) => d.kind === "new",
   ).length;
@@ -613,8 +621,8 @@ export function ImportWizard({ onFinished }: { onFinished: () => void }) {
               value={`${checksums.minDate ?? "—"} – ${checksums.maxDate ?? "—"}`}
             />
             <Stat
-              label="Fehler / Duplikate"
-              value={`${formatCountNumber(invalidCount)} / ${formatCountNumber(dedupeCount)}`}
+              label="Ungültige Zeilen"
+              value={formatCountNumber(invalidCount)}
               variant={invalidCount > 0 ? "negative" : "neutral"}
             />
           </div>
@@ -814,7 +822,6 @@ function RowStatusBadge({ status }: { status: NormalizedRow["status"] }) {
     valid: { label: "Gültig", variant: "positive" },
     valid_warning: { label: "Warnung", variant: "warning" },
     needs_mapping: { label: "Zuordnung", variant: "warning" },
-    needs_dedupe: { label: "Duplikat prüfen", variant: "warning" },
     invalid: { label: "Ungültig", variant: "negative" },
     excluded: { label: "Ausgeschlossen", variant: "neutral" },
   };

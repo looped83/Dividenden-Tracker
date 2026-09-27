@@ -156,27 +156,6 @@ export async function normalizeRows(
   return result;
 }
 
-/**
- * Markiert Zeilen, deren exakter Zeilen-Fingerprint bereits in einer aktiven
- * Zahlung existiert (Stufe 2, IMPORT_SPEC.md §7). Keine automatische Loeschung
- * — nur Status `needs_dedupe`, den der Nutzer entscheidet.
- */
-export function markExactDuplicates(
-  rows: NormalizedRow[],
-  existingRowFingerprints: Set<string>,
-): void {
-  for (const row of rows) {
-    if (row.status === "valid" || row.status === "valid_warning") {
-      if (row.rowFingerprint && existingRowFingerprints.has(row.rowFingerprint)) {
-        row.status = "needs_dedupe";
-        row.warnings.push(
-          "Moegliches exaktes Duplikat eines bereits importierten Eingangs.",
-        );
-      }
-    }
-  }
-}
-
 /** Gruppiert gueltige Zeilen nach eindeutigem Quell-Investmentnamen (Task §8). */
 export function groupCompanies(
   rows: NormalizedRow[],

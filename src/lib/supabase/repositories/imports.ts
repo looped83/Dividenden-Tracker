@@ -104,7 +104,11 @@ export async function rollbackImport(importId: string): Promise<Import> {
   return data;
 }
 
-/** Loescht einen noch nicht committeten Import-Entwurf (nur analyzing/pending_confirmation). */
+/**
+ * Loescht einen noch nicht abgeschlossenen Import-Entwurf. RLS laesst das nur
+ * fuer Entwuerfe zu (`imports_delete_draft_own`); abgeschlossene und
+ * zurueckgerollte Importe bleiben als Historie unangetastet.
+ */
 export async function discardImport(importId: string): Promise<void> {
   const { error } = await supabase.from("imports").delete().eq("id", importId);
   if (error) throw error;

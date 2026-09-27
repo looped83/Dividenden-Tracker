@@ -26,12 +26,8 @@ import {
   usePayment,
   useUnarchivePayment,
 } from "@/features/payments/hooks";
-import {
-  formatDate,
-  formatDateTime,
-  isImported,
-  sourceLabel,
-} from "@/features/payments/paymentDisplay";
+import { isImported, sourceLabel } from "@/features/payments/paymentDisplay";
+import { formatCalendarDate, formatTimestamp } from "@/lib/utils/formatDate";
 import {
   DeleteDialog,
   StornoDialog,
@@ -237,7 +233,7 @@ export function PaymentDetailPage() {
         badge={cancelled ? <Badge variant="warning">Storniert</Badge> : undefined}
         subtitle={
           <>
-            <DateText>{formatDate(payment.pay_date)}</DateText>
+            <DateText>{formatCalendarDate(payment.pay_date)}</DateText>
             <span>·</span>
             <span>
               {depot?.name ?? "—"}
@@ -283,13 +279,13 @@ export function PaymentDetailPage() {
             <DetailRow label="Währung">{payment.original_currency}</DetailRow>
             <DetailRow label="Datenquelle">{sourceLabel(payment.source)}</DetailRow>
             {payment.note && <DetailRow label="Notiz">{payment.note}</DetailRow>}
-            <DetailRow label="Erstellt">{formatDateTime(payment.created_at)}</DetailRow>
+            <DetailRow label="Erstellt">{formatTimestamp(payment.created_at)}</DetailRow>
             <DetailRow label="Zuletzt geändert">
-              {formatDateTime(payment.updated_at)}
+              {formatTimestamp(payment.updated_at)}
             </DetailRow>
             {cancelled && payment.archived_at && (
               <DetailRow label="Storniert am">
-                {formatDateTime(payment.archived_at)}
+                {formatTimestamp(payment.archived_at)}
               </DetailRow>
             )}
             {cancelled && payment.archive_reason && (
@@ -314,7 +310,7 @@ export function PaymentDetailPage() {
               )}
               {importRun?.committed_at && (
                 <DetailRow label="Importiert am">
-                  {formatDateTime(importRun.committed_at)}
+                  {formatTimestamp(importRun.committed_at)}
                 </DetailRow>
               )}
               {payment.source_row_number !== null && (
@@ -334,7 +330,7 @@ export function PaymentDetailPage() {
               )}
               {importedPayDate !== null && (
                 <DetailRow label="Importiertes Zahlungsdatum">
-                  {formatDate(importedPayDate)}
+                  {formatCalendarDate(importedPayDate)}
                   {dateChanged && (
                     <span className="ml-2 text-warning-strong">
                       (nachträglich geändert)

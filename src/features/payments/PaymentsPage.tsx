@@ -54,7 +54,8 @@ import {
   statusNeedsArchived,
 } from "@/features/payments/listParams";
 import { sortRows, type SortableRow } from "@/features/payments/sortRows";
-import { formatDate, sourceLabel } from "@/features/payments/paymentDisplay";
+import { sourceLabel } from "@/features/payments/paymentDisplay";
+import { formatCalendarDate } from "@/lib/utils/formatDate";
 import {
   DeleteDialog,
   StornoDialog,
@@ -668,7 +669,7 @@ interface RowActionProps {
  * einer Seite nicht auseinanderhalten.
  */
 function actionSubject({ companyName, effectiveDate }: Row): string {
-  return `${companyName || "Eingang"} vom ${formatDate(effectiveDate)}`;
+  return `${companyName || "Eingang"} vom ${formatCalendarDate(effectiveDate)}`;
 }
 
 function PaymentRow({
@@ -686,13 +687,13 @@ function PaymentRow({
   return (
     <TableRow>
       <TableCell>
-        {formatDate(effectiveDate)}
+        {formatCalendarDate(effectiveDate)}
         {shifted && (
           <span
             className="block text-xs text-muted-foreground"
             title="Tatsächliches Zahlungsdatum"
           >
-            tatsächlich {formatDate(payment.pay_date)}
+            tatsächlich {formatCalendarDate(payment.pay_date)}
           </span>
         )}
       </TableCell>
@@ -793,7 +794,7 @@ function PaymentItem({
       to={`/eingaenge/${payment.id}`}
       state={{ from: listUrl }}
       title={companyName || "—"}
-      date={formatDate(effectiveDate)}
+      date={formatCalendarDate(effectiveDate)}
       depot={depotName}
       amount={amount}
       cancelled={Boolean(payment.archived_at)}

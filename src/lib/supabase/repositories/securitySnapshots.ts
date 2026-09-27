@@ -101,8 +101,8 @@ export interface SnapshotImportInput {
  *
  * Die Reihenfolge ist bewusst loeschen → Lauf → Zeilen: PostgREST kennt keine
  * Transaktion ueber mehrere Anfragen. Bricht der Vorgang nach dem Lauf ab,
- * bleibt ein Lauf ohne Zeilen zurueck — sichtbar in der Standsverwaltung und
- * dort mit einem Griff zu entfernen. Die umgekehrte Reihenfolge waere nicht
+ * bleibt ein Lauf ohne Zeilen zurueck — sichtbar unter Einstellungen → Importe
+ * und dort mit einem Griff zu entfernen (`SnapshotRunsCard`). Die umgekehrte Reihenfolge waere nicht
  * moeglich: Zeilen brauchen den Lauf als Fremdschluessel.
  */
 export async function importSnapshotRun(

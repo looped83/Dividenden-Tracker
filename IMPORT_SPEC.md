@@ -139,6 +139,12 @@ Währung/anderem Depot. Diese Zeilen werden **nie automatisch** entschieden: kei
 Überschreibung, keine Löschung, kein Verwerfen — der Nutzer sieht Quellzeile und vorhandenen
 Datensatz nebeneinander und entscheidet je Zeile (Schritt 19).
 
+**Stand der Umsetzung (DECISIONS.md D-8-4):** Der Import prüft nur Stufe 1. Die Stufen 2–4
+(und damit die Schritte 15, 16 und 19) sind bewusst nicht Teil des Imports. Überschneidungen
+mit dem Bestand findet anschließend die Datenqualitätsansicht (gleiches Unternehmen, Depot
+und Datum; mit gleichem Betrag als „hohe Wahrscheinlichkeit"); dort werden sie storniert oder
+als „keine Dublette" markiert (D-6-5). Die Zeilen-Fingerprints werden weiterhin gespeichert.
+
 ## 8. Importbilanz
 
 Invariante (client- UND serverseitig geprüft; bei Verletzung wird der Commit verweigert):

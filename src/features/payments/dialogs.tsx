@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { formatDate } from "./paymentDisplay";
+import { formatCalendarDate } from "@/lib/utils/formatDate";
 
 export interface PaymentSummaryData {
   company: string;
@@ -26,7 +26,7 @@ function PaymentSummary({ data }: { data: PaymentSummaryData }) {
       <dt className="text-muted-foreground">Unternehmen</dt>
       <dd className="text-right font-medium">{data.company}</dd>
       <dt className="text-muted-foreground">Zahlungsdatum</dt>
-      <dd className="text-right">{formatDate(data.payDate)}</dd>
+      <dd className="text-right">{formatCalendarDate(data.payDate)}</dd>
       <dt className="text-muted-foreground">Depot</dt>
       <dd className="text-right">{data.depot}</dd>
       <dt className="text-muted-foreground">Betrag</dt>

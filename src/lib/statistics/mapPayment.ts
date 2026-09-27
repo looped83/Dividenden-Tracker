@@ -38,14 +38,28 @@ function toDecimalString(value: string | number): string {
  * Der Filter steht hier statt in der Abfrage, weil Auswertungen und
  * Eingangsliste **einen** Abruf teilen — die Liste braucht die stornierten
  * Zeilen (ARCHITECTURE.md §4.4).
+ *
+ * Einmal je Abruf: Das Ergebnis wird zur geladenen Liste gemerkt. React Query
+ * fuehrt `select` je Beobachter aus, und Uebersicht, Statistik, Ziele und
+ * Detailseite sind jeweils eigene Beobachter — ohne das parste jeder
+ * Seitenwechsel dieselben Betraege erneut in `Money`. Die geladene Liste
+ * bleibt dasselbe Objekt, bis ein neuer Abruf sie ersetzt; mit ihr faellt auch
+ * der Eintrag weg. Das Ergebnis wird geteilt und darf deshalb nicht veraendert
+ * werden (alle Auswertungen lesen `readonly`).
  */
+const parsedByRows = new WeakMap<object, AnalyticsPayment[]>();
+
 export function activeAnalyticsPayments(
   rows: readonly (RawAnalyticsRow & { archived_at: string | null })[],
 ): AnalyticsPayment[] {
+  const cached = parsedByRows.get(rows);
+  if (cached) return cached;
+
   const active: AnalyticsPayment[] = [];
   for (const row of rows) {
     if (row.archived_at === null) active.push(mapAnalyticsPayment(row));
   }
+  parsedByRows.set(rows, active);
   return active;
 }
 
