@@ -78,7 +78,7 @@ describe("Datenbasis der Auswertungen", () => {
     });
     const first = result.current.payments;
     // Zahlung am 2. April bei Quartalsplan zaehlt zum Maerz (§10).
-    expect(first.map((payment) => payment.payDate)).toEqual(["2026-03-02"]);
+    expect(first.map((payment) => payment.payDate)).toEqual(["2026-03-31"]);
     expect(first[0]?.actualPayDate).toBe("2026-04-02");
     rerender();
     expect(result.current.payments).toBe(first);

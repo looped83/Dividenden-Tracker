@@ -30,12 +30,13 @@ const MAX_EARLY_MONTHS = 1;
  *
  * Ohne Plan bleibt das echte Zahlungsdatum unveraendert.
  *
- * Der Tag wird aus dem echten Datum uebernommen und auf die Monatslaenge
- * begrenzt; bei einer vorgezogenen Zahlung ist es der 1. des geplanten Monats,
- * damit bereits erhaltenes Geld in Zeitraeumen „bis heute" (Monat/Jahr bis
- * heute) nicht erst am Zahltag sichtbar wird. Der Tag dient nur der internen
- * Datumsdarstellung, nicht der Zuordnung. Reine Funktion, keine
- * Gleitkomma-Geldarithmetik.
+ * Der Tag einer verspaeteten Zahlung ist der **Monatsletzte** des geplanten
+ * Monats: Das Geld kam erst nach Monatsende, also steht die Zahlung als letzte
+ * Buchung ihres Monats. Bei einer vorgezogenen Zahlung ist es der 1. des
+ * geplanten Monats, damit bereits erhaltenes Geld in Zeitraeumen „bis heute"
+ * (Monat/Jahr bis heute) nicht erst am Zahltag sichtbar wird. Der Tag dient nur
+ * der Datumsdarstellung und Sortierung, nicht der Zuordnung. Reine Funktion,
+ * keine Gleitkomma-Geldarithmetik.
  */
 export function effectivePayDate(
   payDate: string,
@@ -46,7 +47,6 @@ export function effectivePayDate(
 
   const year = yearOf(payDate);
   const month = monthOf(payDate);
-  const day = Number.parseInt(payDate.slice(8, 10), 10);
   const actualIndex = year * 12 + (month - 1); // absoluter Monatsindex
 
   // Letzter faelliger geplanter Monat am/vor der Zahlung und naechster geplanter
@@ -75,12 +75,16 @@ export function effectivePayDate(
   if (isEarly) {
     return isoDate(Math.floor(nextIndex / 12), (nextIndex % 12) + 1, 1);
   }
-  if (!Number.isFinite(dueIndex)) return payDate;
+  if (!Number.isFinite(dueIndex) || dueIndex === actualIndex) return payDate;
 
+  // Verspaetete Zahlung: Monatsletzter des faelligen Monats.
   const effectiveYear = Math.floor(dueIndex / 12);
   const effectiveMonth = (dueIndex % 12) + 1;
-  const effectiveDay = Math.min(day, lastDayOfMonth(effectiveYear, effectiveMonth));
-  return isoDate(effectiveYear, effectiveMonth, effectiveDay);
+  return isoDate(
+    effectiveYear,
+    effectiveMonth,
+    lastDayOfMonth(effectiveYear, effectiveMonth),
+  );
 }
 
 /**
