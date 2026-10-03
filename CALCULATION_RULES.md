@@ -277,11 +277,14 @@ Auswertungen bildet.
 - **Jahreswechsel:** die Zuordnung darf das Jahr in beide Richtungen verschieben; geprüft werden
   die geplanten Monate der Jahre `J−1`, `J` und `J+1`. Beispiele: Januar bei Dezember-Plan →
   Dezember des Vorjahres; Dezember bei Plan Jan/Apr/Jul/Okt → Januar des Folgejahres.
-- Der Tag des effektiven Datums ist der echte Zahltag, begrenzt auf die Länge des Zielmonats
-  (z. B. 31.03. → geplanter Februar → 28./29.02.). Bei einer **vorgezogenen** Zahlung ist es der
-  **1. des geplanten Monats**, damit bereits erhaltenes Geld in Zeiträumen „bis heute" (Monat bzw.
-  Jahr bis heute, §5.2/§6) ab Monatsbeginn zählt und nicht erst am Zahltag auftaucht. Der Tag dient
-  nur der internen Datumsdarstellung, nicht der Zuordnung.
+- Der Tag des effektiven Datums ist bei einer **verspäteten** Zahlung der **Monatsletzte** des
+  geplanten Monats (z. B. Zahlung 02.10. bei Plan September → 30.09.; geplanter Februar →
+  28./29.02.). Das Geld kam erst nach Monatsende; so steht die Zahlung als **letzte Buchung** ihres
+  Monats und zählt in Zeiträumen „bis heute" des Vorjahres (§6) nicht früher als nötig. Bei einer
+  **vorgezogenen** Zahlung ist es der **1. des geplanten Monats**, damit bereits erhaltenes Geld in
+  Zeiträumen „bis heute" (Monat bzw. Jahr bis heute, §5.2/§6) ab Monatsbeginn zählt und nicht erst
+  am Zahltag auftaucht. Der Tag dient nur der Datumsdarstellung und Sortierung, nicht der
+  Zuordnung.
 
 ### 10.2 Geltungsbereich
 
