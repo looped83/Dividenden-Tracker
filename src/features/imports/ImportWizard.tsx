@@ -523,7 +523,7 @@ export function ImportWizard({ onFinished }: { onFinished: () => void }) {
           <Card>
             <CardHeader>
               <CardTitle className="text-base">
-                Unternehmen ({formatCountNumber(companyGroups.length)}) —{" "}
+                Assets ({formatCountNumber(companyGroups.length)}) —{" "}
                 {formatCountNumber(newCompanyCount)} werden neu (archiviert) angelegt
               </CardTitle>
             </CardHeader>
@@ -664,7 +664,7 @@ export function ImportWizard({ onFinished }: { onFinished: () => void }) {
             </CardHeader>
             <CardContent className="space-y-3">
               <Input
-                placeholder="Filtern nach Unternehmen, Broker oder Datum …"
+                placeholder="Filtern nach Asset, Broker oder Datum …"
                 value={detailFilter}
                 onChange={(e) => {
                   setDetailFilter(e.target.value);
@@ -680,7 +680,7 @@ export function ImportWizard({ onFinished }: { onFinished: () => void }) {
                     <TableRow>
                       <TableHead>Zeile</TableHead>
                       <TableHead>Datum</TableHead>
-                      <TableHead>Unternehmen</TableHead>
+                      <TableHead>Asset</TableHead>
                       <TableHead className="text-right">Betrag</TableHead>
                       <TableHead>Broker</TableHead>
                       <TableHead>Status</TableHead>

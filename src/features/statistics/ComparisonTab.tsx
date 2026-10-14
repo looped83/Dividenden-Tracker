@@ -342,7 +342,7 @@ export function ComparisonTab() {
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle>Nach Unternehmen</CardTitle>
+            <CardTitle>Nach Assets</CardTitle>
           </CardHeader>
           <CardContent>
             {comparison.securities.length === 0 ? (
@@ -352,10 +352,10 @@ export function ComparisonTab() {
             ) : (
               <ComparisonBreakdown
                 rows={securityRows(comparison, filter, securities)}
-                rowHeader="Unternehmen"
+                rowHeader="Asset"
                 currentLabel={comparison.current.label}
                 referenceLabel={comparison.reference.label}
-                caption={`Netto-Dividenden je Unternehmen: ${comparison.current.label} gegenüber ${comparison.reference.label}`}
+                caption={`Netto-Dividenden je Asset: ${comparison.current.label} gegenüber ${comparison.reference.label}`}
                 hasPartial={comparison.truncated}
               />
             )}

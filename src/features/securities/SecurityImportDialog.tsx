@@ -157,7 +157,7 @@ export function SecurityImportDialog({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Unternehmen aus Excel importieren</DialogTitle>
+          <DialogTitle>Assets aus Excel importieren</DialogTitle>
           <DialogDescription>
             Liest Name, Ticker, ISIN und WKN aus der ersten Tabelle einer .xlsx-Datei.
             Eine Depot-/Broker-Spalte wird per Namensabgleich als Depot übernommen, falls
@@ -258,8 +258,8 @@ export function SecurityImportDialog({
         {state.step === "done" && (
           <div className="space-y-2 text-sm">
             <p>
-              {state.imported} Unternehmen importiert, {state.skipped} übersprungen
-              (bereits vorhanden)
+              {state.imported} Assets importiert, {state.skipped} übersprungen (bereits
+              vorhanden)
               {state.failed > 0 ? `, ${state.failed.toString()} fehlgeschlagen` : ""}.
             </p>
             {state.failures.length > 0 && (
@@ -278,8 +278,8 @@ export function SecurityImportDialog({
               onClick={() => void handleImport()}
               disabled={state.rows.every((row) => row.isDuplicate)}
             >
-              {formatCountNumber(state.rows.filter((r) => !r.isDuplicate).length)}{" "}
-              Unternehmen importieren
+              {formatCountNumber(state.rows.filter((r) => !r.isDuplicate).length)} Assets
+              importieren
             </Button>
           )}
           {state.step === "done" && (

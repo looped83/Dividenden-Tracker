@@ -224,7 +224,7 @@ export function PortfolioImportDialog({
       if (createMissing) {
         setState({
           step: "importing",
-          label: `Lege ${formatCountNoun(unmatched.length, "Unternehmen", "Unternehmen")} an …`,
+          label: `Lege ${formatCountNoun(unmatched.length, "Asset", "Assets")} an …`,
         });
         for (const entry of unmatched) {
           const { position } = entry;
@@ -446,11 +446,7 @@ export function PortfolioImportDialog({
                           />
                           <span className="min-w-0">
                             {FIELD_LABELS[field]} für{" "}
-                            {formatCountNoun(
-                              entries.length,
-                              "Unternehmen",
-                              "Unternehmen",
-                            )}
+                            {formatCountNoun(entries.length, "Asset", "Assets")}
                             <span className="block truncate text-xs text-muted-foreground">
                               {entries
                                 .slice(0, 2)
@@ -484,8 +480,7 @@ export function PortfolioImportDialog({
                   }}
                 />
                 <span>
-                  {formatCountNoun(unmatched.length, "Unternehmen", "Unternehmen")} neu
-                  anlegen
+                  {formatCountNoun(unmatched.length, "Asset", "Assets")} neu anlegen
                   <span className="block text-xs text-muted-foreground">
                     {unmatched
                       .slice(0, 4)
@@ -500,13 +495,11 @@ export function PortfolioImportDialog({
 
             {archivedHits.length > 0 && (
               <p className="rounded-md border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
-                {formatCountNoun(
-                  archivedHits.length,
-                  "Unternehmen ist",
-                  "Unternehmen sind",
-                )}{" "}
-                archiviert, hält laut Datei aber Bestand. Der Stand wird gespeichert; die
-                Archivierung bleibt unverändert.
+                {archivedHits.length === 1
+                  ? "1 Asset ist archiviert, hält"
+                  : `${formatCountNumber(archivedHits.length)} Assets sind archiviert, halten`}{" "}
+                laut Datei aber Bestand. Der Stand wird gespeichert; die Archivierung
+                bleibt unverändert.
               </p>
             )}
 
@@ -533,7 +526,7 @@ export function PortfolioImportDialog({
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Unternehmen</TableHead>
+                    <TableHead>Asset</TableHead>
                     <TableHead className="hidden sm:table-cell">ISIN</TableHead>
                     <TableHead className="text-right">Stück</TableHead>
                     <TableHead className="hidden sm:table-cell">Zuordnung</TableHead>
@@ -600,15 +593,12 @@ export function PortfolioImportDialog({
             </p>
             <ul className="list-disc space-y-1 pl-5 text-muted-foreground">
               {state.created > 0 && (
-                <li>
-                  {formatCountNoun(state.created, "Unternehmen", "Unternehmen")} neu
-                  angelegt
-                </li>
+                <li>{formatCountNoun(state.created, "Asset", "Assets")} neu angelegt</li>
               )}
               {state.updated > 0 && (
                 <li>
-                  Stammdaten von{" "}
-                  {formatCountNoun(state.updated, "Unternehmen", "Unternehmen")} ergänzt
+                  Stammdaten von {formatCountNoun(state.updated, "Asset", "Assets")}{" "}
+                  ergänzt
                 </li>
               )}
               <li>
@@ -619,8 +609,8 @@ export function PortfolioImportDialog({
             {state.failures.length > 0 && (
               <>
                 <p className="text-negative">
-                  Der Depotstand ist gespeichert. Bei den folgenden Unternehmen blieben
-                  die Stammdaten unverändert:
+                  Der Depotstand ist gespeichert. Bei den folgenden Assets blieben die
+                  Stammdaten unverändert:
                 </p>
                 <ul className="list-disc space-y-1 pl-5 text-negative">
                   {state.failures.map((failure) => (

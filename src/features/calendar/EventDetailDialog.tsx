@@ -98,7 +98,7 @@ export function EventDetailDialog({
                 {event.endDate && ` bis ${longDate(event.endDate)}`}
               </Detail>
               {time && <Detail term="Uhrzeit">{time}</Detail>}
-              {sourceName && <Detail term="Unternehmen laut Quelle">{sourceName}</Detail>}
+              {sourceName && <Detail term="Asset laut Quelle">{sourceName}</Detail>}
               {event.sourcePortfolio && (
                 <Detail term="Depot laut Quelle">{event.sourcePortfolio}</Detail>
               )}

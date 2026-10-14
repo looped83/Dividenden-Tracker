@@ -278,6 +278,10 @@ Zwang als Schutz vor versehentlicher Löschung.
 kein UPDATE, kein anon-Zugriff (`revoke all`, dann minimale Grants). Der
 `enforce_user_id`-Trigger verhindert das Unterschieben einer fremden `user_id`.
 
+**`anomaly_reviews` (0033).** Dieselben Regeln; zusätzlich prüft
+`enforce_own_payment`, dass der markierte Eingang dem Nutzer gehört — ein
+Fremdschlüssel allein prüft nur, dass er existiert (vgl. 0030).
+
 Schreibzugriffe erfolgen ausschließlich je einzelnem Datensatz und jeweils
 RLS-geprüft (kein globaler Bypass, keine Massenaktionen); fremde
 Datensätze/Unternehmen/Depots sind damit nicht erreichbar.

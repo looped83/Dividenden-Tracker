@@ -576,8 +576,13 @@ D-007). Stornierte Zahlungen und als „keine Dublette" markierte Paare
 **Auffälligkeiten** (`detectAnomalies`). Nullbetrag, negativer Betrag,
 Zukunftsdatum, fehlende Zuordnung, importierte Zeile ohne Importreferenz,
 ungewöhnlich hoher Betrag. Letzterer ist **relativ**: > `UNUSUALLY_HIGH_FACTOR`
-(= 5) × Median der übrigen aktiven Zahlungen desselben Unternehmens, erst ab
-3 Vergleichszahlungen — keine starre absolute Schwelle, nur ein Hinweis.
+(= 5) × Median der **benachbarten** aktiven Zahlungen desselben Assets (bis zu drei
+davor und drei danach, zeitlich geordnet), erst ab 3 Vergleichszahlungen — keine
+starre absolute Schwelle, nur ein Hinweis. Als Sonderdividende erfasste Zahlungen
+sind ausgenommen. Bis 2026-10-14 galt der Median **aller** Zahlungen des Assets;
+bei per Sparplan aufgebauten Positionen war damit jede neue Zahlung „auffällig“
+(im echten Bestand 29 Hinweise, danach 10). Als geprüft markierte Befunde
+(`anomaly_reviews`) erscheinen eingeklappt und lassen sich zurücknehmen.
 
 ---
 

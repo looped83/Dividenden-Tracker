@@ -19,16 +19,19 @@ import { useDepots } from "@/features/depots/hooks";
 import { useSecurities } from "@/features/securities/hooks";
 import {
   useAllPayments,
+  useAnomalyReviews,
   useArchivePayment,
   useDeletePayment,
   useDismissDuplicate,
   useDuplicateDismissals,
+  useReviewAnomaly,
   useUndismissDuplicate,
 } from "@/features/payments/hooks";
 import type { PaymentListRow } from "@/lib/supabase/repositories/payments";
 import {
   detectAnomalies,
   findDuplicatePairs,
+  type Anomaly,
   type DuplicatePair,
 } from "@/lib/payments/dataQuality";
 import { isoFromRef } from "@/lib/statistics";
@@ -43,6 +46,8 @@ export function DataQualityPage() {
   const { data: dismissedKeys = [] } = useDuplicateDismissals();
   const dismiss = useDismissDuplicate();
   const undismiss = useUndismissDuplicate();
+  const { data: reviewedKeys = [] } = useAnomalyReviews();
+  const reviewAnomaly = useReviewAnomaly();
   const { notify } = useToast();
   const archivePayment = useArchivePayment();
   const deletePayment = useDeletePayment();
@@ -74,33 +79,57 @@ export function DataQualityPage() {
     };
   }, [payments, dismissedKeys]);
   const today = isoFromRef(useToday());
-  const anomalies = React.useMemo(
-    () => detectAnomalies(payments, today),
-    [payments, today],
-  );
+  // Wie bei den Dubletten: offene Befunde oben, als geprüft markierte
+  // eingeklappt darunter. Eine Markierung, deren Befund nicht mehr besteht
+  // (Betrag korrigiert, storniert, gelöscht), erscheint nicht.
+  const { anomalies, reviewedAnomalies } = React.useMemo(() => {
+    const reviewedSet = new Set(reviewedKeys);
+    const all = detectAnomalies(payments, today);
+    return {
+      anomalies: all.filter((anomaly) => !reviewedSet.has(anomaly.key)),
+      reviewedAnomalies: all.filter((anomaly) => reviewedSet.has(anomaly.key)),
+    };
+  }, [payments, today, reviewedKeys]);
 
-  // Übersichtszahlen (§17). Archivierte Zuordnungen sind kein Fehler, nur Hinweis.
+  // Übersichtszahlen (§17). Archivierte Assets und Depots sind kein Fehler, nur
+  // Hinweis. Gezählt werden sie selbst — zuvor stand hier die Zahl der
+  // **Eingänge** auf archivierten Assets (595 statt 46) unter der Überschrift
+  // „Archivierte Unternehmen".
   const overview = React.useMemo(() => {
     const active = payments.filter((p) => !p.archived_at);
-    const cancelled = payments.filter((p) => p.archived_at);
-    const archivedSecurityIds = new Set(
-      securities.filter((s) => s.archived_at).map((s) => s.id),
-    );
-    const archivedDepotIds = new Set(
-      depots.filter((d) => d.archived_at).map((d) => d.id),
-    );
     return {
       duplicates: duplicatePairs.length,
       anomalies: anomalies.length,
-      cancelled: cancelled.length,
+      cancelled: payments.length - active.length,
       importedModified: active.filter(
         (p) => isImported(p.source) && p.updated_at !== p.created_at,
       ).length,
-      archivedCompany: active.filter((p) => archivedSecurityIds.has(p.security_id))
-        .length,
-      archivedDepot: active.filter((p) => archivedDepotIds.has(p.depot_id)).length,
+      archivedAssets: securities.filter((s) => s.archived_at).length,
+      archivedDepots: depots.filter((d) => d.archived_at).length,
     };
   }, [payments, securities, depots, duplicatePairs.length, anomalies.length]);
+
+  const setReviewed = (anomaly: Anomaly<PaymentListRow>, reviewed: boolean) => {
+    reviewAnomaly.mutate(
+      { paymentId: anomaly.payment.id, code: anomaly.code, reviewed },
+      {
+        onSuccess: () => {
+          if (!reviewed) notify("Der Eintrag steht wieder unter den Auffälligkeiten.");
+        },
+        onError: (error) => {
+          notify(
+            getErrorMessage(
+              error,
+              reviewed
+                ? "Der Eintrag konnte nicht als geprüft markiert werden."
+                : "Die Markierung konnte nicht zurückgenommen werden.",
+            ),
+            "negative",
+          );
+        },
+      },
+    );
+  };
 
   // Aktionsziele für die geteilten Dialoge.
   const [stornoTarget, setStornoTarget] = React.useState<PaymentListRow | null>(null);
@@ -175,11 +204,8 @@ export function DataQualityPage() {
               label="Importe mit Änderung"
               value={overview.importedModified}
             />
-            <OverviewItem
-              label="Archivierte Unternehmen"
-              value={overview.archivedCompany}
-            />
-            <OverviewItem label="Archivierte Depots" value={overview.archivedDepot} />
+            <OverviewItem label="Archivierte Assets" value={overview.archivedAssets} />
+            <OverviewItem label="Archivierte Depots" value={overview.archivedDepots} />
           </dl>
         </CardContent>
       </Card>
@@ -196,7 +222,7 @@ export function DataQualityPage() {
             {duplicatePairs.length === 0 ? (
               <AllClear
                 title="Keine möglichen Dubletten"
-                description="Keine Zahlungen mit gleichem Unternehmen, Depot und Zahlungsdatum."
+                description="Keine Zahlungen mit gleichem Asset, Depot und Zahlungsdatum."
               />
             ) : (
               <ul className="space-y-4">
@@ -304,32 +330,107 @@ export function DataQualityPage() {
               <AlertTriangle className="size-5" aria-hidden /> Auffällige Datensätze
             </h2>
             {anomalies.length === 0 ? (
-              <AllClear title="Keine Auffälligkeiten" />
+              <AllClear
+                title={
+                  reviewedAnomalies.length > 0
+                    ? "Keine offenen Auffälligkeiten"
+                    : "Keine Auffälligkeiten"
+                }
+              />
             ) : (
-              // Dieselbe Listenform wie die Eingaenge: eine Zeile je Befund, die
-              // als Ganzes zum Eingang fuehrt — statt Name als Link und einer
-              // zweiten Schaltflaeche „Öffnen" mit demselben Ziel.
+              // Je Befund eine Zeile: Sie führt als Ganzes zum Eingang (dort
+              // korrigieren, stornieren oder löschen); darunter rechts die
+              // Entscheidung „In Ordnung" — an derselben Stelle wie „Keine
+              // Dublette" bei den Dubletten. Neben dem Text stand sie auf dem
+              // Telefon im Weg: Der Hinweis brach dort auf fünf Zeilen um.
               <ListGroup>
-                {anomalies.map((anomaly) => (
-                  <li key={`${anomaly.payment.id}-${anomaly.code}`}>
-                    <ListRow asChild>
-                      <Link to={`/eingaenge/${anomaly.payment.id}`}>
-                        <ListItemBody
-                          title={securityName(anomaly.payment.security_id)}
-                          meta={
-                            <>
-                              <span className="shrink-0">
-                                {formatCalendarDate(anomaly.payment.pay_date)}
-                              </span>
-                              <span className="basis-full">{anomaly.message}</span>
-                            </>
-                          }
-                        />
-                      </Link>
-                    </ListRow>
-                  </li>
-                ))}
+                {anomalies.map((anomaly) => {
+                  const asset = securityName(anomaly.payment.security_id);
+                  const date = formatCalendarDate(anomaly.payment.pay_date);
+                  return (
+                    <li key={anomaly.key}>
+                      <ListRow asChild>
+                        <Link to={`/eingaenge/${anomaly.payment.id}`}>
+                          <ListItemBody
+                            title={asset}
+                            meta={
+                              <>
+                                <span className="shrink-0">{date}</span>
+                                <span className="basis-full">{anomaly.message}</span>
+                              </>
+                            }
+                            trailing={
+                              <AmountText
+                                amount={Money.fromString(
+                                  anomaly.payment.net_amount,
+                                  currencyOf(anomaly.payment.depot_id),
+                                )}
+                              />
+                            }
+                          />
+                        </Link>
+                      </ListRow>
+                      <div className="-mt-2 flex justify-end pb-1 pr-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          aria-label={`${asset} vom ${date} als geprüft markieren`}
+                          disabled={reviewAnomaly.isPending}
+                          onClick={() => {
+                            setReviewed(anomaly, true);
+                          }}
+                        >
+                          In Ordnung
+                        </Button>
+                      </div>
+                    </li>
+                  );
+                })}
               </ListGroup>
+            )}
+            {reviewedAnomalies.length > 0 && (
+              <Disclosure
+                summary={`Als geprüft markiert (${formatCountNumber(reviewedAnomalies.length)})`}
+              >
+                <ListGroup>
+                  {reviewedAnomalies.map((anomaly) => {
+                    const asset = securityName(anomaly.payment.security_id);
+                    const date = formatCalendarDate(anomaly.payment.pay_date);
+                    return (
+                      <li key={anomaly.key}>
+                        <ListRow className="pr-1">
+                          <span className="min-w-0 flex-1">
+                            <span className="font-medium [overflow-wrap:anywhere]">
+                              {asset}
+                            </span>
+                            <span className="flex flex-wrap gap-x-2 text-sm text-muted-foreground">
+                              <DateText>{date}</DateText>
+                              <AmountText
+                                amount={Money.fromString(
+                                  anomaly.payment.net_amount,
+                                  currencyOf(anomaly.payment.depot_id),
+                                )}
+                              />
+                            </span>
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="-my-2 shrink-0"
+                            aria-label={`Markierung für ${asset} vom ${date} zurücknehmen`}
+                            disabled={reviewAnomaly.isPending}
+                            onClick={() => {
+                              setReviewed(anomaly, false);
+                            }}
+                          >
+                            Zurücknehmen
+                          </Button>
+                        </ListRow>
+                      </li>
+                    );
+                  })}
+                </ListGroup>
+              </Disclosure>
             )}
           </section>
         </>

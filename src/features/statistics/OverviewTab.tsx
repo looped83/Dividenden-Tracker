@@ -35,7 +35,7 @@ export function OverviewTab() {
             ? formatYearSpan(stats.firstPayDate, stats.lastPayDate)
             : null,
           formatPayments(stats.count),
-          formatCountNoun(stats.distinctSecurities, "Unternehmen", "Unternehmen"),
+          formatCountNoun(stats.distinctSecurities, "Asset", "Assets"),
         ]
           .filter(Boolean)
           .join(" · ")}

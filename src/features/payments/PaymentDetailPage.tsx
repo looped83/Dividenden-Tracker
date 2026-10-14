@@ -282,7 +282,7 @@ export function PaymentDetailPage() {
             <CardTitle>Details</CardTitle>
           </CardHeader>
           <CardContent>
-            <DetailRow label="Unternehmen">
+            <DetailRow label="Asset">
               {/* Von einer einzelnen Zahlung zur Entwicklung der ganzen
                 Position — die Detailseite des Unternehmens. */}
               {security ? (

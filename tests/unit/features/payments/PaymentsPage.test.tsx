@@ -117,7 +117,7 @@ describe("PaymentsPage", () => {
     setViewportWide(false);
   });
 
-  it("zeigt die Eingaenge mit Unternehmen und Betrag", () => {
+  it("zeigt die Eingaenge mit Asset und Betrag", () => {
     renderList([
       zahlung({ id: "a", security_id: "s1", net_amount: "50.00" }),
       zahlung({
@@ -177,14 +177,14 @@ describe("PaymentsPage", () => {
     expect(screen.getByText(/^2 Eingänge/)).toHaveTextContent("2 Eingänge · 50,50 €");
   });
 
-  it("filtert nach Unternehmen und nennt die Trefferzahl", async () => {
+  it("filtert nach Asset und nennt die Trefferzahl", async () => {
     const user = userEvent.setup();
     renderList([
       zahlung({ id: "a", security_id: "s1" }),
       zahlung({ id: "b", security_id: "s2" }),
     ]);
 
-    await user.selectOptions(screen.getByLabelText("Unternehmen"), "s1");
+    await user.selectOptions(screen.getByLabelText("Asset"), "s1");
 
     expect(screen.getByText(/^1 Eingang/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Apple Inc\./ })).toBeInTheDocument();
@@ -248,7 +248,7 @@ describe("PaymentsPage", () => {
       "/eingaenge?page=2",
     );
 
-    await user.selectOptions(screen.getByLabelText("Unternehmen"), "s1");
+    await user.selectOptions(screen.getByLabelText("Asset"), "s1");
 
     expect(screen.getByText("25 von 28 angezeigt")).toBeInTheDocument();
   });
@@ -319,7 +319,7 @@ describe("PaymentsPage", () => {
     const user = userEvent.setup();
     renderList([zahlung({ id: "a", security_id: "s1" })]);
 
-    await user.selectOptions(screen.getByLabelText("Unternehmen"), "s2");
+    await user.selectOptions(screen.getByLabelText("Asset"), "s2");
 
     expect(
       screen.getByText("Keine Eingänge für die aktuelle Auswahl"),

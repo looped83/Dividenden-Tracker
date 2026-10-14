@@ -23,7 +23,7 @@ export interface PaymentSummaryData {
 function PaymentSummary({ data }: { data: PaymentSummaryData }) {
   return (
     <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 rounded-md bg-muted/50 p-3 text-sm">
-      <dt className="text-muted-foreground">Unternehmen</dt>
+      <dt className="text-muted-foreground">Asset</dt>
       <dd className="text-right font-medium">{data.company}</dd>
       <dt className="text-muted-foreground">Zahlungsdatum</dt>
       <dd className="text-right">{formatCalendarDate(data.payDate)}</dd>

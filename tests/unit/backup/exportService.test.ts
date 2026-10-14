@@ -106,7 +106,7 @@ describe("Export — Spaltenwahl", () => {
     const labels = columnsFor([zahlung()]).map((column) => column.label);
     expect(labels).toEqual([
       "Zahlungsdatum",
-      "Unternehmen",
+      "Asset",
       "Ticker",
       "Depot",
       "Bruttobetrag",
@@ -154,7 +154,7 @@ describe("Export — CSV", () => {
     const rows = csvRows(buildCsvDocument(payments, columnsFor(payments)));
     expect(rows[0]).toEqual([
       "Zahlungsdatum",
-      "Unternehmen",
+      "Asset",
       "Ticker",
       "Depot",
       "Bruttobetrag",
@@ -194,12 +194,12 @@ function blatt(workbook: Awaited<ReturnType<typeof buildXlsxWorkbook>>) {
 }
 
 describe("Export — Excel", () => {
-  it("fuellt Unternehmen, Ticker und Depot — genau das fehlte", async () => {
+  it("fuellt Asset, Ticker und Depot — genau das fehlte", async () => {
     const payments = [zahlung()];
     const workbook = await buildXlsxWorkbook(payments, columnsFor(payments));
     const sheet = blatt(workbook);
 
-    expect(sheet.getRow(1).getCell(2).value).toBe("Unternehmen");
+    expect(sheet.getRow(1).getCell(2).value).toBe("Asset");
     expect(sheet.getRow(2).getCell(2).value).toBe("Alpha AG");
     expect(sheet.getRow(2).getCell(3).value).toBe("ALP");
     expect(sheet.getRow(2).getCell(4).value).toBe("Hauptdepot");

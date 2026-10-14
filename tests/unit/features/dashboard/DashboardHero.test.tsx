@@ -124,7 +124,7 @@ describe("DashboardHero — eine Hauptzahl statt Kachelraster", () => {
     expect(screen.queryByRole("link", MONATSLINK)).not.toBeInTheDocument();
     const labels = screen.getAllByRole("term").map((term) => term.textContent);
     expect(labels).toEqual(["Ø pro Monat", "Zahlungen", "Bester Monat"]);
-    expect(screen.getByText("2 Unternehmen")).toBeInTheDocument();
+    expect(screen.getByText("2 Assets")).toBeInTheDocument();
   });
 
   it('verzichtet bei „Alle Jahre" auf den Durchschnitt pro Monat', () => {

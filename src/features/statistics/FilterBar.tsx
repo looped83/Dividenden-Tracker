@@ -89,7 +89,7 @@ export function FilterBar({
         </FilterField>
       )}
 
-      <FilterField id="stats-filter-security" label="Unternehmen">
+      <FilterField id="stats-filter-security" label="Asset">
         <EntitySelect
           id="stats-filter-security"
           options={securityOptions}
@@ -97,7 +97,7 @@ export function FilterBar({
           onChange={(value) => {
             setFilter({ ...filter, securityId: value || null });
           }}
-          allLabel="Alle Unternehmen"
+          allLabel="Alle Assets"
         />
       </FilterField>
 

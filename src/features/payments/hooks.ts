@@ -15,6 +15,12 @@ import {
   fetchDuplicateDismissals,
   undismissDuplicate,
 } from "@/lib/supabase/repositories/duplicateDismissals";
+import {
+  fetchAnomalyReviews,
+  markAnomalyReviewed,
+  unmarkAnomalyReviewed,
+} from "@/lib/supabase/repositories/anomalyReviews";
+import { anomalyKey, type AnomalyCode } from "@/lib/payments/dataQuality";
 
 /**
  * Zentraler Query-Key-Namespace aller Zahlungsabfragen, sodass jede
@@ -29,6 +35,7 @@ export const PAYMENTS_KEY = ["payments"] as const;
  */
 export const PAYMENT_HISTORY_KEY = [...PAYMENTS_KEY, "list"] as const;
 export const DUPLICATE_DISMISSALS_KEY = ["duplicate-dismissals"] as const;
+export const ANOMALY_REVIEWS_KEY = ["anomaly-reviews"] as const;
 
 /** Invalidiert alle von einer Zahlungsänderung betroffenen Caches (§22). */
 function invalidateAll(queryClient: ReturnType<typeof useQueryClient>) {
@@ -140,5 +147,45 @@ export function useUndismissDuplicate() {
       undismissDuplicate(idA, idB),
     onSuccess: () =>
       void queryClient.invalidateQueries({ queryKey: DUPLICATE_DISMISSALS_KEY }),
+  });
+}
+
+/** Als „geprüft, in Ordnung" markierte Auffälligkeiten (Schlüssel aus `anomalyKey`). */
+export function useAnomalyReviews() {
+  return useQuery({
+    queryKey: ANOMALY_REVIEWS_KEY,
+    queryFn: fetchAnomalyReviews,
+  });
+}
+
+interface AnomalyRef {
+  paymentId: string;
+  code: AnomalyCode;
+}
+
+/**
+ * Markiert eine Auffälligkeit als geprüft bzw. nimmt die Markierung zurück.
+ *
+ * Der Cache wird nach dem Erfolg direkt fortgeschrieben statt neu geladen: Die
+ * Antwort des Servers bestätigt genau diese eine Änderung, ein erneutes Lesen
+ * der ganzen Liste brächte nichts Neues.
+ */
+export function useReviewAnomaly() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ paymentId, code, reviewed }: AnomalyRef & { reviewed: boolean }) =>
+      reviewed
+        ? markAnomalyReviewed(paymentId, code)
+        : unmarkAnomalyReviewed(paymentId, code),
+    onSuccess: (_result, { paymentId, code, reviewed }) => {
+      const key = anomalyKey(paymentId, code);
+      queryClient.setQueryData<string[]>(ANOMALY_REVIEWS_KEY, (current = []) =>
+        reviewed
+          ? current.includes(key)
+            ? current
+            : [...current, key]
+          : current.filter((entry) => entry !== key),
+      );
+    },
   });
 }

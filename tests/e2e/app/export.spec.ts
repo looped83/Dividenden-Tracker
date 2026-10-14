@@ -30,7 +30,7 @@ async function exportiere(page: import("@playwright/test").Page, format: string)
   return { datei, pfad };
 }
 
-test("CSV enthält Unternehmen, Depot und Betrag je Zeile", async ({ page, konto }) => {
+test("CSV enthält Asset, Depot und Betrag je Zeile", async ({ page, konto }) => {
   const { datei, pfad } = await exportiere(page, "csv");
   expect(datei.suggestedFilename()).toMatch(/^dividenden-export-\d{4}-\d{2}-\d{2}\.csv$/);
 
@@ -40,7 +40,7 @@ test("CSV enthält Unternehmen, Depot und Betrag je Zeile", async ({ page, konto
     .trim()
     .split("\r\n");
 
-  expect(zeilen[0]).toContain("Unternehmen");
+  expect(zeilen[0]).toContain("Asset");
   expect(zeilen).toHaveLength(3);
   for (const zeile of zeilen.slice(1)) {
     expect(zeile).toContain(konto.securityName);
@@ -63,13 +63,13 @@ test("XLSX enthält dieselben Angaben als echte Zellen", async ({ page, konto })
 
   const kopf = sheet.getRow(1).values as unknown[];
   const spalte = (name: string) => kopf.indexOf(name);
-  expect(spalte("Unternehmen")).toBeGreaterThan(0);
+  expect(spalte("Asset")).toBeGreaterThan(0);
 
   // Kopfzeile plus zwei Eingänge.
   expect(sheet.rowCount).toBe(3);
 
   const zeile = sheet.getRow(2);
-  expect(zeile.getCell(spalte("Unternehmen")).value).toBe(konto.securityName);
+  expect(zeile.getCell(spalte("Asset")).value).toBe(konto.securityName);
   expect(zeile.getCell(spalte("Depot")).value).toBe(konto.depotName);
   // Zahl, nicht Text: Nur so lässt sich in Excel damit rechnen.
   expect(zeile.getCell(spalte("Nettobetrag")).value).toBe(20.5);
