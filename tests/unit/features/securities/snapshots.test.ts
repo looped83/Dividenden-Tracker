@@ -179,6 +179,25 @@ describe("portfolioTotals", () => {
     ).toBe("5,00\u00A0%");
   });
 
+  it("rechnet den Kursgewinn aus Depotwert und Einstand", () => {
+    // 10.000 − 8.000 = 2.000 €, bezogen auf den Einstand 25,0 %.
+    const totals = portfolioTotals(snapshots);
+    expect(totals.gain && formatMoney(totals.gain)).toMatch(/^2\.000,00\s€$/);
+    expect(totals.gainPercent && formatPercent(totals.gainPercent, 1)).toBe(
+      "25,0\u00A0%",
+    );
+  });
+
+  it("nennt keinen Kursgewinn, wenn einer Position der Einstand fehlt", () => {
+    // Ohne Einstand fuer sec-b waere die Differenz um deren 2.000 € zu hoch.
+    const totals = portfolioTotals([
+      snapshots[1],
+      snapshot({ security_id: "sec-b", market_value: "2000.00", buyin_total: null }),
+    ]);
+    expect(totals.gain).toBeNull();
+    expect(totals.gainPercent).toBeNull();
+  });
+
   it("liefert für einen leeren Bestand keine Rendite statt einer 0", () => {
     const totals = portfolioTotals([]);
     expect(totals.asOf).toBeNull();

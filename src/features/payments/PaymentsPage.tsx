@@ -55,7 +55,7 @@ import {
 } from "@/features/payments/listParams";
 import { sortRows, type SortableRow } from "@/features/payments/sortRows";
 import { sourceLabel } from "@/features/payments/paymentDisplay";
-import { formatCalendarDate } from "@/lib/utils/formatDate";
+import { formatCalendarDate, formatDayMonth } from "@/lib/utils/formatDate";
 import {
   DeleteDialog,
   StornoDialog,
@@ -587,6 +587,7 @@ export function PaymentsPage() {
                           row={row}
                           comparison={yearOverYear.get(row.id)}
                           listUrl={listUrl}
+                          dayOnly
                         />
                       ))}
                     </ListGroup>
@@ -783,10 +784,13 @@ function PaymentItem({
   row,
   comparison,
   listUrl,
+  dayOnly = false,
 }: {
   row: Row;
   comparison: YearOverYearComparison | undefined;
   listUrl: string;
+  /** In Monatsgruppen: Monat und Jahr stehen schon in der Überschrift. */
+  dayOnly?: boolean;
 }) {
   const { payment, effectiveDate, companyName, depotName, amount } = row;
   return (
@@ -794,7 +798,18 @@ function PaymentItem({
       to={`/eingaenge/${payment.id}`}
       state={{ from: listUrl }}
       title={companyName || "—"}
-      date={formatCalendarDate(effectiveDate)}
+      date={
+        dayOnly ? (
+          // Das Jahr steht in der Monatsueberschrift; Sprachausgaben nennen es
+          // trotzdem mit, weil sie eine Zeile oft ohne Ueberschrift ansteuern.
+          <>
+            {formatDayMonth(effectiveDate)}
+            <span className="sr-only">{effectiveDate.slice(0, 4)}</span>
+          </>
+        ) : (
+          formatCalendarDate(effectiveDate)
+        )
+      }
       depot={depotName}
       amount={amount}
       cancelled={Boolean(payment.archived_at)}

@@ -345,9 +345,14 @@ GUI-Wizard-Schicht ist eine dünne Hülle über exakt diesen getesteten Funktion
   Monatsvergleich, decimal-sichere Summe (0,1 + 0,2 = 0,30).
 - `yearSelection.test.ts` — URL-Parameter: „all", gültige Jahre, sichere Rückfälle bei
   ungültigem Parameter.
-- `KpiCards.test.tsx` — Render-Smoke mit echter Analytics-Verdrahtung: vier Kacheln (die
-  Gesamtsumme aller Jahre steht nicht mehr darunter), Ø-pro-Monat nur bei Einzeljahr, Zahl der
-  Zahlungen als Zusatz der Jahreskachel bzw. als vierte Kachel samt Herkunft.
+- `DashboardHero.test.tsx` — Kennzahlkopf mit echter Analytics-Verdrahtung: Summe des gewählten
+  Jahres (nicht aller Jahre), Vergleich des laufenden Jahres gegen denselben Zeitraum,
+  Reihenfolge der Leiste je Zeitraum, Ø pro Monat nur bei Einzeljahr, Zahl der Zahlungen samt
+  Herkunft außerhalb des laufenden Jahres; Jahresziel als Balken mit Restbetrag, Monatsziel nur
+  im laufenden Jahr, kein Ziel bei „Alle Jahre", Anlege-Link ohne Jahresziel.
+- `UpcomingPayments.test.tsx` — „Demnächst": die nächsten drei Zahltage in zeitlicher Folge,
+  ohne Vergangenes, Abgesagtes und Ex-Tage; erwartete Summe der nächsten 30 Tage; eigene
+  Unternehmensnamen statt der Schreibweise der Quelle; entfällt ohne kommende Termine.
 
 **Integration (`tests/integration/dashboard.test.ts`, benötigt lokale Postgres-DB):**
 aktive Zahlungen des Nutzers, Ausschluss stornierter/archivierter Zahlungen, Einbeziehung

@@ -47,7 +47,7 @@ test("importiert einen Depotstand und zeigt seine Kennzahlen", async ({
   // (dieselbe Reihenfolge wie in `SecurityImportDialog`).
   await dialog.getByRole("button", { name: "Schließen" }).first().click();
 
-  // Die Kennzahlkacheln rechnen aus dem juengsten Stand: 1.000 + 500 = 1.500 €
+  // Der Kennzahlkopf rechnet aus dem juengsten Stand: 1.000 + 500 = 1.500 €
   // Depotwert, 40 + 10 = 50 € erwartet, macht 3,33 % Rendite (Summe durch
   // Summe, nicht Mittelwert der Einzelrenditen).
   await expect(page.getByText("Depotwert")).toBeVisible();
@@ -122,7 +122,10 @@ test("ersetzt einen Stand desselben Tages, statt ihn zu verdoppeln", async ({
 }) => {
   const importiere = async () => {
     await page.goto("/#/depot");
-    await page.getByRole("button", { name: "Depotstand importieren" }).click();
+    // Beim ersten Mal am Ende der Liste, danach als „Aktualisieren" am Stand.
+    await page
+      .getByRole("button", { name: /^Depotstand (importieren|aktualisieren)$/ })
+      .click();
     await page.setInputFiles('input[type="file"]', BEISPIELDATEI);
     await page.getByRole("button", { name: /Positionen übernehmen/ }).click();
     await expect(page.getByText(/Depotstand vom 03\.08\.2026 gespeichert/)).toBeVisible({

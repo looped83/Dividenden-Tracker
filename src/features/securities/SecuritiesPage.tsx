@@ -2,7 +2,6 @@ import * as React from "react";
 import { Link } from "react-router";
 import {
   Briefcase,
-  ChevronRight,
   Pencil,
   RotateCcw,
   Trash2,
@@ -11,7 +10,10 @@ import {
 import { MD_BREAKPOINT_QUERY, useMediaQuery } from "@/lib/hooks/useMediaQuery";
 import { monthNameDeShort, normalizePayoutMonths } from "@/lib/statistics";
 import { SecurityImportButton } from "@/features/securities/SecurityImportDialog";
-import { PortfolioImportButton } from "@/features/securities/PortfolioImportDialog";
+import {
+  PortfolioImportButton,
+  PortfolioImportDialog,
+} from "@/features/securities/PortfolioImportDialog";
 import { PortfolioSummary } from "@/features/securities/PortfolioSummary";
 import { SecurityFormDialog } from "@/features/securities/SecurityFormDialog";
 import { DeleteSecurityDialog } from "@/features/securities/DeleteSecurityDialog";
@@ -110,6 +112,12 @@ export function SecuritiesPage() {
     security: null,
   });
   const [deleteTarget, setDeleteTarget] = React.useState<Security | null>(null);
+  // Ein Dialog fuer beide Ausloeser des Depotstand-Imports (Kennzahlkopf und
+  // Seitenende), siehe `PortfolioImportButton`.
+  const [portfolioImportOpen, setPortfolioImportOpen] = React.useState(false);
+  const openPortfolioImport = React.useCallback(() => {
+    setPortfolioImportOpen(true);
+  }, []);
 
   // Listenzeilen statt Tabelle auf dem Telefon — dasselbe Muster wie in der
   // Dividendenliste. Sieben Spalten hinter einem seitlichen Bildlauf sind auf
@@ -222,7 +230,7 @@ export function SecuritiesPage() {
       {/* Kennzahlen des Depotstands, sofern einer importiert ist. Sie stehen
           bewusst ueber der Liste: Die Kacheln beantworten „wie steht mein Depot
           insgesamt", die Liste „woraus besteht es". */}
-      <PortfolioSummary snapshots={snapshots} />
+      <PortfolioSummary snapshots={snapshots} onImport={openPortfolioImport} />
 
       {/* Filterleiste in derselben Optik wie Dividenden und Statistik. Die
           Auswahlwerte stammen aus dem Bestand — leere Listen entfallen. */}
@@ -438,11 +446,20 @@ export function SecuritiesPage() {
       )}
 
       {/* Seltener gebrauchte Importe am Seitenende: die Liste selbst soll den
-          oberen Bereich bestimmen. Archivierte blendet der Filter ein. */}
+          oberen Bereich bestimmen. Ist schon ein Depotstand importiert, steht
+          sein Import als „Aktualisieren" im Kennzahlkopf; hier nur, solange
+          es keinen gibt. Archivierte blendet der Filter ein. */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border pt-4">
         <SecurityImportButton />
-        <PortfolioImportButton />
+        {snapshots.length === 0 && (
+          <PortfolioImportButton onClick={openPortfolioImport} />
+        )}
       </div>
+
+      <PortfolioImportDialog
+        open={portfolioImportOpen}
+        onOpenChange={setPortfolioImportOpen}
+      />
 
       <SecurityFormDialog
         security={dialog.security}
@@ -547,9 +564,15 @@ function Metric({ value, detail }: { value: React.ReactNode; detail?: string | n
 
 /**
  * Ein Asset auf dem Telefon: eine Zeile, die als Ganzes zur Detailseite
- * fuehrt. Oben Name (mit Ticker) und Wert, darunter erwartete Ausschuettung
- * und Gewinn — dieselbe Form wie eine Zeile der Statistiklisten: was es ist
- * und was es wert ist oben, die Ableitungen darunter.
+ * fuehrt. Oben Name und Wert, darunter Ticker, erwartete Ausschuettung und
+ * Rendite links, der Kursgewinn in Prozent rechts — dieselbe Form wie eine
+ * Zeile der Statistiklisten: was es ist und was es wert ist oben, die
+ * Ableitungen darunter.
+ *
+ * Der Ticker steht in der zweiten Zeile und der Gewinn nur als Prozent (den
+ * Betrag nennt die Detailseite): Hinter dem Namen und mit Betrag brachen
+ * beide Zeilen bei laengeren Namen um, eine Position belegte bis zu fuenf
+ * Zeilen. Ohne Pfeil am Rand, wie alle Listen (`ListItemBody`).
  *
  * Bearbeiten und Archivieren stehen auf der Detailseite. Als Symbole in jeder
  * Karte verlaengerten sie sie um eine Zeile, und die Karte hatte drei kleine
@@ -560,6 +583,7 @@ function Metric({ value, detail }: { value: React.ReactNode; detail?: string | n
 function AssetItem({ row }: { row: AssetRow }) {
   const { security, position } = row;
   const payout = payoutLabel(security);
+  const gain = position?.gain ?? null;
 
   return (
     <li>
@@ -567,13 +591,8 @@ function AssetItem({ row }: { row: AssetRow }) {
         <Link to={`/depot/${security.id}`}>
           <span className="min-w-0 flex-1 space-y-0.5">
             <span className="flex items-baseline justify-between gap-3">
-              <span className="min-w-0 font-medium [overflow-wrap:anywhere]">
+              <span className="line-clamp-2 min-w-0 font-medium [overflow-wrap:anywhere]">
                 {security.name}
-                {security.ticker && (
-                  <span className="ml-1.5 text-sm font-normal text-muted-foreground">
-                    {security.ticker}
-                  </span>
-                )}
                 {security.archived_at && (
                   <Badge variant="neutral" className="ml-2 align-middle">
                     Archiviert
@@ -590,7 +609,8 @@ function AssetItem({ row }: { row: AssetRow }) {
             <span className="flex items-baseline justify-between gap-3 text-sm text-muted-foreground">
               {position ? (
                 <>
-                  <span className="min-w-0">
+                  <span className="min-w-0 truncate">
+                    {security.ticker && <>{security.ticker} · </>}
                     {position.annualDividend ? (
                       <>
                         <AmountText amount={position.annualDividend} /> p. a.
@@ -601,11 +621,16 @@ function AssetItem({ row }: { row: AssetRow }) {
                       "keine Ausschüttung erwartet"
                     )}
                   </span>
-                  {position.gain && (
-                    <span className="shrink-0">
-                      <AmountText amount={position.gain} showSign />
-                      {position.gainPercent &&
-                        ` · ${formatPercent(position.gainPercent, 1)}`}
+                  {position.gainPercent && (
+                    <span
+                      className={cn(
+                        "shrink-0 tabular-amount",
+                        gain?.isPositive() && "text-positive",
+                        gain?.isNegative() && "text-negative",
+                      )}
+                    >
+                      {gain?.isPositive() ? "+" : ""}
+                      {formatPercent(position.gainPercent, 1)}
                     </span>
                   )}
                 </>
@@ -618,7 +643,6 @@ function AssetItem({ row }: { row: AssetRow }) {
               )}
             </span>
           </span>
-          <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
         </Link>
       </ListRow>
     </li>

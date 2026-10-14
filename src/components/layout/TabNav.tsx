@@ -1,5 +1,5 @@
 import * as React from "react";
-import { NavLink, useLocation } from "react-router";
+import { Link, matchPath, useLocation } from "react-router";
 import { prefetchProps } from "@/app/routeChunks";
 import { cn } from "@/lib/utils/cn";
 
@@ -8,6 +8,18 @@ export interface TabNavItem {
   label: string;
   /** Nur bei exakter Pfadgleichheit aktiv (Elternpfad eines Unterbereichs). */
   end?: boolean;
+  /**
+   * Weitere Pfade, unter denen der Reiter als aktiv gilt — fuer einen Reiter,
+   * der mehrere Unterseiten zusammenfasst („Aufteilung": Unternehmen und
+   * Depotkonten).
+   */
+  also?: readonly string[];
+}
+
+/** Aktiv wie bei `NavLink`, zusaetzlich unter den Pfaden aus `also`. */
+function isTabActive(tab: TabNavItem, pathname: string): boolean {
+  if (matchPath({ path: tab.to, end: tab.end ?? false }, pathname)) return true;
+  return tab.also?.some((path) => matchPath({ path, end: false }, pathname)) ?? false;
 }
 
 /**
@@ -24,7 +36,7 @@ export function TabNav({ label, tabs }: { label: string; tabs: readonly TabNavIt
   const { pathname } = useLocation();
 
   React.useEffect(() => {
-    // NavLink kennzeichnet den aktiven Eintrag mit aria-current="page".
+    // Der aktive Eintrag traegt aria-current="page".
     listRef.current
       ?.querySelector('[aria-current="page"]')
       ?.scrollIntoView({ block: "nearest", inline: "nearest" });
@@ -46,27 +58,28 @@ export function TabNav({ label, tabs }: { label: string; tabs: readonly TabNavIt
           "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
         )}
       >
-        {tabs.map((tab) => (
-          <li key={tab.to} className="shrink-0">
-            <NavLink
-              to={tab.to}
-              end={tab.end ?? false}
-              {...prefetchProps(tab.to)}
-              className={({ isActive }) =>
-                cn(
+        {tabs.map((tab) => {
+          const isActive = isTabActive(tab, pathname);
+          return (
+            <li key={tab.to} className="shrink-0">
+              <Link
+                to={tab.to}
+                aria-current={isActive ? "page" : undefined}
+                {...prefetchProps(tab.to)}
+                className={cn(
                   "inline-flex items-center whitespace-nowrap rounded-t-md border-b-2 px-3 py-2",
                   "pointer-coarse:min-h-11 text-sm font-medium outline-none",
                   "focus-visible:ring-2 focus-visible:ring-ring",
                   isActive
                     ? "border-primary text-foreground"
                     : "border-transparent text-muted-foreground hover:text-foreground",
-                )
-              }
-            >
-              {tab.label}
-            </NavLink>
-          </li>
-        ))}
+                )}
+              >
+                {tab.label}
+              </Link>
+            </li>
+          );
+        })}
       </ul>
     </nav>
   );

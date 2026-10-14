@@ -1,4 +1,4 @@
-import { formatMoney, formatPercent, NOT_AVAILABLE } from "@/lib/money";
+import { formatMoney, formatPercent, NOT_AVAILABLE, type Money } from "@/lib/money";
 import type { ComparisonResult, YearSelection } from "@/lib/statistics";
 import { monthNameDe } from "@/lib/statistics";
 
@@ -124,4 +124,13 @@ export function paymentsListHref(params: {
   if (params.depotId) search.set("depot", params.depotId);
   const query = search.toString();
   return query ? `/eingaenge?${query}` : "/eingaenge";
+}
+
+/**
+ * Balkenlaenge in Prozent der laengsten Zeile — rein visuell, mindestens 2 %,
+ * damit auch ein kleiner Anteil als Balken sichtbar bleibt. Dieselbe Rechnung
+ * fuer die Rangbalken hier und die Ranglisten der Statistik.
+ */
+export function barLength(net: Money, maxNumber: number): number {
+  return maxNumber > 0 ? Math.max(2, (net.toChartNumber() / maxNumber) * 100) : 0;
 }

@@ -245,9 +245,9 @@ export function SecurityFormDialog({
 
 /**
  * Die Hauptaktion des Depotbereichs, samt eigenem Dialogzustand — genau wie ihn
- * `SecurityImportButton` und `PortfolioImportButton` tragen. Dadurch kann die
- * Kopfzeile des Bereichs sie zeigen, ohne dass ein Reiter darunter dafuer
- * Zustand nach oben reichen muesste.
+ * `SecurityImportButton` traegt. Dadurch kann die Kopfzeile des Bereichs sie
+ * zeigen, ohne dass ein Reiter darunter dafuer Zustand nach oben reichen
+ * muesste.
  */
 export function NewAssetButton() {
   const [open, setOpen] = React.useState(false);

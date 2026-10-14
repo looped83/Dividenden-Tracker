@@ -3,16 +3,18 @@ import { Link } from "react-router";
 import { LayoutDashboard, Upload, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { KpiHeroSkeleton } from "@/components/domain/KpiHero";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useDepots } from "@/features/depots/hooks";
-import { availableYears, yearOf } from "@/lib/statistics";
+import { availableYears, isoFromRef, yearOf } from "@/lib/statistics";
 import { useToday } from "@/lib/hooks/useToday";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { useDashboardYear, useEffectivePayments } from "./hooks";
 import { YearSelector } from "./YearSelector";
-import { KpiCards } from "./KpiCards";
+import { DashboardHero } from "./DashboardHero";
+import { UpcomingPayments } from "./UpcomingPayments";
 // Recharts wiegt gepackt rund 108 kB und wird nur fuer die Diagramme
 // gebraucht; nachgeladen faellt es aus dem Startpaket heraus.
 const MonthlyChart = React.lazy(async () => ({
@@ -21,26 +23,13 @@ const MonthlyChart = React.lazy(async () => ({
 import { TopCompanies, DepotDistribution } from "./Distributions";
 import { RecentPayments } from "./RecentPayments";
 import { HistoricalOverview } from "./HistoricalOverview";
-import { GoalSection } from "./GoalSection";
 import { buildEntityMap, describeSelection } from "./format";
 
 function DashboardSkeleton() {
   return (
     <div className="space-y-6" aria-busy="true" aria-live="polite">
       <span className="sr-only">Dashboard wird geladen …</span>
-      <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {Array.from({ length: 6 }).map((_, index) => (
-          <Card key={index}>
-            <CardHeader className="pb-2 sm:pb-2">
-              <Skeleton className="h-4 w-24" />
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="h-8 w-32" />
-              <Skeleton className="mt-3 h-3 w-40" />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <KpiHeroSkeleton />
       <Card>
         <CardContent className="p-4 sm:p-6">
           <Skeleton className="h-72 w-full" />
@@ -162,9 +151,13 @@ export function DashboardPage() {
         </p>
       )}
 
-      <KpiCards payments={payments} selection={selection} today={today} />
+      <DashboardHero payments={payments} selection={selection} today={today} />
 
-      <GoalSection payments={payments} selection={selection} today={today} />
+      {/* Was demnächst kommt, gehört zum Jetzt: im laufenden Jahr und bei
+          „Alle Jahre", nicht beim Blick zurück auf 2024. */}
+      {(selection === "all" || selection === today.year) && (
+        <UpcomingPayments today={isoFromRef(today)} />
+      )}
 
       <React.Suspense fallback={<Skeleton className="h-72 rounded-lg" />}>
         <MonthlyChart payments={payments} selection={selection} today={today} />

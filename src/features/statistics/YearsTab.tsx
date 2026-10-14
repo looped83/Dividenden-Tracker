@@ -13,7 +13,8 @@ import {
   type MonthValue,
   type YearStatistics,
 } from "@/lib/statistics";
-import { formatMoney } from "@/lib/money";
+import { formatMoney, formatPercent } from "@/lib/money";
+import { useToday } from "@/lib/hooks/useToday";
 import { useStatisticsContext } from "./context";
 import {
   describeComparison,
@@ -36,8 +37,8 @@ function monthCell(value: MonthValue | null): React.ReactNode {
   );
 }
 
-function changeCell(change: ComparisonResult): React.ReactNode {
-  const described = describeComparison(change, "ggü. Vorjahr");
+function changeCell(change: ComparisonResult, context: string): React.ReactNode {
+  const described = describeComparison(change, context);
   const toneClass =
     described.tone === "positive"
       ? "text-positive"
@@ -50,8 +51,9 @@ function changeCell(change: ComparisonResult): React.ReactNode {
 export function YearsTab() {
   const { payments, filter } = useStatisticsContext();
   const navigate = useNavigate();
+  const today = useToday();
 
-  const stats = React.useMemo(() => yearStatistics(payments), [payments]);
+  const stats = React.useMemo(() => yearStatistics(payments, today), [payments, today]);
   const chartData = React.useMemo(
     () =>
       yearlyBuckets(payments).map((bucket) => ({
@@ -72,7 +74,16 @@ export function YearsTab() {
         header: "Jahr",
         headerLabel: "Jahr",
         compare: (a, b) => a.year - b.year,
-        render: (row) => <span className="font-medium">{row.year}</span>,
+        render: (row) => (
+          <span className="font-medium">
+            {row.year}
+            {row.year === today.year && (
+              <span className="ml-2 text-xs font-normal text-muted-foreground">
+                läuft
+              </span>
+            )}
+          </span>
+        ),
       },
       {
         key: "net",
@@ -129,10 +140,16 @@ export function YearsTab() {
       {
         key: "change",
         header: "Δ Vorjahr",
-        render: (row) => changeCell(row.change),
+        // Das laufende Jahr steht gegen denselben Ausschnitt des Vorjahres
+        // (§11.3) — die Beschriftung sagt es.
+        render: (row) =>
+          changeCell(
+            row.change,
+            row.year === today.year ? "ggü. Vorjahreszeitraum" : "ggü. Vorjahr",
+          ),
       },
     ],
-    [],
+    [today.year],
   );
 
   if (stats.length === 0) {
@@ -182,6 +199,33 @@ export function YearsTab() {
               )
             }
             rowLabel={(row) => `Monate von ${String(row.year)} anzeigen`}
+            listSummary={{
+              meta: (row) => {
+                const { change } = row;
+                const trend =
+                  change.kind === "percent" ? (
+                    <span
+                      className={cn(
+                        "font-medium",
+                        change.absolute.isNegative() && "text-negative",
+                        change.absolute.isPositive() && "text-positive",
+                      )}
+                    >
+                      {change.percent.isPositive() ? "+" : ""}
+                      {formatPercent(change.percent)}
+                      {row.year === today.year ? " bis heute" : ""}
+                    </span>
+                  ) : null;
+                return (
+                  <>
+                    {trend}
+                    {trend && " · "}
+                    {formatCountNumber(row.count)} Zahlungen
+                    {row.bestMonth && ` · stärkster ${monthNameDe(row.bestMonth.month)}`}
+                  </>
+                );
+              },
+            }}
           />
         </CardContent>
       </Card>

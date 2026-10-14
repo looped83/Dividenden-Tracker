@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ArrowDown, ArrowUp, ArrowUpDown, ChevronRight, Search } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FilterSort } from "@/components/ui/filter-bar";
@@ -59,6 +59,20 @@ interface StatTableProps<T> {
   /** Optionaler Klick-Handler je Zeile (Drill-down). */
   onRowClick?: (row: T) => void;
   rowLabel?: (row: T) => string;
+  /**
+   * Kompakte Zeile auf dem Telefon: statt je weiterer Spalte eine beschriftete
+   * Zeile **eine** Zusatzzeile, auf Wunsch mit Anteilsbalken. Für Ranglisten
+   * (Unternehmen, Depotkonten), in denen sonst jeder Eintrag fünf Zeilen hoch
+   * war und dieselben Summen ein zweites Mal als Balken darüber standen.
+   */
+  listSummary?: ListSummary<T>;
+}
+
+export interface ListSummary<T> {
+  /** Die Zusatzzeile, z. B. „31 Zahlungen · Ø 56,29 €". */
+  meta: (row: T) => React.ReactNode;
+  /** Balken unter dem Namen: Länge in Prozent der längsten Zeile, Anteil am Ende. */
+  bar?: (row: T) => { length: number; label: React.ReactNode };
 }
 
 /**
@@ -137,6 +151,7 @@ export function StatTable<T>({
   emptyMessage = "Keine Daten für die aktuelle Auswahl.",
   onRowClick,
   rowLabel,
+  listSummary,
 }: StatTableProps<T>) {
   const isWide = useMediaQuery(MD_BREAKPOINT_QUERY);
   const sortId = React.useId();
@@ -370,6 +385,7 @@ export function StatTable<T>({
               caption={caption}
               clickable={onRowClick !== undefined}
               rowInteraction={rowInteraction}
+              summary={listSummary}
             />
           )}
         </>
@@ -427,6 +443,7 @@ function StatList<T>({
   caption,
   clickable,
   rowInteraction,
+  summary,
 }: {
   rows: readonly T[];
   columns: readonly StatColumn<T>[];
@@ -434,11 +451,62 @@ function StatList<T>({
   caption: string;
   clickable: boolean;
   rowInteraction: (row: T) => React.HTMLAttributes<HTMLElement>;
+  summary: ListSummary<T> | undefined;
 }) {
   const nameColumn = columns.at(0);
   const valueColumn = columns.at(1);
   const detailColumns = columns.slice(2).filter((column) => !column.listHidden);
   if (!nameColumn) return null;
+
+  if (summary) {
+    return (
+      <ListGroup inset aria-label={caption}>
+        {rows.map((row) => {
+          const bar = summary.bar?.(row);
+          return (
+            <li key={getRowKey(row)}>
+              <ListRow interactive={clickable} {...rowInteraction(row)}>
+                <div className="min-w-0 flex-1 space-y-1">
+                  <div className="flex items-baseline justify-between gap-3">
+                    {/* Einzeilig: Die Zeilen einer Rangliste sollen gleich hoch
+                        sein, damit die Balken eine Treppe bilden. Der volle
+                        Name steht auf der Assetseite. */}
+                    <div className="min-w-0 font-medium [&_.truncate]:line-clamp-1">
+                      {nameColumn.render(row)}
+                    </div>
+                    {valueColumn && (
+                      <div className="shrink-0 font-semibold tabular-amount">
+                        {valueColumn.render(row)}
+                      </div>
+                    )}
+                  </div>
+                  {bar && (
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted"
+                        aria-hidden
+                      >
+                        <div
+                          className="h-full rounded-full bg-chart-1"
+                          style={{ width: `${String(bar.length)}%` }}
+                        />
+                      </div>
+                      <span className="w-14 shrink-0 text-right text-xs tabular-amount text-muted-foreground">
+                        {bar.label}
+                      </span>
+                    </div>
+                  )}
+                  <div className="truncate text-xs text-muted-foreground">
+                    {summary.meta(row)}
+                  </div>
+                </div>
+              </ListRow>
+            </li>
+          );
+        })}
+      </ListGroup>
+    );
+  }
 
   return (
     <ListGroup inset aria-label={caption}>
@@ -482,12 +550,6 @@ function StatList<T>({
                 </dl>
               )}
             </div>
-            {clickable && (
-              <ChevronRight
-                className="mt-1 size-4 shrink-0 text-muted-foreground"
-                aria-hidden
-              />
-            )}
           </ListRow>
         </li>
       ))}

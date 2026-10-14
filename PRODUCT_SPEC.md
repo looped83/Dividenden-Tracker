@@ -138,6 +138,12 @@ Diagramme:
 
 Exakte Formeln, Rundung und Randfälle jeder Kennzahl: CALCULATION_RULES.md §6.
 
+**Aufbau:** Die Dividenden des gewählten Zeitraums stehen als **eine** Hauptzahl oben, mit
+Vorjahresvergleich und dem Fortschritt zum Jahresziel direkt darunter; laufender Monat,
+Durchschnitt und bester Monat bilden eine Leiste. Darunter „Demnächst": die nächsten
+angekündigten Zahltage aus dem Dividendenkalender (§5.4) mit der erwarteten Summe der nächsten
+30 Tage — als Ankündigung gekennzeichnet, nicht mit den Eingängen verrechnet (Grundsatz 8).
+
 **Drill-down-Prinzip:** Klick/Tap auf eine Kennzahl oder ein Diagrammsegment öffnet die
 Zahlungsliste mit vorbefüllten Filtern (z. B. „Netto YTD" → Eingänge, Jahresfilter =
 laufendes Jahr). Die Summe der gefilterten Liste muss exakt der Kennzahl entsprechen.
@@ -262,7 +268,9 @@ Historie.
 
 ### 5.5 Statistiken
 
-Fünf Unterbereiche: Übersicht, **Verlauf**, **Vergleich**, Unternehmen, Depotkonten. Die
+Vier Unterbereiche: Übersicht, **Verlauf**, **Vergleich**, **Aufteilung** (nach Unternehmen
+oder nach Depotkonto, Umschalter auf der Seite; beide behalten ihre Adresse). Fünf Reiter
+passten auf dem iPhone nicht nebeneinander, „Depotkonten" lag unsichtbar außerhalb. Die
 frühere **Entwicklung** liegt seit der Umbenennung im Bereich Depot (§5.3) — sie setzte als
 einzige auf den Depotständen auf statt auf den erfassten Zahlungen.
 
@@ -295,8 +303,8 @@ Kalendertag; ein Satz unter der Auswahl nennt ihn — alles andere wäre eine sy
 Untertreibung des laufenden Jahres (CALCULATION_RULES.md §11.10, DECISIONS.md D-7-1). Es wird
 nichts hochgerechnet (Grundsatz 8).
 
-Drei Kennzahlkacheln: die beiden Zeiträume und die Veränderung (Betrag als Kennzahl,
-Prozentzahl mit Bezugszeitraum darunter), auf dem iPhone die Veränderung über die volle Breite.
+Ein Kennzahlkopf: die Veränderung als Hauptzahl (Betrag, Prozentzahl mit Bezugszeitraum
+darunter), beide Zeiträume mit Summe und Zahl der Zahlungen in der Leiste darunter.
 
 Der Unterbereich Unternehmen blendet in der Tabelle „Unternehmensstatistik" archivierte
 Unternehmen zunächst aus; unterhalb der Tabelle sind sie zuschaltbar (dasselbe Muster wie in der
@@ -443,8 +451,9 @@ Verteilung oder Vorschläge.
 **Funktionen.** Anlegen, Bearbeiten, dauerhaftes Löschen (mit Bestätigung, ohne
 Veränderung von Dividendeneingängen), Zielübersicht (`/ziele`) mit aktiven,
 bevorstehenden und beendeten Zielen als eigene Reiter, Detailansicht
-(`/ziele/:id`) mit Drill-down zu den Eingängen des Zeitraums, Zielsektion der
-Übersicht mit denselben Zielkarten.
+(`/ziele/:id`) mit Drill-down zu den Eingängen des Zeitraums. Auf der Übersicht
+stehen Jahres- und Monatsziel im Kennzahlkopf bei der Summe, auf die sie sich
+beziehen (CALCULATION_RULES.md §9.6).
 
 **Angezeigt** werden: bisher erhaltene Dividenden, Zielbetrag, Zielerreichung in
 Prozent, verbleibender bzw. überschrittener Betrag, Zielstatus (bevorstehend /

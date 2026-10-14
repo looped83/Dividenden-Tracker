@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { MemoryRouter, Outlet, Route, Routes } from "react-router";
+import { MemoryRouter, Outlet, Route, Routes, useLocation } from "react-router";
 import { EUR, Money } from "@/lib/money";
 import type { AnalyticsPayment } from "@/lib/statistics";
 import type { EntityInfo } from "@/features/dashboard/format";
@@ -127,3 +127,66 @@ describe("Spalten der Unternehmensstatistik", () => {
     expect(within(screen.getByRole("table")).getByText("10.03.2025")).toBeInTheDocument();
   });
 });
+
+describe("CompaniesTab auf dem Telefon", () => {
+  beforeEach(() => {
+    setViewportWide(false);
+  });
+
+  it("zeigt eine Rangliste mit Anteil statt Balken und Tabelle untereinander", () => {
+    renderCompanies([
+      p("sec-a", "2025-03-10", "100.00"),
+      p("sec-a", "2025-06-10", "200.00"),
+      p("sec-c", "2025-04-10", "100.00"),
+    ]);
+
+    // Die zweite Darstellung derselben Summen entfaellt: eine Liste, keine
+    // Rangbalken darueber.
+    expect(
+      screen.queryByRole("list", { name: "Aktive Unternehmen nach Nettodividende" }),
+    ).not.toBeInTheDocument();
+    const liste = screen.getByRole("list", { name: "Kennzahlen je Unternehmen" });
+    const alpha = within(liste).getByText("Alpha AG").closest("li");
+    if (!alpha) throw new Error("Zeile nicht gefunden.");
+    // 300 von 400 € — Anteil am Balkenende, darunter eine Zusatzzeile.
+    expect(alpha).toHaveTextContent("75,0 %");
+    expect(alpha).toHaveTextContent(/2 Zahlungen · Ø 150,00\s€/);
+  });
+});
+
+describe("Umschalter der Aufteilung", () => {
+  it("wechselt zu den Depotkonten und behaelt den Filter", () => {
+    setViewportWide(false);
+    const context: StatisticsContext = {
+      portfolio: EMPTY_PORTFOLIO_SERIES,
+      payments: PAYMENTS,
+      allPayments: PAYMENTS,
+      securities: new Map<string, EntityInfo>([
+        ["sec-a", { name: "Alpha AG", archived: false }],
+      ]),
+      depots: new Map<string, EntityInfo>([
+        ["dep-1", { name: "Hauptdepot", archived: false }],
+      ]),
+      filter: { ...EMPTY_STATISTICS_FILTER, year: 2025 },
+    };
+    render(
+      <MemoryRouter initialEntries={["/statistiken/unternehmen?year=2025"]}>
+        <Routes>
+          <Route element={<Outlet context={context} />}>
+            <Route path="/statistiken/unternehmen" element={<CompaniesTab />} />
+            <Route path="/statistiken/depots" element={<LocationProbe />} />
+          </Route>
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("radio", { name: "Unternehmen" })).toBeChecked();
+    fireEvent.click(screen.getByRole("radio", { name: "Depotkonten" }));
+    expect(screen.getByTestId("ort")).toHaveTextContent("/statistiken/depots?year=2025");
+  });
+});
+
+function LocationProbe() {
+  const { pathname, search } = useLocation();
+  return <p data-testid="ort">{`${pathname}${search}`}</p>;
+}

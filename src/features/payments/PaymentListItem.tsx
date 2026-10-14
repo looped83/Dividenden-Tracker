@@ -1,6 +1,5 @@
 import type * as React from "react";
 import { Link } from "react-router";
-import { DateText } from "@/components/DateText";
 import { AmountText } from "@/components/money/AmountText";
 import { Badge } from "@/components/ui/badge";
 import { ListItemBody, ListRow } from "@/components/ui/list";
@@ -15,6 +14,11 @@ import type { Money } from "@/lib/money";
  * Zeile 1 traegt den Namen, Zeile 2 Datum und Depot links, den Betrag rechts.
  * Die ganze Zeile fuehrt zur Detailseite; dort stehen Bearbeiten, Stornieren
  * und Loeschen.
+ *
+ * Ohne Kalendersymbol vor dem Datum und ohne Pfeil am Rand: Beide standen in
+ * jeder Zeile, sagten nichts, was die Zeile nicht schon zeigt, und nahmen dem
+ * Depot die Breite — „Trade Repub…". In Monatsgruppen genuegt „11.10.", Monat
+ * und Jahr nennt die Ueberschrift.
  *
  * Das Depot steht immer mit: Wer nach Depot filtert oder nur eines fuehrt,
  * liest es mit, ohne dass es stoert — wer mehrere fuehrt, braucht es.
@@ -36,7 +40,10 @@ export function PaymentListItem({
   to: string;
   state?: unknown;
   title: React.ReactNode;
-  /** Bereits formatiertes Datum (`formatCalendarDate`) — entfaellt, wenn es der Titel ist. */
+  /**
+   * Bereits formatiertes Datum (`formatCalendarDate`, in Monatsgruppen
+   * `formatDayMonth`) — entfaellt, wenn es der Titel ist.
+   */
   date?: React.ReactNode;
   depot?: string | null | undefined;
   amount: Money;
@@ -67,7 +74,7 @@ export function PaymentListItem({
             // hoeher als ihre Nachbarn.
             meta={
               <span className="flex min-w-0 items-center">
-                {date !== undefined && <DateText className="shrink-0">{date}</DateText>}
+                {date !== undefined && <span className="shrink-0">{date}</span>}
                 {depot && (
                   <span className="truncate">
                     {date !== undefined && "\u00A0· "}
@@ -82,7 +89,6 @@ export function PaymentListItem({
                 <AmountText amount={amount} />
               </span>
             }
-            chevron
           />
         </Link>
       </ListRow>

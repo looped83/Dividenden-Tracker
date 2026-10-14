@@ -192,19 +192,20 @@ ohne sichtbaren Monatswechsel untereinander stand. Ein Etikett trägt nur der **
 „Zahltag" stünde an praktisch jedem Termin dieses Kalenders und sagte damit nichts. Für
 Hilfsmittel wird die Art weiterhin in beiden Fällen angesagt.
 
-Direkt unter der Kopfzeile — an derselben Stelle wie in jedem anderen Bereich — stehen vier
-Kennzahlkacheln (`StatCard` wie auf der Übersicht): nächster Zahltag mit Abstand in Tagen,
-erwartete Summe im laufenden Monat, erwartete Summe der nächsten 30 Tage und Anzahl
-verschiedener Unternehmen. Darunter die Wahl der Darstellung (Liste links als
+Direkt unter der Kopfzeile — an derselben Stelle wie in jedem anderen Bereich — steht der
+Kennzahlkopf (`KpiHero` wie auf der Übersicht): die erwartete Summe der nächsten 30 Tage als
+Hauptzahl, darunter der nächste Zahltag mit Abstand in Tagen und die erwartete Summe des
+laufenden Monats. Die frühere Kachel „Unternehmen mit kommenden Zahltagen" ist entfallen —
+die Liste darunter zeigt sie. Darunter die Wahl der Darstellung (Liste links als
 Voreinstellung, Monatsraster rechts). Wann zuletzt abgeglichen wurde, steht als Fußnote am
 Seitenende: Es ist eine Auskunft über die Herkunft der Daten, nicht über Dividenden.
 
 Die Summen stammen ausschließlich aus den Beträgen, die die Quelle nennt. Nennt sie für
-einen Termin keinen, fehlt er in der Summe — und die Kachel sagt es („aus 2 von 3
+einen Termin keinen, fehlt er in der Summe — und die Kennzahl sagt es („aus 2 von 3
 Terminen"), statt die Lücke stillschweigend als Null zu verrechnen. Liefert die Quelle
-überhaupt keine Beträge, zeigt die Kachel die Anzahl. Beträge in verschiedenen Währungen
-werden **nicht** addiert (das wäre eine Umrechnung zu einem erfundenen Kurs); die Kachel
-weist dann „verschiedene Währungen" aus. Abgesagte Termine zählen nirgends mit, bleiben in
+überhaupt keine Beträge, zeigt sie die Anzahl („angekündigte Termine"). Beträge in
+verschiedenen Währungen werden **nicht** addiert (das wäre eine Umrechnung zu einem erfundenen
+Kurs); die Kennzahl weist dann „verschiedene Währungen" aus. Abgesagte Termine zählen nirgends mit, bleiben in
 der Liste aber sichtbar und gekennzeichnet.
 
 Das Monatsraster ist einen Klick entfernt; die Wahl bleibt in `localStorage` erhalten. Es
@@ -226,7 +227,9 @@ Die Kacheln der Tagesspalte tragen **kein** Datum: Es steht als Überschrift unm
 darüber, und zweimal dasselbe Datum in zwei Schriftgrößen liest sich wie zwei Angaben.
 Unter dem Unternehmensnamen bleibt dort nur das Depot (und die Uhrzeit, falls die Quelle
 eine nennt). In der Liste trägt jede Kachel ihr Datum weiterhin selbst — dort gibt es keine
-Überschrift je Tag. Vorgelesen wird das vollständige Datum in beiden Fällen.
+Überschrift je Tag —, und zwar im Datumsfeld; daneben steht nur der Wochentag („Do ·
+Comdirect"). „Do, 15.10.2026" wiederholte Tag und Monat des Feldes und brach mit dem Depot
+auf drei Zeilen um. Vorgelesen wird das vollständige Datum in beiden Fällen.
 
 ### Unternehmensnamen
 
@@ -250,9 +253,8 @@ Passen zwei eigene Unternehmen auf denselben Schlüssel, bleibt der Name der Que
 eine Ähnlichkeitsstufe wie im Import gibt es hier nicht — dort bestätigt ein Mensch den
 Vorschlag, hier widerspräche niemand. Angeglichen wird **nur die Anzeige**: Der Termin wird
 keinem Unternehmen zugeordnet, nichts wird gespeichert, `company_name` bleibt der Wert des
-Feeds und steht in der Detailansicht als „Unternehmen laut Quelle", sobald er abweicht. Die
-Kachel „Unternehmen" zählt den angezeigten Namen, sodass zwei Schreibweisen nicht als zwei
-Unternehmen erscheinen.
+Feeds und steht in der Detailansicht als „Unternehmen laut Quelle", sobald er abweicht.
+Dieselbe Angleichung nutzt „Demnächst" auf der Übersicht (`useResolvedCalendarEvents`).
 
 Die Abschnittsüberschriften der Liste („Heute", „September 2026") sind gesetzt wie die
 Abschnittstitel der übrigen Bereiche; zuvor standen sie klein, grau und in Großbuchstaben da

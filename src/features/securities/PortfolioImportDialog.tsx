@@ -663,19 +663,41 @@ function Balance({ label, value }: { label: string; value: number }) {
   );
 }
 
-export function PortfolioImportButton() {
-  const [open, setOpen] = React.useState(false);
-  return (
-    <>
+/**
+ * Ausloeser des Depotstand-Imports. Den Dialog selbst haelt die Seite
+ * (`SecuritiesPage`) — **einmal**, fuer beide Ausloeser: Der Knopf am Ende der
+ * Liste verschwindet, sobald ein Stand importiert ist. Truege er den Dialog
+ * selbst, verschwaende mit ihm mitten im Ablauf der Dialog samt
+ * Erfolgsmeldung.
+ */
+export function PortfolioImportButton({
+  variant = "outline",
+  onClick,
+}: {
+  /**
+   * `inline`: als Textschaltflaeche „Aktualisieren" neben dem Stand im
+   * Kennzahlkopf; der negative Rand gleicht ihren Innenabstand aus, damit sie
+   * auf der Linie des Textes daneben steht.
+   */
+  variant?: "outline" | "inline";
+  onClick: () => void;
+}) {
+  if (variant === "inline") {
+    return (
       <Button
-        variant="outline"
-        onClick={() => {
-          setOpen(true);
-        }}
+        variant="ghost"
+        size="sm"
+        className="relative z-10 -my-2 -ml-3 text-primary"
+        aria-label="Depotstand aktualisieren"
+        onClick={onClick}
       >
-        <Upload /> Depotstand importieren
+        <Upload /> Aktualisieren
       </Button>
-      <PortfolioImportDialog open={open} onOpenChange={setOpen} />
-    </>
+    );
+  }
+  return (
+    <Button variant="outline" onClick={onClick}>
+      <Upload /> Depotstand importieren
+    </Button>
   );
 }

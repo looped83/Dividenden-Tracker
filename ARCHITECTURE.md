@@ -482,8 +482,9 @@ sortiert Ziele stabil (CALCULATION_RULES.md §13).
 **Feature-Schicht (`src/features/goals`).** `hooks.ts` (React-Query-Anbindung,
 Query-Key `["goals"]`), `schemas.ts` (Zod-Formular), `format.ts` (Anzeige/
 Beschriftungen), `GoalsPage`, `GoalDetailPage`, `GoalCard`, `GoalProgressBar`,
-`GoalFormDialog`, `DeleteGoalDialog`. Dashboard-Integration über
-`src/features/dashboard/GoalSection.tsx`.
+`GoalFormDialog`, `DeleteGoalDialog`. Dashboard-Integration über den Kennzahlkopf
+`src/features/dashboard/DashboardHero.tsx` (Jahresziel als `GoalProgressBar`, Monatsziel im
+Feld des Monats).
 
 **Repository (`src/lib/supabase/repositories/goals.ts`).** CRUD gegen die
 RLS-geschützte `goals`-Tabelle, mapt `numeric` einmal in `Money`, wirft
@@ -492,18 +493,18 @@ RLS-geschützte `goals`-Tabelle, mapt `numeric` einmal in `Money`, wirft
 
 **Query-Strategie.** Der Zielfortschritt leitet sich aus derselben aktiven
 Dividendenhistorie ab, die das Dashboard bereits lädt (`["payments","list"]`,
-geteilter Cache, keine zusätzliche Roh-Abfrage je Zielkarte, kein N+1). Es gibt
+geteilter Cache, keine zusätzliche Roh-Abfrage je Ziel, kein N+1). Es gibt
 bewusst keine neue SECURITY-DEFINER-Funktion oder materialisierte View für die
 aktuelle Datenmenge; die Berechnung ist rein und clientseitig auf der bereits
 übertragenen Historie.
 
 **Cache-Invalidierung.** Zielmutationen invalidieren `["goals"]` (Übersicht,
-Detail, Dashboard-Zielsektion). Zahlungs-/Import-Mutationen invalidieren
+Detail, Kennzahlkopf des Dashboards). Zahlungs-/Import-Mutationen invalidieren
 `["payments"]` und aktualisieren dadurch automatisch alle abgeleiteten
 Zielstände. Zentrale Query-Keys, keine verstreuten Schlüssel.
 
 **Dashboard-Interaktion (Auftrag §26).** Einzeljahr → Jahresziel dieses Jahres
-(sonst leerer Zustand mit Anlege-Link); „Alle Jahre" → keine Jahres-Zielkarte,
-nur ein Link zur Zielübersicht; die Monatszielkarte (aktueller Monat) bleibt
-unabhängig von der Jahresauswahl. Keine Karte verwendet je einen anderen
-Zeitraum als ihre sichtbare Beschriftung.
+als Balken im Kennzahlkopf (sonst ein Link „Jahresziel für 2026 festlegen");
+„Alle Jahre" → kein Ziel; das Monatsziel des laufenden Monats steht nur im
+laufenden Jahr im Feld des Monats (CALCULATION_RULES.md §9.6). Kein Ziel steht
+neben einer Zahl, die einen anderen Zeitraum meint.

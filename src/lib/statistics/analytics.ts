@@ -582,8 +582,20 @@ export function averagePerActiveMonth(payments: readonly AnalyticsPayment[]): Mo
   return Money.fromDecimal(aggregate(payments).net.toDecimal().div(months), EUR);
 }
 
-/** Jahresstatistik, neueste Jahre zuerst (§11.3). */
-export function yearStatistics(payments: readonly AnalyticsPayment[]): YearStatistics[] {
+/**
+ * Jahresstatistik, neueste Jahre zuerst (§11.3).
+ *
+ * Das **laufende Jahr** wird wie in der Matrix und auf der Übersicht mit
+ * demselben Ausschnitt des Vorjahres verglichen (1.1. bis Stichtag, §6.2):
+ * Gegen das volle Vorjahr stand es bis in den Dezember hinein im Minus — rot,
+ * obwohl es im gleichen Zeitraum vorn lag.
+ *
+ * @param ref Stichtag „heute"; bestimmt, welches Jahr läuft.
+ */
+export function yearStatistics(
+  payments: readonly AnalyticsPayment[],
+  ref: RefDate,
+): YearStatistics[] {
   const byYear = partitionByYear(payments);
   const netByYear = new Map<number, Money>();
   for (const [year, rows] of byYear) netByYear.set(year, aggregate(rows).net);
@@ -592,6 +604,8 @@ export function yearStatistics(payments: readonly AnalyticsPayment[]): YearStati
   for (const [year, rows] of byYear) {
     const { net, count } = aggregate(rows);
     const priorYearNet = netByYear.get(year - 1) ?? null;
+    const running =
+      year === ref.year ? selectedYearComparison(payments, year, ref) : null;
     stats.push({
       year,
       net,
@@ -601,7 +615,12 @@ export function yearStatistics(payments: readonly AnalyticsPayment[]): YearStati
       averagePayment: averagePayment(rows),
       bestMonth: bestMonthInYear(rows, year),
       worstMonth: worstMonthInYear(rows, year),
-      change: comparePeriods(net, priorYearNet),
+      change:
+        priorYearNet === null
+          ? { kind: "no-comparison" }
+          : running
+            ? comparePeriods(running.current, running.prior)
+            : comparePeriods(net, priorYearNet),
       priorYearNet,
     });
   }

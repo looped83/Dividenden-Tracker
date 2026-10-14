@@ -35,6 +35,17 @@ export function formatCalendarDate(iso: string): string {
   return DATE.format(new Date(year, month - 1, day));
 }
 
+/**
+ * Kalendertag ohne Jahr: `29.07.` — wo Monat und Jahr schon darüber stehen
+ * (Monatsgruppe einer Liste) oder der Zusammenhang sie nennt (nächster
+ * Zahltag). Mit Jahr brach die Zeile daneben um.
+ */
+export function formatDayMonth(iso: string): string {
+  const [, month, day] = iso.split("-");
+  if (!month || !day) return iso;
+  return `${day}.${month}.`;
+}
+
 /** Zeitpunkt (ISO mit Uhrzeit, z. B. `created_at`) als Datum: `29.07.2026`. */
 export function formatTimestampDate(value: string | Date): string {
   return DATE.format(typeof value === "string" ? new Date(value) : value);

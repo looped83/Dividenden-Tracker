@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
-import { StatCard, StatGrid } from "@/components/domain/StatCard";
+import { KpiHero, KpiHeroSkeleton, TrendPill } from "@/components/domain/KpiHero";
 import { AmountText } from "@/components/money/AmountText";
 import { EntitySelect, type EntityOption } from "@/components/domain/EntitySelect";
 import { FilterBar, FilterField, FilterReset } from "@/components/ui/filter-bar";
@@ -107,16 +107,8 @@ export function DevelopmentTab() {
     return (
       <div className="space-y-4" aria-busy="true" aria-live="polite">
         <span className="sr-only">Entwicklung wird geladen …</span>
-        <StatGrid>
-          {Array.from({ length: 4 }).map((_, index) => (
-            <Card key={index}>
-              <CardContent className="p-4 sm:p-6">
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="mt-3 h-8 w-32" />
-              </CardContent>
-            </Card>
-          ))}
-        </StatGrid>
+        <KpiHeroSkeleton stats={2} />
+        <Skeleton className="h-72 rounded-lg" />
       </div>
     );
   }
@@ -432,45 +424,54 @@ export function DevelopmentView({
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard
-          label="Erwartet p. a."
-          value={expected ? <AmountText amount={expected} /> : <span>—</span>}
-          caption={`Stand ${formatCalendarDate(latest.asOf)}`}
-        />
-        <StatCard
-          label="Erhalten"
-          value={<AmountText amount={received} />}
-          caption={`${formatCalendarDate(range.start)} – ${formatCalendarDate(range.end)}`}
-        />
-        <StatCard
-          label="Zuwachs"
-          value={growth ? <AmountText amount={growth} showSign /> : <span>—</span>}
-          caption={
-            growthPercent
-              ? // Vorzeichen wie beim Betrag darueber, damit beide Zeilen
-                // dasselbe sagen.
-                `${growthPercent.isPositive() ? "+" : ""}${formatPercent(
-                  growthPercent,
-                  1,
-                )} gegenüber den letzten zwölf Monaten`
-              : undefined
-          }
-        />
-        <StatCard
-          label="Rendite auf Einstand"
-          value={
-            yieldOnBuyin ? <span>{formatPercent(yieldOnBuyin, 2)}</span> : <span>—</span>
-          }
-          caption={
-            latest.buyinTotal ? (
-              <span>
+      {/* Die Erwartung ist die Hauptzahl, der Zuwachs gegenueber dem
+          Erhaltenen ihre Marke; das Erhaltene und die Rendite auf den Einstand
+          stehen darunter. Vier gleich grosse Kacheln liessen offen, welche
+          Zahl die Frage des Bereichs beantwortet. */}
+      <KpiHero
+        label={`Erwartet p. a. · Stand ${formatCalendarDate(latest.asOf)}`}
+        value={expected ? <AmountText amount={expected} /> : "—"}
+        trend={
+          growthPercent ? (
+            <TrendPill
+              tone={
+                growthPercent.isNegative()
+                  ? "negative"
+                  : growthPercent.isZero()
+                    ? "neutral"
+                    : "positive"
+              }
+              title="gegenüber den letzten zwölf Monaten"
+            >
+              {`${growthPercent.isPositive() ? "+" : ""}${formatPercent(growthPercent, 1)}`}
+            </TrendPill>
+          ) : undefined
+        }
+        caption={
+          growth ? (
+            <>
+              Zuwachs <AmountText amount={growth} showSign /> gegenüber den letzten zwölf
+              Monaten
+            </>
+          ) : undefined
+        }
+        stats={[
+          {
+            label: "Erhalten (12 Monate)",
+            value: <AmountText amount={received} />,
+            caption: `${formatCalendarDate(range.start)} – ${formatCalendarDate(range.end)}`,
+          },
+          {
+            label: "Rendite auf Einstand",
+            value: yieldOnBuyin ? formatPercent(yieldOnBuyin, 2) : "—",
+            caption: latest.buyinTotal ? (
+              <>
                 Einstand <AmountText amount={latest.buyinTotal} />
-              </span>
-            ) : undefined
-          }
-        />
-      </div>
+              </>
+            ) : undefined,
+          },
+        ]}
+      />
 
       <Card>
         <CardHeader>
@@ -512,6 +513,22 @@ export function DevelopmentView({
             initialSort={{ key: "growth", direction: "desc" }}
             caption="Erwartete und erhaltene Dividenden je gehaltenem Asset"
             emptyMessage="Kein Asset im aktuellen Depotstand."
+            // Auf dem Telefon eine Zusatzzeile statt drei beschrifteter:
+            // erwartet steht als Kennzahl rechts, darunter erhalten und der
+            // Zuwachs.
+            listSummary={{
+              meta: (row) => (
+                <>
+                  erhalten <AmountText amount={row.received} />
+                  {row.growth && (
+                    <>
+                      {" · "}
+                      <AmountText amount={row.growth} showSign />
+                    </>
+                  )}
+                </>
+              ),
+            }}
           />
         </CardContent>
       </Card>
@@ -525,16 +542,23 @@ export function DevelopmentView({
         // Aussage. Dann steht dort ein Satz.
         (hasKnownKey(portfolio.bySector) || hasKnownKey(portfolio.byCountry) ? (
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-            <AllocationCard
-              title="Aufteilung nach Branche"
-              buckets={portfolio.bySector}
-              total={latest.marketValue}
-            />
-            <AllocationCard
-              title="Aufteilung nach Land"
-              buckets={portfolio.byCountry}
-              total={latest.marketValue}
-            />
+            {/* Jede Aufteilung fuer sich nur, wenn sie etwas sagt: Nennt der
+                Stand Laender, aber keine Branchen, stand sonst „ohne Angabe
+                100 %" als eigene Karte neben der des Landes. */}
+            {hasKnownKey(portfolio.bySector) && (
+              <AllocationCard
+                title="Aufteilung nach Branche"
+                buckets={portfolio.bySector}
+                total={latest.marketValue}
+              />
+            )}
+            {hasKnownKey(portfolio.byCountry) && (
+              <AllocationCard
+                title="Aufteilung nach Land"
+                buckets={portfolio.byCountry}
+                total={latest.marketValue}
+              />
+            )}
           </div>
         ) : (
           <p className="px-1 text-sm text-muted-foreground">

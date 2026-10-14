@@ -37,7 +37,7 @@ features/securities/portfolioMatch.ts  Zuordnung + Stammdaten-Vorschläge
         ↓
 Supabase  security_snapshot_runs + security_snapshots (RLS, eigene Zeilen)
         ↓
-Kacheln (/depot) · Positionskarte (Detailseite) · Depot „Entwicklung"
+Kennzahlkopf (/depot) · Positionskarte (Detailseite) · Depot „Entwicklung"
 ```
 
 | Datei | Rolle |
@@ -50,7 +50,7 @@ Kacheln (/depot) · Positionskarte (Detailseite) · Depot „Entwicklung"
 | `src/features/securities/snapshots.ts` | Auswertung (jüngster Stand, Summen, Rendite, Zeitreihe) |
 | `src/features/securities/DevelopmentTab.tsx` | Unterbereich „Entwicklung" |
 | `src/features/securities/PortfolioImportDialog.tsx` | Assistent |
-| `src/features/securities/PortfolioSummary.tsx` | Kennzahlkacheln |
+| `src/features/securities/PortfolioSummary.tsx` | Kennzahlkopf mit „Aktualisieren" |
 | `src/features/securities/PositionCard.tsx` | Position auf der Detailseite |
 | `src/lib/supabase/repositories/securitySnapshots.ts` | Lesen und Schreiben |
 
@@ -187,13 +187,18 @@ Datei und lässt alle übrigen stehen.
 
 ## 8. Was die Oberfläche zeigt
 
-**`/#/depot`** — vier Kennzahlkacheln unter Kopfzeile und Reitern, an derselben Stelle wie in
-jedem anderen Bereich: Depotwert (mit Stand), erwartete Jahresdividende, Rendite und
-Anzahl Positionen. Die Kacheln beantworten „wie steht mein Depot insgesamt".
+**`/#/depot`** — der Kennzahlkopf unter Kopfzeile und Reitern, an derselben Stelle wie in
+jedem anderen Bereich: der Depotwert als Hauptzahl mit Stand und Kursgewinn gegenüber dem
+Einstand (nur, wenn jede Position beides trägt), darunter erwartete Jahresdividende (mit
+Anzahl Positionen) und Rendite (mit Rendite auf den Einstand). Er beantwortet „wie steht mein
+Depot insgesamt". Neben dem Einstand steht „Aktualisieren" — der Import eines neuen Stands dort,
+wo man sieht, wie alt der jetzige ist; am Ende der Assetliste steht er nur noch, solange kein
+Stand importiert ist.
 
 Die Liste darunter beantwortet „woraus besteht es" und zeigt dafür je Zeile **Wert** (mit
 Anteil am Depot), **Erwartet p. a.** (mit Rendite) und **Gewinn** (absolut und relativ) aus
-dem jüngsten Stand. Zuvor führte sie ausschließlich Stammdaten — Ticker, ISIN, Land, Status —,
+dem jüngsten Stand; auf dem Telefon in zwei Zeilen — Name und Wert, darunter Ticker,
+Erwartung und Rendite links, der Gewinn in Prozent rechts (den Betrag nennt die Detailseite). Zuvor führte sie ausschließlich Stammdaten — Ticker, ISIN, Land, Status —,
 also Felder, die beim Wiederfinden helfen, aber keine Frage an ein Depot beantworten; Ticker
 und ISIN stehen deshalb jetzt klein unter dem Namen statt in eigenen Spalten. Ohne
 importierten Stand entfallen die drei Zahlenspalten ganz (wie in der Unternehmensstatistik),
@@ -221,9 +226,10 @@ laufende Jahr: Die Erwartung gilt für zwölf Monate, ein angebrochenes Jahr lie
 zwangsläufig zu hoch aussehen.
 
 **`/#/depot/entwicklung`** — der Unterbereich, der aus den Ständen eine Zeitreihe
-macht: vier Kacheln (erwartet p. a., erhalten in den zwölf Monaten bis zum Stichtag, der
-Zuwachs, Rendite auf den Einstand), der Verlauf beider Größen über die Stichtage, die
-Gegenüberstellung je Asset und die Aufteilung nach Branche und Land. Er lag bis zur
+macht: der Kennzahlkopf (erwartet p. a. als Hauptzahl, der Zuwachs als Marke daneben,
+darunter erhalten in den zwölf Monaten bis zum Stichtag und Rendite auf den Einstand), der Verlauf beider Größen über die Stichtage, die
+Gegenüberstellung je Asset und die Aufteilung nach Branche und Land — jede Aufteilung nur, wenn
+der Stand für sie Angaben trägt; „ohne Angabe 100 %" ist keine Aussage. Er lag bis zur
 Umbenennung des Bereichs unter `/#/statistiken/entwicklung`; der alte Pfad leitet dauerhaft
 hierher um.
 
@@ -240,7 +246,7 @@ Die Tabelle listet **nur, was im jüngsten Stand liegt** (`heldSecurityIds`). Ve
 Papiere standen früher mit dem Wegfall ihres Erhaltenen darin — das beantwortet aber eine
 andere Frage als dieser Bereich: Er sagt, ob die Ertragskraft des *heutigen* Depots wächst.
 Was ein verkauftes Papier beigetragen hat, steht weiterhin in der Historie (Statistik,
-Detailseite). Die Kacheln darüber bleiben davon unberührt; ihr „Erhalten" ist die volle
+Detailseite). Der Kennzahlkopf darüber bleibt davon unberührt; sein „Erhalten" ist die volle
 Summe der letzten zwölf Monate, sonst verglichen sie zwei verschieden zusammengesetzte
 Grundgesamtheiten.
 
@@ -286,7 +292,7 @@ Unterbereiche wie bisher ohne Datenzugriffsschicht gerendert (und getestet) werd
 | Stand mit falschem Stichtag | Unter Einstellungen → Importe → „Depotstände" einzeln löschbar; der Dialog nennt, welcher Stand danach gilt |
 | Abbruch nach dem Lauf, vor den Zeilen | Ein Lauf ohne Zeilen bleibt sichtbar und lässt sich entfernen — PostgREST kennt keine Transaktion über mehrere Anfragen |
 | Verkauftes Papier | Fehlt im jüngsten Stand; die Detailseite sagt „Letzter bekannter Bestand" |
-| Verschiedene Währungen im Stand | Es wird **nicht** addiert; die Kachel weist „verschiedene Währungen" aus |
+| Verschiedene Währungen im Stand | Es wird **nicht** addiert; der Kennzahlkopf weist „verschiedene Währungen" aus |
 
 ## 10. Tests
 

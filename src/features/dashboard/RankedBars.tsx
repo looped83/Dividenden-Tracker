@@ -2,6 +2,7 @@ import { Link } from "react-router";
 import { Badge } from "@/components/ui/badge";
 import { formatMoney, formatPercent, type Money } from "@/lib/money";
 import { shareOfTotal } from "@/lib/statistics";
+import { barLength } from "./format";
 
 export interface RankedBarItem {
   key: string;
@@ -36,8 +37,7 @@ export function RankedBars({ items, total, ariaLabel }: RankedBarsProps) {
     <ul className="space-y-3" aria-label={ariaLabel}>
       {items.map((item) => {
         const share = shareOfTotal(item.net, total);
-        const widthPercent =
-          maxNumber > 0 ? Math.max(2, (item.net.toChartNumber() / maxNumber) * 100) : 0;
+        const widthPercent = barLength(item.net, maxNumber);
         return (
           <li key={item.key}>
             <Link

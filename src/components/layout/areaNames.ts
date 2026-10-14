@@ -8,8 +8,11 @@ const AREA_NAMES: readonly { prefix: string; name: string; exact?: boolean }[] =
   { prefix: "/depot", name: "Depot" },
   { prefix: "/statistiken/verlauf", name: "Statistiken, Verlauf" },
   { prefix: "/statistiken/vergleich", name: "Statistiken, Vergleich" },
-  { prefix: "/statistiken/unternehmen", name: "Statistiken, Unternehmen" },
-  { prefix: "/statistiken/depots", name: "Statistiken, Depotkonten" },
+  {
+    prefix: "/statistiken/unternehmen",
+    name: "Statistiken, Aufteilung nach Unternehmen",
+  },
+  { prefix: "/statistiken/depots", name: "Statistiken, Aufteilung nach Depotkonten" },
   { prefix: "/statistiken", name: "Statistiken" },
   { prefix: "/ziele/bevorstehend", name: "Ziele, bevorstehend" },
   { prefix: "/ziele/beendet", name: "Ziele, beendet" },

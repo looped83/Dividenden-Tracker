@@ -8,18 +8,24 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
   aggregate,
+  shareOfTotal,
   securityStatistics,
   sortSecurityStatistics,
   type SecurityStatistics,
 } from "@/lib/statistics";
+import { formatPercent } from "@/lib/money";
 import { compareGerman } from "@/lib/utils/compareText";
+import { MD_BREAKPOINT_QUERY, useMediaQuery } from "@/lib/hooks/useMediaQuery";
 import { RankedBars, type RankedBarItem } from "@/features/dashboard/RankedBars";
+import { barLength } from "@/features/dashboard/format";
 import { useStatisticsContext } from "./context";
+import { BreakdownSwitch } from "./BreakdownSwitch";
 import {
   entityArchived,
   entityName,
   formatCountNumber,
   formatIsoDate,
+  formatPayments,
   statisticsDrillHref,
 } from "./format";
 import { StatSearch, StatTable, type StatColumn } from "./components/StatTable";
@@ -82,6 +88,11 @@ export function CompaniesTab() {
   );
 
   const total = React.useMemo(() => aggregate(payments).net, [payments]);
+  const maxNet = React.useMemo(
+    () => tableRows.reduce((max, row) => Math.max(max, row.net.toChartNumber()), 0),
+    [tableRows],
+  );
+  const isWide = useMediaQuery(MD_BREAKPOINT_QUERY);
   // Die Rangliste zeigt **nur aktive** Unternehmen: Sie beantwortet „woher
   // kommen meine Dividenden", und eine geschlossene Position gehoert nicht mehr
   // zu dieser Antwort — sie stand in der Vergangenheit oft weit oben und
@@ -226,29 +237,38 @@ export function CompaniesTab() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Unternehmen nach Dividendensumme</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {topItems.length === 0 ? (
-            <p className="py-6 text-sm text-muted-foreground">
-              Kein aktives Unternehmen in dieser Auswahl — die Tabelle darunter zeigt die
-              archivierten.
-            </p>
-          ) : (
-            <RankedBars
-              items={topItems}
-              total={total}
-              ariaLabel="Aktive Unternehmen nach Nettodividende"
-            />
-          )}
-        </CardContent>
-      </Card>
+      <BreakdownSwitch />
+      {/* Auf dem Telefon ist die Liste darunter selbst die Rangliste (Balken
+          je Zeile); dieselben Summen ein zweites Mal als Balken darueber
+          verdoppelten dort die Seite. Ab `md` steht die Tabelle — sie zeigt
+          keine Balken, deshalb bleibt die Rangliste dort. */}
+      {isWide && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Unternehmen nach Dividendensumme</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {topItems.length === 0 ? (
+              <p className="py-6 text-sm text-muted-foreground">
+                Kein aktives Unternehmen in dieser Auswahl — die Tabelle darunter zeigt
+                die archivierten.
+              </p>
+            ) : (
+              <RankedBars
+                items={topItems}
+                total={total}
+                ariaLabel="Aktive Unternehmen nach Nettodividende"
+              />
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader className="gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <CardTitle>Unternehmensstatistik</CardTitle>
+          <CardTitle>
+            {isWide ? "Unternehmensstatistik" : "Unternehmen nach Dividendensumme"}
+          </CardTitle>
           <div className="sm:-my-3 sm:w-64 sm:shrink-0">
             <StatSearch
               value={query}
@@ -277,6 +297,30 @@ export function CompaniesTab() {
             rowLabel={(row) =>
               `Dividendeneingänge von ${entityName(securities, row.securityId)} anzeigen`
             }
+            listSummary={{
+              bar: (row) => {
+                const share = shareOfTotal(row.net, total);
+                return {
+                  length: barLength(row.net, maxNet),
+                  label: share ? formatPercent(share) : "—",
+                };
+              },
+              meta: (row) => {
+                const expected = expectedById.get(row.securityId);
+                return (
+                  <>
+                    {formatPayments(row.count)} · Ø{" "}
+                    <AmountText amount={row.averagePayment} />
+                    {expected && (
+                      <>
+                        {" "}
+                        · erw. <AmountText amount={expected} /> p. a.
+                      </>
+                    )}
+                  </>
+                );
+              },
+            }}
           />
           {/* Nebenschalter am Fuss der Kachel, abgesetzt durch eine Trennlinie —
               dasselbe Muster wie unter der Unternehmensliste. */}

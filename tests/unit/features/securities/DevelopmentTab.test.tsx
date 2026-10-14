@@ -151,9 +151,11 @@ describe("DevelopmentView", () => {
     // 8 von 42 sind 19,0 %. An der Erwartung gemessen waeren es 16,0 % — eine
     // Wachstumsrate bezieht sich aber auf den Wert, aus dem gewachsen wurde.
     renderTab();
-    expect(
-      screen.getByText(/\+19,0 % gegenüber den letzten zwölf Monaten/),
-    ).toBeInTheDocument();
+    // Die Rate steht als Marke neben der Erwartung; wofuer sie gilt, nennt ihr
+    // Titel.
+    expect(screen.getByTitle("gegenüber den letzten zwölf Monaten")).toHaveTextContent(
+      /^\+19,0\s%/,
+    );
   });
 
   it("zeigt einen echten Rückgang weiterhin negativ", () => {

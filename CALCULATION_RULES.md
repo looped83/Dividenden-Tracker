@@ -194,17 +194,18 @@ ausschließlich diese Schicht auf; keine Aggregation in React-Komponenten.
 
 - Aktuell: `[erster Tag des aktuellen Monats, heute]`.
 - **Sichtbar nur, wenn der laufende Monat im gewählten Zeitraum liegt** — also im laufenden Jahr
-  und bei „Alle Jahre". In einem anderen Jahr stünde die Kachel für einen Zeitraum, den die Seite
-  gerade nicht zeigt; dieselbe Regel gilt für die Zielsektion (§9.6).
+  und bei „Alle Jahre". In einem anderen Jahr stünde das Feld für einen Zeitraum, den die Seite
+  gerade nicht zeigt; dieselbe Regel gilt für die Ziele der Übersicht (§9.6).
 - Vergleich: gleicher Monat im Vorjahr `[01., entsprechender Kalendertag]`; besitzt der
   Vorjahresmonat weniger Tage, wird auf den letzten gültigen Kalendertag gekappt.
 
 ### 9.4 Prozentuale Veränderung (§6.4)
 
-Die Vergleichszeile der Kennzahlkacheln nennt absolute und prozentuale Veränderung und ist mit
-„ggü. Vorjahr" beschriftet — worauf sich das Vorjahr bezieht, sagt die Beschriftung der Kachel
-(Jahr bzw. aktueller Monat); der vollständige Satz steht im Titel der Zeile („Gegenüber dem
-gleichen Zeitraum des Vorjahres"). Die Kurzform hält die Zeile auf dem iPhone einzeilig.
+Der Kennzahlkopf der Übersicht nennt die prozentuale Veränderung als Marke neben der Summe und
+die absolute in der Zeile darunter („+203,24 € ggü. Vorjahreszeitraum", in einem abgeschlossenen
+Jahr „ggü. Vorjahr"); der vollständige Satz steht im Titel der Marke („gegenüber dem gleichen
+Zeitraum des Vorjahres"). Das Feld des laufenden Monats trägt die Kurzform „+65,0 % ggü. Vj.",
+sofern kein Monatsziel gesetzt ist. Die Kurzformen halten die Zeilen auf dem iPhone einzeilig.
 
 `(aktuell − vergleich) ÷ vergleich × 100`, nur wenn `vergleich > 0`. Sonst:
 
@@ -234,23 +235,29 @@ Differenz stammt aus `Money.subtract` (exakt, R-3).
 - **Historische Gesamtsumme (§5.3/§12):** immer über die gesamte aktive Historie, unabhängig von
   der Jahresauswahl; als historischer Gesamtwert gekennzeichnet.
 - **Zahlungen im Zeitraum:** Anzahl der Eingänge des gewählten Zeitraums, mit Anzahl der
-  ausschüttenden Unternehmen als Zusatz. Die reine Zahl ausschüttender Unternehmen stand vorher
-  allein — sie sagte nichts über das Jahr aus.
-- **Reihenfolge der Kacheln:** gewählter Zeitraum → laufender Monat → bester Monat →
-  Ø pro Monat → Historie → Zahlungen. Vom Zeitraum, den die Seite zeigt, zu dem, was ihn
-  einordnet.
+  ausschüttenden Unternehmen als Zusatz — in der Leiste des Kennzahlkopfs, sobald das Feld des
+  laufenden Monats entfällt (anderes Jahr) oder bei „Alle Jahre". Die reine Zahl ausschüttender
+  Unternehmen stand vorher allein — sie sagte nichts über das Jahr aus.
+- **Reihenfolge im Kennzahlkopf:** Hauptzahl gewählter Zeitraum → Leiste laufender Monat →
+  Ø pro Monat → bester Monat (in einem anderen Jahr: Ø pro Monat → Zahlungen → bester Monat;
+  bei „Alle Jahre": laufender Monat → Zahlungen → bester Monat). Vom Zeitraum, den die Seite
+  zeigt, zu dem, was ihn einordnet.
 - **Letzte Dividendeneingänge:** die fünf jüngsten der gesamten Historie (unabhängig von der
   Jahresauswahl), mit Weg zur vollständigen Liste. Die Übersicht zeigt den letzten Stand, sie
   ersetzt die Liste nicht.
 
-### 9.6 Zielsektion der Übersicht
+### 9.6 Ziele auf der Übersicht
 
 Gezeigt wird ausschließlich, was zum gewählten Jahr gehört: das **Jahresziel dieses Jahres** und —
 nur im laufenden Jahr — das **Monatsziel des laufenden Monats**. Ein Monatsziel gehört zu einem
 Monat eines Jahres; neben einem anderen Jahr stünde es für einen Zeitraum, den die Seite gerade
-nicht zeigt. Bei „Alle Jahre" entfällt der Bereich: Ziele sind an einen Zeitraum gebunden, „alle
-Jahre" ist keiner. Der Zeitraum steht nicht unter dem Zieltitel — die Jahresauswahl der Seite
-sagt ihn bereits. Dargestellt wird dieselbe Zielkarte wie auf der Zielseite.
+nicht zeigt. Bei „Alle Jahre" entfällt beides: Ziele sind an einen Zeitraum gebunden, „alle
+Jahre" ist keiner.
+
+Beide stehen im Kennzahlkopf bei der Zahl, auf die sie sich beziehen: das Jahresziel als Balken
+unter der Jahressumme (erreichter Anteil, Zielbetrag, Restbetrag bzw. Ergebnis), das Monatsziel als
+„19 % vom Ziel" im Feld des laufenden Monats. Alle Werte stammen aus `computeGoalProgress` — es ist
+dieselbe Rechnung wie auf der Zielseite (Ist = effektive Monatszuordnung, §10).
 
 ---
 
@@ -355,6 +362,12 @@ Zahlungen, Anzahl Unternehmen/Depots (distinct), Durchschnittszahlung (§11.2), 
 bei Gleichstand der ältere Monat), sowie die Veränderung zum vorhergehenden Kalenderjahr
 (`comparePeriods` §6.4 auf den Jahressummen). Fehlt das Vorjahr in der Datenbasis, gilt „Kein
 Vergleichswert".
+
+Das **laufende Jahr** vergleicht wie die Übersicht (§6.6) und die Matrix (§11.10) den Ausschnitt
+`1.1.` bis Stichtag mit demselben Ausschnitt des Vorjahres (`selectedYearComparison`) und ist als
+„läuft" gekennzeichnet. Gegen das volle Vorjahr stand es bis in den Dezember hinein im Minus — rot,
+obwohl es im gleichen Zeitraum vorn lag; dieselbe Zahl hieß auf der Übersicht „+11,6 %" und in der
+Jahresstatistik „−2,6 %".
 
 ### 11.4 Monatsstatistik (`monthAcrossYearsStatistics`)
 

@@ -32,7 +32,10 @@ test.use({
 
 async function importiere(page: import("@playwright/test").Page, datei: string) {
   await page.goto("/#/depot");
-  await page.getByRole("button", { name: "Depotstand importieren" }).click();
+  // Beim ersten Mal am Ende der Liste, danach als „Aktualisieren" am Stand.
+  await page
+    .getByRole("button", { name: /^Depotstand (importieren|aktualisieren)$/ })
+    .click();
   await page.setInputFiles('input[type="file"]', datei);
   await page.getByRole("button", { name: /Positionen übernehmen/ }).click();
   await expect(page.getByText(/gespeichert/)).toBeVisible({ timeout: 15000 });

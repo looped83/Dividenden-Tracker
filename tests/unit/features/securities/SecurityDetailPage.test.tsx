@@ -111,16 +111,28 @@ describe("SecurityDetailPage", () => {
 
   it("zaehlt die Eingaenge", () => {
     renderPage();
-    expect(screen.getByText("3 Eingänge")).toBeInTheDocument();
+    expect(screen.getByText(/^3 Eingänge/)).toBeInTheDocument();
+  });
+
+  it("stellt die letzten Eingaenge vor Ausschuettungsplan und Stammdaten", () => {
+    renderPage();
+    const eingaenge = screen.getByRole("heading", { name: "Letzte Eingänge" });
+    for (const name of ["Ausschüttungsplan", "Stammdaten"]) {
+      const spaeter = screen.getByRole("heading", { name });
+      expect(
+        eingaenge.compareDocumentPosition(spaeter) & Node.DOCUMENT_POSITION_FOLLOWING,
+        `${name} steht vor den letzten Eingängen`,
+      ).toBeTruthy();
+    }
   });
 
   it("weist den groessten Eingang aus", () => {
     renderPage();
-    // Der Betrag steht sowohl in der Kennzahlkarte als auch in der Liste der
+    // Der Betrag steht sowohl im Kennzahlkopf als auch in der Liste der
     // letzten Eingaenge — beide Vorkommen sind richtig.
     expect(screen.getAllByText("150,00 €").length).toBeGreaterThan(0);
     const card = screen.getByText("Größter Eingang").closest("div")?.parentElement;
-    if (!card) throw new Error("Kennzahlkarte nicht gefunden.");
+    if (!card) throw new Error("Kennzahl nicht gefunden.");
     expect(within(card).getByText("150,00 €")).toBeInTheDocument();
   });
 

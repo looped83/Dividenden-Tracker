@@ -9,8 +9,8 @@ import {
   eventTime,
   eventTitle,
   eventTypeLabel,
-  shortDate,
   spokenDate,
+  weekdayShort,
 } from "@/lib/calendar/format";
 import type { CalendarEvent } from "@/lib/calendar/types";
 
@@ -69,7 +69,8 @@ export function AgendaView({
  * als Ueberschrift unmittelbar darueber. Zweimal dasselbe Datum in zwei
  * Schriftgroessen liest sich wie zwei Angaben; unter dem Namen bleibt dort nur
  * das Depot. In der Liste traegt jede Zeile ihr Datum weiterhin selbst — dort
- * gibt es keine Ueberschrift je Tag.
+ * gibt es keine Ueberschrift je Tag: Tag und Monat im Datumsfeld, daneben nur
+ * der Wochentag. Ohne Pfeil am Rand, wie alle Listen (`ListItemBody`).
  */
 export function EventTile({
   event,
@@ -86,7 +87,7 @@ export function EventTile({
   const amountLabel = event.expectedAmount
     ? `, erwartet ${formatMoney(event.expectedAmount)}`
     : "";
-  const meta = [showDate ? shortDate(event.date) : null, time, event.sourcePortfolio]
+  const meta = [showDate ? weekdayShort(event.date) : null, time, event.sourcePortfolio]
     .filter((part): part is string => part !== null)
     .join(" · ");
 
@@ -151,7 +152,6 @@ export function EventTile({
               </span>
             ) : undefined
           }
-          chevron
         />
       </button>
     </ListRow>
