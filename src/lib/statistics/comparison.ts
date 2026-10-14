@@ -215,7 +215,9 @@ function monthValue(
  * hängen: Im Januar sagt ein Jahresvergleich fast nichts, ein rollierender
  * Zwölfmonatsvergleich dagegen weiterhin alles.
  *
- * Beide Fenster sind exakt zwölf Monate lang und enden am selben Kalendertag.
+ * Beide Fenster umfassen zwölf Kalendermonate, der jüngste davon angeschnitten
+ * bis zum Referenztag (CALCULATION_RULES.md §6.7) — auf beiden Seiten gleich
+ * geschnitten, damit der Vergleich fair bleibt.
  */
 export function compareRollingTwelveMonths(
   payments: readonly AnalyticsPayment[],
@@ -285,9 +287,10 @@ function monthSlot(ref: RefDate, offset: number): { year: number; month: number 
 }
 
 /**
- * Zwölfmonatsfenster, das `monthsBack` Monate vor dem Referenzmonat endet.
- * Das Fenster endet am Referenztag (bzw. am letzten Tag des Monats, wenn
- * dieser kürzer ist) und beginnt am Tag danach zwölf Monate früher.
+ * Zwölfmonatsfenster, das `monthsBack` Monate vor dem Referenzmonat endet:
+ * vom **Ersten** des Monats elf Monate davor bis zum Referenztag des
+ * Endmonats (bzw. dessen letztem Tag, wenn er kürzer ist). Elf volle Monate
+ * plus der angeschnittene — wie §6.7, nicht „ein Jahr ab dem Tag danach".
  */
 function rollingRange(ref: RefDate, monthsBack: number): DateRange {
   const end = monthSlot(ref, monthsBack);
