@@ -360,9 +360,11 @@ Navigation jetzt **Depotkonten** (Einstellungen und Statistik).
   `/statistiken/entwicklung` leiten **dauerhaft** um, samt Suchparametern —
   sonst verlöre ein Lesezeichen auf eine gefilterte Ansicht genau die Auswahl,
   die es festhalten sollte.
-- Außerhalb des Depotbereichs bleibt „Unternehmen" stehen, wo tatsächlich
-  Unternehmen gemeint sind (Statistik-Unterbereich, Zahlungsformular,
-  Kalender).
+- ~~Außerhalb des Depotbereichs bleibt „Unternehmen" stehen~~ — seit
+  2026-10-14 heißt es **überall** „Asset": Der Bestand mischt Aktien, ETFs und
+  ETPs, „Unternehmen" traf in Statistik, Formular, Übersicht und Export ebenso
+  wenig zu wie im Depotbereich. URL-Pfade (`/statistiken/unternehmen`) bleiben
+  für Lesezeichen unverändert.
 
 *Beleg:* `src/app/navigation.ts`, `src/app/router.tsx`,
 `src/features/securities/DepotPage.tsx`.

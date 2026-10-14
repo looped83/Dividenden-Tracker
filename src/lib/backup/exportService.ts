@@ -154,7 +154,7 @@ function whenFilled(field: ExportField, kind: ColumnKind) {
  */
 const COLUMNS: readonly ColumnDefinition[] = [
   { field: "pay_date", label: "Zahlungsdatum", kind: "date" },
-  { field: "security_name", label: "Unternehmen", kind: "text" },
+  { field: "security_name", label: "Asset", kind: "text" },
   {
     field: "ticker",
     label: "Ticker",

@@ -246,8 +246,8 @@ export default function RestoreSection() {
 const RECORD_LABELS: Record<string, string> = {
   depot: "Depots",
   depots: "Depots",
-  security: "Unternehmen",
-  securities: "Unternehmen",
+  security: "Assets",
+  securities: "Assets",
   dividend_payment: "Dividendeneingänge",
   dividend_payments: "Dividendeneingänge",
   goal: "Ziele",
@@ -297,7 +297,7 @@ function ConfirmRestoreDialog({
             <dd className="text-right font-medium tabular-nums">
               {formatCountNumber(contents["dividend_payments"] ?? 0)}
             </dd>
-            <dt className="text-muted-foreground">Unternehmen</dt>
+            <dt className="text-muted-foreground">Assets</dt>
             <dd className="text-right tabular-nums">
               {formatCountNumber(contents["securities"] ?? 0)}
             </dd>

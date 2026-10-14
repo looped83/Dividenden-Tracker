@@ -104,8 +104,8 @@ export function YearsTab() {
       {
         key: "securities",
         listHidden: true,
-        header: "Unternehmen",
-        headerLabel: "Anzahl Unternehmen",
+        header: "Assets",
+        headerLabel: "Anzahl Assets",
         align: "right",
         compare: (a, b) => a.distinctSecurities - b.distinctSecurities,
         render: (row) => formatCountNumber(row.distinctSecurities),

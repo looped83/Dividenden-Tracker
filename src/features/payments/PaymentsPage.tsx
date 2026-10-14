@@ -85,7 +85,7 @@ const effectiveDateOf = (row: Row): string => row.effectiveDate;
 const SORT_OPTIONS: readonly FilterSortOption[] = [
   { value: "payment_date", label: "Nach Datum" },
   { value: "amount", label: "Nach Betrag" },
-  { value: "company", label: "Nach Unternehmen" },
+  { value: "company", label: "Nach Asset" },
   { value: "depot", label: "Nach Depot" },
   { value: "updated", label: "Nach Änderung" },
 ];
@@ -165,7 +165,7 @@ export function PaymentsPage() {
 
   const { data: allPayments = [], isLoading: paymentsLoading } = useAllPayments();
   // Die Namen der Unternehmen kommen aus den Stammdaten, nicht aus der
-  // Zahlungsabfrage — ohne sie waeren Spalte und Sortierung „Unternehmen" leer.
+  // Zahlungsabfrage — ohne sie waeren Spalte und Sortierung „Asset" leer.
   const isLoading = paymentsLoading || securitiesLoading;
 
   // Geladen werden immer alle Zeilen; was der Statusfilter ausblendet, zaehlt
@@ -402,7 +402,7 @@ export function PaymentsPage() {
           Sortierrichtung als Symbolschalter statt langer Auswahltexte
           („Zahlungsdatum – neueste zuerst“), damit alles in eine Zeile passt. */}
       <FilterBar activeCount={activeFilterCount}>
-        <FilterField id="f-security" label="Unternehmen">
+        <FilterField id="f-security" label="Asset">
           <EntitySelect
             id="f-security"
             options={securityOptions}
@@ -410,7 +410,7 @@ export function PaymentsPage() {
             onChange={(value) => {
               updateParams({ security: value });
             }}
-            allLabel="Alle Unternehmen"
+            allLabel="Alle Assets"
           />
         </FilterField>
 
@@ -542,7 +542,7 @@ export function PaymentsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Zahlungsdatum</TableHead>
-                    <TableHead>Unternehmen</TableHead>
+                    <TableHead>Asset</TableHead>
                     <TableHead>Depot</TableHead>
                     <TableHead className="text-right">Netto</TableHead>
                     <TableHead className="text-right">Aktion</TableHead>

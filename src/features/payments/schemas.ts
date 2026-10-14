@@ -100,7 +100,7 @@ function payDateSchema() {
 
 /** Auf das Wesentliche reduziertes Formular: Depot, Unternehmen, Zahlungsdatum, Nettobetrag, Notiz. */
 export const paymentFormSchema = z.object({
-  securityId: z.string().trim().min(1, "Unternehmen ist erforderlich"),
+  securityId: z.string().trim().min(1, "Asset ist erforderlich"),
   depotId: z.string().trim().min(1, "Depot ist erforderlich"),
   payDate: payDateSchema(),
   netAmount: positiveMoneyString("Nettobetrag"),

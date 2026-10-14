@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useLocation, useNavigate } from "react-router";
-import { Building2, Landmark } from "lucide-react";
+import { Briefcase, Landmark } from "lucide-react";
 import { prefetchRoute } from "@/app/routeChunks";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { useStatisticsContext } from "./context";
@@ -37,7 +37,7 @@ export function BreakdownSwitch() {
       label="Aufteilung nach"
       className="w-full sm:w-auto"
       options={[
-        { value: "unternehmen", label: "Unternehmen", icon: Building2 },
+        { value: "unternehmen", label: "Assets", icon: Briefcase },
         { value: "depots", label: "Depotkonten", icon: Landmark },
       ]}
       value={value}

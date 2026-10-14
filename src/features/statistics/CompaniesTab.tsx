@@ -119,7 +119,7 @@ export function CompaniesTab() {
     () => [
       {
         key: "name",
-        header: "Unternehmen",
+        header: "Asset",
         headerLabel: "Name (alphabetisch)",
         compare: (a, b) => compareGerman(labelOf(a.securityId), labelOf(b.securityId)),
         render: (row) => (
@@ -229,7 +229,7 @@ export function CompaniesTab() {
     return (
       <EmptyState
         icon={BarChart3}
-        title="Keine Unternehmensdaten"
+        title="Keine Daten zu Assets"
         description="Für den aktuellen Filter liegen keine Dividendeneingänge vor."
       />
     );
@@ -245,19 +245,19 @@ export function CompaniesTab() {
       {isWide && (
         <Card>
           <CardHeader>
-            <CardTitle>Unternehmen nach Dividendensumme</CardTitle>
+            <CardTitle>Assets nach Dividendensumme</CardTitle>
           </CardHeader>
           <CardContent>
             {topItems.length === 0 ? (
               <p className="py-6 text-sm text-muted-foreground">
-                Kein aktives Unternehmen in dieser Auswahl — die Tabelle darunter zeigt
-                die archivierten.
+                Kein aktives Asset in dieser Auswahl — die Tabelle darunter zeigt die
+                archivierten.
               </p>
             ) : (
               <RankedBars
                 items={topItems}
                 total={total}
-                ariaLabel="Aktive Unternehmen nach Nettodividende"
+                ariaLabel="Aktive Assets nach Nettodividende"
               />
             )}
           </CardContent>
@@ -267,14 +267,10 @@ export function CompaniesTab() {
       <Card>
         <CardHeader className="gap-3 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle>
-            {isWide ? "Unternehmensstatistik" : "Unternehmen nach Dividendensumme"}
+            {isWide ? "Statistik je Asset" : "Assets nach Dividendensumme"}
           </CardTitle>
           <div className="sm:-my-3 sm:w-64 sm:shrink-0">
-            <StatSearch
-              value={query}
-              onChange={setQuery}
-              placeholder="Unternehmen suchen …"
-            />
+            <StatSearch value={query} onChange={setQuery} placeholder="Assets suchen …" />
           </div>
         </CardHeader>
         <CardContent>
@@ -282,13 +278,13 @@ export function CompaniesTab() {
             rows={tableRows}
             columns={columns}
             getRowKey={(row) => row.securityId}
-            caption="Kennzahlen je Unternehmen"
+            caption="Kennzahlen je Asset"
             searchOf={(row) => entityName(securities, row.securityId)}
             query={query}
             initialSort={{ key: "net", direction: "desc" }}
             emptyMessage={
               tableRows.length === 0 && hasArchived
-                ? "Nur archivierte Unternehmen in dieser Auswahl — unten einblenden."
+                ? "Nur archivierte Assets in dieser Auswahl — unten einblenden."
                 : "Keine Daten für die aktuelle Auswahl."
             }
             onRowClick={(row) =>

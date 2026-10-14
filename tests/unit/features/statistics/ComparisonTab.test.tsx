@@ -271,9 +271,9 @@ describe("ComparisonTab — Monat gegen Monat", () => {
     expect(screen.getAllByText("100,00 €").length).toBeGreaterThan(0);
   });
 
-  it("schluesselt nach Unternehmen auf statt nach Monaten", () => {
+  it("schluesselt nach Assets auf statt nach Monaten", () => {
     renderTab("?modus=monate&monat=5&basis=2026&referenz=2025");
-    expect(screen.getByText("Nach Unternehmen")).toBeInTheDocument();
+    expect(screen.getByText("Nach Assets")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Beta SE" })).toHaveAttribute(
       "href",
       "/depot/sec-b",
@@ -371,10 +371,8 @@ describe("ComparisonTab — Darstellung auf dem Telefon", () => {
 
   it("stellt auch den Monatsvergleich als Liste dar", () => {
     renderTab("?modus=monate&monat=5&basis=2026&referenz=2025");
-    expect(
-      screen.queryByRole("table", { name: /je Unternehmen/ }),
-    ).not.toBeInTheDocument();
-    expect(screen.getByRole("list", { name: /je Unternehmen/ })).toBeInTheDocument();
+    expect(screen.queryByRole("table", { name: /je Asset/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("list", { name: /je Asset/ })).toBeInTheDocument();
     const beta = card("Beta SE");
     expect(within(beta).getByRole("link", { name: "Beta SE" })).toHaveAttribute(
       "href",

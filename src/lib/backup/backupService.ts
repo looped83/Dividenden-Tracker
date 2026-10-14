@@ -335,7 +335,7 @@ async function fetchSecurities(): Promise<SecurityBackup[]> {
         .range(from, to),
     ),
   ]);
-  assertComplete(data.length, expected, "Unternehmen");
+  assertComplete(data.length, expected, "Assets");
 
   return data.map(
     (s) =>

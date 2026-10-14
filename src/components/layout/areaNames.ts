@@ -10,7 +10,7 @@ const AREA_NAMES: readonly { prefix: string; name: string; exact?: boolean }[] =
   { prefix: "/statistiken/vergleich", name: "Statistiken, Vergleich" },
   {
     prefix: "/statistiken/unternehmen",
-    name: "Statistiken, Aufteilung nach Unternehmen",
+    name: "Statistiken, Aufteilung nach Assets",
   },
   { prefix: "/statistiken/depots", name: "Statistiken, Aufteilung nach Depotkonten" },
   { prefix: "/statistiken", name: "Statistiken" },

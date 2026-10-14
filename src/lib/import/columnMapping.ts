@@ -15,7 +15,7 @@ export const REQUIRED_FIELDS: TargetField[] = [
 
 export const FIELD_LABELS: Record<TargetField, string> = {
   pay_date: "Zahlungsdatum",
-  security: "Unternehmen / Wertpapier",
+  security: "Asset / Wertpapier",
   net_amount: "Nettobetrag",
   broker: "Depot / Broker",
 };
@@ -34,6 +34,7 @@ const SYNONYMS: Record<TargetField, string[]> = {
   ],
   security: [
     "investment",
+    "asset",
     "unternehmen",
     "wertpapier",
     "security",

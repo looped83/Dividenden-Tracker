@@ -17,7 +17,7 @@ test("erfasst eine Dividende und zeigt sie in Liste und Übersicht", async ({
 
   // Rollenbasiert statt über das Label: In der Navigation steht ebenfalls
   // „Unternehmen", und „Depot" steckt in „Depots".
-  await page.getByRole("combobox", { name: "Unternehmen" }).fill("Muster");
+  await page.getByRole("combobox", { name: "Asset" }).fill("Muster");
   await page.getByRole("option", { name: konto.securityName }).click();
 
   await page
@@ -43,7 +43,7 @@ test("weist unvollständige Eingaben zurück, statt sie zu speichern", async ({ 
   await page.getByRole("button", { name: "Speichern" }).click();
 
   // Die Meldungen stehen am Feld; gespeichert wird nichts (keine Navigation).
-  await expect(page.getByText("Unternehmen ist erforderlich")).toBeVisible();
+  await expect(page.getByText("Asset ist erforderlich")).toBeVisible();
   await expect(page.getByText("Depot ist erforderlich")).toBeVisible();
   await expect(page).toHaveURL(/#\/eingaenge\/neu$/);
 });
@@ -65,7 +65,7 @@ test("erfasst auf breiten Schirmen im Overlay, ohne die Seite zu verlassen", asy
   await expect(dialog.getByRole("heading", { name: "Neue Dividende" })).toBeVisible();
   await expect(page).toHaveURL(/#\/statistiken$/);
 
-  await dialog.getByRole("combobox", { name: "Unternehmen" }).fill("Muster");
+  await dialog.getByRole("combobox", { name: "Asset" }).fill("Muster");
   await page.getByRole("option", { name: konto.securityName }).click();
   await dialog
     .getByRole("combobox", { name: "Depot", exact: true })

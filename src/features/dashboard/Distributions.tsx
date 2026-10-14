@@ -50,18 +50,18 @@ export function TopCompanies({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Top-Unternehmen</CardTitle>
+        <CardTitle>Top-Assets</CardTitle>
       </CardHeader>
       <CardContent>
         {items.length === 0 ? (
           <p className="py-6 text-sm text-muted-foreground">
-            Keine Unternehmen im ausgewählten Zeitraum.
+            Keine Assets im ausgewählten Zeitraum.
           </p>
         ) : (
           <RankedBars
             items={items}
             total={total}
-            ariaLabel="Top-Unternehmen nach Nettodividende"
+            ariaLabel="Top-Assets nach Nettodividende"
           />
         )}
       </CardContent>

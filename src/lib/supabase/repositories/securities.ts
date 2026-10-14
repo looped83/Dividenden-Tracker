@@ -63,14 +63,14 @@ export async function deleteSecurity(id: string): Promise<void> {
   if (error) {
     if (error.code === "23503") {
       throw new Error(
-        "Unternehmen kann nicht gelöscht werden, solange noch Dividendeneingänge darauf verweisen. Lösche zuerst die zugehörigen Eingänge.",
+        "Das Asset kann nicht gelöscht werden, solange noch Dividendeneingänge darauf verweisen. Lösche zuerst die zugehörigen Eingänge.",
       );
     }
     throw error;
   }
   if (count === 0) {
     throw new Error(
-      "Unternehmen konnte nicht gelöscht werden (nicht gefunden, nicht archiviert oder keine Berechtigung).",
+      "Das Asset konnte nicht gelöscht werden (nicht gefunden, nicht archiviert oder keine Berechtigung).",
     );
   }
 }

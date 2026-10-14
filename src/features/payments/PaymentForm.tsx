@@ -235,14 +235,14 @@ export function PaymentForm({
         {/* Unternehmen zuerst: die Auswahl belegt das Depot aus dem
             Standard-Depot des Unternehmens vor (siehe selectSecurity). */}
         <div className="space-y-1.5">
-          <Label htmlFor="payment-security">Unternehmen</Label>
+          <Label htmlFor="payment-security">Asset</Label>
           <Combobox
             id="payment-security"
             options={securityOptions}
             value={watchedSecurityId}
             onChange={selectSecurity}
             placeholder="Name oder Ticker suchen …"
-            emptyMessage="Kein Unternehmen gefunden"
+            emptyMessage="Kein Asset gefunden"
           />
           {errors.securityId && (
             <p className="text-sm text-negative">{errors.securityId.message}</p>

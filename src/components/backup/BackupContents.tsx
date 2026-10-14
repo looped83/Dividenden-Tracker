@@ -17,7 +17,7 @@ import { formatTimestamp } from "@/lib/utils/formatDate";
 export function BackupContents({ backup }: { backup: BackupRoot }) {
   const counts = [
     { label: "Dividendeneingänge", value: backup.data.dividend_payments.length },
-    { label: "Unternehmen", value: backup.data.securities.length },
+    { label: "Assets", value: backup.data.securities.length },
     { label: "Depots", value: backup.data.depots.length },
     { label: "Ziele", value: backup.data.goals.length },
   ];

@@ -126,11 +126,7 @@ export function DashboardHero({ payments, selection, today }: DashboardHeroProps
     stats.push({
       label: "Zahlungen",
       value: formatCountNumber(data.period.length),
-      caption: formatCountNoun(
-        distinctSecurities(data.period),
-        "Unternehmen",
-        "Unternehmen",
-      ),
+      caption: formatCountNoun(distinctSecurities(data.period), "Asset", "Assets"),
     });
   }
   if (data.best) {

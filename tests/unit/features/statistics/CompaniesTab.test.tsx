@@ -67,42 +67,40 @@ beforeEach(() => {
 });
 
 describe("CompaniesTab", () => {
-  it("blendet archivierte Unternehmen in der Statistik zunächst aus", () => {
+  it("blendet archivierte Assets in der Statistik zunächst aus", () => {
     renderCompanies();
     expect(tableNames()).toEqual(["Alpha AG"]);
   });
 
-  it("blendet archivierte Unternehmen auf Wunsch ein", () => {
+  it("blendet archivierte Assets auf Wunsch ein", () => {
     renderCompanies();
     fireEvent.click(screen.getByLabelText("Archivierte anzeigen"));
     expect(tableNames()).toEqual(["Beta AG", "Alpha AG"]);
   });
 
-  it("führt in der Rangliste nur aktive Unternehmen", () => {
+  it("führt in der Rangliste nur aktive Assets", () => {
     renderCompanies();
     // „Beta AG" zahlte mehr (300 € gegen 100 €) und stand deshalb ganz oben —
     // als geschlossene Position verdrängte sie die laufenden Zahler.
-    const ranking = screen.getByLabelText("Aktive Unternehmen nach Nettodividende");
+    const ranking = screen.getByLabelText("Aktive Assets nach Nettodividende");
     expect(within(ranking).getByText("Alpha AG")).toBeInTheDocument();
     expect(within(ranking).queryByText("Beta AG")).not.toBeInTheDocument();
   });
 
   it("sagt es, wenn die Rangliste ohne archivierte leer bliebe", () => {
     renderCompanies([p("sec-b", "2025-04-10", "300.00")]);
-    expect(
-      screen.getByText(/Kein aktives Unternehmen in dieser Auswahl/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Kein aktives Asset in dieser Auswahl/)).toBeInTheDocument();
   });
 
-  it("erklärt eine leere Tabelle, wenn nur archivierte Unternehmen übrig sind", () => {
+  it("erklärt eine leere Tabelle, wenn nur archivierte Assets übrig sind", () => {
     renderCompanies([p("sec-b", "2025-04-10", "300.00")]);
     expect(
-      screen.getByText(/Nur archivierte Unternehmen in dieser Auswahl/),
+      screen.getByText(/Nur archivierte Assets in dieser Auswahl/),
     ).toBeInTheDocument();
   });
 });
 
-describe("Spalten der Unternehmensstatistik", () => {
+describe("Spalten der Statistik je Asset", () => {
   it("fasst erste und letzte Zahlung zu einem Zeitraum zusammen", () => {
     renderCompanies([
       p("sec-a", "2025-03-10", "100.00"),
@@ -143,9 +141,9 @@ describe("CompaniesTab auf dem Telefon", () => {
     // Die zweite Darstellung derselben Summen entfaellt: eine Liste, keine
     // Rangbalken darueber.
     expect(
-      screen.queryByRole("list", { name: "Aktive Unternehmen nach Nettodividende" }),
+      screen.queryByRole("list", { name: "Aktive Assets nach Nettodividende" }),
     ).not.toBeInTheDocument();
-    const liste = screen.getByRole("list", { name: "Kennzahlen je Unternehmen" });
+    const liste = screen.getByRole("list", { name: "Kennzahlen je Asset" });
     const alpha = within(liste).getByText("Alpha AG").closest("li");
     if (!alpha) throw new Error("Zeile nicht gefunden.");
     // 300 von 400 € — Anteil am Balkenende, darunter eine Zusatzzeile.
@@ -180,7 +178,7 @@ describe("Umschalter der Aufteilung", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole("radio", { name: "Unternehmen" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "Assets" })).toBeChecked();
     fireEvent.click(screen.getByRole("radio", { name: "Depotkonten" }));
     expect(screen.getByTestId("ort")).toHaveTextContent("/statistiken/depots?year=2025");
   });
