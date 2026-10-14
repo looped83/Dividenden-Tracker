@@ -220,10 +220,18 @@ export function DataQualityPage() {
               <Copy className="size-5" aria-hidden /> Mögliche Dubletten
             </h2>
             {duplicatePairs.length === 0 ? (
-              <AllClear
-                title="Keine möglichen Dubletten"
-                description="Keine Zahlungen mit gleichem Asset, Depot und Zahlungsdatum."
-              />
+              // Sind alle Paare als „keine Dublette" markiert, ist die Arbeit
+              // erledigt — derselbe Satz wie bei den Auffälligkeiten. Die
+              // Erklärung „keine Zahlungen mit gleichem …" stimmte dann nicht:
+              // Solche Paare gibt es, sie stehen eingeklappt darunter.
+              dismissedPairs.length > 0 ? (
+                <AllClear title="Keine offenen Dubletten" />
+              ) : (
+                <AllClear
+                  title="Keine möglichen Dubletten"
+                  description="Keine Zahlungen mit gleichem Asset, Depot und Zahlungsdatum."
+                />
+              )
             ) : (
               <ul className="space-y-4">
                 {duplicatePairs.map((pair) => (
