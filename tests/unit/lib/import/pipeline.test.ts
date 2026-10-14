@@ -23,7 +23,8 @@ function normalize(amounts: ImportCellValue[]) {
 
 describe("normalizeRows — Beträge", () => {
   it("weist negative Beträge und 0 als fehlerhafte Zeile aus", async () => {
-    const rows = await normalize(["-5,00", "(1,50)", "0,00", 0]);
+    // 0,004 ist zwar positiv, ergibt gerundet aber einen Eingang ueber 0,00 €.
+    const rows = await normalize(["-5,00", "(1,50)", "0,00", 0, "0,0040"]);
 
     for (const row of rows) {
       expect(row.status).toBe("invalid");

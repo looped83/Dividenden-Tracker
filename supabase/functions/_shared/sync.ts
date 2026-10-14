@@ -147,13 +147,51 @@ function stableString(value: unknown): string {
 }
 
 /**
+ * Spalten, die die Datenbank in anderer Schreibweise zurueckgibt, als der
+ * Parser sie erzeugt: `numeric` kommt als JSON-Zahl (51.3 statt "51.30"),
+ * `timestamptz` mit Zeitzonenversatz statt `Z` und ohne Millisekunden
+ * ("2026-07-15T08:00:00+00:00" statt "2026-07-15T08:00:00.000Z"). Als Text
+ * verglichen galt damit jeder Termin mit Betrag oder Uhrzeit bei jedem Lauf
+ * als geaendert und wurde neu geschrieben.
+ */
+const AMOUNT_COLUMNS: ReadonlySet<keyof CalendarEventWrite> = new Set([
+  "expected_amount",
+]);
+const INSTANT_COLUMNS: ReadonlySet<keyof CalendarEventWrite> = new Set([
+  "starts_at",
+  "ends_at",
+  "source_created_at",
+  "source_updated_at",
+]);
+
+/** Dezimalwert ohne nachgestellte Nullen — ohne Umweg ueber Gleitkomma. */
+function canonicalAmount(value: string | number): string {
+  const text = String(value);
+  return text.includes(".") ? text.replace(/0+$/, "").replace(/\.$/, "") : text;
+}
+
+function comparable(key: keyof CalendarEventWrite, value: unknown): string {
+  if (value === null || value === undefined) return "null";
+  if (typeof value === "string" || typeof value === "number") {
+    if (AMOUNT_COLUMNS.has(key)) return canonicalAmount(value);
+    if (INSTANT_COLUMNS.has(key)) {
+      const instant = Date.parse(String(value));
+      if (!Number.isNaN(instant)) return String(instant);
+    }
+  }
+  return stableString(value);
+}
+
+/**
  * Hat sich fachlich etwas geaendert? Nur dann wird geschrieben — sonst wuerde
  * jede Synchronisation `updated_at` aller Termine anfassen und die Historie
  * bereits vergangener Zahltage unnoetig beruehren (Auftrag §5).
  */
 function hasChanged(existing: StoredCalendarEvent, next: CalendarEventWrite): boolean {
   const keys = Object.keys(next) as (keyof CalendarEventWrite)[];
-  return keys.some((key) => stableString(existing[key]) !== stableString(next[key]));
+  return keys.some(
+    (key) => comparable(key, existing[key]) !== comparable(key, next[key]),
+  );
 }
 
 /**
