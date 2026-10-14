@@ -98,12 +98,12 @@ NICHT stillschweigend gleichgesetzt, sondern die Zeile erhält eine sichtbare Vo
 | Eingabe | Regel |
 |---|---|
 | Datum | Erkanntes Format je Datei (nicht je Zeile!); Excel-Serienwerte über SheetJS-Datumsmodus inkl. 1904-Workbooks; Ergebnis ISO `YYYY-MM-DD`; unplausible Daten (< 1970, > heute) → Fehlerzeile |
-| Beträge | String-basiertes Parsen nach erkanntem Zahlenformat → Decimal; niemals `parseFloat`; Tausendertrennzeichen entfernt; `−`/`(123,45)` → negativ; leere Zelle = „nicht angegeben" (nie 0 erzwingen, außer Feld hat Default 0) |
+| Beträge | String-basiertes Parsen nach erkanntem Zahlenformat → Decimal; niemals `parseFloat`; Tausendertrennzeichen entfernt; `−`/`(123,45)` → negativ; leere Zelle = „nicht angegeben" (nie 0 erzwingen, außer Feld hat Default 0); mehr als zwei Nachkommastellen (z. B. Formelwerte) → kaufmännisch gerundet nach R-1 (CALCULATION_RULES.md §3), Zeile mit Hinweis |
 | Währung | Symbol→ISO-Mapping (€→EUR, $→USD nach Rückfrage bei mehrdeutigen Symbolen, £→GBP, CHF, …); Kleinbuchstaben → Großbuchstaben |
 | Text | Trim, NFC-Normalisierung, Mehrfach-Whitespace zusammengefasst; Originalwert bleibt im `row_report` erhalten |
 | Formeln (Excel) | Es zählt der berechnete Wert; Zellen ohne cached value → Fehlerzeile „Formel ohne Ergebniswert" |
 | Leere Zeilen | Klassifiziert als „leer/übersprungen", zählen in der Bilanz als bewusst ausgeschlossen (Kategorie strukturell) |
-| Negative Beträge | Erlaubt nur mit Zahlungsart `correction`/`cancellation` (automatischer Vorschlag, Nutzerbestätigung in Schritt 19) |
+| Negative Beträge | Der Import legt ausschließlich reguläre Eingänge an: Beträge ≤ 0 sind Fehlerzeilen (Korrekturen und Stornos werden nicht importiert). Zahlungsarten `correction`/`cancellation` mit Vorschlag und Nutzerbestätigung sind nicht umgesetzt |
 
 ## 6. Import-Lebenszyklus (Status)
 
