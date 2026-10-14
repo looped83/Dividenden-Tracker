@@ -33,13 +33,15 @@ function p(
     depot?: string;
     created?: string;
     id?: string;
+    /** Tatsaechliches Datum, wenn der Ausschuettungsplan verschiebt (§10). */
+    actual?: string;
   } = {},
 ): AnalyticsPayment {
   seq += 1;
   return {
     id: options.id ?? `id-${String(seq)}`,
     payDate,
-    actualPayDate: payDate,
+    actualPayDate: options.actual ?? payDate,
     netAmount: Money.fromString(net, EUR),
     grossAmount: Money.fromString(net, EUR),
     securityId: options.security ?? "sec-a",
@@ -321,6 +323,26 @@ describe("selectedYearComparison (§6.1/§6.2)", () => {
   it("liefert keinen Vergleich bei 'Alle Jahre'", () => {
     const { prior } = selectedYearComparison(payments, "all", REF_2026_JUL20);
     expect(prior).toBeNull();
+  });
+
+  it("zaehlt eine vorgezogene Zahlung wie die Jahressumme und im Vorjahr gleich", () => {
+    const withEarly = [
+      ...payments,
+      // Am 15.07. eingegangen, laut Plan fuer August: effektiv 01.08.2026.
+      p("2026-08-01", "40", { actual: "2026-07-15" }),
+      // Vorjahr, gleiche Lage: bis zum 20.07.2025 eingegangen — zaehlt.
+      p("2025-08-01", "30", { actual: "2025-07-15" }),
+      // Vorjahr, erst am 25.07.2025 eingegangen — zaehlt nicht.
+      p("2025-08-01", "20", { actual: "2025-07-25" }),
+    ];
+
+    const { current, prior } = selectedYearComparison(withEarly, 2026, REF_2026_JUL20);
+    // Genau die Jahressumme, die die Kachel daneben zeigt.
+    expect(current.toStringValue()).toBe(
+      selectedPeriodAggregate(withEarly, 2026).net.toStringValue(),
+    );
+    expect(current.toStringValue()).toBe("190.00");
+    expect(prior?.toStringValue()).toBe("130.00");
   });
 });
 

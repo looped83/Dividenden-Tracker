@@ -2,10 +2,9 @@ import { EUR, Money, sumMoney, type DecimalInstance } from "@/lib/money";
 import { compareGerman } from "@/lib/utils/compareText";
 import {
   isInRange,
-  isoDate,
+  isoFromRef,
   monthOf,
   priorYearSameDay,
-  ytdRange,
   monthToDateRange,
   priorYearMonthToDateRange,
   yearOf,
@@ -338,6 +337,14 @@ export function selectedPeriodAggregate(
  * Aktueller Wert und Vorjahres-Vergleichswert fuer die Jahresauswahl (§6.1/§6.2).
  * Laufendes Jahr: gleicher YTD-Zeitraum. Abgeschlossenes Jahr: volles Vorjahr.
  * `prior === null` bei „Alle Jahre" (kein Vorjahresvergleich, §5.1).
+ *
+ * Im laufenden Jahr gehoert eine Zahlung zum **effektiven** Jahr (§10), und
+ * „bis heute" grenzt nach dem **tatsaechlichen** Eingang ab: was bis heute
+ * bzw. bis zum gleichen Kalendertag des Vorjahres eingegangen war. Grenzte
+ * das effektive Datum ab, fiele eine vorgezogene Zahlung (effektiv der 1. des
+ * Folgemonats) aus dem Vergleich, stuende aber in der Jahressumme daneben —
+ * die Differenz passte nicht mehr zum angezeigten Betrag. So ist `current`
+ * genau die Jahressumme, und das Vorjahr wird nach derselben Regel gezaehlt.
  */
 export function selectedYearComparison(
   payments: readonly AnalyticsPayment[],
@@ -348,12 +355,14 @@ export function selectedYearComparison(
     return { current: aggregate(payments).net, prior: null };
   }
   if (selection === ref.year) {
-    const current = aggregateInRange(payments, ytdRange(selection, ref)).net;
-    const prior = aggregateInRange(payments, {
-      start: isoDate(selection - 1, 1, 1),
-      end: priorYearSameDay(ref),
-    }).net;
-    return { current, prior };
+    const receivedBy = (year: number, lastDay: string): Money =>
+      aggregate(
+        payments.filter((p) => yearOf(p.payDate) === year && p.actualPayDate <= lastDay),
+      ).net;
+    return {
+      current: receivedBy(selection, isoFromRef(ref)),
+      prior: receivedBy(selection - 1, priorYearSameDay(ref)),
+    };
   }
   const current = aggregateInYear(payments, selection).net;
   const prior = aggregateInYear(payments, selection - 1).net;
