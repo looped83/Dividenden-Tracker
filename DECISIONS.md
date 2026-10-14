@@ -792,6 +792,44 @@ hätte seinen gesamten Bestand storniert und nichts zurückerhalten.
 
 ---
 
+## ADR-004: Versionsnummer nach SemVer, Anhebung durch CI erzwungen
+
+**Status:** Accepted  
+**Scope:** Release
+
+### Decision
+
+Die Fassung steht allein in `package.json` und folgt Semantic Versioning. Jede Änderung, die
+Nutzer erreicht (`src/`, `public/`, `supabase/`, `index.html`), hebt sie an: Patch für
+Fehlerbehebungen, Minor für neue oder spürbar geänderte Funktionen, Major für Brüche (etwa
+Sicherungen, die ältere Fassungen nicht mehr einspielen). Der CI-Job `version` lässt einen
+Pull Request ohne Anhebung nicht durch (`scripts/check-version-bump.mjs`). Startpunkt ist
+**1.5.0** (2026-10-14); zuvor stand die Nummer seit Projektbeginn unverändert auf 0.1.0.
+
+### Why
+
+Die Nummer steht in den Einstellungen und in jeder Sicherungsdatei. Bleibt sie stehen, sagt sie
+nichts — weder welcher Stand auf dem Gerät läuft noch aus welchem eine Sicherung stammt.
+
+### Trade-offs
+
+- Eine von Hand gewählte Stufe statt einer automatisch hochgezählten Build-Nummer: Sie verlangt
+  bei jedem PR eine Entscheidung, sagt dafür aber, **wie viel** sich geändert hat.
+- Zwei offene PRs mit derselben Anhebung kollidieren — der zweite muss nach dem ersten erneut
+  anheben. Das ist gewollt: Jede ausgelieferte Fassung trägt eine eigene Nummer.
+
+### Guardrails
+
+- Verglichen wird mit dem aktuellen Stand der Basis, nicht mit dem Abzweigpunkt.
+- Tests, Doku, CI und Abhängigkeiten allein verlangen keine Anhebung; sie gehen mit der
+  nächsten Änderung an der App hinaus.
+
+### Revisit When
+
+- Fassungen sollen als Git-Tags oder Releases mit Änderungsprotokoll erscheinen.
+
+---
+
 # Superseded Decisions
 
 Move replaced decisions here instead of deleting them.
