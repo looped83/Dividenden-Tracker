@@ -32,7 +32,14 @@ export function DialogContent({
           // ist; die Fusszeile bleibt beim Scrollen stehen (`DialogFooter`).
           // `max-w-lg` gilt ohne Praefix: Auf dem Telefon ist das Panel ohnehin
           // schmaler, und eine Ueberschreibung wirkt so weiter auf allen Breiten.
-          "fixed left-1/2 z-50 grid w-full max-w-lg -translate-x-1/2",
+          //
+          // **Eine Spalte, die nie breiter wird als das Panel.** Die implizite
+          // Spalte eines Grids waechst sonst bis zur Mindestbreite ihres
+          // Inhalts: Eine Vorschautabelle mit vier Spalten zog das ganze Panel
+          // auf dem Telefon auf ~530px, Text lief rechts aus dem Bild, und man
+          // musste seitlich scrollen. Mit `minmax(0,1fr)` bleibt die Breite
+          // beim Panel; Tabellen scrollen in ihrem eigenen Rahmen.
+          "fixed left-1/2 z-50 grid w-full max-w-lg -translate-x-1/2 grid-cols-[minmax(0,1fr)]",
           "bottom-0 max-h-[92dvh] rounded-t-xl",
           "sm:bottom-auto sm:top-1/2 sm:w-[calc(100%-1rem)] sm:max-h-[90vh] sm:-translate-y-1/2 sm:rounded-lg",
           "gap-4 overflow-y-auto border border-border bg-card p-4 shadow-lg sm:p-6",
@@ -96,7 +103,12 @@ export function DialogFooter({ className, ...props }: React.ComponentProps<"div"
         // Der negative Aussenabstand nimmt den unteren Innenabstand des Panels
         // auf: Die Fusszeile schliesst buendig ab und traegt den Abstand zum
         // Home-Indicator selbst — sonst stuende er doppelt darunter.
-        "sticky bottom-0 -mx-4 border-t border-border bg-card px-4 pt-3",
+        //
+        // Derselbe Betrag als negativer `bottom`: `sticky` rechnet vom
+        // Innenabstand des Panels aus, nicht von seiner Kante. Mit `bottom-0`
+        // klebte die Fusszeile so hoch ueber dem Rand, und darunter lief der
+        // Inhalt durchs Bild, solange nicht ganz nach unten gescrollt war.
+        "sticky -bottom-[max(1rem,env(safe-area-inset-bottom))] -mx-4 border-t border-border bg-card px-4 pt-3",
         "-mb-[max(1rem,env(safe-area-inset-bottom))] pb-[max(1rem,env(safe-area-inset-bottom))]",
         "sm:static sm:m-0 sm:border-0 sm:p-0",
         className,

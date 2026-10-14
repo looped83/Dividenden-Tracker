@@ -414,7 +414,10 @@ export function PortfolioImportDialog({
             </dl>
 
             {changesByField.size > 0 && (
-              <fieldset className="space-y-2">
+              // `min-w-0`: Ein fieldset ist von Haus aus mindestens so breit wie
+              // sein Inhalt — die gekuerzten Beispielzeilen darin kuerzten sonst
+              // nicht, sondern zogen den Dialog in voller Laenge auf.
+              <fieldset className="min-w-0 space-y-2">
                 <legend className="text-sm font-medium">Stammdaten ergänzen</legend>
                 <p className="text-xs text-muted-foreground">
                   Vorhandene Werte werden nur ersetzt, wenn die Quelle abweicht. Leere
@@ -523,45 +526,60 @@ export function PortfolioImportDialog({
               </details>
             )}
 
-            <div className="max-h-72 overflow-y-auto">
+            {/* Eigener Bildlauf nur auf breiten Schirmen: Auf dem Telefon
+                scrollt das Panel selbst, eine zweite Scrollbox darin faengt
+                den Daumen ab. Die Hauptaktion steht dort ohnehin fest unten. */}
+            <div className="sm:max-h-72 sm:overflow-y-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Unternehmen</TableHead>
-                    <TableHead>ISIN</TableHead>
+                    <TableHead className="hidden sm:table-cell">ISIN</TableHead>
                     <TableHead className="text-right">Stück</TableHead>
-                    <TableHead>Zuordnung</TableHead>
+                    <TableHead className="hidden sm:table-cell">Zuordnung</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {matched.map((entry) => (
-                    <TableRow key={entry.position.sourceRow}>
-                      <TableCell className="font-medium">
-                        {entry.securityName ?? entry.position.name}
-                        {entry.securityName !== null &&
-                          entry.securityName !== entry.position.name && (
-                            <span className="block text-xs text-muted-foreground">
-                              laut Quelle: {entry.position.name}
-                            </span>
-                          )}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {entry.position.isin}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums text-muted-foreground">
-                        {entry.position.quantity}
-                      </TableCell>
-                      <TableCell>
-                        {entry.securityId === null ? (
-                          <Badge variant={createMissing ? "positive" : "neutral"}>
-                            {createMissing ? "Wird angelegt" : "Übersprungen"}
-                          </Badge>
-                        ) : (
-                          <Badge variant="neutral">{MATCH_LABELS[entry.matchKind]}</Badge>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {matched.map((entry) => {
+                    const assignment =
+                      entry.securityId === null ? (
+                        <Badge variant={createMissing ? "positive" : "neutral"}>
+                          {createMissing ? "Wird angelegt" : "Übersprungen"}
+                        </Badge>
+                      ) : (
+                        <Badge variant="neutral">{MATCH_LABELS[entry.matchKind]}</Badge>
+                      );
+                    return (
+                      <TableRow key={entry.position.sourceRow}>
+                        <TableCell className="font-medium">
+                          {entry.securityName ?? entry.position.name}
+                          {entry.securityName !== null &&
+                            entry.securityName !== entry.position.name && (
+                              <span className="block text-xs font-normal text-muted-foreground">
+                                laut Quelle: {entry.position.name}
+                              </span>
+                            )}
+                          {/* Auf dem Telefon traegt die erste Spalte ISIN und
+                              Zuordnung mit: Vier Spalten liessen dem Namen dort
+                              kaum 100px, lange ETF-Namen standen Wort fuer Wort
+                              untereinander. */}
+                          <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-normal text-muted-foreground sm:hidden">
+                            {entry.position.isin}
+                            {assignment}
+                          </span>
+                        </TableCell>
+                        <TableCell className="hidden text-muted-foreground sm:table-cell">
+                          {entry.position.isin}
+                        </TableCell>
+                        <TableCell className="text-right align-top tabular-nums text-muted-foreground sm:align-middle">
+                          {entry.position.quantity}
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell">
+                          {assignment}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
