@@ -213,6 +213,49 @@ describe("planSync", () => {
     expect(plan.unchanged).toBe(1);
   });
 
+  describe("Zeitstempel des Feeds", () => {
+    /** Derselbe Termin, mit wechselndem DTSTAMP — wie bei jedem Abruf neu gesetzt. */
+    function abruf(dtstamp: string, summary = "Allianz SE 12,50 € Zahltag") {
+      return parse(
+        feed(
+          [
+            "BEGIN:VEVENT",
+            "UID:allianz",
+            `DTSTAMP:${dtstamp}`,
+            "DTSTART;VALUE=DATE:20260815",
+            `SUMMARY:${summary}`,
+            "END:VEVENT",
+          ].join("\r\n"),
+        ),
+      ).events;
+    }
+
+    it("haelt einen Termin, bei dem nur DTSTAMP wechselt, fuer unveraendert", () => {
+      const gestern = toWrite(abruf("20260802T060000Z")[0]);
+      const bestand = [gespeichert("row-1", gestern)];
+
+      const plan = planSync(abruf("20260803T060000Z"), bestand, HEUTE);
+
+      expect(plan.toUpdate).toHaveLength(0);
+      expect(plan.unchanged).toBe(1);
+    });
+
+    it("schreibt den neuen Zeitstempel mit, sobald sich fachlich etwas aendert", () => {
+      const gestern = toWrite(abruf("20260802T060000Z")[0]);
+      const bestand = [gespeichert("row-1", gestern)];
+
+      const plan = planSync(
+        abruf("20260803T060000Z", "Allianz SE 13,10 € Zahltag"),
+        bestand,
+        HEUTE,
+      );
+
+      expect(plan.toUpdate).toHaveLength(1);
+      expect(plan.toUpdate[0].expected_amount).toBe("13.10");
+      expect(plan.toUpdate[0].raw_data["dtstamp"]).toBe("2026-08-03T06:00:00Z");
+    });
+  });
+
   describe("Schreibweise der Datenbank", () => {
     // Mit Uhrzeit, damit auch `starts_at` gefuellt ist.
     const mitBetrag = parse(

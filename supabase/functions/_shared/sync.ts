@@ -160,8 +160,6 @@ const AMOUNT_COLUMNS: ReadonlySet<keyof CalendarEventWrite> = new Set([
 const INSTANT_COLUMNS: ReadonlySet<keyof CalendarEventWrite> = new Set([
   "starts_at",
   "ends_at",
-  "source_created_at",
-  "source_updated_at",
 ]);
 
 /** Dezimalwert ohne nachgestellte Nullen — ohne Umweg ueber Gleitkomma. */
@@ -170,8 +168,36 @@ function canonicalAmount(value: string | number): string {
   return text.includes(".") ? text.replace(/0+$/, "").replace(/\.$/, "") : text;
 }
 
+/**
+ * Zeitstempel des Feeds, die keine fachliche Aenderung tragen. Viele
+ * Kalenderdienste setzen `DTSTAMP` (und teils `CREATED`/`LAST-MODIFIED`) bei
+ * **jedem** Abruf auf die aktuelle Uhrzeit. Verglichen galt damit jeder
+ * Termin bei jedem Lauf als geaendert. Sie werden deshalb nicht verglichen,
+ * aber mitgeschrieben, sobald sich etwas anderes aendert. Gelesen werden sie
+ * in der App nirgends.
+ */
+const METADATA_COLUMNS: ReadonlySet<keyof CalendarEventWrite> = new Set([
+  "source_created_at",
+  "source_updated_at",
+]);
+/** Dieselben Angaben in `raw_data` (Eigenschaftsnamen klein, wie ical.js sie liefert). */
+const METADATA_PROPERTIES: ReadonlySet<string> = new Set([
+  "dtstamp",
+  "created",
+  "last-modified",
+]);
+
+function withoutMetadata(raw: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(raw).filter(([name]) => !METADATA_PROPERTIES.has(name)),
+  );
+}
+
 function comparable(key: keyof CalendarEventWrite, value: unknown): string {
   if (value === null || value === undefined) return "null";
+  if (key === "raw_data" && typeof value === "object" && !Array.isArray(value)) {
+    return stableString(withoutMetadata(value as Record<string, unknown>));
+  }
   if (typeof value === "string" || typeof value === "number") {
     if (AMOUNT_COLUMNS.has(key)) return canonicalAmount(value);
     if (INSTANT_COLUMNS.has(key)) {
@@ -190,7 +216,9 @@ function comparable(key: keyof CalendarEventWrite, value: unknown): string {
 function hasChanged(existing: StoredCalendarEvent, next: CalendarEventWrite): boolean {
   const keys = Object.keys(next) as (keyof CalendarEventWrite)[];
   return keys.some(
-    (key) => comparable(key, existing[key]) !== comparable(key, next[key]),
+    (key) =>
+      !METADATA_COLUMNS.has(key) &&
+      comparable(key, existing[key]) !== comparable(key, next[key]),
   );
 }
 
