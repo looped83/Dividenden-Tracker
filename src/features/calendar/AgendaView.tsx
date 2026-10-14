@@ -27,6 +27,10 @@ import type { CalendarEvent } from "@/lib/calendar/types";
  * Dividendenliste (`ListSection`, `ListGroup`). Einzelne Karten kosteten je
  * Termin zwei Rahmen und eine Lücke.
  *
+ * Rechts neben jeder Abschnittsueberschrift steht die erwartete Summe — wie
+ * die Monatssumme in der Dividendenliste. Fehlt sie (keine Betraege, mehrere
+ * Waehrungen), bleibt die Stelle leer statt eine Null zu behaupten.
+ *
  * Ueberschriftenhierarchie: Die Seite traegt die h1, jeder Abschnitt („Heute",
  * „Diese Woche", „Später") eine h2. Das Datum jeder Zeile steht vollstaendig
  * in ihrer zugaenglichen Bezeichnung.
@@ -45,7 +49,20 @@ export function AgendaView({
   return (
     <div className="space-y-6">
       {sections.map((section) => (
-        <ListSection key={section.key} title={section.label}>
+        <ListSection
+          key={section.key}
+          title={section.label}
+          aside={
+            section.expected ? (
+              <>
+                {/* Vorgelesen als „September 2026 erwartet 64,00 €": Die Summe
+                    ist angekündigt, nicht erhalten. */}
+                <span className="sr-only">erwartet </span>
+                <AmountText amount={section.expected} />
+              </>
+            ) : undefined
+          }
+        >
           <ListGroup>
             {section.days
               .flatMap((day) => day.events)

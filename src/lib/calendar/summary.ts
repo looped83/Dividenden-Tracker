@@ -59,7 +59,8 @@ export function daysBetween(from: string, to: string): number {
   return Math.round((parse(to) - parse(from)) / 86_400_000);
 }
 
-function isCounted(event: CalendarEvent): boolean {
+/** Abgesagte Termine sind keine angekuendigte Zahlung mehr und zaehlen nirgends mit. */
+export function isCounted(event: CalendarEvent): boolean {
   return event.eventState !== "cancelled";
 }
 

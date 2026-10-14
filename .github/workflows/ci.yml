@@ -54,6 +54,23 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ci-placeholder-anon-key
         run: npm run build
 
+  # Jede Aenderung an der App hebt die Versionsnummer (DECISIONS.md ADR-004).
+  # Eigener, kleiner Job: Er braucht die volle Historie fuer den Vergleich mit
+  # der Basis, aber weder Abhaengigkeiten noch ein eigenes Node — das Skript
+  # kommt mit dem Node des Runners aus.
+  version:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Versionsnummer angehoben
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: node scripts/check-version-bump.mjs "origin/$BASE_REF"
+
   e2e-smoke:
     runs-on: ubuntu-24.04
     steps:

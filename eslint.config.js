@@ -101,4 +101,14 @@ export default tseslint.config(
       globals: globals.node,
     },
   },
+  {
+    // Kleine Node-Skripte fuer CI und Werkzeuge: reines JavaScript ausserhalb
+    // des TypeScript-Projekts, deshalb ohne die typgestuetzten Regeln.
+    files: ["scripts/**/*.mjs"],
+    ...tseslint.configs.disableTypeChecked,
+    languageOptions: {
+      ...tseslint.configs.disableTypeChecked.languageOptions,
+      globals: globals.node,
+    },
+  },
 );

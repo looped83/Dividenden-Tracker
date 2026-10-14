@@ -119,6 +119,20 @@ High-quality software is the result of consistently excellent small decisions.
 
 ---
 
+# Versioning
+
+The app version lives only in `package.json`. It is shown in Settings and written into every backup.
+
+Every change that reaches users — anything under `src/`, `public/`, `supabase/` or `index.html` — raises the version (Semantic Versioning):
+
+- Patch (1.5.0 → 1.5.1): bug fixes, wording, small visual corrections.
+- Minor (1.5.1 → 1.6.0): new features or noticeable changes to existing ones.
+- Major (1.x → 2.0.0): breaking changes, e.g. backups that older versions cannot restore.
+
+Bump with `npm version <patch|minor|major> --no-git-tag-version`. CI enforces it on pull requests (`scripts/check-version-bump.mjs`, DECISIONS.md ADR-004).
+
+---
+
 # Communication
 
 Be concise.

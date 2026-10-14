@@ -11,15 +11,16 @@
  *    `count` der Datenbank geprueft. Eine fehlende Sicherung ist harmlos,
  *    eine unvollstaendige nicht — und man sieht ihr nichts an.
  * 2. **Erfolg heisst: Datei liegt vor.** `createBackup` erzeugt nur die
- *    Daten; erst {@link downloadBackup} macht sie zur Sicherung. Die
- *    Oberflaeche meldet Erfolg deshalb erst nach dem Herunterladen und
- *    schreibt erst dann `profiles.last_backup_at`.
+ *    Daten; erst {@link downloadBackup} macht sie zur Sicherung und haelt
+ *    dabei `profiles.last_backup_at` fest. Die Oberflaeche meldet Erfolg
+ *    deshalb erst danach.
  */
 
 import Decimal from "decimal.js";
 import { supabase } from "@/lib/supabase/client";
 import { fetchAllPages } from "@/lib/supabase/fetchAllPages";
 import { downloadBlob } from "@/lib/utils/downloadBlob";
+import { isoFromRef, refDateFromDate } from "@/lib/statistics/dates";
 import type { Database } from "@/lib/supabase/database.types";
 import {
   BACKUP_FORMAT,
@@ -801,10 +802,10 @@ export async function createBackup(
       integrity,
     };
 
-    // Generate filename
-    const now = new Date();
-    const dateStr = now.toISOString().split("T")[0]; // YYYY-MM-DD
-    const fileName = `dividend-tracker-backup-${dateStr}.json`;
+    // Der Kalendertag des Geraets, nicht der in UTC: Sonst trug eine
+    // Sicherung kurz nach Mitternacht das Datum des Vortags — der Export
+    // rechnet bereits so.
+    const fileName = `dividend-tracker-backup-${isoFromRef(refDateFromDate())}.json`;
 
     return {
       success: true,
@@ -824,33 +825,59 @@ export async function createBackup(
 // Herunterladen und Sicherungszeitpunkt
 // ============================================================================
 
-/** Bietet die Sicherung als Datei zum Herunterladen an (iOS-sicher, siehe `downloadBlob`). */
-export function downloadBackup(backup: BackupRoot, fileName: string): void {
-  const json = JSON.stringify(backup, null, 2);
-  downloadBlob(new Blob([json], { type: "application/json" }), fileName);
+/**
+ * Uebergibt die Sicherung als Datei und haelt ihren Zeitpunkt fest
+ * (`profiles.last_backup_at`, BACKUP_AND_RESTORE.md §4). Liefert den
+ * gespeicherten Zeitpunkt — oder `null`, wenn er nicht geschrieben werden
+ * konnte. Die Datei wird in jedem Fall uebergeben: Sie ist die Sicherung, der
+ * Zeitpunkt nur ihr Vermerk.
+ *
+ * **Erst schreiben, dann uebergeben.** Zuvor wurde der Zeitpunkt nach dem
+ * Herunterladen geschrieben — auf dem iPhone kam dieser Schreibzugriff nie an
+ * (Serverprotokoll: nach jeder Sicherung nur Lesezugriffe), und „Zuletzt
+ * gesichert" blieb stehen. Was nach der Uebergabe an den Download-Dialog
+ * laeuft, ist dort nicht verlaesslich. Deshalb entsteht die Datei zuerst — was
+ * scheitern kann (Serialisierung), scheitert vor dem Schreiben —, danach folgt
+ * nur noch der Klick (iOS-sicher, siehe `downloadBlob`).
+ *
+ * Ob die Datei anschliessend auch gespeichert wird, kann keine Webseite
+ * wissen; der Dialog gehoert dem Browser. Der Vermerk steht deshalb fuer
+ * „Datei uebergeben", wie zuvor auch.
+ */
+export async function downloadBackup(
+  backup: BackupRoot,
+  fileName: string,
+): Promise<string | null> {
+  const file = new Blob([JSON.stringify(backup, null, 2)], {
+    type: "application/json",
+  });
+  const recordedAt = await markBackupCompleted();
+  downloadBlob(file, fileName);
+  return recordedAt;
 }
 
 /**
- * Haelt den Zeitpunkt der letzten Sicherung fest (`profiles.last_backup_at`,
- * BACKUP_AND_RESTORE.md §4). Wird **nur** nach dem tatsaechlichen Herunterladen
- * aufgerufen — ein erzeugter, aber nie gespeicherter Datensatz ist keine
- * Sicherung.
- *
- * Ein Fehler hierbei bleibt folgenlos fuer die Sicherung selbst: Die Datei
- * liegt bereits vor. Er wird deshalb gemeldet, aber nicht als Fehlschlag
- * behandelt.
+ * Schreibt den Sicherungszeitpunkt und liest ihn in derselben Anfrage zurueck:
+ * Ein Update, das wegen RLS keine Zeile trifft, meldet keinen Fehler — erst
+ * die fehlende Zeile verraet es. Scheitert etwas, bleibt es bei `null`; die
+ * Oberflaeche meldet es, die Sicherung selbst ist davon nicht betroffen.
  */
-export async function markBackupCompleted(): Promise<{ at: string } | null> {
-  const userId = await currentUserId();
-  if (!userId) return null;
+async function markBackupCompleted(): Promise<string | null> {
+  try {
+    const userId = await currentUserId();
+    if (!userId) return null;
 
-  const at = getCurrentTimestamp();
-  const { error } = await supabase
-    .from("profiles")
-    .update({ last_backup_at: at })
-    .eq("id", userId);
-  if (error) return null;
-  return { at };
+    const { data, error } = await supabase
+      .from("profiles")
+      .update({ last_backup_at: getCurrentTimestamp() })
+      .eq("id", userId)
+      .select("last_backup_at")
+      .single();
+    if (error) return null;
+    return data.last_backup_at;
+  } catch {
+    return null;
+  }
 }
 
 /** Liest den Zeitpunkt der letzten Sicherung fuer die Anzeige im Bereich. */

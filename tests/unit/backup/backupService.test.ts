@@ -170,6 +170,24 @@ function makeQuery(table: string, options?: { count?: string; head?: boolean }) 
   return query;
 }
 
+/**
+ * Was beim Herunterladen in welcher Reihenfolge geschieht, und was das
+ * Schreiben des Sicherungszeitpunkts antwortet.
+ */
+const herunterladen = vi.hoisted(() => {
+  const antwort: {
+    data: { last_backup_at: string } | null;
+    error: { message: string } | null;
+  } = { data: null, error: null };
+  return { ablauf: [] as string[], antwort };
+});
+
+vi.mock("@/lib/utils/downloadBlob", () => ({
+  downloadBlob: (_blob: Blob, fileName: string) => {
+    herunterladen.ablauf.push(`uebergeben:${fileName}`);
+  },
+}));
+
 vi.mock("@/lib/supabase/client", () => ({
   supabase: {
     auth: {
@@ -179,12 +197,21 @@ vi.mock("@/lib/supabase/client", () => ({
     from: (table: string) => ({
       select: (_columns: string, options?: { count?: string; head?: boolean }) =>
         makeQuery(table, options),
-      update: () => ({ eq: () => Promise.resolve({ error: null }) }),
+      update: () => ({
+        eq: () => ({
+          select: () => ({
+            single: () => {
+              herunterladen.ablauf.push("schreiben");
+              return Promise.resolve(herunterladen.antwort);
+            },
+          }),
+        }),
+      }),
     }),
   },
 }));
 
-const { createBackup } = await import("@/lib/backup/backupService");
+const { createBackup, downloadBackup } = await import("@/lib/backup/backupService");
 const { parseBackupSafe, validateBackupIntegrity } =
   await import("@/lib/backup/backupFormat");
 
@@ -711,5 +738,43 @@ describe("createBackup — Fehlerfaelle", () => {
 
     expect(result.success).toBe(false);
     expect(result.errorDetails).toMatch(/von 5 Depotstände/);
+  });
+});
+
+describe("downloadBackup — Sicherungszeitpunkt", () => {
+  beforeEach(() => {
+    herunterladen.ablauf = [];
+  });
+
+  async function sicherung() {
+    tables["dividend_payments"] = paymentRows(1);
+    const result = await createBackup();
+    if (!result.backup || !result.fileName) throw new Error("keine Sicherung");
+    return { backup: result.backup, fileName: result.fileName };
+  }
+
+  it("hält den Zeitpunkt fest, bevor die Datei übergeben wird", async () => {
+    // Auf dem iPhone kam ein Schreibzugriff **nach** dem Download-Dialog nie
+    // an — „Zuletzt gesichert" blieb stehen. Die Reihenfolge ist der Fix.
+    herunterladen.antwort = {
+      data: { last_backup_at: "2026-10-14T20:58:35.123+00:00" },
+      error: null,
+    };
+    const { backup, fileName } = await sicherung();
+
+    const recordedAt = await downloadBackup(backup, fileName);
+
+    expect(herunterladen.ablauf).toEqual(["schreiben", `uebergeben:${fileName}`]);
+    expect(recordedAt).toBe("2026-10-14T20:58:35.123+00:00");
+  });
+
+  it("übergibt die Datei auch, wenn das Schreiben scheitert", async () => {
+    herunterladen.antwort = { data: null, error: { message: "Load failed" } };
+    const { backup, fileName } = await sicherung();
+
+    const recordedAt = await downloadBackup(backup, fileName);
+
+    expect(herunterladen.ablauf).toContain(`uebergeben:${fileName}`);
+    expect(recordedAt).toBeNull();
   });
 });

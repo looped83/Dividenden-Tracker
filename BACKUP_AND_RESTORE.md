@@ -76,9 +76,12 @@ Wiederherstellung hält sich daran (§5.2/§5.3).
 
 ## 3. Backup-Erinnerung und Status
 
-- `last_backup_at` wird **nur** nach vollständig erzeugtem und heruntergeladenem JSON-Export
-  gesetzt (`markBackupCompleted` in `src/lib/backup/backupService.ts`). Eine Wiederherstellung
-  setzt den Wert ausdrücklich nicht — sie ist keine Sicherung (ADR-003).
+- `last_backup_at` wird **nur** gesetzt, wenn der JSON-Export vollständig erzeugt ist und als
+  Datei übergeben wird (`downloadBackup` in `src/lib/backup/backupService.ts`) — und zwar
+  unmittelbar **vor** der Übergabe: Auf dem iPhone kam ein Schreibzugriff nach dem
+  Download-Dialog nicht mehr an, „Zuletzt gesichert" blieb stehen (behoben am 2026-10-14).
+  Scheitert das Schreiben, wird die Datei trotzdem übergeben und der Fehlschlag gemeldet. Eine
+  Wiederherstellung setzt den Wert ausdrücklich nicht — sie ist keine Sicherung (ADR-003).
 - Der Bereich „Datensicherung" und die Einstellungen zeigen den Stand als Satz
   („Zuletzt gesichert: vor 12 Tagen (17.7.2026)"), abgeleitet in
   `src/features/backup/hooks.ts`.
