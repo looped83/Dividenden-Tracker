@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  anomalyKey,
   detectAnomalies,
   findDuplicatePairs,
   pairKey,
@@ -96,7 +97,7 @@ describe("detectAnomalies (§18)", () => {
     expect(anomalies.some((x) => x.code === "import_without_reference")).toBe(true);
   });
 
-  it("meldet einen ungewöhnlich hohen Betrag relativ zum Unternehmen", () => {
+  it("meldet einen ungewöhnlich hohen Betrag relativ zum Asset", () => {
     const rows = [
       payment({ id: "a", net_amount: "10.00" }),
       payment({ id: "b", net_amount: "11.00" }),
@@ -110,6 +111,61 @@ describe("detectAnomalies (§18)", () => {
     expect(
       anomalies.some((x) => x.code === "unusually_high" && x.payment.id === "a"),
     ).toBe(false);
+  });
+
+  /** Monatliche Zahlungen eines Assets in zeitlicher Folge. */
+  function reihe(betraege: string[]): PaymentLike[] {
+    return betraege.map((net_amount, index) =>
+      payment({
+        id: `m${String(index).padStart(2, "0")}`,
+        pay_date: `2025-${String(index + 1).padStart(2, "0")}-15`,
+        net_amount,
+      }),
+    );
+  }
+
+  it("meldet eine aufgestockte Position nicht als ungewöhnlich hoch", () => {
+    // Sparplan: aus 5 € werden 35 € und dann 80 € — gemessen am Median der
+    // ganzen Historie war jede neue Zahlung „auffällig".
+    const anomalies = detectAnomalies(
+      reihe([
+        "5.10",
+        "5.30",
+        "5.20",
+        "5.40",
+        "5.00",
+        "5.20",
+        "35.00",
+        "42.00",
+        "38.00",
+        "80.00",
+      ]),
+      today,
+    );
+    expect(anomalies.filter((x) => x.code === "unusually_high")).toEqual([]);
+  });
+
+  it("meldet einen Ausreißer gegenüber den Zahlungen davor und danach", () => {
+    // Ein Tippfehler: 742,00 statt 74,20.
+    const anomalies = detectAnomalies(
+      reihe(["70.10", "72.30", "73.00", "742.00", "74.80", "75.10", "76.00"]),
+      today,
+    );
+    expect(
+      anomalies.filter((x) => x.code === "unusually_high").map((x) => x.payment.id),
+    ).toEqual(["m03"]);
+  });
+
+  it("nimmt eine als Sonderdividende erfasste Zahlung aus", () => {
+    const rows = reihe(["10.00", "11.00", "9.00", "500.00"]);
+    rows[3] = { ...rows[3], payment_type: "special" };
+    const anomalies = detectAnomalies(rows, today);
+    expect(anomalies.some((x) => x.code === "unusually_high")).toBe(false);
+  });
+
+  it("liefert je Befund einen stabilen Schlüssel aus Eingang und Art", () => {
+    const [befund] = detectAnomalies([payment({ id: "a", net_amount: "0.00" })], today);
+    expect(befund.key).toBe(anomalyKey("a", "zero_amount"));
   });
 
   it("meldet keinen ungewöhnlich hohen Betrag ohne genügend Vergleichsdaten", () => {

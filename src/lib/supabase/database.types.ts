@@ -652,6 +652,23 @@ export interface Database {
         Update: never; // unveraenderlich: nur anlegen oder loeschen (Widerruf)
         Relationships: [];
       };
+      anomaly_reviews: {
+        Row: {
+          id: string;
+          user_id: string;
+          payment_id: string;
+          code: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string;
+          payment_id: string;
+          code: string;
+        };
+        Update: never; // unveraenderlich: nur anlegen oder loeschen (Widerruf)
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {

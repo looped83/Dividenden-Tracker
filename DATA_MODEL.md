@@ -476,6 +476,21 @@ UPDATE (Einträge sind unveränderlich, Widerruf per DELETE). Kein Bezug am
 Dividendeneingang selbst — die Dublettenerkennung bleibt eine jederzeit neu
 berechenbare Ableitung.
 
+### `anomaly_reviews` (0033)
+
+Als „geprüft, in Ordnung" markierte Auffälligkeiten (Datenqualität, D-6-4).
+
+| Spalte      | Typ           | Beschreibung |
+|-------------|---------------|--------------|
+| id          | uuid PK       | |
+| user_id     | uuid not null | Eigentümer (RLS, enforce_user_id-Trigger) |
+| payment_id  | uuid not null | FK `dividend_payments(id)` **on delete cascade**; muss dem Nutzer gehören (`enforce_own_payment`) |
+| code        | text not null | Art der Auffälligkeit (`AnomalyCode`, z. B. `unusually_high`) |
+| created_at  | timestamptz   | |
+
+Unique `(user_id, payment_id, code)`. RLS wie `duplicate_dismissals`; kein UPDATE.
+Nicht Teil der Sicherung — Arbeitsstand der Ansicht, kein Bestand.
+
 ---
 
 ## Dividendenkalender (Migration 0027)

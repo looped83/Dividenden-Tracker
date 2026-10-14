@@ -144,3 +144,61 @@ describe("duplicate_dismissals RLS (§16, D-6-4)", () => {
     ).rejects.toThrow(/user_id muss auth.uid/);
   });
 });
+
+describe("anomaly_reviews RLS (Datenqualität, D-6-4)", () => {
+  async function seedOwnPayment(user: string, name: string) {
+    return asUser(user, async (c) => {
+      const depotId = await seedDepot(c, `Depot ${name}`);
+      const securityId = await seedSecurity(c, { name });
+      return seedPayment(c, { securityId, depotId, payDate: "2025-05-05" });
+    });
+  }
+
+  it("A markiert eine eigene Auffälligkeit; B sieht die Markierung nicht", async () => {
+    const payment = await seedOwnPayment(userA, "Geprüft AG");
+    await asUser(userA, (c) =>
+      c.query("insert into anomaly_reviews (payment_id, code) values ($1, $2)", [
+        payment.id,
+        "unusually_high",
+      ]),
+    );
+
+    const own = await asUser(userA, (c) =>
+      c.query("select code from anomaly_reviews where payment_id = $1", [payment.id]),
+    );
+    expect(own.rowCount).toBe(1);
+
+    const foreign = await asUser(userB, (c) =>
+      c.query("select code from anomaly_reviews where payment_id = $1", [payment.id]),
+    );
+    expect(foreign.rowCount).toBe(0);
+  });
+
+  it("verweigert die Markierung eines fremden Eingangs", async () => {
+    const payment = await seedOwnPayment(userA, "Fremd geprüft AG");
+    await expect(
+      asUser(userB, (c) =>
+        c.query("insert into anomaly_reviews (payment_id, code) values ($1, $2)", [
+          payment.id,
+          "zero_amount",
+        ]),
+      ),
+    ).rejects.toThrow(/gehoert nicht zum eigenen Bestand/);
+  });
+
+  it("verschwindet mit dem gelöschten Eingang", async () => {
+    const payment = await seedOwnPayment(userA, "Gelöscht AG");
+    await asUser(userA, async (c) => {
+      await c.query("insert into anomaly_reviews (payment_id, code) values ($1, $2)", [
+        payment.id,
+        "zero_amount",
+      ]);
+      await c.query("delete from dividend_payments where id = $1", [payment.id]);
+    });
+
+    const rest = await asUser(userA, (c) =>
+      c.query("select 1 from anomaly_reviews where payment_id = $1", [payment.id]),
+    );
+    expect(rest.rowCount).toBe(0);
+  });
+});

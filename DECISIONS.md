@@ -394,8 +394,13 @@ Datenqualitätsansicht (`duplicate_dismissals`). Sonst müsste dieselbe Entschei
 bei jedem Aufruf neu getroffen werden. Widerrufbar: Markierte Paare stehen eingeklappt
 darunter und lassen sich einzeln zurücknehmen.
 
-*Beleg:* `0020_phase6_delete_and_duplicate_review.sql`,
-`repositories/duplicateDismissals.ts`.
+Seit 2026-10-14 gilt dasselbe für **auffällige Datensätze** („In Ordnung“,
+`anomaly_reviews`, je Eingang und Art der Auffälligkeit). Die Zeile verweist per
+Fremdschlüssel auf den Eingang und verschwindet mit ihm. Beide Tabellen sind
+Arbeitsstand der Ansicht, kein Bestand — sie stehen deshalb nicht in der Sicherung.
+
+*Beleg:* `0020_phase6_delete_and_duplicate_review.sql`, `0033_anomaly_reviews.sql`,
+`repositories/duplicateDismissals.ts`, `repositories/anomalyReviews.ts`.
 
 ## D-6-5: Auffälligkeiten benennen, nie automatisch handeln
 
