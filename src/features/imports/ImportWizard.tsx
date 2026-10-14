@@ -58,6 +58,7 @@ import type {
   BrokerDecision,
 } from "@/lib/import/types";
 import { formatTimestampDate } from "@/lib/utils/formatDate";
+import { isoFromRef, refDateFromDate } from "@/lib/statistics";
 
 function eur(canonical: string): string {
   return formatMoney(Money.fromString(canonical, EUR));
@@ -238,7 +239,7 @@ export function ImportWizard({ onFinished }: { onFinished: () => void }) {
           date1904: data.date1904,
           currency: "EUR",
           minDate: "1970-01-01",
-          maxDate: new Date().toISOString().slice(0, 10),
+          maxDate: isoFromRef(refDateFromDate()),
         },
       );
       const secForMatch = existingSecurities.map((s) => ({

@@ -538,7 +538,7 @@ unten — in die Richtung, in der ein Bildschirm nachgibt.
 ## Phase 6 – Validierung und Datenqualität
 
 **Zahlungsdatum.** Gültiges Kalenderdatum, ≥ 1970-01-01 und ≤ heute (lokal,
-ohne Zeitzonenverschiebung; entspricht dem DB-CHECK `pay_date <= current_date`).
+ohne Zeitzonenverschiebung; entspricht dem DB-CHECK `pay_date <= heute in Europe/Berlin`, 0032).
 Zukünftige Zahlungsdaten werden abgelehnt.
 
 **Nettobetrag.** Decimal-sicher (`lib/money`, keine JS-Float-Arithmetik):
