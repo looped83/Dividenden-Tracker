@@ -436,6 +436,32 @@ describe("Erwartete Beträge aus dem Feed", () => {
     expect(screen.getAllByText(/aus 2 Terminen/).length).toBeGreaterThan(0);
   });
 
+  it("nennt die erwartete Summe rechts neben jedem Abschnitt", () => {
+    zustand.events = [
+      mitBetrag("1", "2026-08-13", "Verizon", "51.37"),
+      mitBetrag("2", "2026-08-20", "Allianz", "12.63"),
+      mitBetrag("3", "2026-09-15", "Apple", "10.00"),
+      // Abgesagt: bleibt in der Liste sichtbar, zaehlt aber nicht mit.
+      { ...mitBetrag("4", "2026-09-20", "Abgesagt AG", "5.00"), eventState: "cancelled" },
+      // Ohne Betrag: Der Abschnitt nennt keine Summe statt einer Null.
+      event({ id: "5", date: "2026-10-01", title: "Ohne Betrag AG" }),
+    ];
+    renderPage("agenda");
+
+    // Wie die Monatssumme der Dividendenliste — und als „erwartet" vorgelesen.
+    // jsdom fuegt zwischen den Teilen keine Leerzeichen ein (kein Layout), der
+    // Browser schon; die Pruefung laesst beides zu.
+    expect(
+      screen.getByRole("heading", { name: /^Später im August\s*erwartet\s*64,00\s€$/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /^September 2026\s*erwartet\s*10,00\s€$/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Oktober 2026", level: 2 }),
+    ).toBeInTheDocument();
+  });
+
   it("weist aus, wenn nicht jeder Termin einen Betrag mitbringt", () => {
     zustand.events = [
       mitBetrag("1", "2026-08-13", "Verizon", "51.37"),

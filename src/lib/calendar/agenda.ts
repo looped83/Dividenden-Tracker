@@ -1,5 +1,7 @@
+import type { Money } from "@/lib/money";
 import { monthNameDe } from "@/lib/statistics";
 import { addDays, groupByDate, weekdayIndex } from "./month";
+import { expectedTotalOf, isCounted } from "./summary";
 import type { CalendarEvent } from "./types";
 
 /**
@@ -28,6 +30,12 @@ export interface AgendaSection {
   key: string;
   label: string;
   days: AgendaDay[];
+  /**
+   * Summe der erwarteten Betraege des Abschnitts — dieselbe Regel wie im
+   * Kennzahlkopf: ohne abgesagte Termine, leer ohne Betraege oder bei
+   * verschiedenen Waehrungen (`expectedTotalOf`).
+   */
+  expected: Money | null;
 }
 
 /** „September 2026" aus einem ISO-Datum. */
@@ -61,7 +69,7 @@ export function buildAgenda(
   // Die Termine sind chronologisch sortiert, `groupByDate` behaelt diese
   // Reihenfolge bei — die Abschnitte entstehen dadurch bereits in der
   // richtigen Folge, ohne eigene Sortierung.
-  const sections = new Map<string, AgendaSection>();
+  const sections = new Map<string, Omit<AgendaSection, "expected">>();
   const add = (key: string, label: string, day: AgendaDay) => {
     const section = sections.get(key);
     if (section) section.days.push(day);
@@ -79,5 +87,9 @@ export function buildAgenda(
     else add(date.slice(0, 7), monthLabel(date), day);
   }
 
-  return [...sections.values()];
+  return [...sections.values()].map((section) => ({
+    ...section,
+    expected: expectedTotalOf(section.days.flatMap((day) => day.events).filter(isCounted))
+      .total,
+  }));
 }
