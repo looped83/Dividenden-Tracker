@@ -14,6 +14,7 @@ import { AuditTrail } from "@/components/audit/AuditTrail";
 import { Money, toCurrencyCode, toGermanDecimalString } from "@/lib/money";
 import { cn } from "@/lib/utils/cn";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
+import { useToast } from "@/components/ui/toast";
 import { useDepots } from "@/features/depots/hooks";
 import { useSecurities } from "@/features/securities/hooks";
 import {
@@ -62,6 +63,7 @@ export function PaymentDetailPage() {
   const archivePayment = useArchivePayment();
   const unarchivePayment = useUnarchivePayment();
   const deletePayment = useDeletePayment();
+  const { notify } = useToast();
 
   const [stornoOpen, setStornoOpen] = React.useState(false);
   const [stornoReason, setStornoReason] = React.useState("");
@@ -201,8 +203,22 @@ export function PaymentDetailPage() {
                 variant="outline"
                 size="icon"
                 aria-label="Reaktivieren"
+                disabled={unarchivePayment.isPending}
                 onClick={() => {
-                  void unarchivePayment.mutateAsync(payment.id);
+                  unarchivePayment.mutate(payment.id, {
+                    onSuccess: () => {
+                      notify("Dividendeneingang reaktiviert.");
+                    },
+                    onError: (error) => {
+                      notify(
+                        getErrorMessage(
+                          error,
+                          "Der Eingang konnte nicht reaktiviert werden.",
+                        ),
+                        "negative",
+                      );
+                    },
+                  });
                 }}
               >
                 <RotateCcw />

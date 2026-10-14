@@ -48,6 +48,7 @@ import {
   type DepotFormValues,
   type PortfolioFormValues,
 } from "@/features/depots/schemas";
+import { useArchiveToggle } from "@/components/domain/useArchiveToggle";
 import type { Depot } from "@/lib/supabase/repositories/depots";
 import type { Portfolio } from "@/lib/supabase/repositories/portfolios";
 
@@ -288,8 +289,8 @@ function ManagedRow({
 export function DepotsPage() {
   const { data: portfolios = [] } = usePortfolios();
   const { data: depots = [], isLoading } = useDepots();
-  const archiveDepot = useArchiveDepot();
-  const archivePortfolio = useArchivePortfolio();
+  const toggleDepot = useArchiveToggle(useArchiveDepot());
+  const togglePortfolio = useArchiveToggle(useArchivePortfolio());
 
   const [showArchived, setShowArchived] = React.useState(false);
   const [depotDialog, setDepotDialog] = React.useState<{
@@ -333,12 +334,9 @@ export function DepotsPage() {
             ? `Portfolio ${portfolio.name} reaktivieren`
             : `Portfolio ${portfolio.name} archivieren`
         }
-        onClick={() =>
-          void archivePortfolio.mutateAsync({
-            id: portfolio.id,
-            archived: Boolean(portfolio.archived_at),
-          })
-        }
+        onClick={() => {
+          togglePortfolio(portfolio, `Portfolio „${portfolio.name}“`);
+        }}
       >
         {portfolio.archived_at ? <RotateCcw /> : <ArchiveIcon />}
       </Button>
@@ -365,12 +363,9 @@ export function DepotsPage() {
             ? `Depot ${depot.name} reaktivieren`
             : `Depot ${depot.name} archivieren`
         }
-        onClick={() =>
-          void archiveDepot.mutateAsync({
-            id: depot.id,
-            archived: Boolean(depot.archived_at),
-          })
-        }
+        onClick={() => {
+          toggleDepot(depot, `Depot „${depot.name}“`);
+        }}
       >
         {depot.archived_at ? <RotateCcw /> : <ArchiveIcon />}
       </Button>

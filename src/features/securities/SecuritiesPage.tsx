@@ -35,6 +35,7 @@ import { SkeletonRows } from "@/components/ui/skeleton";
 import { ListGroup, ListRow } from "@/components/ui/list";
 import { cn } from "@/lib/utils/cn";
 import { useDepots } from "@/features/depots/hooks";
+import { useArchiveToggle } from "@/components/domain/useArchiveToggle";
 import {
   Table,
   TableBody,
@@ -95,7 +96,7 @@ export function SecuritiesPage() {
     () => new Map(depots.map((depot) => [depot.id, depot])),
     [depots],
   );
-  const archiveSecurity = useArchiveSecurity();
+  const toggleArchive = useArchiveToggle(useArchiveSecurity());
   const [showArchived, setShowArchived] = React.useState(false);
   const [sectorFilter, setSectorFilter] = React.useState("");
   const [currencyFilter, setCurrencyFilter] = React.useState("");
@@ -199,12 +200,9 @@ export function SecuritiesPage() {
       onEdit={() => {
         setDialog({ open: true, security });
       }}
-      onArchive={() =>
-        void archiveSecurity.mutateAsync({
-          id: security.id,
-          archived: Boolean(security.archived_at),
-        })
-      }
+      onArchive={() => {
+        toggleArchive(security, `„${security.name}“`);
+      }}
       onDelete={() => {
         setDeleteTarget(security);
       }}

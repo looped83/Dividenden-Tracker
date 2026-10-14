@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
+import { ToastProvider } from "@/components/ui/toast";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { EUR, Money } from "@/lib/money";
 import type { AnalyticsPayment } from "@/lib/statistics";
@@ -72,7 +73,7 @@ vi.mock("@/features/securities/hooks", () => ({
   // erhaltenen Eingaengen.
   useSecuritySnapshots: () => ({ data: [], isLoading: false }),
   // Bearbeiten, Archivieren und Loeschen stehen im Kopf der Seite.
-  useArchiveSecurity: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useArchiveSecurity: () => ({ mutate: vi.fn(), isPending: false }),
   useDeleteSecurity: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useCreateSecurity: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useUpdateSecurity: () => ({ mutateAsync: vi.fn(), isPending: false }),
@@ -85,11 +86,13 @@ const { SecurityDetailPage } = await import("@/features/securities/SecurityDetai
 
 function renderPage(id = SECURITY_ID) {
   return render(
-    <MemoryRouter initialEntries={[`/depot/${id}`]}>
-      <Routes>
-        <Route path="/depot/:id" element={<SecurityDetailPage />} />
-      </Routes>
-    </MemoryRouter>,
+    <ToastProvider>
+      <MemoryRouter initialEntries={[`/depot/${id}`]}>
+        <Routes>
+          <Route path="/depot/:id" element={<SecurityDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    </ToastProvider>,
   );
 }
 

@@ -44,6 +44,7 @@ import { PaymentListItem } from "@/features/payments/PaymentListItem";
 import { PositionCard } from "@/features/securities/PositionCard";
 import { latestAsOf, statusOf } from "@/features/securities/snapshots";
 import { useDepots } from "@/features/depots/hooks";
+import { useArchiveToggle } from "@/components/domain/useArchiveToggle";
 import { deriveDataQuality } from "@/features/securities/dataQuality";
 
 /**
@@ -77,6 +78,7 @@ export function SecurityDetailPage() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
   const archiveSecurity = useArchiveSecurity();
+  const toggleArchive = useArchiveToggle(archiveSecurity);
   const [editOpen, setEditOpen] = React.useState(false);
   const [deleteOpen, setDeleteOpen] = React.useState(false);
   const { payments, paymentsQuery } = useEffectivePayments();
@@ -215,9 +217,10 @@ export function SecurityDetailPage() {
               variant="outline"
               size="icon"
               aria-label={archived ? "Reaktivieren" : "Archivieren"}
-              onClick={() =>
-                void archiveSecurity.mutateAsync({ id: security.id, archived })
-              }
+              disabled={archiveSecurity.isPending}
+              onClick={() => {
+                toggleArchive(security, `„${security.name}“`);
+              }}
             >
               {archived ? <RotateCcw /> : <Archive />}
             </Button>
