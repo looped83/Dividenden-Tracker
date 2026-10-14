@@ -830,6 +830,9 @@ nichts — weder welcher Stand auf dem Gerät läuft noch aus welchem eine Siche
 - Verglichen wird mit dem aktuellen Stand der Basis, nicht mit dem Abzweigpunkt.
 - Tests, Doku, CI und Abhängigkeiten allein verlangen keine Anhebung; sie gehen mit der
   nächsten Änderung an der App hinaus.
+- Jeder PR hebt für sich an — auch ein zweiter PR vom selben Branch, nachdem der erste
+  bereits gemergt ist (so geschehen bei #156: Datenqualität und „Asset“ gingen ohne
+  Anhebung als 1.5.0 hinaus und wurden mit 1.6.0 nachgezogen).
 
 ### Revisit When
 
