@@ -1,18 +1,21 @@
-import { StatCard, StatGrid } from "@/components/domain/StatCard";
+import { KpiHero } from "@/components/domain/KpiHero";
 import { AmountText } from "@/components/money/AmountText";
 import { monthNameDe } from "@/lib/statistics";
 import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
-import { formatCalendarDate } from "@/lib/utils/formatDate";
+import { formatDayMonth } from "@/lib/utils/formatDate";
 import { relativeDayLabel } from "@/lib/calendar/format";
 import type { CalendarSummary as Summary, ExpectedTotal } from "@/lib/calendar/summary";
 
 /**
- * Kennzahlen über der Liste — dieselbe `StatCard` wie auf der Übersicht, damit
- * Kacheln in der ganzen App gleich aussehen.
+ * Kennzahlkopf des Kalenders — derselbe `KpiHero` wie auf der Übersicht und
+ * in den anderen Bereichen. Die Hauptzahl beantwortet die Frage, mit der man
+ * den Kalender öffnet: Was kommt in den nächsten 30 Tagen? Nächster Zahltag
+ * und der laufende Monat stehen darunter. Die frühere Kachel „Unternehmen mit
+ * kommenden Zahltagen" entfällt — die Liste darunter zeigt sie.
  *
  * Die Beträge sind die **angekündigten** der Kalenderquelle, nicht erhaltene
  * Zahlungen und keine Schätzung dieser App (PRODUCT_SPEC.md Grundsatz 8). Nennt
- * die Quelle für einen Termin keinen Betrag, fehlt er auch hier — die Kachel
+ * die Quelle für einen Termin keinen Betrag, fehlt er auch hier — die Kennzahl
  * fällt dann auf die Anzahl zurück, statt eine Lücke stillschweigend als Null
  * zu verrechnen.
  */
@@ -24,45 +27,43 @@ export function CalendarSummaryTiles({
   today: string;
 }) {
   const month = monthNameDe(Number.parseInt(today.slice(5, 7), 10));
+  const next = summary.next;
 
   return (
-    <StatGrid>
-      <StatCard
-        label="Nächster Zahltag"
-        value={summary.next ? formatCalendarDate(summary.next.date) : <span>–</span>}
-        caption={
-          summary.next
-            ? // Die Anzahl nur, wenn an diesem Tag mehr als ein Termin liegt —
-              // sonst waere die Zeile dreizeilig und die Kachel hoeher als ihre
-              // Nachbarn, ohne etwas zu sagen.
-              summary.next.events.length > 1
-              ? `${relativeDayLabel(summary.next.daysAway)} · ${formatCountNumber(summary.next.events.length)} Termine`
-              : relativeDayLabel(summary.next.daysAway)
-            : "keine angekündigten Termine"
-        }
-      />
-      <StatCard
-        label="Diesen Monat"
-        value={<TotalValue total={summary.thisMonth} />}
-        caption={`${month} · ${captionFor(summary.thisMonth)}`}
-      />
-      <StatCard
-        label="Nächste 30 Tage"
-        value={<TotalValue total={summary.next30Days} />}
-        caption={captionFor(summary.next30Days)}
-      />
-      <StatCard
-        label="Unternehmen"
-        value={formatCountNumber(summary.companies)}
-        caption="mit kommenden Zahltagen"
-      />
-    </StatGrid>
+    <KpiHero
+      label="Nächste 30 Tage"
+      value={<TotalValue total={summary.next30Days} />}
+      // Ohne Beträge ist die Hauptzahl die Anzahl — „erwartet 2 Termine"
+      // wiederholte sie nur.
+      caption={
+        summary.next30Days.total
+          ? `erwartet ${captionFor(summary.next30Days)}`
+          : "angekündigte Termine"
+      }
+      stats={[
+        {
+          label: "Nächster Zahltag",
+          value: next ? formatDayMonth(next.date) : "–",
+          caption: next
+            ? // Die Anzahl nur, wenn an diesem Tag mehr als ein Termin liegt.
+              next.events.length > 1
+              ? `${relativeDayLabel(next.daysAway)} · ${formatCountNumber(next.events.length)} Termine`
+              : relativeDayLabel(next.daysAway)
+            : "keine angekündigten Termine",
+        },
+        {
+          label: `${month} gesamt`,
+          value: <TotalValue total={summary.thisMonth} />,
+          caption: captionFor(summary.thisMonth),
+        },
+      ]}
+    />
   );
 }
 
 /**
  * Die Summe, wenn die Quelle Beträge nennt — sonst die Anzahl der Termine.
- * So bleibt die Kachel auch dann aussagekräftig, wenn der Feed nur Namen
+ * So bleibt die Kennzahl auch dann aussagekräftig, wenn der Feed nur Namen
  * liefert.
  */
 function TotalValue({ total }: { total: ExpectedTotal }) {

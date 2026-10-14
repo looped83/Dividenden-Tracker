@@ -9,15 +9,10 @@ import { Disclosure } from "@/components/ui/disclosure";
 import { DetailBackLink, DetailHeader } from "@/components/layout/DetailHeader";
 import { ListGroup } from "@/components/ui/list";
 import { PageSkeleton } from "@/components/layout/PageSkeleton";
-import { StatCard, StatGrid } from "@/components/domain/StatCard";
+import { KpiHero } from "@/components/domain/KpiHero";
 import { AmountText } from "@/components/money/AmountText";
-import { DateText } from "@/components/DateText";
 import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
-import {
-  formatCalendarDate,
-  formatDateRange,
-  formatYearSpan,
-} from "@/lib/utils/formatDate";
+import { formatCalendarDate, formatYearSpan } from "@/lib/utils/formatDate";
 import {
   aggregate,
   averagePayment,
@@ -243,6 +238,14 @@ export function SecurityDetailPage() {
         subtitle={identity || undefined}
       />
 
+      {/* Reihenfolge nach der Haeufigkeit der Frage: erst die Position (Wert,
+          Erwartung, Rendite), dann was kam (Summe, Verlauf, letzte Eingaenge),
+          zuletzt Ausschuettungsplan und Stammdaten. Zuvor stand die Position
+          hinter vier Kacheln und dem Diagramm, die Stammdaten vor den letzten
+          Eingaengen. Die Position steht ausserhalb der Bedingung unten: Ein
+          frisch gekauftes Papier hat einen Bestand, aber noch keinen Eingang. */}
+      <PositionCard status={snapshotStatus} perYear={stats.perYear} />
+
       {stats.count === 0 ? (
         <EmptyState
           icon={Briefcase}
@@ -256,40 +259,25 @@ export function SecurityDetailPage() {
         />
       ) : (
         <>
-          {/* Dasselbe Raster wie auf der Assetliste und im Kalender:
-              zwei Kacheln je Zeile auf dem Telefon, vier ab `lg`. */}
-          <StatGrid>
-            <StatCard
-              label="Summe insgesamt"
-              value={<AmountText amount={stats.net} />}
-              caption={formatCountNoun(stats.count, "Eingang", "Eingänge")}
-            />
-            <StatCard
-              label="Durchschnitt je Eingang"
-              value={<AmountText amount={stats.average} />}
-            />
-            <StatCard
-              label="Größter Eingang"
-              value={
-                stats.largest ? <AmountText amount={stats.largest} /> : <span>—</span>
-              }
-            />
-            <StatCard
-              label="Zeitraum"
-              value={
-                stats.first && stats.last ? (
-                  formatYearSpan(stats.first, stats.last)
-                ) : (
-                  <span>—</span>
-                )
-              }
-              caption={
-                stats.first && stats.last
-                  ? formatDateRange(stats.first, stats.last)
-                  : undefined
-              }
-            />
-          </StatGrid>
+          <KpiHero
+            label="Erhalten insgesamt"
+            value={<AmountText amount={stats.net} />}
+            to={`/eingaenge?security=${id}`}
+            drillLabel={`Alle Eingänge von ${security.name} anzeigen`}
+            caption={[
+              formatCountNoun(stats.count, "Eingang", "Eingänge"),
+              stats.first && stats.last ? formatYearSpan(stats.first, stats.last) : null,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+            stats={[
+              { label: "Ø je Eingang", value: <AmountText amount={stats.average} /> },
+              {
+                label: "Größter Eingang",
+                value: stats.largest ? <AmountText amount={stats.largest} /> : "—",
+              },
+            ]}
+          />
 
           <Card>
             <CardHeader>
@@ -306,11 +294,41 @@ export function SecurityDetailPage() {
         </>
       )}
 
-      {/* Der Depotstand steht zwischen der erhaltenen Historie und den
-          Stammdaten: erst was kam, dann wie die Position heute dasteht, dann
-          was sie ist. Bewusst ausserhalb der Bedingung oben — ein frisch
-          gekauftes Papier hat einen Bestand, aber noch keinen Eingang. */}
-      <PositionCard status={snapshotStatus} perYear={stats.perYear} />
+      {recent.length > 0 && (
+        <Card>
+          {/* Kopf wie „Letzte Eingänge" auf der Uebersicht: der Weg zur ganzen
+              Liste rechts neben der Ueberschrift. */}
+          <CardHeader className="flex-row items-center justify-between gap-3">
+            <CardTitle>Letzte Eingänge</CardTitle>
+            <Button asChild variant="ghost" size="sm" className="-my-2 -mr-3 shrink-0">
+              <Link to={`/eingaenge?security=${id}`}>
+                Alle {formatCountNumber(stats.count)}
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {/* Der Name stuende in jeder Zeile wie in der Ueberschrift; hier
+                ist das Datum der Titel. */}
+            <ListGroup inset>
+              {recent.map((payment) => (
+                <PaymentListItem
+                  key={payment.id}
+                  to={`/eingaenge/${payment.id}`}
+                  title={
+                    <>
+                      {formatCalendarDate(payment.payDate)}
+                      {payment.payDate !== payment.actualPayDate &&
+                        ` (tatsächlich ${formatCalendarDate(payment.actualPayDate)})`}
+                    </>
+                  }
+                  depot={depotName(payment.depotId)}
+                  amount={payment.netAmount}
+                />
+              ))}
+            </ListGroup>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
@@ -401,42 +419,6 @@ export function SecurityDetailPage() {
           </CardContent>
         </Card>
       </div>
-
-      {recent.length > 0 && (
-        <Card>
-          {/* Kopf wie „Letzte Eingänge" auf der Uebersicht: der Weg zur ganzen
-              Liste rechts neben der Ueberschrift. */}
-          <CardHeader className="flex-row items-center justify-between gap-3">
-            <CardTitle>Letzte Eingänge</CardTitle>
-            <Button asChild variant="ghost" size="sm" className="-my-2 -mr-3 shrink-0">
-              <Link to={`/eingaenge?security=${id}`}>
-                Alle {formatCountNumber(stats.count)}
-              </Link>
-            </Button>
-          </CardHeader>
-          <CardContent>
-            {/* Der Name stuende in jeder Zeile wie in der Ueberschrift; hier
-                ist das Datum der Titel. */}
-            <ListGroup inset>
-              {recent.map((payment) => (
-                <PaymentListItem
-                  key={payment.id}
-                  to={`/eingaenge/${payment.id}`}
-                  title={
-                    <DateText>
-                      {formatCalendarDate(payment.payDate)}
-                      {payment.payDate !== payment.actualPayDate &&
-                        ` (tatsächlich ${formatCalendarDate(payment.actualPayDate)})`}
-                    </DateText>
-                  }
-                  depot={depotName(payment.depotId)}
-                  amount={payment.netAmount}
-                />
-              ))}
-            </ListGroup>
-          </CardContent>
-        </Card>
-      )}
 
       <SecurityFormDialog
         security={security}

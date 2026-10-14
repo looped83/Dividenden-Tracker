@@ -173,16 +173,38 @@ describe("SecuritiesPage", () => {
     renderPage([snapshot()]);
 
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
-    // Die Kennzahlkacheln nennen dieselben Betraege — geprueft wird die Zeile.
+    // Der Kennzahlkopf nennt dieselben Betraege — geprueft wird die Zeile.
     const zeile = screen.getByRole("link", { name: /^Alpha AG/ });
     expect(zeile).toHaveAttribute("href", "/depot/sec-a");
     const inZeile = within(zeile);
     expect(inZeile.getByText(/1\.200,00\s€/)).toBeInTheDocument();
     expect(inZeile.getByText(/60,00\s€/)).toBeInTheDocument();
-    expect(inZeile.getByText(/\+200,00\s€/)).toBeInTheDocument();
+    // Der Gewinn als Prozent; den Betrag nennt die Detailseite.
+    expect(inZeile.getByText(/^\+20,0\s%$/)).toBeInTheDocument();
     // Bearbeiten und Archivieren stehen auf der Detailseite, nicht in der Zeile.
     expect(
       screen.queryByRole("button", { name: "Alpha AG archivieren" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("bietet den Import am Stand an, am Seitenende nur ohne Depotstand", () => {
+    const { unmount } = renderPage([]);
+    expect(
+      screen.getByRole("button", { name: "Depotstand importieren" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Depotstand aktualisieren" }),
+    ).not.toBeInTheDocument();
+    unmount();
+
+    // Mit Stand steht der Import neben dessen Datum im Kennzahlkopf.
+    renderPage([snapshot()]);
+    expect(screen.getByText(/^Depotwert · Stand/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Depotstand aktualisieren" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Depotstand importieren" }),
     ).not.toBeInTheDocument();
   });
 

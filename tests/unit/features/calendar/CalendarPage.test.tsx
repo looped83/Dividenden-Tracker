@@ -341,7 +341,9 @@ describe("Listenansicht", () => {
     const kachel = screen.getByRole("button", { name: /Heute AG/ });
     expect(kachel).toHaveTextContent("5");
     expect(kachel).toHaveTextContent("Aug");
-    expect(kachel).toHaveTextContent("Mi, 05.08.2026");
+    // Daneben nur der Wochentag: Tag und Monat stehen schon im Datumsfeld.
+    expect(kachel).toHaveTextContent("Mi");
+    expect(kachel).not.toHaveTextContent("05.08.2026");
     // … fuer Sprachausgaben steht das Datum ausgeschrieben in der Bezeichnung.
     expect(
       screen.getByRole("button", {
@@ -360,7 +362,7 @@ describe("Listenansicht", () => {
   });
 });
 
-describe("Kennzahlkacheln", () => {
+describe("Kennzahlkopf", () => {
   it("zeigt den naechsten Zahltag mit Abstand und Anzahl", () => {
     zustand.events = [
       event({ id: "1", date: "2026-08-13", title: "Apple Inc." }),
@@ -369,11 +371,11 @@ describe("Kennzahlkacheln", () => {
     renderPage("agenda");
 
     expect(screen.getByText("Nächster Zahltag")).toBeInTheDocument();
-    expect(screen.getByText("13.08.2026")).toBeInTheDocument();
+    expect(screen.getByText("13.08.")).toBeInTheDocument();
     expect(screen.getByText("in 8 Tagen · 2 Termine")).toBeInTheDocument();
   });
 
-  it("zaehlt Monat, Zeitraum und Unternehmen", () => {
+  it("stellt die naechsten 30 Tage voran, den Monat darunter", () => {
     zustand.events = [
       event({ id: "1", date: "2026-08-13", title: "Apple Inc." }),
       event({ id: "2", date: "2026-08-20", title: "Apple Inc." }),
@@ -381,10 +383,13 @@ describe("Kennzahlkacheln", () => {
     ];
     renderPage("agenda");
 
-    expect(screen.getByText("Diesen Monat")).toBeInTheDocument();
     expect(screen.getByText("Nächste 30 Tage")).toBeInTheDocument();
-    // Apple zaehlt einmal, obwohl es zweimal vorkommt.
-    expect(screen.getByText("mit kommenden Zahltagen")).toBeInTheDocument();
+    expect(screen.getByText("August gesamt")).toBeInTheDocument();
+    // Ohne Beträge zaehlt die Hauptzahl die Termine; der im Dezember liegt
+    // ausserhalb des Fensters.
+    expect(
+      screen.getByText("angekündigte Termine").previousElementSibling,
+    ).toHaveTextContent("2");
   });
 
   it("bleibt ohne Termine weg", () => {
@@ -445,7 +450,7 @@ describe("Erwartete Beträge aus dem Feed", () => {
     zustand.events = [event({ id: "1", date: "2026-08-13", title: "Ohne Betrag AG" })];
     renderPage("agenda");
 
-    expect(screen.getByText("Diesen Monat")).toBeInTheDocument();
+    expect(screen.getByText("August gesamt")).toBeInTheDocument();
     expect(screen.queryByText(/aus \d+ Termin/)).not.toBeInTheDocument();
   });
 
@@ -573,21 +578,5 @@ describe("Namen der angelegten Unternehmen", () => {
     renderPage("agenda");
 
     expect(screen.getByRole("button", { name: /Apple Inc\./ })).toBeInTheDocument();
-  });
-
-  it("zaehlt angeglichene Termine als ein Unternehmen", () => {
-    zustand.securities = [{ id: "s1", name: "Realty Income", archived_at: null }];
-    zustand.events = [
-      event({ id: "1", date: "2026-08-13", companyName: "Realty Income Corporation" }),
-      event({ id: "2", date: "2026-08-20", companyName: "Realty Income" }),
-    ];
-    renderPage("agenda");
-
-    // Beide Termine gehoeren zu „Realty Income" — die Kachel zaehlt sie als ein
-    // Unternehmen, nicht als zwei Schreibweisen.
-    // Die Kennzahl steht in der Kachel unmittelbar ueber ihrer Bildunterschrift.
-    expect(
-      screen.getByText("mit kommenden Zahltagen").previousElementSibling,
-    ).toHaveTextContent("1");
   });
 });

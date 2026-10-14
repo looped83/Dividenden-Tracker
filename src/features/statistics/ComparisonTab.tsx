@@ -4,7 +4,7 @@ import { Info } from "lucide-react";
 import { ListGroup } from "@/components/ui/list";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select } from "@/components/ui/select";
-import { StatCard, StatGrid } from "@/components/domain/StatCard";
+import { KpiHero } from "@/components/domain/KpiHero";
 import { AmountText } from "@/components/money/AmountText";
 import { cn } from "@/lib/utils/cn";
 import { MD_BREAKPOINT_QUERY, useMediaQuery } from "@/lib/hooks/useMediaQuery";
@@ -284,26 +284,26 @@ export function ComparisonTab() {
         </CardContent>
       </Card>
 
-      <StatGrid columns={3}>
-        <StatCard
-          label={comparison.current.label}
-          value={<AmountText amount={comparison.current.net} />}
-          caption={formatPayments(comparison.current.count)}
-        />
-        <StatCard
-          label={comparison.reference.label}
-          value={<AmountText amount={comparison.reference.net} />}
-          caption={formatPayments(comparison.reference.count)}
-        />
-        {/* Die Aussage des Vergleichs: auf dem Telefon ueber die volle Breite,
-            statt allein in einer halben Reihe zu stehen. */}
-        <StatCard
-          label="Veränderung"
-          value={<span className={changeTone}>{change.value}</span>}
-          caption={change.caption}
-          className="col-span-2 lg:col-span-1"
-        />
-      </StatGrid>
+      {/* Die Aussage des Vergleichs — die Veraenderung — ist die Hauptzahl;
+          beide Zeitraeume stehen darunter. Als drei gleich grosse Kacheln
+          stand sie zuletzt und allein in einer eigenen Reihe. */}
+      <KpiHero
+        label="Veränderung"
+        value={<span className={changeTone}>{change.value}</span>}
+        caption={change.caption}
+        stats={[
+          {
+            label: comparison.current.label,
+            value: <AmountText amount={comparison.current.net} />,
+            caption: formatPayments(comparison.current.count),
+          },
+          {
+            label: comparison.reference.label,
+            value: <AmountText amount={comparison.reference.net} />,
+            caption: formatPayments(comparison.reference.count),
+          },
+        ]}
+      />
 
       {"months" in comparison ? (
         <>
@@ -479,35 +479,37 @@ function ComparisonBreakdown({
               row.current.money.isZero() &&
               row.reference.money.isZero();
             return (
-              <li key={row.key} className="space-y-1.5 px-3 py-2.5">
-                {/* Zuerst Name und Differenz: Das ist die Aussage der Zeile. */}
+              // Zwei Zeilen: Name und Differenz, darunter beide Zeitraeume in
+              // einer Zeile. Untereinander beschriftet brauchte jeder Monat
+              // drei Zeilen, ein Jahresvergleich gut einen Bildschirm mehr.
+              <li key={row.key} className="space-y-0.5 px-3 py-2">
                 <div className="flex items-baseline justify-between gap-3">
-                  <span className="font-medium">
+                  <span className="min-w-0 truncate font-medium">
                     <BreakdownLabel row={row} />
                   </span>
                   {leer ? (
                     <span className="text-sm text-muted-foreground">keine Zahlungen</span>
                   ) : (
-                    <span className="whitespace-nowrap">
+                    <span className="whitespace-nowrap font-medium">
                       <BreakdownDifference amount={row.difference} />
                     </span>
                   )}
                 </div>
                 {!leer && (
-                  <dl className="space-y-0.5 text-sm text-muted-foreground">
-                    <div className="flex items-baseline justify-between gap-3">
-                      <dt>{currentLabel}</dt>
-                      <dd className="whitespace-nowrap text-foreground">
+                  <p className="flex gap-3 text-xs text-muted-foreground tabular-amount">
+                    <span>
+                      {currentLabel}{" "}
+                      <span className="text-foreground">
                         <BreakdownAmount value={row.current} />
-                      </dd>
-                    </div>
-                    <div className="flex items-baseline justify-between gap-3">
-                      <dt>{referenceLabel}</dt>
-                      <dd className="whitespace-nowrap text-foreground">
+                      </span>
+                    </span>
+                    <span>
+                      {referenceLabel}{" "}
+                      <span className="text-foreground">
                         <BreakdownAmount value={row.reference} />
-                      </dd>
-                    </div>
-                  </dl>
+                      </span>
+                    </span>
+                  </p>
                 )}
               </li>
             );

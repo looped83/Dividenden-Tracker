@@ -102,6 +102,12 @@ export function ListRow({
  * Der Titel bricht höchstens auf zwei Zeilen um. Abgeschnitten nach einer
  * Zeile verlor „… UCITS ETF" genau den Teil, der ihn unterscheidet; ganz
  * ungebremst verlängerte ein einzelner Fondsname die Liste um drei Zeilen.
+ *
+ * **Datenlisten tragen keinen Pfeil am Rand** (Eingänge, Termine, Assets,
+ * Statistik): Er stand in jeder Zeile, sagte nichts, was die Hover- und
+ * Tippfläche nicht schon sagt, und kostete die Breite, in der sonst der Name
+ * des Depots stand. `chevron` bleibt einzelnen Navigationszeilen vorbehalten
+ * („Gesamt seit März 2019"), die ohne ihn wie bloßer Text aussähen.
  */
 export function ListItemBody({
   leading,

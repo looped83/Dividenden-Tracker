@@ -37,6 +37,31 @@ describe("TabNav", () => {
     );
   });
 
+  it("markiert einen zusammenfassenden Reiter auch auf seinen weiteren Pfaden", () => {
+    render(
+      <MemoryRouter initialEntries={["/statistiken/depots"]}>
+        <TabNav
+          label="Statistikbereiche"
+          tabs={[
+            { to: "/statistiken", label: "Übersicht", end: true },
+            {
+              to: "/statistiken/unternehmen",
+              label: "Aufteilung",
+              also: ["/statistiken/depots"],
+            },
+          ]}
+        />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("link", { name: "Aufteilung" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(screen.getByRole("link", { name: "Übersicht" })).not.toHaveAttribute(
+      "aria-current",
+    );
+  });
+
   it("benennt den Navigationsbereich", () => {
     renderNav("/statistiken");
     expect(

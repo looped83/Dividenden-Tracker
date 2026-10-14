@@ -318,13 +318,12 @@ export function DataQualityPage() {
                           title={securityName(anomaly.payment.security_id)}
                           meta={
                             <>
-                              <DateText className="shrink-0">
+                              <span className="shrink-0">
                                 {formatCalendarDate(anomaly.payment.pay_date)}
-                              </DateText>
+                              </span>
                               <span className="basis-full">{anomaly.message}</span>
                             </>
                           }
-                          chevron
                         />
                       </Link>
                     </ListRow>

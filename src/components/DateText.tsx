@@ -3,10 +3,12 @@ import { Calendar } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
 /**
- * Datum mit vorangestelltem Kalendersymbol — ueberall dort, wo ein Datum ohne
- * eigene Beschriftung fuer sich steht (Kartenliste, Detailkopf, Dublettenver-
- * gleich). In Tabellen mit Spaltenkopf und in beschrifteten Feldern bleibt es
- * aus: Dort sagt die Beschriftung bereits, was die Zahl bedeutet.
+ * Datum mit vorangestelltem Kalendersymbol — dort, wo ein Datum ohne eigene
+ * Beschriftung fuer sich steht und hervortreten soll (Detailkopf,
+ * Dublettenvergleich). In Listenzeilen bleibt es aus: Dort stand es in jeder
+ * Zeile und nahm dem Depot daneben die Breite. In Tabellen mit Spaltenkopf und
+ * in beschrifteten Feldern ebenso — dort sagt die Beschriftung bereits, was die
+ * Zahl bedeutet.
  *
  * Das Symbol waechst mit der Schriftgroesse (`1em`) und sitzt einen Pixel
  * hoeher: Mittig ausgerichtet stuende es optisch zu tief, weil die Mitte der

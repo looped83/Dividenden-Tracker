@@ -7,18 +7,25 @@ import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
   aggregate,
+  shareOfTotal,
   calendarMonthBuckets,
   depotStatistics,
   MONTH_NAMES_DE_SHORT,
   type DepotStatistics,
 } from "@/lib/statistics";
+import { formatPercent } from "@/lib/money";
 import { compareGerman } from "@/lib/utils/compareText";
+import { MD_BREAKPOINT_QUERY, useMediaQuery } from "@/lib/hooks/useMediaQuery";
 import { RankedBars, type RankedBarItem } from "@/features/dashboard/RankedBars";
+import { barLength } from "@/features/dashboard/format";
 import { useStatisticsContext } from "./context";
+import { BreakdownSwitch } from "./BreakdownSwitch";
 import {
   entityArchived,
   entityName,
+  formatCountNoun,
   formatCountNumber,
+  formatPayments,
   statisticsDrillHref,
 } from "./format";
 import { CategoryBarChart } from "./components/charts";
@@ -30,6 +37,11 @@ export function DepotsTab() {
 
   const stats = React.useMemo(() => depotStatistics(payments), [payments]);
   const total = React.useMemo(() => aggregate(payments).net, [payments]);
+  const maxNet = React.useMemo(
+    () => stats.reduce((max, stat) => Math.max(max, stat.net.toChartNumber()), 0),
+    [stats],
+  );
+  const isWide = useMediaQuery(MD_BREAKPOINT_QUERY);
 
   const distributionItems = React.useMemo<RankedBarItem[]>(
     () =>
@@ -115,21 +127,67 @@ export function DepotsTab() {
     );
   }
 
+  const distribution = (
+    <Card>
+      <CardHeader>
+        <CardTitle>Depotverteilung</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <RankedBars
+          items={distributionItems}
+          total={total}
+          ariaLabel="Netto-Dividende je Depot"
+        />
+      </CardContent>
+    </Card>
+  );
+
+  const statistic = (
+    <Card>
+      {/* Ohne Suchfeld: Depots zaehlt man an einer Hand. Ein Filter fuer
+          eine Liste, die vollstaendig ins Bild passt, ist ein Bedienelement
+          ohne Aufgabe — anders als bei den Unternehmen, wo Hunderte Zeilen
+          stehen koennen. */}
+      <CardHeader>
+        <CardTitle>{isWide ? "Depotstatistik" : "Depotverteilung"}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <StatTable
+          rows={stats}
+          columns={columns}
+          getRowKey={(row) => row.depotId}
+          caption="Kennzahlen je Depot"
+          initialSort={{ key: "net", direction: "desc" }}
+          onRowClick={(row) =>
+            void navigate(statisticsDrillHref(filter, { depotId: row.depotId }))
+          }
+          rowLabel={(row) =>
+            `Dividendeneingänge im Depot ${entityName(depots, row.depotId)} anzeigen`
+          }
+          listSummary={{
+            bar: (row) => {
+              const share = shareOfTotal(row.net, total);
+              return {
+                length: barLength(row.net, maxNet),
+                label: share ? formatPercent(share) : "—",
+              };
+            },
+            meta: (row) =>
+              `${formatPayments(row.count)} · ${formatCountNoun(row.distinctSecurities, "Unternehmen", "Unternehmen")}`,
+          }}
+        />
+      </CardContent>
+    </Card>
+  );
+
+  // Auf dem Telefon traegt die Liste die Verteilung selbst (Balken je Zeile)
+  // und steht deshalb vorn; die Rangbalken darueber entfallen dort. Ab `md`
+  // zeigt die Tabelle keine Balken — dort bleibt die Reihenfolge Verteilung,
+  // Monate, Tabelle.
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Depotverteilung</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <RankedBars
-            items={distributionItems}
-            total={total}
-            ariaLabel="Netto-Dividende je Depot"
-          />
-        </CardContent>
-      </Card>
-
+      <BreakdownSwitch />
+      {isWide ? distribution : statistic}
       <Card>
         <CardHeader>
           <CardTitle>Monatliche Verteilung</CardTitle>
@@ -143,30 +201,7 @@ export function DepotsTab() {
         </CardContent>
       </Card>
 
-      <Card>
-        {/* Ohne Suchfeld: Depots zaehlt man an einer Hand. Ein Filter fuer
-            eine Liste, die vollstaendig ins Bild passt, ist ein Bedienelement
-            ohne Aufgabe — anders als bei den Unternehmen, wo Hunderte Zeilen
-            stehen koennen. */}
-        <CardHeader>
-          <CardTitle>Depotstatistik</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <StatTable
-            rows={stats}
-            columns={columns}
-            getRowKey={(row) => row.depotId}
-            caption="Kennzahlen je Depot"
-            initialSort={{ key: "net", direction: "desc" }}
-            onRowClick={(row) =>
-              void navigate(statisticsDrillHref(filter, { depotId: row.depotId }))
-            }
-            rowLabel={(row) =>
-              `Dividendeneingänge im Depot ${entityName(depots, row.depotId)} anzeigen`
-            }
-          />
-        </CardContent>
-      </Card>
+      {isWide && statistic}
     </div>
   );
 }

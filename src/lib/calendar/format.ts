@@ -56,15 +56,15 @@ export function longDate(iso: string): string {
 }
 
 /**
- * „Mo, 13.08.2026" — die Fassung fuer die Kacheln der Liste.
+ * „Mo" — der Wochentag neben dem Datumsfeld einer Terminzeile.
  *
- * Der ausgeschriebene Wochentag sprengte dort die Zeile: In der dreispaltigen
- * Darstellung brach „Donnerstag, 13.08.2026" um und machte einzelne Kacheln
- * hoeher als ihre Nachbarn. Vollstaendig steht das Datum weiterhin in der
- * zugaenglichen Bezeichnung und in der Detailansicht.
+ * Tag und Monat stehen im Datumsfeld links; „Mo, 13.08.2026" daneben
+ * wiederholte sie und brach mit dem Depot auf drei Zeilen um. Vollstaendig
+ * steht das Datum weiterhin in der zugaenglichen Bezeichnung und in der
+ * Detailansicht.
  */
-export function shortDate(iso: string): string {
-  return `${WEEKDAYS_DE_SHORT[weekdayIndex(iso)]}, ${formatCalendarDate(iso)}`;
+export function weekdayShort(iso: string): string {
+  return WEEKDAYS_DE_SHORT[weekdayIndex(iso)] ?? "";
 }
 
 /** „13. August 2026" — ausgeschrieben fuer Sprachausgaben. */

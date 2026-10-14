@@ -1,31 +1,35 @@
 import * as React from "react";
-import { StatCard, StatGrid } from "@/components/domain/StatCard";
+import { KpiHero, TrendPill } from "@/components/domain/KpiHero";
+import { PortfolioImportButton } from "@/features/securities/PortfolioImportDialog";
 import { AmountText } from "@/components/money/AmountText";
 import { formatPercent } from "@/lib/money";
 import { formatCalendarDate } from "@/lib/utils/formatDate";
-import { formatCountNumber } from "@/lib/utils/formatNumber";
+import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
 import { portfolioTotals, type SnapshotSum } from "@/features/securities/snapshots";
 import type { SecuritySnapshot } from "@/lib/supabase/repositories/securitySnapshots";
 
 /**
- * Kennzahlen des juengsten Depotstands (docs/PORTFOLIO_IMPORT.md).
- *
- * Steht direkt unter der Kopfzeile — an derselben Stelle wie in jedem anderen
- * Bereich (Uebersicht, Kalender), damit die Seite sich nicht anders anfuehlt
- * als die Nachbarn.
+ * Kennzahlkopf des juengsten Depotstands (docs/PORTFOLIO_IMPORT.md) —
+ * derselbe `KpiHero` wie in den anderen Bereichen, direkt unter der Kopfzeile.
  *
  * Diese Zahlen sind **Marktdaten einer fremden Quelle zu einem Stichtag**, kein
- * Ergebnis der eigenen Auswertungen. Deshalb traegt die erste Kachel den Stand
- * sichtbar mit: Ein Depotwert ohne Datum liest sich wie „jetzt", und genau das
- * ist er nicht.
+ * Ergebnis der eigenen Auswertungen. Deshalb traegt die Hauptzahl den Stand
+ * sichtbar in ihrer Beschriftung: Ein Depotwert ohne Datum liest sich wie
+ * „jetzt", und genau das ist er nicht. Gleich daneben liegt der Weg, ihn zu
+ * erneuern — dort, wo man sieht, dass er alt ist. Am Ende der Assetliste stand
+ * der Import hinter zwanzig Zeilen.
  *
- * Ohne importierten Stand erscheint hier nichts — eine Reihe leerer Kacheln
- * waere ein Versprechen auf Daten, die es nicht gibt.
+ * Ohne importierten Stand erscheint hier nichts — eine leere Kennzahl waere
+ * ein Versprechen auf Daten, die es nicht gibt. Der Import steht dann am Ende
+ * der Liste.
  */
 export function PortfolioSummary({
   snapshots,
+  onImport,
 }: {
   snapshots: readonly SecuritySnapshot[];
+  /** Oeffnet den Import eines neuen Stands (Dialog der Seite). */
+  onImport: () => void;
 }) {
   const totals = React.useMemo(() => portfolioTotals(snapshots), [snapshots]);
 
@@ -36,62 +40,58 @@ export function PortfolioSummary({
     dividend.kind === "amount" && dividend.counted < totals.positions
       ? `aus ${formatCountNumber(dividend.counted)} von ${formatCountNumber(totals.positions)} Positionen`
       : undefined;
+  const { gain, gainPercent } = totals;
 
   return (
-    // Dasselbe Raster wie die Kennzahlen des Kalenders (`CalendarSummary`):
-    // zwei Kacheln je Zeile auf dem Telefon, vier ab `lg`. Einspaltig standen
-    // sie hier als vier volle Bloecke untereinander und schoben die Liste weit
-    // nach unten — und sahen anders aus als dieselben Kacheln zwei Bereiche
-    // weiter.
-    <StatGrid>
-      <StatCard
-        label="Depotwert"
-        value={<SumValue sum={totals.marketValue} />}
-        caption={`Stand ${formatCalendarDate(totals.asOf)}`}
-      />
-      {/* „Erwartet p. a." statt „Erwartete Jahresdividende": Der laengere Name
-          bricht in der Kachel auf zwei Zeilen um und schiebt seine Kennzahl
-          gegenueber den Nachbarn nach unten — in einer Viererreihe faellt der
-          Versatz sofort auf. Es ist ausserdem dieselbe Beschriftung wie in der
-          Unternehmensstatistik. */}
-      <StatCard
-        label="Erwartet p. a."
-        value={<SumValue sum={dividend} />}
-        caption={dividendGaps}
-      />
-      <StatCard
-        label="Rendite"
-        value={
-          totals.yieldPercent === null ? (
-            <span className="text-muted-foreground">—</span>
-          ) : (
-            <span>{formatPercent(totals.yieldPercent, 2)}</span>
-          )
-        }
-        caption={
-          totals.yieldOnBuyinPercent === null
-            ? undefined
-            : `auf den Einstand ${formatPercent(totals.yieldOnBuyinPercent, 2)}`
-        }
-      />
-      <StatCard
-        label="Positionen"
-        value={<span>{formatCountNumber(totals.positions)}</span>}
-        caption={
-          totals.buyinTotal.kind === "amount" ? (
+    <KpiHero
+      label={`Depotwert · Stand ${formatCalendarDate(totals.asOf)}`}
+      value={<SumValue sum={totals.marketValue} />}
+      trend={
+        gain && gainPercent ? (
+          <TrendPill
+            tone={gain.isNegative() ? "negative" : gain.isZero() ? "neutral" : "positive"}
+            title="Kursgewinn gegenüber dem Einstand"
+          >
+            {`${gain.isPositive() ? "+" : ""}${formatPercent(gainPercent, 1)}`}
+          </TrendPill>
+        ) : undefined
+      }
+      caption={
+        <span className="flex flex-wrap items-center gap-x-3">
+          {totals.buyinTotal.kind === "amount" && (
             <span>
               Einstand <AmountText amount={totals.buyinTotal.value} />
             </span>
-          ) : undefined
-        }
-      />
-    </StatGrid>
+          )}
+          <PortfolioImportButton variant="inline" onClick={onImport} />
+        </span>
+      }
+      stats={[
+        // „Erwartet p. a." statt „Erwartete Jahresdividende": dieselbe
+        // Beschriftung wie in der Unternehmensstatistik.
+        {
+          label: "Erwartet p. a.",
+          value: <SumValue sum={dividend} />,
+          caption:
+            dividendGaps ?? formatCountNoun(totals.positions, "Position", "Positionen"),
+        },
+        {
+          label: "Rendite",
+          value:
+            totals.yieldPercent === null ? "—" : formatPercent(totals.yieldPercent, 2),
+          caption:
+            totals.yieldOnBuyinPercent === null
+              ? undefined
+              : `auf Einstand ${formatPercent(totals.yieldOnBuyinPercent, 2)}`,
+        },
+      ]}
+    />
   );
 }
 
 /**
  * Eine Summe aus Snapshots. Verschiedene Waehrungen werden **nicht** addiert —
- * das waere eine Umrechnung zu einem erfundenen Kurs; die Kachel sagt es
+ * das waere eine Umrechnung zu einem erfundenen Kurs; die Kennzahl sagt es
  * stattdessen, wie es der Dividendenkalender an derselben Stelle tut.
  */
 function SumValue({ sum }: { sum: SnapshotSum }) {

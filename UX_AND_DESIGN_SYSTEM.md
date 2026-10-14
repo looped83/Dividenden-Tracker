@@ -128,13 +128,13 @@ Eigene zusammengesetzte Komponenten (fachlich):
 | Komponente | Zweck |
 |---|---|
 | `AmountText` | Betragsdarstellung: tabular-nums, Währung, Vorzeichen, Farbe (semantisch), niemals Rundung in der Komponente |
-| `StatCard` / `StatGrid` | **Eine** Kennzahlkachel für alle Bereiche (die Übersicht hatte eine eigene Fassung): Beschriftung, Wert, Zusatz am Kachelboden. Zwei je Zeile schon auf dem Telefon; die Kacheln einer Reihe teilen sich ihre Zeilen per CSS-Subgrid, sodass Beschriftung, Wert und Zusatz nebeneinander auf einer Linie stehen, ohne Platz für eine zweite Beschriftungszeile zu reservieren. Ein Drill-down macht die **ganze Kachel** zur Tippfläche (Link auf dem Wert, per `::after` gedehnt). Max. 4 primäre StatCards pro Ansicht (Hierarchie statt Kennzahlflut) |
-| `ListGroup` / `ListRow` / `ListItemBody` / `ListSection` | **Eine Listenform** für Einträge (`components/ui/list.tsx`): eine Fläche mit Trennlinien statt einzelner Karten — auf der Seite ist die Liste selbst die Karte, in einer Karte trägt sie keinen zweiten Rahmen (`inset`). Zeile 1 der Name (höchstens zwei Zeilen), Zeile 2 Angaben links und Wert rechts; `asChild` macht die ganze Zeile zur Tippfläche. `ListSection` gruppiert (Monat, „Diese Woche") mit Kennzahl im Kopf |
-| `PaymentListItem` | Ein Dividendeneingang als Zeile — dieselbe in Dividendenliste, Übersicht und Assetseite: Name, Datum · Depot, Betrag (Depot wird gekürzt, nie umbrochen). Auf der Assetseite ist das Datum der Titel |
+| `KpiHero` / `TrendPill` | **Ein** Kennzahlkopf für alle Bereiche (`components/domain/KpiHero.tsx`): **eine** Hauptzahl groß (32 px), daneben optional der Vergleich als Marke (`TrendPill`: Pfeil **und** Vorzeichen, Bedeutung im `title` und für Sprachausgaben), darunter eine Unterzeile, optional ein Zusatz (Zielbalken) und eine Leiste mit bis zu drei Nebenkennzahlen, durch Linien getrennt. Er ersetzt das frühere Raster gleich großer Kacheln (`StatCard`/`StatGrid`): Vier bis sechs Kacheln kosteten auf dem Telefon 300–700 px, bevor der Inhalt begann, und ließen offen, welche Zahl zählt. Jede Seite beantwortet zuerst **ihre** Frage — Übersicht: Dividenden des Zeitraums; Kalender: nächste 30 Tage; Depot: Depotwert; Statistik: Gesamtsumme; Vergleich: Veränderung; Entwicklung: erwartet p. a.; Assetseite: erhalten insgesamt. Ein Drill-down macht die **ganze Fläche** zur Tippfläche (Link auf dem Wert, per `::after` gedehnt; für die Hauptzahl der obere Teil, für jede Nebenkennzahl ihr Feld) und trägt einen sprechenden Namen (`drillLabel`). Ladegerüst in derselben Form: `KpiHeroSkeleton` |
+| `ListGroup` / `ListRow` / `ListItemBody` / `ListSection` | **Eine Listenform** für Einträge (`components/ui/list.tsx`): eine Fläche mit Trennlinien statt einzelner Karten — auf der Seite ist die Liste selbst die Karte, in einer Karte trägt sie keinen zweiten Rahmen (`inset`). Zeile 1 der Name (höchstens zwei Zeilen), Zeile 2 Angaben links und Wert rechts; `asChild` macht die ganze Zeile zur Tippfläche. `ListSection` gruppiert (Monat, „Diese Woche") mit Kennzahl im Kopf **Datenlisten ohne Pfeil am Rand und ohne Kalendersymbol vor dem Datum** (Eingänge, Termine, Assets, Statistik, Datenqualität): Beide standen in jeder Zeile, sagten nichts, was Tippfläche und Inhalt nicht schon sagen, und nahmen dem Depot die Breite („Trade Repub…"). `chevron` bleibt einzelnen Navigationszeilen („Gesamt seit März 2019") vorbehalten |
+| `PaymentListItem` | Ein Dividendeneingang als Zeile — dieselbe in Dividendenliste, Übersicht und Assetseite: Name, Datum · Depot, Betrag (Depot wird gekürzt, nie umbrochen). In Monatsgruppen nur „11.10." (`formatDayMonth`) — Monat und Jahr nennt die Überschrift, Sprachausgaben bekommen das Jahr dennoch mit. Auf der Assetseite ist das Datum der Titel |
 | `PaymentTable` / Liste | Tabelle ab `md` (Aktionen je Zeile) bzw. `PaymentListItem`-Liste auf dem Telefon, nach Datum sortiert nach Monat gruppiert mit Monatssumme im Kopf; darüber Anzahl und Summe der Auswahl; „weitere laden" statt Blättern (die geladene Menge steht in der Adresse, der Weg zurück findet sie wieder) |
 | `DetailHeader` | **Ein** Kopf für Zahlung, Asset und Ziel: Rückweg links und Symbolaktionen rechts in einer Zeile, darunter Titel samt Zustand (nur der Sonderfall), Zusatzzeile und — wo es eine gibt — die Kennzahl (Betrag der Zahlung). Bearbeiten, Stornieren/Archivieren, Löschen stehen hier und nicht in den Listen: Eine Zeile ist **eine** Tippfläche |
 | `SegmentedControl` | Umschalter zwischen wenigen Zuständen (Erscheinungsbild, Kalenderansicht, Verlauf nach Jahren/Monaten) — immer Symbol **und** Text, als Optionsgruppe (`radiogroup`); auf dem Telefon in voller Breite |
-| `StatTable` | Statistiktabelle ab `md`; auf dem Telefon eine Liste (Name und Kennzahl oben, weitere Spalten beschriftet darunter, Sortierung als `FilterSort`). Nebenkennzahlen (`listHidden`) entfallen dort |
+| `StatTable` | Statistiktabelle ab `md`; auf dem Telefon eine Liste (Name und Kennzahl oben, weitere Spalten beschriftet darunter, Sortierung als `FilterSort`). Nebenkennzahlen (`listHidden`) entfallen dort Ranglisten (Unternehmen, Depotkonten, Entwicklung je Asset) nutzen auf dem Telefon die **kompakte Zeile** (`listSummary`): Name und Kennzahl, optional ein Anteilsbalken mit Prozent am Ende, darunter **eine** Zusatzzeile („31 Zahlungen · Ø 56,29 € · erw. 315,58 € p. a."). Der Name bleibt dort einzeilig, damit die Balken eine Treppe bilden; die Rangbalken-Karte darüber entfällt auf dem Telefon, ab `md` bleibt sie neben der Tabelle |
 | `FilterBar` / `FilterField` / `FilterSort` / `FilterReset` | **Eine** Filterleiste für alle Bereiche (Dividenden, Depot, Statistik) — dieselben Bausteine, dieselben Abstände. Ab `sm` dauerhaft sichtbar, darunter eine aufklappbare Zeile mit der Zahl wirkender Filter. Regeln unten |
 | `ComparisonBreakdown` | Gegenüberstellung Zeile für Zeile (Monate oder Unternehmen): ab `md` eine Tabelle mit vier Spalten, darunter eine Liste — je Zeile Name und Differenz, darunter beide Zeiträume. Vier Spalten passen bei 390 px nicht nebeneinander, und die Seite soll auf dem Telefon nicht seitlich verschiebbar sein |
 | `EntitySelect` | **Die** Auswahlliste für Unternehmen und Depots — überall dieselbe: neutrale Auswahl („Alle Unternehmen"), darunter die Gruppen „Aktiv" und „Archiviert" (leere Gruppe entfällt), sortiert nach deutschem Alphabet. Archivierte bleiben wählbar, stehen aber nicht zwischen den aktiven. Neue Unternehmens-/Depotauswahlen in Filterleisten verwenden ausschließlich diese Komponente |
@@ -230,8 +230,10 @@ ein anderer Platz fürs Zurücksetzen fallen beim Wechsel sofort auf.
 - Schnelle manuelle Erfassung: Formular als Full-Screen-Sheet, sinnvolle Defaults (heutiges
   Datum, zuletzt genutztes Depot), Wertpapier-Suchfeld mit Zuletzt-Liste, numerische
   Tastatur (`inputmode="decimal"`), Einhandbedienung (primäre Aktionen unten).
-- Kompakte Statistiken: StatCards zwei je Zeile, Diagramme volle Breite, fünf Reiter
-  (Übersicht, Verlauf, Vergleich, Unternehmen, Depotkonten).
+- Kompakte Statistiken: Kennzahlkopf (`KpiHero`), Diagramme volle Breite, vier Reiter
+  (Übersicht, Verlauf, Vergleich, Aufteilung) — mehr passen bei 390 px nicht nebeneinander.
+  „Aufteilung" fasst Unternehmen und Depotkonten zusammen (Umschalter auf der Seite, beide
+  behalten ihre Adresse).
 - Progressive Offenlegung komplexer Filter (FilterBar-Sheet); keine Hover-Abhängigkeiten
   (alle Aktionen tapbar, Kontextmenüs als Long-Press mit sichtbarer Alternative).
 - Touch-Ziele ≥ 44×44 pt; Safe Areas (`env(safe-area-inset-*)`) für Notch/Home-Indicator;
@@ -297,12 +299,24 @@ maximaler Kontrast auf Schwarz lässt Schrift auf OLED ausfransen.
 
 ## Dashboard (Phase 5A)
 
-**Aufbau (von oben):** Seitenüberschrift → Zeitraumsteuerung → KPI-Karten → monatlicher
-Verlauf → Top-Unternehmen + Depotverteilung (nebeneinander ab `lg`) → letzte Eingänge →
-Summe seit Beginn. Ruhig, datenorientiert; keine dekorativen Visualisierungen, keine
+**Aufbau (von oben):** Seitenüberschrift → Zeitraumsteuerung → Kennzahlkopf (`DashboardHero`)
+→ „Demnächst" (nur laufendes Jahr und „Alle Jahre") → monatlicher Verlauf → Top-Unternehmen +
+Depotverteilung (nebeneinander ab `lg`) → letzte Eingänge → Summe seit Beginn. Ruhig, datenorientiert; keine dekorativen Visualisierungen, keine
 3D-Diagramme, keine dauerhafte grün/rot-Bewertung saisonaler Schwankungen.
 
-**Responsive:** vier KPI-Kacheln, Raster 2 → 4 Spalten (iPhone/Desktop); die Gesamtsumme aller
+**Kennzahlkopf:** die Dividenden des Zeitraums als Hauptzahl, daneben der Vorjahresvergleich
+als Marke (im laufenden Jahr gegen denselben Zeitraum), darunter das **Jahresziel** als Balken
+(„46,5 % vom Jahresziel 4.200,00 € · noch 2.248,09 €", führt zur Zieldetailseite; ohne Ziel
+„Jahresziel für 2026 festlegen"). Die Leiste: laufender Monat (mit Monatsziel „19 % vom Ziel",
+sonst Vorjahresvergleich), Ø pro Monat, bester Monat; außerhalb des laufenden Jahres statt des
+Monats die Zahl der Zahlungen samt Breite. Er ersetzt vier Kacheln und die beiden Zielkarten
+darunter — das Ziel stand getrennt von der Summe, auf die es sich bezieht.
+
+**Demnächst:** die nächsten drei angekündigten Zahltage aus dem Kalender und die erwartete Summe
+der nächsten 30 Tage; „erwartet", weil es Ankündigungen sind, keine Eingänge. Ohne kommende
+Termine entfällt die Karte.
+
+**Responsive:** Kennzahlkopf über die volle Breite; die Gesamtsumme aller
 Jahre steht als eine Zeile „Gesamt seit März 2019 · 412 Zahlungen" am Seitenende (wie die
 Eingänge darüber, führt zur Statistik), nicht zusätzlich als Kachel. Bei „Alle Jahre" entfällt
 die Zeile, weil die Kennzahlen oben dann dieselbe Summe nennen. Früher stand dort eine Karte mit
@@ -364,9 +378,11 @@ die Monatsziele; *Bevorstehend* das nächste Ziel zuerst; *Beendet* das zuletzt
 beendete zuerst. Der Zielstatus (erreicht/verfehlt) sortiert nirgends — sonst
 liefen die Zeiträume durcheinander.
 
-**Zielkarte.** `GoalCard` ist **eine** Komponente für Zielseite und Übersicht;
-eine zweite, kürzere Fassung für das Dashboard gab es, und dieselbe Sache sah an
-zwei Stellen unterschiedlich aus. Die ganze Karte führt zur Detailseite;
+**Zielkarte.** `GoalCard` ist **eine** Komponente für die Zielseite; eine zweite,
+kürzere Fassung für das Dashboard gab es, und dieselbe Sache sah an zwei Stellen
+unterschiedlich aus. Die Übersicht zeigt Ziele seit dem Kennzahlkopf nicht mehr
+als Karte, sondern dort, wo die Summe steht: das Jahresziel als Balken unter der
+Hauptzahl (mit derselben `GoalProgressBar`), das Monatsziel im Feld des Monats. Die ganze Karte führt zur Detailseite;
 „Bearbeiten" und „Löschen" stehen dort im Kopf (`DetailHeader`) — wie bei
 Eingängen und Assets.
 
@@ -375,7 +391,7 @@ waren dadurch kaum zu unterscheiden. Eine 36-px-Symbolkachel trennt sie
 (`CalendarRange` für das Jahr, `CalendarDays` für den Monat) samt Tönung
 (Primärfarbe gegen Grau); den Klartext liefert der Titel selbst
 („Dividendenziel 2026", „Monatsziel März 2026"), Farbe und Form tragen nie
-allein. Dasselbe Zeichen erscheint auf Übersicht, Zielseite und Detailseite; nur
+allein. Dasselbe Zeichen erscheint auf Zielseite und Detailseite; nur
 die Detailseite nennt die Zielart zusätzlich als Text.
 
 **Aufbau der Zielkarte.** Die Karte beantwortet auf einen Blick nur zwei

@@ -13,7 +13,7 @@ import { pruefeAxe } from "../support/axe";
  * navigiert deshalb ausdrücklich in ihren Monat, statt sich auf „heute" zu
  * verlassen.
  */
-/** Kalendertag in `days` Tagen — fuer die Kacheln „Diesen Monat"/„30 Tage". */
+/** Kalendertag in `days` Tagen — fuer den Monat und die „Nächsten 30 Tage". */
 function inDays(days: number): string {
   const date = new Date();
   date.setDate(date.getDate() + days);
@@ -72,11 +72,14 @@ test("Liste ist die Standardansicht und zeigt Kacheln je Termin", async ({ page 
   // liegen alle in 2099 bzw. in dieser Woche.
   await expect(page.getByRole("heading", { name: "März 2099", level: 2 })).toBeVisible();
   await expect(page.getByRole("heading", { name: "April 2099", level: 2 })).toBeVisible();
-  // Jede Kachel traegt ihr Datum selbst — als Zahl und ausgeschrieben.
-  const apple = page.getByRole("button", { name: /Apple Inc\./ });
+  // Jede Kachel traegt ihr Datum selbst — im Datumsfeld, daneben der
+  // Wochentag; vollstaendig nennt es die zugaengliche Bezeichnung.
+  const apple = page.getByRole("button", {
+    name: /Apple Inc\., Zahltag am 13\. März 2099/,
+  });
   await expect(apple).toBeVisible();
   await expect(apple).toContainText("13");
-  await expect(apple).toContainText("Fr, 13.03.2099");
+  await expect(apple).toContainText("Fr · Trade Republic");
   // Der Unternehmensname steht ohne Betrag und Depot im Titel …
   await expect(apple).toContainText("Apple Inc.");
   // … der Betrag rechts an der Kante, das Depot in der Metazeile.
@@ -84,15 +87,13 @@ test("Liste ist die Standardansicht und zeigt Kacheln je Termin", async ({ page 
   await expect(apple).toContainText("Trade Republic");
   await expect(page.getByRole("button", { name: /Allianz SE/ })).toBeVisible();
 
-  // Kennzahlkacheln ueber der Liste — mit der Summe der erwarteten Betraege.
+  // Kennzahlkopf ueber der Liste — mit der Summe der erwarteten Betraege.
+  await expect(page.getByText("Nächste 30 Tage")).toBeVisible();
   await expect(page.getByText("Nächster Zahltag")).toBeVisible();
-  // Die Summenkacheln zaehlen nur das 30-Tage-Fenster: 60,00 + 40,00 = 100,00.
+  // Die Hauptzahl zaehlt nur das 30-Tage-Fenster: 60,00 + 40,00 = 100,00.
   // Die Termine von 2099 stehen in der Liste, aber nicht in dieser Summe.
   await expect(page.getByText("100,00 €").first()).toBeVisible();
   await expect(page.getByText(/aus 2 Terminen/).first()).toBeVisible();
-  // „Unternehmen" heisst auch der Navigationspunkt daneben — deshalb die
-  // Bildunterschrift der Kachel als eindeutiges Merkmal.
-  await expect(page.getByText("mit kommenden Zahltagen")).toBeVisible();
 
   await pruefeAxe(page, "Kalender – Liste");
 });

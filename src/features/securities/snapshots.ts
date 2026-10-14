@@ -53,6 +53,14 @@ export interface PortfolioTotals {
   yieldPercent: DecimalInstance | null;
   /** Erwartete Jahresdividende geteilt durch Einstand, in Prozentpunkten. */
   yieldOnBuyinPercent: DecimalInstance | null;
+  /**
+   * Kursgewinn: Depotwert minus Einstand. Nur, wenn **jede** Position beides
+   * traegt — fehlt einer Zeile der Einstand, waere die Differenz um deren
+   * ganzen Marktwert zu hoch, und das stuende als Gewinn da.
+   */
+  gain: Money | null;
+  /** Kursgewinn geteilt durch Einstand, in Prozentpunkten. */
+  gainPercent: DecimalInstance | null;
 }
 
 const HUNDRED = new MoneyDecimal(100);
@@ -158,6 +166,13 @@ export function portfolioTotals(snapshots: readonly SecuritySnapshot[]): Portfol
   const buyinTotal = sumField(current, (snapshot) => snapshot.buyin_total);
   const annualDividend = sumField(current, (snapshot) => snapshot.annual_dividend_total);
 
+  const complete =
+    marketValue.kind === "amount" &&
+    buyinTotal.kind === "amount" &&
+    marketValue.counted === current.length &&
+    buyinTotal.counted === current.length;
+  const gain = complete ? marketValue.value.subtract(buyinTotal.value) : null;
+
   return {
     asOf,
     positions: current.length,
@@ -166,6 +181,11 @@ export function portfolioTotals(snapshots: readonly SecuritySnapshot[]): Portfol
     annualDividend,
     yieldPercent: percentOf(annualDividend, marketValue),
     yieldOnBuyinPercent: percentOf(annualDividend, buyinTotal),
+    gain,
+    gainPercent:
+      gain === null
+        ? null
+        : percentOf({ kind: "amount", value: gain, counted: current.length }, buyinTotal),
   };
 }
 

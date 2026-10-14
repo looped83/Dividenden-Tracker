@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { EUR, Money } from "@/lib/money";
-import type { AnalyticsPayment, PaymentSource, PaymentType } from "@/lib/statistics";
+import type {
+  AnalyticsPayment,
+  PaymentSource,
+  PaymentType,
+  RefDate,
+} from "@/lib/statistics";
 import {
   activeMonthCount,
   averagePayment,
@@ -19,6 +24,9 @@ import {
   yearStatistics,
 } from "@/lib/statistics";
 import { EMPTY_STATISTICS_FILTER } from "@/features/statistics/filterParams";
+
+/** Ein Stichtag nach allen Testjahren: Keines davon laeuft noch. */
+const SPAETER: RefDate = { year: 2030, month: 1, day: 1 };
 
 let seq = 0;
 function p(
@@ -209,12 +217,12 @@ describe("yearStatistics (§11.3)", () => {
   ];
 
   it("sortiert neueste Jahre zuerst", () => {
-    const stats = yearStatistics(payments);
+    const stats = yearStatistics(payments, SPAETER);
     expect(stats.map((s) => s.year)).toEqual([2025, 2024]);
   });
 
   it("berechnet je Jahr Summe, Anzahl, Distinct, Durchschnitt, beste/schwächste Monate", () => {
-    const stats = yearStatistics(payments);
+    const stats = yearStatistics(payments, SPAETER);
     const y2024 = stats.find((s) => s.year === 2024);
     expect(y2024?.net.toStringValue()).toBe("400.00");
     expect(y2024?.count).toBe(2);
@@ -226,7 +234,7 @@ describe("yearStatistics (§11.3)", () => {
   });
 
   it("liefert Vorjahresvergleich; ohne Vorjahr 'no-comparison'", () => {
-    const stats = yearStatistics(payments);
+    const stats = yearStatistics(payments, SPAETER);
     const y2025 = stats.find((s) => s.year === 2025);
     // 2025 (250) vs 2024 (400) → -150 → percent
     expect(y2025?.change.kind).toBe("percent");
@@ -236,6 +244,25 @@ describe("yearStatistics (§11.3)", () => {
     // Kein 2023 in der Datenbasis → kein Vergleich
     expect(y2024?.change.kind).toBe("no-comparison");
     expect(y2024?.priorYearNet).toBeNull();
+  });
+
+  it("vergleicht das laufende Jahr mit demselben Zeitraum des Vorjahres", () => {
+    // Stichtag 20.07.2025: 2025 hat bis dahin 300 €, 2024 bis zum 20.07.
+    // 200 € (März und 10. Juli). Die Dezemberzahlung 2024 liegt ausserhalb.
+    const laufend: RefDate = { year: 2025, month: 7, day: 20 };
+    const imJahr = [
+      p("2024-03-10", "100", { security: "a", depot: "d1" }),
+      p("2024-07-10", "100", { security: "b", depot: "d1" }),
+      p("2024-12-10", "500", { security: "b", depot: "d1" }),
+      p("2025-03-10", "300", { security: "a", depot: "d2" }),
+    ];
+    const y2025 = yearStatistics(imJahr, laufend).find((s) => s.year === 2025);
+    // 300 € gegen 200 € im gleichen Zeitraum: +50 %. Gegen das volle Vorjahr
+    // (700 €) waeren es −57 % — rot, obwohl das Jahr vorn liegt.
+    expect(y2025?.change.kind).toBe("percent");
+    if (y2025?.change.kind !== "percent") return;
+    expect(y2025.change.absolute.toStringValue()).toBe("100.00");
+    expect(y2025.change.percent.toNumber()).toBe(50);
   });
 });
 
@@ -358,7 +385,7 @@ describe("Skalierung (≥ 10.000 Eingänge, ≥ 500 Unternehmen)", () => {
     expect(overview.distinctSecurities).toBe(SECURITIES);
     expect(overview.distinctDepots).toBe(DEPOTS);
 
-    const years = yearStatistics(payments);
+    const years = yearStatistics(payments, SPAETER);
     expect(years.map((y) => y.year)).toEqual(
       [...years.map((y) => y.year)].sort((a, b) => b - a),
     );

@@ -122,20 +122,27 @@ export const DEPOT_TABS: readonly { to: string; label: string; end?: boolean }[]
 /**
  * Unterbereiche der Statistik (PRODUCT_SPEC.md §11).
  *
- * Fuenf statt sieben: „Jahre" und „Monate" sind der Reiter „Verlauf" mit einem
+ * Vier statt sieben: „Jahre" und „Monate" sind der Reiter „Verlauf" mit einem
  * Umschalter, der „Breakdown" ist als Matrix in die Uebersicht gezogen (dort
- * lag die Heatmap derselben Zahlen). Sieben Reiter liefen auf dem Telefon zur
- * Haelfte aus dem Bild. Der Vergleich folgt dem Verlauf: Er beantwortet
- * dieselbe zeitliche Frage fuer zwei gewaehlte Zeitraeume.
+ * lag die Heatmap derselben Zahlen), „Unternehmen" und „Depotkonten" sind der
+ * Reiter „Aufteilung". Mehr als vier Reiter liefen auf dem Telefon aus dem
+ * Bild. Der Vergleich folgt dem Verlauf: Er beantwortet dieselbe zeitliche
+ * Frage fuer zwei gewaehlte Zeitraeume.
  */
-export const STATISTICS_TABS: readonly { to: string; label: string; end?: boolean }[] = [
+export const STATISTICS_TABS: readonly {
+  to: string;
+  label: string;
+  end?: boolean;
+  also?: readonly string[];
+}[] = [
   { to: "/statistiken", label: "Übersicht", end: true },
   { to: "/statistiken/verlauf", label: "Verlauf" },
   { to: "/statistiken/vergleich", label: "Vergleich" },
-  { to: "/statistiken/unternehmen", label: "Unternehmen" },
-  // „Depotkonten" statt „Depots": Gemeint sind die Konten bei den Brokern, nicht
-  // der Bestand — den fuehrt seit der Umbenennung der Bereich „Depot".
-  { to: "/statistiken/depots", label: "Depotkonten" },
+  // Unternehmen und Depotkonten als **ein** Reiter „Aufteilung" (Umschalter
+  // auf der Seite, `BreakdownSwitch`): Beide beantworten dieselbe Frage —
+  // woher kommen die Dividenden? Fuenf Reiter passten auf dem Telefon nicht
+  // nebeneinander; „Depotkonten" lag unsichtbar rechts ausserhalb.
+  { to: "/statistiken/unternehmen", label: "Aufteilung", also: ["/statistiken/depots"] },
 ];
 
 /**

@@ -99,11 +99,6 @@ describe("buildCalendarSummary", () => {
     expect(summary.upcoming).toBe(5);
   });
 
-  it("zählt Unternehmen ohne Dubletten", () => {
-    // Apple kommt am 13.08. und am 20.09. vor und zählt einmal.
-    expect(buildCalendarSummary(bestand, HEUTE).companies).toBe(4);
-  });
-
   it("lässt abgesagte Termine aus allen Zahlen heraus", () => {
     const mitAbsage = [
       event("a", "2026-08-06", "Abgesagt AG", { eventState: "cancelled" }),
@@ -114,7 +109,6 @@ describe("buildCalendarSummary", () => {
 
     expect(summary.next?.date).toBe("2026-08-10");
     expect(summary.upcoming).toBe(1);
-    expect(summary.companies).toBe(1);
     expect(summary.thisMonth.count).toBe(1);
   });
 
@@ -123,7 +117,6 @@ describe("buildCalendarSummary", () => {
 
     expect(summary.next).toBeNull();
     expect(summary.upcoming).toBe(0);
-    expect(summary.companies).toBe(0);
     expect(summary.next30Days.count).toBe(0);
   });
 });
