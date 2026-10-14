@@ -117,25 +117,28 @@ export async function normalizeRows(
       options.numberFormat,
     );
     if (amountOutcome.ok) {
-      const amount = amountOutcome.value.decimal;
-      // Der Import legt jede Zeile als regulaeren Eingang an; die Datenbank
-      // laesst dafuer keinen negativen Betrag zu. Ohne diese Pruefung scheiterte
-      // erst der Commit — als Ganzes und mit einer rohen Datenbankmeldung.
-      if (amount.lessThanOrEqualTo(0)) {
-        errors.push(
-          `Zeile ${String(sourceRowNumber)}: Betrag muss größer als 0 sein – Korrekturen und Stornos werden nicht importiert.`,
-        );
-      }
       // R-1: Genau hier, beim Festschreiben, wird auf zwei Stellen gerundet.
       // Rundete erst die Datenbank, wichen ihre Summen von den hier
       // berechneten Kontrollsummen ab und der Import wuerde abgelehnt.
-      if (amount.decimalPlaces() > MONEY_SCALE) {
-        netAmount = roundHalfUp(amount, MONEY_SCALE).toFixed(MONEY_SCALE);
+      const { canonical, decimal } = amountOutcome.value;
+      const rounded = roundHalfUp(decimal, MONEY_SCALE);
+      if (decimal.decimalPlaces() > MONEY_SCALE) {
+        netAmount = rounded.toFixed(MONEY_SCALE);
         warnings.push(
-          `Betrag ${toGermanDecimalString(amountOutcome.value.canonical)} wurde kaufmännisch auf ${toGermanDecimalString(netAmount)} gerundet.`,
+          `Betrag ${toGermanDecimalString(canonical)} wurde kaufmännisch auf ${toGermanDecimalString(netAmount)} gerundet.`,
         );
       } else {
-        netAmount = amountOutcome.value.canonical;
+        netAmount = canonical;
+      }
+      // Der Import legt jede Zeile als regulaeren Eingang an; die Datenbank
+      // laesst dafuer keinen negativen Betrag zu. Ohne diese Pruefung scheiterte
+      // erst der Commit — als Ganzes und mit einer rohen Datenbankmeldung.
+      // Geprueft wird der gerundete Wert: 0,004 waere sonst ein Eingang ueber
+      // 0,00 €.
+      if (rounded.lessThanOrEqualTo(0)) {
+        errors.push(
+          `Zeile ${String(sourceRowNumber)}: Betrag muss größer als 0 sein – Korrekturen und Stornos werden nicht importiert.`,
+        );
       }
     } else {
       errors.push(`Zeile ${String(sourceRowNumber)}: ${amountOutcome.error.reason}.`);
