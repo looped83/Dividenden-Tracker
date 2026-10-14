@@ -6,11 +6,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/toast";
 import { BackupContents } from "@/components/backup/BackupContents";
 import ProgressIndicator from "@/components/backup/ProgressIndicator";
-import {
-  createBackup,
-  downloadBackup,
-  markBackupCompleted,
-} from "@/lib/backup/backupService";
+import { createBackup, downloadBackup } from "@/lib/backup/backupService";
 import type { BackupProgress } from "@/lib/backup/backupService";
 import type { BackupRoot } from "@/lib/backup/backupFormat";
 import { useLastBackup } from "./hooks";
@@ -18,10 +14,10 @@ import { useLastBackup } from "./hooks";
 /**
  * Sicherung erstellen.
  *
- * Der Ablauf ist bewusst in dieser Reihenfolge: Daten laden → Datei anbieten →
- * **erst dann** Erfolg melden und den Sicherungszeitpunkt festhalten. Zuvor
- * meldete dieser Bereich „erfolgreich erstellt und heruntergeladen", ohne dass
- * je eine Datei entstand — die Erfolgsmeldung hing am Erzeugen der Daten, nicht
+ * Der Ablauf ist bewusst in dieser Reihenfolge: Daten laden → Datei anbieten
+ * (samt Sicherungszeitpunkt, siehe `downloadBackup`) → **erst dann** Erfolg
+ * melden. Zuvor meldete dieser Bereich „erfolgreich erstellt und
+ * heruntergeladen", ohne dass je eine Datei entstand — die Erfolgsmeldung hing am Erzeugen der Daten, nicht
  * am Ergebnis. Bei einem Sicherheitsnetz ist genau das der teuerste Fehler:
  * Man bemerkt ihn erst, wenn man es braucht.
  */
@@ -46,11 +42,19 @@ export default function BackupSection() {
         return;
       }
 
-      downloadBackup(result.backup, result.fileName);
+      const recordedAt = await downloadBackup(result.backup, result.fileName);
       setBackup(result.backup);
-      await markBackupCompleted();
-      lastBackup.refetch();
-      notify("Sicherung erstellt und heruntergeladen.");
+      if (recordedAt) {
+        lastBackup.record(recordedAt);
+        notify("Sicherung erstellt und heruntergeladen.");
+      } else {
+        // Die Datei ist da — nur der Vermerk fehlt. Gesagt wird es trotzdem:
+        // „Zuletzt gesichert" zeigte sonst stillschweigend einen alten Stand.
+        notify(
+          "Sicherung heruntergeladen, der Zeitpunkt konnte aber nicht gespeichert werden.",
+          "negative",
+        );
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unbekannter Fehler.");
     } finally {

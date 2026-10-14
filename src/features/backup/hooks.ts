@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchLastBackupAt } from "@/lib/backup/backupService";
 import { formatTimestampDate } from "@/lib/utils/formatDate";
 
@@ -18,7 +18,8 @@ function daysSince(iso: string, now: Date): number {
  * geschrieben; die Frage „wann habe ich zuletzt gesichert?" war damit nicht zu
  * beantworten. Eine Sicherung, an die niemand erinnert wird, ist keine.
  */
-export function useLastBackup(): { label: string; refetch: () => void } {
+export function useLastBackup(): { label: string; record: (at: string) => void } {
+  const queryClient = useQueryClient();
   const query = useQuery({
     queryKey: LAST_BACKUP_KEY,
     queryFn: fetchLastBackupAt,
@@ -26,7 +27,12 @@ export function useLastBackup(): { label: string; refetch: () => void } {
 
   return {
     label: describeLastBackup(query.data ?? null, query.isLoading),
-    refetch: () => void query.refetch(),
+    // Der gespeicherte Zeitpunkt kommt aus der Schreibanfrage selbst zurueck —
+    // ein zweites Lesen waere eine Anfrage ohne neue Auskunft. Alle Stellen,
+    // die den Stand zeigen (Sicherung, Einstellungen), lesen denselben Eintrag.
+    record: (at) => {
+      queryClient.setQueryData(LAST_BACKUP_KEY, at);
+    },
   };
 }
 

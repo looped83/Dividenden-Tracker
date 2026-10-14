@@ -91,8 +91,10 @@ test("erstellt eine vollständige Sicherungsdatei", async ({ page, konto }) => {
   });
   expect(inhalt.integrity.record_counts.dividend_payment).toBe(anzahl);
 
-  // 4. Der Sicherungsstand wird fortgeschrieben.
+  // 4. Der Sicherungsstand wird fortgeschrieben — in der Datenbank und in der
+  //    Zeile darüber, ohne die Seite neu zu laden.
   await expect(page.getByText("Sicherung erstellt und heruntergeladen.")).toBeVisible();
+  await expect(page.getByText(/^Zuletzt gesichert: heute/)).toBeVisible();
   const lastBackup = await asUser(konto.userId, async (client) => {
     const result = await client.query<{ last_backup_at: string | null }>(
       "select last_backup_at from profiles where id = $1",
