@@ -18,19 +18,24 @@ import {
   usePayment,
   useUpdatePayment,
 } from "@/features/payments/hooks";
-import { paymentFormSchema, type PaymentFormValues } from "@/features/payments/schemas";
+import {
+  paymentFormSchema,
+  todayIso,
+  type PaymentFormValues,
+} from "@/features/payments/schemas";
 import {
   PaymentConflictError,
   type DividendPaymentInsert,
 } from "@/lib/supabase/repositories/payments";
 
-const DEFAULT_VALUES: PaymentFormValues = {
-  securityId: "",
-  depotId: "",
-  payDate: new Date().toISOString().slice(0, 10),
-  netAmount: "",
-  note: "",
-};
+/**
+ * Leeres Formular. Das Datum ist der heutige **lokale** Kalendertag beim
+ * Oeffnen: Als Modulkonstante ueber UTC stand nach Mitternacht der Vortag im
+ * Feld und in einer tagelang geoeffneten App ein noch aelteres Datum.
+ */
+function emptyValues(): PaymentFormValues {
+  return { securityId: "", depotId: "", payDate: todayIso(), netAmount: "", note: "" };
+}
 
 /**
  * Das Formular fuer einen Dividendeneingang — **einmal** fuer beide Wege:
@@ -66,6 +71,7 @@ export function PaymentForm({
 
   const [submitError, setSubmitError] = React.useState<string | null>(null);
   const [conflict, setConflict] = React.useState(false);
+  const [defaultValues] = React.useState(emptyValues);
 
   const {
     register,
@@ -77,7 +83,7 @@ export function PaymentForm({
     formState: { errors, isSubmitting },
   } = useForm<PaymentFormValues>({
     resolver: zodResolver(paymentFormSchema),
-    defaultValues: DEFAULT_VALUES,
+    defaultValues,
   });
 
   // Formular nur einmalig aus dem geladenen Eingang vorbelegen — ein späteres

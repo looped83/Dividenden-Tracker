@@ -171,7 +171,8 @@ create table dividend_payments (
   depot_id             uuid not null references depots(id),
 
   -- Zahlung (Basiswährung, final gerundet auf 2 Nachkommastellen)
-  pay_date             date not null check (pay_date between date '1970-01-01' and current_date),
+  -- Obergrenze: heutiger Kalendertag in Europe/Berlin, nicht UTC (0032)
+  pay_date             date not null check (pay_date between date '1970-01-01' and (now() at time zone 'Europe/Berlin')::date),
   gross_amount         numeric(14,2) not null,
   net_amount           numeric(14,2) not null,
   withholding_tax      numeric(14,2) not null default 0,

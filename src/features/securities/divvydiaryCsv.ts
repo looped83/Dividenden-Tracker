@@ -181,9 +181,14 @@ function isMissing(value: string): boolean {
   return PLACEHOLDER_VALUES.has(value.toLowerCase());
 }
 
-function textOrNull(value: string, maxLength: number): string | null {
+/**
+ * Freitext der Quelle oder `null`. Ohne `maxLength` ungekuerzt — so muessen
+ * Werte mit festem Format (Ticker, WKN, Land, Waehrung) gelesen werden: Erst
+ * gekuerzt und dann geprueft, wuerde aus „Germany" das gueltige „GE" (Georgien).
+ */
+function textOrNull(value: string, maxLength?: number): string | null {
   if (isMissing(value)) return null;
-  return value.slice(0, maxLength);
+  return maxLength === undefined ? value : value.slice(0, maxLength);
 }
 
 /**
@@ -309,13 +314,13 @@ export function parseDivvyDiaryCsv(buffer: ArrayBuffer): ParsedDivvyDiaryFile {
 
     const rowWarnings: string[] = [];
 
-    let ticker = textOrNull(cell(row, column.symbol), 20);
+    let ticker = textOrNull(cell(row, column.symbol));
     if (ticker !== null && !TICKER_PATTERN.test(ticker)) {
       rowWarnings.push(`Ticker „${ticker}" ungültig, wird nicht übernommen`);
       ticker = null;
     }
 
-    let wkn = textOrNull(cell(row, column.wkn), 6)?.toUpperCase() ?? null;
+    let wkn = textOrNull(cell(row, column.wkn))?.toUpperCase() ?? null;
     if (wkn !== null && !WKN_PATTERN.test(wkn)) {
       rowWarnings.push(`WKN „${wkn}" ungültig, wird nicht übernommen`);
       wkn = null;
@@ -324,12 +329,12 @@ export function parseDivvyDiaryCsv(buffer: ArrayBuffer): ParsedDivvyDiaryFile {
     // Das Land der Quelle wird nur uebernommen, wenn es ein Laendercode ist.
     // Fuer alles andere gilt die ISIN als Quelle — ihre ersten beiden Zeichen
     // sind nach ISO 6166 der Emissionsstaat.
-    const rawCountry = textOrNull(cell(row, column.country), 2)?.toUpperCase() ?? null;
+    const rawCountry = textOrNull(cell(row, column.country))?.toUpperCase() ?? null;
     const country =
       rawCountry !== null && /^[A-Z]{2}$/.test(rawCountry) ? rawCountry : null;
 
     const dividendCurrency =
-      textOrNull(cell(row, column.originalDividendCurrency), 3)?.toUpperCase() ?? null;
+      textOrNull(cell(row, column.originalDividendCurrency))?.toUpperCase() ?? null;
 
     const currency = cell(row, column.currency).toUpperCase();
     if (!/^[A-Z]{3}$/.test(currency)) {

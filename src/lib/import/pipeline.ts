@@ -1,4 +1,7 @@
 import { MoneyDecimal } from "@/lib/money/decimalConfig";
+import { MONEY_SCALE } from "@/lib/money/money";
+import { roundHalfUp } from "@/lib/money/rounding";
+import { toGermanDecimalString } from "@/lib/money/germanDecimalInput";
 import { compareGerman } from "@/lib/utils/compareText";
 import { parseDateValue, type DateFormat } from "./parseDate";
 import { parseAmount, type NumberFormat } from "./parseAmount";
@@ -114,7 +117,26 @@ export async function normalizeRows(
       options.numberFormat,
     );
     if (amountOutcome.ok) {
-      netAmount = amountOutcome.value.canonical;
+      const amount = amountOutcome.value.decimal;
+      // Der Import legt jede Zeile als regulaeren Eingang an; die Datenbank
+      // laesst dafuer keinen negativen Betrag zu. Ohne diese Pruefung scheiterte
+      // erst der Commit — als Ganzes und mit einer rohen Datenbankmeldung.
+      if (amount.lessThanOrEqualTo(0)) {
+        errors.push(
+          `Zeile ${String(sourceRowNumber)}: Betrag muss größer als 0 sein – Korrekturen und Stornos werden nicht importiert.`,
+        );
+      }
+      // R-1: Genau hier, beim Festschreiben, wird auf zwei Stellen gerundet.
+      // Rundete erst die Datenbank, wichen ihre Summen von den hier
+      // berechneten Kontrollsummen ab und der Import wuerde abgelehnt.
+      if (amount.decimalPlaces() > MONEY_SCALE) {
+        netAmount = roundHalfUp(amount, MONEY_SCALE).toFixed(MONEY_SCALE);
+        warnings.push(
+          `Betrag ${toGermanDecimalString(amountOutcome.value.canonical)} wurde kaufmännisch auf ${toGermanDecimalString(netAmount)} gerundet.`,
+        );
+      } else {
+        netAmount = amountOutcome.value.canonical;
+      }
     } else {
       errors.push(`Zeile ${String(sourceRowNumber)}: ${amountOutcome.error.reason}.`);
     }

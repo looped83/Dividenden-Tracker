@@ -7,6 +7,22 @@
 
 import { QueryClient } from "@tanstack/react-query";
 
+/**
+ * Einmal wiederholen — ausser bei „nicht gefunden" (PostgREST `PGRST116`):
+ * Ein geloeschter Eingang taucht auch beim zweiten Versuch nicht auf. Die
+ * Wiederholung kostete eine Anfrage und verzoegerte die Meldung „nicht
+ * gefunden" um eine Sekunde — etwa direkt nach dem Loeschen oder bei einem
+ * alten Link.
+ */
+export function shouldRetry(failureCount: number, error: unknown): boolean {
+  const notFound =
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === "PGRST116";
+  return !notFound && failureCount < 1;
+}
+
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -22,7 +38,7 @@ export const queryClient = new QueryClient({
       // Verbindungsabbruch wird weiterhin nachgeladen (`refetchOnReconnect`
       // bleibt an), und beim Navigieren greift die Frist oben.
       refetchOnWindowFocus: false,
-      retry: 1,
+      retry: shouldRetry,
     },
   },
 });

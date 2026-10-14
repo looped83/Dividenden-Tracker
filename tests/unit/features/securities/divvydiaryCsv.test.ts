@@ -90,6 +90,21 @@ describe("parseDivvyDiaryCsv", () => {
     expect(position.isin).toBe("DE000A0F5UH1");
   });
 
+  it("prüft Land, WKN und Währung vollständig, statt sie passend zu kürzen", () => {
+    // Gekuerzt und dann geprueft, wuerde aus „Germany" das gueltige „GE"
+    // (Georgien), aus einer siebenstelligen WKN eine sechsstellige.
+    const odd = EQUITY.replace(";850103;", ";8501034;").replace(
+      ";EQUITY;US;USD;",
+      ";EQUITY;Germany;USDX;",
+    );
+    const [position] = parseDivvyDiaryCsv(csv(odd)).positions;
+
+    expect(position.country).toBeNull();
+    expect(position.dividendCurrency).toBeNull();
+    expect(position.wkn).toBeNull();
+    expect(position.warnings).toContain('WKN „8501034" ungültig, wird nicht übernommen');
+  });
+
   it("überspringt Zeilen ohne Bestand, ohne sie als Fehler zu werten", () => {
     const result = parseDivvyDiaryCsv(csv(EQUITY, WATCHLIST, ETF));
 

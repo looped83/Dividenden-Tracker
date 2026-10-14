@@ -184,6 +184,11 @@ ausschließlich diese Schicht auf; keine Aggregation in React-Komponenten.
 - Ein Jahr gilt als **abgeschlossen**, wenn es nicht das aktuelle Kalenderjahr ist.
 - Entsprechender Kalendertag im Vorjahr: gleicher Monat/Tag, `29.02.` → `28.02.` im
   Nicht-Schaltjahr (Kappung auf den letzten gültigen Monatstag).
+- Mit Ausschüttungsplan (§10) gehört eine Zahlung zum Jahr ihres **effektiven** Datums;
+  „bis heute" bzw. „bis zum entsprechenden Kalendertag" grenzt im laufenden Jahr dagegen nach
+  dem **tatsächlichen** Zahlungsdatum ab. Der Vergleichswert des laufenden Jahres ist damit
+  genau die angezeigte Jahressumme — auch wenn eine vorgezogene Zahlung effektiv erst im
+  kommenden Monat steht —, und das Vorjahr zählt nach derselben Regel.
 
 ### 9.3 Aktueller Monat (§5.2/§6.3)
 
@@ -305,7 +310,9 @@ Gleitkomma-Geldarithmetik statt.
   **mindestens bis zum letzten Monat mit Zahlungen**. Der ausgewählte Zeitraum (§5.1) und der
   Jahresvergleich (§6) folgen dagegen unverändert dem effektiven Datum: Geld, das laut Plan erst
   im kommenden Monat fällig ist, zählt auch erst dort — das ist die gewollte Folge einer
-  Auswertung nach Ausschüttungsplan statt nach Kalender.
+  Auswertung nach Ausschüttungsplan statt nach Kalender. Nur die Grenze „bis heute" des
+  Jahresvergleichs im laufenden Jahr folgt dem tatsächlichen Eingang (§9.2), damit Jahressumme
+  und Veränderung zueinander passen.
 - Eine mehr als einen Monat zu früh eingetroffene Zahlung wird weiterhin dem vorherigen fälligen
   geplanten Monat zugerechnet (kein Vorziehen über mehr als einen Monat).
 
@@ -538,7 +545,7 @@ unten — in die Richtung, in der ein Bildschirm nachgibt.
 ## Phase 6 – Validierung und Datenqualität
 
 **Zahlungsdatum.** Gültiges Kalenderdatum, ≥ 1970-01-01 und ≤ heute (lokal,
-ohne Zeitzonenverschiebung; entspricht dem DB-CHECK `pay_date <= current_date`).
+ohne Zeitzonenverschiebung; entspricht dem DB-CHECK `pay_date <= heute in Europe/Berlin`, 0032).
 Zukünftige Zahlungsdaten werden abgelehnt.
 
 **Nettobetrag.** Decimal-sicher (`lib/money`, keine JS-Float-Arithmetik):

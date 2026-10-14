@@ -39,6 +39,34 @@ describe("CHECK-Constraints (TEST_STRATEGY.md §5)", () => {
     ).rejects.toThrow(/dividend_payments_pay_date_check/);
   });
 
+  // Der Kalendertag in Berlin, nicht in UTC (0032): Zwischen 0 und 2 Uhr
+  // deutscher Zeit liegt UTC noch im Vortag.
+  it("akzeptiert den heutigen Berliner Kalendertag und lehnt den morgigen ab", async () => {
+    const { today, tomorrow } = await asUser(userId, async (client) =>
+      firstRow(
+        await client.query<{ today: string; tomorrow: string }>(
+          `select to_char((now() at time zone 'Europe/Berlin')::date, 'YYYY-MM-DD') as today,
+                  to_char((now() at time zone 'Europe/Berlin')::date + 1, 'YYYY-MM-DD') as tomorrow`,
+        ),
+      ),
+    );
+
+    const row = await asUser(userId, async (client) => {
+      const depotId = await seedDepot(client, "Depot CHECK 3");
+      const securityId = await seedSecurity(client, { name: "Check AG 3" });
+      return seedPayment(client, { securityId, depotId, payDate: today });
+    });
+    expect(row.id).toBeTruthy();
+
+    await expect(
+      asUser(userId, async (client) => {
+        const depotId = await seedDepot(client, "Depot CHECK 4");
+        const securityId = await seedSecurity(client, { name: "Check AG 4" });
+        return seedPayment(client, { securityId, depotId, payDate: tomorrow });
+      }),
+    ).rejects.toThrow(/dividend_payments_pay_date_check/);
+  });
+
   it("erzwingt die Betragsinvariante (Toleranz 0,02) — CALCULATION_RULES.md §4", async () => {
     await expect(
       asUser(userId, async (client) => {

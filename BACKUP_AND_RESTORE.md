@@ -152,6 +152,15 @@ Die beiden Modi decken die realen Fälle ab — „ich habe etwas verloren" (mer
 den Stand von damals" (replace). Eine feldweise Konfliktauflösung bliebe eine Funktion, die
 man einmal im Leben braucht und deren Fehlbedienung teuer ist.
 
+**Leere Teilbeträge kommen als 0,00 zurück.** `solidarity_surcharge`, `church_tax` und `fees`
+dürfen in der Datenbank leer sein; das Format (Version 1 und 2) schreibt für sie `0` als
+Vorgabe, und `restore_backup` setzt fehlende Werte auf 0. „Nicht erfasst" und „0,00" sind
+danach nicht mehr unterscheidbar. Das ist hingenommen: Keine Auswertung und keine Anzeige liest
+diese Felder, und die Betragsinvariante (CALCULATION_RULES.md §4) behandelt leer ohnehin als 0.
+Sie zu erhalten hieße, das Format zu ändern und `restore_backup` vollständig neu anzulegen — mehr
+Risiko für die Wiederherstellung, als der Unterschied wert ist. Ändert sich das (etwa weil die
+Felder im Formular erfasst werden), gehört die Korrektur in dieselbe Änderung.
+
 ### 5.5 Fingerprints beim Einspielen
 
 `business_fingerprint` wird vom Trigger neu berechnet, nie aus der Datei übernommen. Ein
