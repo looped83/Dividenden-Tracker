@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { TabNav } from "@/components/layout/TabNav";
-import { refDateFromDate } from "@/lib/statistics";
+import { useToday } from "@/lib/hooks/useToday";
 import { computeGoalProgress, sortGoalProgress } from "@/lib/goals";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { useGoalProgressPayments, useGoals } from "./hooks";
@@ -43,7 +43,7 @@ function GoalsSkeleton() {
 
 export function GoalsPage() {
   const navigate = useNavigate();
-  const today = React.useMemo(() => refDateFromDate(), []);
+  const today = useToday();
   const goalsQuery = useGoals();
   const { payments, isLoading: paymentsLoading } = useGoalProgressPayments();
   // Hier wird nur angelegt; Bearbeiten und Loeschen stehen auf der

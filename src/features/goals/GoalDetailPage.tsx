@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { DetailBackLink, DetailHeader } from "@/components/layout/DetailHeader";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
-import { refDateFromDate } from "@/lib/statistics";
+import { useToday } from "@/lib/hooks/useToday";
 import { computeGoalProgress } from "@/lib/goals";
 import { useDeleteGoal, useGoal, useGoalProgressPayments } from "./hooks";
 import { GoalProgressBar } from "./GoalProgressBar";
@@ -42,7 +42,7 @@ function formatTimestamp(iso: string): string {
 export function GoalDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const today = React.useMemo(() => refDateFromDate(), []);
+  const today = useToday();
   const goalQuery = useGoal(id);
   const { payments, isLoading: paymentsLoading } = useGoalProgressPayments();
   const deleteGoal = useDeleteGoal();

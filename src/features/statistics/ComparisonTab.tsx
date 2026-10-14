@@ -16,12 +16,12 @@ import {
   compareYears,
   filterPayments,
   monthNameDe,
-  refDateFromDate,
   type ComparisonMonthSide,
   type MonthComparison,
   type PeriodComparison,
   type StatisticsFilter,
 } from "@/lib/statistics";
+import { useToday } from "@/lib/hooks/useToday";
 import { useStatisticsContext } from "./context";
 import type { EntityInfo } from "@/features/dashboard/format";
 import {
@@ -66,7 +66,7 @@ import {
 export function ComparisonTab() {
   const { allPayments, filter, securities } = useStatisticsContext();
   const [searchParams, setSearchParams] = useSearchParams();
-  const today = React.useMemo(() => refDateFromDate(), []);
+  const today = useToday();
 
   // Alle Filter ausser dem Jahr — die beiden Jahre waehlt dieser Bereich selbst.
   const yearlessFilter = React.useMemo(() => ({ ...filter, year: null }), [filter]);
