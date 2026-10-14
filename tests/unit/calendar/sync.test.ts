@@ -212,6 +212,49 @@ describe("planSync", () => {
     expect(plan.toUpdate).toHaveLength(0);
     expect(plan.unchanged).toBe(1);
   });
+
+  describe("Schreibweise der Datenbank", () => {
+    // Mit Uhrzeit, damit auch `starts_at` gefuellt ist.
+    const mitBetrag = parse(
+      feed(
+        [
+          "BEGIN:VEVENT",
+          "UID:betrag",
+          "DTSTART:20260815T080000Z",
+          "SUMMARY:Verizon Communications Inc 51,30 € Zahltag (Trade Republic)",
+          "END:VEVENT",
+        ].join("\r\n"),
+      ),
+    ).events;
+
+    /** So liefert PostgREST die Zeile zurueck: numeric als Zahl, timestamptz mit Versatz. */
+    function wieAusDerDatenbank(write: CalendarEventWrite, betrag: number) {
+      return gespeichert("row-1", write, {
+        expected_amount: betrag as unknown as string,
+        starts_at: write.starts_at?.replace(".000Z", "+00:00") ?? null,
+      });
+    }
+
+    it("haelt einen unveraenderten Termin mit Betrag und Uhrzeit fuer unveraendert", () => {
+      const write = toWrite(mitBetrag[0]);
+      expect(write.expected_amount).toBe("51.30");
+      expect(write.starts_at).toMatch(/\.000Z$/);
+
+      const plan = planSync(mitBetrag, [wieAusDerDatenbank(write, 51.3)], HEUTE);
+
+      expect(plan.toUpdate).toHaveLength(0);
+      expect(plan.unchanged).toBe(1);
+    });
+
+    it("erkennt weiterhin einen geaenderten Betrag", () => {
+      const write = toWrite(mitBetrag[0]);
+
+      const plan = planSync(mitBetrag, [wieAusDerDatenbank(write, 51.31)], HEUTE);
+
+      expect(plan.toUpdate).toHaveLength(1);
+      expect(plan.toUpdate[0].expected_amount).toBe("51.30");
+    });
+  });
 });
 
 describe("runCalendarSync", () => {
