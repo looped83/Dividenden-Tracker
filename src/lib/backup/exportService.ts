@@ -26,6 +26,7 @@
 
 import { supabase } from "@/lib/supabase/client";
 import { fetchAllPages } from "@/lib/supabase/fetchAllPages";
+import { downloadBlob } from "@/lib/utils/downloadBlob";
 import { MoneyDecimal } from "@/lib/money/decimalConfig";
 import { describePaymentType } from "@/lib/payments/paymentType";
 import type { PaymentType } from "@/lib/supabase/database.types";
@@ -527,17 +528,6 @@ export async function buildXlsxWorkbook(
 // ============================================================================
 // Datei ausliefern
 // ============================================================================
-
-function downloadBlob(blob: Blob, fileName: string): void {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = fileName;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-}
 
 /** Tagesstempel im Dateinamen: `dividenden-export-2026-07-31.csv`. */
 function getTimestampSuffix(): string {
