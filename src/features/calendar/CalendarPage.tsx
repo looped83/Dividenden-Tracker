@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useToast } from "@/components/ui/toast";
 import { isoFromRef, refDateFromDate } from "@/lib/statistics";
+import { useToday } from "@/lib/hooks/useToday";
 import { shiftMonth } from "@/lib/calendar/month";
 import { buildCalendarSummary } from "@/lib/calendar/summary";
 import {
@@ -62,7 +63,7 @@ function CalendarSkeleton() {
  */
 export function CalendarPage() {
   const { notify } = useToast();
-  const today = React.useMemo(() => isoFromRef(refDateFromDate()), []);
+  const today = isoFromRef(useToday());
   const [viewMode, setViewMode] = useCalendarViewMode();
   const [visibleMonth, setVisibleMonth] = React.useState(() => {
     const ref = refDateFromDate();

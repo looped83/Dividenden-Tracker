@@ -31,7 +31,8 @@ import {
   findDuplicatePairs,
   type DuplicatePair,
 } from "@/lib/payments/dataQuality";
-import { todayIso } from "@/features/payments/schemas";
+import { isoFromRef } from "@/lib/statistics";
+import { useToday } from "@/lib/hooks/useToday";
 import { isImported, sourceLabel } from "./paymentDisplay";
 import { DeleteDialog, StornoDialog, type PaymentSummaryData } from "./dialogs";
 
@@ -72,9 +73,10 @@ export function DataQualityPage() {
       dismissedPairs: all.filter((pair) => dismissedSet.has(pair.key)),
     };
   }, [payments, dismissedKeys]);
+  const today = isoFromRef(useToday());
   const anomalies = React.useMemo(
-    () => detectAnomalies(payments, todayIso()),
-    [payments],
+    () => detectAnomalies(payments, today),
+    [payments, today],
   );
 
   // Übersichtszahlen (§17). Archivierte Zuordnungen sind kein Fehler, nur Hinweis.

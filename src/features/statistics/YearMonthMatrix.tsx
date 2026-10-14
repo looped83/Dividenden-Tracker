@@ -18,12 +18,12 @@ import {
   filterPayments,
   monthNameDe,
   monthNameDeShort,
-  refDateFromDate,
   type BreakdownCell,
   type BreakdownMatrix,
   type ComparisonResult,
   type StatisticsFilter,
 } from "@/lib/statistics";
+import { useToday } from "@/lib/hooks/useToday";
 import { useStatisticsContext } from "./context";
 import {
   describeComparison,
@@ -60,7 +60,7 @@ export function YearMonthMatrix() {
   const { allPayments, filter } = useStatisticsContext();
   const [searchParams, setSearchParams] = useSearchParams();
   const isWide = useMediaQuery(MD_BREAKPOINT_QUERY);
-  const today = React.useMemo(() => refDateFromDate(), []);
+  const today = useToday();
   const view = parseBreakdownView(searchParams);
 
   const yearlessFilter = React.useMemo(() => ({ ...filter, year: null }), [filter]);

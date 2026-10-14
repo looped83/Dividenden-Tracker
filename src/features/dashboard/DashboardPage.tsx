@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useDepots } from "@/features/depots/hooks";
-import { availableYears, refDateFromDate, yearOf } from "@/lib/statistics";
+import { availableYears, yearOf } from "@/lib/statistics";
+import { useToday } from "@/lib/hooks/useToday";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { useDashboardYear, useEffectivePayments } from "./hooks";
 import { YearSelector } from "./YearSelector";
@@ -50,7 +51,7 @@ function DashboardSkeleton() {
 }
 
 export function DashboardPage() {
-  const today = React.useMemo(() => refDateFromDate(), []);
+  const today = useToday();
   const { selection, setSelection } = useDashboardYear();
   // Alle Auswertungen laufen auf `payments` mit effektivem Datum (§10).
   const { payments, paymentsQuery, securitiesQuery } = useEffectivePayments();

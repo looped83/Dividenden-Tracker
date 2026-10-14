@@ -19,6 +19,7 @@
 import Decimal from "decimal.js";
 import { supabase } from "@/lib/supabase/client";
 import { fetchAllPages } from "@/lib/supabase/fetchAllPages";
+import { downloadBlob } from "@/lib/utils/downloadBlob";
 import type { Database } from "@/lib/supabase/database.types";
 import {
   BACKUP_FORMAT,
@@ -823,29 +824,10 @@ export async function createBackup(
 // Herunterladen und Sicherungszeitpunkt
 // ============================================================================
 
-/**
- * Bietet die Sicherung als Datei zum Herunterladen an.
- *
- * `URL.revokeObjectURL` folgt bewusst erst im naechsten Makrotask: Safari auf
- * iOS und iPadOS bricht den Download ab, wenn die Objekt-URL noch im selben
- * Durchlauf wie der Klick freigegeben wird. Auf genau diesen Geraeten soll die
- * Sicherung funktionieren.
- */
+/** Bietet die Sicherung als Datei zum Herunterladen an (iOS-sicher, siehe `downloadBlob`). */
 export function downloadBackup(backup: BackupRoot, fileName: string): void {
   const json = JSON.stringify(backup, null, 2);
-  const blob = new Blob([json], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = fileName;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-
-  window.setTimeout(() => {
-    URL.revokeObjectURL(url);
-  }, 0);
+  downloadBlob(new Blob([json], { type: "application/json" }), fileName);
 }
 
 /**
