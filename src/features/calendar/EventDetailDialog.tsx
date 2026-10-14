@@ -54,7 +54,7 @@ export function EventDetailDialog({
       }}
     >
       <DialogContent
-        className="max-w-sm sm:max-w-md"
+        className="max-w-md"
         // Der Dialog wird nicht von einem `DialogTrigger` geoeffnet, sondern
         // von einem Termin im Raster oder in der Liste. Ohne Trigger gibt Radix
         // den Fokus an den Seitenkoerper zurueck — wer den Dialog per Tastatur

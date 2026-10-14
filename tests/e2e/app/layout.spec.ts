@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { expect, test } from "../support/appTest";
 
 /**
@@ -72,4 +73,52 @@ test("Matrix auf dem Telefon: gedreht, ohne seitlichen Überlauf der Seite", asy
     () => document.documentElement.scrollWidth - window.innerWidth,
   );
   expect(ueberlauf).toBeLessThanOrEqual(0);
+});
+
+/**
+ * Dialoge auf dem Telefon. Zwei Fehler, die nur im Browser sichtbar werden:
+ *
+ * 1. Das Panel ist ein Grid; seine Spalte wuchs bis zur Mindestbreite des
+ *    Inhalts. Die Vorschautabelle des Depotstands zog es so auf rund 530px —
+ *    Text lief rechts aus dem Bild, man musste seitlich scrollen.
+ * 2. Die klebende Fußzeile stand um den unteren Innenabstand des Panels über
+ *    dessen Rand; darunter lief der Inhalt durchs Bild.
+ */
+test("Depotstand-Vorschau auf dem Telefon: so breit wie der Bildschirm, Fußzeile am Rand", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 360, height: 740 });
+  await page.goto("/#/depot");
+  await page.getByRole("button", { name: "Depotstand importieren" }).click();
+  await page.setInputFiles(
+    'input[type="file"]',
+    fileURLToPath(
+      new URL("../fixtures/divvydiaryportfolio1785790381565.csv", import.meta.url),
+    ),
+  );
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByRole("table")).toBeVisible();
+
+  // Die Hauptaktion steht in der Fußzeile; ihr Elternelement ist die Fußzeile.
+  const aktion = dialog.getByRole("button", { name: /Positionen übernehmen/ });
+  const masse = await aktion.evaluate((button) => {
+    const panel = button.closest('[role="dialog"]');
+    const footer = button.parentElement;
+    if (!panel || !footer) throw new Error("Dialog oder Fußzeile fehlt.");
+    return {
+      ueberlauf: panel.scrollWidth - panel.clientWidth,
+      breite: panel.getBoundingClientRect().width,
+      // Die Prüfung der Fußzeile braucht Inhalt unter ihr — sonst stünde sie
+      // auch mit dem alten Fehler am Rand.
+      scrollt: panel.scrollHeight > panel.clientHeight,
+      abstandUnten:
+        panel.getBoundingClientRect().bottom - footer.getBoundingClientRect().bottom,
+    };
+  });
+
+  expect(masse.ueberlauf).toBeLessThanOrEqual(0);
+  expect(masse.breite).toBeLessThanOrEqual(360);
+  expect(masse.scrollt).toBe(true);
+  // Höchstens der Rahmen des Panels (1px) liegt unter der Fußzeile.
+  expect(masse.abstandUnten).toBeLessThanOrEqual(1.5);
 });

@@ -173,7 +173,7 @@ export function SecurityImportDialog({
               type="file"
               accept=".xlsx"
               onChange={(event) => void handleFileChange(event)}
-              className="text-sm"
+              className="w-full text-sm"
             />
           </div>
         )}
@@ -192,35 +192,46 @@ export function SecurityImportDialog({
               {formatCountNumber(state.rows.filter((r) => r.isDuplicate).length)} bereits
               vorhanden.
             </p>
-            <div className="max-h-80 overflow-y-auto">
+            {/* Eigener Bildlauf nur auf breiten Schirmen — auf dem Telefon
+                scrollt das Panel selbst (siehe `PortfolioImportDialog`). */}
+            <div className="sm:max-h-80 sm:overflow-y-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Name</TableHead>
-                    <TableHead>Ticker</TableHead>
-                    <TableHead>ISIN</TableHead>
-                    <TableHead>Land</TableHead>
-                    <TableHead>Depot</TableHead>
+                    <TableHead className="hidden sm:table-cell">Ticker</TableHead>
+                    <TableHead className="hidden sm:table-cell">ISIN</TableHead>
+                    <TableHead className="hidden sm:table-cell">Land</TableHead>
+                    <TableHead className="hidden sm:table-cell">Depot</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {state.rows.map((row) => (
                     <TableRow key={row.sourceRow}>
-                      <TableCell className="font-medium">{row.name}</TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell className="font-medium">
+                        {row.name}
+                        {/* Auf dem Telefon stehen die Kennungen unter dem Namen
+                            statt in vier eigenen Spalten. */}
+                        <span className="block text-xs font-normal text-muted-foreground sm:hidden">
+                          {[row.ticker, row.isin, row.country, row.defaultDepotName]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </span>
+                      </TableCell>
+                      <TableCell className="hidden text-muted-foreground sm:table-cell">
                         {row.ticker ?? "—"}
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell className="hidden text-muted-foreground sm:table-cell">
                         {row.isin ?? "—"}
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell className="hidden text-muted-foreground sm:table-cell">
                         {row.country ?? "—"}
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell className="hidden text-muted-foreground sm:table-cell">
                         {row.defaultDepotName ?? "—"}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="align-top sm:align-middle">
                         {row.isDuplicate ? (
                           <Badge variant="neutral">Bereits vorhanden</Badge>
                         ) : (
