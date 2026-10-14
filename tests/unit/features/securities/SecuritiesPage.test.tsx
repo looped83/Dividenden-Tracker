@@ -50,7 +50,7 @@ vi.mock("@/features/securities/hooks", async (importOriginal) => {
       isLoading: false,
     }),
     useSecuritySnapshots: () => ({ data: staende.current, isLoading: false }),
-    useArchiveSecurity: () => ({ mutate: vi.fn(), isPending: false }),
+    useArchiveSecurity: () => ({ mutateAsync: vi.fn(), isPending: false }),
     useDeleteSecurity: () => ({ mutateAsync: vi.fn(), isPending: false }),
   };
 });

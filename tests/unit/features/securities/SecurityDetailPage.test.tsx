@@ -73,7 +73,7 @@ vi.mock("@/features/securities/hooks", () => ({
   // erhaltenen Eingaengen.
   useSecuritySnapshots: () => ({ data: [], isLoading: false }),
   // Bearbeiten, Archivieren und Loeschen stehen im Kopf der Seite.
-  useArchiveSecurity: () => ({ mutate: vi.fn(), isPending: false }),
+  useArchiveSecurity: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useDeleteSecurity: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useCreateSecurity: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useUpdateSecurity: () => ({ mutateAsync: vi.fn(), isPending: false }),
