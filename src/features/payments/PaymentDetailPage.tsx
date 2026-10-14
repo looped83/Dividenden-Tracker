@@ -26,7 +26,11 @@ import {
   usePayment,
   useUnarchivePayment,
 } from "@/features/payments/hooks";
-import { isImported, sourceLabel } from "@/features/payments/paymentDisplay";
+import {
+  amountDiffers,
+  isImported,
+  sourceLabel,
+} from "@/features/payments/paymentDisplay";
 import { formatCalendarDate, formatTimestamp } from "@/lib/utils/formatDate";
 import {
   DeleteDialog,
@@ -137,7 +141,8 @@ export function PaymentDetailPage() {
     typeof rawNet === "string" || typeof rawNet === "number" ? String(rawNet) : null;
   const rawPayDate = normalized?.["pay_date"];
   const importedPayDate = typeof rawPayDate === "string" ? rawPayDate : null;
-  const netChanged = importedNet !== null && importedNet !== payment.net_amount;
+  const netChanged =
+    importedNet !== null && amountDiffers(importedNet, payment.net_amount);
   const dateChanged = importedPayDate !== null && importedPayDate !== payment.pay_date;
 
   const handleStorno = async () => {
