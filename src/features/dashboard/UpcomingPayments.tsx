@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Link } from "react-router";
+import { CalendarDays } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ListGroup, ListItemBody, ListRow } from "@/components/ui/list";
@@ -57,10 +58,17 @@ export function UpcomingPayments({ today }: { today: string }) {
             </p>
           )}
         </div>
-        {/* Wie „Alle Dividenden" bei den letzten Eingängen: der Weg zum
-            ganzen Bereich rechts neben der Überschrift. */}
-        <Button asChild variant="ghost" size="sm" className="-my-2 -mr-3 shrink-0">
-          <Link to="/kalender">Kalender</Link>
+        {/* Der Weg zum ganzen Bereich als Symbol rechts neben der Überschrift —
+            dieselbe Form wie der Umschalter beim Dividendenverlauf und dasselbe
+            Symbol wie „Kalender" in der Navigation. */}
+        <Button asChild variant="outline" size="icon" className="-my-2 shrink-0">
+          <Link
+            to="/kalender"
+            aria-label="Zum Dividendenkalender"
+            title="Dividendenkalender"
+          >
+            <CalendarDays aria-hidden />
+          </Link>
         </Button>
       </CardHeader>
       <CardContent>
