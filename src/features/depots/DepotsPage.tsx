@@ -335,7 +335,7 @@ export function DepotsPage() {
             : `Portfolio ${portfolio.name} archivieren`
         }
         onClick={() => {
-          togglePortfolio(portfolio, `Portfolio „${portfolio.name}“`);
+          togglePortfolio(portfolio, `Portfolio „${portfolio.name}"`);
         }}
       >
         {portfolio.archived_at ? <RotateCcw /> : <ArchiveIcon />}
@@ -364,7 +364,7 @@ export function DepotsPage() {
             : `Depot ${depot.name} archivieren`
         }
         onClick={() => {
-          toggleDepot(depot, `Depot „${depot.name}“`);
+          toggleDepot(depot, `Depot „${depot.name}"`);
         }}
       >
         {depot.archived_at ? <RotateCcw /> : <ArchiveIcon />}

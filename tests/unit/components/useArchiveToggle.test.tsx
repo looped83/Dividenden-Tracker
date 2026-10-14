@@ -21,7 +21,7 @@ function Probe({
     <button
       type="button"
       onClick={() => {
-        toggle({ id: "dep-1", archived_at: archivedAt }, "Depot „Comdirect“");
+        toggle({ id: "dep-1", archived_at: archivedAt }, 'Depot „Comdirect"');
       }}
     >
       Umschalten
@@ -53,7 +53,7 @@ describe("useArchiveToggle", () => {
       { id: "dep-1", archived: false },
       expect.any(Object),
     );
-    expect(await screen.findByText("Depot „Comdirect“ archiviert.")).toBeInTheDocument();
+    expect(await screen.findByText('Depot „Comdirect" archiviert.')).toBeInTheDocument();
   });
 
   it("reaktiviert einen archivierten Datensatz", async () => {
@@ -64,7 +64,7 @@ describe("useArchiveToggle", () => {
       { id: "dep-1", archived: true },
       expect.any(Object),
     );
-    expect(await screen.findByText("Depot „Comdirect“ reaktiviert.")).toBeInTheDocument();
+    expect(await screen.findByText('Depot „Comdirect" reaktiviert.')).toBeInTheDocument();
   });
 
   it("meldet einen Fehler, statt ihn zu verschlucken", async () => {

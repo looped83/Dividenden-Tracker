@@ -15,7 +15,7 @@ interface ArchiveMutation {
  * geklappt hat, und ein Fehler ginge voellig unter (zuvor sogar als
  * unbehandelte Promise-Ablehnung).
  *
- * `label` nennt den Datensatz im Satz: „Depot „Comdirect" archiviert."
+ * `label` nennt den Datensatz in der Meldung, etwa `Depot „Comdirect"`.
  */
 export function useArchiveToggle(mutation: ArchiveMutation) {
   const { notify } = useToast();

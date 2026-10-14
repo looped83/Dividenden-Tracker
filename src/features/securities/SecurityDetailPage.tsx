@@ -219,7 +219,7 @@ export function SecurityDetailPage() {
               aria-label={archived ? "Reaktivieren" : "Archivieren"}
               disabled={archiveSecurity.isPending}
               onClick={() => {
-                toggleArchive(security, `„${security.name}“`);
+                toggleArchive(security, `„${security.name}"`);
               }}
             >
               {archived ? <RotateCcw /> : <Archive />}

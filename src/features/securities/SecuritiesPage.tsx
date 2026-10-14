@@ -201,7 +201,7 @@ export function SecuritiesPage() {
         setDialog({ open: true, security });
       }}
       onArchive={() => {
-        toggleArchive(security, `„${security.name}“`);
+        toggleArchive(security, `„${security.name}"`);
       }}
       onDelete={() => {
         setDeleteTarget(security);
