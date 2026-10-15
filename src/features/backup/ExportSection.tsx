@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Section } from "@/components/ui/section";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -47,18 +47,15 @@ export default function ExportSection() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Daten exportieren</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <Section title="Daten exportieren">
+      <div className="space-y-4">
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
 
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 sm:max-w-xs">
           <Label htmlFor="export-format">Format</Label>
           <Select
             id="export-format"
@@ -89,7 +86,7 @@ export default function ExportSection() {
           <Download />
           {isExporting ? "Wird erstellt …" : "Export herunterladen"}
         </Button>
-      </CardContent>
-    </Card>
+      </div>
+    </Section>
   );
 }

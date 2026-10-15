@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Section } from "@/components/ui/section";
 import {
   Dialog,
   DialogContent,
@@ -123,11 +123,8 @@ export default function RestoreSection() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Sicherung wiederherstellen</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <Section title="Sicherung wiederherstellen">
+      <div className="space-y-4">
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
@@ -229,7 +226,7 @@ export default function RestoreSection() {
             </Button>
           </div>
         )}
-      </CardContent>
+      </div>
 
       <ConfirmRestoreDialog
         open={confirmOpen}
@@ -239,7 +236,7 @@ export default function RestoreSection() {
         isPending={isProcessing}
         onConfirm={() => void handleRestore()}
       />
-    </Card>
+    </Section>
   );
 }
 

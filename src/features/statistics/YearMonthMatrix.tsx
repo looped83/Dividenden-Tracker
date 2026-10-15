@@ -142,8 +142,9 @@ export function YearMonthMatrix() {
 
 /**
  * Toenung einer Zelle nach der Hoehe ihres Betrags — die fruehere Heatmap.
- * Wurzelskaliert, damit auch kleine Monate sichtbar bleiben; hoechstens 40 %
- * Deckkraft, damit die Zahl darauf in beiden Erscheinungsbildern lesbar bleibt.
+ * Wurzelskaliert, damit auch kleine Monate sichtbar bleiben; in
+ * Vordergrundfarbe mit hoechstens 22 % Deckkraft (seit 1.9.0 grau statt blau:
+ * Blau heisst Aktion, und die Tabelle soll ruhig bleiben wie die Uebersicht).
  * Nur in der Ansicht „Summe": Veraenderung und Aufgelaufenes haben eine eigene
  * Skala, die eine gemeinsame Farbe verfaelschen wuerde.
  */
@@ -160,9 +161,9 @@ function useCellTint(matrix: BreakdownMatrix, view: BreakdownView) {
     if (view !== "summe" || cell.future || max <= 0) return undefined;
     const value = cell.net.toChartNumber();
     if (value <= 0) return undefined;
-    const alpha = Math.round(Math.min(1, Math.sqrt(value / max)) * 40);
+    const alpha = Math.round(Math.min(1, Math.sqrt(value / max)) * 22);
     return {
-      backgroundColor: `color-mix(in srgb, var(--chart-1) ${String(alpha)}%, transparent)`,
+      backgroundColor: `color-mix(in srgb, var(--foreground) ${String(alpha)}%, transparent)`,
     };
   };
 }
@@ -250,7 +251,7 @@ function BreakdownMatrixTable({ matrix, view, filter }: MatrixProps) {
     // ihr Bezugsrahmen das Dokument — der seitliche Bildlauf dieses Kastens
     // klammert sie dann nicht ein, und die Seite selbst laesst sich bis zur
     // rechten Tabellenkante schieben, obwohl dort nichts Sichtbares steht.
-    <div className="relative w-full overflow-x-auto rounded-lg border border-border">
+    <div className="relative w-full overflow-x-auto rounded-2xl border border-border">
       <table className="w-full table-fixed border-separate border-spacing-0 text-sm">
         <caption className="sr-only">{caption}</caption>
         <colgroup>
@@ -264,7 +265,7 @@ function BreakdownMatrixTable({ matrix, view, filter }: MatrixProps) {
           <tr>
             <th
               scope="col"
-              className="sticky left-0 z-20 border-b border-r border-border bg-muted px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground"
+              className="sticky left-0 z-20 border-b border-r border-border bg-muted px-3 py-2 text-left text-[0.8125rem] font-medium text-muted-foreground"
             >
               Jahr
             </th>
@@ -272,7 +273,7 @@ function BreakdownMatrixTable({ matrix, view, filter }: MatrixProps) {
               <th
                 key={month.month}
                 scope="col"
-                className="whitespace-nowrap border-b border-border bg-muted px-2.5 py-2 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                className="whitespace-nowrap border-b border-border bg-muted px-2.5 py-2 text-right text-[0.8125rem] font-medium text-muted-foreground"
               >
                 <span aria-hidden>{monthNameDeShort(month.month)}</span>
                 <span className="sr-only">{monthNameDe(month.month)}</span>
@@ -280,7 +281,7 @@ function BreakdownMatrixTable({ matrix, view, filter }: MatrixProps) {
             ))}
             <th
               scope="col"
-              className="z-20 whitespace-nowrap border-b border-l border-border bg-muted px-3 py-2 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground sm:sticky sm:right-0"
+              className="z-20 whitespace-nowrap border-b border-l border-border bg-muted px-3 py-2 text-right text-[0.8125rem] font-medium text-muted-foreground sm:sticky sm:right-0"
             >
               Gesamt
             </th>
@@ -385,7 +386,7 @@ function TransposedMatrixTable({ matrix, view, filter }: MatrixProps) {
   const tintOf = useCellTint(matrix, view);
 
   return (
-    <div className="relative w-full overflow-x-auto rounded-lg border border-border">
+    <div className="relative w-full overflow-x-auto rounded-2xl border border-border">
       <table className="w-full border-separate border-spacing-0 text-xs">
         <caption className="sr-only">{`${CAPTIONS[view]}, Zeilen je Monat, Spalten je Jahr`}</caption>
         <thead>

@@ -13,7 +13,7 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Section, SectionButton } from "@/components/ui/section";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import { ListGroup, ListRow } from "@/components/ui/list";
@@ -373,23 +373,23 @@ export function DepotsPage() {
   );
 
   return (
-    <div className="space-y-6">
-      <Card>
-        {/* Die Aktion gehoert in die Kopfzeile der Kachel, nicht in ihren
-            Inhalt: Sie betrifft die ganze Kachel, nicht eine Zeile darin. */}
-        <CardHeader className="flex-row items-center justify-between gap-3">
-          <CardTitle>Portfolios</CardTitle>
-          <Button
-            size="sm"
-            className="-my-2"
+    <div className="space-y-10">
+      {/* Die Aktion gehoert in den Kopf des Abschnitts, nicht in seinen
+          Inhalt: Sie betrifft den ganzen Abschnitt, nicht eine Zeile darin. */}
+      <Section
+        title="Portfolios"
+        action={
+          <SectionButton
+            icon={Plus}
             onClick={() => {
               setPortfolioDialog({ open: true, portfolio: null });
             }}
           >
-            <Plus /> Neues Portfolio
-          </Button>
-        </CardHeader>
-        <CardContent className="space-y-3">
+            Neues Portfolio
+          </SectionButton>
+        }
+      >
+        <div className="space-y-3">
           {/* Dieselbe Darstellung wie die Depots darunter: Zeilen mit Status
               und Aktionen. Zuvor standen Portfolios als Etiketten mit winzigen
               Symbolknoepfen da — eine zweite Sprache auf einer Seite, deren
@@ -400,7 +400,7 @@ export function DepotsPage() {
               Noch keine Portfolios angelegt.
             </p>
           ) : !isWide ? (
-            <ListGroup inset aria-label="Portfolios">
+            <ListGroup aria-label="Portfolios">
               {visiblePortfolios.map((portfolio) => (
                 <li key={portfolio.id}>
                   <ManagedRow
@@ -452,23 +452,23 @@ export function DepotsPage() {
               </TableBody>
             </Table>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </Section>
 
-      <Card>
-        <CardHeader className="flex-row items-center justify-between gap-3">
-          <CardTitle>Depots</CardTitle>
-          <Button
-            size="sm"
-            className="-my-2"
+      <Section
+        title="Depots"
+        action={
+          <SectionButton
+            icon={Plus}
             onClick={() => {
               setDepotDialog({ open: true, depot: null });
             }}
           >
-            <Plus /> Neues Depot
-          </Button>
-        </CardHeader>
-        <CardContent className="space-y-3">
+            Neues Depot
+          </SectionButton>
+        }
+      >
+        <div className="space-y-3">
           {isLoading ? (
             <SkeletonRows rows={3} label="Depots" />
           ) : visibleDepots.length === 0 ? (
@@ -487,7 +487,7 @@ export function DepotsPage() {
               }
             />
           ) : !isWide ? (
-            <ListGroup inset aria-label="Depots">
+            <ListGroup aria-label="Depots">
               {visibleDepots.map((depot) => (
                 <li key={depot.id}>
                   <ManagedRow
@@ -560,8 +560,8 @@ export function DepotsPage() {
             />
             Archivierte anzeigen
           </label>
-        </CardContent>
-      </Card>
+        </div>
+      </Section>
 
       <DepotFormDialog
         depot={depotDialog.depot}

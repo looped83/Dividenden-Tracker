@@ -308,7 +308,7 @@ export function SecurityDetailPage() {
           <div>
             {/* Der Name stuende in jeder Zeile wie in der Ueberschrift; hier
                 ist das Datum der Titel. */}
-            <ListGroup inset>
+            <ListGroup>
               {recent.map((payment) => (
                 <PaymentListItem
                   key={payment.id}
@@ -348,7 +348,7 @@ export function SecurityDetailPage() {
             </dl>
 
             {quality === "incomplete" && (
-              <p className="flex gap-2 rounded-md border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
+              <p className="flex gap-2 rounded-2xl bg-muted p-3 text-sm text-muted-foreground">
                 <ShieldAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
                 <span>
                   Die Stammdaten sind unvollständig. Das beeinträchtigt nichts an den
@@ -384,8 +384,8 @@ export function SecurityDetailPage() {
                         <span
                           className={
                             planned
-                              ? "inline-flex min-w-11 justify-center rounded-md bg-primary px-2 py-1 text-sm text-primary-foreground"
-                              : "inline-flex min-w-11 justify-center rounded-md border border-border px-2 py-1 text-sm text-muted-foreground"
+                              ? "inline-flex min-w-11 justify-center rounded-full bg-accent px-2 py-1 text-sm font-semibold text-foreground"
+                              : "inline-flex min-w-11 justify-center rounded-full px-2 py-1 text-sm text-muted-foreground"
                           }
                         >
                           <span className="sr-only">

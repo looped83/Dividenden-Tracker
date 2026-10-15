@@ -41,7 +41,8 @@ export function PageSkeleton({
           <Bar className="h-6 w-40" />
         </div>
       )}
-      <div className="space-y-3 rounded-lg border border-border bg-card p-4 sm:p-6">
+      {/* Ohne Rahmen wie die Abschnitte der Seiten (seit 1.9.0). */}
+      <div className="space-y-3">
         <Bar className="h-4 w-1/3" />
         <Bar className="h-4 w-2/3" />
         <Bar className="h-4 w-1/2" />

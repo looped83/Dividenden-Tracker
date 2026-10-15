@@ -115,7 +115,6 @@ export function Distribution({
       ) : shown === "assets" ? (
         <>
           <RankedBars
-            tone="neutral"
             items={assets}
             total={total}
             ariaLabel="Top-Assets nach Nettodividende"
@@ -128,7 +127,6 @@ export function Distribution({
         </>
       ) : (
         <RankedBars
-          tone="neutral"
           items={depotItems}
           total={total}
           ariaLabel="Nettodividende je Depot"

@@ -2,7 +2,6 @@ import * as React from "react";
 import { Link, useSearchParams } from "react-router";
 import { Info } from "lucide-react";
 import { ListGroup } from "@/components/ui/list";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Section } from "@/components/ui/section";
 import { Select } from "@/components/ui/select";
 import { KpiHero } from "@/components/domain/KpiHero";
@@ -148,142 +147,145 @@ export function ComparisonTab() {
 
   return (
     <div className="space-y-10">
-      <Card>
-        <CardHeader>
-          <CardTitle>Zeitraumvergleich</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Zwei Spalten schon auf dem Telefon: „Jahr" und „verglichen mit"
+      {/* Die Wahl der Zeitraeume ohne Kartenrahmen, die Felder als Pillen
+          wie die Filterleiste darueber (seit 1.9.0): Sie ist das Werkzeug der
+          Seite, kein eigener Abschnitt. */}
+      <section aria-labelledby="comparison-setup" className="space-y-3">
+        <h2 id="comparison-setup" className="sr-only">
+          Zeitraumvergleich
+        </h2>
+        {/* Zwei Spalten schon auf dem Telefon: „Jahr" und „verglichen mit"
               gehoeren zusammen — sie bilden den Satz, den die Seite beantwortet
               („2026 verglichen mit 2025"), und untereinander stand zwischen
               ihnen ein Feld Luft. Vergleichsart und Monat bestimmen, *was*
               verglichen wird, und behalten die volle Breite. */}
-          <div
-            className={cn(
-              "grid grid-cols-2 gap-3 sm:gap-4",
-              selection.mode === "monate" ? "sm:grid-cols-4" : "sm:grid-cols-3",
-            )}
-          >
-            <label className="col-span-2 space-y-1.5 sm:col-span-1">
-              <span className="text-sm font-medium">Vergleichsart</span>
+        <div
+          className={cn(
+            "grid grid-cols-2 gap-3 [&_select]:rounded-full [&_select]:pl-4",
+            selection.mode === "monate" ? "sm:grid-cols-4" : "sm:grid-cols-3",
+          )}
+        >
+          <label className="col-span-2 space-y-1 sm:col-span-1">
+            <span className="text-[0.8125rem] text-muted-foreground">Vergleichsart</span>
+            <Select
+              value={selection.mode}
+              onChange={(event) => {
+                setSelection({
+                  ...selection,
+                  mode: event.target.value as ComparisonMode,
+                });
+              }}
+            >
+              <option value="jahre">Jahr gegen Jahr</option>
+              <option value="monate">Monat gegen Monat</option>
+              <option value="rollierend">Letzte 12 Monate</option>
+            </Select>
+          </label>
+
+          {selection.mode === "monate" && (
+            <label className="col-span-2 space-y-1 sm:col-span-1">
+              <span className="text-[0.8125rem] text-muted-foreground">Monat</span>
               <Select
-                value={selection.mode}
+                value={String(selection.month)}
                 onChange={(event) => {
                   setSelection({
                     ...selection,
-                    mode: event.target.value as ComparisonMode,
+                    month: Number.parseInt(event.target.value, 10),
                   });
                 }}
               >
-                <option value="jahre">Jahr gegen Jahr</option>
-                <option value="monate">Monat gegen Monat</option>
-                <option value="rollierend">Letzte 12 Monate</option>
+                {monthOptions.map((month) => (
+                  <option key={month} value={month}>
+                    {monthNameDe(month)}
+                  </option>
+                ))}
               </Select>
             </label>
+          )}
 
-            {selection.mode === "monate" && (
-              <label className="col-span-2 space-y-1.5 sm:col-span-1">
-                <span className="text-sm font-medium">Monat</span>
+          {selection.mode !== "rollierend" && (
+            <>
+              <label className="space-y-1">
+                <span className="text-[0.8125rem] text-muted-foreground">Jahr</span>
                 <Select
-                  value={String(selection.month)}
+                  value={String(selection.currentYear)}
                   onChange={(event) => {
+                    const currentYear = Number.parseInt(event.target.value, 10);
                     setSelection({
                       ...selection,
-                      month: Number.parseInt(event.target.value, 10),
+                      currentYear,
+                      // Beide Seiten auf dasselbe Jahr zu stellen ergaebe
+                      // einen Vergleich mit sich selbst.
+                      referenceYear:
+                        selection.referenceYear === currentYear
+                          ? currentYear - 1
+                          : selection.referenceYear,
+                      // Im laufenden Jahr gibt es den gewaehlten Monat
+                      // moeglicherweise noch nicht.
+                      month: Math.min(
+                        selection.month,
+                        comparisonMonthOptions(currentYear, today).length,
+                      ),
                     });
                   }}
                 >
-                  {monthOptions.map((month) => (
-                    <option key={month} value={month}>
-                      {monthNameDe(month)}
+                  {yearOptions.map((year) => (
+                    <option key={year} value={year}>
+                      {year}
                     </option>
                   ))}
                 </Select>
               </label>
-            )}
 
-            {selection.mode !== "rollierend" && (
-              <>
-                <label className="space-y-1.5">
-                  <span className="text-sm font-medium">Jahr</span>
-                  <Select
-                    value={String(selection.currentYear)}
-                    onChange={(event) => {
-                      const currentYear = Number.parseInt(event.target.value, 10);
-                      setSelection({
-                        ...selection,
-                        currentYear,
-                        // Beide Seiten auf dasselbe Jahr zu stellen ergaebe
-                        // einen Vergleich mit sich selbst.
-                        referenceYear:
-                          selection.referenceYear === currentYear
-                            ? currentYear - 1
-                            : selection.referenceYear,
-                        // Im laufenden Jahr gibt es den gewaehlten Monat
-                        // moeglicherweise noch nicht.
-                        month: Math.min(
-                          selection.month,
-                          comparisonMonthOptions(currentYear, today).length,
-                        ),
-                      });
-                    }}
-                  >
-                    {yearOptions.map((year) => (
+              <label className="space-y-1">
+                <span className="text-[0.8125rem] text-muted-foreground">
+                  verglichen mit
+                </span>
+                <Select
+                  value={String(selection.referenceYear)}
+                  onChange={(event) => {
+                    setSelection({
+                      ...selection,
+                      referenceYear: Number.parseInt(event.target.value, 10),
+                    });
+                  }}
+                >
+                  {yearOptions
+                    .filter((year) => year !== selection.currentYear)
+                    .map((year) => (
                       <option key={year} value={year}>
                         {year}
                       </option>
                     ))}
-                  </Select>
-                </label>
+                </Select>
+              </label>
+            </>
+          )}
+        </div>
 
-                <label className="space-y-1.5">
-                  <span className="text-sm font-medium">verglichen mit</span>
-                  <Select
-                    value={String(selection.referenceYear)}
-                    onChange={(event) => {
-                      setSelection({
-                        ...selection,
-                        referenceYear: Number.parseInt(event.target.value, 10),
-                      });
-                    }}
-                  >
-                    {yearOptions
-                      .filter((year) => year !== selection.currentYear)
-                      .map((year) => (
-                        <option key={year} value={year}>
-                          {year}
-                        </option>
-                      ))}
-                  </Select>
-                </label>
-              </>
-            )}
-          </div>
-
-          {/* Bis wann gerechnet wurde — ohne diese Angabe fuehren die Kacheln
+        {/* Bis wann gerechnet wurde — ohne diese Angabe fuehren die Kacheln
               darunter in die Irre: Laeuft einer der Zeitraeume noch, endet der
               Vergleich auf **beiden** Seiten am selben Kalendertag (PRODUCT_SPEC.md
               §5.5, DECISIONS.md D-7-1). Eine eigene Kachel dafuer kostete auf
               dem Telefon eine halbe Reihe; als Satz unter der Auswahl steht
               sie dort, wo der Zeitraum gewaehlt wird. */}
-          <p className="text-sm text-muted-foreground">
-            {comparison.truncated
-              ? `Gerechnet bis ${formatIsoDate(comparison.cutoff)} — beide Seiten am selben Kalendertag gekappt.`
-              : `Volle Zeiträume, gerechnet bis ${formatIsoDate(comparison.cutoff)}.`}
-          </p>
+        <p className="text-sm text-muted-foreground">
+          {comparison.truncated
+            ? `Gerechnet bis ${formatIsoDate(comparison.cutoff)} — beide Seiten am selben Kalendertag gekappt.`
+            : `Volle Zeiträume, gerechnet bis ${formatIsoDate(comparison.cutoff)}.`}
+        </p>
 
-          {filter.year !== null && (
-            <p className="flex items-start gap-2 rounded-md bg-muted/50 p-3 text-sm text-muted-foreground">
-              <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
-              <span>
-                Der Jahresfilter ({filter.year}) wirkt in diesem Bereich nicht — die
-                verglichenen Zeiträume werden hier gewählt. Alle übrigen Filter gelten
-                weiterhin.
-              </span>
-            </p>
-          )}
-        </CardContent>
-      </Card>
+        {filter.year !== null && (
+          <p className="flex items-start gap-2 rounded-2xl bg-muted p-3 text-sm text-muted-foreground">
+            <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
+            <span>
+              Der Jahresfilter ({filter.year}) wirkt in diesem Bereich nicht — die
+              verglichenen Zeiträume werden hier gewählt. Alle übrigen Filter gelten
+              weiterhin.
+            </span>
+          </p>
+        )}
+      </section>
 
       {/* Die Aussage des Vergleichs — die Veraenderung — ist die Hauptzahl;
           beide Zeitraeume stehen darunter. Als drei gleich grosse Kacheln
@@ -461,7 +463,7 @@ function ComparisonBreakdown({
           </TableBody>
         </Table>
       ) : (
-        <ListGroup inset aria-label={caption}>
+        <ListGroup aria-label={caption}>
           {rows.map((row) => {
             // Ein Monat ohne Zahlungen auf beiden Seiten braucht keine drei
             // Zeilen mit Gedankenstrichen — er braucht einen Satz.

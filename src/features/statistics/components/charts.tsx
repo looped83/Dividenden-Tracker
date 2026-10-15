@@ -28,6 +28,7 @@ import {
 import {
   CHART_BAR_CURSOR,
   CHART_BAR_RADIUS,
+  CHART_MAX_BAR_SIZE,
   CHART_GRID_PROPS,
   CHART_LINE_CURSOR,
   CHART_MARGIN,
@@ -106,8 +107,9 @@ export function CategoryBarChart({
           <Bar
             dataKey="value"
             name="Nettodividende"
-            fill="var(--chart-1)"
+            fill="var(--foreground)"
             radius={CHART_BAR_RADIUS}
+            maxBarSize={CHART_MAX_BAR_SIZE}
             {...CHART_SERIES_PROPS}
             cursor="pointer"
             onClick={(entry) => {
@@ -194,12 +196,12 @@ interface ComparisonLineChartProps {
  * auf einen Blick; nebeneinanderstehende Balken muesste man Paar fuer Paar
  * lesen.
  *
- * **Farbwahl gemessen, nicht geschaetzt:** `--chart-1` (blau) gegen `--chart-2`
- * (orange) — die ersten beiden Plaetze der kategorialen Palette und zugleich
- * gegenueberliegende Farbtoene. Der Palettenvalidator meldet fuer dieses Paar
- * ΔE 25,1 (hell) bzw. 25,3 (dunkel) bei Protanopie; die Schwelle liegt bei 8.
- * Zwei benachbarte Blautoene haetten hier deutlich schlechter getrennt, und
- * genau das Auseinanderhalten ist der Zweck dieses Diagramms.
+ * **Monochrom wie der Kopf der Uebersicht** (seit 1.9.0): der aktuelle
+ * Zeitraum in Vordergrundfarbe, die Referenz in `--series-prior` (neutrales
+ * Grau, 3,6:1 hell / 3,5:1 dunkel) und gestrichelt. Der Helligkeitsabstand
+ * trennt beide Linien staerker als zwei Farbtoene gleicher Helligkeit, und
+ * Farbe bleibt auf der ganzen App der Veraenderung vorbehalten
+ * (UX_AND_DESIGN_SYSTEM.md §1a).
  *
  * **Identitaet haengt nicht an der Farbe allein:** Die Vergleichsreihe ist
  * zusaetzlich gestrichelt, beide Reihen sind benannt (Legende), und die
@@ -234,22 +236,22 @@ export function ComparisonLineChart({
           {/* Die Vergleichsreihe liegt hinten und traegt einen Strich: Der
                 Blick soll zuerst auf dem aktuellen Zeitraum landen. */}
           <Line
-            type="monotone"
+            type="linear"
             dataKey="reference"
             name={referenceLabel}
-            stroke="var(--chart-2)"
-            strokeWidth={2}
-            strokeDasharray="6 4"
+            stroke="var(--series-prior)"
+            strokeWidth={1.5}
+            strokeDasharray="3 3"
             dot={false}
             activeDot={{ r: 5 }}
             {...CHART_SERIES_PROPS}
           />
           <Line
-            type="monotone"
+            type="linear"
             dataKey="current"
             name={currentLabel}
-            stroke="var(--chart-1)"
-            strokeWidth={2}
+            stroke="var(--foreground)"
+            strokeWidth={2.25}
             dot={false}
             activeDot={{ r: 5 }}
             {...CHART_SERIES_PROPS}
@@ -259,8 +261,8 @@ export function ComparisonLineChart({
 
       <ChartLegend
         items={[
-          { label: currentLabel, color: "var(--chart-1)" },
-          { label: referenceLabel, color: "var(--chart-2)", dashed: true },
+          { label: currentLabel, color: "var(--foreground)" },
+          { label: referenceLabel, color: "var(--series-prior)", dashed: true },
         ]}
       />
 

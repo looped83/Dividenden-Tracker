@@ -37,7 +37,7 @@ export function SnapshotRunsCard() {
   return (
     <Section title="Depotstände">
       <div>
-        <ListGroup inset aria-label="Depotstände">
+        <ListGroup aria-label="Depotstände">
           {runs.map((run) => {
             const date = formatCalendarDate(run.as_of);
             return (

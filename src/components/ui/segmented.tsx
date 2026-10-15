@@ -17,9 +17,13 @@ export interface SegmentOption<T extends string> {
  * hoch. Ausgezeichnet als Optionsgruppe (`radiogroup`/`radio`): Es ist genau
  * ein Zustand gewaehlt, und Sprachausgaben nennen, welcher.
  *
- * `variant="pill"` ist die leise Fassung fuer Abschnittskoepfe der Uebersicht
- * (Diagrammsicht, Assets/Depots): gedaempfte Flaeche, 32px hoch; die
- * Tippflaeche reicht per Pseudo-Element auf 44px.
+ * Beide Fassungen haben seit 1.9.0 dieselbe Form wie auf der Uebersicht:
+ * gedaempfte Spur, der gewaehlte Zustand als helle Pille darueber. Im dunklen
+ * Schema liegt die Pille auf der Akzentstufe — schwarz auf grauer Spur laese
+ * sie sich als Loch statt als Auswahl (UX_AND_DESIGN_SYSTEM.md §8).
+ * `variant="pill"` ist die kompakte Fassung fuer Abschnittskoepfe
+ * (Diagrammsicht, Assets/Depots): 32px hoch, die Tippflaeche reicht per
+ * Pseudo-Element auf 44px. Die gewoehnliche Fassung ist so hoch wie ein Feld.
  */
 export function SegmentedControl<T extends string>({
   label,
@@ -42,10 +46,7 @@ export function SegmentedControl<T extends string>({
       role="radiogroup"
       aria-label={label}
       className={cn(
-        "inline-flex items-center gap-0.5 p-0.5",
-        variant === "pill"
-          ? "rounded-full bg-muted"
-          : "rounded-md border border-border bg-card",
+        "inline-flex items-center gap-0.5 rounded-full bg-muted p-0.5",
         className,
       )}
     >
@@ -61,22 +62,14 @@ export function SegmentedControl<T extends string>({
               onChange(option);
             }}
             className={cn(
-              "inline-flex flex-1 items-center justify-center gap-1.5 px-3 outline-none",
+              "inline-flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 outline-none",
               "focus-visible:ring-2 focus-visible:ring-ring",
               variant === "pill"
-                ? cn(
-                    "relative h-8 rounded-full text-[0.8125rem] font-semibold",
-                    "after:absolute after:inset-x-0 after:-inset-y-1.5",
-                    active
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground",
-                  )
-                : cn(
-                    "min-h-9 rounded-sm text-sm font-medium pointer-coarse:min-h-11",
-                    active
-                      ? "bg-accent text-accent-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground",
-                  ),
+                ? "relative h-8 text-[0.8125rem] font-semibold after:absolute after:inset-x-0 after:-inset-y-1.5"
+                : "min-h-9 px-4 text-sm font-semibold pointer-coarse:min-h-11",
+              active
+                ? "bg-background text-foreground shadow-sm dark:bg-accent"
+                : "text-muted-foreground hover:text-foreground",
             )}
           >
             {Icon && <Icon className="size-4" aria-hidden />}

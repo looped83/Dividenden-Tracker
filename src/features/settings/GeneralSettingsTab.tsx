@@ -1,13 +1,7 @@
 import * as React from "react";
 import { Link, useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Section } from "@/components/ui/section";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { useSession } from "@/app/auth/SessionProvider";
@@ -42,13 +36,9 @@ export function GeneralSettingsTab() {
   };
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Profil</CardTitle>
-          <CardDescription>Angemeldet als {session?.user.email}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
+    <div className="space-y-10">
+      <Section title="Profil" description={`Angemeldet als ${session?.user.email ?? ""}`}>
+        <div className="space-y-3 pt-2">
           {error && <p className="text-sm text-negative">{error}</p>}
           <Button
             variant="outline"
@@ -57,40 +47,38 @@ export function GeneralSettingsTab() {
           >
             Abmelden
           </Button>
-        </CardContent>
-      </Card>
+        </div>
+      </Section>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Darstellung</CardTitle>
-          <CardDescription>
-            Hell, dunkel oder passend zur Einstellung des Systems.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+      <Section
+        title="Darstellung"
+        description="Hell, dunkel oder passend zur Einstellung des Systems."
+      >
+        <div className="pt-2">
           <ThemeToggle />
-        </CardContent>
-      </Card>
+        </div>
+      </Section>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Über diese App</CardTitle>
-          <CardDescription>
-            Angaben zur laufenden Fassung und zum Stand deiner Datensicherung.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+      <Section
+        title="Über diese App"
+        description="Angaben zur laufenden Fassung und zum Stand deiner Datensicherung."
+      >
+        {/* Zwei Zeilen wie eine Liste: Beschriftung links, Wert rechts,
+            dazwischen eine Haarlinie. */}
+        <dl className="divide-y divide-border text-[0.9375rem]">
+          <div className="flex items-baseline justify-between gap-4 py-3">
             <dt className="text-muted-foreground">Version</dt>
-            <dd className="text-right tabular-nums">{__APP_VERSION__}</dd>
+            <dd className="font-medium tabular-nums">{__APP_VERSION__}</dd>
+          </div>
+          <div className="flex items-baseline justify-between gap-4 py-3">
             <dt className="text-muted-foreground">Datensicherung</dt>
-            <dd className="text-right">{lastBackup.label}</dd>
-          </dl>
-          <Button variant="outline" className="mt-4" asChild>
-            <Link to="/einstellungen/datensicherung">Zur Datensicherung</Link>
-          </Button>
-        </CardContent>
-      </Card>
+            <dd className="text-right font-medium">{lastBackup.label}</dd>
+          </div>
+        </dl>
+        <Button variant="outline" className="mt-3" asChild>
+          <Link to="/einstellungen/datensicherung">Zur Datensicherung</Link>
+        </Button>
+      </Section>
     </div>
   );
 }

@@ -17,6 +17,9 @@ import { PageHeader } from "@/components/layout/PageHeader";
  * 44px hohen Zeile. Zwei Spalten, weil die vier Bereiche so ohne Blaettern in
  * einen Blick passen. Optik und Verhalten wie die Terminkacheln des Kalenders
  * — dieselbe Sache soll ueberall gleich aussehen.
+ *
+ * Seit 1.9.0 gedaempfte Flaechen ohne Rahmen, wie die Kennzahlen der
+ * Uebersicht und die Zielkacheln.
  */
 export function MorePage() {
   return (
@@ -28,14 +31,14 @@ export function MorePage() {
             <NavLink
               to={item.to}
               {...prefetchProps(item.to)}
-              className="flex h-full flex-col gap-3 rounded-2xl border border-border bg-card p-4 outline-none transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background"
+              className="flex h-full flex-col gap-3 rounded-2xl bg-muted p-4 outline-none transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background"
             >
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted text-foreground">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-background text-foreground dark:bg-accent">
                 <item.icon className="size-5" aria-hidden />
               </span>
               <span className="min-w-0">
-                <span className="block text-sm font-medium">{item.label}</span>
-                <span className="mt-0.5 block text-xs text-muted-foreground">
+                <span className="block text-[0.9375rem] font-semibold">{item.label}</span>
+                <span className="mt-0.5 block text-[0.8125rem] text-muted-foreground">
                   {item.description}
                 </span>
               </span>

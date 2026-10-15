@@ -20,10 +20,11 @@ interface RankedBarsProps {
   /** Bezeichnung fuer den Screenreader (z. B. „Top-Unternehmen"). */
   ariaLabel: string;
   /**
-   * `series`: Balken in Diagrammfarbe (Statistik). `neutral`: schmaler Balken
-   * in Vordergrundfarbe fuer die monochrome Uebersicht (seit 1.7.0).
+   * Zweispaltig ab `lg` (Statistik): Ueber die volle Breite des Desktops wurden
+   * die Balken einen Meter lang und Name und Betrag standen weit auseinander.
+   * Auf der Uebersicht steht die Liste ohnehin in der schmalen rechten Spalte.
    */
-  tone?: "series" | "neutral";
+  columns?: boolean;
 }
 
 /**
@@ -31,14 +32,17 @@ interface RankedBarsProps {
  * Reine Verteilung nach Nettodividende — keine Depotwerte, keine Performance,
  * keine Anlagebewertung. Die Balkenbreite ist rein visuell; alle angezeigten
  * Betraege und Anteile stammen aus lib/money bzw. lib/statistics.
+ *
+ * Schmale Balken in Vordergrundfarbe, Zeilen durch Haarlinien getrennt — auf
+ * der Uebersicht und in der Statistik dieselbe Form (seit 1.9.0; vorher trug
+ * die Statistik breite Balken in Diagrammblau).
  */
 export function RankedBars({
   items,
   total,
   ariaLabel,
-  tone = "series",
+  columns = false,
 }: RankedBarsProps) {
-  const neutral = tone === "neutral";
   const maxNet = items.reduce(
     (max, item) => (item.net.compareTo(max) > 0 ? item.net : max),
     items[0]?.net ?? total,
@@ -47,24 +51,24 @@ export function RankedBars({
 
   return (
     <ul
-      className={neutral ? "divide-y divide-border" : "space-y-3"}
+      className={cn(
+        "divide-y divide-border",
+        // Jede Zeile endet mit einer Linie, damit beide Spalten gleich enden.
+        columns &&
+          "lg:columns-2 lg:gap-x-12 lg:[&>li]:break-inside-avoid lg:[&>li]:border-b",
+      )}
       aria-label={ariaLabel}
     >
       {items.map((item) => {
         const share = shareOfTotal(item.net, total);
         const widthPercent = barLength(item.net, maxNumber);
         return (
-          <li key={item.key} className={cn(neutral && "py-3")}>
+          <li key={item.key} className="py-3">
             <Link
               to={item.href}
               className="group block rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <div
-                className={cn(
-                  "flex items-baseline justify-between gap-2",
-                  neutral ? "text-base" : "text-sm",
-                )}
-              >
+              <div className="flex items-baseline justify-between gap-2">
                 <span className="flex min-w-0 items-center gap-1.5">
                   <span
                     className="truncate font-medium group-hover:underline"
@@ -78,22 +82,14 @@ export function RankedBars({
                     </Badge>
                   )}
                 </span>
-                <span className={cn("shrink-0 tabular-nums", neutral && "font-semibold")}>
+                <span className="shrink-0 font-semibold tabular-nums">
                   {formatMoney(item.net)}
                 </span>
               </div>
-              <div className={cn("flex items-center gap-2", neutral ? "mt-2" : "mt-1")}>
-                <div
-                  className={cn(
-                    "flex-1 overflow-hidden rounded-full",
-                    neutral ? "h-[3px] bg-border" : "h-2 bg-muted",
-                  )}
-                >
+              <div className="mt-2 flex items-center gap-2">
+                <div className="h-[3px] flex-1 overflow-hidden rounded-full bg-border">
                   <div
-                    className={cn(
-                      "h-full rounded-full",
-                      neutral ? "bg-foreground" : "bg-chart-1",
-                    )}
+                    className="h-full rounded-full bg-foreground"
                     style={{ width: `${String(widthPercent)}%` }}
                   />
                 </div>

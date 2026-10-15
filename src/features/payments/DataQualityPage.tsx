@@ -1,11 +1,12 @@
 import * as React from "react";
 import { Link } from "react-router";
-import { AlertTriangle, CheckCircle2, Copy } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageSkeleton } from "@/components/layout/PageSkeleton";
 import { Badge } from "@/components/ui/badge";
 import { DetailBackLink, DetailHeader } from "@/components/layout/DetailHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Section } from "@/components/ui/section";
 import { Disclosure } from "@/components/ui/disclosure";
 import { useToast } from "@/components/ui/toast";
 import { ListGroup, ListItemBody, ListRow } from "@/components/ui/list";
@@ -194,254 +195,248 @@ export function DataQualityPage() {
       {/* Übersicht (§17) — eine Karte statt sechs: Die Zahlen sind meist null
           und brauchten als einzelne Kacheln untereinander einen ganzen
           Bildschirm. */}
-      <Card>
-        <CardContent className="p-4 sm:p-6">
-          <dl className="grid grid-cols-2 gap-x-4 gap-y-4 sm:grid-cols-3 lg:grid-cols-6">
-            <OverviewItem label="Mögliche Dubletten" value={overview.duplicates} />
-            <OverviewItem label="Auffällige Datensätze" value={overview.anomalies} />
-            <OverviewItem label="Stornierte" value={overview.cancelled} />
-            <OverviewItem
-              label="Importe mit Änderung"
-              value={overview.importedModified}
-            />
-            <OverviewItem label="Archivierte Assets" value={overview.archivedAssets} />
-            <OverviewItem label="Archivierte Depots" value={overview.archivedDepots} />
-          </dl>
-        </CardContent>
-      </Card>
+      {/* Auf gedämpfter Fläche wie die Kennzahlen im Kopf der Übersicht. */}
+      <div className="rounded-2xl bg-muted p-4 sm:px-5">
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-4 sm:grid-cols-3 lg:grid-cols-6">
+          <OverviewItem label="Mögliche Dubletten" value={overview.duplicates} />
+          <OverviewItem label="Auffällige Datensätze" value={overview.anomalies} />
+          <OverviewItem label="Stornierte" value={overview.cancelled} />
+          <OverviewItem label="Importe mit Änderung" value={overview.importedModified} />
+          <OverviewItem label="Archivierte Assets" value={overview.archivedAssets} />
+          <OverviewItem label="Archivierte Depots" value={overview.archivedDepots} />
+        </dl>
+      </div>
 
       {isLoading ? (
         <PageSkeleton header={false} />
       ) : (
-        <>
+        <div className="space-y-10 pt-4">
           {/* Dubletten (§16) */}
-          <section className="space-y-3">
-            <h2 className="flex items-center gap-2 text-lg font-medium">
-              <Copy className="size-5" aria-hidden /> Mögliche Dubletten
-            </h2>
-            {duplicatePairs.length === 0 ? (
-              // Sind alle Paare als „keine Dublette" markiert, ist die Arbeit
-              // erledigt — derselbe Satz wie bei den Auffälligkeiten. Die
-              // Erklärung „keine Zahlungen mit gleichem …" stimmte dann nicht:
-              // Solche Paare gibt es, sie stehen eingeklappt darunter.
-              dismissedPairs.length > 0 ? (
-                <AllClear title="Keine offenen Dubletten" />
-              ) : (
-                <AllClear
-                  title="Keine möglichen Dubletten"
-                  description="Keine Zahlungen mit gleichem Asset, Depot und Zahlungsdatum."
-                />
-              )
-            ) : (
-              <ul className="space-y-4">
-                {duplicatePairs.map((pair) => (
-                  <DuplicateCard
-                    key={pair.key}
-                    pair={pair}
-                    securityName={securityName}
-                    depotName={depotName}
-                    currencyOf={currencyOf}
-                    onDismiss={() => {
-                      dismiss.mutate({ idA: pair.a.id, idB: pair.b.id });
-                    }}
-                    onStorno={(p) => {
-                      setStornoReason("");
-                      setStornoError(null);
-                      setStornoTarget(p);
-                    }}
-                    onDelete={(p) => {
-                      setDeleteError(null);
-                      setDeleteTarget(p);
-                    }}
+          <Section title="Mögliche Dubletten">
+            <div className="space-y-3">
+              {duplicatePairs.length === 0 ? (
+                // Sind alle Paare als „keine Dublette" markiert, ist die Arbeit
+                // erledigt — derselbe Satz wie bei den Auffälligkeiten. Die
+                // Erklärung „keine Zahlungen mit gleichem …" stimmte dann nicht:
+                // Solche Paare gibt es, sie stehen eingeklappt darunter.
+                dismissedPairs.length > 0 ? (
+                  <AllClear title="Keine offenen Dubletten" />
+                ) : (
+                  <AllClear
+                    title="Keine möglichen Dubletten"
+                    description="Keine Zahlungen mit gleichem Asset, Depot und Zahlungsdatum."
                   />
-                ))}
-              </ul>
-            )}
-            {dismissedPairs.length > 0 && (
-              <Disclosure
-                summary={`Als keine Dublette markiert (${formatCountNumber(dismissedPairs.length)})`}
-              >
-                <ListGroup>
-                  {dismissedPairs.map((pair) => {
-                    const company = securityName(pair.a.security_id);
-                    // Ein Zahltag ist ein Kalendertag, kein Zeitpunkt.
-                    const date = formatCalendarDate(pair.a.pay_date);
-                    return (
-                      <li key={pair.key}>
-                        <ListRow className="pr-1">
-                          <span className="min-w-0 flex-1">
-                            <span className="font-medium [overflow-wrap:anywhere]">
-                              {company}
-                            </span>
-                            <span className="flex flex-wrap gap-x-2 text-sm text-muted-foreground">
-                              <DateText>{date}</DateText>
-                              <span>{depotName(pair.a.depot_id)}</span>
-                              <span>
-                                <AmountText
-                                  amount={Money.fromString(
-                                    pair.a.net_amount,
-                                    currencyOf(pair.a.depot_id),
-                                  )}
-                                />
-                                {" / "}
-                                <AmountText
-                                  amount={Money.fromString(
-                                    pair.b.net_amount,
-                                    currencyOf(pair.b.depot_id),
-                                  )}
-                                />
+                )
+              ) : (
+                <ul className="space-y-4">
+                  {duplicatePairs.map((pair) => (
+                    <DuplicateCard
+                      key={pair.key}
+                      pair={pair}
+                      securityName={securityName}
+                      depotName={depotName}
+                      currencyOf={currencyOf}
+                      onDismiss={() => {
+                        dismiss.mutate({ idA: pair.a.id, idB: pair.b.id });
+                      }}
+                      onStorno={(p) => {
+                        setStornoReason("");
+                        setStornoError(null);
+                        setStornoTarget(p);
+                      }}
+                      onDelete={(p) => {
+                        setDeleteError(null);
+                        setDeleteTarget(p);
+                      }}
+                    />
+                  ))}
+                </ul>
+              )}
+              {dismissedPairs.length > 0 && (
+                <Disclosure
+                  summary={`Als keine Dublette markiert (${formatCountNumber(dismissedPairs.length)})`}
+                >
+                  <ListGroup>
+                    {dismissedPairs.map((pair) => {
+                      const company = securityName(pair.a.security_id);
+                      // Ein Zahltag ist ein Kalendertag, kein Zeitpunkt.
+                      const date = formatCalendarDate(pair.a.pay_date);
+                      return (
+                        <li key={pair.key}>
+                          <ListRow className="pr-1">
+                            <span className="min-w-0 flex-1">
+                              <span className="font-medium [overflow-wrap:anywhere]">
+                                {company}
+                              </span>
+                              <span className="flex flex-wrap gap-x-2 text-sm text-muted-foreground">
+                                <DateText>{date}</DateText>
+                                <span>{depotName(pair.a.depot_id)}</span>
+                                <span>
+                                  <AmountText
+                                    amount={Money.fromString(
+                                      pair.a.net_amount,
+                                      currencyOf(pair.a.depot_id),
+                                    )}
+                                  />
+                                  {" / "}
+                                  <AmountText
+                                    amount={Money.fromString(
+                                      pair.b.net_amount,
+                                      currencyOf(pair.b.depot_id),
+                                    )}
+                                  />
+                                </span>
                               </span>
                             </span>
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="-my-2 shrink-0"
-                            aria-label={`Markierung für ${company} vom ${date} zurücknehmen`}
-                            disabled={undismiss.isPending}
-                            onClick={() => {
-                              undismiss.mutate(
-                                { idA: pair.a.id, idB: pair.b.id },
-                                {
-                                  onSuccess: () => {
-                                    notify(
-                                      "Das Paar steht wieder unter den möglichen Dubletten.",
-                                    );
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="-my-2 shrink-0"
+                              aria-label={`Markierung für ${company} vom ${date} zurücknehmen`}
+                              disabled={undismiss.isPending}
+                              onClick={() => {
+                                undismiss.mutate(
+                                  { idA: pair.a.id, idB: pair.b.id },
+                                  {
+                                    onSuccess: () => {
+                                      notify(
+                                        "Das Paar steht wieder unter den möglichen Dubletten.",
+                                      );
+                                    },
+                                    onError: (error) => {
+                                      notify(
+                                        getErrorMessage(
+                                          error,
+                                          "Die Markierung konnte nicht zurückgenommen werden.",
+                                        ),
+                                        "negative",
+                                      );
+                                    },
                                   },
-                                  onError: (error) => {
-                                    notify(
-                                      getErrorMessage(
-                                        error,
-                                        "Die Markierung konnte nicht zurückgenommen werden.",
-                                      ),
-                                      "negative",
-                                    );
-                                  },
-                                },
-                              );
-                            }}
-                          >
-                            Zurücknehmen
-                          </Button>
-                        </ListRow>
-                      </li>
-                    );
-                  })}
-                </ListGroup>
-              </Disclosure>
-            )}
-          </section>
+                                );
+                              }}
+                            >
+                              Zurücknehmen
+                            </Button>
+                          </ListRow>
+                        </li>
+                      );
+                    })}
+                  </ListGroup>
+                </Disclosure>
+              )}
+            </div>
+          </Section>
 
           {/* Auffällige Datensätze (§18) */}
-          <section className="space-y-3">
-            <h2 className="flex items-center gap-2 text-lg font-medium">
-              <AlertTriangle className="size-5" aria-hidden /> Auffällige Datensätze
-            </h2>
-            {anomalies.length === 0 ? (
-              <AllClear
-                title={
-                  reviewedAnomalies.length > 0
-                    ? "Keine offenen Auffälligkeiten"
-                    : "Keine Auffälligkeiten"
-                }
-              />
-            ) : (
-              // Je Befund eine Zeile: Sie führt als Ganzes zum Eingang (dort
-              // korrigieren, stornieren oder löschen); darunter rechts die
-              // Entscheidung „In Ordnung" — an derselben Stelle wie „Keine
-              // Dublette" bei den Dubletten. Neben dem Text stand sie auf dem
-              // Telefon im Weg: Der Hinweis brach dort auf fünf Zeilen um.
-              <ListGroup>
-                {anomalies.map((anomaly) => {
-                  const asset = securityName(anomaly.payment.security_id);
-                  const date = formatCalendarDate(anomaly.payment.pay_date);
-                  return (
-                    <li key={anomaly.key}>
-                      <ListRow asChild>
-                        <Link to={`/eingaenge/${anomaly.payment.id}`}>
-                          <ListItemBody
-                            title={asset}
-                            meta={
-                              <>
-                                <span className="shrink-0">{date}</span>
-                                <span className="basis-full">{anomaly.message}</span>
-                              </>
-                            }
-                            trailing={
-                              <AmountText
-                                amount={Money.fromString(
-                                  anomaly.payment.net_amount,
-                                  currencyOf(anomaly.payment.depot_id),
-                                )}
-                              />
-                            }
-                          />
-                        </Link>
-                      </ListRow>
-                      <div className="-mt-2 flex justify-end pb-1 pr-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          aria-label={`${asset} vom ${date} als geprüft markieren`}
-                          disabled={reviewAnomaly.isPending}
-                          onClick={() => {
-                            setReviewed(anomaly, true);
-                          }}
-                        >
-                          In Ordnung
-                        </Button>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ListGroup>
-            )}
-            {reviewedAnomalies.length > 0 && (
-              <Disclosure
-                summary={`Als geprüft markiert (${formatCountNumber(reviewedAnomalies.length)})`}
-              >
+          <Section title="Auffällige Datensätze">
+            <div className="space-y-3">
+              {anomalies.length === 0 ? (
+                <AllClear
+                  title={
+                    reviewedAnomalies.length > 0
+                      ? "Keine offenen Auffälligkeiten"
+                      : "Keine Auffälligkeiten"
+                  }
+                />
+              ) : (
+                // Je Befund eine Zeile: Sie führt als Ganzes zum Eingang (dort
+                // korrigieren, stornieren oder löschen); darunter rechts die
+                // Entscheidung „In Ordnung" — an derselben Stelle wie „Keine
+                // Dublette" bei den Dubletten. Neben dem Text stand sie auf dem
+                // Telefon im Weg: Der Hinweis brach dort auf fünf Zeilen um.
                 <ListGroup>
-                  {reviewedAnomalies.map((anomaly) => {
+                  {anomalies.map((anomaly) => {
                     const asset = securityName(anomaly.payment.security_id);
                     const date = formatCalendarDate(anomaly.payment.pay_date);
                     return (
                       <li key={anomaly.key}>
-                        <ListRow className="pr-1">
-                          <span className="min-w-0 flex-1">
-                            <span className="font-medium [overflow-wrap:anywhere]">
-                              {asset}
-                            </span>
-                            <span className="flex flex-wrap gap-x-2 text-sm text-muted-foreground">
-                              <DateText>{date}</DateText>
-                              <AmountText
-                                amount={Money.fromString(
-                                  anomaly.payment.net_amount,
-                                  currencyOf(anomaly.payment.depot_id),
-                                )}
-                              />
-                            </span>
-                          </span>
+                        <ListRow asChild>
+                          <Link to={`/eingaenge/${anomaly.payment.id}`}>
+                            <ListItemBody
+                              title={asset}
+                              meta={
+                                <>
+                                  <span className="shrink-0">{date}</span>
+                                  <span className="basis-full">{anomaly.message}</span>
+                                </>
+                              }
+                              trailing={
+                                <AmountText
+                                  amount={Money.fromString(
+                                    anomaly.payment.net_amount,
+                                    currencyOf(anomaly.payment.depot_id),
+                                  )}
+                                />
+                              }
+                            />
+                          </Link>
+                        </ListRow>
+                        <div className="-mt-2 flex justify-end pb-1 pr-1">
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="-my-2 shrink-0"
-                            aria-label={`Markierung für ${asset} vom ${date} zurücknehmen`}
+                            aria-label={`${asset} vom ${date} als geprüft markieren`}
                             disabled={reviewAnomaly.isPending}
                             onClick={() => {
-                              setReviewed(anomaly, false);
+                              setReviewed(anomaly, true);
                             }}
                           >
-                            Zurücknehmen
+                            In Ordnung
                           </Button>
-                        </ListRow>
+                        </div>
                       </li>
                     );
                   })}
                 </ListGroup>
-              </Disclosure>
-            )}
-          </section>
-        </>
+              )}
+              {reviewedAnomalies.length > 0 && (
+                <Disclosure
+                  summary={`Als geprüft markiert (${formatCountNumber(reviewedAnomalies.length)})`}
+                >
+                  <ListGroup>
+                    {reviewedAnomalies.map((anomaly) => {
+                      const asset = securityName(anomaly.payment.security_id);
+                      const date = formatCalendarDate(anomaly.payment.pay_date);
+                      return (
+                        <li key={anomaly.key}>
+                          <ListRow className="pr-1">
+                            <span className="min-w-0 flex-1">
+                              <span className="font-medium [overflow-wrap:anywhere]">
+                                {asset}
+                              </span>
+                              <span className="flex flex-wrap gap-x-2 text-sm text-muted-foreground">
+                                <DateText>{date}</DateText>
+                                <AmountText
+                                  amount={Money.fromString(
+                                    anomaly.payment.net_amount,
+                                    currencyOf(anomaly.payment.depot_id),
+                                  )}
+                                />
+                              </span>
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="-my-2 shrink-0"
+                              aria-label={`Markierung für ${asset} vom ${date} zurücknehmen`}
+                              disabled={reviewAnomaly.isPending}
+                              onClick={() => {
+                                setReviewed(anomaly, false);
+                              }}
+                            >
+                              Zurücknehmen
+                            </Button>
+                          </ListRow>
+                        </li>
+                      );
+                    })}
+                  </ListGroup>
+                </Disclosure>
+              )}
+            </div>
+          </Section>
+        </div>
       )}
 
       <StornoDialog
@@ -478,7 +473,7 @@ export function DataQualityPage() {
  */
 function AllClear({ title, description }: { title: string; description?: string }) {
   return (
-    <p className="flex items-start gap-2 rounded-lg border border-border bg-card p-3 text-sm">
+    <p className="flex items-start gap-2 py-1 text-[0.9375rem]">
       <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-positive" aria-hidden />
       <span>
         <span className="font-medium">{title}</span>
@@ -490,9 +485,13 @@ function AllClear({ title, description }: { title: string; description?: string 
 
 function OverviewItem({ label, value }: { label: string; value: number }) {
   return (
-    <div className="flex flex-col-reverse">
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="text-xl font-semibold tabular-nums">{formatCountNumber(value)}</dd>
+    // Erst die Beschriftung, dann der Wert — wie die Kennzahlen im Kopf der
+    // Übersicht.
+    <div className="flex flex-col">
+      <dt className="text-[0.8125rem] text-muted-foreground">{label}</dt>
+      <dd className="text-[1.0625rem] font-semibold tabular-nums">
+        {formatCountNumber(value)}
+      </dd>
     </div>
   );
 }
@@ -528,7 +527,7 @@ function DuplicateCard({
         <CardContent className="space-y-3">
           <div className="grid gap-3 sm:grid-cols-2">
             {[pair.a, pair.b].map((p) => (
-              <div key={p.id} className="rounded-md border border-border p-3 text-sm">
+              <div key={p.id} className="rounded-xl bg-muted p-3 text-sm">
                 <div className="flex items-center justify-between">
                   <DateText className="font-medium">
                     {formatCalendarDate(p.pay_date)}

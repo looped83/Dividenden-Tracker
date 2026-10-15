@@ -2,7 +2,7 @@ import * as React from "react";
 import { Plus, RotateCcw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Section, SectionButton } from "@/components/ui/section";
 import {
   Table,
   TableBody,
@@ -113,21 +113,21 @@ export function ImportsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader className="flex-row items-center justify-between gap-3">
-          <CardTitle>Import</CardTitle>
-          <Button
-            size="sm"
-            className="-my-2"
+    <div className="space-y-10">
+      <Section
+        title="Import"
+        action={
+          <SectionButton
+            icon={Plus}
             onClick={() => {
               setWizardOpen(true);
             }}
           >
-            <Plus /> Neuer Import
-          </Button>
-        </CardHeader>
-        <CardContent className="space-y-3">
+            Neuer Import
+          </SectionButton>
+        }
+      >
+        <div className="space-y-3">
           {actionError && (
             <p role="alert" className="text-sm text-negative">
               {actionError}
@@ -198,8 +198,8 @@ export function ImportsPage() {
               </TableBody>
             </Table>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </Section>
 
       <SnapshotRunsCard />
     </div>

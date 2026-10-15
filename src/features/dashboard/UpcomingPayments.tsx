@@ -59,7 +59,7 @@ export function UpcomingPayments({ today }: { today: string }) {
       // bei den Eingängen. Ein Symbol allein musste man deuten.
       action={<SectionLink to="/kalender">Kalender</SectionLink>}
     >
-      <ListGroup inset aria-label="Nächste angekündigte Zahltage">
+      <ListGroup aria-label="Nächste angekündigte Zahltage">
         {next.map((event) => {
           const { day, month } = dateTile(event.date);
           const when = relativeDayLabel(daysBetween(today, event.date));

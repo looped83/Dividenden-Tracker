@@ -46,10 +46,16 @@ export const CHART_GRID_PROPS = {
   stroke: "var(--border)",
 } as const;
 
+/**
+ * Achsen ohne Linien und Striche (seit 1.9.0, wie im Kopf der Uebersicht):
+ * Das Raster traegt die Groessenordnung, die Beschriftung den Wert. Eine
+ * dunkle Achsenlinie samt Strichen an jedem Wert war das Lauteste im Bild.
+ */
 export const CHART_X_AXIS_PROPS = {
-  tick: { fontSize: 12 },
+  tick: { fontSize: 12, fill: "var(--muted-foreground)" },
   tickMargin: 8,
-  stroke: "var(--muted-foreground)",
+  axisLine: { stroke: "var(--border)" },
+  tickLine: false,
 } as const;
 
 /**
@@ -60,10 +66,11 @@ export const CHART_X_AXIS_PROPS = {
  */
 export const CHART_Y_AXIS_PROPS = {
   tickFormatter: formatAxisTick,
-  tick: { fontSize: 12 },
+  tick: { fontSize: 12, fill: "var(--muted-foreground)" },
   tickMargin: 4,
   width: 56,
-  stroke: "var(--muted-foreground)",
+  axisLine: false,
+  tickLine: false,
 } as const;
 
 export const CHART_BAR_CURSOR = { fill: "var(--muted)" } as const;
@@ -82,3 +89,10 @@ export const CHART_SERIES_PROPS = { isAnimationActive: false } as const;
 
 /** Radius der Balkenoberkante — ueberall derselbe. */
 export const CHART_BAR_RADIUS: [number, number, number, number] = [4, 4, 0, 0];
+
+/**
+ * Hoechstbreite eines Balkens. Bei fuenf Jahren auf dem Desktop wurden die
+ * Balken sonst 160px breit — Flaechen statt Marken, in Vordergrundfarbe zu
+ * schwer fuer eine ruhige Seite.
+ */
+export const CHART_MAX_BAR_SIZE = 32;

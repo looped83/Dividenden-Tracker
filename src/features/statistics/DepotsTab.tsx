@@ -134,6 +134,7 @@ export function DepotsTab() {
           items={distributionItems}
           total={total}
           ariaLabel="Netto-Dividende je Depot"
+          columns
         />
       </div>
     </Section>

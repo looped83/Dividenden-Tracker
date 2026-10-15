@@ -229,7 +229,9 @@ function DayButton({
             key={event.id}
             className={cn(
               "size-1.5 rounded-full",
-              event.eventState === "cancelled" ? "bg-muted-foreground/50" : "bg-primary",
+              event.eventState === "cancelled"
+                ? "bg-muted-foreground/50"
+                : "bg-foreground",
             )}
           />
         ))}
@@ -250,7 +252,7 @@ function DayMark({ day, today, dim }: { day: number; today: boolean; dim: boolea
       aria-hidden
       className={cn(
         "flex size-6 items-center justify-center rounded-full text-xs",
-        today && "bg-primary font-semibold text-primary-foreground",
+        today && "bg-foreground font-semibold text-background",
         !today && !dim && "text-foreground",
         !today && dim && "text-muted-foreground",
       )}

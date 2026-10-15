@@ -40,19 +40,21 @@ export function SkeletonRows({
 }) {
   return (
     <div
-      className={cn("overflow-hidden rounded-lg border border-border", className)}
+      // Ohne Rahmen und graue Kopfzeile — in der Form von Liste und Tabelle
+      // (seit 1.9.0), sonst springt die Seite, sobald die Daten da sind.
+      className={className}
       aria-busy="true"
       aria-live="polite"
     >
       <span className="sr-only">{label} werden geladen …</span>
-      <div className="flex h-11 items-center gap-4 border-b border-border bg-muted/50 px-4">
+      <div className="flex h-10 items-center gap-4 border-b border-border">
         <Skeleton className="h-3 w-24" />
         <Skeleton className="ml-auto h-3 w-16" />
       </div>
       {Array.from({ length: rows }).map((_, index) => (
         <div
           key={index}
-          className="flex items-center gap-4 border-b border-border px-4 py-3 last:border-0"
+          className="flex items-center gap-4 border-b border-border py-3 last:border-0"
         >
           <Skeleton className="h-4 w-2/5" />
           <Skeleton className="ml-auto h-4 w-16" />

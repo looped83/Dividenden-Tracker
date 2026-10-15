@@ -97,7 +97,7 @@ export function StatSearch({
       />
       <Input
         type="search"
-        className="pl-9"
+        className="rounded-full pl-9"
         placeholder={placeholder}
         value={value}
         aria-label={placeholder}
@@ -258,10 +258,10 @@ export function StatTable<T>({
         // `relative`: haelt die absolut positionierten `sr-only`-Texte im
         // Bildlaufkasten — sonst schiebt eine breite Tabelle die ganze Seite
         // nach rechts (siehe ui/table.tsx).
-        <div className="relative w-full overflow-x-auto rounded-lg border border-border">
+        <div className="relative w-full overflow-x-auto">
           <table className="w-full caption-bottom text-sm">
             <caption className="sr-only">{caption}</caption>
-            <thead className="bg-muted/50">
+            <thead>
               <tr className="border-b border-border">
                 {columns.map((column) => {
                   const isSorted = activeSort?.key === column.key;
@@ -278,7 +278,7 @@ export function StatTable<T>({
                       scope="col"
                       aria-sort={ariaSort}
                       className={cn(
-                        "h-11 px-4 align-middle text-xs font-medium uppercase tracking-wide text-muted-foreground",
+                        "h-11 px-3 align-middle text-[0.8125rem] font-medium text-muted-foreground first:pl-0 last:pr-0",
                         column.align === "right" ? "text-right" : "text-left",
                         column.className,
                       )}
@@ -290,7 +290,7 @@ export function StatTable<T>({
                             toggleSort(column.key);
                           }}
                           className={cn(
-                            "inline-flex h-full min-h-11 items-center gap-1 rounded-sm uppercase outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring",
+                            "inline-flex h-full min-h-11 items-center gap-1 rounded-sm outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring",
                             column.align === "right" && "flex-row-reverse",
                           )}
                           aria-label={`Nach ${column.headerLabel ?? column.key} sortieren`}
@@ -338,7 +338,7 @@ export function StatTable<T>({
                       <td
                         key={column.key}
                         className={cn(
-                          "px-4 py-3 align-middle",
+                          "px-3 py-3 align-middle first:pl-0 last:pr-0",
                           column.align === "right" && "text-right tabular-nums",
                           column.className,
                         )}
@@ -433,7 +433,7 @@ export function StatTable<T>({
 
 /**
  * Listenfassung der Tabelle. Die Zeile steht in der Karte ohne eigenen Rahmen
- * (`ListGroup inset`) — eine Tabelle in der Karte braucht ihn, eine Liste
+ * (`ListGroup`) — eine Tabelle in der Karte braucht ihn, eine Liste
  * nicht, und jeder weitere Rahmen kostet auf dem Telefon Breite.
  */
 function StatList<T>({
@@ -460,7 +460,7 @@ function StatList<T>({
 
   if (summary) {
     return (
-      <ListGroup inset aria-label={caption}>
+      <ListGroup aria-label={caption}>
         {rows.map((row) => {
           const bar = summary.bar?.(row);
           return (
@@ -483,11 +483,11 @@ function StatList<T>({
                   {bar && (
                     <div className="flex items-center gap-2">
                       <div
-                        className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted"
+                        className="h-[3px] flex-1 overflow-hidden rounded-full bg-border"
                         aria-hidden
                       >
                         <div
-                          className="h-full rounded-full bg-chart-1"
+                          className="h-full rounded-full bg-foreground"
                           style={{ width: `${String(bar.length)}%` }}
                         />
                       </div>
@@ -509,7 +509,7 @@ function StatList<T>({
   }
 
   return (
-    <ListGroup inset aria-label={caption}>
+    <ListGroup aria-label={caption}>
       {rows.map((row) => (
         <li key={getRowKey(row)}>
           <ListRow

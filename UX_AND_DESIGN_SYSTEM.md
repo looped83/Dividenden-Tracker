@@ -1,6 +1,6 @@
 # UX_AND_DESIGN_SYSTEM.md — Dividend Tracker
 
-Stand: 2026-07-19 · Status: Verbindliches UX- und Designsystem (Planungsphase)
+Stand: 2026-10-15 · Status: Verbindliches UX- und Designsystem (Planungsphase)
 
 Designhaltung: **modern, hochwertig, ruhig, vertrauenswürdig, datenorientiert, klar.**
 Nicht verspielt, kein generisches Admin-Dashboard. Die App soll sich anfühlen wie ein
@@ -67,16 +67,14 @@ und ≥ 3:1 Kontrast. Die ersten **drei** Slots halten die Schwellen zusätzlich
 Paare — Darstellungen ohne feste Nachbarschaft (Streudiagramme, Landkarten) sind damit
 auf drei Reihen begrenzt.
 
-**Zwei Reihen (aktuell ↔ Referenz)** verwenden immer Slot 1 und Slot 2 — Blau gegen
-Orange, gegenüberliegende Farbtöne, ΔE 25,1 hell / 25,3 dunkel bei Protanopie. Die
-Referenzreihe ist zusätzlich gestrichelt oder benannt; Farbe allein trägt die Identität
-nie.
-
-**Ausnahme: der Kopf der Übersicht** (seit 1.7.0). Dort steht das aktuelle Jahr in
-Vordergrundfarbe und das Vorjahr in `--series-prior` (neutrales Grau, 3,6:1 hell / 3,5:1
-dunkel gegen die Seite), als Linie gestrichelt, mit Legende. Der Kopf ist monochrom, damit
-Farbe dort nur Veränderung meint; der Helligkeitsabstand ist größer als zwischen zwei
-Farbtönen gleicher Helligkeit. Alle anderen Diagramme bleiben bei Slot 1 und 2.
+**Ein- und Zweireihendiagramme sind monochrom** (Kopf der Übersicht seit 1.7.0, alle
+übrigen seit 1.9.0): eine Reihe in Vordergrundfarbe; zwei Reihen (aktuell ↔ Referenz)
+als Vordergrundfarbe gegen `--series-prior` (neutrales Grau, 3,6:1 hell / 3,5:1 dunkel
+gegen die Seite), die Referenz zusätzlich gestrichelt und benannt (Legende). Farbe meint
+damit auf jeder Seite nur Veränderung; der Helligkeitsabstand trennt stärker als zwei
+Farbtöne gleicher Helligkeit. Dasselbe gilt für Rangbalken, Anteilsbalken, Zielbalken und
+die Tönung der Matrix Jahre × Monate (Vordergrundfarbe mit höchstens 22 % Deckkraft).
+Die kategoriale Palette bleibt Darstellungen mit mehr als zwei Reihen vorbehalten.
 
 **Der Dunkelsatz ist eigens gewählt, keine Aufhellung des hellen.** Sein Band liegt
 tiefer (L 0,48–0,67 gegenüber 0,43–0,77): Marken oberhalb davon blenden auf dunklem
@@ -119,8 +117,10 @@ als Serienfarbe benutzt — auch dann nicht, wenn ein Farbton ähnlich aussieht.
   Bedienelement daneben — `-my-2` bei `size="sm"` (36 px), `sm:-my-3` bei einem Feld mit
   44 px. Ohne das saß die Überschrift einer Karte mit Schaltfläche 10 px tiefer als die der
   Karte daneben, mit Suchfeld 14 px.
-- Radius 8 px für Bedienelemente, 16 px für Karten und gerahmte Listen, Pillen für die
-  Erfassen-Schaltfläche der Seitenleiste. Schatten nur eine dezente Stufe für schwebende
+- Radius 8 px für Eingabefelder, 16 px für Karten und gedämpfte Flächen, **Pillen für alle
+  Schaltflächen** (seit 1.9.0), für Umschalter, Abzeichen und für Auswahlfelder in
+  Filterleisten, Seiten- und Abschnittsköpfen (dieselbe Form wie die Jahresauswahl der
+  Übersicht). Schatten nur eine dezente Stufe für schwebende
   Elemente (Dialoge, Popover) — Karten trennen sich per Haarlinie, nicht per Schatten.
 - Animationen: nur funktionale Übergänge ≤ 200 ms (Panel auf/zu, Fokus); Diagramme ohne
   Intro-Animation — für alle, nicht nur bei `prefers-reduced-motion` (`CHART_SERIES_PROPS` in
@@ -144,8 +144,8 @@ Eigene zusammengesetzte Komponenten (fachlich):
 |---|---|
 | `AmountText` | Betragsdarstellung: tabular-nums, Währung, Vorzeichen, Farbe (semantisch), niemals Rundung in der Komponente |
 | `KpiHero` / `TrendPill` | **Ein** Kennzahlkopf für alle Bereiche (`components/domain/KpiHero.tsx`): **eine** Hauptzahl groß (32 px), daneben optional der Vergleich als Marke (`TrendPill`: Pfeil **und** Vorzeichen, Bedeutung im `title` und für Sprachausgaben), darunter eine Unterzeile, optional ein Zusatz (Zielbalken) und eine Leiste mit bis zu drei Nebenkennzahlen, durch Linien getrennt. Er ersetzt das frühere Raster gleich großer Kacheln (`StatCard`/`StatGrid`): Vier bis sechs Kacheln kosteten auf dem Telefon 300–700 px, bevor der Inhalt begann, und ließen offen, welche Zahl zählt. Jede Seite beantwortet zuerst **ihre** Frage — Übersicht: Dividenden des Zeitraums; Kalender: nächste 30 Tage; Depot: Depotwert; Statistik: Gesamtsumme; Vergleich: Veränderung; Entwicklung: erwartet p. a.; Assetseite: erhalten insgesamt. Ein Drill-down macht die **ganze Fläche** zur Tippfläche (Link auf dem Wert, per `::after` gedehnt; für die Hauptzahl der obere Teil, für jede Nebenkennzahl ihr Feld) und trägt einen sprechenden Namen (`drillLabel`). Ladegerüst in derselben Form: `KpiHeroSkeleton` |
-| `ListGroup` / `ListRow` / `ListItemBody` / `ListSection` | **Eine Listenform** für Einträge (`components/ui/list.tsx`): eine Fläche mit Trennlinien statt einzelner Karten — auf der Seite ist die Liste selbst die Karte, in einer Karte trägt sie keinen zweiten Rahmen (`inset`). Zeile 1 der Name (höchstens zwei Zeilen), Zeile 2 Angaben links und Wert rechts; `asChild` macht die ganze Zeile zur Tippfläche. `ListSection` gruppiert (Monat, „Diese Woche") mit Kennzahl im Kopf **Datenlisten ohne Pfeil am Rand und ohne Kalendersymbol vor dem Datum** (Eingänge, Termine, Assets, Statistik, Datenqualität): Beide standen in jeder Zeile, sagten nichts, was Tippfläche und Inhalt nicht schon sagen, und nahmen dem Depot die Breite („Trade Repub…"). `chevron` bleibt einzelnen Navigationszeilen („Gesamt seit März 2019") vorbehalten |
-| `Section` / `SectionLink` | Abschnitt **ohne Kartenrahmen** (`components/ui/section.tsx`, seit 1.7.0): Überschrift 19 px, rechts höchstens eine Aktion — ein Textlink in Primärblau mit Pfeil (`SectionLink`, „Alle", „Kalender") oder ein Umschalter —, darunter optional eine Zeile Beschreibung. Abschnitte trennen sich durch Abstand (40 px, ab `lg` 48 px) und Überschrift, nicht durch Rahmen. **Wann Abschnitt, wann Karte:** Lese-Seiten gliedern mit Abschnitten (Übersicht, Statistik, Depot-Entwicklung, Assetseite, Ergebnisse des Zeitraumvergleichs). Karten bleiben für Gruppen von Bedienelementen (Formulare, Einstellungen, Import-Assistent, Eingabe des Zeitraumvergleichs), für gleichartige Elemente in Rastern (Zielkarten, Dubletten-Paare, Positionen) und für Detailblätter (Zahlung, Ziel) — dort bündelt der Rahmen, was zusammen bedient oder verglichen wird |
+| `ListGroup` / `ListRow` / `ListItemBody` / `ListSection` | **Eine Listenform** für Einträge (`components/ui/list.tsx`): Zeilen mit Trennlinien statt einzelner Karten, seit 1.9.0 überall ohne Rahmen (die frühere Fassung `inset` ist die einzige). Zeile 1 der Name (höchstens zwei Zeilen), Zeile 2 Angaben links und Wert rechts; `asChild` macht die ganze Zeile zur Tippfläche. `ListSection` gruppiert (Monat, „Diese Woche") mit Kennzahl im Kopf **Datenlisten ohne Pfeil am Rand und ohne Kalendersymbol vor dem Datum** (Eingänge, Termine, Assets, Statistik, Datenqualität): Beide standen in jeder Zeile, sagten nichts, was Tippfläche und Inhalt nicht schon sagen, und nahmen dem Depot die Breite („Trade Repub…"). `chevron` bleibt einzelnen Navigationszeilen („Gesamt seit März 2019") vorbehalten |
+| `Section` / `SectionLink` | Abschnitt **ohne Kartenrahmen** (`components/ui/section.tsx`, seit 1.7.0): Überschrift 19 px, rechts höchstens eine Aktion — ein Textlink in Primärblau mit Pfeil (`SectionLink`, „Alle", „Kalender") oder ein Umschalter —, darunter optional eine Zeile Beschreibung. Abschnitte trennen sich durch Abstand (40 px, ab `lg` 48 px) und Überschrift, nicht durch Rahmen. **Wann Abschnitt, wann Karte:** Lese-Seiten gliedern mit Abschnitten (Übersicht, Statistik, Depot-Entwicklung, Assetseite, Ergebnisse des Zeitraumvergleichs). Seit 1.9.0 gliedern auch Einstellungen, Zeitraumvergleich und Detailseiten mit Abschnitten; Karten mit Rahmen bleiben Formularen in Dialogen, dem Import-Assistenten und den Dubletten-Paaren vorbehalten, gleichartige Kacheln (Ziele, „Mehr") stehen auf gedämpfter Fläche (siehe „Eine Linie für alle Seiten") |
 | `SegmentedControl` | Umschalter zwischen wenigen Zuständen (Optionsgruppe). `variant="pill"` ist die leise Fassung für Abschnittsköpfe (Diagrammsicht, Assets/Depots): gedämpfte Fläche, 32 px hoch, Tippfläche per Pseudo-Element 44 px |
 | `PaymentListItem` | Ein Dividendeneingang als Zeile — dieselbe in Dividendenliste, Übersicht und Assetseite: Name, Datum · Depot, Betrag (Depot wird gekürzt, nie umbrochen). In Monatsgruppen nur „11.10." (`formatDayMonth`) — Monat und Jahr nennt die Überschrift, Sprachausgaben bekommen das Jahr dennoch mit. Auf der Assetseite ist das Datum der Titel |
 | `PaymentTable` / Liste | Tabelle ab `md` (Aktionen je Zeile) bzw. `PaymentListItem`-Liste auf dem Telefon, nach Datum sortiert nach Monat gruppiert mit Monatssumme im Kopf; darüber Anzahl und Summe der Auswahl; „weitere laden" statt Blättern (die geladene Menge steht in der Adresse, der Weg zurück findet sie wieder) |
@@ -164,6 +164,32 @@ Eigene zusammengesetzte Komponenten (fachlich):
 | `GoalProgress` | Zielfortschritt: Balken, „X von Y (Z %)", Kappung 100 % visuell |
 | `ToastProvider` / `useToast` | Kurze Rückmeldung nach abgeschlossenen Aktionen (Speichern, Storno, Reaktivieren): `role="status"`, `aria-live="polite"`, 4 s sichtbar, von Hand schließbar, über der Bottom-Navigation. Nur Bestätigungen und beiläufige Fehler — alles Entscheidungspflichtige bleibt Dialog oder Feldfehler. **Sichtbar gestaltet:** farbiger Streifen an der linken Kante, **deckend** getönter Grund im Ton der Meldung (`--positive-surface` / `--negative-surface`), Symbol passend zum Ton (Haken bzw. Ausrufezeichen), kräftiger Schatten und ein kurzes Einblenden von unten (`motion-safe`, 200 ms). Eine Rückmeldung, die man übersieht, ist keine — und ein Haken an einer Fehlermeldung ist eine falsche. **Keine Transparenz:** Der Toast schwebt über scrollendem Inhalt; ein Alpha-Tint (`bg-positive/10`) ließ Tabellenzeilen und Diagramme durchscheinen und machte den Text je nach Scrollposition unlesbar. Deshalb fertig gemischte, undurchsichtige Flächen-Tokens statt Farbe mit Alpha. Inhalt mittig in der Zeile, damit der Text nicht über der 44-px-Schließen-Fläche klebt |
 
+### Eine Linie für alle Seiten (seit 1.9.0)
+
+Die Übersicht hat die Form vorgegeben; alle übrigen Seiten folgen ihr, damit keine Seite
+anders gebaut wirkt als die nächste:
+
+- **Abschnitte statt Karten.** Auch Einstellungen, Depotkonten, Import, Datensicherung,
+  Zahlungs- und Zieldetail gliedern mit `Section` (40 px Abstand, ab `lg` zwei Spalten wo
+  es passt). Aktionen im Abschnittskopf sind Textaktionen in Primärblau — `SectionLink`
+  zum Weitergehen, `SectionButton` zum Anlegen oder Aufklappen („Neues Depot",
+  „Anzeigen"); eine gefüllte Schaltfläche je Abschnitt war lauter als die Überschrift.
+- **Gedämpfte Flächen statt Rahmen** für Kennzahlen und gleichartige Kacheln:
+  Zielkarten, Kacheln unter „Mehr", Kennzahlen der Position und der Datenqualität. Karten
+  mit Rahmen bleiben für Formulare in Dialogen, den Import-Assistenten und die
+  Dubletten-Paare.
+- **Listen und Tabellen ohne Rahmen** (`ListGroup`, `Table`, `StatTable`, Ladegerüste):
+  Haarlinien zwischen den Zeilen, erste und letzte Spalte bündig mit der Überschrift,
+  Spaltenköpfe in gewöhnlicher Schreibung. Die Dividendentabelle gruppiert nach Datum
+  sortiert wie die Liste nach Monat (Monatssumme in der Betragsspalte); Zeilenaktionen
+  sind Symbole ohne Rahmen.
+- **Reiter** (`TabNav`) markieren den aktiven Eintrag mit einer Linie in
+  Vordergrundfarbe und halbfett — ein Ort, keine Aktion.
+- **Umschalter** (`SegmentedControl`) haben in beiden Fassungen die Pillenform der
+  Übersicht; im Dunkeln liegt die gewählte Pille auf der Akzentstufe.
+- **Erfassen** steht nur in der Navigation, nicht zusätzlich im Kopf der Dividendenliste.
+- **Detailkopf**: Der Betrag einer Zahlung steht in der Größe der Hauptzahl (40 px).
+
 ### Filterleisten — verbindliche Regeln
 
 Sie stehen auf drei Seiten nebeneinander im Gedächtnis; unterschiedliche Feldbreiten oder
@@ -181,6 +207,9 @@ ein anderer Platz fürs Zurücksetzen fallen beim Wechsel sofort auf.
   rund 30 px offen.
 - **Höhe:** alles 44 px (`h-11`), auch das Zurücksetzen — die Zeile darf keine zweite Höhe
   kennen.
+- **Form:** ohne Rahmen um die Leiste, Felder und Schaltflächen als Pillen (seit 1.9.0).
+  Auf dem Telefon ist die eingeklappte Leiste eine Pille „Filter" mit der Zahl wirkender
+  Filter, nicht mehr ein Kasten über die volle Breite.
 - **Beschriftungen:** unsichtbar, aber vorhanden (`sr-only`). Jedes Feld benennt sich über
   seinen neutralen Wert selbst („Alle Jahre", „Alle Depots"); Sortieroptionen beginnen mit
   „Nach …" und nennen den Begriff, den die Seite selbst verwendet — kurz und ohne
@@ -203,7 +232,8 @@ ein anderer Platz fürs Zurücksetzen fallen beim Wechsel sofort auf.
   in der Zeichenfläche, nimmt ihr Platz weg und bringt die Schrift des SVG statt der der
   Anwendung mit. Farbe trägt die Unterscheidung nie allein (WCAG 1.4.1).
 - Jede Grafik: Umschalter zur Datentabelle + textuelle Zusammenfassung (Screenreader). Die
-  Datentabelle ist die **gewöhnliche** Tabelle der Anwendung (`components/ui/table`) — Rahmen,
+  Datentabelle ist die **gewöhnliche** Tabelle der Anwendung (`components/ui/table`) — seit
+  1.9.0 ohne Rahmen und graue Kopfzeile, sonst wie beschrieben —
   graue Kopfzeile, `px-4 py-3` je Zelle. Ein eigenes, engeres Muster ließ dieselbe Sache zwei
   Bildschirme weiter anders aussehen.
 - **Ein Stil für alle Diagramme.** Achsen, Raster, Tooltip-Kasten, Höhe, Leerzustand und die
@@ -434,7 +464,7 @@ Eingängen und Assets.
 **Zielart erkennbar machen.** Jahres- und Monatsziel tragen dieselbe Karte und
 waren dadurch kaum zu unterscheiden. Eine 36-px-Symbolkachel trennt sie
 (`CalendarRange` für das Jahr, `CalendarDays` für den Monat) samt Tönung
-(Primärfarbe gegen Grau); den Klartext liefert der Titel selbst
+(seit 1.9.0 dunkel gegen Grau statt Primärfarbe gegen Grau); den Klartext liefert der Titel selbst
 („Dividendenziel 2026", „Monatsziel März 2026"), Farbe und Form tragen nie
 allein. Dasselbe Zeichen erscheint auf Zielseite und Detailseite; nur
 die Detailseite nennt die Zielart zusätzlich als Text.

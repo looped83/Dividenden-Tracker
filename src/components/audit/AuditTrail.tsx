@@ -92,7 +92,7 @@ export function AuditTrail({ entityType, entityId }: AuditTrailProps) {
       {data.map((entry) => (
         <li key={entry.id} className="relative">
           <span
-            className="absolute -left-[1.1rem] top-1.5 size-2 rounded-full bg-primary"
+            className="absolute -left-[1.1rem] top-1.5 size-2 rounded-full bg-foreground"
             aria-hidden
           />
           <p className="text-sm font-medium">

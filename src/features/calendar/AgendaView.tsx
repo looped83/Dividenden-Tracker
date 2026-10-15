@@ -128,11 +128,11 @@ export function EventTile({
                 // Grau wie auf der Übersicht: Blau markiert Aktionen, nicht Daten.
                 // Abgesagt bleibt durch blasse Ziffern und den durchgestrichenen
                 // Titel erkennbar.
-                "flex size-12 shrink-0 flex-col items-center justify-center rounded-xl bg-muted",
+                "flex size-11 shrink-0 flex-col items-center justify-center rounded-xl bg-muted",
                 cancelled ? "text-muted-foreground" : "text-foreground",
               )}
             >
-              <span className="text-lg font-semibold leading-none tabular-amount">
+              <span className="text-base font-semibold leading-none tabular-amount">
                 {day}
               </span>
               <span className="mt-0.5 text-[0.625rem] font-semibold uppercase leading-none tracking-wide text-muted-foreground">
