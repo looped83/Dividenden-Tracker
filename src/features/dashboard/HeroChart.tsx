@@ -49,8 +49,9 @@ const num = (money: Money): number => money.toChartNumber();
  * „Alle Jahre" ist eine Linie: Gefragt ist der Verlauf über viele Jahre, und
  * fünfzehn Säulen wurden auf dem Telefon zu Strichen.
  *
- * Farben: aktuelles Jahr in Vordergrundfarbe, Vorjahr in `--series-prior` und
- * — als Linie — gestrichelt. Die Identität trägt nie die Farbe allein.
+ * Farben: Linien des aktuellen Zeitraums in der Akzentfarbe (Orange, seit
+ * 1.11.0 — die Hauptlinie der Seite), Säulen in Vordergrundfarbe, Vorjahr in
+ * `--series-prior` und — als Linie — gestrichelt. Die Identität trägt nie die Farbe allein.
  */
 export function HeroChart({
   series,
@@ -252,7 +253,7 @@ function Cumulative({
       <path
         d={path(line)}
         fill="none"
-        stroke="var(--foreground)"
+        stroke="var(--primary)"
         strokeWidth={2.5}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -281,7 +282,7 @@ function Cumulative({
             cx={x(point.x)}
             cy={y(num(point.value))}
             r={5}
-            fill="var(--foreground)"
+            fill="var(--primary)"
             stroke="var(--background)"
             strokeWidth={2}
           />
@@ -291,7 +292,7 @@ function Cumulative({
           cx={x(end.x)}
           cy={y(end.value)}
           r={4.5}
-          fill="var(--foreground)"
+          fill="var(--primary)"
           stroke="var(--background)"
           strokeWidth={2}
         />
@@ -350,7 +351,7 @@ function Years({
       <path
         d={path}
         fill="none"
-        stroke="var(--foreground)"
+        stroke="var(--primary)"
         strokeWidth={2.5}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -359,7 +360,7 @@ function Years({
         cx={dot.x}
         cy={dot.y}
         r={active === null ? 4.5 : 5}
-        fill="var(--foreground)"
+        fill="var(--primary)"
         stroke="var(--background)"
         strokeWidth={2}
       />

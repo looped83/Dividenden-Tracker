@@ -544,7 +544,7 @@ function Legend({
   const swatch =
     kind === "cumulative"
       ? [
-          <span key="c" className="h-0.5 w-3 rounded-full bg-foreground" />,
+          <span key="c" className="h-0.5 w-3 rounded-full bg-primary" />,
           <span
             key="p"
             className="h-0.5 w-3 bg-[repeating-linear-gradient(90deg,var(--series-prior)_0_2px,transparent_2px_4px)]"
