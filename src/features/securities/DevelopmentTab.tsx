@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Link } from "react-router";
 import { TrendingUp } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Section } from "@/components/ui/section";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -423,7 +423,7 @@ export function DevelopmentView({
   const range = trailingYearRange(latest.asOf);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       {/* Die Erwartung ist die Hauptzahl, der Zuwachs gegenueber dem
           Erhaltenen ihre Marke; das Erhaltene und die Rendite auf den Einstand
           stehen darunter. Vier gleich grosse Kacheln liessen offen, welche
@@ -473,11 +473,8 @@ export function DevelopmentView({
         ]}
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Erwartet und erhalten im Verlauf</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <Section title="Erwartet und erhalten im Verlauf">
+        <div>
           {points.length < 2 ? (
             // Mit einem einzigen Stichtag gibt es keine Entwicklung zu zeigen.
             // Eine Linie durch einen Punkt waere eine Behauptung ueber einen
@@ -495,15 +492,17 @@ export function DevelopmentView({
               ariaLabel="Erwartete und tatsächlich erhaltene Dividenden je Stichtag"
             />
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </Section>
 
-      <Card>
-        <CardHeader className="gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <CardTitle>Erwartet gegen erhalten je Asset</CardTitle>
+      <Section
+        title="Erwartet gegen erhalten je Asset"
+        actionClassName="w-full sm:-my-3 sm:w-64"
+        action={
           <StatSearch value={query} onChange={setQuery} placeholder="Asset suchen …" />
-        </CardHeader>
-        <CardContent>
+        }
+      >
+        <div>
           <StatTable
             rows={assetRows}
             columns={columns}
@@ -530,8 +529,8 @@ export function DevelopmentView({
               ),
             }}
           />
-        </CardContent>
-      </Card>
+        </div>
+      </Section>
 
       {/* Bei einem einzelnen Asset saehe die Aufteilung immer gleich aus:
           eine Branche, ein Land, jeweils 100 %. Eine Aussage, die aus der
@@ -594,11 +593,8 @@ function AllocationCard({
   const totalValue = total ?? Money.zero(EUR);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <Section title={title}>
+      <div>
         {buckets.length === 0 ? (
           <p className="py-6 text-sm text-muted-foreground">
             Keine Angaben im aktuellen Depotstand.
@@ -639,7 +635,7 @@ function AllocationCard({
             })}
           </ul>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </Section>
   );
 }

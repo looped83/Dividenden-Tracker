@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useNavigate } from "react-router";
 import { BarChart3 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Section } from "@/components/ui/section";
 import { AmountText } from "@/components/money/AmountText";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
@@ -83,25 +83,19 @@ export function MonthsTab() {
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Monatliche Entwicklung</CardTitle>
-        </CardHeader>
-        <CardContent>
+    <div className="space-y-10">
+      <Section title="Monatliche Entwicklung">
+        <div>
           <CategoryBarChart
             data={chartData}
             ariaLabel="Netto-Dividenden je Kalendermonat"
             categoryHeader="Monat"
           />
-        </CardContent>
-      </Card>
+        </div>
+      </Section>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Monatsstatistik</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <Section title="Monatsstatistik">
+        <div>
           <StatTable
             rows={stats}
             columns={columns}
@@ -112,8 +106,8 @@ export function MonthsTab() {
             }
             rowLabel={(row) => `Alle Zahlungen im ${monthNameDe(row.month)} anzeigen`}
           />
-        </CardContent>
-      </Card>
+        </div>
+      </Section>
     </div>
   );
 }

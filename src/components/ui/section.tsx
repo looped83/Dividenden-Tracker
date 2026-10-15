@@ -19,6 +19,7 @@ export function Section({
   title,
   description,
   action,
+  actionClassName = "-my-2 shrink-0",
   className,
   children,
   ...props
@@ -26,18 +27,24 @@ export function Section({
   title: React.ReactNode;
   description?: React.ReactNode;
   action?: React.ReactNode;
+  /**
+   * Platz der Aktion. Voreinstellung: rechts, so hoch wie die Überschrift.
+   * Ein Suchfeld setzt etwa `w-full sm:w-64 sm:-my-3` — auf dem Telefon bricht
+   * es dann in eine eigene Zeile unter die Überschrift.
+   */
+  actionClassName?: string;
 }) {
   const id = React.useId();
   return (
     <section aria-labelledby={id} className={cn("min-w-0", className)} {...props}>
-      <div className="flex min-h-7 items-center justify-between gap-3">
+      <div className="flex min-h-7 flex-wrap items-center justify-between gap-x-3 gap-y-2">
         <h2
           id={id}
           className="text-[1.1875rem] font-bold leading-tight tracking-[-0.015em]"
         >
           {title}
         </h2>
-        {action !== undefined && <div className="-my-2 shrink-0">{action}</div>}
+        {action !== undefined && <div className={actionClassName}>{action}</div>}
       </div>
       {description !== undefined && (
         <p className="mt-0.5 text-[0.8125rem] text-muted-foreground">{description}</p>

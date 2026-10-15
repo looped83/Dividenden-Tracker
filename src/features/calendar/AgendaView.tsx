@@ -125,16 +125,17 @@ export function EventTile({
             <span
               aria-hidden
               className={cn(
-                "flex size-12 shrink-0 flex-col items-center justify-center rounded-md",
-                cancelled
-                  ? "bg-muted text-muted-foreground"
-                  : "bg-primary/10 text-primary",
+                // Grau wie auf der Übersicht: Blau markiert Aktionen, nicht Daten.
+                // Abgesagt bleibt durch blasse Ziffern und den durchgestrichenen
+                // Titel erkennbar.
+                "flex size-12 shrink-0 flex-col items-center justify-center rounded-xl bg-muted",
+                cancelled ? "text-muted-foreground" : "text-foreground",
               )}
             >
               <span className="text-lg font-semibold leading-none tabular-amount">
                 {day}
               </span>
-              <span className="mt-0.5 text-[0.625rem] font-medium uppercase leading-none">
+              <span className="mt-0.5 text-[0.625rem] font-semibold uppercase leading-none tracking-wide text-muted-foreground">
                 {month}
               </span>
             </span>

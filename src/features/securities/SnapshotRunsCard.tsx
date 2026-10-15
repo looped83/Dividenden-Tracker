@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Section } from "@/components/ui/section";
 import {
   Dialog,
   DialogContent,
@@ -35,11 +35,8 @@ export function SnapshotRunsCard() {
   if (runs.length === 0) return null;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Depotstände</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <Section title="Depotstände">
+      <div>
         <ListGroup inset aria-label="Depotstände">
           {runs.map((run) => {
             const date = formatCalendarDate(run.as_of);
@@ -69,7 +66,7 @@ export function SnapshotRunsCard() {
             );
           })}
         </ListGroup>
-      </CardContent>
+      </div>
       <DeleteSnapshotRunDialog
         run={target}
         runs={runs}
@@ -77,7 +74,7 @@ export function SnapshotRunsCard() {
           if (!open) setTarget(null);
         }}
       />
-    </Card>
+    </Section>
   );
 }
 

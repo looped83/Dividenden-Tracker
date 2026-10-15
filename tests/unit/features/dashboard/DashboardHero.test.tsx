@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
@@ -17,6 +17,12 @@ const goals: Goal[] = [];
 // zeigt — nicht, woher sie kommen.
 vi.mock("@/features/goals/hooks", () => ({
   useGoals: () => ({ data: goals }),
+}));
+
+// Angekündigte Termine des Kalenders (für die Prognose, §9.7).
+const calendar = vi.hoisted(() => ({ events: [] as unknown[] }));
+vi.mock("@/features/calendar/hooks", () => ({
+  useCalendarEvents: () => ({ data: calendar.events }),
 }));
 
 const { DashboardHero } = await import("@/features/dashboard/DashboardHero");
@@ -74,6 +80,13 @@ function renderHero(
 }
 
 const MONATSLINK = { name: "Zahlungen des aktuellen Monats anzeigen" };
+
+// Die Diagrammsicht bleibt im Speicher des Geräts stehen; jeder Test beginnt
+// mit der Voreinstellung.
+afterEach(() => {
+  window.localStorage.clear();
+  calendar.events = [];
+});
 
 describe("DashboardHero — eine Hauptzahl statt Kachelraster", () => {
   it("zeigt die Summe des gewählten Jahres, nicht die aller Jahre", () => {
@@ -158,6 +171,31 @@ describe("DashboardHero — Ziele im Kontext", () => {
     ).toHaveAttribute("href", `/ziele/${JAHRESZIEL_2026.id}`);
   });
 
+  it("ersetzt in der Prognose die nächsten Wochen durch angekündigte Beträge", () => {
+    // Angekündigt am 5. August: 90 € (netto). Das Vorjahr bis 5. August (60 €)
+    // entfällt dafür, ab dem 6. August gilt wieder das Vorjahr (120 €).
+    calendar.events = [
+      {
+        id: "e1",
+        date: "2026-08-05",
+        eventType: "payment",
+        eventState: "active",
+        expectedAmount: Money.fromString("90.00", EUR),
+      },
+    ];
+    renderHero(
+      2026,
+      [...PAYMENTS, payment("2025-08-01", "60.00"), payment("2025-11-10", "120.00")],
+      [JAHRESZIEL_2026],
+    );
+    // 500 + 90 + 120
+    expect(
+      screen.getByRole("link", {
+        name: /Prognose bis Jahresende 710,00\s?€, davon 90,00\s?€ angekündigt/,
+      }),
+    ).toBeInTheDocument();
+  });
+
   it("zeigt zu einem anderen Jahr das Ergebnis statt einer Prognose", () => {
     renderHero(2024, PAYMENTS, [JAHRESZIEL_2024]);
     expect(screen.queryByText(/Prognose/)).not.toBeInTheDocument();
@@ -233,5 +271,18 @@ describe("DashboardHero — Diagramm im Kopf", () => {
     expect(
       screen.getByRole("link", { name: "Zahlungen Mai 2026 anzeigen" }),
     ).toHaveAttribute("href", "/eingaenge?year=2026&month=5");
+  });
+});
+
+describe("DashboardHero — Diagrammsicht", () => {
+  it("merkt sich die gewählte Sicht auf diesem Gerät", async () => {
+    const user = userEvent.setup();
+    const { unmount } = renderHero(2026, [payment("2026-03-10", "50.00")]);
+    expect(screen.getByRole("radio", { name: "Kumuliert" })).toBeChecked();
+    await user.click(screen.getByRole("radio", { name: "Monatlich" }));
+    unmount();
+
+    renderHero(2026, [payment("2026-03-10", "50.00")]);
+    expect(screen.getByRole("radio", { name: "Monatlich" })).toBeChecked();
   });
 });

@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Link, useNavigate } from "react-router";
 import { BarChart3 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Section } from "@/components/ui/section";
 import { AmountText } from "@/components/money/AmountText";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -236,18 +236,15 @@ export function CompaniesTab() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       <BreakdownSwitch />
       {/* Auf dem Telefon ist die Liste darunter selbst die Rangliste (Balken
           je Zeile); dieselben Summen ein zweites Mal als Balken darueber
           verdoppelten dort die Seite. Ab `md` steht die Tabelle — sie zeigt
           keine Balken, deshalb bleibt die Rangliste dort. */}
       {isWide && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Assets nach Dividendensumme</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <Section title="Assets nach Dividendensumme">
+          <div>
             {topItems.length === 0 ? (
               <p className="py-6 text-sm text-muted-foreground">
                 Kein aktives Asset in dieser Auswahl — die Tabelle darunter zeigt die
@@ -260,20 +257,18 @@ export function CompaniesTab() {
                 ariaLabel="Aktive Assets nach Nettodividende"
               />
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </Section>
       )}
 
-      <Card>
-        <CardHeader className="gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <CardTitle>
-            {isWide ? "Statistik je Asset" : "Assets nach Dividendensumme"}
-          </CardTitle>
-          <div className="sm:-my-3 sm:w-64 sm:shrink-0">
-            <StatSearch value={query} onChange={setQuery} placeholder="Assets suchen …" />
-          </div>
-        </CardHeader>
-        <CardContent>
+      <Section
+        title={isWide ? "Statistik je Asset" : "Assets nach Dividendensumme"}
+        actionClassName="w-full sm:-my-3 sm:w-64"
+        action={
+          <StatSearch value={query} onChange={setQuery} placeholder="Assets suchen …" />
+        }
+      >
+        <div>
           <StatTable
             rows={tableRows}
             columns={columns}
@@ -331,8 +326,8 @@ export function CompaniesTab() {
               Archivierte anzeigen
             </label>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </Section>
     </div>
   );
 }

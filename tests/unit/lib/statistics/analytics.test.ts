@@ -382,6 +382,24 @@ describe("yearEndForecast (§9.7)", () => {
     );
   });
 
+  it("ersetzt das Vorjahr bis zum letzten angekündigten Tag durch Ankündigungen", () => {
+    const payments = [
+      p("2025-07-25", "40"), // im Fenster der Ankündigungen: entfällt
+      p("2025-08-05", "30"), // nach dem letzten angekündigten Tag (02.08.): zählt
+      p("2026-03-10", "150"),
+    ];
+    const result = yearEndForecast(payments, REF_2026_JUL20, [
+      { date: "2026-07-24", amount: Money.fromString("45", EUR) },
+      { date: "2026-08-02", amount: Money.fromString("5", EUR) },
+      { date: "2026-07-20", amount: Money.fromString("999", EUR) }, // heute: schon in „eingegangen"
+      { date: "2027-01-05", amount: Money.fromString("999", EUR) }, // nächstes Jahr
+    ]);
+    expect(result.announced.toStringValue()).toBe("50.00");
+    expect(result.announcedUntil).toBe("2026-08-02");
+    expect(result.remainingPrior.toStringValue()).toBe("30.00");
+    expect(result.forecast.toStringValue()).toBe("230.00");
+  });
+
   it("bildet den 29. Februar auf den 28. Februar des Vorjahres ab", () => {
     const payments = [p("2027-02-28", "5"), p("2027-03-01", "7")];
     const { remainingPrior } = yearEndForecast(payments, {

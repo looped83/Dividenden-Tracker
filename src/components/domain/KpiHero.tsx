@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { ArrowDownRight, ArrowUpRight } from "lucide-react";
-import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils/cn";
 
@@ -29,6 +28,10 @@ const stretched = cn(
  * auf dem Telefon 300 bis 700px, bevor der Inhalt der Seite begann — und
  * ließen offen, welche Zahl zählt. Hier trägt die Größe die Rangfolge: Jede
  * Seite beantwortet zuerst ihre eine Frage.
+ *
+ * Seit 1.7.0 ohne Kartenrahmen, in der Form des Kopfes der Übersicht: Zahl
+ * 40px, darunter die Nebenkennzahlen auf einer gedämpften Fläche ohne
+ * Trennlinien. Die Größe trägt die Rangfolge, nicht ein Rahmen.
  *
  * Reine Darstellung: Werte kommen fertig formatiert, gerechnet wird in den
  * Fachmodulen. Ein Drill-down macht die ganze Fläche zur Tippfläche (Link
@@ -62,18 +65,18 @@ export function KpiHero({
   className?: string;
 }) {
   const valueClass =
-    "text-[2rem] font-semibold leading-none tracking-tight tabular-amount";
+    "text-[2.5rem] font-bold leading-[1.05] tracking-[-0.035em] tabular-amount";
 
   return (
-    <Card className={cn("overflow-hidden", className)}>
-      <div className="relative space-y-2 p-4 sm:p-6">
-        <p className="text-sm text-muted-foreground">{label}</p>
+    <section className={cn("flex flex-col", className)}>
+      <div className="relative space-y-2">
+        <p className="text-[0.9375rem] font-medium text-muted-foreground">{label}</p>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           {to !== undefined ? (
             <Link
               to={to}
               aria-label={drillLabel}
-              className={cn(valueClass, stretched, "after:rounded-t-lg")}
+              className={cn(valueClass, stretched, "after:rounded-sm")}
             >
               {value}
             </Link>
@@ -83,14 +86,14 @@ export function KpiHero({
           {trend}
         </div>
         {caption !== undefined && (
-          <p className="text-sm text-muted-foreground">{caption}</p>
+          <p className="text-[0.9375rem] text-muted-foreground">{caption}</p>
         )}
         {footer !== undefined && <div className="relative z-10 pt-2">{footer}</div>}
       </div>
       {stats && stats.length > 0 && (
         <dl
           className={cn(
-            "grid divide-x divide-border border-t border-border",
+            "mt-5 grid gap-1 rounded-2xl bg-muted p-1.5",
             stats.length === 1
               ? "grid-cols-1"
               : stats.length === 2
@@ -104,13 +107,15 @@ export function KpiHero({
             <div
               key={stat.label}
               className={cn(
-                "relative flex min-w-0 flex-col px-3 py-3 first:pl-4 sm:px-6 sm:first:pl-6",
+                "relative flex min-w-0 flex-col rounded-xl px-2.5 py-2 sm:px-4 sm:py-3",
                 stat.to !== undefined &&
-                  "transition-colors hover:bg-accent/50 active:bg-accent motion-reduce:transition-none",
+                  "transition-colors hover:bg-accent motion-reduce:transition-none",
               )}
             >
-              <dt className="truncate text-xs text-muted-foreground">{stat.label}</dt>
-              <dd className="mt-1 truncate text-base font-semibold tabular-amount">
+              <dt className="truncate text-[0.8125rem] text-muted-foreground">
+                {stat.label}
+              </dt>
+              <dd className="mt-0.5 truncate text-[1.0625rem] font-semibold tracking-[-0.01em] tabular-amount">
                 {stat.to !== undefined ? (
                   <Link
                     to={stat.to}
@@ -124,7 +129,7 @@ export function KpiHero({
                 )}
               </dd>
               {stat.caption !== undefined && (
-                <dd className="mt-0.5 truncate text-xs text-muted-foreground">
+                <dd className="mt-0.5 text-[0.8125rem] text-muted-foreground">
                   {stat.caption}
                 </dd>
               )}
@@ -132,12 +137,13 @@ export function KpiHero({
           ))}
         </dl>
       )}
-    </Card>
+    </section>
   );
 }
 
 /**
- * Vergleich als kleine Marke neben der Hauptzahl. Die Richtung steckt in Form
+ * Vergleich neben der Hauptzahl: Pfeil und Prozent in Grün bzw. Rot, ohne
+ * Hintergrund (seit 1.7.0, wie im Kopf der Übersicht). Die Richtung steckt in Form
  * **und** Farbe (Pfeil, Vorzeichen im Text), nie in der Farbe allein
  * (UX_AND_DESIGN_SYSTEM.md §1). Wofür der Vergleich steht, sagt `title` —
  * für Sprachausgaben zusätzlich als versteckter Text.
@@ -156,10 +162,10 @@ export function TrendPill({
     <span
       title={title}
       className={cn(
-        "inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-sm font-medium tabular-amount",
-        tone === "positive" && "bg-positive-surface text-positive",
-        tone === "negative" && "bg-negative-surface text-negative",
-        tone === "neutral" && "bg-muted text-muted-foreground",
+        "inline-flex items-center gap-0.5 text-[0.9375rem] font-semibold tabular-amount",
+        tone === "positive" && "text-positive",
+        tone === "negative" && "text-negative",
+        tone === "neutral" && "text-muted-foreground",
       )}
     >
       {tone !== "neutral" && <Icon className="size-4" aria-hidden strokeWidth={2.5} />}
@@ -175,28 +181,23 @@ export function TrendPill({
  */
 export function KpiHeroSkeleton({ stats = 3 }: { stats?: 2 | 3 }) {
   return (
-    <Card className="overflow-hidden" aria-hidden>
-      <div className="space-y-3 p-4 sm:p-6">
-        <Skeleton className="h-4 w-28" />
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-4 w-40" />
-      </div>
+    <div className="flex flex-col" aria-hidden>
+      <Skeleton className="h-4 w-28" />
+      <Skeleton className="mt-3 h-10 w-52" />
+      <Skeleton className="mt-3 h-4 w-40" />
       <div
         className={cn(
-          "grid divide-x divide-border border-t border-border",
+          "mt-5 grid gap-1 rounded-2xl bg-muted p-1.5",
           stats === 2 ? "grid-cols-2" : "grid-cols-3",
         )}
       >
         {Array.from({ length: stats }).map((_, index) => (
-          <div
-            key={index}
-            className="space-y-2 px-3 py-3 first:pl-4 sm:px-6 sm:first:pl-6"
-          >
-            <Skeleton className="h-3 w-14" />
-            <Skeleton className="h-5 w-20" />
+          <div key={index} className="space-y-2 px-2.5 py-2 sm:px-4 sm:py-3">
+            <Skeleton className="h-3 w-14 bg-background" />
+            <Skeleton className="h-5 w-20 bg-background" />
           </div>
         ))}
       </div>
-    </Card>
+    </div>
   );
 }
