@@ -27,7 +27,8 @@ Umsetzung als CSS-Variablen (Tailwind-4-`@theme`), Hell- und Dunkelmodus über
 | `--input` | Rahmen von Bedienelementen | Grau ≥ 3:1 gegen jede Nachbarfläche | dito, heller gesetzt |
 | `--foreground` | Text | fast Schwarz | helles Grau |
 | `--muted-foreground` | Sekundärtext, Labels | Grau ≥ 4,5:1 Kontrast | dito |
-| `--primary` | Aktionen, aktive Navigation | gedecktes Tiefblau | helleres Blau |
+| `--primary` | Aktionen: Erfassen, Schaltflächen, Links | gedecktes Tiefblau | helleres Blau |
+| `--accent` | Hover, aktive Navigation (mit halbfetter Schrift) | neutrales Hellgrau | neutrale Stufe über der Karte |
 | `--positive` | Zuwächse, Eingänge | gedecktes Grün | angepasst, Kontrast AA |
 | `--negative` | Korrekturen, Rückgänge, Fehler | gedecktes Rot | angepasst |
 | `--warning` | Warnungen, mögliche Duplikate | Bernstein | angepasst |
@@ -35,6 +36,13 @@ Umsetzung als CSS-Variablen (Tailwind-4-`@theme`), Hell- und Dunkelmodus über
 
 Regeln: Bedeutung nie durch Farbe allein (immer Text/Symbol dazu, z. B. Vorzeichen);
 alle Text-/Hintergrund-Paare ≥ WCAG AA (4,5:1; große Zahlen 3:1).
+
+**Schwarz für Daten, Blau für Aktionen, Grün/Rot für Veränderung** (seit 1.7.0). Die
+Neutraltöne tragen keinen Blaustich mehr (Chroma ≤ 0,006). Blau steht nur dort, wo etwas
+passiert — der aktive Navigationspunkt ist ein Ort und wird über Vordergrundfarbe und
+Gewicht markiert, nicht über Blau. Gemessen hell: Vordergrund 18,1:1 auf der Seite,
+Sekundärtext 6,0:1 auf der Seite und 5,1:1 auf dem Akzent, `--input` ≥ 3,1:1 gegen jede
+Nachbarfläche.
 
 #### 1a Diagrammpalette (kategorial)
 
@@ -63,6 +71,12 @@ auf drei Reihen begrenzt.
 Orange, gegenüberliegende Farbtöne, ΔE 25,1 hell / 25,3 dunkel bei Protanopie. Die
 Referenzreihe ist zusätzlich gestrichelt oder benannt; Farbe allein trägt die Identität
 nie.
+
+**Ausnahme: der Kopf der Übersicht** (seit 1.7.0). Dort steht das aktuelle Jahr in
+Vordergrundfarbe und das Vorjahr in `--series-prior` (neutrales Grau, 3,6:1 hell / 3,5:1
+dunkel gegen die Seite), als Linie gestrichelt, mit Legende. Der Kopf ist monochrom, damit
+Farbe dort nur Veränderung meint; der Helligkeitsabstand ist größer als zwischen zwei
+Farbtönen gleicher Helligkeit. Alle anderen Diagramme bleiben bei Slot 1 und 2.
 
 **Der Dunkelsatz ist eigens gewählt, keine Aufhellung des hellen.** Sein Band liegt
 tiefer (L 0,48–0,67 gegenüber 0,43–0,77): Marken oberhalb davon blenden auf dunklem
@@ -105,8 +119,9 @@ als Serienfarbe benutzt — auch dann nicht, wenn ein Farbton ähnlich aussieht.
   Bedienelement daneben — `-my-2` bei `size="sm"` (36 px), `sm:-my-3` bei einem Feld mit
   44 px. Ohne das saß die Überschrift einer Karte mit Schaltfläche 10 px tiefer als die der
   Karte daneben, mit Suchfeld 14 px.
-- Radius 8 px (Karten 12 px); Schatten nur eine dezente Stufe für schwebende Elemente
-  (Dialoge, Popover) — Karten trennen sich per Fläche und 1-px-Border, nicht per Schatten.
+- Radius 8 px für Bedienelemente, 16 px für Karten und gerahmte Listen, Pillen für die
+  Erfassen-Schaltfläche der Seitenleiste. Schatten nur eine dezente Stufe für schwebende
+  Elemente (Dialoge, Popover) — Karten trennen sich per Haarlinie, nicht per Schatten.
 - Animationen: nur funktionale Übergänge ≤ 200 ms (Panel auf/zu, Fokus); Diagramme ohne
   Intro-Animation — für alle, nicht nur bei `prefers-reduced-motion` (`CHART_SERIES_PROPS` in
   `chartTheme.ts`): Die Reihen wuchsen rund 1,5 s aus der Nulllinie, so lange stand ein leeres
@@ -130,6 +145,8 @@ Eigene zusammengesetzte Komponenten (fachlich):
 | `AmountText` | Betragsdarstellung: tabular-nums, Währung, Vorzeichen, Farbe (semantisch), niemals Rundung in der Komponente |
 | `KpiHero` / `TrendPill` | **Ein** Kennzahlkopf für alle Bereiche (`components/domain/KpiHero.tsx`): **eine** Hauptzahl groß (32 px), daneben optional der Vergleich als Marke (`TrendPill`: Pfeil **und** Vorzeichen, Bedeutung im `title` und für Sprachausgaben), darunter eine Unterzeile, optional ein Zusatz (Zielbalken) und eine Leiste mit bis zu drei Nebenkennzahlen, durch Linien getrennt. Er ersetzt das frühere Raster gleich großer Kacheln (`StatCard`/`StatGrid`): Vier bis sechs Kacheln kosteten auf dem Telefon 300–700 px, bevor der Inhalt begann, und ließen offen, welche Zahl zählt. Jede Seite beantwortet zuerst **ihre** Frage — Übersicht: Dividenden des Zeitraums; Kalender: nächste 30 Tage; Depot: Depotwert; Statistik: Gesamtsumme; Vergleich: Veränderung; Entwicklung: erwartet p. a.; Assetseite: erhalten insgesamt. Ein Drill-down macht die **ganze Fläche** zur Tippfläche (Link auf dem Wert, per `::after` gedehnt; für die Hauptzahl der obere Teil, für jede Nebenkennzahl ihr Feld) und trägt einen sprechenden Namen (`drillLabel`). Ladegerüst in derselben Form: `KpiHeroSkeleton` |
 | `ListGroup` / `ListRow` / `ListItemBody` / `ListSection` | **Eine Listenform** für Einträge (`components/ui/list.tsx`): eine Fläche mit Trennlinien statt einzelner Karten — auf der Seite ist die Liste selbst die Karte, in einer Karte trägt sie keinen zweiten Rahmen (`inset`). Zeile 1 der Name (höchstens zwei Zeilen), Zeile 2 Angaben links und Wert rechts; `asChild` macht die ganze Zeile zur Tippfläche. `ListSection` gruppiert (Monat, „Diese Woche") mit Kennzahl im Kopf **Datenlisten ohne Pfeil am Rand und ohne Kalendersymbol vor dem Datum** (Eingänge, Termine, Assets, Statistik, Datenqualität): Beide standen in jeder Zeile, sagten nichts, was Tippfläche und Inhalt nicht schon sagen, und nahmen dem Depot die Breite („Trade Repub…"). `chevron` bleibt einzelnen Navigationszeilen („Gesamt seit März 2019") vorbehalten |
+| `Section` / `SectionLink` | Abschnitt **ohne Kartenrahmen** (`components/ui/section.tsx`, seit 1.7.0): Überschrift 19 px, rechts höchstens eine Aktion — ein Textlink in Primärblau mit Pfeil (`SectionLink`, „Alle", „Kalender") oder ein Umschalter —, darunter optional eine Zeile Beschreibung. Abschnitte trennen sich durch Abstand (40 px, ab `lg` 48 px) und Überschrift, nicht durch Rahmen. Bisher auf der Übersicht; die übrigen Seiten folgen |
+| `SegmentedControl` | Umschalter zwischen wenigen Zuständen (Optionsgruppe). `variant="pill"` ist die leise Fassung für Abschnittsköpfe (Diagrammsicht, Assets/Depots): gedämpfte Fläche, 32 px hoch, Tippfläche per Pseudo-Element 44 px |
 | `PaymentListItem` | Ein Dividendeneingang als Zeile — dieselbe in Dividendenliste, Übersicht und Assetseite: Name, Datum · Depot, Betrag (Depot wird gekürzt, nie umbrochen). In Monatsgruppen nur „11.10." (`formatDayMonth`) — Monat und Jahr nennt die Überschrift, Sprachausgaben bekommen das Jahr dennoch mit. Auf der Assetseite ist das Datum der Titel |
 | `PaymentTable` / Liste | Tabelle ab `md` (Aktionen je Zeile) bzw. `PaymentListItem`-Liste auf dem Telefon, nach Datum sortiert nach Monat gruppiert mit Monatssumme im Kopf; darüber Anzahl und Summe der Auswahl; „weitere laden" statt Blättern (die geladene Menge steht in der Adresse, der Weg zurück findet sie wieder) |
 | `DetailHeader` | **Ein** Kopf für Zahlung, Asset und Ziel: Rückweg links und Symbolaktionen rechts in einer Zeile, darunter Titel samt Zustand (nur der Sonderfall), Zusatzzeile und — wo es eine gibt — die Kennzahl (Betrag der Zahlung). Bearbeiten, Stornieren/Archivieren, Löschen stehen hier und nicht in den Listen: Eine Zeile ist **eine** Tippfläche |
@@ -176,8 +193,8 @@ ein anderer Platz fürs Zurücksetzen fallen beim Wechsel sofort auf.
 
 ## 3. Diagramm-Richtlinien
 
-- Balken für Monats-/Jahresreihen (diskrete Zeiträume), Linie nur für rollierende 12-Monats-
-  Reihe; Donut sparsam für Aufteilungen (max. 6 Segmente + „übrige").
+- Balken für Monats-/Jahresreihen (diskrete Zeiträume), Linie für rollierende 12-Monats-Reihen
+  und laufende Jahressummen (Kopf der Übersicht); Donut sparsam für Aufteilungen (max. 6 Segmente + „übrige").
 - Ein Diagramm beantwortet eine Frage; keine Doppelachsen, keine 3D, kein Dekor.
 - Tooltip mit exakten Werten (`AmountText`); X-Achsen-Labels de-DE („Jan", „Feb", …).
 - Vorjahresvergleich als gepaarte Balken oder dezente Vorjahr-Schattenbalken.
@@ -218,8 +235,11 @@ ein anderer Platz fürs Zurücksetzen fallen beim Wechsel sofort auf.
 
 ### iPhone (< 768 px)
 
-- Bottom Navigation (5 Slots): Übersicht · Eingänge · **＋ Erfassen** (zentral, hervorgehoben)
-  · Statistiken · Mehr (Kalender, Depot, Ziele, Einstellungen).
+- Bottom Navigation (5 Slots): Übersicht · Eingänge · **＋ Erfassen** (zentral, als einziger
+  gefüllter Kreis in Primärblau) · Statistiken · Mehr (Kalender, Depot, Ziele, Einstellungen).
+  Erfassen sitzt in der Leiste statt darüber — der herausragende Knopf verdeckte beim Scrollen
+  Inhalt. Die Leiste ist leicht durchscheinend; aktiv ist ein Eintrag in Vordergrundfarbe und
+  halbfett.
 - Listen statt breiter Tabellen: je Zahlung eine Zeile (`PaymentListItem`), nach Monat
   gruppiert mit Monatssumme; „weitere laden" statt Blättern. Tabellen der Statistik werden zu
   Listen (`StatTable`), die Matrix Jahre × Monate steht gedreht (Monate als Zeilen).
@@ -299,35 +319,60 @@ maximaler Kontrast auf Schwarz lässt Schrift auf OLED ausfransen.
 
 ## Dashboard (Phase 5A)
 
-**Aufbau (von oben):** Seitenüberschrift → Zeitraumsteuerung → Kennzahlkopf (`DashboardHero`)
-→ „Demnächst" (nur laufendes Jahr und „Alle Jahre") → monatlicher Verlauf → Top-Unternehmen +
-Depotverteilung (nebeneinander ab `lg`) → letzte Eingänge → Summe seit Beginn. Ruhig, datenorientiert; keine dekorativen Visualisierungen, keine
-3D-Diagramme, keine dauerhafte grün/rot-Bewertung saisonaler Schwankungen.
+**Aufbau (von oben):** Seitenüberschrift mit Jahres-Pille → Kopf (`DashboardHero`: Hauptzahl,
+Veränderung, Jahresziel, Diagramm, Kennzahlen) → „Demnächst" (nur laufendes Jahr und „Alle
+Jahre") → „Verteilung" (Assets/Depots umschaltbar) → letzte Eingänge → Summe seit Beginn. Alle
+Abschnitte ohne Kartenrahmen (`Section`). **Ab `lg` zwei Spalten:** links Kopf und letzte
+Eingänge, rechts (352 px) Demnächst, Verteilung, Summe. Ruhig, datenorientiert; keine
+dekorativen Visualisierungen, keine 3D-Diagramme, keine dauerhafte grün/rot-Bewertung
+saisonaler Schwankungen.
 
-**Kennzahlkopf:** die Dividenden des Zeitraums als Hauptzahl, daneben der Vorjahresvergleich
-als Marke (im laufenden Jahr gegen denselben Zeitraum), darunter das **Jahresziel** als Balken
-(„46,5 % vom Jahresziel 4.200,00 € · noch 2.248,09 €", führt zur Zieldetailseite; ohne Ziel
-„Jahresziel für 2026 festlegen"). Die Leiste: laufender Monat (mit Monatsziel „19 % vom Ziel",
-sonst Vorjahresvergleich), Ø pro Monat, bester Monat; außerhalb des laufenden Jahres statt des
-Monats die Zahl der Zahlungen samt Breite. Er ersetzt vier Kacheln und die beiden Zielkarten
-darunter — das Ziel stand getrennt von der Summe, auf die es sich bezieht.
+**Kopf (seit 1.7.0, ohne Kartenrahmen):** Drei Ebenen tragen die Rangfolge — Hauptzahl 40 px
+(52 px ab `sm`), Abschnitte, Zeilen. Unter der Zahl die Veränderung als Pfeil und Prozent in
+Grün/Rot, daneben gedämpft der Betrag und der Bezug („+92,20 € ggü. Vorjahreszeitraum"). Darunter
+das **Jahresziel** als 4-px-Balken mit Zeile „40,4 % vom Ziel 3.200,00 €"; rechts im
+laufenden Jahr die **Prognose** (gestrichelte Verlängerung des Balkens, CALCULATION_RULES.md
+§9.7), sonst Restbetrag bzw. Ergebnis. Führt zur Zieldetailseite; ohne Ziel „Jahresziel für 2026
+festlegen". Dann das Diagramm und eine gedämpfte Fläche mit drei Kennzahlen ohne Trennlinien:
+laufender Monat (mit Monatsziel „17 % vom Monatsziel" — nicht „vom Ziel", sonst verwechselbar
+mit dem Jahresziel —, sonst Vorjahresvergleich), Ø pro Monat, bester Monat; außerhalb des
+laufenden Jahres statt des Monats die Zahl der Zahlungen samt Breite.
+
+**Diagramm im Kopf:** ein eigenes SVG (`HeroChart`) statt Recharts — es steht im ersten
+Bildschirm, die Übersicht lädt Recharts damit gar nicht mehr. Ein Jahr hat zwei Sichten
+(Umschalter „Kumuliert | Monatlich", Voreinstellung kumuliert): die laufende Jahressumme als
+Linie gegen das Vorjahr (gestrichelt; im laufenden Jahr endet die Linie heute) oder die
+Monatssummen als Balkenpaare. „Alle Jahre" zeigt eine Säule je Jahr. **Wischen statt Tooltip:**
+Fahren oder Wischen wählt einen Punkt, der Kopf zeigt dann dessen Stand samt Vergleich, und der
+Betrag führt zu diesen Zahlungen. Mit der Maus endet die Auswahl beim Verlassen und ein Klick
+öffnet die Zahlungen; mit dem Finger bleibt sie stehen, bis man den Punkt erneut antippt.
+Tastatur: Das Diagramm ist ein Schieberegler (`role="slider"`, Pfeiltasten, Pos1/Ende, Enter
+öffnet, Escape setzt zurück), der Stand wird über `aria-valuetext` angesagt. Die Datentabelle
+darunter bleibt.
+
+**Verteilung:** die fünf stärksten Assets des Zeitraums als schmale Balken in Vordergrundfarbe
+mit Anteil, darunter „Alle 12 Assets" zur Statistik; umschaltbar auf die Depots. Beide
+beantworten dieselbe Frage, früher standen sie als zwei Karten nebeneinander. Mit nur einem
+Depot entfällt der Umschalter, der Abschnitt heißt „Top-Assets".
 
 **Demnächst:** die nächsten drei angekündigten Zahltage aus dem Kalender und die erwartete Summe
 der nächsten 30 Tage; „erwartet", weil es Ankündigungen sind, keine Eingänge. Ohne kommende
-Termine entfällt die Karte.
+Termine entfällt der Abschnitt. Das Datumsfeld ist grau (`--muted`), nicht blau: Blau
+markiert Aktionen, der Weg zum Kalender ist der Link „Kalender" im Abschnittskopf.
 
-**Responsive:** Kennzahlkopf über die volle Breite; die Gesamtsumme aller
-Jahre steht als eine Zeile „Gesamt seit März 2019 · 412 Zahlungen" am Seitenende (wie die
-Eingänge darüber, führt zur Statistik), nicht zusätzlich als Kachel. Bei „Alle Jahre" entfällt
+**Responsive:** Kopf über die volle Breite (ab `lg` die linke Spalte); die Gesamtsumme aller
+Jahre steht als eine Zeile „Gesamt seit März 2019 · 412 Zahlungen" auf gedämpfter Fläche am
+Ende (führt zur Statistik), nicht zusätzlich als Kachel. Bei „Alle Jahre" entfällt
 die Zeile, weil die Kennzahlen oben dann dieselbe Summe nennen. Früher stand dort eine Karte mit
-sechs Eckdaten, die fast alle schon auf der Seite oder in der Statistik standen. Diagramm füllt die Breite
-(`ResponsiveContainer`), Top-Listen/Depotverteilung als horizontale Balken (auf schmalen Geräten
-untereinander). Touch-Ziele ≥ 44 px (Buttons `size="sm"`/`default`), `overflow-x` nur innerhalb
+sechs Eckdaten, die fast alle schon auf der Seite oder in der Statistik standen. Das Diagramm
+misst seine Breite selbst (`ResizeObserver`) und zeichnet in echten Pixeln; die Verteilung als
+horizontale Balken. Touch-Ziele ≥ 44 px (Buttons `size="sm"`/`default`), `overflow-x` nur innerhalb
 scrollbarer Container (Datentabellen).
 
 **Accessibility:**
-- Semantische Überschriften (`h1` „Übersicht", Kartentitel via `CardTitle`).
-- Jedes Diagramm hat `role="img"` mit beschreibendem `aria-label` **und** eine ausklappbare
+- Semantische Überschriften (`h1` „Übersicht", Abschnitte als `h2` über `Section`).
+- Jedes Diagramm hat eine Beschreibung für Hilfsmittel (`role="img"` mit `aria-label`, das
+  Diagramm im Kopf als Schieberegler mit `aria-valuetext`) **und** eine ausklappbare
   Datentabelle (`<details>` „Datentabelle anzeigen") als text-/tabellarische Alternative.
 - Zeitraum-Buttons mit `aria-pressed`; Fokuszustände sichtbar (`focus-visible:ring`).
 - `prefers-reduced-motion` schaltet Diagramm-Animationen ab.

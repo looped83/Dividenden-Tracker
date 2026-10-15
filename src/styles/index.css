@@ -12,36 +12,44 @@
 }
 
 /* Design-Tokens hell (UX_AND_DESIGN_SYSTEM.md #1) — ruhig, datenorientiert,
-   keine dekorativen Farbverlaeufe. Alle Text/Hintergrund-Paare >= WCAG AA. */
+   keine dekorativen Farbverlaeufe. Alle Text/Hintergrund-Paare >= WCAG AA.
+
+   Neutrale Toene ohne Blaustich (Chroma <= 0.006): Schwarz und Grau tragen die
+   Daten, Farbe bleibt Bedeutung vorbehalten — Tiefblau fuer Aktionen, Gruen
+   und Rot fuer Veraenderung. Gemessen: Vordergrund 18,1:1 auf der Seite,
+   Sekundaertext 6,0:1 auf der Seite und 5,1:1 auf dem Akzent. */
 :root {
-  --background: oklch(0.995 0.002 260);
-  --foreground: oklch(0.2 0.02 260);
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.2 0.004 286);
 
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.2 0.02 260);
+  --card-foreground: oklch(0.2 0.004 286);
 
-  --border: oklch(0.9 0.006 260);
+  /* Haarlinie: trennt, ohne ein Gitter zu zeichnen. */
+  --border: oklch(0.925 0.002 286);
   /* Rahmen von Eingabefeldern, Auswahllisten, Kontrollkaestchen und
      Umriss-Schaltflaechen. Dieser Rahmen ist bei einem leeren Feld das
      einzige, was die Bedienelemente ueberhaupt sichtbar macht — WCAG 2.2
      (1.4.11) verlangt dafuer 3:1 gegen jede angrenzende Flaeche. Der frueher
      helle Wert (0.88) erreichte 1,4:1. Gemessen gegen alle Nachbarflaechen:
-     Karte 3,6:1, Seite 3,6:1, gedaempft 3,2:1, Akzent (Hover) 3,1:1.
+     Karte 3,6:1, Seite 3,6:1, gedaempft 3,3:1, Akzent (Hover) 3,1:1.
      Deutlich dunkler ginge, wuerde die ruhigen Formulare aber in ein Gitter
      aus Kaesten verwandeln — 0.62 ist der hellste Wert, der die Schwelle
      ueberall haelt. Strukturlinien (`--border`) sind davon nicht betroffen:
      Karten- und Tabellenraender tragen keine Bedienbedeutung. */
-  --input: oklch(0.62 0.008 260);
+  --input: oklch(0.62 0.004 286);
   --ring: oklch(0.55 0.09 255);
 
-  --muted: oklch(0.96 0.004 260);
-  --muted-foreground: oklch(0.44 0.015 260);
+  --muted: oklch(0.965 0.001 286);
+  --muted-foreground: oklch(0.5 0.006 286);
 
   --primary: oklch(0.4 0.09 255);
   --primary-foreground: oklch(0.98 0.004 260);
 
-  --accent: oklch(0.94 0.012 255);
-  --accent-foreground: oklch(0.3 0.05 255);
+  /* Hover und aktive Navigation: neutrales Grau statt Blau — Blau heisst
+     „hier passiert etwas", nicht „hier bist du". */
+  --accent: oklch(0.945 0.002 286);
+  --accent-foreground: oklch(0.2 0.004 286);
 
   --positive: oklch(0.45 0.11 155);
   --positive-foreground: oklch(0.98 0.004 260);
@@ -71,6 +79,11 @@
   --chart-4: oklch(0.52 0.17 345); /* magenta  #a8347f */
   --chart-5: oklch(0.6 0.14 150); /* grün     #319751 */
   --chart-6: oklch(0.46 0.16 300); /* violett  #673ba2 */
+
+  /* Vergleichsreihe (Vorjahr) im Kopf der Uebersicht: neutrales Grau, das
+     aktuelle Jahr steht in Vordergrundfarbe (UX_AND_DESIGN_SYSTEM.md #1a).
+     3,6:1 gegen die Seite — als Marke >= 3:1 (1.4.11). */
+  --series-prior: oklch(0.62 0.004 286);
 }
 
 /* Design-Tokens dunkel — echtes Schwarz als Grundflaeche (OLED: Pixel bleiben
@@ -99,8 +112,8 @@
   --primary: oklch(0.72 0.1 255);
   --primary-foreground: oklch(0.16 0.02 255);
 
-  --accent: oklch(0.29 0.02 255);
-  --accent-foreground: oklch(0.88 0.03 255);
+  --accent: oklch(0.29 0.004 286);
+  --accent-foreground: oklch(0.94 0.004 260);
 
   --positive: oklch(0.72 0.13 155);
   --positive-foreground: oklch(0.16 0.03 155);
@@ -129,6 +142,9 @@
   --chart-4: oklch(0.55 0.17 345); /* magenta  #b23e88 */
   --chart-5: oklch(0.64 0.14 150); /* grün     #40a35c */
   --chart-6: oklch(0.55 0.17 300); /* violett  #8254c4 */
+
+  /* 3,5:1 gegen Schwarz, 3,1:1 gegen die Karte. */
+  --series-prior: oklch(0.5 0.004 286);
 }
 
 /* Tokens fuer Tailwind-Utilities verfuegbar machen (bg-background, text-foreground, ...). */
@@ -161,6 +177,7 @@
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
   --color-chart-6: var(--chart-6);
+  --color-series-prior: var(--series-prior);
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);

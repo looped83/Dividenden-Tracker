@@ -369,6 +369,32 @@ export function selectedYearComparison(
   return { current, prior };
 }
 
+/**
+ * Prognose zum Jahresende (CALCULATION_RULES.md §9.7): was bis heute
+ * eingegangen ist, plus was im Vorjahr **nach** dem gleichen Kalendertag noch
+ * kam. Beide Teile folgen der Abgrenzung von {@link selectedYearComparison}
+ * (effektives Jahr, tatsaechlicher Eingang) — `received` ist deshalb genau die
+ * Jahressumme im Kopf, und Vorjahr bis heute plus `remainingPrior` ergibt das
+ * volle Vorjahr.
+ *
+ * Bewusst einfach: Kaeufe, Verkaeufe und Kuerzungen seit dem Vorjahr kennt die
+ * Regel nicht. Sie ist eine Einordnung fuer die Uebersicht, kein Zielstand —
+ * `computeGoalProgress` bleibt frei von erwarteten Betraegen (§13).
+ */
+export function yearEndForecast(
+  payments: readonly AnalyticsPayment[],
+  ref: RefDate,
+): { received: Money; remainingPrior: Money; forecast: Money } {
+  const { current: received } = selectedYearComparison(payments, ref.year, ref);
+  const cutoff = priorYearSameDay(ref);
+  const remainingPrior = aggregate(
+    payments.filter(
+      (p) => yearOf(p.payDate) === ref.year - 1 && p.actualPayDate > cutoff,
+    ),
+  ).net;
+  return { received, remainingPrior, forecast: received.add(remainingPrior) };
+}
+
 /** Aktueller Monat bis heute (§5.2), unabhaengig von der Jahresauswahl. */
 export function currentMonthAggregate(
   payments: readonly AnalyticsPayment[],

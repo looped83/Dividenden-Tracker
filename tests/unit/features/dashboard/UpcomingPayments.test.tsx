@@ -137,14 +137,12 @@ describe("UpcomingPayments", () => {
     zustand.securities = [];
   });
 
-  it("führt über ein beschriftetes Kalendersymbol zum ganzen Kalender", () => {
+  it("führt über einen Textlink im Abschnittskopf zum ganzen Kalender", () => {
     renderCard([event({ id: "1", date: "2026-08-13" })]);
 
-    const link = screen.getByRole("link", { name: "Zum Dividendenkalender" });
+    expect(screen.getByRole("heading", { name: "Demnächst" })).toBeInTheDocument();
+    const link = screen.getByRole("link", { name: "Kalender" });
     expect(link).toHaveAttribute("href", "/kalender");
-    // Ein Symbol, kein Wort — wie der Umschalter beim Dividendenverlauf.
-    expect(link).toHaveTextContent("");
-    expect(link.querySelector("svg")).not.toBeNull();
   });
 
   it("entfällt ohne kommende Zahltage", () => {

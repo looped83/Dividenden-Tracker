@@ -22,9 +22,9 @@ describe("BottomNav", () => {
       "/einstellungen",
     ]) {
       const { unmount } = renderNav(path);
-      expect(screen.getByRole("link", { name: "Mehr" })).toHaveClass("text-primary");
+      expect(screen.getByRole("link", { name: "Mehr" })).toHaveClass("text-foreground");
       expect(screen.getByRole("link", { name: "Übersicht" })).not.toHaveClass(
-        "text-primary",
+        "text-foreground",
       );
       unmount();
     }
@@ -32,7 +32,9 @@ describe("BottomNav", () => {
 
   it("markiert „Mehr“ nicht in den direkt erreichbaren Bereichen", () => {
     renderNav("/eingaenge");
-    expect(screen.getByRole("link", { name: "Mehr" })).not.toHaveClass("text-primary");
-    expect(screen.getByRole("link", { name: "Dividenden" })).toHaveClass("text-primary");
+    expect(screen.getByRole("link", { name: "Mehr" })).not.toHaveClass("text-foreground");
+    expect(screen.getByRole("link", { name: "Dividenden" })).toHaveClass(
+      "text-foreground",
+    );
   });
 });

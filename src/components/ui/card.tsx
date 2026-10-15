@@ -17,12 +17,16 @@ import { cn } from "@/lib/utils/cn";
  *
  * Wer den Innenabstand ueberschreibt, muss die `sm:`-Stufe mitsetzen
  * (`p-0 sm:p-0`): `tailwind-merge` ersetzt nur Klassen derselben Variante.
+ *
+ * **Form:** 16px Radius, Haarlinie, kein Schatten. Die Karte trennt sich per
+ * Linie und Flaeche; Schatten bleibt schwebenden Elementen (Dialog, Popover)
+ * vorbehalten (UX_AND_DESIGN_SYSTEM.md §1 „Abstaende, Radien, Tiefe").
  */
 export function Card({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       className={cn(
-        "rounded-lg border border-border bg-card text-card-foreground shadow-sm",
+        "rounded-2xl border border-border bg-card text-card-foreground",
         className,
       )}
       {...props}

@@ -26,7 +26,7 @@ export function ListGroup({
     <ul
       className={cn(
         "divide-y divide-border",
-        inset ? "-mx-3" : "overflow-hidden rounded-lg border border-border bg-card",
+        inset ? "-mx-3" : "overflow-hidden rounded-2xl border border-border bg-card",
         className,
       )}
       {...props}

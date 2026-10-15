@@ -37,7 +37,8 @@ export function HistoricalOverview({ payments, selection }: HistoricalOverviewPr
   if (first === null) return null;
 
   return (
-    <ListGroup aria-label="Historische Gesamtsumme">
+    // Eine gedämpfte Fläche wie die Kennzahlen im Kopf — keine Karte mit Rahmen.
+    <ListGroup aria-label="Historische Gesamtsumme" className="border-0 bg-muted">
       <li>
         <ListRow asChild>
           <Link to="/statistiken">

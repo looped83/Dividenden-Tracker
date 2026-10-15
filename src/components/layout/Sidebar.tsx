@@ -26,7 +26,7 @@ export function Sidebar() {
           erreichbar. Auf dieser Breite oeffnet sie ein Overlay ueber der
           aktuellen Seite, statt sie zu verlassen. */}
       <div className="px-3 pb-3">
-        <Button className="w-full" {...newPayment}>
+        <Button className="w-full rounded-full" {...newPayment}>
           <Plus aria-hidden /> Neue Dividende
         </Button>
       </div>
@@ -39,10 +39,10 @@ export function Sidebar() {
             {...prefetchProps(item.to)}
             className={({ isActive }) =>
               cn(
-                "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium outline-none",
+                "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium outline-none",
                 "focus-visible:ring-2 focus-visible:ring-ring",
                 isActive
-                  ? "bg-accent text-accent-foreground"
+                  ? "bg-accent font-semibold text-accent-foreground"
                   : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
               )
             }
@@ -88,10 +88,10 @@ export function CompactSidebar() {
             {...prefetchProps(item.to)}
             className={({ isActive }) =>
               cn(
-                "flex size-11 items-center justify-center rounded-md outline-none",
+                "flex size-11 items-center justify-center rounded-xl outline-none",
                 "focus-visible:ring-2 focus-visible:ring-ring",
                 isActive
-                  ? "bg-accent text-accent-foreground"
+                  ? "bg-accent font-semibold text-accent-foreground"
                   : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
               )
             }
