@@ -69,6 +69,13 @@ interface StatTableProps<T> {
 }
 
 export interface ListSummary<T> {
+  /** Feld am Anfang der Zeile, etwa das Jahr als Kachel (`ListTile`). */
+  leading?: (row: T) => React.ReactNode;
+  /**
+   * Titel statt der ersten Spalte — wenn diese schon in `leading` steht und
+   * sonst doppelt in der Zeile stünde.
+   */
+  title?: (row: T) => React.ReactNode;
   /** Die Zusatzzeile, z. B. „31 Zahlungen · Ø 56,29 €". */
   meta: (row: T) => React.ReactNode;
   /**
@@ -476,6 +483,7 @@ function StatList<T>({
           return (
             <li key={getRowKey(row)}>
               <ListRow interactive={clickable} {...rowInteraction(row)}>
+                {summary.leading?.(row)}
                 <div className="min-w-0 flex-1 space-y-1">
                   <div className="flex items-baseline justify-between gap-3">
                     {/* Einzeilig und auslaufend wie jeder Listentitel
@@ -483,7 +491,7 @@ function StatList<T>({
                         gleich hoch sein, damit die Balken eine Treppe bilden.
                         Der volle Name steht auf der Assetseite. */}
                     <div className="min-w-0 flex-1 truncate-fade font-medium">
-                      {nameColumn.render(row)}
+                      {summary.title ? summary.title(row) : nameColumn.render(row)}
                     </div>
                     {summary.value ? (
                       <div className="shrink-0 font-semibold tabular-amount">

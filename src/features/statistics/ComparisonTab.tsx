@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Link, useSearchParams } from "react-router";
 import { Info } from "lucide-react";
-import { ListGroup } from "@/components/ui/list";
+import { ListGroup, ListTile } from "@/components/ui/list";
 import { Section } from "@/components/ui/section";
 import { FilterBar } from "@/components/ui/filter-bar";
 import { Select } from "@/components/ui/select";
@@ -16,6 +16,7 @@ import {
   compareYears,
   filterPayments,
   monthNameDe,
+  monthNameDeShort,
   type ComparisonMonthSide,
   type MonthComparison,
   type PeriodComparison,
@@ -376,6 +377,11 @@ interface BreakdownRow {
   key: string;
   /** Zeilenkopf: Monatsname oder Unternehmensname. */
   label: string;
+  /**
+   * Kurzname für die Kachel am Zeilenanfang der Liste („Mär") — Monate stehen
+   * dort wie das Datum bei den Eingängen. Ohne Kachel steht `label` als Titel.
+   */
+  tile?: string;
   /** Optionales Ziel des Zeilenkopfs (Unternehmensseite). */
   labelHref?: string | undefined;
   archived?: boolean;
@@ -465,6 +471,40 @@ function ComparisonBreakdown({
               !row.reference.partial &&
               row.current.money.isZero() &&
               row.reference.money.isZero();
+            if (row.tile !== undefined) {
+              // Monat als Kachel vorn, daneben beide Zeiträume untereinander,
+              // die Differenz rechts. Der volle Monatsname steht für
+              // Sprachausgaben in der Zeile, die Kachel ist dekorativ.
+              return (
+                <li key={row.key} className="flex items-center gap-3 px-3 py-2">
+                  <ListTile primary={row.tile} />
+                  <span className="sr-only">{row.label}</span>
+                  {leer ? (
+                    <span className="text-sm text-muted-foreground">keine Zahlungen</span>
+                  ) : (
+                    <>
+                      <div className="min-w-0 flex-1 space-y-0.5 tabular-amount">
+                        <p className="truncate">
+                          <span className="text-muted-foreground">{currentLabel}</span>{" "}
+                          <span className="font-medium">
+                            <BreakdownAmount value={row.current} />
+                          </span>
+                        </p>
+                        <p className="truncate text-sm text-muted-foreground">
+                          {referenceLabel}{" "}
+                          <span className="text-foreground">
+                            <BreakdownAmount value={row.reference} />
+                          </span>
+                        </p>
+                      </div>
+                      <span className="shrink-0 whitespace-nowrap font-medium">
+                        <BreakdownDifference amount={row.difference} />
+                      </span>
+                    </>
+                  )}
+                </li>
+              );
+            }
             return (
               // Zwei Zeilen: Name und Differenz, darunter beide Zeitraeume in
               // einer Zeile. Untereinander beschriftet brauchte jeder Monat
@@ -606,6 +646,7 @@ function monthRows(
   return comparison.months.map((month) => ({
     key: `${String(month.current.year)}-${String(month.month)}`,
     label: monthNameDe(month.month),
+    tile: monthNameDeShort(month.month),
     current: side(month.current),
     reference: side(month.reference),
     difference: month.current.net.subtract(month.reference.net),

@@ -78,6 +78,9 @@ damit auf jeder Seite nur Veränderung; der Helligkeitsabstand trennt stärker a
 Farbtöne gleicher Helligkeit. Dasselbe gilt für Rangbalken, Anteilsbalken, Zielbalken und
 die Tönung der Matrix Jahre × Monate (Vordergrundfarbe mit höchstens 22 % Deckkraft).
 Die kategoriale Palette bleibt Darstellungen mit mehr als zwei Reihen vorbehalten.
+Ausnahme seit 1.11.0/1.12.0: Zeitverläufe des aktuellen Zeitraums — Kopf der Übersicht,
+Statistik › Verlauf (Balken) und der kumulierte Vergleich (Linie) — stehen in der
+Akzentfarbe Orange; Ranglisten und Anteile bleiben in Vordergrundfarbe.
 
 **Der Dunkelsatz ist eigens gewählt, keine Aufhellung des hellen.** Sein Band liegt
 tiefer (L 0,48–0,67 gegenüber 0,43–0,77): Marken oberhalb davon blenden auf dunklem
@@ -402,6 +405,8 @@ Fahren oder Wischen wählt einen Punkt, der Kopf zeigt dann dessen Stand samt Ve
 „+3.059,15 € ggü. 2025" — kurz, damit die Zeile auf dem Telefon nicht umbricht), und der
 Betrag führt zu diesen Zahlungen. Mit der Maus endet die Auswahl beim Verlassen und ein Klick
 öffnet die Zahlungen; mit dem Finger bleibt sie stehen, bis man den Punkt erneut antippt.
+Eine Legende steht seit 1.12.0 nicht mehr daneben: Die Vorjahreslinie trägt ihr Jahr am Ende,
+der Kopf nennt beim Wischen beide Jahre.
 Tastatur: Das Diagramm ist ein Schieberegler (`role="slider"`, Pfeiltasten, Pos1/Ende, Enter
 öffnet, Escape setzt zurück), der Stand wird über `aria-valuetext` angesagt. Eine Datentabelle
 steht darunter seit 1.11.0 nicht mehr: Jeder Punkt ist ansteuerbar, die Statistik führt dieselben

@@ -55,7 +55,9 @@ export default function ExportSection() {
           </Alert>
         )}
 
-        <div className="space-y-1.5 sm:max-w-xs">
+        {/* Feldbreite nach dem längsten Eintrag, nicht nach der Seite: Über
+            die ganze Breite wirkte die Auswahl zweier Formate überdimensioniert. */}
+        <div className="w-44 space-y-1.5">
           <Label htmlFor="export-format">Format</Label>
           {/* Als Pille wie die Felder der Filterleisten. */}
           <Select

@@ -96,6 +96,7 @@ export function MonthsTab({
         <div>
           <CategoryBarChart
             data={chartData}
+            color="primary"
             ariaLabel="Netto-Dividenden je Kalendermonat"
             categoryHeader="Monat"
           />
