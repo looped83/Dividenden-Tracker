@@ -242,8 +242,8 @@ Zurückhaltung wie beim Import (IMPORT_SPEC.md §6):
 1. gleicher Name nach Normalisierung,
 2. eine beim Import bestätigte Schreibweise (`security_aliases`),
 3. gleicher Name ohne Satzzeichen, ohne Rechtsform („Corp.", „AG", „plc" …) und ohne die
-   Angaben zum **Papier** am Namensende — Fondsart, Ausschüttungsart und Währung der
-   Anteilsklasse („UCITS ETF", „EUR (dist)", „Acc"). Der Kalender nennt ETFs in voller
+   Angaben zum **Papier** am Namensende — Fondsart, Ausschüttungsart, Währung der
+   Anteilsklasse und Fondsdomizil („UCITS ETF", „EUR (dist)", „Acc", „(DE)"). Der Kalender nennt ETFs in voller
    Länge, im eigenen Bestand steht der Name meist ohne diesen Anhang: „JPM US Equity
    Premium Income Active UCITS ETF USD (dist)" trifft damit „JPM US Equity Premium Income
    Active". Abgetragen wird nur am **Ende**; in der Mitte gehören dieselben Wörter zum

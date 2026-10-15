@@ -98,7 +98,7 @@ function untilLabel(year: number, month: number, day?: number): string {
  *   ({@link selectedYearComparison}).
  * - **Monatlich:** Monatssummen beider Jahre; Monate, die noch nicht begonnen
  *   haben, bleiben leer statt 0 €.
- * - **Alle Jahre:** eine Säule je Jahr; das laufende Jahr wird mit dem
+ * - **Alle Jahre:** ein Punkt je Jahr; das laufende Jahr wird mit dem
  *   Vorjahr bis heute verglichen, nicht mit dem ganzen Vorjahr.
  */
 export function buildHeroSeries(

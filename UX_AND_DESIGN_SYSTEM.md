@@ -390,7 +390,9 @@ laufenden Jahres statt des Monats die Zahl der Zahlungen samt Breite.
 Bildschirm, die Übersicht lädt Recharts damit gar nicht mehr. Ein Jahr hat zwei Sichten
 (Umschalter „Kumuliert | Monatlich", Voreinstellung kumuliert): die laufende Jahressumme als
 Linie gegen das Vorjahr (gestrichelt; im laufenden Jahr endet die Linie heute) oder die
-Monatssummen als Balkenpaare. „Alle Jahre" zeigt eine Säule je Jahr. **Wischen statt Tooltip:**
+Monatssummen als Balkenpaare. „Alle Jahre" zeigt den Verlauf der Jahressummen als Linie (seit 1.11.0; fünfzehn Säulen
+wurden auf dem Telefon zu Strichen), beschriftet ist jedes Jahr, für das Platz ist, das
+laufende immer. **Wischen statt Tooltip:**
 Fahren oder Wischen wählt einen Punkt, der Kopf zeigt dann dessen Stand samt Vergleich, und der
 Betrag führt zu diesen Zahlungen. Mit der Maus endet die Auswahl beim Verlassen und ein Klick
 öffnet die Zahlungen; mit dem Finger bleibt sie stehen, bis man den Punkt erneut antippt.
@@ -479,13 +481,12 @@ Hauptzahl (mit derselben `GoalProgressBar`), das Monatsziel im Feld des Monats. 
 „Bearbeiten" und „Löschen" stehen dort im Kopf (`DetailHeader`) — wie bei
 Eingängen und Assets.
 
-**Zielart erkennbar machen.** Jahres- und Monatsziel tragen dieselbe Karte und
-waren dadurch kaum zu unterscheiden. Eine 36-px-Symbolkachel trennt sie
-(`CalendarRange` für das Jahr, `CalendarDays` für den Monat) samt Tönung
-(seit 1.9.0 dunkel gegen Grau statt Primärfarbe gegen Grau); den Klartext liefert der Titel selbst
-(„Dividendenziel 2026", „Monatsziel März 2026"), Farbe und Form tragen nie
-allein. Dasselbe Zeichen erscheint auf Zielseite und Detailseite; nur
-die Detailseite nennt die Zielart zusätzlich als Text.
+**Zeichen und Zielart.** Jahres- und Monatsziel tragen dieselbe dunkle
+36-px-Symbolkachel (`GoalMark`, `CalendarRange`). Bis 1.10 trug das Monatsziel ein
+eigenes Symbol auf grauer Kachel; die Zielart steht aber schon im Titel
+(„Dividendenziel 2026", „Monatsziel März 2026"), und das graue Zeichen wirkte wie
+deaktiviert. Die Detailseite nennt Zielart und Zeitraum zusätzlich nur bei eigenem
+Titel; sonst steht darunter allein der Zeitfortschritt bzw. „Beginnt am …".
 
 **Aufbau der Zielkarte.** Die Karte beantwortet auf einen Blick nur zwei
 Fragen: Wie hoch ist das Ziel, und wo stehe ich? Oben Symbolkachel und Titel;

@@ -41,6 +41,9 @@ describe("canonicalCompanyKey", () => {
     expect(
       canonicalCompanyKey("JPM Europe Equity Premium Income Active UCITS ETF EUR (dist)"),
     ).toBe("jpm europe equity premium income active");
+    expect(
+      canonicalCompanyKey("iShares STOXX Global Select Dividend 100 UCITS ETF (DE)"),
+    ).toBe("ishares stoxx global select dividend 100");
     expect(canonicalCompanyKey("JPM Nasdaq Equity Premium Income Active")).toBe(
       "jpm nasdaq equity premium income active",
     );

@@ -55,13 +55,15 @@ export function goalTypeBadgeLabel(
   return `Jahresziel ${year}`;
 }
 
-/** Beginn-Hinweis fuer bevorstehende Ziele (Auftrag §16), z. B. „Beginnt am 01.01.2028". */
+/**
+ * Beginn-Hinweis fuer bevorstehende Ziele (Auftrag §16), z. B. „Beginnt am
+ * 01.01.2028" oder „Beginnt am 01.11.2026". Als Datum auch beim Monatsziel:
+ * „Beginnt im November 2026" unter „Monatsziel November 2026" wiederholte nur
+ * den Titel.
+ */
 export function startsAtLabel(goal: Pick<Goal, "goalType" | "year" | "month">): string {
-  const year = String(goal.year);
-  if (goal.goalType === "monthly" && goal.month !== null) {
-    return `Beginnt im ${monthNameDe(goal.month)} ${year}`;
-  }
-  return `Beginnt am 01.01.${year}`;
+  const month = goal.goalType === "monthly" && goal.month !== null ? goal.month : 1;
+  return `Beginnt am 01.${String(month).padStart(2, "0")}.${String(goal.year)}`;
 }
 
 export const STATUS_LABELS: Record<GoalStatus, string> = {
