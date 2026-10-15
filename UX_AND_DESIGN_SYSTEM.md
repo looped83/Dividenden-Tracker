@@ -42,8 +42,8 @@ alle Text-/Hintergrund-Paare ≥ WCAG AA (4,5:1; große Zahlen 3:1).
 steht nur dort, wo etwas passiert — der aktive Navigationspunkt ist ein Ort und wird über
 Vordergrundfarbe und Gewicht markiert, nicht über die Akzentfarbe. Die Warnfarbe ist deshalb
 Gelb statt Bernstein: Neben dem Orange sähe „Storniert" sonst wie eine Aktion aus. Einzige Ausnahme
-von „Orange heißt Aktion": das Diagramm der Übersicht — Linie und Säulen des aktuellen Zeitraums
-sind die Hauptaussage der Seite und tragen die Markenfarbe, das Vorjahr bleibt grau. Gemessen hell: Vordergrund 18,1:1 auf der Seite,
+von „Orange heißt Aktion": das Diagramm der Übersicht — die Linie des aktuellen Zeitraums ist
+die Hauptaussage der Seite und trägt die Markenfarbe, das Vorjahr bleibt grau. Gemessen hell: Vordergrund 18,1:1 auf der Seite,
 Sekundärtext 6,0:1 auf der Seite und 5,1:1 auf dem Akzent, `--input` ≥ 3,1:1 gegen jede
 Nachbarfläche.
 
@@ -398,7 +398,7 @@ laufenden Jahres statt des Monats die Zahl der Zahlungen samt Breite.
 Bildschirm, die Übersicht lädt Recharts damit gar nicht mehr. Ein Jahr hat zwei Sichten
 (Umschalter „Kumuliert | Monatlich", Voreinstellung kumuliert): die laufende Jahressumme als
 Linie in Orange gegen das Vorjahr (grau gestrichelt; im laufenden Jahr endet die Linie heute) oder die
-Monatssummen als Balkenpaare. „Alle Jahre" zeigt den Verlauf der Jahressummen als Linie (seit 1.11.0; fünfzehn Säulen
+Monatssummen als Linie gegen das Vorjahr (seit 1.12.0, zuvor Balkenpaare; ein Punkt je Monat). „Alle Jahre" zeigt den Verlauf der Jahressummen als Linie (seit 1.11.0; fünfzehn Säulen
 wurden auf dem Telefon zu Strichen), beschriftet ist jedes Jahr, für das Platz ist, das
 laufende immer. **Wischen statt Tooltip:**
 Fahren oder Wischen wählt einen Punkt, der Kopf zeigt dann dessen Stand samt Vergleich („Dividenden bis September 2026",
