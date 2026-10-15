@@ -25,8 +25,12 @@ export function ListGroup({
   return (
     <ul
       className={cn(
-        "divide-y divide-border",
-        inset ? "-mx-3" : "overflow-hidden rounded-2xl border border-border bg-card",
+        inset
+          ? // Trennlinien auf der Linie des Textes, nicht über den Innenabstand
+            // der Zeilen hinaus: Ohne Rahmen um die Liste (Abschnitt der
+            // Übersicht) standen sie sonst 12px über Überschrift und Beträge.
+            "-mx-3 [&>li+li]:relative [&>li+li]:before:absolute [&>li+li]:before:inset-x-3 [&>li+li]:before:top-0 [&>li+li]:before:h-px [&>li+li]:before:bg-border"
+          : "divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card",
         className,
       )}
       {...props}

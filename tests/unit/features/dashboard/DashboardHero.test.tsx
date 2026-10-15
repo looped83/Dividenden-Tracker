@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
@@ -74,6 +74,12 @@ function renderHero(
 }
 
 const MONATSLINK = { name: "Zahlungen des aktuellen Monats anzeigen" };
+
+// Die Diagrammsicht bleibt im Speicher des Geräts stehen; jeder Test beginnt
+// mit der Voreinstellung.
+afterEach(() => {
+  window.localStorage.clear();
+});
 
 describe("DashboardHero — eine Hauptzahl statt Kachelraster", () => {
   it("zeigt die Summe des gewählten Jahres, nicht die aller Jahre", () => {
@@ -233,5 +239,18 @@ describe("DashboardHero — Diagramm im Kopf", () => {
     expect(
       screen.getByRole("link", { name: "Zahlungen Mai 2026 anzeigen" }),
     ).toHaveAttribute("href", "/eingaenge?year=2026&month=5");
+  });
+});
+
+describe("DashboardHero — Diagrammsicht", () => {
+  it("merkt sich die gewählte Sicht auf diesem Gerät", async () => {
+    const user = userEvent.setup();
+    const { unmount } = renderHero(2026, [payment("2026-03-10", "50.00")]);
+    expect(screen.getByRole("radio", { name: "Kumuliert" })).toBeChecked();
+    await user.click(screen.getByRole("radio", { name: "Monatlich" }));
+    unmount();
+
+    renderHero(2026, [payment("2026-03-10", "50.00")]);
+    expect(screen.getByRole("radio", { name: "Monatlich" })).toBeChecked();
   });
 });

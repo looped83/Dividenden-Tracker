@@ -46,6 +46,29 @@ import { describeSelection, paymentsListHref, splitComparison } from "./format";
 import { buildHeroSeries, type HeroChartKind, type HeroPoint } from "./heroSeries";
 import { HeroChart } from "./HeroChart";
 
+/**
+ * Die zuletzt gewählte Diagrammsicht bleibt auf diesem Gerät stehen — eine
+ * Ansichtsvorliebe wie das Farbschema, keine fachlichen Daten (ARCHITECTURE.md
+ * §1). Gesperrter Speicher (privates Fenster) fällt auf „kumuliert" zurück.
+ */
+const KIND_KEY = "dividend-tracker:dashboard-chart";
+
+function readStoredKind(): HeroChartKind {
+  try {
+    return window.localStorage.getItem(KIND_KEY) === "monthly" ? "monthly" : "cumulative";
+  } catch {
+    return "cumulative";
+  }
+}
+
+function storeKind(kind: HeroChartKind): void {
+  try {
+    window.localStorage.setItem(KIND_KEY, kind);
+  } catch {
+    // Ohne Speicher gilt die Wahl nur bis zum Neuladen.
+  }
+}
+
 const KIND_OPTIONS: readonly SegmentOption<HeroChartKind>[] = [
   { value: "cumulative", label: "Kumuliert" },
   { value: "monthly", label: "Monatlich" },
@@ -87,7 +110,11 @@ function hasTrend(result: ComparisonResult): boolean {
 export function DashboardHero({ payments, selection, today }: DashboardHeroProps) {
   const goals = useGoals().data;
   const navigate = useNavigate();
-  const [kind, setKind] = React.useState<HeroChartKind>("cumulative");
+  const [kind, setKindState] = React.useState<HeroChartKind>(readStoredKind);
+  const setKind = (next: HeroChartKind) => {
+    setKindState(next);
+    storeKind(next);
+  };
   // Die Auswahl gehört zu einer Datenreihe: Wechseln Jahr oder Sicht, beginnt
   // der Kopf wieder beim Zeitraum (abgeleitet statt per Effekt zurückgesetzt).
   const [selected, setSelected] = React.useState<{
