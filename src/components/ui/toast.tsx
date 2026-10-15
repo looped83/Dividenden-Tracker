@@ -76,39 +76,29 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             <div
               key={toast.id}
               className={cn(
-                "pointer-events-auto flex w-full max-w-md items-center gap-3 rounded-lg py-2.5 pl-3 pr-2",
-                // Farbiger Streifen an der Kante, getoenter Grund, kraeftiger
-                // Schatten: Die frueheren Toasts unterschieden sich nur durch
-                // einen duennen Rahmen vom Hintergrund und gingen zwischen
-                // Karten unter — eine Rueckmeldung, die niemand bemerkt, ist
-                // keine.
-                "border border-l-4 shadow-xl",
-                "text-sm text-foreground",
-                // Deckende Flaeche, keine Transparenz: Der Toast schwebt ueber
-                // scrollendem Inhalt: Tabellenzeilen, Diagramme, Karten. Mit
-                // einem Alpha-Tint (`bg-positive/10`) schlug all das durch und
-                // der Text stand je nach Scrollposition auf einem anderen
-                // Grund. Die Toenung steckt jetzt in fertig gemischten Tokens.
+                // Eine vollflaechig gefaerbte Pille, so breit wie ihr Text:
+                // Mit Rahmen, Farbstreifen und getoentem Grund sah der Toast
+                // aus wie eine weitere Kachel und ging zwischen den Karten der
+                // Seite unter. Gruen (bzw. Rot) traegt die Botschaft allein.
+                // Deckend, ohne Transparenz — der Toast schwebt ueber
+                // scrollendem Inhalt. `rounded-3xl` statt `rounded-full`, damit
+                // eine umbrechende Fehlermeldung keine Linse wird.
+                "pointer-events-auto flex w-fit max-w-md items-center gap-2.5 rounded-3xl py-2 pl-4 pr-1.5",
+                "text-sm font-medium shadow-xl",
                 positive
-                  ? "border-positive/40 border-l-positive bg-positive-surface"
-                  : "border-negative/40 border-l-negative bg-negative-surface",
+                  ? "bg-positive text-positive-foreground"
+                  : "bg-negative text-negative-foreground",
                 // Kurz eingeblendet statt uebergangslos gesetzt — die Bewegung
                 // ist es, die den Blick holt. `prefers-reduced-motion` schaltet
                 // sie ab (tw-animate-css).
                 "motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-200",
               )}
             >
-              <Icon
-                className={cn(
-                  "size-5 shrink-0",
-                  positive ? "text-positive" : "text-negative",
-                )}
-                aria-hidden
-              />
+              <Icon className="size-5 shrink-0" aria-hidden />
               {/* Alles mittig in einer Zeile: Zuvor stand der Text oben
                   (`items-start`), waehrend die 32px hohe Schliessen-Schaltflaeche
                   die Kachel hoeher machte — darunter blieb sichtbar Luft. */}
-              <span className="min-w-0 flex-1 font-medium">{toast.message}</span>
+              <span className="min-w-0 flex-1">{toast.message}</span>
               <button
                 type="button"
                 aria-label="Hinweis schließen"
@@ -116,9 +106,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                   dismiss(toast.id);
                 }}
                 className={cn(
-                  "flex size-8 shrink-0 items-center justify-center rounded-md",
-                  "text-muted-foreground outline-none transition-colors",
-                  "hover:bg-foreground/10 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring",
+                  "flex size-8 shrink-0 items-center justify-center rounded-full",
+                  "opacity-80 outline-none transition",
+                  "hover:bg-black/10 hover:opacity-100 focus-visible:ring-2 focus-visible:ring-current",
                 )}
               >
                 <X className="size-4" aria-hidden />
