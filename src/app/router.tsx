@@ -8,6 +8,7 @@ import { AppShell } from "@/app/AppShell";
 import { NotFoundPage } from "@/app/NotFoundPage";
 import { AuthPageSkeleton } from "@/components/layout/PageSkeleton";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
+import { PaymentComposerRoute } from "@/features/payments/PaymentComposer";
 import { routeChunks } from "@/app/routeChunks";
 
 /**
@@ -33,9 +34,6 @@ import { routeChunks } from "@/app/routeChunks";
  */
 const PaymentsPage = React.lazy(async () => ({
   default: (await routeChunks.payments()).PaymentsPage,
-}));
-const NewPaymentPage = React.lazy(async () => ({
-  default: (await routeChunks.newPayment()).NewPaymentPage,
 }));
 const PaymentDetailPage = React.lazy(async () => ({
   default: (await routeChunks.paymentDetail()).PaymentDetailPage,
@@ -160,10 +158,10 @@ export const router = createHashRouter([
     children: [
       { index: true, element: <DashboardPage /> },
       { path: "eingaenge", element: <PaymentsPage /> },
-      { path: "eingaenge/neu", element: <NewPaymentPage /> },
+      { path: "eingaenge/neu", element: <PaymentComposerRoute /> },
       { path: "eingaenge/datenqualitaet", element: <DataQualityPage /> },
       { path: "eingaenge/:id", element: <PaymentDetailPage /> },
-      { path: "eingaenge/:id/bearbeiten", element: <NewPaymentPage /> },
+      { path: "eingaenge/:id/bearbeiten", element: <PaymentComposerRoute /> },
       { path: "kalender", element: <CalendarPage /> },
       {
         path: "depot",

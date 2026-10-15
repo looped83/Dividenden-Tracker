@@ -2,17 +2,20 @@ import * as React from "react";
 import { useNavigate } from "react-router";
 import { BarChart3 } from "lucide-react";
 import { Section } from "@/components/ui/section";
+import { ListTile } from "@/components/ui/list";
 import { AmountText } from "@/components/money/AmountText";
+import { formatMoney } from "@/lib/money";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
   calendarMonthBuckets,
   monthAcrossYearsStatistics,
   monthNameDe,
+  monthNameDeShort,
   MONTH_NAMES_DE_SHORT,
   type MonthAcrossYearsStatistics,
 } from "@/lib/statistics";
 import { useStatisticsContext } from "./context";
-import { formatCountNumber, statisticsDrillHref } from "./format";
+import { formatCountNumber, formatPayments, statisticsDrillHref } from "./format";
 import { CategoryBarChart } from "./components/charts";
 import { StatTable, type StatColumn } from "./components/StatTable";
 
@@ -114,6 +117,12 @@ export function MonthsTab({
               void navigate(statisticsDrillHref(filter, { month: row.month }))
             }
             rowLabel={(row) => `Alle Zahlungen im ${monthNameDe(row.month)} anzeigen`}
+            listSummary={{
+              // Der Monat als Kachel vorn — wie im Vergleich und bei den Jahren.
+              leading: (row) => <ListTile primary={monthNameDeShort(row.month)} />,
+              title: (row) => formatPayments(row.count),
+              meta: (row) => `Ø ${formatMoney(row.averagePayment)} je Zahlung`,
+            }}
           />
         </div>
       </Section>

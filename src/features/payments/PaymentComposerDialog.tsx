@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { ComposerTarget } from "@/features/payments/PaymentComposer";
 
 // Das Formular haengt an Formular-, Waehrungs- und Datenschicht und wiegt
 // entsprechend; es laedt erst, wenn der Dialog offen ist.
@@ -16,9 +17,11 @@ const PaymentForm = React.lazy(async () => ({
 export function PaymentComposerDialog({
   open,
   onOpenChange,
+  target,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  target: ComposerTarget;
 }) {
   const close = React.useCallback(() => {
     onOpenChange(false);
@@ -28,7 +31,9 @@ export function PaymentComposerDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Neue Dividende</DialogTitle>
+          <DialogTitle>
+            {target.paymentId ? "Dividende bearbeiten" : "Neue Dividende"}
+          </DialogTitle>
         </DialogHeader>
         <React.Suspense
           fallback={
@@ -40,9 +45,17 @@ export function PaymentComposerDialog({
             </div>
           }
         >
-          {/* Erst beim Öffnen einhängen: Ein geschlossener Dialog soll weder
-              Stammdaten laden noch ein Formular vorhalten. */}
-          {open && <PaymentForm onDone={close} onCancel={close} />}
+          {/* Der Inhalt eines geschlossenen Dialogs wird ausgehaengt (nach der
+              Ausblendung) — ein geschlossener Dialog laedt also weder
+              Stammdaten noch haelt er ein Formular vor. Der Schluessel sorgt
+              dafuer, dass ein anderes Ziel ein frisches Formular bekommt. */}
+          <PaymentForm
+            key={target.paymentId ?? `neu-${target.securityId ?? ""}`}
+            id={target.paymentId}
+            initialSecurityId={target.securityId}
+            onDone={close}
+            onCancel={close}
+          />
         </React.Suspense>
       </DialogContent>
     </Dialog>

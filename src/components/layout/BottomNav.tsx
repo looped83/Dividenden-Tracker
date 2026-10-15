@@ -2,7 +2,7 @@ import { Plus, MoreHorizontal } from "lucide-react";
 import { NavLink, useLocation } from "react-router";
 import { BOTTOM_NAV_MORE_ITEMS, BOTTOM_NAV_PRIMARY_ITEMS } from "@/app/navigation";
 import { prefetchProps } from "@/app/routeChunks";
-import { useNewPaymentTrigger } from "@/features/payments/PaymentComposer";
+import { usePaymentComposer } from "@/features/payments/PaymentComposer";
 import { cn } from "@/lib/utils/cn";
 
 const ACTIVE = "font-semibold text-foreground";
@@ -35,7 +35,7 @@ export function BottomNav() {
   const inMoreArea = BOTTOM_NAV_MORE_ITEMS.some(
     (item) => pathname === item.to || pathname.startsWith(`${item.to}/`),
   );
-  const newPayment = useNewPaymentTrigger();
+  const newPayment = usePaymentComposer();
 
   return (
     <nav

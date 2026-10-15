@@ -41,6 +41,7 @@ import { latestAsOf, statusOf } from "@/features/securities/snapshots";
 import { useDepots } from "@/features/depots/hooks";
 import { useArchiveToggle } from "@/components/domain/useArchiveToggle";
 import { deriveDataQuality } from "@/features/securities/dataQuality";
+import { usePaymentComposer } from "@/features/payments/PaymentComposer";
 
 /**
  * Wie viele Zahlungen die Seite direkt zeigt — so viele wie die Uebersicht.
@@ -71,6 +72,8 @@ const RECENT_LIMIT = 5;
  */
 export function SecurityDetailPage() {
   const { id = "" } = useParams();
+  // Erfassen von hier aus: das Asset ist schon gewaehlt.
+  const newPayment = usePaymentComposer({ securityId: id });
   const navigate = useNavigate();
   const archiveSecurity = useArchiveSecurity();
   const toggleArchive = useArchiveToggle(archiveSecurity);
@@ -252,8 +255,8 @@ export function SecurityDetailPage() {
           title="Noch kein Dividendeneingang"
           description="Für dieses Asset ist bisher keine Zahlung erfasst."
           action={
-            <Button asChild>
-              <Link to="/eingaenge/neu">Eingang erfassen</Link>
+            <Button aria-haspopup="dialog" {...newPayment}>
+              Eingang erfassen
             </Button>
           }
         />

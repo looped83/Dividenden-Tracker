@@ -19,7 +19,6 @@ const NAVIGIERBARE_PFADE = [
   ...DEPOT_TABS.map((tab) => tab.to),
   ...STATISTICS_TABS.map((tab) => tab.to),
   ...SETTINGS_TABS.map((tab) => tab.to),
-  "/eingaenge/neu",
   "/mehr",
 ];
 

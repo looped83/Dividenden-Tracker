@@ -12,8 +12,10 @@ test("erfasst eine Dividende und zeigt sie in Liste und Übersicht", async ({
   page,
   konto,
 }) => {
+  // Die alte Adresse oeffnet das Sheet ueber der Liste.
   await page.goto("/#/eingaenge/neu");
   await expect(page.getByRole("heading", { name: "Neue Dividende" })).toBeVisible();
+  await expect(page).toHaveURL(/#\/eingaenge$/);
 
   // Rollenbasiert statt über das Label: In der Navigation steht ebenfalls
   // „Unternehmen", und „Depot" steckt in „Depots".
@@ -41,9 +43,9 @@ test("weist unvollständige Eingaben zurück, statt sie zu speichern", async ({ 
   await page.goto("/#/eingaenge/neu");
   await page.getByRole("button", { name: "Speichern" }).click();
 
-  // Die Meldungen stehen am Feld; gespeichert wird nichts (keine Navigation).
+  // Die Meldungen stehen am Feld; gespeichert wird nichts (das Sheet bleibt).
   await expect(page.getByText("Asset ist erforderlich")).toBeVisible();
-  await expect(page).toHaveURL(/#\/eingaenge\/neu$/);
+  await expect(page.getByRole("dialog")).toBeVisible();
 });
 
 test("erfasst auf breiten Schirmen im Overlay, ohne die Seite zu verlassen", async ({

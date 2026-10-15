@@ -1,9 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router";
 import {
   PaymentComposerProvider,
-  useNewPaymentTrigger,
+  PaymentComposerRoute,
+  usePaymentComposer,
 } from "@/features/payments/PaymentComposer";
 
 // Das echte Formular braucht Stammdaten und Abfragen; hier geht es nur um das
@@ -17,7 +19,7 @@ vi.mock("@/features/payments/PaymentForm", () => ({
 }));
 
 function Trigger() {
-  const trigger = useNewPaymentTrigger();
+  const trigger = usePaymentComposer();
   return (
     <button type="button" {...trigger}>
       Neue Dividende
@@ -51,4 +53,35 @@ describe("PaymentComposer", () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     expect(() => render(<Trigger />)).toThrow(/PaymentComposerProvider/);
   });
+
+  it.each([
+    ["/eingaenge/neu", "Neue Dividende", "/eingaenge"],
+    ["/eingaenge/p1/bearbeiten", "Dividende bearbeiten", "/eingaenge/p1"],
+  ])(
+    "öffnet die alte Adresse %s als Overlay über der passenden Seite",
+    async (path, title, target) => {
+      function Path() {
+        return <output aria-label="Pfad">{useLocation().pathname}</output>;
+      }
+      render(
+        <MemoryRouter initialEntries={[path]}>
+          <PaymentComposerProvider>
+            <Routes>
+              <Route path="/eingaenge/neu" element={<PaymentComposerRoute />} />
+              <Route
+                path="/eingaenge/:id/bearbeiten"
+                element={<PaymentComposerRoute />}
+              />
+              <Route path="*" element={<Path />} />
+            </Routes>
+          </PaymentComposerProvider>
+        </MemoryRouter>,
+      );
+
+      expect(await screen.findByRole("dialog")).toHaveAccessibleName(title);
+      expect(
+        screen.getByRole("status", { name: "Pfad", hidden: true }),
+      ).toHaveTextContent(target);
+    },
+  );
 });

@@ -122,4 +122,27 @@ describe("PaymentForm", () => {
     // Safari erkennt Namensfelder auch am Platzhalter.
     expect(search.getAttribute("placeholder")).not.toMatch(/name/i);
   });
+
+  it("übernimmt ein vorgewähltes Asset samt Depot", async () => {
+    depots.current = [depot("d1", "Depot A"), depot("d2", "Depot B")];
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <PaymentForm initialSecurityId="s1" onDone={vi.fn()} onCancel={vi.fn()} />
+      </ToastProvider>,
+    );
+
+    expect(screen.getByRole("combobox", { name: "Asset" })).toHaveValue("Apple Inc.");
+    await user.type(screen.getByLabelText("Nettobetrag"), "3");
+    await user.click(screen.getByRole("button", { name: "Speichern" }));
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({ security_id: "s1", depot_id: "d2" }),
+    );
+  });
+
+  it("fragt keine Notiz ab", () => {
+    depots.current = [depot("d1", "Depot A")];
+    renderForm();
+    expect(screen.queryByLabelText(/Notiz/)).not.toBeInTheDocument();
+  });
 });

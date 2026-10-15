@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Combobox } from "@/components/ui/combobox";
-import { Textarea } from "@/components/ui/textarea";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { currencySymbol, toGermanDecimalString } from "@/lib/money";
 import { useToast } from "@/components/ui/toast";
@@ -33,8 +32,8 @@ import {
  * Oeffnen: Als Modulkonstante ueber UTC stand nach Mitternacht der Vortag im
  * Feld und in einer tagelang geoeffneten App ein noch aelteres Datum.
  */
-function emptyValues(): PaymentFormValues {
-  return { securityId: "", depotId: "", payDate: todayIso(), netAmount: "", note: "" };
+function emptyValues(securityId = ""): PaymentFormValues {
+  return { securityId, depotId: "", payDate: todayIso(), netAmount: "", note: "" };
 }
 
 /**
@@ -46,11 +45,14 @@ function emptyValues(): PaymentFormValues {
  */
 export function PaymentForm({
   id,
+  initialSecurityId,
   onDone,
   onCancel,
 }: {
   /** Gesetzt: bestehenden Eingang bearbeiten. Leer: neuen erfassen. */
   id?: string | undefined;
+  /** Neu erfassen mit vorgewähltem Asset (etwa von dessen Detailseite). */
+  initialSecurityId?: string | undefined;
   /** Nach erfolgreichem Speichern. */
   onDone: () => void;
   /** Abbrechen — oder Zurueck aus einem stornierten Eingang. */
@@ -71,7 +73,7 @@ export function PaymentForm({
 
   const [submitError, setSubmitError] = React.useState<string | null>(null);
   const [conflict, setConflict] = React.useState(false);
-  const [defaultValues] = React.useState(emptyValues);
+  const [defaultValues] = React.useState(() => emptyValues(initialSecurityId));
 
   const {
     register,
@@ -104,7 +106,10 @@ export function PaymentForm({
   }, [existingPayment, reset]);
 
   const activeSecurities = securities.filter((security) => !security.archived_at);
-  const activeDepots = depots.filter((depot) => !depot.archived_at);
+  const activeDepots = React.useMemo(
+    () => depots.filter((depot) => !depot.archived_at),
+    [depots],
+  );
 
   // Die Combobox liegt ausserhalb der register()-Anbindung, deshalb wird der
   // Wert beobachtet und per setValue gesetzt. shouldValidate raeumt eine
@@ -135,14 +140,29 @@ export function PaymentForm({
    * Blick. Bleibt es offen (kein Standard, mehrere Depots), erscheint die
    * Auswahl.
    */
-  const depotFor = (securityId: string): string => {
-    const security = securities.find((s) => s.id === securityId);
-    const preferred = security?.default_depot_id;
-    if (preferred && activeDepots.some((depot) => depot.id === preferred)) {
-      return preferred;
-    }
-    return activeDepots.length === 1 ? (activeDepots[0]?.id ?? "") : "";
-  };
+  const depotFor = React.useCallback(
+    (securityId: string): string => {
+      const security = securities.find((s) => s.id === securityId);
+      const preferred = security?.default_depot_id;
+      if (preferred && activeDepots.some((depot) => depot.id === preferred)) {
+        return preferred;
+      }
+      return activeDepots.length === 1 ? (activeDepots[0]?.id ?? "") : "";
+    },
+    [securities, activeDepots],
+  );
+
+  // Vorgewaehltes Asset: Das Depot steht erst fest, wenn Assets und Depots
+  // geladen sind — bis dahin wird gewartet, danach genau einmal gesetzt.
+  const preselected = React.useRef(false);
+  React.useEffect(() => {
+    if (!initialSecurityId || preselected.current) return;
+    if (securities.length === 0 || depots.length === 0) return;
+    preselected.current = true;
+    const depotId = depotFor(initialSecurityId);
+    if (depotId) setValue("depotId", depotId);
+  }, [initialSecurityId, securities.length, depots.length, depotFor, setValue]);
+
   const needsDepotChoice = watchedSecurityId !== "" && depotFor(watchedSecurityId) === "";
 
   const selectSecurity = (securityId: string) => {
@@ -196,6 +216,9 @@ export function PaymentForm({
       fx_rate: null,
       quantity: null,
       amount_per_share: null,
+      // Ohne eigenes Feld (das Formular bleibt bei dem, was man beim Erfassen
+      // braucht): Eine vorhandene Notiz, etwa aus einem Import, reist beim
+      // Bearbeiten unverändert mit.
       note: values.note?.trim() ? values.note.trim() : null,
     };
 
@@ -328,12 +351,6 @@ export function PaymentForm({
               <p className="text-sm text-negative">{errors.netAmount.message}</p>
             )}
           </div>
-        </div>
-
-        <div className="space-y-1.5">
-          <Label htmlFor="payment-note">Notiz (optional)</Label>
-          <Textarea id="payment-note" rows={2} {...register("note")} />
-          {errors.note && <p className="text-sm text-negative">{errors.note.message}</p>}
         </div>
 
         {submitError && (

@@ -24,7 +24,6 @@ describe("areaNameFor", () => {
   it("benennt die Hauptbereiche", () => {
     expect(areaNameFor("/")).toBe("Übersicht");
     expect(areaNameFor("/eingaenge")).toBe("Dividenden");
-    expect(areaNameFor("/eingaenge/neu")).toBe("Neue Dividende");
     expect(areaNameFor("/statistiken/verlauf")).toBe("Statistiken, Verlauf");
     expect(areaNameFor("/einstellungen/depots")).toBe("Einstellungen, Depotkonten");
     expect(areaNameFor("/depot")).toBe("Depot");

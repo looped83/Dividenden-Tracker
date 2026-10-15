@@ -20,6 +20,7 @@ import { useStatisticsContext } from "./context";
 import {
   describeComparison,
   formatCountNumber,
+  formatPayments,
   statisticsDrillHref,
   statisticsTabHref,
 } from "./format";
@@ -80,16 +81,7 @@ export function YearsTab({
         header: "Jahr",
         headerLabel: "Jahr",
         compare: (a, b) => a.year - b.year,
-        render: (row) => (
-          <span className="font-medium">
-            {row.year}
-            {row.year === today.year && (
-              <span className="ml-2 text-xs font-normal text-muted-foreground">
-                läuft
-              </span>
-            )}
-          </span>
-        ),
+        render: (row) => <span className="font-medium">{row.year}</span>,
       },
       {
         key: "net",
@@ -205,13 +197,8 @@ export function YearsTab({
             rowLabel={(row) => `Monate von ${String(row.year)} anzeigen`}
             listSummary={{
               // Das Jahr als Kachel vorn — wie das Datum bei den Eingängen.
-              leading: (row) => (
-                <ListTile
-                  primary={String(row.year)}
-                  secondary={row.year === today.year ? "läuft" : undefined}
-                />
-              ),
-              title: (row) => `${formatCountNumber(row.count)} Zahlungen`,
+              leading: (row) => <ListTile primary={String(row.year)} />,
+              title: (row) => formatPayments(row.count),
               meta: (row) => {
                 const { change } = row;
                 const trend =

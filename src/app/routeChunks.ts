@@ -9,7 +9,6 @@
  */
 export const routeChunks = {
   payments: () => import("@/features/payments/PaymentsPage"),
-  newPayment: () => import("@/features/payments/NewPaymentPage"),
   paymentDetail: () => import("@/features/payments/PaymentDetailPage"),
   dataQuality: () => import("@/features/payments/DataQualityPage"),
   calendar: () => import("@/features/calendar/CalendarPage"),
@@ -47,7 +46,6 @@ type ChunkName = keyof typeof routeChunks;
  */
 const CHUNKS_BY_PATH: Readonly<Record<string, readonly ChunkName[]>> = {
   "/eingaenge": ["payments"],
-  "/eingaenge/neu": ["newPayment"],
   "/eingaenge/datenqualitaet": ["dataQuality"],
   "/kalender": ["calendar"],
   "/depot": ["depot", "securities"],

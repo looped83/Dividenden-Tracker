@@ -19,6 +19,7 @@ import { Distribution } from "./Distributions";
 import { RecentPayments } from "./RecentPayments";
 import { HistoricalOverview } from "./HistoricalOverview";
 import { buildEntityMap, describeSelection } from "./format";
+import { usePaymentComposer } from "@/features/payments/PaymentComposer";
 
 function DashboardSkeleton() {
   return (
@@ -36,6 +37,7 @@ function DashboardSkeleton() {
 
 export function DashboardPage() {
   const today = useToday();
+  const newPayment = usePaymentComposer();
   const { selection, setSelection } = useDashboardYear();
   // Alle Auswertungen laufen auf `payments` mit effektivem Datum (§10).
   const { payments, paymentsQuery, securitiesQuery } = useEffectivePayments();
@@ -113,10 +115,8 @@ export function DashboardPage() {
           description="Erfasse deinen ersten Eingang oder importiere deine bisherige Historie, um Kennzahlen zu sehen."
           action={
             <div className="flex flex-wrap justify-center gap-2">
-              <Button asChild>
-                <Link to="/eingaenge/neu">
-                  <Plus /> Ersten Eingang erfassen
-                </Link>
+              <Button aria-haspopup="dialog" {...newPayment}>
+                <Plus /> Ersten Eingang erfassen
               </Button>
               <Button asChild variant="outline">
                 <Link to="/einstellungen/importe">
