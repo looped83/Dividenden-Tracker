@@ -237,13 +237,18 @@ export function CompaniesTab() {
 
   return (
     <div className="space-y-10">
-      <BreakdownSwitch />
       {/* Auf dem Telefon ist die Liste darunter selbst die Rangliste (Balken
           je Zeile); dieselben Summen ein zweites Mal als Balken darueber
           verdoppelten dort die Seite. Ab `md` steht die Tabelle — sie zeigt
           keine Balken, deshalb bleibt die Rangliste dort. */}
       {isWide && (
-        <Section title="Assets nach Dividendensumme">
+        // „Verteilung" mit dem Umschalter Assets | Depots rechts — dieselbe
+        // Ueberschrift und dieselbe Stelle wie auf der Uebersicht.
+        <Section
+          title="Verteilung"
+          action={<BreakdownSwitch />}
+          actionClassName="shrink-0"
+        >
           <div>
             {topItems.length === 0 ? (
               <p className="py-6 text-sm text-muted-foreground">
@@ -262,14 +267,29 @@ export function CompaniesTab() {
         </Section>
       )}
 
+      {/* Auf dem Telefon traegt diese Liste die Verteilung und damit auch
+          den Umschalter; das Suchfeld steht dann als erste Zeile darunter. */}
       <Section
-        title={isWide ? "Statistik je Asset" : "Assets nach Dividendensumme"}
-        actionClassName="w-full sm:-my-3 sm:w-64"
+        title={isWide ? "Statistik je Asset" : "Verteilung"}
+        actionClassName={isWide ? "w-64 -my-3" : "shrink-0"}
         action={
-          <StatSearch value={query} onChange={setQuery} placeholder="Assets suchen …" />
+          isWide ? (
+            <StatSearch value={query} onChange={setQuery} placeholder="Assets suchen …" />
+          ) : (
+            <BreakdownSwitch />
+          )
         }
       >
-        <div>
+        <div className="space-y-3">
+          {!isWide && (
+            <div className="pt-1 [&_input]:rounded-full">
+              <StatSearch
+                value={query}
+                onChange={setQuery}
+                placeholder="Assets suchen …"
+              />
+            </div>
+          )}
           <StatTable
             rows={tableRows}
             columns={columns}
@@ -314,9 +334,9 @@ export function CompaniesTab() {
               },
             }}
           />
-          {/* Nebenschalter am Fuss der Kachel, abgesetzt durch eine Trennlinie —
-              dasselbe Muster wie unter der Unternehmensliste. */}
-          <div className="mt-4 border-t border-border pt-4">
+          {/* Nebenschalter unter der Liste — ohne Trennlinie: Die Liste endet
+              ohne Rahmen, eine Linie darunter sah aus wie eine leere Zeile. */}
+          <div className="pt-2">
             <label className="flex min-h-11 items-center gap-2 text-sm text-muted-foreground">
               <Checkbox
                 checked={showArchived}

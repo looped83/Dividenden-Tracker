@@ -40,7 +40,7 @@ export function Section({
       <div className="flex min-h-7 flex-wrap items-center justify-between gap-x-3 gap-y-2">
         <h2
           id={id}
-          className="text-[1.1875rem] font-bold leading-tight tracking-[-0.015em]"
+          className="min-w-0 flex-1 text-[1.1875rem] font-bold leading-tight tracking-[-0.015em]"
         >
           {title}
         </h2>

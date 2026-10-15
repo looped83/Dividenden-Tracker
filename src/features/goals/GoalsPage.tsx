@@ -95,7 +95,9 @@ export function GoalsPage() {
     <PageHeader
       title="Ziele"
       actions={
-        <Button onClick={openCreate}>
+        // Umriss wie die Jahresauswahl der Uebersicht; gefuellt bleibt allein
+        // das Erfassen in der Navigation.
+        <Button variant="outline" onClick={openCreate}>
           <Plus aria-hidden /> Ziel anlegen
         </Button>
       }

@@ -60,9 +60,7 @@ test.use({
 
 test("Liste ist die Standardansicht und zeigt Kacheln je Termin", async ({ page }) => {
   await page.goto("/#/kalender");
-  await expect(
-    page.getByRole("heading", { name: "Dividendenkalender", level: 1 }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Kalender", level: 1 })).toBeVisible();
 
   // Ohne eigene Wahl steht die Liste bereits — kein Klick noetig.
   await expect(page.getByRole("radio", { name: "Liste", exact: true })).toBeChecked();
@@ -156,9 +154,7 @@ test("Fokus kehrt nach dem Schließen an den Eintrag zurück", async ({ page }) 
 test("keine waagerechte Bildlaufleiste auf schmalen Geräten", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 700 });
   await page.goto("/#/kalender");
-  await expect(
-    page.getByRole("heading", { name: "Dividendenkalender", level: 1 }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Kalender", level: 1 })).toBeVisible();
 
   for (const ansicht of ["Liste", "Monat"] as const) {
     await page.getByRole("radio", { name: ansicht, exact: true }).click();

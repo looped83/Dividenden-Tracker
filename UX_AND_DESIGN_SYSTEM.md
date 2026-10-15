@@ -187,6 +187,23 @@ anders gebaut wirkt als die nächste:
   Vordergrundfarbe und halbfett — ein Ort, keine Aktion.
 - **Umschalter** (`SegmentedControl`) haben in beiden Fassungen die Pillenform der
   Übersicht; im Dunkeln liegt die gewählte Pille auf der Akzentstufe.
+- **Auswahl steht rechts im Kopf dessen, was sie steuert** — wie Jahr und „Kumuliert |
+  Monatlich" auf der Übersicht. Seitenweit im Seitenkopf: Jahr (Übersicht), Darstellung
+  Liste | Monat (Kalender), auf dem Telefon die Pille „Filter" (Dividenden, Statistik).
+  Für einen Abschnitt in dessen Kopf: Jahre | Monate (Verlauf), Assets | Depots
+  (Verteilung in Übersicht und Aufteilung), „Filter" der Assetliste im Depot. Ab `sm`
+  stehen die Filterfelder als Zeile direkt darunter. Keine Umschalter als eigene Zeile
+  über einem Abschnitt, keine Umschalter über die volle Breite. Sortierung über einer
+  Liste auf dem Telefon steht rechts in Inhaltsbreite. Der Zeitraumvergleich ist eine
+  Pillenzeile, die sich als Satz liest („Jahr gegen Jahr · 2026 · gegen 2025").
+- **Gruppenüberschriften sind Abschnittsüberschriften** (`ListSection` = `Section`):
+  Monate der Dividenden, „Heute"/„Diese Woche" im Kalender stehen in 19 px, die Summe
+  gedämpft rechts, 40 px zwischen den Gruppen. Am Desktop gruppiert die
+  Dividendentabelle ebenso; ihre Spaltenköpfe sind nur für Hilfsmittel da.
+- **Seitenkopf-Aktionen** sind Umriss-Pillen (Neues Asset, Ziel anlegen, Datenqualität)
+  in der Form der Jahresauswahl; gefüllt ist allein das Erfassen der Navigation. Der
+  Kalender heißt im Kopf „Kalender" wie in der Navigation; „Aktualisieren" steht in der
+  Zeile mit dem Stand des Abgleichs.
 - **Erfassen** steht nur in der Navigation, nicht zusätzlich im Kopf der Dividendenliste.
 - **Detailkopf**: Der Betrag einer Zahlung steht in der Größe der Hauptzahl (40 px).
 
@@ -209,7 +226,8 @@ ein anderer Platz fürs Zurücksetzen fallen beim Wechsel sofort auf.
   kennen.
 - **Form:** ohne Rahmen um die Leiste, Felder und Schaltflächen als Pillen (seit 1.9.0).
   Auf dem Telefon ist die eingeklappte Leiste eine Pille „Filter" mit der Zahl wirkender
-  Filter, nicht mehr ein Kasten über die volle Breite.
+  Filter rechts im Kopf (`FilterToggle`, `useFilterDisclosure`); die Felder klappen
+  darunter auf. Eine Leiste mit nur einem Feld (Entwicklung) braucht keinen Schalter.
 - **Beschriftungen:** unsichtbar, aber vorhanden (`sr-only`). Jedes Feld benennt sich über
   seinen neutralen Wert selbst („Alle Jahre", „Alle Depots"); Sortieroptionen beginnen mit
   „Nach …" und nennen den Begriff, den die Seite selbst verwendet — kurz und ohne

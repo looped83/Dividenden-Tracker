@@ -355,23 +355,28 @@ export function StatTable<T>({
       ) : (
         <>
           {activeSort && sortableColumns.length > 1 && (
-            <FilterSort
-              id={sortId}
-              value={activeSort.key}
-              direction={activeSort.direction}
-              options={sortableColumns.map((column) => ({
-                value: column.key,
-                label: `Nach ${columnName(column)}`,
-              }))}
-              onValueChange={(key) => {
-                setPage(1);
-                setSort({ key, direction: activeSort.direction });
-              }}
-              onDirectionChange={(direction) => {
-                setPage(1);
-                setSort({ key: activeSort.key, direction });
-              }}
-            />
+            // Rechts und in Inhaltsbreite — wie die Umschalter in den Köpfen
+            // der Abschnitte, nicht als Feld über die ganze Breite.
+            <div className="flex justify-end">
+              <FilterSort
+                compact
+                id={sortId}
+                value={activeSort.key}
+                direction={activeSort.direction}
+                options={sortableColumns.map((column) => ({
+                  value: column.key,
+                  label: `Nach ${columnName(column)}`,
+                }))}
+                onValueChange={(key) => {
+                  setPage(1);
+                  setSort({ key, direction: activeSort.direction });
+                }}
+                onDirectionChange={(direction) => {
+                  setPage(1);
+                  setSort({ key: activeSort.key, direction });
+                }}
+              />
+            </div>
           )}
           {pageRows.length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">
@@ -496,7 +501,7 @@ function StatList<T>({
                       </span>
                     </div>
                   )}
-                  <div className="truncate text-xs text-muted-foreground">
+                  <div className="truncate text-sm text-muted-foreground">
                     {summary.meta(row)}
                   </div>
                 </div>

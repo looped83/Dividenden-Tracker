@@ -28,7 +28,7 @@ const ROUTEN = [
   { pfad: "/#/eingaenge", name: "Dividenden", warten: "Dividenden" },
   { pfad: "/#/eingaenge/neu", name: "Neue Dividende", warten: "Neue Dividende" },
   { pfad: "/#/eingaenge/datenqualitaet", name: "Datenqualität", warten: "Datenqualität" },
-  { pfad: "/#/kalender", name: "Kalender", warten: "Dividendenkalender" },
+  { pfad: "/#/kalender", name: "Kalender", warten: "Kalender" },
   { pfad: "/#/depot", name: "Depot", warten: "Depot" },
   // Ohne Depotstand zeigt die Entwicklung ihren Leerzustand — auch der muss
   // barrierefrei sein, und er ist der erste, den jemand hier zu sehen bekommt.

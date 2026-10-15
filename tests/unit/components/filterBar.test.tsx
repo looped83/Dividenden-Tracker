@@ -1,23 +1,43 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type * as React from "react";
 import {
   FilterBar,
   FilterField,
   FilterReset,
   FilterSort,
+  FilterToggle,
+  useFilterDisclosure,
 } from "@/components/ui/filter-bar";
+
+/** Schalter und Felder wie auf einer Seite: Der Schalter steht im Kopf. */
+function Bar({
+  activeCount = 0,
+  children,
+}: {
+  activeCount?: number;
+  children: React.ReactNode;
+}) {
+  const disclosure = useFilterDisclosure(activeCount);
+  return (
+    <>
+      <FilterToggle disclosure={disclosure} />
+      <FilterBar disclosure={disclosure}>{children}</FilterBar>
+    </>
+  );
+}
 
 function renderBar(activeCount?: number) {
   return render(
-    <FilterBar {...(activeCount === undefined ? {} : { activeCount })}>
+    <Bar {...(activeCount === undefined ? {} : { activeCount })}>
       <FilterField id="f-year" label="Jahr">
         <select id="f-year" defaultValue="">
           <option value="">Alle Jahre</option>
           <option value="2026">2026</option>
         </select>
       </FilterField>
-    </FilterBar>,
+    </Bar>,
   );
 }
 
@@ -40,6 +60,10 @@ describe("FilterBar", () => {
     const toggle = screen.getByRole("button", { name: /Filter/ });
     expect(toggle).toHaveAttribute("aria-expanded", "true");
     expect(toggle).toHaveTextContent("2 aktiv");
+    // Der Schalter steuert die Felder, die er auf- und zuklappt.
+    expect(
+      document.getElementById(toggle.getAttribute("aria-controls") ?? ""),
+    ).toContainElement(screen.getByRole("combobox", { name: "Jahr" }));
   });
 
   it("klappt auf Bedienung um", async () => {
@@ -75,7 +99,7 @@ describe("FilterSort", () => {
     const onValueChange = vi.fn();
     const onDirectionChange = vi.fn();
     render(
-      <FilterBar activeCount={1}>
+      <Bar activeCount={1}>
         <FilterSort
           id="sort"
           value="name"
@@ -84,7 +108,7 @@ describe("FilterSort", () => {
           onValueChange={onValueChange}
           onDirectionChange={onDirectionChange}
         />
-      </FilterBar>,
+      </Bar>,
     );
     return { onValueChange, onDirectionChange };
   }
@@ -98,7 +122,10 @@ describe("FilterSort", () => {
     const user = userEvent.setup();
     const { onValueChange } = renderSort();
 
-    await user.selectOptions(screen.getByRole("combobox"), "depot");
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Sortierung" }),
+      "depot",
+    );
 
     expect(onValueChange).toHaveBeenCalledWith("depot");
   });
@@ -121,9 +148,9 @@ describe("FilterReset", () => {
     const user = userEvent.setup();
     const onClick = vi.fn();
     render(
-      <FilterBar activeCount={1}>
+      <Bar activeCount={1}>
         <FilterReset onClick={onClick} />
-      </FilterBar>,
+      </Bar>,
     );
 
     await user.click(screen.getByRole("button", { name: "Filter zurücksetzen" }));

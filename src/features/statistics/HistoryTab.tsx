@@ -22,18 +22,23 @@ export function HistoryTab() {
   const [searchParams, setSearchParams] = useSearchParams();
   const grain = parseHistoryGrain(searchParams);
 
-  return (
-    <div className="space-y-6">
-      <SegmentedControl
-        label="Verlauf nach"
-        options={OPTIONS}
-        value={grain}
-        onChange={(next) => {
-          setSearchParams((prev) => applyHistoryGrain(prev, next), { replace: true });
-        }}
-        variant="pill"
-      />
-      {grain === "jahre" ? <YearsTab /> : <MonthsTab />}
-    </div>
+  // Der Umschalter steht rechts im Kopf des Diagramms — wie „Kumuliert |
+  // Monatlich" auf der Übersicht —, nicht als eigene Zeile über dem Abschnitt.
+  const switcher = (
+    <SegmentedControl
+      label="Verlauf nach"
+      options={OPTIONS}
+      value={grain}
+      onChange={(next) => {
+        setSearchParams((prev) => applyHistoryGrain(prev, next), { replace: true });
+      }}
+      variant="pill"
+    />
+  );
+
+  return grain === "jahre" ? (
+    <YearsTab switcher={switcher} />
+  ) : (
+    <MonthsTab switcher={switcher} />
   );
 }
