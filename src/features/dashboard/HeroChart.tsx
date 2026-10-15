@@ -49,8 +49,8 @@ const num = (money: Money): number => money.toChartNumber();
  * „Alle Jahre" ist eine Linie: Gefragt ist der Verlauf über viele Jahre, und
  * fünfzehn Säulen wurden auf dem Telefon zu Strichen.
  *
- * Farben: Linien des aktuellen Zeitraums in der Akzentfarbe (Orange, seit
- * 1.11.0 — die Hauptlinie der Seite), Säulen in Vordergrundfarbe, Vorjahr in
+ * Farben: der aktuelle Zeitraum in der Akzentfarbe (Orange, seit 1.11.0 — die
+ * Hauptaussage der Seite), als Linie wie als Säule; Vorjahr in
  * `--series-prior` und — als Linie — gestrichelt. Die Identität trägt nie die Farbe allein.
  */
 export function HeroChart({
@@ -454,7 +454,7 @@ function Bars({
             opacity={activeKey === null || activeKey === group.key ? 1 : 0.3}
           >
             {rect(center - barWidth - 1.5, num(group.prior), "var(--series-prior)")}
-            {group.current && rect(center + 1.5, num(group.current), "var(--foreground)")}
+            {group.current && rect(center + 1.5, num(group.current), "var(--primary)")}
             <text
               x={center}
               y={height + LABELS - 6}

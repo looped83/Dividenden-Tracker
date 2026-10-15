@@ -551,7 +551,7 @@ function Legend({
           />,
         ]
       : [
-          <span key="c" className="size-2 rounded-[2px] bg-foreground" />,
+          <span key="c" className="size-2 rounded-[2px] bg-primary" />,
           <span key="p" className="size-2 rounded-[2px] bg-series-prior" />,
         ];
   return (
