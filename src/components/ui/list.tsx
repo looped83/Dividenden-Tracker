@@ -113,7 +113,7 @@ export function ListRow({
  *
  * Rein dekorativ (`aria-hidden`): Die Zeile nennt das Datum vollständig in
  * ihrer Bezeichnung oder als Text für Sprachausgaben. Grau wie die übrigen
- * Flächen: Blau markiert Aktionen, nicht Daten.
+ * Flächen: Orange markiert Aktionen, nicht Daten.
  */
 export function ListDateTile({ iso, muted = false }: { iso: string; muted?: boolean }) {
   const { day, month } = dateTile(iso);

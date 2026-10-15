@@ -31,7 +31,7 @@ const trackToneClass: Record<"positive" | "neutral" | "negative", string> = {
  * Die Information funktioniert nicht ausschliesslich ueber Farbe.
  *
  * Seit 1.9.0 in der Form des Zielbalkens im Kopf der Uebersicht: 4px hoch,
- * Spur in Haarlinienfarbe, laufend in Vordergrundfarbe statt Blau.
+ * Spur in Haarlinienfarbe, laufend in Vordergrundfarbe statt Akzentfarbe.
  */
 export function GoalProgressBar({
   progress,

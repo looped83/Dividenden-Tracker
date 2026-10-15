@@ -8,7 +8,7 @@ const badgeVariants = cva(
     variants: {
       variant: {
         neutral: "border-transparent bg-muted text-muted-foreground",
-        // Hervorgehoben, aber nicht blau: Ein Etikett beschreibt einen Zustand,
+        // Hervorgehoben, aber nicht orange: Ein Etikett beschreibt einen Zustand,
         // es ist keine Aktion (UX_AND_DESIGN_SYSTEM.md §1, seit 1.9.0).
         primary: "border-transparent bg-accent text-foreground",
         positive: "border-transparent bg-positive/10 text-positive",

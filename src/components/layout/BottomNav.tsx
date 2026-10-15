@@ -15,9 +15,9 @@ const INACTIVE = "text-muted-foreground";
  *
  * **Erfassen sitzt in der Leiste, nicht darueber.** Der frueher 32px
  * herausragende Knopf verdeckte beim Scrollen Inhalt. Hervorgehoben bleibt
- * er durch Form und Farbe: der einzige gefuellte Kreis, in Primaerblau.
+ * er durch Form und Farbe: der einzige gefuellte Kreis, in der Akzentfarbe Orange.
  *
- * **Aktiv heisst Vordergrund und Gewicht, nicht Blau.** Blau markiert in der
+ * **Aktiv heisst Vordergrund und Gewicht, nicht Orange.** Orange markiert in der
  * App, was eine Aktion ausloest; der aktive Bereich ist ein Ort. Die Leiste
  * ist leicht durchscheinend, damit beim Scrollen sichtbar bleibt, dass die
  * Seite darunter weitergeht.

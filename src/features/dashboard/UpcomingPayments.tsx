@@ -55,7 +55,7 @@ export function UpcomingPayments({ today }: { today: string }) {
           </>
         ) : undefined
       }
-      // Der Weg zum ganzen Bereich als Textlink in Primärblau — wie „Alle"
+      // Der Weg zum ganzen Bereich als Textlink in der Akzentfarbe — wie „Alle"
       // bei den Eingängen. Ein Symbol allein musste man deuten.
       action={<SectionLink to="/kalender">Kalender</SectionLink>}
     >

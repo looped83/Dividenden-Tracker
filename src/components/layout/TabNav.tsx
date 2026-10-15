@@ -26,7 +26,7 @@ function isTabActive(tab: TabNavItem, pathname: string): boolean {
  * Navigation der Unterbereiche (Statistik, Einstellungen).
  *
  * Der aktive Reiter traegt eine Linie in Vordergrundfarbe und halbfette
- * Schrift — wie der aktive Eintrag der Navigation. Blau bleibt Aktionen
+ * Schrift — wie der aktive Eintrag der Navigation. Orange bleibt Aktionen
  * vorbehalten (UX_AND_DESIGN_SYSTEM.md §1).
  *
  * Immer eine Zeile: Passen die Reiter nicht nebeneinander, laesst sich die
@@ -74,7 +74,7 @@ export function TabNav({ label, tabs }: { label: string; tabs: readonly TabNavIt
                   "inline-flex items-center whitespace-nowrap rounded-t-md border-b-2 px-3 py-2",
                   "pointer-coarse:min-h-11 text-sm font-medium outline-none",
                   "focus-visible:ring-2 focus-visible:ring-ring",
-                  // Vordergrundfarbe statt Blau: Ein Reiter ist ein Ort, keine
+                  // Vordergrundfarbe statt Orange: Ein Reiter ist ein Ort, keine
                   // Aktion — dieselbe Regel wie in der Navigation (seit 1.9.0).
                   isActive
                     ? "border-foreground font-semibold text-foreground"
