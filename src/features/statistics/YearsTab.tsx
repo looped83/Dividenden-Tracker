@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useNavigate } from "react-router";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Section } from "@/components/ui/section";
 import { AmountText } from "@/components/money/AmountText";
 import { EmptyState } from "@/components/ui/empty-state";
 import { BarChart3 } from "lucide-react";
@@ -163,25 +163,19 @@ export function YearsTab() {
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Jährliche Entwicklung</CardTitle>
-        </CardHeader>
-        <CardContent>
+    <div className="space-y-10">
+      <Section title="Jährliche Entwicklung">
+        <div>
           <CategoryBarChart
             data={chartData}
             ariaLabel="Netto-Dividenden je Jahr"
             categoryHeader="Jahr"
           />
-        </CardContent>
-      </Card>
+        </div>
+      </Section>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Jahresstatistik</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <Section title="Jahresstatistik">
+        <div>
           <StatTable
             rows={stats}
             columns={columns}
@@ -227,8 +221,8 @@ export function YearsTab() {
               },
             }}
           />
-        </CardContent>
-      </Card>
+        </div>
+      </Section>
     </div>
   );
 }

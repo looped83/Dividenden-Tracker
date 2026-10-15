@@ -20,7 +20,7 @@ export function OverviewTab() {
   const { bestMonth, bestYear } = stats;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       {/* Die Gesamtsumme ist die Hauptzahl; Zeitraum, Zahl der Zahlungen und
           Breite stehen in ihrer Unterzeile. Darunter drei Nebenkennzahlen statt
           fuenf weiterer Kacheln — sechs gleich grosse schoben die Matrix auf

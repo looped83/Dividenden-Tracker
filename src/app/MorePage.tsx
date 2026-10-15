@@ -28,9 +28,9 @@ export function MorePage() {
             <NavLink
               to={item.to}
               {...prefetchProps(item.to)}
-              className="flex h-full flex-col gap-3 rounded-lg border border-border bg-card p-4 outline-none transition-colors hover:border-primary/40 hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background"
+              className="flex h-full flex-col gap-3 rounded-2xl border border-border bg-card p-4 outline-none transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background"
             >
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted text-foreground">
                 <item.icon className="size-5" aria-hidden />
               </span>
               <span className="min-w-0">

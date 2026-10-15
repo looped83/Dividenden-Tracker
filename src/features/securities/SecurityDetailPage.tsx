@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from "react-router";
 import { Archive, Briefcase, Pencil, RotateCcw, ShieldAlert, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Section, SectionLink } from "@/components/ui/section";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Disclosure } from "@/components/ui/disclosure";
 import { DetailBackLink, DetailHeader } from "@/components/layout/DetailHeader";
@@ -279,34 +279,33 @@ export function SecurityDetailPage() {
             ]}
           />
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Entwicklung je Jahr</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <Section title="Entwicklung je Jahr" className="pt-4">
+            <div>
               <CategoryBarChart
                 data={yearData}
                 ariaLabel={`Jährliche Dividendeneingänge von ${security.name}`}
                 categoryHeader="Jahr"
               />
-            </CardContent>
-          </Card>
+            </div>
+          </Section>
         </>
       )}
 
       {recent.length > 0 && (
-        <Card>
-          {/* Kopf wie „Letzte Eingänge" auf der Uebersicht: der Weg zur ganzen
-              Liste rechts neben der Ueberschrift. */}
-          <CardHeader className="flex-row items-center justify-between gap-3">
-            <CardTitle>Letzte Eingänge</CardTitle>
-            <Button asChild variant="ghost" size="sm" className="-my-2 -mr-3 shrink-0">
-              <Link to={`/eingaenge?security=${id}`}>
-                Alle {formatCountNumber(stats.count)}
-              </Link>
-            </Button>
-          </CardHeader>
-          <CardContent>
+        // Kopf wie „Letzte Eingänge" auf der Uebersicht: der Weg zur ganzen
+        // Liste rechts neben der Ueberschrift.
+        <Section
+          title="Letzte Eingänge"
+          // Die Seite steht im 24px-Takt des Detailkopfs; Abschnitte ohne
+          // Rahmen brauchen 40px Luft, sonst kleben sie aneinander.
+          className="pt-4"
+          action={
+            <SectionLink to={`/eingaenge?security=${id}`}>
+              Alle {formatCountNumber(stats.count)}
+            </SectionLink>
+          }
+        >
+          <div>
             {/* Der Name stuende in jeder Zeile wie in der Ueberschrift; hier
                 ist das Datum der Titel. */}
             <ListGroup inset>
@@ -326,16 +325,13 @@ export function SecurityDetailPage() {
                 />
               ))}
             </ListGroup>
-          </CardContent>
-        </Card>
+          </div>
+        </Section>
       )}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Stammdaten</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+      <div className="grid grid-cols-1 gap-10 pt-4 lg:grid-cols-2 lg:gap-x-16">
+        <Section title="Stammdaten">
+          <div className="space-y-4">
             <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
               <Field label="Ticker" value={security.ticker} />
               <Field label="ISIN" value={security.isin} />
@@ -368,14 +364,11 @@ export function SecurityDetailPage() {
                 <p className="whitespace-pre-wrap text-sm">{security.note}</p>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </Section>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Ausschüttungsplan</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <Section title="Ausschüttungsplan">
+          <div>
             {payoutMonths.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 Kein Plan hinterlegt. Zahlungen zählen dann für den Monat, in dem sie
@@ -416,8 +409,8 @@ export function SecurityDetailPage() {
                 </Disclosure>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </Section>
       </div>
 
       <SecurityFormDialog

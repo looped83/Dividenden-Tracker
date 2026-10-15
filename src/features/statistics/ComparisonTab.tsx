@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router";
 import { Info } from "lucide-react";
 import { ListGroup } from "@/components/ui/list";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Section } from "@/components/ui/section";
 import { Select } from "@/components/ui/select";
 import { KpiHero } from "@/components/domain/KpiHero";
 import { AmountText } from "@/components/money/AmountText";
@@ -146,7 +147,7 @@ export function ComparisonTab() {
         : "text-muted-foreground";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       <Card>
         <CardHeader>
           <CardTitle>Zeitraumvergleich</CardTitle>
@@ -307,25 +308,19 @@ export function ComparisonTab() {
 
       {"months" in comparison ? (
         <>
-          <Card>
-            <CardHeader>
-              <CardTitle>Kumulierter Verlauf</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <Section title="Kumulierter Verlauf">
+            <div>
               <ComparisonLineChart
                 points={points}
                 currentLabel={comparison.current.label}
                 referenceLabel={comparison.reference.label}
                 ariaLabel={`Kumulierte Netto-Dividenden: ${comparison.current.label} gegenüber ${comparison.reference.label}`}
               />
-            </CardContent>
-          </Card>
+            </div>
+          </Section>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Monat für Monat</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <Section title="Monat für Monat">
+            <div>
               <ComparisonBreakdown
                 rows={monthRows(comparison, filter)}
                 rowHeader="Monat"
@@ -336,15 +331,12 @@ export function ComparisonTab() {
                   (month) => !month.current.complete || !month.reference.complete,
                 )}
               />
-            </CardContent>
-          </Card>
+            </div>
+          </Section>
         </>
       ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle>Nach Assets</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <Section title="Nach Assets">
+          <div>
             {comparison.securities.length === 0 ? (
               <p className="py-8 text-center text-sm text-muted-foreground">
                 In keinem der beiden Monate gab es Dividendeneingänge.
@@ -359,8 +351,8 @@ export function ComparisonTab() {
                 hasPartial={comparison.truncated}
               />
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </Section>
       )}
     </div>
   );

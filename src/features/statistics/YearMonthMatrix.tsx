@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Link, useSearchParams } from "react-router";
 import { Info } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Section } from "@/components/ui/section";
 import { Select } from "@/components/ui/select";
 import { AmountText } from "@/components/money/AmountText";
 import { cn } from "@/lib/utils/cn";
@@ -79,30 +79,30 @@ export function YearMonthMatrix() {
   if (matrix.years.length === 0) return null;
 
   return (
-    <Card>
-      {/* Die Ansichtswahl steht in der Kopfzeile rechts: Sie gehoert zur
-          Kachel, nicht zu ihrem Inhalt, und braucht dort keine eigene
-          Beschriftung — die Auswahl benennt sich selbst („Summe je Monat").
-          Fuer Hilfsmittel traegt sie den Namen als `aria-label`. */}
-      <CardHeader className="gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <CardTitle>Jahre × Monate</CardTitle>
-        <div className="sm:-my-3 sm:w-56 sm:shrink-0">
-          <Select
-            aria-label="Ansicht"
-            value={view}
-            onChange={(event) => {
-              setView(event.target.value as BreakdownView);
-            }}
-          >
-            {(Object.keys(BREAKDOWN_VIEW_LABELS) as BreakdownView[]).map((value) => (
-              <option key={value} value={value}>
-                {BREAKDOWN_VIEW_LABELS[value]}
-              </option>
-            ))}
-          </Select>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    // Die Ansichtswahl steht in der Kopfzeile rechts: Sie gehoert zum
+    // Abschnitt, nicht zu seinem Inhalt, und braucht dort keine eigene
+    // Beschriftung — die Auswahl benennt sich selbst („Summe je Monat"). Fuer
+    // Hilfsmittel traegt sie den Namen als `aria-label`.
+    <Section
+      title="Jahre × Monate"
+      actionClassName="w-full sm:-my-3 sm:w-56"
+      action={
+        <Select
+          aria-label="Ansicht"
+          value={view}
+          onChange={(event) => {
+            setView(event.target.value as BreakdownView);
+          }}
+        >
+          {(Object.keys(BREAKDOWN_VIEW_LABELS) as BreakdownView[]).map((value) => (
+            <option key={value} value={value}>
+              {BREAKDOWN_VIEW_LABELS[value]}
+            </option>
+          ))}
+        </Select>
+      }
+    >
+      <div className="space-y-4">
         {filter.year !== null && (
           <p className="flex items-start gap-2 rounded-md bg-muted/50 p-3 text-sm text-muted-foreground">
             <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
@@ -135,8 +135,8 @@ export function YearMonthMatrix() {
             )}
           </p>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </Section>
   );
 }
 

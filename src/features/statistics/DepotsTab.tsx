@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useNavigate } from "react-router";
 import { BarChart3 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Section } from "@/components/ui/section";
 import { AmountText } from "@/components/money/AmountText";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -128,30 +128,24 @@ export function DepotsTab() {
   }
 
   const distribution = (
-    <Card>
-      <CardHeader>
-        <CardTitle>Depotverteilung</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <Section title="Depotverteilung">
+      <div>
         <RankedBars
           items={distributionItems}
           total={total}
           ariaLabel="Netto-Dividende je Depot"
         />
-      </CardContent>
-    </Card>
+      </div>
+    </Section>
   );
 
   const statistic = (
-    <Card>
-      {/* Ohne Suchfeld: Depots zaehlt man an einer Hand. Ein Filter fuer
-          eine Liste, die vollstaendig ins Bild passt, ist ein Bedienelement
-          ohne Aufgabe — anders als bei den Unternehmen, wo Hunderte Zeilen
-          stehen koennen. */}
-      <CardHeader>
-        <CardTitle>{isWide ? "Depotstatistik" : "Depotverteilung"}</CardTitle>
-      </CardHeader>
-      <CardContent>
+    // Ohne Suchfeld: Depots zaehlt man an einer Hand. Ein Filter fuer eine
+    // Liste, die vollstaendig ins Bild passt, ist ein Bedienelement ohne
+    // Aufgabe — anders als bei den Unternehmen, wo Hunderte Zeilen stehen
+    // koennen.
+    <Section title={isWide ? "Depotstatistik" : "Depotverteilung"}>
+      <div>
         <StatTable
           rows={stats}
           columns={columns}
@@ -176,8 +170,8 @@ export function DepotsTab() {
               `${formatPayments(row.count)} · ${formatCountNoun(row.distinctSecurities, "Asset", "Assets")}`,
           }}
         />
-      </CardContent>
-    </Card>
+      </div>
+    </Section>
   );
 
   // Auf dem Telefon traegt die Liste die Verteilung selbst (Balken je Zeile)
@@ -185,21 +179,18 @@ export function DepotsTab() {
   // zeigt die Tabelle keine Balken — dort bleibt die Reihenfolge Verteilung,
   // Monate, Tabelle.
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       <BreakdownSwitch />
       {isWide ? distribution : statistic}
-      <Card>
-        <CardHeader>
-          <CardTitle>Monatliche Verteilung</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <Section title="Monatliche Verteilung">
+        <div>
           <CategoryBarChart
             data={monthlyData}
             ariaLabel="Netto-Dividende je Kalendermonat"
             categoryHeader="Monat"
           />
-        </CardContent>
-      </Card>
+        </div>
+      </Section>
 
       {isWide && statistic}
     </div>
