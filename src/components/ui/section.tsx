@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Link } from "react-router";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
 /**
@@ -44,7 +44,18 @@ export function Section({
         >
           {title}
         </h2>
-        {action !== undefined && <div className={actionClassName}>{action}</div>}
+        {action !== undefined && (
+          // Felder im Kopf (Auswahl, Suche) als Pillen — wie der Umschalter
+          // daneben und die Jahresauswahl der Übersicht (seit 1.9.0).
+          <div
+            className={cn(
+              "[&_input]:rounded-full [&_select]:rounded-full [&_select]:pl-4",
+              actionClassName,
+            )}
+          >
+            {action}
+          </div>
+        )}
       </div>
       {description !== undefined && (
         <p className="mt-0.5 text-[0.8125rem] text-muted-foreground">{description}</p>
@@ -53,6 +64,12 @@ export function Section({
     </section>
   );
 }
+
+const sectionActionClass = cn(
+  "inline-flex min-h-11 items-center gap-0.5 rounded-sm text-[0.9375rem] font-medium text-primary outline-none",
+  "hover:underline focus-visible:ring-2 focus-visible:ring-ring",
+  "disabled:pointer-events-none disabled:opacity-50",
+);
 
 /**
  * Textlink im Kopf eines Abschnitts („Alle", „Kalender") — in Primärblau,
@@ -68,16 +85,33 @@ export function SectionLink({
   className?: string;
 }) {
   return (
-    <Link
-      to={to}
-      className={cn(
-        "inline-flex min-h-11 items-center gap-0.5 rounded-sm text-[0.9375rem] font-medium text-primary outline-none",
-        "hover:underline focus-visible:ring-2 focus-visible:ring-ring",
-        className,
-      )}
-    >
+    <Link to={to} className={cn(sectionActionClass, className)}>
       {children}
       <ChevronRight className="size-4" aria-hidden />
     </Link>
+  );
+}
+
+/**
+ * Aktion im Kopf eines Abschnitts, die etwas anlegt oder startet („Neues
+ * Depot", „Neuer Import") — dieselbe Form wie {@link SectionLink}, mit dem
+ * Symbol vorn statt dem Pfeil hinten. Eine gefüllte Schaltfläche im Kopf jedes
+ * Abschnitts war lauter als die Überschrift daneben (seit 1.9.0).
+ */
+export function SectionButton({
+  icon: Icon,
+  children,
+  className,
+  ...props
+}: React.ComponentProps<"button"> & { icon?: LucideIcon }) {
+  return (
+    <button
+      type="button"
+      className={cn(sectionActionClass, "gap-1", className)}
+      {...props}
+    >
+      {Icon && <Icon className="size-4" aria-hidden />}
+      {children}
+    </button>
   );
 }

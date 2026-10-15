@@ -600,7 +600,9 @@ function AllocationCard({
             Keine Angaben im aktuellen Depotstand.
           </p>
         ) : (
-          <ul className="space-y-3">
+          // Dieselbe Form wie die Rangbalken der Uebersicht und Statistik:
+          // Zeilen mit Haarlinie, schmaler Balken in Vordergrundfarbe.
+          <ul className="divide-y divide-border">
             {buckets.map((bucket) => {
               const share = totalValue.isZero()
                 ? null
@@ -609,22 +611,22 @@ function AllocationCard({
                     .dividedBy(totalValue.toDecimal())
                     .times(HUNDRED);
               return (
-                <li key={bucket.key || "unknown"}>
-                  <div className="flex items-baseline justify-between gap-2 text-sm">
+                <li key={bucket.key || "unknown"} className="py-3">
+                  <div className="flex items-baseline justify-between gap-2">
                     <span className="min-w-0 truncate font-medium">{bucket.label}</span>
-                    <span className="shrink-0 tabular-nums text-muted-foreground">
+                    <span className="shrink-0 font-semibold tabular-nums">
                       {share ? formatPercent(share, 1) : "—"}
                     </span>
                   </div>
-                  <div className="mt-1 h-1.5 rounded-full bg-muted" aria-hidden>
+                  <div className="mt-2 h-[3px] rounded-full bg-border" aria-hidden>
                     <div
-                      className="h-full rounded-full bg-primary"
+                      className="h-full rounded-full bg-foreground"
                       style={{
                         width: `${String(share ? Math.max(1, share.toNumber()) : 0)}%`,
                       }}
                     />
                   </div>
-                  <p className="mt-1 text-xs text-muted-foreground">
+                  <p className="mt-1.5 text-[0.8125rem] text-muted-foreground">
                     {formatMoney(bucket.marketValue)} ·{" "}
                     {formatMoney(bucket.annualDividend)} erwartet ·{" "}
                     {formatCountNumber(bucket.positions)}{" "}

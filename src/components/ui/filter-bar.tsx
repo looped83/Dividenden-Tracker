@@ -16,6 +16,12 @@ import { Select } from "@/components/ui/select";
  * Werkzeug dazu. Wie viele Filter greifen, zeigt die Zeile auch eingeklappt.
  * Ab `sm` ist die Leiste unveraendert dauerhaft sichtbar.
  *
+ * **Ohne Rahmen, Felder als Pillen** (seit 1.9.0): in der Form der
+ * Jahresauswahl im Kopf der Uebersicht. Die Leiste ist ein Werkzeug ueber dem
+ * Inhalt, kein eigener Abschnitt — ein Kasten darum stellte sie auf eine Stufe
+ * mit den Daten. Die Pillenform setzt die Leiste selbst, damit jede Seite
+ * dieselbe bekommt, ohne dass die Felder sie einzeln tragen muessen.
+ *
  * @param activeCount Anzahl wirkender Filter (0 = unveraenderte Ansicht).
  */
 export function FilterBar({
@@ -33,7 +39,7 @@ export function FilterBar({
   const [open, setOpen] = React.useState(activeCount > 0);
 
   return (
-    <div className={cn("rounded-lg border border-border bg-card", className)}>
+    <div className={className}>
       <button
         type="button"
         aria-expanded={open}
@@ -42,19 +48,17 @@ export function FilterBar({
           setOpen((value) => !value);
         }}
         className={cn(
-          "flex min-h-11 w-full items-center justify-between gap-2 rounded-lg px-3 text-sm font-medium",
-          "outline-none focus-visible:ring-2 focus-visible:ring-ring sm:hidden",
+          "inline-flex min-h-11 items-center gap-2 rounded-full border border-input bg-background pl-4 pr-3 text-sm font-semibold",
+          "outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring sm:hidden",
         )}
       >
-        <span className="flex items-center gap-2">
-          <SlidersHorizontal className="size-4 text-muted-foreground" aria-hidden />
-          Filter
-          {activeCount > 0 && (
-            <span className="rounded-full bg-accent px-2 py-0.5 text-xs text-accent-foreground">
-              {formatCountNumber(activeCount)} aktiv
-            </span>
-          )}
-        </span>
+        <SlidersHorizontal className="size-4 text-muted-foreground" aria-hidden />
+        Filter
+        {activeCount > 0 && (
+          <span className="rounded-full bg-foreground px-2 py-0.5 text-xs text-background">
+            {formatCountNumber(activeCount)} aktiv
+          </span>
+        )}
         <ChevronDown
           className={cn("size-4 text-muted-foreground", open && "rotate-180")}
           aria-hidden
@@ -64,7 +68,9 @@ export function FilterBar({
       <div
         id={panelId}
         className={cn(
-          "flex-wrap items-center gap-3 p-3 pt-0 sm:flex sm:p-4",
+          "flex-wrap items-center gap-3 pt-3 sm:flex sm:pt-0",
+          // Auswahlfelder als Pillen wie die Jahresauswahl der Uebersicht.
+          "[&_select]:rounded-full [&_select]:pl-4",
           open ? "flex" : "hidden",
         )}
       >
@@ -158,6 +164,7 @@ export function FilterSort({
         <div className="min-w-0 flex-1">
           <Select
             id={id}
+            className="rounded-full pl-4"
             value={value}
             onChange={(event) => {
               onValueChange(event.target.value);

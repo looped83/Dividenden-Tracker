@@ -28,8 +28,10 @@ export function GoalTypeMark({
   return (
     <span
       className={cn(
-        "flex size-9 shrink-0 items-center justify-center rounded-md",
-        isMonthly ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary",
+        "flex size-9 shrink-0 items-center justify-center rounded-xl",
+        // Das Jahresziel ist der Rahmen und steht dunkel, das Monatsziel grau —
+        // ohne Blau, das Aktionen vorbehalten ist (seit 1.9.0).
+        isMonthly ? "bg-muted text-muted-foreground" : "bg-foreground text-background",
         className,
       )}
       // Die Beschriftung steht daneben; das Symbol wiederholte sie nur.

@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Section } from "@/components/ui/section";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/toast";
 import { BackupContents } from "@/components/backup/BackupContents";
@@ -64,11 +64,8 @@ export default function BackupSection() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Sicherung erstellen</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <Section title="Sicherung erstellen">
+      <div className="space-y-4">
         <p className="text-sm text-muted-foreground" aria-live="polite">
           {lastBackup.label}
         </p>
@@ -92,7 +89,7 @@ export default function BackupSection() {
             <BackupContents backup={backup} />
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </Section>
   );
 }

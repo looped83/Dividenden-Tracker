@@ -12,25 +12,19 @@ import { cn } from "@/lib/utils/cn";
  * Titel. Einzelne Karten kosten je Eintrag zwei Rahmen und eine Lücke — auf
  * dem Telefon passten so sechs Eingänge auf den Bildschirm.
  *
- * Zwei Fassungen, eine Regel: Eine Liste auf der Seite **ist** die Karte
- * (`framed`); eine Liste in einer Karte trägt keinen zweiten Rahmen, sondern
- * rückt um den Innenabstand ihrer Zeilen nach außen, damit Text und Beträge
- * auf der Linie der Kartenüberschrift stehen.
+ * **Ohne Rahmen** (seit 1.9.0, wie die Übersicht): Die Liste rückt um den
+ * Innenabstand ihrer Zeilen nach außen, damit Namen und Beträge auf der Linie
+ * der Überschrift stehen — auf der Seite wie in einer Karte. Die Trennlinien
+ * laufen auf der Linie des Textes, nicht über den Innenabstand hinaus. Früher
+ * trug eine Liste auf der Seite einen eigenen Kartenrahmen; zusammen mit den
+ * Abschnitten der Übersicht standen damit zwei Formen derselben Sache
+ * nebeneinander.
  */
-export function ListGroup({
-  inset = false,
-  className,
-  ...props
-}: React.ComponentProps<"ul"> & { inset?: boolean }) {
+export function ListGroup({ className, ...props }: React.ComponentProps<"ul">) {
   return (
     <ul
       className={cn(
-        inset
-          ? // Trennlinien auf der Linie des Textes, nicht über den Innenabstand
-            // der Zeilen hinaus: Ohne Rahmen um die Liste (Abschnitt der
-            // Übersicht) standen sie sonst 12px über Überschrift und Beträge.
-            "-mx-3 [&>li+li]:relative [&>li+li]:before:absolute [&>li+li]:before:inset-x-3 [&>li+li]:before:top-0 [&>li+li]:before:h-px [&>li+li]:before:bg-border"
-          : "divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card",
+        "-mx-3 [&>li+li]:relative [&>li+li]:before:absolute [&>li+li]:before:inset-x-3 [&>li+li]:before:top-0 [&>li+li]:before:h-px [&>li+li]:before:bg-border",
         className,
       )}
       {...props}
@@ -40,7 +34,8 @@ export function ListGroup({
 
 /**
  * Überschrift einer gruppierten Liste (Monat, „Diese Woche") samt optionaler
- * Kennzahl rechts — etwa der Monatssumme. Klein und gedämpft: Sie ordnet, sie
+ * Kennzahl rechts — etwa der Monatssumme. Eine Stufe unter der Überschrift
+ * eines Abschnitts (15px gegen 19px), die Summe gedämpft: Sie ordnet, sie
  * konkurriert nicht mit den Einträgen.
  */
 export function ListSection({
@@ -55,11 +50,13 @@ export function ListSection({
   className?: string;
 }) {
   return (
-    <section className={cn("space-y-2", className)}>
-      <h2 className="flex items-baseline justify-between gap-3 px-1 text-sm font-semibold text-muted-foreground">
+    <section className={cn("space-y-1", className)}>
+      <h2 className="flex items-baseline justify-between gap-3 text-[0.9375rem] font-semibold">
         <span>{title}</span>
         {aside !== undefined && (
-          <span className="shrink-0 font-medium tabular-amount">{aside}</span>
+          <span className="shrink-0 text-sm font-medium text-muted-foreground tabular-amount">
+            {aside}
+          </span>
         )}
       </h2>
       {children}
@@ -71,7 +68,7 @@ const rowClassName = "flex w-full min-h-11 items-center gap-3 px-3 py-2.5 text-l
 
 const interactiveRowClassName = cn(
   rowClassName,
-  "cursor-pointer outline-none transition-colors hover:bg-accent/50 active:bg-accent",
+  "cursor-pointer rounded-xl outline-none transition-colors hover:bg-accent/60 active:bg-accent",
   "focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
   "motion-reduce:transition-none",
 );

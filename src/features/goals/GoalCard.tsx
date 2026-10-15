@@ -1,7 +1,7 @@
 import { Link } from "react-router";
 import { CalendarClock } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils/cn";
 import type { GoalProgress } from "@/lib/goals";
 import { GoalProgressBar } from "./GoalProgressBar";
 import { GoalTypeMark } from "./GoalTypeMark";
@@ -53,8 +53,11 @@ export function GoalCard({ progress }: GoalCardProps) {
   const tone = statusTone(status);
 
   return (
-    <Card className="relative flex flex-col transition-colors hover:bg-accent/50 active:bg-accent motion-reduce:transition-none">
-      <CardContent className="flex flex-1 flex-col gap-3 p-4 sm:p-6">
+    // Gedaempfte Flaeche ohne Rahmen — wie die Kennzahlen im Kopf der
+    // Uebersicht (seit 1.9.0). Die Ziele stehen im Raster nebeneinander und
+    // brauchen eine Flaeche; einen Rahmen braucht die nicht.
+    <div className="relative flex flex-col rounded-2xl bg-muted transition-colors hover:bg-accent active:bg-accent motion-reduce:transition-none">
+      <div className="flex flex-1 flex-col gap-3 p-4 sm:p-5">
         {/* Der Titel nennt Zielart und Zeitraum bereits („Dividendenziel 2026",
             „Monatsziel Juli 2026"). Umbrochen wird nur an Wortgrenzen:
             Abgeschnitten oder mitten im Wort gebrochen liest sich beides
@@ -67,14 +70,19 @@ export function GoalCard({ progress }: GoalCardProps) {
                 Titel dauerhaft ihre Breite, auch in der zweiten Zeile. */}
             <Badge
               variant={badgeVariantByTone[tone]}
-              className="float-right mt-0.5 ml-2 whitespace-nowrap"
+              className={cn(
+                "float-right mt-0.5 ml-2 whitespace-nowrap",
+                // Auf der gedaempften Flaeche hebt sich die neutrale Marke erst
+                // mit der Seitenfarbe ab.
+                tone === "neutral" && "bg-background dark:bg-accent",
+              )}
             >
               {statusLabel(status)}
             </Badge>
             {/* Der Link dehnt sich per `::after` ueber die ganze Karte. */}
             <Link
               to={`/ziele/${goal.id}`}
-              className="block rounded-sm outline-none after:absolute after:inset-0 after:rounded-lg focus-visible:after:ring-2 focus-visible:after:ring-ring"
+              className="block rounded-sm outline-none after:absolute after:inset-0 after:rounded-2xl focus-visible:after:ring-2 focus-visible:after:ring-ring"
             >
               <h3 className="text-base font-semibold tracking-tight">
                 {goalDisplayTitle(goal)}
@@ -118,7 +126,7 @@ export function GoalCard({ progress }: GoalCardProps) {
             <GoalProgressBar progress={progress} showPercent={false} />
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

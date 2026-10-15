@@ -31,7 +31,7 @@ export function HistoryTab() {
         onChange={(next) => {
           setSearchParams((prev) => applyHistoryGrain(prev, next), { replace: true });
         }}
-        className="w-full sm:w-auto"
+        variant="pill"
       />
       {grain === "jahre" ? <YearsTab /> : <MonthsTab />}
     </div>

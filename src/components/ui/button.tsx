@@ -5,7 +5,11 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils/cn";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm " +
+  // Pillenform fuer alle Schaltflaechen (seit 1.9.0): dieselbe Form wie das
+  // Erfassen in der Seitenleiste, die Jahresauswahl und die Umschalter der
+  // Uebersicht. Eingabefelder bleiben bei 8px — sie sind Flaechen zum
+  // Ausfuellen, keine Aktionen (UX_AND_DESIGN_SYSTEM.md §1).
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm " +
     "font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 " +
     "outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 " +
     "ring-offset-background [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
@@ -26,8 +30,8 @@ const buttonVariants = cva(
         // Auf Touchgeraeten (pointer: coarse) waechst die kompakte Variante auf
         // 44px, damit sie die Mindest-Touch-Zielgroesse erfuellt. Mit Maus
         // bleibt die dichtere 36px-Darstellung erhalten.
-        sm: "h-9 pointer-coarse:min-h-11 rounded-md px-3",
-        lg: "h-12 rounded-md px-8",
+        sm: "h-9 pointer-coarse:min-h-11 px-3.5",
+        lg: "h-12 px-8",
         icon: "size-11",
       },
     },

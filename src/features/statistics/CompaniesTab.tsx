@@ -255,6 +255,7 @@ export function CompaniesTab() {
                 items={topItems}
                 total={total}
                 ariaLabel="Aktive Assets nach Nettodividende"
+                columns
               />
             )}
           </div>

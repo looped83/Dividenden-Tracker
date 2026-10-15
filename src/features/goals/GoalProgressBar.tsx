@@ -19,7 +19,7 @@ interface GoalProgressBarProps {
 
 const trackToneClass: Record<"positive" | "neutral" | "negative", string> = {
   positive: "bg-positive",
-  neutral: "bg-primary",
+  neutral: "bg-foreground",
   negative: "bg-negative",
 };
 
@@ -29,6 +29,9 @@ const trackToneClass: Record<"positive" | "neutral" | "negative", string> = {
  * Überschreitung inkl. übertroffenem Betrag). Der Balken ist visuell bei 100 %
  * begrenzt; der tatsaechliche Prozentwert steht zusaetzlich als Text daneben.
  * Die Information funktioniert nicht ausschliesslich ueber Farbe.
+ *
+ * Seit 1.9.0 in der Form des Zielbalkens im Kopf der Uebersicht: 4px hoch,
+ * Spur in Haarlinienfarbe, laufend in Vordergrundfarbe statt Blau.
  */
 export function GoalProgressBar({
   progress,
@@ -47,7 +50,7 @@ export function GoalProgressBar({
         aria-valuemax={100}
         aria-valuenow={Math.round(barValue)}
         aria-valuetext={label}
-        className="h-2.5 w-full overflow-hidden rounded-full bg-muted"
+        className="h-1 w-full overflow-hidden rounded-full bg-border"
       >
         <div
           className={cn(

@@ -137,9 +137,7 @@ export function EventDetailDialog({
 function Detail({ term, children }: { term: string; children: ReactNode }) {
   return (
     <div className="grid gap-0.5">
-      <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-        {term}
-      </dt>
+      <dt className="text-[0.8125rem] text-muted-foreground">{term}</dt>
       <dd className="min-w-0 break-words text-foreground">{children}</dd>
     </div>
   );

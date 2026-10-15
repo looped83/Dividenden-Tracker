@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { PageSkeleton } from "@/components/layout/PageSkeleton";
 import { DetailBackLink, DetailHeader } from "@/components/layout/DetailHeader";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Section, SectionButton } from "@/components/ui/section";
 import { EmptyState } from "@/components/ui/empty-state";
 import { AmountText } from "@/components/money/AmountText";
 import { DateText } from "@/components/DateText";
@@ -41,7 +41,7 @@ import {
 
 function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex justify-between gap-4 border-b border-border py-2 text-sm last:border-0">
+    <div className="flex justify-between gap-4 border-b border-border py-3 text-[0.9375rem] last:border-0">
       <span className="text-muted-foreground">{label}</span>
       <span className="text-right">{children}</span>
     </div>
@@ -276,12 +276,9 @@ export function PaymentDetailPage() {
           Verlauf darunter ueber beide Spalten; ohne sie ruecken Details und
           Verlauf nebeneinander. So bleibt in keinem Fall eine halbe Seite
           leer. */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Details</CardTitle>
-          </CardHeader>
-          <CardContent>
+      <div className="grid grid-cols-1 gap-10 pt-4 lg:grid-cols-2 lg:gap-x-16">
+        <Section title="Details">
+          <div>
             <DetailRow label="Asset">
               {/* Von einer einzelnen Zahlung zur Entwicklung der ganzen
                 Position — die Detailseite des Unternehmens. */}
@@ -312,15 +309,12 @@ export function PaymentDetailPage() {
             {cancelled && payment.archive_reason && (
               <DetailRow label="Stornogrund">{payment.archive_reason}</DetailRow>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </Section>
 
         {imported && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Importherkunft</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <Section title="Importherkunft">
+            <div>
               <DetailRow label="Importdatei">
                 {payment.source_file_name ?? importRun?.file_name ?? "—"}
               </DetailRow>
@@ -365,42 +359,41 @@ export function PaymentDetailPage() {
                   Importherkunft bleibt dennoch erhalten.
                 </p>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </Section>
         )}
 
-        <Card className={imported ? "lg:col-span-2" : undefined}>
-          {/* Eingeklappt: Der Verlauf ist Nachschlagewerk, keine Kernaussage.
-              Er wird erst beim Aufklappen gerendert und damit auch erst dann
-              geladen — die Seite spart die Abfrage, solange niemand fragt. */}
-          <CardHeader className="p-0 sm:p-0">
-            <CardTitle>
-              <button
-                type="button"
-                aria-expanded={historyOpen}
-                aria-controls="payment-history"
-                onClick={() => {
-                  setHistoryOpen((open) => !open);
-                }}
-                className="flex min-h-11 w-full items-center justify-between gap-2 rounded-lg p-4 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring sm:p-6"
-              >
-                Änderungsverlauf
-                <ChevronDown
-                  className={cn(
-                    "size-4 shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none",
-                    historyOpen && "rotate-180",
-                  )}
-                  aria-hidden
-                />
-              </button>
-            </CardTitle>
-          </CardHeader>
+        {/* Eingeklappt: Der Verlauf ist Nachschlagewerk, keine Kernaussage.
+            Er wird erst beim Aufklappen gerendert und damit auch erst dann
+            geladen — die Seite spart die Abfrage, solange niemand fragt. */}
+        <Section
+          title="Änderungsverlauf"
+          className={imported ? "lg:col-span-2" : undefined}
+          action={
+            <SectionButton
+              aria-expanded={historyOpen}
+              aria-controls="payment-history"
+              onClick={() => {
+                setHistoryOpen((open) => !open);
+              }}
+            >
+              {historyOpen ? "Ausblenden" : "Anzeigen"}
+              <ChevronDown
+                className={cn(
+                  "size-4 shrink-0 transition-transform motion-reduce:transition-none",
+                  historyOpen && "rotate-180",
+                )}
+                aria-hidden
+              />
+            </SectionButton>
+          }
+        >
           {historyOpen && (
-            <CardContent id="payment-history">
+            <div id="payment-history" className="pt-2">
               <AuditTrail entityType="dividend_payment" entityId={payment.id} />
-            </CardContent>
+            </div>
           )}
-        </Card>
+        </Section>
       </div>
 
       <StornoDialog

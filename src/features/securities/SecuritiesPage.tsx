@@ -370,7 +370,9 @@ export function SecuritiesPage() {
               )}
               <TableHead className={payoutClass}>Ausschüttung</TableHead>
               <TableHead className={depotClass}>Depotkonto</TableHead>
-              <TableHead className="text-right">Aktionen</TableHead>
+              <TableHead className="w-0">
+                <span className="sr-only">Aktionen</span>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -389,7 +391,7 @@ export function SecuritiesPage() {
                             position?.marketValue ? (
                               <AmountText
                                 amount={position.marketValue}
-                                className="font-medium"
+                                className="font-semibold"
                               />
                             ) : null
                           }
@@ -449,7 +451,7 @@ export function SecuritiesPage() {
           oberen Bereich bestimmen. Ist schon ein Depotstand importiert, steht
           sein Import als „Aktualisieren" im Kennzahlkopf; hier nur, solange
           es keinen gibt. Archivierte blendet der Filter ein. */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border pt-4">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 pt-2">
         <SecurityImportButton />
         {snapshots.length === 0 && (
           <PortfolioImportButton onClick={openPortfolioImport} />

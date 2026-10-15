@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Link, useSearchParams } from "react-router";
-import { Ban, Pencil, Plus, RotateCcw, ShieldCheck, Trash2, Wallet } from "lucide-react";
+import { Ban, Pencil, RotateCcw, ShieldCheck, Trash2, Wallet } from "lucide-react";
 import {
   effectivePayDate,
   monthNameDe,
@@ -19,7 +19,6 @@ import {
   type FilterSortOption,
 } from "@/components/ui/filter-bar";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { useNewPaymentTrigger } from "@/features/payments/PaymentComposer";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ListGroup, ListSection } from "@/components/ui/list";
@@ -92,7 +91,6 @@ const SORT_OPTIONS: readonly FilterSortOption[] = [
 
 export function PaymentsPage() {
   const { notify } = useToast();
-  const newPayment = useNewPaymentTrigger();
   const { data: depots = [] } = useDepots();
   const { data: securities = [], isLoading: securitiesLoading } = useSecurities();
 
@@ -375,26 +373,21 @@ export function PaymentsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Erst ab `md`: Auf dem Telefon steht das Erfassen als hervorgehobene
-          Schaltflaeche in der Bottom-Navigation, eine zweite daneben waere
-          dieselbe Aktion zweimal auf demselben Bildschirm. */}
+      {/* Erfassen steht in der Navigation (Seitenleiste bzw. Bottom-
+          Navigation) und damit auf jeder Seite an derselben Stelle — wie auf
+          der Uebersicht traegt der Kopf nur, was allein diese Seite betrifft. */}
       <PageHeader
         title="Dividenden"
         actions={
-          <>
-            {/* Die Pruefung der Daten gehoert zur Liste, steht aber nicht in
-                ihrem Weg: oben als Symbol, ab `md` beschriftet. Zuvor lag sie
-                am Seitenende, hinter allen Eingaengen. */}
-            <Button variant="outline" asChild className="w-11 px-0 md:w-auto md:px-4">
-              <Link to="/eingaenge/datenqualitaet" aria-label="Datenqualität">
-                <ShieldCheck />
-                <span className="hidden md:inline">Datenqualität</span>
-              </Link>
-            </Button>
-            <Button className="hidden md:inline-flex" {...newPayment}>
-              <Plus /> Neue Dividende
-            </Button>
-          </>
+          // Die Pruefung der Daten gehoert zur Liste, steht aber nicht in
+          // ihrem Weg: oben als Symbol, ab `md` beschriftet. Zuvor lag sie am
+          // Seitenende, hinter allen Eingaengen.
+          <Button variant="outline" asChild className="w-11 px-0 md:w-auto md:px-4">
+            <Link to="/eingaenge/datenqualitaet" aria-label="Datenqualität">
+              <ShieldCheck />
+              <span className="hidden md:inline">Datenqualität</span>
+            </Link>
+          </Button>
         }
       />
 
@@ -500,7 +493,7 @@ export function PaymentsPage() {
       </FilterBar>
 
       {!isLoading && rows.length > 0 && (
-        <p className="px-1 text-sm text-muted-foreground" aria-live="polite">
+        <p className="text-sm text-muted-foreground" aria-live="polite">
           {formatCountNoun(rows.length, "Eingang", "Eingänge")}
           {total && (
             <>
@@ -537,39 +530,67 @@ export function PaymentsPage() {
               Zeile wurde doppelt gerendert, samt doppelt gebauter
               Money-Objekte. */}
           {isWide ? (
-            <div>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Zahlungsdatum</TableHead>
-                    <TableHead>Asset</TableHead>
-                    <TableHead>Depot</TableHead>
-                    <TableHead className="text-right">Netto</TableHead>
-                    <TableHead className="text-right">Aktion</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {visibleRows.map((row) => (
-                    <PaymentRow
-                      key={row.id}
-                      row={row}
-                      comparison={yearOverYear.get(row.id)}
-                      listUrl={listUrl}
-                      onStorno={() => {
-                        setStornoReason("");
-                        setStornoError(null);
-                        setStornoTarget(row);
-                      }}
-                      onReactivate={() => void reactivate(row.payment.id)}
-                      onDelete={() => {
-                        setDeleteError(null);
-                        setDeleteTarget(row);
-                      }}
-                    />
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead>Zahlungsdatum</TableHead>
+                  <TableHead>Asset</TableHead>
+                  <TableHead>Depot</TableHead>
+                  <TableHead className="text-right">Netto</TableHead>
+                  <TableHead className="w-0">
+                    <span className="sr-only">Aktionen</span>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {/* Nach Datum sortiert gruppiert auch die Tabelle nach Monat —
+                    mit derselben Monatsueberschrift und -summe wie die Liste
+                    auf dem Telefon. */}
+                {(groupedByMonth
+                  ? groupByMonth(visibleRows, effectiveDateOf)
+                  : [{ key: "", year: 0, month: 0, rows: visibleRows }]
+                ).map((group) => {
+                  const monthTotal = totalsByMonth?.get(group.key);
+                  return (
+                    <React.Fragment key={group.key}>
+                      {groupedByMonth && (
+                        <TableRow className="border-0 hover:bg-transparent">
+                          <th
+                            scope="colgroup"
+                            colSpan={3}
+                            className="pb-1 pt-8 text-left text-[0.9375rem] font-semibold"
+                          >
+                            {monthNameDe(group.month)} {group.year}
+                          </th>
+                          <td className="px-3 pb-1 pt-8 text-right text-sm font-medium text-muted-foreground tabular-amount">
+                            {monthTotal && <AmountText amount={monthTotal} />}
+                          </td>
+                          <td aria-hidden />
+                        </TableRow>
+                      )}
+                      {group.rows.map((row) => (
+                        <PaymentRow
+                          key={row.id}
+                          row={row}
+                          comparison={yearOverYear.get(row.id)}
+                          listUrl={listUrl}
+                          onStorno={() => {
+                            setStornoReason("");
+                            setStornoError(null);
+                            setStornoTarget(row);
+                          }}
+                          onReactivate={() => void reactivate(row.payment.id)}
+                          onDelete={() => {
+                            setDeleteError(null);
+                            setDeleteTarget(row);
+                          }}
+                        />
+                      ))}
+                    </React.Fragment>
+                  );
+                })}
+              </TableBody>
+            </Table>
           ) : groupedByMonth ? (
             <div className="space-y-6">
               {groupByMonth(visibleRows, effectiveDateOf).map((group) => {
@@ -687,7 +708,7 @@ function PaymentRow({
   const subject = actionSubject(row);
   return (
     <TableRow>
-      <TableCell>
+      <TableCell className="whitespace-nowrap text-muted-foreground tabular-amount">
         {formatCalendarDate(effectiveDate)}
         {shifted && (
           <span
@@ -717,7 +738,7 @@ function PaymentRow({
         )}
       </TableCell>
       <TableCell className="text-muted-foreground">{depotName || "—"}</TableCell>
-      <TableCell className="text-right">
+      <TableCell className="text-right font-semibold">
         {/* Der Indikator steht links des Betrags, damit die Ziffern der Spalte
             buendig bleiben. */}
         <span className="inline-flex items-center justify-end gap-1.5">
@@ -725,11 +746,14 @@ function PaymentRow({
           <AmountText amount={amount} />
         </span>
       </TableCell>
-      <TableCell className="text-right">
-        <div className="flex justify-end gap-2">
+      <TableCell className="py-1 text-right">
+        {/* Ohne Rahmen: Drei umrandete Knoepfe je Zeile machten aus der Liste
+            ein Raster aus Kaesten. Die Symbole bleiben sichtbar (keine
+            Hover-Abhaengigkeit), die Flaeche erscheint beim Zeigen. */}
+        <div className="flex justify-end gap-0.5 text-muted-foreground">
           {cancelled ? (
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon"
               aria-label={`${subject} reaktivieren`}
               onClick={onReactivate}
@@ -739,7 +763,7 @@ function PaymentRow({
           ) : (
             <>
               <Button
-                variant="outline"
+                variant="ghost"
                 size="icon"
                 aria-label={`${subject} bearbeiten`}
                 asChild
@@ -752,7 +776,7 @@ function PaymentRow({
                 </Link>
               </Button>
               <Button
-                variant="outline"
+                variant="ghost"
                 size="icon"
                 aria-label={`${subject} stornieren`}
                 onClick={onStorno}
@@ -762,7 +786,7 @@ function PaymentRow({
             </>
           )}
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon"
             aria-label={`${subject} dauerhaft löschen`}
             onClick={onDelete}

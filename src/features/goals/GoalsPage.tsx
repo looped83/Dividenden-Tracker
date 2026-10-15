@@ -3,7 +3,6 @@ import { Outlet, useNavigate } from "react-router";
 import { Plus, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { TabNav } from "@/components/layout/TabNav";
@@ -17,25 +16,23 @@ import type { GoalsContext } from "./context";
 function GoalsSkeleton() {
   return (
     <div
-      className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3"
+      className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2 xl:grid-cols-3"
       aria-busy="true"
     >
       <span className="sr-only">Ziele werden geladen …</span>
       {Array.from({ length: 3 }).map((_, index) => (
         // Dieselben Zeilen wie die Zielkarte: Kopf, Betragszeile, Balken —
         // sonst springt die Seite, sobald die Ziele da sind.
-        <Card key={index}>
-          <CardContent className="flex flex-col gap-3 p-4 sm:p-6">
-            <div className="flex items-center gap-3">
-              <Skeleton className="size-9 shrink-0 rounded-md" />
-              <Skeleton className="h-5 w-40" />
-            </div>
-            <div className="space-y-2">
-              <Skeleton className="h-7 w-48" />
-              <Skeleton className="h-2.5 w-full" />
-            </div>
-          </CardContent>
-        </Card>
+        <div key={index} className="flex flex-col gap-3 rounded-2xl bg-muted p-4 sm:p-5">
+          <div className="flex items-center gap-3">
+            <Skeleton className="size-9 shrink-0 rounded-xl bg-background" />
+            <Skeleton className="h-5 w-40 bg-background" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="h-7 w-48 bg-background" />
+            <Skeleton className="h-1 w-full bg-background" />
+          </div>
+        </div>
       ))}
     </div>
   );

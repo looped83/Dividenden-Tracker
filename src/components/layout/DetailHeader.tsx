@@ -79,7 +79,9 @@ export function DetailHeader({
             </div>
           )}
           {figure !== undefined && (
-            <div className="mt-2 text-2xl font-semibold tabular-amount">{figure}</div>
+            <div className="mt-3 text-[2.5rem] font-bold leading-[1.05] tracking-[-0.035em] tabular-amount">
+              {figure}
+            </div>
           )}
         </div>
       </div>

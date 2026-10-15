@@ -3,8 +3,7 @@ import { Outlet, useMatch } from "react-router";
 import { BarChart3 } from "lucide-react";
 import { STATISTICS_TABS } from "@/app/navigation";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardContent } from "@/components/ui/card";
+import { KpiHeroSkeleton } from "@/components/domain/KpiHero";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageSkeleton } from "@/components/layout/PageSkeleton";
@@ -18,16 +17,8 @@ function StatisticsSkeleton() {
   return (
     <div className="space-y-4" aria-busy="true" aria-live="polite">
       <span className="sr-only">Statistiken werden geladen …</span>
-      <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {Array.from({ length: 6 }).map((_, index) => (
-          <Card key={index}>
-            <CardContent className="p-4 sm:p-6">
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="mt-3 h-8 w-32" />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {/* In der Form des Kennzahlkopfs, mit dem jeder Reiter beginnt. */}
+      <KpiHeroSkeleton />
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Section } from "@/components/ui/section";
 import { Badge } from "@/components/ui/badge";
 import { Disclosure } from "@/components/ui/disclosure";
 import { AmountText } from "@/components/money/AmountText";
@@ -82,19 +82,23 @@ export function PositionCard({
   const cagr = ratioToPercent(snapshot.dividend_cagr);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex flex-wrap items-center gap-2">
+    // Ein Abschnitt ohne Rahmen; die vier Kennzahlen auf gedaempfter Flaeche
+    // wie im Kopf der Uebersicht (seit 1.9.0).
+    <Section
+      // Die Datumsmarke gehoert zur Ueberschrift: Jede Zahl galt nur an diesem Tag.
+      title={
+        <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
           {current ? "Position" : "Letzter bekannter Bestand"}
           <Badge variant={current ? "neutral" : "warning"}>
             Stand {formatCalendarDate(snapshot.as_of)}
           </Badge>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+        </span>
+      }
+    >
+      <div className="space-y-3">
         {/* Verkauft: Ueberschrift „Letzter bekannter Bestand" und die gelbe
             Datumsmarke sagen es; ein Satz darunter wiederholte es nur. */}
-        <dl className="grid grid-cols-2 gap-x-4 gap-y-4">
+        <dl className="grid grid-cols-2 gap-1 rounded-2xl bg-muted p-1.5">
           <KeyFigure
             label="Erwartet p. a."
             value={annualDividend ? <AmountText amount={annualDividend} /> : null}
@@ -160,8 +164,8 @@ export function PositionCard({
             />
           </dl>
         </Disclosure>
-      </CardContent>
-    </Card>
+      </div>
+    </Section>
   );
 }
 
@@ -190,13 +194,13 @@ function KeyFigure({
   caption?: React.ReactNode;
 }) {
   return (
-    <div>
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="text-lg font-semibold tabular-amount">
+    <div className="min-w-0 px-2.5 py-2 sm:px-4 sm:py-3">
+      <dt className="truncate text-[0.8125rem] text-muted-foreground">{label}</dt>
+      <dd className="mt-0.5 truncate text-[1.0625rem] font-semibold tracking-[-0.01em] tabular-amount">
         {value ?? <span className="text-muted-foreground">—</span>}
       </dd>
       {caption !== undefined && (
-        <dd className="text-xs text-muted-foreground">{caption}</dd>
+        <dd className="mt-0.5 text-[0.8125rem] text-muted-foreground">{caption}</dd>
       )}
     </div>
   );
