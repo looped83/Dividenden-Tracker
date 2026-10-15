@@ -84,9 +84,7 @@ test("Abbrechen fuehrt dorthin zurueck, wo man herkam", async ({ page }) => {
   // Schmal: Dort fuehrt die Bottom-Navigation auf die eigene Seite.
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/#/kalender");
-  await expect(
-    page.getByRole("heading", { name: "Kalender", level: 1 }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Kalender", level: 1 })).toBeVisible();
 
   await page.getByRole("link", { name: "Neue Dividende erfassen" }).click();
   await expect(page).toHaveURL(/#\/eingaenge\/neu$/);
