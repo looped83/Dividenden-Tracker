@@ -322,15 +322,18 @@ describe("Listenansicht", () => {
     ];
   });
 
-  it("gruppiert nach Zeitraum und gibt jedem spaeteren Monat einen Abschnitt", () => {
+  it("gliedert nur nach Monaten", () => {
     renderPage("agenda");
 
-    expect(screen.getByRole("heading", { name: "Heute", level: 2 })).toBeInTheDocument();
-    // „Später" endet mit dem laufenden Monat; der September traegt seine eigene
-    // Ueberschrift, statt in einer Sammelrubrik zu verschwinden.
+    expect(
+      screen.getByRole("heading", { name: "August 2026", level: 2 }),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "September 2026", level: 2 }),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Heute", level: 2 }),
+    ).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: /^Später/ })).not.toBeInTheDocument();
   });
 
@@ -452,7 +455,7 @@ describe("Erwartete Beträge aus dem Feed", () => {
     // jsdom fuegt zwischen den Teilen keine Leerzeichen ein (kein Layout), der
     // Browser schon; die Pruefung laesst beides zu.
     expect(
-      screen.getByRole("heading", { name: /^Später im August\s*erwartet\s*64,00\s€$/ }),
+      screen.getByRole("heading", { name: /^August 2026\s*erwartet\s*64,00\s€$/ }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: /^September 2026\s*erwartet\s*10,00\s€$/ }),

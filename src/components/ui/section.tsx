@@ -72,7 +72,7 @@ const sectionActionClass = cn(
 );
 
 /**
- * Textlink im Kopf eines Abschnitts („Alle", „Kalender") — in Primärblau,
+ * Textlink im Kopf eines Abschnitts („Alle", „Kalender") — in der Akzentfarbe,
  * weil er eine Aktion ist. 44px hohe Tippfläche bei 20px Schrift.
  */
 export function SectionLink({

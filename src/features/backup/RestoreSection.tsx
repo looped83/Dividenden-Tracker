@@ -163,6 +163,7 @@ export default function RestoreSection() {
               <Label htmlFor="restore-mode">Wie soll eingespielt werden?</Label>
               <Select
                 id="restore-mode"
+                className="rounded-full pl-4"
                 value={mode}
                 onChange={(event) => {
                   setMode(event.target.value as RestoreMode);

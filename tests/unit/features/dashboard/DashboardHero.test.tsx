@@ -204,11 +204,11 @@ describe("DashboardHero — Ziele im Kontext", () => {
 
   it("nennt das Monatsziel im Feld des Monats, nur im laufenden Jahr", () => {
     const { unmount } = renderHero(2026, PAYMENTS, [MONATSZIEL_JULI]);
-    expect(screen.getByText("25 % vom Monatsziel")).toBeInTheDocument();
+    expect(screen.getByText("25 % vom Ziel")).toBeInTheDocument();
     unmount();
 
     renderHero(2024, PAYMENTS, [JAHRESZIEL_2024, MONATSZIEL_JULI]);
-    expect(screen.queryByText(/vom Monatsziel$/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^\d+ % vom Ziel$/)).not.toBeInTheDocument();
   });
 
   it('zeigt bei „Alle Jahre" kein Ziel', () => {
@@ -245,10 +245,10 @@ describe("DashboardHero — Diagramm im Kopf", () => {
 
     chart.focus();
     await user.keyboard("{Home}{ArrowRight}");
-    // Ende Februar: 40 €, Vorjahr bis Ende Februar 0 € → „neu".
-    expect(screen.getByText("bis Ende Februar 2026")).toBeInTheDocument();
+    // Ende Februar: 40 €, Vorjahr bis Februar 0 € → „neu".
+    expect(screen.getByText("Dividenden bis Februar 2026")).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "Zahlungen bis Ende Februar 2026 anzeigen" }),
+      screen.getByRole("link", { name: "Zahlungen bis Februar 2026 anzeigen" }),
     ).toHaveTextContent(/40,00\s?€/);
 
     await user.keyboard("{Escape}");
@@ -266,7 +266,7 @@ describe("DashboardHero — Diagramm im Kopf", () => {
     // Punkte: Januar bis Juli (August ff. haben noch nicht begonnen).
     expect(chart).toHaveAttribute("aria-valuemax", "6");
     await user.keyboard("{Home}{ArrowRight}{ArrowRight}{ArrowRight}{ArrowRight}");
-    expect(screen.getByText("Mai 2026")).toBeInTheDocument();
+    expect(screen.getByText("Dividenden Mai 2026")).toBeInTheDocument();
     expect(screen.getByText("+33,3 %", { exact: false })).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "Zahlungen Mai 2026 anzeigen" }),

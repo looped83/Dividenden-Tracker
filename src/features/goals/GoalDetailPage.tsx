@@ -11,10 +11,11 @@ import { useToday } from "@/lib/hooks/useToday";
 import { computeGoalProgress } from "@/lib/goals";
 import { useDeleteGoal, useGoal, useGoalProgressPayments } from "./hooks";
 import { GoalProgressBar } from "./GoalProgressBar";
-import { GoalTypeMark } from "./GoalTypeMark";
+import { GoalMark } from "./GoalMark";
 import { GoalFormDialog } from "./GoalFormDialog";
 import { DeleteGoalDialog } from "./DeleteGoalDialog";
 import {
+  autoGoalTitle,
   drillDownHref,
   goalDisplayTitle,
   goalTypeBadgeLabel,
@@ -113,6 +114,17 @@ export function GoalDetailPage() {
       ? { label: "Übertroffen um", value: money(progress.overshoot) }
       : { label: "Noch bis zum Ziel", value: money(progress.remaining) };
 
+  const title = goalDisplayTitle(goal);
+  const timing = isUpcoming ? startsAtLabel(goal) : timeProgressText(progress);
+  // Zielart und Zeitraum nur bei eigenem Titel: Der automatische Titel nennt
+  // beides schon („Monatsziel November 2026"), die Zeile wiederholte ihn sonst.
+  // Ein Satz statt zweier Teile: Getrennt blieb der Punkt beim Umbruch allein
+  // am Zeilenende stehen.
+  const subtitle =
+    title === autoGoalTitle(goal)
+      ? timing
+      : `${goalTypeBadgeLabel(goal)}\u00A0· ${timing}`;
+
   return (
     <div className="space-y-6">
       <DetailHeader
@@ -142,18 +154,12 @@ export function GoalDetailPage() {
             </Button>
           </>
         }
-        leading={<GoalTypeMark goal={goal} className="mt-0.5" />}
-        title={goalDisplayTitle(goal)}
+        leading={<GoalMark className="mt-0.5" />}
+        title={title}
         badge={
           <Badge variant={badgeVariantByTone[tone]}>{statusLabel(progress.status)}</Badge>
         }
-        // Die Zielart als Text (nur hier; Karte und Uebersicht tragen sie als
-        // Zeichen), dazu wie weit der Zeitraum ist.
-        // Ein Satz statt dreier Teile: Getrennt blieb der Punkt beim Umbruch
-        // allein am Zeilenende stehen.
-        subtitle={`${goalTypeBadgeLabel(goal)}\u00A0· ${
-          isUpcoming ? startsAtLabel(goal) : timeProgressText(progress)
-        }`}
+        subtitle={subtitle}
       />
 
       {/* Ohne Kartenrahmen wie der Kopf der Uebersicht: Balken, darunter die

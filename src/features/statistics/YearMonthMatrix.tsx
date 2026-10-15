@@ -143,8 +143,8 @@ export function YearMonthMatrix() {
 /**
  * Toenung einer Zelle nach der Hoehe ihres Betrags — die fruehere Heatmap.
  * Wurzelskaliert, damit auch kleine Monate sichtbar bleiben; in
- * Vordergrundfarbe mit hoechstens 22 % Deckkraft (seit 1.9.0 grau statt blau:
- * Blau heisst Aktion, und die Tabelle soll ruhig bleiben wie die Uebersicht).
+ * Vordergrundfarbe mit hoechstens 22 % Deckkraft (seit 1.9.0 grau statt Akzentfarbe:
+ * sie heisst Aktion, und die Tabelle soll ruhig bleiben wie die Uebersicht).
  * Nur in der Ansicht „Summe": Veraenderung und Aufgelaufenes haben eine eigene
  * Skala, die eine gemeinsame Farbe verfaelschen wuerde.
  */

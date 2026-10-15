@@ -4,7 +4,6 @@ import { DEPOT_TABS } from "@/app/navigation";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageSkeleton } from "@/components/layout/PageSkeleton";
 import { TabNav } from "@/components/layout/TabNav";
-import { NewAssetButton } from "@/features/securities/SecurityFormDialog";
 
 /**
  * Rahmen des Depotbereichs mit Unterbereichs-Navigation, analog zu Statistik
@@ -23,21 +22,24 @@ import { NewAssetButton } from "@/features/securities/SecurityFormDialog";
  * einzige, der eine Frage des Depots beantwortete statt eine der Historie. Ihr
  * alter Pfad leitet dauerhaft hierher um (router.tsx).
  *
- * Die Hauptaktion steht in der Kopfzeile und gilt fuer den ganzen Bereich: Ein
- * neues Asset anzulegen ist auch aus der Entwicklung heraus sinnvoll, und der
- * Knopf traegt seinen Dialog selbst.
+ * **Der Kopf traegt den Filter des Reiters** (seit 1.11.0), wie die
+ * Jahresauswahl auf der Uebersicht: Assets den Filterschalter, die Entwicklung
+ * die Assetauswahl (`DepotHeaderActions`). „Neues Asset" steht im Reiter Assets
+ * neben der Ueberschrift der Liste — in der Entwicklung hat es keinen Bezug.
  */
 export function DepotPage() {
+  // Die Stelle im Kopf, in die der Reiter seine Aktion setzt.
+  const [actions, setActions] = React.useState<HTMLDivElement | null>(null);
   return (
     <div className="space-y-6">
-      <PageHeader title="Depot" actions={<NewAssetButton />} />
+      <PageHeader title="Depot" actions={<div ref={setActions} className="contents" />} />
 
       <TabNav label="Depotbereiche" tabs={DEPOT_TABS} />
 
       {/* Eigener Ladezustand: Beim Reiterwechsel bleiben Kopfzeile und Reiter
           stehen, nur der Inhalt darunter wartet. */}
       <React.Suspense fallback={<PageSkeleton header={false} />}>
-        <Outlet />
+        <Outlet context={actions} />
       </React.Suspense>
     </div>
   );

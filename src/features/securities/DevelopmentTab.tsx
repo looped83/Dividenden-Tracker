@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { KpiHero, KpiHeroSkeleton, TrendPill } from "@/components/domain/KpiHero";
 import { AmountText } from "@/components/money/AmountText";
 import { EntitySelect, type EntityOption } from "@/components/domain/EntitySelect";
-import { FilterBar, FilterField, FilterReset } from "@/components/ui/filter-bar";
+import { DepotHeaderActions } from "./DepotHeaderActions";
 import {
   EUR,
   Money,
@@ -132,27 +132,21 @@ export function DevelopmentTab() {
       {/* Nur **ein** Regler, und zwar der einzige, der hier auf beiden Seiten
           des Vergleichs wirkt. Jahr und Depotkonto waeren wirkungslos (siehe
           `DevelopmentView`), und ein wirkungsloses Bedienelement ist schlimmer
-          als keines. */}
-      <FilterBar>
-        <FilterField id="depot-development-asset" label="Asset">
-          <EntitySelect
-            id="depot-development-asset"
-            options={assetOptions}
-            value={filter.securityId ?? ""}
-            onChange={(value) => {
-              setFilter({ ...filter, securityId: value || null });
-            }}
-            allLabel="Alle Assets"
-          />
-        </FilterField>
-        {filter.securityId !== null && (
-          <FilterReset
-            onClick={() => {
-              setFilter(EMPTY_STATISTICS_FILTER);
-            }}
-          />
-        )}
-      </FilterBar>
+          als keines. Er steht im Seitenkopf wie die Jahresauswahl der
+          Uebersicht; „Alle Assets" setzt ihn zurueck. */}
+      <DepotHeaderActions>
+        <EntitySelect
+          id="depot-development-asset"
+          aria-label="Asset"
+          className="w-auto max-w-[12rem] truncate rounded-full pl-4 font-semibold sm:max-w-xs"
+          options={assetOptions}
+          value={filter.securityId ?? ""}
+          onChange={(value) => {
+            setFilter({ ...EMPTY_STATISTICS_FILTER, securityId: value || null });
+          }}
+          allLabel="Alle Assets"
+        />
+      </DepotHeaderActions>
 
       <DevelopmentView
         allPayments={data.payments}
@@ -450,8 +444,9 @@ export function DevelopmentView({
         caption={
           growth ? (
             <>
-              Zuwachs <AmountText amount={growth} showSign /> gegenüber den letzten zwölf
-              Monaten
+              {/* Kurz, damit die Zeile auf dem Telefon nicht umbricht; das
+                  Fenster nennt die Kachel „Erhalten (12 Monate)" darunter. */}
+              <AmountText amount={growth} showSign /> ggü. letzten 12 Monaten
             </>
           ) : undefined
         }
@@ -512,19 +507,26 @@ export function DevelopmentView({
             initialSort={{ key: "growth", direction: "desc" }}
             caption="Erwartete und erhaltene Dividenden je gehaltenem Asset"
             emptyMessage="Kein Asset im aktuellen Depotstand."
-            // Auf dem Telefon eine Zusatzzeile statt drei beschrifteter:
-            // erwartet steht als Kennzahl rechts, darunter erhalten und der
-            // Zuwachs.
+            // Auf dem Telefon eine Zusatzzeile statt drei beschrifteter. Rechts
+            // steht der Zuwachs, nach dem die Liste sortiert ist; darunter
+            // beide Seiten der Rechnung, jede mit ihrem Namen. Zuvor stand
+            // rechts die Erwartung ohne Beschriftung und der Zuwachs als
+            // nackte Zahl hinter „erhalten" — was welche Zahl war, musste man
+            // raten.
             listSummary={{
+              value: (row) =>
+                row.growth ? (
+                  <>
+                    <span className="sr-only">Zuwachs </span>
+                    <AmountText amount={row.growth} showSign />
+                  </>
+                ) : (
+                  <span className="text-muted-foreground">—</span>
+                ),
               meta: (row) => (
                 <>
-                  erhalten <AmountText amount={row.received} />
-                  {row.growth && (
-                    <>
-                      {" · "}
-                      <AmountText amount={row.growth} showSign />
-                    </>
-                  )}
+                  erwartet {row.expected ? <AmountText amount={row.expected} /> : "—"}
+                  {" · "}erhalten <AmountText amount={row.received} />
                 </>
               ),
             }}

@@ -67,7 +67,7 @@ describe("Zieltitel und Zeitraumbeschriftung", () => {
     expect(periodLabel(goal({ goalType: "monthly", month: 12 }))).toBe("Dezember 2027");
     expect(startsAtLabel(goal({ year: 2028 }))).toBe("Beginnt am 01.01.2028");
     expect(startsAtLabel(goal({ goalType: "monthly", month: 12, year: 2027 }))).toBe(
-      "Beginnt im Dezember 2027",
+      "Beginnt am 01.12.2027",
     );
   });
 });

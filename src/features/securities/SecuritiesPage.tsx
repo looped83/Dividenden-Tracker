@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import {
   Briefcase,
   Pencil,
+  Plus,
   RotateCcw,
   Trash2,
   Archive as ArchiveIcon,
@@ -16,6 +17,7 @@ import {
 } from "@/features/securities/PortfolioImportDialog";
 import { PortfolioSummary } from "@/features/securities/PortfolioSummary";
 import { SecurityFormDialog } from "@/features/securities/SecurityFormDialog";
+import { DepotHeaderActions } from "@/features/securities/DepotHeaderActions";
 import { DeleteSecurityDialog } from "@/features/securities/DeleteSecurityDialog";
 import { AmountText } from "@/components/money/AmountText";
 import { formatPercent, type DecimalInstance } from "@/lib/money";
@@ -237,6 +239,10 @@ export function SecuritiesPage() {
       {/* Kennzahlen des Depotstands, sofern einer importiert ist. Sie stehen
           bewusst ueber der Liste: Die Kacheln beantworten „wie steht mein Depot
           insgesamt", die Liste „woraus besteht es". */}
+      <DepotHeaderActions>
+        <FilterToggle disclosure={filterDisclosure} />
+      </DepotHeaderActions>
+
       <PortfolioSummary snapshots={snapshots} onImport={openPortfolioImport} />
 
       {/* Filterleiste in derselben Optik wie Dividenden und Statistik. Die
@@ -253,8 +259,18 @@ export function SecuritiesPage() {
           visible.length !== shownTotal && {
             description: `${formatCountNumber(visible.length)} von ${formatCountNoun(shownTotal, "Asset", "Assets")}`,
           })}
-        action={<FilterToggle disclosure={filterDisclosure} />}
-        actionClassName="-my-2 shrink-0 sm:hidden"
+        // „Neues Asset" steht bei der Liste, die es verlaengert; der
+        // Filterschalter im Seitenkopf (`DepotHeaderActions`).
+        action={
+          <Button
+            variant="outline"
+            onClick={() => {
+              setDialog({ open: true, security: null });
+            }}
+          >
+            <Plus /> Neues Asset
+          </Button>
+        }
       >
         <div className="space-y-6">
           <FilterBar disclosure={filterDisclosure} className="pt-2">
@@ -617,6 +633,12 @@ function AssetItem({ row }: { row: AssetRow }) {
   const { security, position } = row;
   const payout = payoutLabel(security);
   const gain = position?.gain ?? null;
+  // In der zweiten Zeile: Im Titel liefe das Abzeichen mit dem Namen aus.
+  const archivedBadge = security.archived_at && (
+    <Badge variant="neutral" className="mr-2 align-middle">
+      Archiviert
+    </Badge>
+  );
 
   return (
     <li>
@@ -624,13 +646,9 @@ function AssetItem({ row }: { row: AssetRow }) {
         <Link to={`/depot/${security.id}`}>
           <span className="min-w-0 flex-1 space-y-0.5">
             <span className="flex items-baseline justify-between gap-3">
-              <span className="line-clamp-2 min-w-0 font-medium [overflow-wrap:anywhere]">
+              {/* Eine Zeile, lange Namen laufen aus (`ListItemBody`). */}
+              <span className="min-w-0 flex-1 truncate-fade font-medium">
                 {security.name}
-                {security.archived_at && (
-                  <Badge variant="neutral" className="ml-2 align-middle">
-                    Archiviert
-                  </Badge>
-                )}
               </span>
               {position?.marketValue && (
                 <AmountText
@@ -643,6 +661,7 @@ function AssetItem({ row }: { row: AssetRow }) {
               {position ? (
                 <>
                   <span className="min-w-0 truncate">
+                    {archivedBadge}
                     {security.ticker && <>{security.ticker} · </>}
                     {position.annualDividend ? (
                       <>
@@ -669,6 +688,7 @@ function AssetItem({ row }: { row: AssetRow }) {
                 </>
               ) : (
                 <span className="min-w-0 truncate">
+                  {archivedBadge}
                   {[row.depotName, payout === "—" ? null : payout]
                     .filter(Boolean)
                     .join(" · ") || "—"}

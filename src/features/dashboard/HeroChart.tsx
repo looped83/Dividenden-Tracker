@@ -42,11 +42,16 @@ const num = (money: Money): number => money.toChartNumber();
  *
  * **Tastatur und Screenreader.** Das Diagramm ist ein Schieberegler über die
  * Punkte (`role="slider"`): Pfeiltasten, Pos1/Ende, Escape setzt zurück. Der
- * Wert wird über `aria-valuetext` angesagt; die vollständigen Zahlen stehen
- * zusätzlich in der Datentabelle darunter (§17).
+ * Wert wird über `aria-valuetext` angesagt. Eine Datentabelle steht hier seit
+ * 1.11.0 nicht mehr: Jeder Punkt ist ansteuerbar, und die Statistik führt
+ * dieselben Zahlen als Tabelle (§17).
  *
- * Farben: aktuelles Jahr in Vordergrundfarbe, Vorjahr in `--series-prior` und
- * — als Linie — gestrichelt. Die Identität trägt nie die Farbe allein.
+ * „Alle Jahre" ist eine Linie: Gefragt ist der Verlauf über viele Jahre, und
+ * fünfzehn Säulen wurden auf dem Telefon zu Strichen.
+ *
+ * Farben: der aktuelle Zeitraum in der Akzentfarbe (Orange, seit 1.11.0 — die
+ * Hauptaussage der Seite), als Linie wie als Säule; Vorjahr in
+ * `--series-prior` und — als Linie — gestrichelt. Die Identität trägt nie die Farbe allein.
  */
 export function HeroChart({
   series,
@@ -173,6 +178,8 @@ export function HeroChart({
               height={height}
               active={active}
             />
+          ) : series.kind === "years" ? (
+            <Years series={series} x={x} width={width} height={height} active={active} />
           ) : (
             <Bars series={series} x={x} width={width} height={height} active={active} />
           )}
@@ -246,7 +253,7 @@ function Cumulative({
       <path
         d={path(line)}
         fill="none"
-        stroke="var(--foreground)"
+        stroke="var(--primary)"
         strokeWidth={2.5}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -275,7 +282,7 @@ function Cumulative({
             cx={x(point.x)}
             cy={y(num(point.value))}
             r={5}
-            fill="var(--foreground)"
+            fill="var(--primary)"
             stroke="var(--background)"
             strokeWidth={2}
           />
@@ -285,11 +292,99 @@ function Cumulative({
           cx={x(end.x)}
           cy={y(end.value)}
           r={4.5}
-          fill="var(--foreground)"
+          fill="var(--primary)"
           stroke="var(--background)"
           strokeWidth={2}
         />
       )}
+    </>
+  );
+}
+
+/** Mindestbreite je Jahresbeschriftung („2026" in 11 px samt Luft). */
+const YEAR_TICK_WIDTH = 36;
+
+function Years({
+  series,
+  x,
+  height,
+  active,
+}: Geometry & { series: Extract<HeroSeries, { kind: "years" }> }) {
+  const { bars, points } = series;
+  const max = Math.max(...bars.map((bar) => num(bar.value)), 1) * 1.06;
+  const y = (value: number) => TOP + (1 - value / max) * (height - TOP - 2);
+  const coords = bars.map((bar, index) => ({
+    x: x(index + 0.5),
+    y: y(Math.max(0, num(bar.value))),
+  }));
+  const path = coords
+    .map((p, i) => `${i ? "L" : "M"}${p.x.toFixed(1)},${p.y.toFixed(1)}`)
+    .join("");
+  // Passen nicht alle Jahre nebeneinander, steht jedes n-te — gezählt vom
+  // letzten Jahr aus, damit das laufende Jahr immer beschriftet ist.
+  const step = Math.max(1, Math.ceil(YEAR_TICK_WIDTH / (x(1) - x(0))));
+  const last = bars.length - 1;
+  const marked = active ?? last;
+  const point = points[marked];
+  const dot = coords[marked];
+
+  return (
+    <>
+      <line
+        x1={x(0)}
+        x2={x(bars.length)}
+        y1={y(0)}
+        y2={y(0)}
+        stroke="var(--border)"
+        strokeWidth={1}
+      />
+      {active !== null && (
+        <line
+          x1={x(point.x)}
+          x2={x(point.x)}
+          y1={TOP - 8}
+          y2={y(0)}
+          stroke="var(--muted-foreground)"
+          strokeWidth={1}
+        />
+      )}
+      <path
+        d={path}
+        fill="none"
+        stroke="var(--primary)"
+        strokeWidth={2.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle
+        cx={dot.x}
+        cy={dot.y}
+        r={active === null ? 4.5 : 5}
+        fill="var(--primary)"
+        stroke="var(--background)"
+        strokeWidth={2}
+      />
+      {bars.map((bar, index) => {
+        const strong = index === marked;
+        // Ein gewähltes Jahr zwischen zwei Beschriftungen verdrängt seine
+        // Nachbarn, statt sie zu überdecken.
+        if (!strong && ((last - index) % step !== 0 || Math.abs(index - marked) < step)) {
+          return null;
+        }
+        return (
+          <text
+            key={bar.year}
+            x={x(index + 0.5)}
+            y={height + LABELS - 6}
+            textAnchor="middle"
+            fontSize={11}
+            fontWeight={strong ? 700 : 500}
+            fill={strong ? "var(--foreground)" : "var(--muted-foreground)"}
+          >
+            {bar.year}
+          </text>
+        );
+      })}
     </>
   );
 }
@@ -299,37 +394,20 @@ function Bars({
   x,
   height,
   active,
-}: Geometry & { series: Exclude<HeroSeries, { kind: "cumulative" }> }) {
-  const groups =
-    series.kind === "years"
-      ? series.bars.map((bar) => ({
-          key: String(bar.year),
-          month: 0,
-          tick: String(bar.year),
-          prior: null,
-          current: bar.value,
-          emphasis: bar.partial,
-        }))
-      : series.months.map((bar) => ({
-          key: String(bar.month),
-          month: bar.month,
-          tick: (MONTH_NAMES_DE_SHORT[bar.month - 1] ?? "").charAt(0),
-          prior: bar.prior,
-          current: bar.current,
-          emphasis: false,
-        }));
+}: Geometry & { series: Extract<HeroSeries, { kind: "monthly" }> }) {
+  const groups = series.months.map((bar) => ({
+    key: String(bar.month),
+    month: bar.month,
+    tick: (MONTH_NAMES_DE_SHORT[bar.month - 1] ?? "").charAt(0),
+    prior: bar.prior,
+    current: bar.current,
+  }));
   const slots = groups.length;
   const slotWidth = x(1) - x(0);
-  const single = series.kind === "years";
-  const barWidth = single
-    ? Math.min(48, slotWidth * 0.42)
-    : Math.min(12, slotWidth * 0.3);
+  const barWidth = Math.min(12, slotWidth * 0.3);
   const max =
     Math.max(
-      ...groups.flatMap((g) => [
-        g.prior ? num(g.prior) : 0,
-        g.current ? num(g.current) : 0,
-      ]),
+      ...groups.flatMap((g) => [num(g.prior), g.current ? num(g.current) : 0]),
       1,
     ) * 1.08;
   const y = (value: number) => 6 + (1 - value / max) * (height - 6);
@@ -338,10 +416,9 @@ function Bars({
       ? null
       : (groups[Math.round((series.points[active]?.x ?? 0) - 0.5)]?.key ?? null);
   // Der aktuelle Monat steht in der Beschriftung kräftiger.
-  const thisMonth =
-    series.kind === "monthly"
-      ? [...series.months].reverse().find((bar) => bar.current !== null)?.month
-      : undefined;
+  const thisMonth = [...series.months]
+    .reverse()
+    .find((bar) => bar.current !== null)?.month;
 
   const rect = (left: number, value: number, fill: string) => {
     const top = y(Math.max(0, value));
@@ -351,7 +428,7 @@ function Bars({
         y={top}
         width={barWidth}
         height={Math.max(0, y(0) - top)}
-        rx={single ? 4 : 2}
+        rx={2}
         fill={fill}
       />
     );
@@ -369,25 +446,15 @@ function Bars({
       />
       {groups.map((group, index) => {
         const center = x(index + 0.5);
-        const strong =
-          group.emphasis || (series.kind === "monthly" && group.month === thisMonth);
+        const strong = group.month === thisMonth;
         return (
           <g
             key={group.key}
             className="transition-opacity motion-reduce:transition-none"
             opacity={activeKey === null || activeKey === group.key ? 1 : 0.3}
           >
-            {single ? (
-              group.current &&
-              rect(center - barWidth / 2, num(group.current), "var(--foreground)")
-            ) : (
-              <>
-                {group.prior &&
-                  rect(center - barWidth - 1.5, num(group.prior), "var(--series-prior)")}
-                {group.current &&
-                  rect(center + 1.5, num(group.current), "var(--foreground)")}
-              </>
-            )}
+            {rect(center - barWidth - 1.5, num(group.prior), "var(--series-prior)")}
+            {group.current && rect(center + 1.5, num(group.current), "var(--primary)")}
             <text
               x={center}
               y={height + LABELS - 6}

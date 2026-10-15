@@ -27,20 +27,23 @@ Umsetzung als CSS-Variablen (Tailwind-4-`@theme`), Hell- und Dunkelmodus über
 | `--input` | Rahmen von Bedienelementen | Grau ≥ 3:1 gegen jede Nachbarfläche | dito, heller gesetzt |
 | `--foreground` | Text | fast Schwarz | helles Grau |
 | `--muted-foreground` | Sekundärtext, Labels | Grau ≥ 4,5:1 Kontrast | dito |
-| `--primary` | Aktionen: Erfassen, Schaltflächen, Links | gedecktes Tiefblau | helleres Blau |
+| `--primary` | Aktionen: Erfassen, Schaltflächen, Links | gebranntes Orange `#ba5006` (4,96:1 auf Weiß) | helles Orange `#fd923e`, dunkle Schrift darauf |
 | `--accent` | Hover, aktive Navigation (mit halbfetter Schrift) | neutrales Hellgrau | neutrale Stufe über der Karte |
 | `--positive` | Zuwächse, Eingänge | gedecktes Grün | angepasst, Kontrast AA |
 | `--negative` | Korrekturen, Rückgänge, Fehler | gedecktes Rot | angepasst |
-| `--warning` | Warnungen, mögliche Duplikate | Bernstein | angepasst |
+| `--warning` | Warnungen, mögliche Duplikate | Gelb (seit 1.11.0, zuvor Bernstein — zu nah am Orange) | angepasst |
 | `--chart-1…6` | Diagrammserien | sechs Farbtöne in fester Reihenfolge (siehe unten) | eigene Dunkel-Stufen, keine Umkehrung |
 
 Regeln: Bedeutung nie durch Farbe allein (immer Text/Symbol dazu, z. B. Vorzeichen);
 alle Text-/Hintergrund-Paare ≥ WCAG AA (4,5:1; große Zahlen 3:1).
 
-**Schwarz für Daten, Blau für Aktionen, Grün/Rot für Veränderung** (seit 1.7.0). Die
-Neutraltöne tragen keinen Blaustich mehr (Chroma ≤ 0,006). Blau steht nur dort, wo etwas
-passiert — der aktive Navigationspunkt ist ein Ort und wird über Vordergrundfarbe und
-Gewicht markiert, nicht über Blau. Gemessen hell: Vordergrund 18,1:1 auf der Seite,
+**Schwarz für Daten, Orange für Aktionen, Grün/Rot für Veränderung** (seit 1.7.0; Orange seit
+1.11.0, zuvor Blau). Die Neutraltöne tragen keinen Blaustich mehr (Chroma ≤ 0,006). Orange
+steht nur dort, wo etwas passiert — der aktive Navigationspunkt ist ein Ort und wird über
+Vordergrundfarbe und Gewicht markiert, nicht über die Akzentfarbe. Die Warnfarbe ist deshalb
+Gelb statt Bernstein: Neben dem Orange sähe „Storniert" sonst wie eine Aktion aus. Einzige Ausnahme
+von „Orange heißt Aktion": das Diagramm der Übersicht — Linie und Säulen des aktuellen Zeitraums
+sind die Hauptaussage der Seite und tragen die Markenfarbe, das Vorjahr bleibt grau. Gemessen hell: Vordergrund 18,1:1 auf der Seite,
 Sekundärtext 6,0:1 auf der Seite und 5,1:1 auf dem Akzent, `--input` ≥ 3,1:1 gegen jede
 Nachbarfläche.
 
@@ -144,10 +147,10 @@ Eigene zusammengesetzte Komponenten (fachlich):
 |---|---|
 | `AmountText` | Betragsdarstellung: tabular-nums, Währung, Vorzeichen, Farbe (semantisch), niemals Rundung in der Komponente |
 | `KpiHero` / `TrendPill` | **Ein** Kennzahlkopf für alle Bereiche (`components/domain/KpiHero.tsx`): **eine** Hauptzahl groß (32 px), daneben optional der Vergleich als Marke (`TrendPill`: Pfeil **und** Vorzeichen, Bedeutung im `title` und für Sprachausgaben), darunter eine Unterzeile, optional ein Zusatz (Zielbalken) und eine Leiste mit bis zu drei Nebenkennzahlen, durch Linien getrennt. Er ersetzt das frühere Raster gleich großer Kacheln (`StatCard`/`StatGrid`): Vier bis sechs Kacheln kosteten auf dem Telefon 300–700 px, bevor der Inhalt begann, und ließen offen, welche Zahl zählt. Jede Seite beantwortet zuerst **ihre** Frage — Übersicht: Dividenden des Zeitraums; Kalender: nächste 30 Tage; Depot: Depotwert; Statistik: Gesamtsumme; Vergleich: Veränderung; Entwicklung: erwartet p. a.; Assetseite: erhalten insgesamt. Ein Drill-down macht die **ganze Fläche** zur Tippfläche (Link auf dem Wert, per `::after` gedehnt; für die Hauptzahl der obere Teil, für jede Nebenkennzahl ihr Feld) und trägt einen sprechenden Namen (`drillLabel`). Ladegerüst in derselben Form: `KpiHeroSkeleton` |
-| `ListGroup` / `ListRow` / `ListItemBody` / `ListSection` | **Eine Listenform** für Einträge (`components/ui/list.tsx`): Zeilen mit Trennlinien statt einzelner Karten, seit 1.9.0 überall ohne Rahmen (die frühere Fassung `inset` ist die einzige). Zeile 1 der Name (höchstens zwei Zeilen), Zeile 2 Angaben links und Wert rechts; `asChild` macht die ganze Zeile zur Tippfläche. `ListSection` gruppiert (Monat, „Diese Woche") mit Kennzahl im Kopf **Datenlisten ohne Pfeil am Rand und ohne Kalendersymbol vor dem Datum** (Eingänge, Termine, Assets, Statistik, Datenqualität): Beide standen in jeder Zeile, sagten nichts, was Tippfläche und Inhalt nicht schon sagen, und nahmen dem Depot die Breite („Trade Repub…"). `chevron` bleibt einzelnen Navigationszeilen („Gesamt seit März 2019") vorbehalten |
-| `Section` / `SectionLink` | Abschnitt **ohne Kartenrahmen** (`components/ui/section.tsx`, seit 1.7.0): Überschrift 19 px, rechts höchstens eine Aktion — ein Textlink in Primärblau mit Pfeil (`SectionLink`, „Alle", „Kalender") oder ein Umschalter —, darunter optional eine Zeile Beschreibung. Abschnitte trennen sich durch Abstand (40 px, ab `lg` 48 px) und Überschrift, nicht durch Rahmen. **Wann Abschnitt, wann Karte:** Lese-Seiten gliedern mit Abschnitten (Übersicht, Statistik, Depot-Entwicklung, Assetseite, Ergebnisse des Zeitraumvergleichs). Seit 1.9.0 gliedern auch Einstellungen, Zeitraumvergleich und Detailseiten mit Abschnitten; Karten mit Rahmen bleiben Formularen in Dialogen, dem Import-Assistenten und den Dubletten-Paaren vorbehalten, gleichartige Kacheln (Ziele, „Mehr") stehen auf gedämpfter Fläche (siehe „Eine Linie für alle Seiten") |
+| `ListGroup` / `ListRow` / `ListItemBody` / `ListSection` | **Eine Listenform** für Einträge (`components/ui/list.tsx`): Zeilen mit Trennlinien statt einzelner Karten, seit 1.9.0 überall ohne Rahmen (die frühere Fassung `inset` ist die einzige). Zeile 1 der Name (seit 1.11.0 **eine** Zeile, lange Namen laufen am Ende aus — `truncate-fade`; Abzeichen wie „Storniert" stehen deshalb in Zeile 2), Zeile 2 Angaben links und Wert rechts; `asChild` macht die ganze Zeile zur Tippfläche. `ListSection` gruppiert (Monat) mit Kennzahl im Kopf **Datenlisten ohne Pfeil am Rand und ohne Kalendersymbol vor dem Datum** (Eingänge, Termine, Assets, Statistik, Datenqualität): Beide standen in jeder Zeile, sagten nichts, was Tippfläche und Inhalt nicht schon sagen, und nahmen dem Depot die Breite („Trade Repub…"). `chevron` bleibt einzelnen Navigationszeilen („Gesamt seit März 2019") vorbehalten |
+| `Section` / `SectionLink` | Abschnitt **ohne Kartenrahmen** (`components/ui/section.tsx`, seit 1.7.0): Überschrift 19 px, rechts höchstens eine Aktion — ein Textlink in der Akzentfarbe mit Pfeil (`SectionLink`, „Alle", „Kalender") oder ein Umschalter —, darunter optional eine Zeile Beschreibung. Abschnitte trennen sich durch Abstand (40 px, ab `lg` 48 px) und Überschrift, nicht durch Rahmen. **Wann Abschnitt, wann Karte:** Lese-Seiten gliedern mit Abschnitten (Übersicht, Statistik, Depot-Entwicklung, Assetseite, Ergebnisse des Zeitraumvergleichs). Seit 1.9.0 gliedern auch Einstellungen, Zeitraumvergleich und Detailseiten mit Abschnitten; Karten mit Rahmen bleiben Formularen in Dialogen, dem Import-Assistenten und den Dubletten-Paaren vorbehalten, gleichartige Kacheln (Ziele, „Mehr") stehen auf gedämpfter Fläche (siehe „Eine Linie für alle Seiten") |
 | `SegmentedControl` | Umschalter zwischen wenigen Zuständen (Optionsgruppe). `variant="pill"` ist die leise Fassung für Abschnittsköpfe (Diagrammsicht, Assets/Depots): gedämpfte Fläche, 32 px hoch, Tippfläche per Pseudo-Element 44 px |
-| `PaymentListItem` | Ein Dividendeneingang als Zeile — dieselbe in Dividendenliste, Übersicht und Assetseite: Name, Datum · Depot, Betrag (Depot wird gekürzt, nie umbrochen). In Monatsgruppen nur „11.10." (`formatDayMonth`) — Monat und Jahr nennt die Überschrift, Sprachausgaben bekommen das Jahr dennoch mit. Auf der Assetseite ist das Datum der Titel |
+| `PaymentListItem` | Ein Dividendeneingang als Zeile — dieselbe in Dividendenliste, Übersicht und Assetseite und seit 1.11.0 in der Form eines Kalendertermins: links das Datumsfeld (`ListDateTile`, Tag und Monat), daneben Name, darunter Wochentag · Depot und rechts der Betrag (Depot wird gekürzt, nie umbrochen). Ohne Monatsgruppen steht statt des Wochentags das Jahr; Sprachausgaben hören das vollständige Datum. Auf der Assetseite ist das Depot der Titel |
 | `PaymentTable` / Liste | Tabelle ab `md` (Aktionen je Zeile) bzw. `PaymentListItem`-Liste auf dem Telefon, nach Datum sortiert nach Monat gruppiert mit Monatssumme im Kopf; darüber Anzahl und Summe der Auswahl; „weitere laden" statt Blättern (die geladene Menge steht in der Adresse, der Weg zurück findet sie wieder) |
 | `DetailHeader` | **Ein** Kopf für Zahlung, Asset und Ziel: Rückweg links und Symbolaktionen rechts in einer Zeile, darunter Titel samt Zustand (nur der Sonderfall), Zusatzzeile und — wo es eine gibt — die Kennzahl (Betrag der Zahlung). Bearbeiten, Stornieren/Archivieren, Löschen stehen hier und nicht in den Listen: Eine Zeile ist **eine** Tippfläche |
 | `SegmentedControl` | Umschalter zwischen wenigen Zuständen (Erscheinungsbild, Kalenderansicht, Verlauf nach Jahren/Monaten) — immer Symbol **und** Text, als Optionsgruppe (`radiogroup`); auf dem Telefon in voller Breite |
@@ -171,7 +174,7 @@ anders gebaut wirkt als die nächste:
 
 - **Abschnitte statt Karten.** Auch Einstellungen, Depotkonten, Import, Datensicherung,
   Zahlungs- und Zieldetail gliedern mit `Section` (40 px Abstand, ab `lg` zwei Spalten wo
-  es passt). Aktionen im Abschnittskopf sind Textaktionen in Primärblau — `SectionLink`
+  es passt). Aktionen im Abschnittskopf sind Textaktionen in der Akzentfarbe — `SectionLink`
   zum Weitergehen, `SectionButton` zum Anlegen oder Aufklappen („Neues Depot",
   „Anzeigen"); eine gefüllte Schaltfläche je Abschnitt war lauter als die Überschrift.
 - **Gedämpfte Flächen statt Rahmen** für Kennzahlen und gleichartige Kacheln:
@@ -197,11 +200,13 @@ anders gebaut wirkt als die nächste:
   Liste auf dem Telefon steht rechts in Inhaltsbreite. Der Zeitraumvergleich ist eine
   Pillenzeile, die sich als Satz liest („Jahr gegen Jahr · 2026 · gegen 2025").
 - **Gruppenüberschriften sind Abschnittsüberschriften** (`ListSection` = `Section`):
-  Monate der Dividenden, „Heute"/„Diese Woche" im Kalender stehen in 19 px, die Summe
+  Monate der Dividenden und des Kalenders stehen in 19 px, die Summe
   gedämpft rechts, 40 px zwischen den Gruppen. Am Desktop gruppiert die
   Dividendentabelle ebenso; ihre Spaltenköpfe sind nur für Hilfsmittel da.
-- **Seitenkopf-Aktionen** sind Umriss-Pillen (Neues Asset, Ziel anlegen, Datenqualität)
-  in der Form der Jahresauswahl; gefüllt ist allein das Erfassen der Navigation. Der
+- **Seitenkopf-Aktionen** sind Umriss-Pillen (Ziel anlegen, Datenqualität) in der Form der
+  Jahresauswahl. Im Depot trägt der Kopf seit 1.11.0 den Filter des Reiters (Assets: Schalter,
+  Entwicklung: Assetauswahl, `DepotHeaderActions`); „Neues Asset" steht neben der Überschrift
+  der Assetliste; gefüllt ist allein das Erfassen der Navigation. Der
   Kalender heißt im Kopf „Kalender" wie in der Navigation; „Aktualisieren" steht in der
   Zeile mit dem Stand des Abgleichs.
 - **Erfassen** steht nur in der Navigation, nicht zusätzlich im Kopf der Dividendenliste.
@@ -284,7 +289,7 @@ ein anderer Platz fürs Zurücksetzen fallen beim Wechsel sofort auf.
 ### iPhone (< 768 px)
 
 - Bottom Navigation (5 Slots): Übersicht · Eingänge · **＋ Erfassen** (zentral, als einziger
-  gefüllter Kreis in Primärblau) · Statistiken · Mehr (Kalender, Depot, Ziele, Einstellungen).
+  gefüllter Kreis in Orange) · Statistiken · Mehr (Kalender, Depot, Ziele, Einstellungen).
   Erfassen sitzt in der Leiste statt darüber — der herausragende Knopf verdeckte beim Scrollen
   Inhalt. Die Leiste ist leicht durchscheinend; aktiv ist ein Eintrag in Vordergrundfarbe und
   halbfett.
@@ -382,21 +387,25 @@ das **Jahresziel** als 4-px-Balken mit Zeile „40,4 % vom Ziel 3.200,00 €"; r
 laufenden Jahr die **Prognose** (gestrichelte Verlängerung des Balkens, CALCULATION_RULES.md
 §9.7), sonst Restbetrag bzw. Ergebnis. Führt zur Zieldetailseite; ohne Ziel „Jahresziel für 2026
 festlegen". Dann das Diagramm und eine gedämpfte Fläche mit drei Kennzahlen ohne Trennlinien:
-laufender Monat (mit Monatsziel „17 % vom Monatsziel" — nicht „vom Ziel", sonst verwechselbar
-mit dem Jahresziel —, sonst Vorjahresvergleich), Ø pro Monat, bester Monat; außerhalb des
+laufender Monat (mit Monatsziel „17 % vom Ziel" — die Kachel trägt den Monat als Überschrift,
+„vom Monatsziel" brach um —, sonst Vorjahresvergleich), Ø pro Monat, bester Monat; außerhalb des
 laufenden Jahres statt des Monats die Zahl der Zahlungen samt Breite.
 
 **Diagramm im Kopf:** ein eigenes SVG (`HeroChart`) statt Recharts — es steht im ersten
 Bildschirm, die Übersicht lädt Recharts damit gar nicht mehr. Ein Jahr hat zwei Sichten
 (Umschalter „Kumuliert | Monatlich", Voreinstellung kumuliert): die laufende Jahressumme als
-Linie gegen das Vorjahr (gestrichelt; im laufenden Jahr endet die Linie heute) oder die
-Monatssummen als Balkenpaare. „Alle Jahre" zeigt eine Säule je Jahr. **Wischen statt Tooltip:**
-Fahren oder Wischen wählt einen Punkt, der Kopf zeigt dann dessen Stand samt Vergleich, und der
+Linie in Orange gegen das Vorjahr (grau gestrichelt; im laufenden Jahr endet die Linie heute) oder die
+Monatssummen als Balkenpaare. „Alle Jahre" zeigt den Verlauf der Jahressummen als Linie (seit 1.11.0; fünfzehn Säulen
+wurden auf dem Telefon zu Strichen), beschriftet ist jedes Jahr, für das Platz ist, das
+laufende immer. **Wischen statt Tooltip:**
+Fahren oder Wischen wählt einen Punkt, der Kopf zeigt dann dessen Stand samt Vergleich („Dividenden bis September 2026",
+„+3.059,15 € ggü. 2025" — kurz, damit die Zeile auf dem Telefon nicht umbricht), und der
 Betrag führt zu diesen Zahlungen. Mit der Maus endet die Auswahl beim Verlassen und ein Klick
 öffnet die Zahlungen; mit dem Finger bleibt sie stehen, bis man den Punkt erneut antippt.
 Tastatur: Das Diagramm ist ein Schieberegler (`role="slider"`, Pfeiltasten, Pos1/Ende, Enter
-öffnet, Escape setzt zurück), der Stand wird über `aria-valuetext` angesagt. Die Datentabelle
-darunter bleibt.
+öffnet, Escape setzt zurück), der Stand wird über `aria-valuetext` angesagt. Eine Datentabelle
+steht darunter seit 1.11.0 nicht mehr: Jeder Punkt ist ansteuerbar, die Statistik führt dieselben
+Zahlen als Tabelle.
 
 **Verteilung:** die fünf stärksten Assets des Zeitraums als schmale Balken in Vordergrundfarbe
 mit Anteil, darunter „Alle 12 Assets" zur Statistik; umschaltbar auf die Depots. Beide
@@ -405,7 +414,7 @@ Depot entfällt der Umschalter, der Abschnitt heißt „Top-Assets".
 
 **Demnächst:** die nächsten drei angekündigten Zahltage aus dem Kalender und die erwartete Summe
 der nächsten 30 Tage; „erwartet", weil es Ankündigungen sind, keine Eingänge. Ohne kommende
-Termine entfällt der Abschnitt. Das Datumsfeld ist grau (`--muted`), nicht blau: Blau
+Termine entfällt der Abschnitt. Das Datumsfeld ist grau (`--muted`), nicht orange: Orange
 markiert Aktionen, der Weg zum Kalender ist der Link „Kalender" im Abschnittskopf.
 
 **Responsive:** Kopf über die volle Breite (ab `lg` die linke Spalte); die Gesamtsumme aller
@@ -479,13 +488,12 @@ Hauptzahl (mit derselben `GoalProgressBar`), das Monatsziel im Feld des Monats. 
 „Bearbeiten" und „Löschen" stehen dort im Kopf (`DetailHeader`) — wie bei
 Eingängen und Assets.
 
-**Zielart erkennbar machen.** Jahres- und Monatsziel tragen dieselbe Karte und
-waren dadurch kaum zu unterscheiden. Eine 36-px-Symbolkachel trennt sie
-(`CalendarRange` für das Jahr, `CalendarDays` für den Monat) samt Tönung
-(seit 1.9.0 dunkel gegen Grau statt Primärfarbe gegen Grau); den Klartext liefert der Titel selbst
-(„Dividendenziel 2026", „Monatsziel März 2026"), Farbe und Form tragen nie
-allein. Dasselbe Zeichen erscheint auf Zielseite und Detailseite; nur
-die Detailseite nennt die Zielart zusätzlich als Text.
+**Zeichen und Zielart.** Jahres- und Monatsziel tragen dieselbe dunkle
+36-px-Symbolkachel (`GoalMark`, `CalendarRange`). Bis 1.10 trug das Monatsziel ein
+eigenes Symbol auf grauer Kachel; die Zielart steht aber schon im Titel
+(„Dividendenziel 2026", „Monatsziel März 2026"), und das graue Zeichen wirkte wie
+deaktiviert. Die Detailseite nennt Zielart und Zeitraum zusätzlich nur bei eigenem
+Titel; sonst steht darunter allein der Zeitfortschritt bzw. „Beginnt am …".
 
 **Aufbau der Zielkarte.** Die Karte beantwortet auf einen Blick nur zwei
 Fragen: Wie hoch ist das Ziel, und wo stehe ich? Oben Symbolkachel und Titel;

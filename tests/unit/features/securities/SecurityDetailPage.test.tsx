@@ -149,8 +149,10 @@ describe("SecurityDetailPage", () => {
     renderPage();
     // Alle zwoelf Monate stehen da; geplante sind fuer Hilfsmittel als solche
     // ausgezeichnet, nicht nur farblich (Farbe allein traegt keine Aussage).
-    expect(screen.getByText("Mär")).toBeInTheDocument();
-    expect(screen.getByText("Jan")).toBeInTheDocument();
+    // Im Plan, nicht in den Datumsfeldern der letzten Eingänge.
+    const plan = within(screen.getByRole("region", { name: "Ausschüttungsplan" }));
+    expect(plan.getByText("Mär")).toBeInTheDocument();
+    expect(plan.getByText("Jan")).toBeInTheDocument();
     expect(screen.getAllByText("Geplant:")).toHaveLength(2);
     expect(screen.getAllByText("Nicht geplant:")).toHaveLength(10);
   });

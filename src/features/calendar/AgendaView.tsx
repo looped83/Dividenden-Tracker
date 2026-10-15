@@ -1,11 +1,16 @@
 import { AmountText } from "@/components/money/AmountText";
 import { Badge } from "@/components/ui/badge";
-import { ListGroup, ListItemBody, ListRow, ListSection } from "@/components/ui/list";
+import {
+  ListDateTile,
+  ListGroup,
+  ListItemBody,
+  ListRow,
+  ListSection,
+} from "@/components/ui/list";
 import { cn } from "@/lib/utils/cn";
 import { formatMoney } from "@/lib/money";
 import { buildAgenda } from "@/lib/calendar/agenda";
 import {
-  dateTile,
   eventTime,
   eventTitle,
   eventTypeLabel,
@@ -31,8 +36,7 @@ import type { CalendarEvent } from "@/lib/calendar/types";
  * die Monatssumme in der Dividendenliste. Fehlt sie (keine Betraege, mehrere
  * Waehrungen), bleibt die Stelle leer statt eine Null zu behaupten.
  *
- * Ueberschriftenhierarchie: Die Seite traegt die h1, jeder Abschnitt („Heute",
- * „Diese Woche", „Später") eine h2. Das Datum jeder Zeile steht vollstaendig
+ * Ueberschriftenhierarchie: Die Seite traegt die h1, jeder Monat eine h2. Das Datum jeder Zeile steht vollstaendig
  * in ihrer zugaenglichen Bezeichnung.
  */
 export function AgendaView({
@@ -98,7 +102,6 @@ export function EventTile({
   onSelect: (event: CalendarEvent) => void;
   showDate?: boolean;
 }) {
-  const { day, month } = dateTile(event.date);
   const time = eventTime(event);
   const cancelled = event.eventState === "cancelled";
   const amountLabel = event.expectedAmount
@@ -118,28 +121,9 @@ export function EventTile({
         aria-label={`${eventTitle(event)}, ${eventTypeLabel(event)} am ${spokenDate(event.date)}${amountLabel}${time ? `, ${time}` : ""}${cancelled ? ", abgesagt" : ""}. Details anzeigen`}
       >
         <ListItemBody
-          // Das Datumsfeld ist rein dekorativ — die vollstaendige Angabe steht
-          // in der Bezeichnung der Schaltflaeche. Zweimal vorgelesen waere es
-          // Laerm.
-          leading={
-            <span
-              aria-hidden
-              className={cn(
-                // Grau wie auf der Übersicht: Blau markiert Aktionen, nicht Daten.
-                // Abgesagt bleibt durch blasse Ziffern und den durchgestrichenen
-                // Titel erkennbar.
-                "flex size-11 shrink-0 flex-col items-center justify-center rounded-xl bg-muted",
-                cancelled ? "text-muted-foreground" : "text-foreground",
-              )}
-            >
-              <span className="text-base font-semibold leading-none tabular-amount">
-                {day}
-              </span>
-              <span className="mt-0.5 text-[0.625rem] font-semibold uppercase leading-none tracking-wide text-muted-foreground">
-                {month}
-              </span>
-            </span>
-          }
+          // Abgesagt bleibt durch blasse Ziffern und den durchgestrichenen
+          // Titel erkennbar.
+          leading={<ListDateTile iso={event.date} muted={cancelled} />}
           title={
             <span className={cn(cancelled && "text-muted-foreground line-through")}>
               {eventTitle(event)}

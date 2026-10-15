@@ -2,17 +2,8 @@ import * as React from "react";
 import { Link, useNavigate } from "react-router";
 import { ArrowDownRight, ArrowUpRight, Target } from "lucide-react";
 import { AmountText } from "@/components/money/AmountText";
-import { ChartDataTable, ChartRowHeader } from "@/components/charts/chartTable";
 import { SegmentedControl, type SegmentOption } from "@/components/ui/segmented";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { formatMoney, formatPercent, type Money } from "@/lib/money";
 import { computeGoalProgress, type GoalProgress } from "@/lib/goals";
 import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
@@ -196,7 +187,7 @@ export function DashboardHero({ payments, selection, today }: DashboardHeroProps
   // Was der Kopf zeigt: der gewählte Punkt oder der Zeitraum.
   const head = point
     ? {
-        label: point.label,
+        label: `Dividenden ${point.label}`,
         value: point.value,
         result: comparePeriods(point.value, point.prior),
         reference: `ggü. ${point.priorLabel}`,
@@ -324,15 +315,6 @@ export function DashboardHero({ payments, selection, today }: DashboardHeroProps
             <span>Dez</span>
           </div>
         )}
-        <div className="mt-3">
-          <ChartDataTable>
-            {series.kind === "years" ? (
-              <YearTable bars={series.bars} />
-            ) : (
-              <MonthTable months={series.months} year={series.year} />
-            )}
-          </ChartDataTable>
-        </div>
       </div>
 
       <Stats stats={buildStats(data, monthly, today)} />
@@ -360,10 +342,10 @@ function buildStats(
       label: monthNameDe(today.month),
       value: <AmountText amount={data.monthNet} />,
       // Ein Monatsziel sagt mehr als der Vorjahresmonat: Es ist die Frage,
-      // die man sich selbst gestellt hat. „Monatsziel" statt „Ziel", damit es
-      // sich nicht mit dem Jahresziel darüber verwechseln lässt.
+      // die man sich selbst gestellt hat. „vom Ziel" genügt — die Kachel
+      // trägt den Monat als Überschrift; „vom Monatsziel" brach um.
       caption: monthly
-        ? `${formatPercent(monthly.percent, 0)} vom Monatsziel`
+        ? `${formatPercent(monthly.percent, 0)} vom Ziel`
         : hasTrend(data.monthResult)
           ? month.caption
           : undefined,
@@ -562,14 +544,14 @@ function Legend({
   const swatch =
     kind === "cumulative"
       ? [
-          <span key="c" className="h-0.5 w-3 rounded-full bg-foreground" />,
+          <span key="c" className="h-0.5 w-3 rounded-full bg-primary" />,
           <span
             key="p"
             className="h-0.5 w-3 bg-[repeating-linear-gradient(90deg,var(--series-prior)_0_2px,transparent_2px_4px)]"
           />,
         ]
       : [
-          <span key="c" className="size-2 rounded-[2px] bg-foreground" />,
+          <span key="c" className="size-2 rounded-[2px] bg-primary" />,
           <span key="p" className="size-2 rounded-[2px] bg-series-prior" />,
         ];
   return (
@@ -583,70 +565,6 @@ function Legend({
         {year - 1}
       </span>
     </span>
-  );
-}
-
-function MonthTable({
-  months,
-  year,
-}: {
-  months: { month: number; current: Money | null; prior: Money }[];
-  year: number;
-}) {
-  return (
-    <Table>
-      <caption className="sr-only">
-        Monatliche Netto-Dividenden {year} und {year - 1}
-      </caption>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Monat</TableHead>
-          <TableHead className="text-right">{year}</TableHead>
-          <TableHead className="text-right">{year - 1}</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {months.map((row) => (
-          <TableRow key={row.month}>
-            <ChartRowHeader>{monthNameDe(row.month)}</ChartRowHeader>
-            <TableCell className="text-right tabular-nums">
-              {row.current ? formatMoney(row.current) : "noch nicht begonnen"}
-            </TableCell>
-            <TableCell className="text-right tabular-nums">
-              {formatMoney(row.prior)}
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-  );
-}
-
-function YearTable({ bars }: { bars: { year: number; value: Money; count: number }[] }) {
-  return (
-    <Table>
-      <caption className="sr-only">Netto-Dividenden je Jahr</caption>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Jahr</TableHead>
-          <TableHead className="text-right">Nettodividende</TableHead>
-          <TableHead className="text-right">Zahlungen</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {bars.map((row) => (
-          <TableRow key={row.year}>
-            <ChartRowHeader>{row.year}</ChartRowHeader>
-            <TableCell className="text-right tabular-nums">
-              {formatMoney(row.value)}
-            </TableCell>
-            <TableCell className="text-right tabular-nums">
-              {formatCountNumber(row.count)}
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
   );
 }
 

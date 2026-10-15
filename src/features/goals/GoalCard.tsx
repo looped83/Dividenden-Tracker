@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils/cn";
 import type { GoalProgress } from "@/lib/goals";
 import { GoalProgressBar } from "./GoalProgressBar";
-import { GoalTypeMark } from "./GoalTypeMark";
+import { GoalMark } from "./GoalMark";
 import {
   achievementText,
   goalDisplayTitle,
@@ -63,14 +63,7 @@ export function GoalCard({ progress }: GoalCardProps) {
             Abgeschnitten oder mitten im Wort gebrochen liest sich beides
             schlechter als eine zweite Zeile. */}
         <div className="flex items-center gap-3">
-          <GoalTypeMark
-            goal={goal}
-            // Auf der gedaempften Karte hebt sich die graue Kachel des
-            // Monatsziels erst mit der Seitenfarbe ab.
-            {...(goal.goalType === "monthly" && {
-              className: "bg-background dark:bg-accent",
-            })}
-          />
+          <GoalMark />
           <div className="min-w-0 flex-1">
             {/* Die Marke steht in der Ecke und wird umflossen, statt eine
                 eigene Spalte zu belegen: Als drittes Flex-Element nahm sie dem

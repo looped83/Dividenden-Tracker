@@ -1,11 +1,11 @@
 import * as React from "react";
 import { Link } from "react-router";
 import { Section, SectionLink } from "@/components/ui/section";
-import { ListGroup, ListItemBody, ListRow } from "@/components/ui/list";
+import { ListDateTile, ListGroup, ListItemBody, ListRow } from "@/components/ui/list";
 import { AmountText } from "@/components/money/AmountText";
 import { formatMoney } from "@/lib/money";
 import { buildCalendarSummary, daysBetween } from "@/lib/calendar/summary";
-import { dateTile, eventTitle, relativeDayLabel } from "@/lib/calendar/format";
+import { eventTitle, relativeDayLabel } from "@/lib/calendar/format";
 import { useResolvedCalendarEvents } from "@/features/calendar/resolvedEvents";
 
 /** Drei Termine: genug für „was kommt als Nächstes", ohne den Kalender zu ersetzen. */
@@ -55,13 +55,12 @@ export function UpcomingPayments({ today }: { today: string }) {
           </>
         ) : undefined
       }
-      // Der Weg zum ganzen Bereich als Textlink in Primärblau — wie „Alle"
+      // Der Weg zum ganzen Bereich als Textlink in der Akzentfarbe — wie „Alle"
       // bei den Eingängen. Ein Symbol allein musste man deuten.
       action={<SectionLink to="/kalender">Kalender</SectionLink>}
     >
       <ListGroup aria-label="Nächste angekündigte Zahltage">
         {next.map((event) => {
-          const { day, month } = dateTile(event.date);
           const when = relativeDayLabel(daysBetween(today, event.date));
           const amount = event.expectedAmount;
           return (
@@ -72,20 +71,8 @@ export function UpcomingPayments({ today }: { today: string }) {
                   aria-label={`${eventTitle(event)}, ${when}${amount ? `, erwartet ${formatMoney(amount)}` : ""}`}
                 >
                   <ListItemBody
-                    // Dasselbe Datumsfeld wie im Kalender, eine Stufe kleiner.
-                    leading={
-                      <span
-                        aria-hidden
-                        className="flex size-11 shrink-0 flex-col items-center justify-center rounded-xl bg-muted"
-                      >
-                        <span className="text-base font-semibold leading-none tabular-amount">
-                          {day}
-                        </span>
-                        <span className="mt-0.5 text-[0.625rem] font-semibold uppercase leading-none tracking-wide text-muted-foreground">
-                          {month}
-                        </span>
-                      </span>
-                    }
+                    // Dasselbe Datumsfeld wie im Kalender.
+                    leading={<ListDateTile iso={event.date} />}
                     title={eventTitle(event)}
                     meta={<span>{when}</span>}
                     trailing={amount ? <AmountText amount={amount} /> : undefined}

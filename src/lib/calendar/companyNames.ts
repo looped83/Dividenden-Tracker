@@ -82,8 +82,9 @@ const LEGAL_FORM_TOKENS = new Set([
 ]);
 
 /**
- * Angaben zum **Papier**, nicht zum Emittenten: Fondsart, Ausschuettungsart und
- * die Waehrung der Anteilsklasse. Der Kalender nennt einen ETF gern in voller
+ * Angaben zum **Papier**, nicht zum Emittenten: Fondsart, Ausschuettungsart,
+ * die Waehrung der Anteilsklasse und das Fondsdomizil („(DE)", „(IE)", „(LU)"
+ * — „iShares STOXX Global Select Dividend 100 UCITS ETF (DE)"). Der Kalender nennt einen ETF gern in voller
  * Laenge — „JPM Europe Equity Premium Income Active UCITS ETF EUR (dist)" —,
  * im eigenen Bestand steht der Name ohne diesen Anhang.
  *
@@ -102,6 +103,7 @@ const INSTRUMENT_TOKENS = new Set([
   "dis",
   "dist",
   "distributing",
+  "de",
   "dkk",
   "etc",
   "etf",
@@ -110,7 +112,9 @@ const INSTRUMENT_TOKENS = new Set([
   "fonds",
   "fund",
   "gbp",
+  "ie",
   "jpy",
+  "lu",
   "nok",
   "sek",
   "thesaurierend",
