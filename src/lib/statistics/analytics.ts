@@ -369,30 +369,76 @@ export function selectedYearComparison(
   return { current, prior };
 }
 
+/** Eine angekündigte Zahlung aus dem Dividendenkalender (Nettobetrag in Euro). */
+export interface AnnouncedPayment {
+  date: string;
+  amount: Money;
+}
+
 /**
  * Prognose zum Jahresende (CALCULATION_RULES.md §9.7): was bis heute
- * eingegangen ist, plus was im Vorjahr **nach** dem gleichen Kalendertag noch
- * kam. Beide Teile folgen der Abgrenzung von {@link selectedYearComparison}
- * (effektives Jahr, tatsaechlicher Eingang) — `received` ist deshalb genau die
- * Jahressumme im Kopf, und Vorjahr bis heute plus `remainingPrior` ergibt das
- * volle Vorjahr.
+ * eingegangen ist, plus — soweit vorhanden — die **angekündigten** Zahlungen
+ * der nächsten Wochen, plus was im Vorjahr danach noch kam.
  *
- * Bewusst einfach: Kaeufe, Verkaeufe und Kuerzungen seit dem Vorjahr kennt die
- * Regel nicht. Sie ist eine Einordnung fuer die Uebersicht, kein Zielstand —
- * `computeGoalProgress` bleibt frei von erwarteten Betraegen (§13).
+ * - `received` folgt der Abgrenzung von {@link selectedYearComparison}
+ *   (effektives Jahr, tatsächlicher Eingang) und ist genau die Jahressumme im
+ *   Kopf.
+ * - `announced` sind die übergebenen Ankündigungen nach heute im laufenden Jahr
+ *   (der Aufrufer begrenzt sie auf 30 Tage). Sie ersetzen das Vorjahr bis zum
+ *   letzten angekündigten Tag (`announcedUntil`).
+ * - `remainingPrior` sind die Vorjahreszahlungen **nach** dem gleichen
+ *   Kalendertag — nach heute bzw. nach `announcedUntil`. Ohne Ankündigungen
+ *   ergibt Vorjahr bis heute plus Rest genau das volle Vorjahr.
+ *
+ * Bewusst einfach: Käufe, Verkäufe und Kürzungen seit dem Vorjahr kennt die
+ * Regel jenseits der Ankündigungen nicht. Sie ist eine Einordnung für die
+ * Übersicht, kein Zielstand — `computeGoalProgress` bleibt frei von erwarteten
+ * Beträgen (§13).
  */
 export function yearEndForecast(
   payments: readonly AnalyticsPayment[],
   ref: RefDate,
-): { received: Money; remainingPrior: Money; forecast: Money } {
+  announcements: readonly AnnouncedPayment[] = [],
+): {
+  received: Money;
+  announced: Money;
+  announcedUntil: string | null;
+  remainingPrior: Money;
+  forecast: Money;
+} {
   const { current: received } = selectedYearComparison(payments, ref.year, ref);
-  const cutoff = priorYearSameDay(ref);
+  const today = isoFromRef(ref);
+  const inYear = announcements.filter(
+    (a) => a.date > today && yearOf(a.date) === ref.year,
+  );
+  const announced = sumMoney(
+    inYear.map((a) => a.amount),
+    EUR,
+  );
+  const announcedUntil = inYear.reduce<string | null>(
+    (latest, a) => (latest === null || a.date > latest ? a.date : latest),
+    null,
+  );
+  const until: RefDate = announcedUntil
+    ? {
+        year: ref.year,
+        month: monthOf(announcedUntil),
+        day: Number.parseInt(announcedUntil.slice(8, 10), 10),
+      }
+    : ref;
+  const cutoff = priorYearSameDay(until);
   const remainingPrior = aggregate(
     payments.filter(
       (p) => yearOf(p.payDate) === ref.year - 1 && p.actualPayDate > cutoff,
     ),
   ).net;
-  return { received, remainingPrior, forecast: received.add(remainingPrior) };
+  return {
+    received,
+    announced,
+    announcedUntil,
+    remainingPrior,
+    forecast: received.add(announced).add(remainingPrior),
+  };
 }
 
 /** Aktueller Monat bis heute (§5.2), unabhaengig von der Jahresauswahl. */

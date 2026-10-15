@@ -18,6 +18,8 @@ import { computeGoalProgress, type GoalProgress } from "@/lib/goals";
 import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
 import { cn } from "@/lib/utils/cn";
 import { useGoals } from "@/features/goals/hooks";
+import { useCalendarEvents } from "@/features/calendar/hooks";
+import { announcedForForecast } from "@/lib/calendar/summary";
 import {
   accessibleProgressLabel,
   statusLabel,
@@ -32,6 +34,7 @@ import {
   currentMonthComparison,
   distinctSecurities,
   firstPayDate,
+  isoFromRef,
   monthNameDe,
   selectedPeriodAggregate,
   selectedYearComparison,
@@ -109,6 +112,7 @@ function hasTrend(result: ComparisonResult): boolean {
  */
 export function DashboardHero({ payments, selection, today }: DashboardHeroProps) {
   const goals = useGoals().data;
+  const calendarEvents = useCalendarEvents().data;
   const navigate = useNavigate();
   const [kind, setKindState] = React.useState<HeroChartKind>(readStoredKind);
   const setKind = (next: HeroChartKind) => {
@@ -168,12 +172,18 @@ export function DashboardHero({ payments, selection, today }: DashboardHeroProps
     };
   }, [goals, selection, payments, today]);
 
+  // Prognose (§9.7): Ankündigungen des Kalenders für die nächsten 30 Tage,
+  // danach das Vorjahr. Ohne Kalender (oder solange er lädt) nur das Vorjahr.
   const forecast = React.useMemo(
     () =>
       annual && data.isCurrentYear && annual.status === "active"
-        ? yearEndForecast(payments, today).forecast
+        ? yearEndForecast(
+            payments,
+            today,
+            announcedForForecast(calendarEvents ?? [], isoFromRef(today)),
+          )
         : null,
-    [annual, data.isCurrentYear, payments, today],
+    [annual, data.isCurrentYear, payments, today, calendarEvents],
   );
 
   const label = describeSelection(selection);
@@ -264,7 +274,11 @@ export function DashboardHero({ payments, selection, today }: DashboardHeroProps
       </p>
 
       {annual ? (
-        <AnnualGoal progress={annual} forecast={forecast} />
+        <AnnualGoal
+          progress={annual}
+          forecast={forecast?.forecast ?? null}
+          announced={forecast?.announcedUntil ? forecast.announced : null}
+        />
       ) : // Erst wenn die Ziele geladen sind: Sonst stuende der Hinweis kurz da
       // und wiche dann dem Balken.
       goals !== undefined && typeof selection === "number" ? (
@@ -451,9 +465,12 @@ function Stats({ stats }: { stats: Stat[] }) {
 function AnnualGoal({
   progress,
   forecast,
+  announced,
 }: {
   progress: GoalProgress;
   forecast: Money | null;
+  /** Darin enthaltene angekündigte Beträge, falls der Kalender welche nennt. */
+  announced: Money | null;
 }) {
   const reached = Math.min(100, Math.max(0, progress.percent.toNumber()));
   const projected = forecast
@@ -474,7 +491,13 @@ function AnnualGoal({
   return (
     <Link
       to={`/ziele/${progress.goal.id}`}
-      aria-label={`Jahresziel: ${label}${forecast ? `. Prognose bis Jahresende ${formatMoney(forecast)}` : ""}`}
+      aria-label={`Jahresziel: ${label}${
+        forecast
+          ? `. Prognose bis Jahresende ${formatMoney(forecast)}${
+              announced ? `, davon ${formatMoney(announced)} angekündigt` : ""
+            }`
+          : ""
+      }`}
       className="mt-4 block space-y-2 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4 ring-offset-background"
     >
       <span

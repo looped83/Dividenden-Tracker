@@ -868,10 +868,13 @@ Liniendiagramm nötig ist.
 - Monochrome Vergleichsreihe im Kopf statt Slot 1/2 der Diagrammpalette (Ausnahme in
   UX_AND_DESIGN_SYSTEM.md §1a).
 
+Seit derselben Fassung ersetzen angekündigte Nettobeträge des Dividendenkalenders das Vorjahr
+für die nächsten bis zu 30 Tage (CALCULATION_RULES.md §9.7).
+
 ### Revisit When
 
-- Angekündigte Beträge aus dem Dividendenkalender sollen die Prognose für die nächsten Wochen
-  ersetzen (genauer, aber abhängig von der Synchronisation).
+- Die Prognose soll Käufe und Verkäufe berücksichtigen (etwa über den Depotstand und die
+  erwartete Jahresdividende je Position).
 
 ---
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  announcedForForecast,
   buildCalendarSummary,
   daysBetween,
   expectedTotalOf,
@@ -197,5 +198,35 @@ describe("Kachelbeschriftungen", () => {
     expect(relativeDayLabel(9)).toBe("in 9 Tagen");
     expect(relativeDayLabel(1200)).toBe("in 1.200 Tagen");
     expect(relativeDayLabel(-3)).toBe("vor 3 Tagen");
+  });
+});
+
+describe("announcedForForecast", () => {
+  it("nimmt nur kommende Zahltage der nächsten 30 Tage mit Betrag in Euro", () => {
+    const result = announcedForForecast(
+      [
+        event("heute", HEUTE, "Heute AG", { expectedAmount: betrag("1") }),
+        event("ok", "2026-08-20", "Ok AG", { expectedAmount: betrag("12.50") }),
+        event("grenze", "2026-09-04", "Grenze AG", { expectedAmount: betrag("3") }),
+        event("spaet", "2026-09-05", "Spät AG", { expectedAmount: betrag("4") }),
+        event("ex", "2026-08-10", "Ex AG", {
+          eventType: "ex_date",
+          expectedAmount: betrag("5"),
+        }),
+        event("abgesagt", "2026-08-11", "Weg AG", {
+          eventState: "cancelled",
+          expectedAmount: betrag("6"),
+        }),
+        event("usd", "2026-08-12", "Dollar Inc", {
+          expectedAmount: betrag("7", toCurrencyCode("USD")),
+        }),
+        event("ohne", "2026-08-13", "Ohne AG"),
+      ],
+      HEUTE,
+    );
+    expect(result.map((a) => [a.date, a.amount.toStringValue()])).toEqual([
+      ["2026-08-20", "12.50"],
+      ["2026-09-04", "3.00"],
+    ]);
   });
 });

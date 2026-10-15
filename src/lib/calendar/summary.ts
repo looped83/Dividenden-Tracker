@@ -1,4 +1,5 @@
-import { Money, sumMoney, type CurrencyCode } from "@/lib/money";
+import { EUR, Money, sumMoney, type CurrencyCode } from "@/lib/money";
+import type { AnnouncedPayment } from "@/lib/statistics";
 import { addDays } from "./month";
 import type { CalendarEvent } from "./types";
 
@@ -119,4 +120,30 @@ export function buildCalendarSummary(
     next30Days: expectedTotalOf(upcoming.filter((event) => event.date <= horizon)),
     upcoming: upcoming.length,
   };
+}
+
+/** Wie weit Ankündigungen in die Prognose zum Jahresende eingehen (CALCULATION_RULES.md §9.7). */
+export const FORECAST_ANNOUNCED_DAYS = 30;
+
+/**
+ * Angekündigte Zahlungen der nächsten {@link FORECAST_ANNOUNCED_DAYS} Tage für
+ * die Prognose (`yearEndForecast`): nur Zahltage (keine Ex-Tage), nicht
+ * abgesagt, mit Betrag in Euro. Die Beträge der Quelle sind Nettobeträge;
+ * andere Währungen bleiben außen vor, statt zu einem erfundenen Kurs
+ * umgerechnet zu werden — für diese Tage gilt dann das Vorjahr.
+ */
+export function announcedForForecast(
+  events: readonly CalendarEvent[],
+  today: string,
+): AnnouncedPayment[] {
+  const until = addDays(today, FORECAST_ANNOUNCED_DAYS);
+  return events.flatMap((event) =>
+    event.eventType === "payment" &&
+    isCounted(event) &&
+    event.date > today &&
+    event.date <= until &&
+    event.expectedAmount?.currency === EUR
+      ? [{ date: event.date, amount: event.expectedAmount }]
+      : [],
+  );
 }

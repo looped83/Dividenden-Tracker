@@ -263,15 +263,21 @@ dieselbe Rechnung wie auf der Zielseite (Ist = effektive Monatszuordnung, §10).
 
 Im **laufenden Jahr** steht neben einem aktiven Jahresziel eine Prognose:
 
-`Prognose = eingegangen bis heute + Vorjahreszahlungen nach dem gleichen Kalendertag`
+`Prognose = eingegangen bis heute + angekündigt (bis T) + Vorjahreszahlungen nach T im Vorjahr`
 
 - *Eingegangen bis heute* ist genau die Jahressumme im Kopf (`selectedYearComparison`,
   §9.2): effektives Jahr (§10), abgegrenzt nach dem tatsächlichen Eingang.
-- *Rest des Vorjahres:* Zahlungen mit effektivem Jahr = Vorjahr, deren tatsächlicher
-  Eingang **nach** dem gleichen Kalendertag des Vorjahres liegt (`priorYearSameDay`, 29.02. →
-  28.02.). Vorjahr bis heute plus Rest ergibt damit genau das volle Vorjahr.
-- Bewusst einfach und erklärbar: Käufe, Verkäufe, Kürzungen und Erhöhungen seit dem Vorjahr
-  kennt die Regel nicht. Angezeigt wird sie deshalb als „Prognose", nie als Zielstand.
+- *Angekündigt:* Zahltage des Dividendenkalenders **nach heute** und höchstens 30 Tage voraus
+  (`announcedForForecast`), nur im laufenden Jahr, nicht abgesagt, mit Betrag in Euro. Die
+  Beträge der Quelle sind Nettobeträge (bestätigt für DivvyDiary) und werden unverändert
+  übernommen; andere Währungen bleiben außen vor statt zu einem erfundenen Kurs umgerechnet zu
+  werden. `T` ist der **letzte angekündigte Tag**; gibt es keine Ankündigung, ist `T` heute.
+- *Rest des Vorjahres:* Zahlungen mit effektivem Jahr = Vorjahr, deren tatsächlicher Eingang
+  **nach** dem gleichen Kalendertag wie `T` im Vorjahr liegt (`priorYearSameDay`, 29.02. →
+  28.02.). Ohne Ankündigungen ergibt Vorjahr bis heute plus Rest genau das volle Vorjahr.
+- Grenzen: Zahlungen zwischen heute und `T`, die die Quelle (noch) nicht ankündigt, fehlen;
+  Käufe, Verkäufe und Kürzungen nach `T` kennt die Regel nicht. Angezeigt wird sie deshalb als
+  „Prognose", nie als Zielstand; die Bildschirmansage nennt den angekündigten Anteil.
 - Sie ist **kein Teil des Zielfortschritts**: `computeGoalProgress` (§13) bleibt frei von
   erwarteten Beträgen; Status, Prozent und Restbetrag eines Ziels ändern sich durch die Prognose
   nicht. Angezeigt nur, solange das Ziel `active` ist.

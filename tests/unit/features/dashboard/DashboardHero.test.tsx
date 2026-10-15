@@ -19,6 +19,12 @@ vi.mock("@/features/goals/hooks", () => ({
   useGoals: () => ({ data: goals }),
 }));
 
+// Angekündigte Termine des Kalenders (für die Prognose, §9.7).
+const calendar = vi.hoisted(() => ({ events: [] as unknown[] }));
+vi.mock("@/features/calendar/hooks", () => ({
+  useCalendarEvents: () => ({ data: calendar.events }),
+}));
+
 const { DashboardHero } = await import("@/features/dashboard/DashboardHero");
 
 const TODAY: RefDate = { year: 2026, month: 7, day: 20 };
@@ -79,6 +85,7 @@ const MONATSLINK = { name: "Zahlungen des aktuellen Monats anzeigen" };
 // mit der Voreinstellung.
 afterEach(() => {
   window.localStorage.clear();
+  calendar.events = [];
 });
 
 describe("DashboardHero — eine Hauptzahl statt Kachelraster", () => {
@@ -162,6 +169,31 @@ describe("DashboardHero — Ziele im Kontext", () => {
     expect(
       screen.getByRole("link", { name: /Prognose bis Jahresende 620,00\s?€/ }),
     ).toHaveAttribute("href", `/ziele/${JAHRESZIEL_2026.id}`);
+  });
+
+  it("ersetzt in der Prognose die nächsten Wochen durch angekündigte Beträge", () => {
+    // Angekündigt am 5. August: 90 € (netto). Das Vorjahr bis 5. August (60 €)
+    // entfällt dafür, ab dem 6. August gilt wieder das Vorjahr (120 €).
+    calendar.events = [
+      {
+        id: "e1",
+        date: "2026-08-05",
+        eventType: "payment",
+        eventState: "active",
+        expectedAmount: Money.fromString("90.00", EUR),
+      },
+    ];
+    renderHero(
+      2026,
+      [...PAYMENTS, payment("2025-08-01", "60.00"), payment("2025-11-10", "120.00")],
+      [JAHRESZIEL_2026],
+    );
+    // 500 + 90 + 120
+    expect(
+      screen.getByRole("link", {
+        name: /Prognose bis Jahresende 710,00\s?€, davon 90,00\s?€ angekündigt/,
+      }),
+    ).toBeInTheDocument();
   });
 
   it("zeigt zu einem anderen Jahr das Ergebnis statt einer Prognose", () => {
