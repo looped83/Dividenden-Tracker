@@ -181,7 +181,13 @@ export function HeroChart({
           ) : series.kind === "years" ? (
             <Years series={series} x={x} width={width} height={height} active={active} />
           ) : (
-            <Bars series={series} x={x} width={width} height={height} active={active} />
+            <MonthlyLine
+              series={series}
+              x={x}
+              width={width}
+              height={height}
+              active={active}
+            />
           )}
         </svg>
       )}
@@ -389,83 +395,126 @@ function Years({
   );
 }
 
-function Bars({
+/**
+ * Monatssummen als Linien (seit 1.12.0, zuvor Balkenpaare): das Jahr in
+ * Orange mit einem Punkt je Monat, das Vorjahr grau gestrichelt und am Ende
+ * mit seinem Jahr beschriftet — dieselbe Sprache wie „Kumuliert". Monate, die
+ * noch nicht begonnen haben, bleiben ohne Linie statt auf 0 € zu fallen.
+ */
+function MonthlyLine({
   series,
   x,
+  width,
   height,
   active,
 }: Geometry & { series: Extract<HeroSeries, { kind: "monthly" }> }) {
-  const groups = series.months.map((bar) => ({
-    key: String(bar.month),
-    month: bar.month,
-    tick: (MONTH_NAMES_DE_SHORT[bar.month - 1] ?? "").charAt(0),
-    prior: bar.prior,
-    current: bar.current,
-  }));
-  const slots = groups.length;
-  const slotWidth = x(1) - x(0);
-  const barWidth = Math.min(12, slotWidth * 0.3);
+  const { months, points } = series;
   const max =
     Math.max(
-      ...groups.flatMap((g) => [num(g.prior), g.current ? num(g.current) : 0]),
+      ...months.flatMap((bar) => [num(bar.prior), bar.current ? num(bar.current) : 0]),
       1,
-    ) * 1.08;
-  const y = (value: number) => 6 + (1 - value / max) * (height - 6);
-  const activeKey =
-    active === null
-      ? null
-      : (groups[Math.round((series.points[active]?.x ?? 0) - 0.5)]?.key ?? null);
+    ) * 1.06;
+  const y = (value: number) => TOP + (1 - Math.max(0, value) / max) * (height - TOP - 2);
+  const path = (coords: { x: number; y: number }[]) =>
+    coords.map((p, i) => `${i ? "L" : "M"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join("");
+  const prior = months.map((bar) => ({ x: x(bar.month - 0.5), y: y(num(bar.prior)) }));
+  const current = months.flatMap((bar) =>
+    bar.current === null ? [] : [{ x: x(bar.month - 0.5), y: y(num(bar.current)) }],
+  );
+  const last = current.length - 1;
+  const point = active === null ? null : points[active];
+  const priorEnd = prior[prior.length - 1];
   // Der aktuelle Monat steht in der Beschriftung kräftiger.
-  const thisMonth = [...series.months]
-    .reverse()
-    .find((bar) => bar.current !== null)?.month;
-
-  const rect = (left: number, value: number, fill: string) => {
-    const top = y(Math.max(0, value));
-    return (
-      <rect
-        x={left}
-        y={top}
-        width={barWidth}
-        height={Math.max(0, y(0) - top)}
-        rx={2}
-        fill={fill}
-      />
-    );
-  };
+  const thisMonth = [...months].reverse().find((bar) => bar.current !== null)?.month;
+  const marked = active ?? last;
 
   return (
     <>
       <line
         x1={x(0)}
-        x2={x(slots)}
+        x2={x(12)}
         y1={y(0)}
         y2={y(0)}
         stroke="var(--border)"
         strokeWidth={1}
       />
-      {groups.map((group, index) => {
-        const center = x(index + 0.5);
-        const strong = group.month === thisMonth;
+      {point && (
+        <line
+          x1={x(point.x)}
+          x2={x(point.x)}
+          y1={TOP - 8}
+          y2={y(0)}
+          stroke="var(--muted-foreground)"
+          strokeWidth={1}
+        />
+      )}
+      <path
+        d={path(prior)}
+        fill="none"
+        stroke="var(--series-prior)"
+        strokeWidth={1.75}
+        strokeDasharray="1 5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {priorEnd.y < y(0) && (
+        <text
+          x={width - INSET}
+          y={priorEnd.y - 9}
+          textAnchor="end"
+          fontSize={12}
+          fill="var(--muted-foreground)"
+        >
+          {series.year - 1}
+        </text>
+      )}
+      <path
+        d={path(current)}
+        fill="none"
+        stroke="var(--primary)"
+        strokeWidth={2.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {current.map((c, index) =>
+        index === marked ? null : (
+          <circle key={c.x} cx={c.x} cy={c.y} r={2.5} fill="var(--primary)" />
+        ),
+      )}
+      {point?.prior && (
+        <circle
+          cx={x(point.x)}
+          cy={y(num(point.prior))}
+          r={3.5}
+          fill="var(--background)"
+          stroke="var(--series-prior)"
+          strokeWidth={1.75}
+        />
+      )}
+      {current[marked] && (
+        <circle
+          cx={current[marked].x}
+          cy={current[marked].y}
+          r={active === null ? 4.5 : 5}
+          fill="var(--primary)"
+          stroke="var(--background)"
+          strokeWidth={2}
+        />
+      )}
+      {months.map((bar) => {
+        const strong = bar.month === thisMonth;
         return (
-          <g
-            key={group.key}
-            className="transition-opacity motion-reduce:transition-none"
-            opacity={activeKey === null || activeKey === group.key ? 1 : 0.3}
+          <text
+            key={bar.month}
+            x={x(bar.month - 0.5)}
+            y={height + LABELS - 6}
+            textAnchor="middle"
+            fontSize={11}
+            fontWeight={strong ? 700 : 500}
+            fill={strong ? "var(--foreground)" : "var(--muted-foreground)"}
           >
-            {rect(center - barWidth - 1.5, num(group.prior), "var(--series-prior)")}
-            {group.current && rect(center + 1.5, num(group.current), "var(--primary)")}
-            <text
-              x={center}
-              y={height + LABELS - 6}
-              textAnchor="middle"
-              fontSize={11}
-              fontWeight={strong ? 700 : 500}
-              fill={strong ? "var(--foreground)" : "var(--muted-foreground)"}
-            >
-              {group.tick}
-            </text>
-          </g>
+            {(MONTH_NAMES_DE_SHORT[bar.month - 1] ?? "").charAt(0)}
+          </text>
         );
       })}
     </>
