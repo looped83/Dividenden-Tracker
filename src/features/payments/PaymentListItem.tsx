@@ -2,35 +2,35 @@ import type * as React from "react";
 import { Link } from "react-router";
 import { AmountText } from "@/components/money/AmountText";
 import { Badge } from "@/components/ui/badge";
-import { ListItemBody, ListRow } from "@/components/ui/list";
+import { ListDateTile, ListItemBody, ListRow } from "@/components/ui/list";
+import { weekdayShort } from "@/lib/calendar/format";
+import { formatCalendarDate } from "@/lib/utils/formatDate";
 import type { Money } from "@/lib/money";
 
 /**
  * Ein Dividendeneingang als Listenzeile — **eine** Form fuer Dividendenliste,
- * Uebersicht und Assetseite. Zuvor sah dieselbe Zahlung an drei Stellen
- * verschieden aus: als Karte ohne Depot, als Zeile mit Depot, mit dem Datum als
- * Titel.
+ * Uebersicht und Assetseite.
  *
- * Zeile 1 traegt den Namen, Zeile 2 Datum und Depot links, den Betrag rechts.
+ * Seit 1.11.0 wie ein Termin im Kalender: links das Datumsfeld (Tag und
+ * Monat), Zeile 1 der Name, Zeile 2 Wochentag bzw. Jahr und Depot links, der
+ * Betrag rechts. Ein Eingang und ein angekuendigter Termin sehen damit gleich
+ * aus; zuvor stand das Datum als „11.10." klein in der zweiten Zeile.
+ *
+ * Neben dem Datumsfeld steht der Wochentag, wenn das Jahr anderswo steht
+ * (Monatsueberschrift, juengste Eingaenge), sonst das Jahr (`showYear`) — das
+ * Feld selbst nennt nur Tag und Monat. Das vollstaendige Datum hoeren
+ * Sprachausgaben in jedem Fall.
+ *
  * Die ganze Zeile fuehrt zur Detailseite; dort stehen Bearbeiten, Stornieren
- * und Loeschen.
- *
- * Ohne Kalendersymbol vor dem Datum und ohne Pfeil am Rand: Beide standen in
- * jeder Zeile, sagten nichts, was die Zeile nicht schon zeigt, und nahmen dem
- * Depot die Breite — „Trade Repub…". In Monatsgruppen genuegt „11.10.", Monat
- * und Jahr nennt die Ueberschrift.
- *
- * Das Depot steht immer mit: Wer nach Depot filtert oder nur eines fuehrt,
- * liest es mit, ohne dass es stoert — wer mehrere fuehrt, braucht es.
- *
- * Auf der Assetseite waere der Name in jeder Zeile derselbe wie in der
- * Ueberschrift; dort ist das Datum der Titel und `date` entfaellt.
+ * und Loeschen. Das Depot steht immer mit: Wer mehrere fuehrt, braucht es.
  */
 export function PaymentListItem({
   to,
   state,
   title,
   date,
+  showYear = false,
+  note,
   depot,
   amount,
   cancelled = false,
@@ -40,11 +40,12 @@ export function PaymentListItem({
   to: string;
   state?: unknown;
   title: React.ReactNode;
-  /**
-   * Bereits formatiertes Datum (`formatCalendarDate`, in Monatsgruppen
-   * `formatDayMonth`) — entfaellt, wenn es der Titel ist.
-   */
-  date?: React.ReactNode;
+  /** Datum des Eingangs (ISO). */
+  date: string;
+  /** Jahr statt Wochentag neben dem Datumsfeld, wenn es nirgends sonst steht. */
+  showYear?: boolean;
+  /** Zusatz zum Datum, etwa „tatsächlich 14.10.". */
+  note?: string | undefined;
   depot?: string | null | undefined;
   amount: Money;
   cancelled?: boolean;
@@ -53,11 +54,15 @@ export function PaymentListItem({
   /** Vorjahresvergleich links vom Betrag (`YearOverYearIndicator`). */
   indicator?: React.ReactNode;
 }) {
+  const when = [showYear ? date.slice(0, 4) : weekdayShort(date), note]
+    .filter(Boolean)
+    .join(" · ");
   return (
     <li>
       <ListRow asChild>
         <Link to={to} state={state}>
           <ListItemBody
+            leading={<ListDateTile iso={date} muted={cancelled} />}
             title={
               <>
                 {title}
@@ -69,15 +74,15 @@ export function PaymentListItem({
                 )}
               </>
             }
-            // Datum und Depot bleiben eine Zeile: Reicht die Breite neben dem
-            // Betrag nicht, wird das Depot gekuerzt — die Zeile wird nicht
-            // hoeher als ihre Nachbarn.
+            // Eine Zeile: Reicht die Breite neben dem Betrag nicht, wird das
+            // Depot gekuerzt — die Zeile wird nicht hoeher als ihre Nachbarn.
             meta={
               <span className="flex min-w-0 items-center">
-                {date !== undefined && <span className="shrink-0">{date}</span>}
+                <span className="sr-only">{formatCalendarDate(date)}, </span>
+                <span className="shrink-0">{when}</span>
                 {depot && (
                   <span className="truncate">
-                    {date !== undefined && "\u00A0· "}
+                    <span aria-hidden>{" · "}</span>
                     {depot}
                   </span>
                 )}

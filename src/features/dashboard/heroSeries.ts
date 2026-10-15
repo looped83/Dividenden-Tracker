@@ -80,10 +80,10 @@ function monthBars(
   });
 }
 
-/** „bis Ende März 2026" bzw. „bis 14. Oktober 2026". */
+/** „bis März 2026" bzw. „bis 14. Oktober 2026". */
 function untilLabel(year: number, month: number, day?: number): string {
   return day === undefined
-    ? `bis Ende ${monthNameDe(month)} ${String(year)}`
+    ? `bis ${monthNameDe(month)} ${String(year)}`
     : `bis ${String(day)}. ${monthNameDe(month)} ${String(year)}`;
 }
 
@@ -125,7 +125,7 @@ export function buildHeroSeries(
           label: `${year} bis heute`,
           value: bar.value,
           prior,
-          priorLabel: `${prevYear} bis heute`,
+          priorLabel: prevYear,
           href: paymentsListHref({ year: bar.year }),
         };
       }
@@ -189,7 +189,9 @@ export function buildHeroSeries(
       label: untilLabel(year, month),
       value: running,
       prior: priorLine[month],
-      priorLabel: untilLabel(year - 1, month),
+      // Kurz: Der Zeitraum steht schon darüber, „ggü. bis Ende September
+      // 2025" brach auf dem Telefon um.
+      priorLabel: String(year - 1),
       href: paymentsListHref({ year }),
     });
   }
@@ -202,7 +204,7 @@ export function buildHeroSeries(
       label: untilLabel(year, today.month, today.day),
       value: current,
       prior,
-      priorLabel: untilLabel(year - 1, today.month, today.day),
+      priorLabel: String(year - 1),
       href: paymentsListHref({ year }),
     });
   }

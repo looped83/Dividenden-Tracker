@@ -196,7 +196,7 @@ export function DashboardHero({ payments, selection, today }: DashboardHeroProps
   // Was der Kopf zeigt: der gewählte Punkt oder der Zeitraum.
   const head = point
     ? {
-        label: point.label,
+        label: `Dividenden ${point.label}`,
         value: point.value,
         result: comparePeriods(point.value, point.prior),
         reference: `ggü. ${point.priorLabel}`,
@@ -360,10 +360,10 @@ function buildStats(
       label: monthNameDe(today.month),
       value: <AmountText amount={data.monthNet} />,
       // Ein Monatsziel sagt mehr als der Vorjahresmonat: Es ist die Frage,
-      // die man sich selbst gestellt hat. „Monatsziel" statt „Ziel", damit es
-      // sich nicht mit dem Jahresziel darüber verwechseln lässt.
+      // die man sich selbst gestellt hat. „vom Ziel" genügt — die Kachel
+      // trägt den Monat als Überschrift; „vom Monatsziel" brach um.
       caption: monthly
-        ? `${formatPercent(monthly.percent, 0)} vom Monatsziel`
+        ? `${formatPercent(monthly.percent, 0)} vom Ziel`
         : hasTrend(data.monthResult)
           ? month.caption
           : undefined,

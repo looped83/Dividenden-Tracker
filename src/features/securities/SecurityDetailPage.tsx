@@ -12,7 +12,7 @@ import { PageSkeleton } from "@/components/layout/PageSkeleton";
 import { KpiHero } from "@/components/domain/KpiHero";
 import { AmountText } from "@/components/money/AmountText";
 import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
-import { formatCalendarDate, formatYearSpan } from "@/lib/utils/formatDate";
+import { formatDayMonth, formatYearSpan } from "@/lib/utils/formatDate";
 import {
   aggregate,
   averagePayment,
@@ -307,20 +307,20 @@ export function SecurityDetailPage() {
         >
           <div>
             {/* Der Name stuende in jeder Zeile wie in der Ueberschrift; hier
-                ist das Datum der Titel. */}
+                ist das Depot der Titel. */}
             <ListGroup>
               {recent.map((payment) => (
                 <PaymentListItem
                   key={payment.id}
                   to={`/eingaenge/${payment.id}`}
-                  title={
-                    <>
-                      {formatCalendarDate(payment.payDate)}
-                      {payment.payDate !== payment.actualPayDate &&
-                        ` (tatsächlich ${formatCalendarDate(payment.actualPayDate)})`}
-                    </>
+                  title={depotName(payment.depotId)}
+                  date={payment.payDate}
+                  showYear
+                  note={
+                    payment.payDate !== payment.actualPayDate
+                      ? `tatsächlich ${formatDayMonth(payment.actualPayDate)}`
+                      : undefined
                   }
-                  depot={depotName(payment.depotId)}
                   amount={payment.netAmount}
                 />
               ))}

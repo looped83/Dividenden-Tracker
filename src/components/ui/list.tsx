@@ -2,6 +2,7 @@ import * as React from "react";
 import { ChevronRight } from "lucide-react";
 import { Slot } from "@radix-ui/react-slot";
 import { cn } from "@/lib/utils/cn";
+import { dateTile } from "@/lib/calendar/format";
 import { Section } from "@/components/ui/section";
 
 /**
@@ -102,6 +103,33 @@ export function ListRow({
       className={cn(interactive ? interactiveRowClassName : rowClassName, className)}
       {...props}
     />
+  );
+}
+
+/**
+ * Datumsfeld am Anfang einer Zeile: Tag groß, Monat klein darunter — dieselbe
+ * Kachel für Termine (Kalender, „Demnächst") und Eingänge (seit 1.11.0). Ein
+ * Datum soll überall gleich aussehen.
+ *
+ * Rein dekorativ (`aria-hidden`): Die Zeile nennt das Datum vollständig in
+ * ihrer Bezeichnung oder als Text für Sprachausgaben. Grau wie die übrigen
+ * Flächen: Blau markiert Aktionen, nicht Daten.
+ */
+export function ListDateTile({ iso, muted = false }: { iso: string; muted?: boolean }) {
+  const { day, month } = dateTile(iso);
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        "flex size-11 shrink-0 flex-col items-center justify-center rounded-xl bg-muted",
+        muted ? "text-muted-foreground" : "text-foreground",
+      )}
+    >
+      <span className="text-base font-semibold leading-none tabular-amount">{day}</span>
+      <span className="mt-0.5 text-[0.625rem] font-semibold uppercase leading-none tracking-wide text-muted-foreground">
+        {month}
+      </span>
+    </span>
   );
 }
 

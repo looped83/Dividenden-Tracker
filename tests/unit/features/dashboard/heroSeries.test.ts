@@ -48,7 +48,7 @@ describe("buildHeroSeries", () => {
   it("zeigt ein abgeschlossenes Jahr kumuliert bis Dezember", () => {
     const series = buildHeroSeries(PAYMENTS, 2025, TODAY, "cumulative");
     expect(series.points).toHaveLength(12);
-    expect(series.points[11].label).toBe("bis Ende Dezember 2025");
+    expect(series.points[11].label).toBe("bis Dezember 2025");
     expect(series.points[11].prior?.toStringValue()).toBe("50.00");
   });
 

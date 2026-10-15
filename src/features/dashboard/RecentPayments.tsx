@@ -3,7 +3,8 @@ import { Badge } from "@/components/ui/badge";
 import { ListGroup } from "@/components/ui/list";
 import { PaymentListItem } from "@/features/payments/PaymentListItem";
 import { recentPayments, type AnalyticsPayment } from "@/lib/statistics";
-import { formatIsoDate, type EntityInfo } from "./format";
+import { formatDayMonth } from "@/lib/utils/formatDate";
+import type { EntityInfo } from "./format";
 
 interface RecentPaymentsProps {
   /** Gesamte aktive Historie (die letzten Eingaenge, unabhaengig vom Jahr, §11). */
@@ -49,10 +50,11 @@ export function RecentPayments({ payments, securities, depots }: RecentPaymentsP
                     </Badge>
                   ) : undefined
                 }
-                date={
+                date={payment.payDate}
+                note={
                   shifted
-                    ? `${formatIsoDate(payment.payDate)} (tatsächlich ${formatIsoDate(payment.actualPayDate)})`
-                    : formatIsoDate(payment.payDate)
+                    ? `tatsächlich ${formatDayMonth(payment.actualPayDate)}`
+                    : undefined
                 }
                 depot={depots.get(payment.depotId)?.name ?? "Unbekannt"}
                 amount={payment.netAmount}

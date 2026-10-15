@@ -147,7 +147,7 @@ Eigene zusammengesetzte Komponenten (fachlich):
 | `ListGroup` / `ListRow` / `ListItemBody` / `ListSection` | **Eine Listenform** für Einträge (`components/ui/list.tsx`): Zeilen mit Trennlinien statt einzelner Karten, seit 1.9.0 überall ohne Rahmen (die frühere Fassung `inset` ist die einzige). Zeile 1 der Name (höchstens zwei Zeilen), Zeile 2 Angaben links und Wert rechts; `asChild` macht die ganze Zeile zur Tippfläche. `ListSection` gruppiert (Monat, „Diese Woche") mit Kennzahl im Kopf **Datenlisten ohne Pfeil am Rand und ohne Kalendersymbol vor dem Datum** (Eingänge, Termine, Assets, Statistik, Datenqualität): Beide standen in jeder Zeile, sagten nichts, was Tippfläche und Inhalt nicht schon sagen, und nahmen dem Depot die Breite („Trade Repub…"). `chevron` bleibt einzelnen Navigationszeilen („Gesamt seit März 2019") vorbehalten |
 | `Section` / `SectionLink` | Abschnitt **ohne Kartenrahmen** (`components/ui/section.tsx`, seit 1.7.0): Überschrift 19 px, rechts höchstens eine Aktion — ein Textlink in Primärblau mit Pfeil (`SectionLink`, „Alle", „Kalender") oder ein Umschalter —, darunter optional eine Zeile Beschreibung. Abschnitte trennen sich durch Abstand (40 px, ab `lg` 48 px) und Überschrift, nicht durch Rahmen. **Wann Abschnitt, wann Karte:** Lese-Seiten gliedern mit Abschnitten (Übersicht, Statistik, Depot-Entwicklung, Assetseite, Ergebnisse des Zeitraumvergleichs). Seit 1.9.0 gliedern auch Einstellungen, Zeitraumvergleich und Detailseiten mit Abschnitten; Karten mit Rahmen bleiben Formularen in Dialogen, dem Import-Assistenten und den Dubletten-Paaren vorbehalten, gleichartige Kacheln (Ziele, „Mehr") stehen auf gedämpfter Fläche (siehe „Eine Linie für alle Seiten") |
 | `SegmentedControl` | Umschalter zwischen wenigen Zuständen (Optionsgruppe). `variant="pill"` ist die leise Fassung für Abschnittsköpfe (Diagrammsicht, Assets/Depots): gedämpfte Fläche, 32 px hoch, Tippfläche per Pseudo-Element 44 px |
-| `PaymentListItem` | Ein Dividendeneingang als Zeile — dieselbe in Dividendenliste, Übersicht und Assetseite: Name, Datum · Depot, Betrag (Depot wird gekürzt, nie umbrochen). In Monatsgruppen nur „11.10." (`formatDayMonth`) — Monat und Jahr nennt die Überschrift, Sprachausgaben bekommen das Jahr dennoch mit. Auf der Assetseite ist das Datum der Titel |
+| `PaymentListItem` | Ein Dividendeneingang als Zeile — dieselbe in Dividendenliste, Übersicht und Assetseite und seit 1.11.0 in der Form eines Kalendertermins: links das Datumsfeld (`ListDateTile`, Tag und Monat), daneben Name, darunter Wochentag · Depot und rechts der Betrag (Depot wird gekürzt, nie umbrochen). Ohne Monatsgruppen steht statt des Wochentags das Jahr; Sprachausgaben hören das vollständige Datum. Auf der Assetseite ist das Depot der Titel |
 | `PaymentTable` / Liste | Tabelle ab `md` (Aktionen je Zeile) bzw. `PaymentListItem`-Liste auf dem Telefon, nach Datum sortiert nach Monat gruppiert mit Monatssumme im Kopf; darüber Anzahl und Summe der Auswahl; „weitere laden" statt Blättern (die geladene Menge steht in der Adresse, der Weg zurück findet sie wieder) |
 | `DetailHeader` | **Ein** Kopf für Zahlung, Asset und Ziel: Rückweg links und Symbolaktionen rechts in einer Zeile, darunter Titel samt Zustand (nur der Sonderfall), Zusatzzeile und — wo es eine gibt — die Kennzahl (Betrag der Zahlung). Bearbeiten, Stornieren/Archivieren, Löschen stehen hier und nicht in den Listen: Eine Zeile ist **eine** Tippfläche |
 | `SegmentedControl` | Umschalter zwischen wenigen Zuständen (Erscheinungsbild, Kalenderansicht, Verlauf nach Jahren/Monaten) — immer Symbol **und** Text, als Optionsgruppe (`radiogroup`); auf dem Telefon in voller Breite |
@@ -382,8 +382,8 @@ das **Jahresziel** als 4-px-Balken mit Zeile „40,4 % vom Ziel 3.200,00 €"; r
 laufenden Jahr die **Prognose** (gestrichelte Verlängerung des Balkens, CALCULATION_RULES.md
 §9.7), sonst Restbetrag bzw. Ergebnis. Führt zur Zieldetailseite; ohne Ziel „Jahresziel für 2026
 festlegen". Dann das Diagramm und eine gedämpfte Fläche mit drei Kennzahlen ohne Trennlinien:
-laufender Monat (mit Monatsziel „17 % vom Monatsziel" — nicht „vom Ziel", sonst verwechselbar
-mit dem Jahresziel —, sonst Vorjahresvergleich), Ø pro Monat, bester Monat; außerhalb des
+laufender Monat (mit Monatsziel „17 % vom Ziel" — die Kachel trägt den Monat als Überschrift,
+„vom Monatsziel" brach um —, sonst Vorjahresvergleich), Ø pro Monat, bester Monat; außerhalb des
 laufenden Jahres statt des Monats die Zahl der Zahlungen samt Breite.
 
 **Diagramm im Kopf:** ein eigenes SVG (`HeroChart`) statt Recharts — es steht im ersten
@@ -393,7 +393,8 @@ Linie gegen das Vorjahr (gestrichelt; im laufenden Jahr endet die Linie heute) o
 Monatssummen als Balkenpaare. „Alle Jahre" zeigt den Verlauf der Jahressummen als Linie (seit 1.11.0; fünfzehn Säulen
 wurden auf dem Telefon zu Strichen), beschriftet ist jedes Jahr, für das Platz ist, das
 laufende immer. **Wischen statt Tooltip:**
-Fahren oder Wischen wählt einen Punkt, der Kopf zeigt dann dessen Stand samt Vergleich, und der
+Fahren oder Wischen wählt einen Punkt, der Kopf zeigt dann dessen Stand samt Vergleich („Dividenden bis September 2026",
+„+3.059,15 € ggü. 2025" — kurz, damit die Zeile auf dem Telefon nicht umbricht), und der
 Betrag führt zu diesen Zahlungen. Mit der Maus endet die Auswahl beim Verlassen und ein Klick
 öffnet die Zahlungen; mit dem Finger bleibt sie stehen, bis man den Punkt erneut antippt.
 Tastatur: Das Diagramm ist ein Schieberegler (`role="slider"`, Pfeiltasten, Pos1/Ende, Enter

@@ -56,7 +56,7 @@ import {
 } from "@/features/payments/listParams";
 import { sortRows, type SortableRow } from "@/features/payments/sortRows";
 import { sourceLabel } from "@/features/payments/paymentDisplay";
-import { formatCalendarDate, formatDayMonth } from "@/lib/utils/formatDate";
+import { formatCalendarDate } from "@/lib/utils/formatDate";
 import {
   DeleteDialog,
   StornoDialog,
@@ -841,18 +841,9 @@ function PaymentItem({
       to={`/eingaenge/${payment.id}`}
       state={{ from: listUrl }}
       title={companyName || "—"}
-      date={
-        dayOnly ? (
-          // Das Jahr steht in der Monatsueberschrift; Sprachausgaben nennen es
-          // trotzdem mit, weil sie eine Zeile oft ohne Ueberschrift ansteuern.
-          <>
-            {formatDayMonth(effectiveDate)}
-            <span className="sr-only">{effectiveDate.slice(0, 4)}</span>
-          </>
-        ) : (
-          formatCalendarDate(effectiveDate)
-        )
-      }
+      date={effectiveDate}
+      // Ohne Monatsgruppen steht das Jahr sonst nirgends.
+      showYear={!dayOnly}
       depot={depotName}
       amount={amount}
       cancelled={Boolean(payment.archived_at)}
