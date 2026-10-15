@@ -27,7 +27,8 @@ Umsetzung als CSS-Variablen (Tailwind-4-`@theme`), Hell- und Dunkelmodus über
 | `--input` | Rahmen von Bedienelementen | Grau ≥ 3:1 gegen jede Nachbarfläche | dito, heller gesetzt |
 | `--foreground` | Text | fast Schwarz | helles Grau |
 | `--muted-foreground` | Sekundärtext, Labels | Grau ≥ 4,5:1 Kontrast | dito |
-| `--primary` | Aktionen, aktive Navigation | gedecktes Tiefblau | helleres Blau |
+| `--primary` | Aktionen: Erfassen, Schaltflächen, Links | gedecktes Tiefblau | helleres Blau |
+| `--accent` | Hover, aktive Navigation (mit halbfetter Schrift) | neutrales Hellgrau | neutrale Stufe über der Karte |
 | `--positive` | Zuwächse, Eingänge | gedecktes Grün | angepasst, Kontrast AA |
 | `--negative` | Korrekturen, Rückgänge, Fehler | gedecktes Rot | angepasst |
 | `--warning` | Warnungen, mögliche Duplikate | Bernstein | angepasst |
@@ -35,6 +36,13 @@ Umsetzung als CSS-Variablen (Tailwind-4-`@theme`), Hell- und Dunkelmodus über
 
 Regeln: Bedeutung nie durch Farbe allein (immer Text/Symbol dazu, z. B. Vorzeichen);
 alle Text-/Hintergrund-Paare ≥ WCAG AA (4,5:1; große Zahlen 3:1).
+
+**Schwarz für Daten, Blau für Aktionen, Grün/Rot für Veränderung** (seit 1.7.0). Die
+Neutraltöne tragen keinen Blaustich mehr (Chroma ≤ 0,006). Blau steht nur dort, wo etwas
+passiert — der aktive Navigationspunkt ist ein Ort und wird über Vordergrundfarbe und
+Gewicht markiert, nicht über Blau. Gemessen hell: Vordergrund 18,1:1 auf der Seite,
+Sekundärtext 6,0:1 auf der Seite und 5,1:1 auf dem Akzent, `--input` ≥ 3,1:1 gegen jede
+Nachbarfläche.
 
 #### 1a Diagrammpalette (kategorial)
 
@@ -105,8 +113,9 @@ als Serienfarbe benutzt — auch dann nicht, wenn ein Farbton ähnlich aussieht.
   Bedienelement daneben — `-my-2` bei `size="sm"` (36 px), `sm:-my-3` bei einem Feld mit
   44 px. Ohne das saß die Überschrift einer Karte mit Schaltfläche 10 px tiefer als die der
   Karte daneben, mit Suchfeld 14 px.
-- Radius 8 px (Karten 12 px); Schatten nur eine dezente Stufe für schwebende Elemente
-  (Dialoge, Popover) — Karten trennen sich per Fläche und 1-px-Border, nicht per Schatten.
+- Radius 8 px für Bedienelemente, 16 px für Karten und gerahmte Listen, Pillen für die
+  Erfassen-Schaltfläche der Seitenleiste. Schatten nur eine dezente Stufe für schwebende
+  Elemente (Dialoge, Popover) — Karten trennen sich per Haarlinie, nicht per Schatten.
 - Animationen: nur funktionale Übergänge ≤ 200 ms (Panel auf/zu, Fokus); Diagramme ohne
   Intro-Animation — für alle, nicht nur bei `prefers-reduced-motion` (`CHART_SERIES_PROPS` in
   `chartTheme.ts`): Die Reihen wuchsen rund 1,5 s aus der Nulllinie, so lange stand ein leeres
@@ -218,8 +227,11 @@ ein anderer Platz fürs Zurücksetzen fallen beim Wechsel sofort auf.
 
 ### iPhone (< 768 px)
 
-- Bottom Navigation (5 Slots): Übersicht · Eingänge · **＋ Erfassen** (zentral, hervorgehoben)
-  · Statistiken · Mehr (Kalender, Depot, Ziele, Einstellungen).
+- Bottom Navigation (5 Slots): Übersicht · Eingänge · **＋ Erfassen** (zentral, als einziger
+  gefüllter Kreis in Primärblau) · Statistiken · Mehr (Kalender, Depot, Ziele, Einstellungen).
+  Erfassen sitzt in der Leiste statt darüber — der herausragende Knopf verdeckte beim Scrollen
+  Inhalt. Die Leiste ist leicht durchscheinend; aktiv ist ein Eintrag in Vordergrundfarbe und
+  halbfett.
 - Listen statt breiter Tabellen: je Zahlung eine Zeile (`PaymentListItem`), nach Monat
   gruppiert mit Monatssumme; „weitere laden" statt Blättern. Tabellen der Statistik werden zu
   Listen (`StatTable`), die Matrix Jahre × Monate steht gedreht (Monate als Zeilen).
