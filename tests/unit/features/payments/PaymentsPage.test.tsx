@@ -273,7 +273,7 @@ describe("PaymentsPage", () => {
     // Die Namen nennen den Eingang: 25 gleichlautende „Bearbeiten" liessen
     // sich per Screenreader nicht auseinanderhalten.
     expect(
-      screen.getByRole("link", { name: "Apple Inc. vom 10.03.2026 bearbeiten" }),
+      screen.getByRole("button", { name: "Apple Inc. vom 10.03.2026 bearbeiten" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Apple Inc. vom 10.03.2026 stornieren" }),

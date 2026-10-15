@@ -69,6 +69,7 @@ import {
 import { YearOverYearIndicator } from "@/features/payments/YearOverYearIndicator";
 import { PaymentListItem } from "@/features/payments/PaymentListItem";
 import { groupByMonth, monthTotals, totalOrNull } from "@/features/payments/monthGroups";
+import { usePaymentComposer } from "@/features/payments/PaymentComposer";
 
 type Row = {
   payment: PaymentListRow;
@@ -93,6 +94,7 @@ const SORT_OPTIONS: readonly FilterSortOption[] = [
 
 export function PaymentsPage() {
   const { notify } = useToast();
+  const newPayment = usePaymentComposer();
   const { data: depots = [] } = useDepots();
   const { data: securities = [], isLoading: securitiesLoading } = useSecurities();
 
@@ -520,8 +522,8 @@ export function PaymentsPage() {
           title="Noch kein Dividendeneingang erfasst"
           description="Erfasse deinen ersten Dividendeneingang."
           action={
-            <Button asChild>
-              <Link to="/eingaenge/neu">Ersten Eingang erfassen</Link>
+            <Button aria-haspopup="dialog" {...newPayment}>
+              Ersten Eingang erfassen
             </Button>
           }
         />
@@ -725,6 +727,7 @@ function PaymentRow({
   const shifted = effectiveDate !== payment.pay_date;
   const cancelled = Boolean(payment.archived_at);
   const subject = actionSubject(row);
+  const edit = usePaymentComposer({ paymentId: payment.id });
   return (
     <TableRow>
       <TableCell className="whitespace-nowrap text-muted-foreground tabular-amount">
@@ -785,14 +788,10 @@ function PaymentRow({
                 variant="ghost"
                 size="icon"
                 aria-label={`${subject} bearbeiten`}
-                asChild
+                aria-haspopup="dialog"
+                {...edit}
               >
-                <Link
-                  to={`/eingaenge/${payment.id}/bearbeiten`}
-                  state={{ from: listUrl }}
-                >
-                  <Pencil />
-                </Link>
+                <Pencil />
               </Button>
               <Button
                 variant="ghost"

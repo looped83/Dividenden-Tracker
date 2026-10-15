@@ -7,14 +7,68 @@ import { cn } from "@/lib/utils/cn";
 export const Dialog = DialogPrimitive.Root;
 export const DialogTrigger = DialogPrimitive.Trigger;
 
+/**
+ * Haelt das Panel auf dem Telefon ueber der Bildschirmtastatur.
+ *
+ * iOS legt die Tastatur **ueber** die Seite, statt sie zu verkleinern: Ein
+ * unten verankertes Panel lag mit seinen Feldern und „Speichern" darunter, und
+ * Safari schob die ganze Seite ruckartig nach oben. Der sichtbare Ausschnitt
+ * (`visualViewport`) verraet, wie viel die Tastatur verdeckt; das Panel
+ * rueckt um genau diesen Betrag hoch und wird hoechstens so hoch wie der Rest.
+ *
+ * Geschrieben wird direkt in zwei CSS-Variablen des Panels, nicht in den
+ * Zustand: Die Tastatur faehrt in vielen kleinen Schritten aus, und jeder
+ * Schritt waere sonst ein Rendern. Ab `sm` ignoriert das Panel die Variablen
+ * (dort steht es mittig, ohne Bildschirmtastatur).
+ */
+function trackKeyboard(node: HTMLElement): () => void {
+  const viewport = window.visualViewport;
+  if (!viewport) return () => undefined;
+  const update = () => {
+    // Beim Zoomen schrumpft der Ausschnitt ebenfalls — das ist keine Tastatur.
+    const inset =
+      viewport.scale > 1.01
+        ? 0
+        : Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
+    node.style.setProperty("--keyboard-inset", `${String(Math.round(inset))}px`);
+    node.style.setProperty(
+      "--viewport-height",
+      `${String(Math.round(viewport.height))}px`,
+    );
+  };
+  update();
+  viewport.addEventListener("resize", update);
+  viewport.addEventListener("scroll", update);
+  return () => {
+    viewport.removeEventListener("resize", update);
+    viewport.removeEventListener("scroll", update);
+  };
+}
+
 export function DialogContent({
   className,
   children,
+  ref,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content>) {
+  const contentRef = React.useCallback(
+    (node: HTMLDivElement | null) => {
+      if (typeof ref === "function") ref(node);
+      else if (ref) ref.current = node;
+      if (!node) return;
+      const stop = trackKeyboard(node);
+      return () => {
+        stop();
+        if (typeof ref === "function") ref(null);
+        else if (ref) ref.current = null;
+      };
+    },
+    [ref],
+  );
+
   return (
     <DialogPrimitive.Portal>
-      <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+      <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 duration-300 sm:duration-150" />
       <DialogPrimitive.Content
         className={cn(
           // **Eine** Breitenklasse, kein `max-w-sm sm:max-w-lg`: Ein `max-w-*`
@@ -39,14 +93,21 @@ export function DialogContent({
           // auf dem Telefon auf ~530px, Text lief rechts aus dem Bild, und man
           // musste seitlich scrollen. Mit `minmax(0,1fr)` bleibt die Breite
           // beim Panel; Tabellen scrollen in ihrem eigenen Rahmen.
+          //
+          // **Das Panel faehrt von unten herein** und legt sich ueber Seite und
+          // Bottom-Navigation — wie ein Sheet unter iOS. Ist die Tastatur
+          // offen, steht es ueber ihr (`trackKeyboard`).
           "fixed left-1/2 z-50 grid w-full max-w-lg -translate-x-1/2 grid-cols-[minmax(0,1fr)]",
-          "bottom-0 max-h-[92dvh] rounded-t-xl",
+          "bottom-[var(--keyboard-inset,0px)] max-h-[min(92dvh,calc(var(--viewport-height,100dvh)_-_0.5rem))] rounded-t-xl",
           "sm:bottom-auto sm:top-1/2 sm:w-[calc(100%-1rem)] sm:max-h-[90vh] sm:-translate-y-1/2 sm:rounded-lg",
-          "gap-4 overflow-y-auto border border-border bg-card p-4 shadow-lg sm:p-6",
+          "gap-4 overflow-y-auto overscroll-contain border border-border bg-card p-4 shadow-lg sm:p-6",
           "pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-6",
-          "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:slide-in-from-bottom-4 motion-reduce:animate-none",
+          "data-[state=open]:animate-in data-[state=closed]:animate-out motion-reduce:animate-none",
+          "duration-300 ease-out data-[state=open]:slide-in-from-bottom data-[state=closed]:slide-out-to-bottom",
+          "sm:duration-150 sm:data-[state=open]:fade-in-0 sm:data-[state=open]:slide-in-from-bottom-4 sm:data-[state=closed]:fade-out-0 sm:data-[state=closed]:slide-out-to-bottom-0",
           className,
         )}
+        ref={contentRef}
         {...props}
       >
         {children}

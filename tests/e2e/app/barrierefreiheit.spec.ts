@@ -26,7 +26,6 @@ test.use({
 const ROUTEN = [
   { pfad: "/#/", name: "Übersicht", warten: "Übersicht" },
   { pfad: "/#/eingaenge", name: "Dividenden", warten: "Dividenden" },
-  { pfad: "/#/eingaenge/neu", name: "Neue Dividende", warten: "Neue Dividende" },
   { pfad: "/#/eingaenge/datenqualitaet", name: "Datenqualität", warten: "Datenqualität" },
   { pfad: "/#/kalender", name: "Kalender", warten: "Kalender" },
   { pfad: "/#/depot", name: "Depot", warten: "Depot" },
@@ -67,6 +66,14 @@ for (const theme of ["light", "dark"] as const) {
     });
   }
 }
+
+test("geöffnetes Sheet „Neue Dividende“ ist frei von axe-Verstößen", async ({ page }) => {
+  await page.goto("/#/eingaenge/neu");
+  await expect(
+    page.getByRole("dialog").getByRole("heading", { name: "Neue Dividende" }),
+  ).toBeVisible();
+  await pruefeAxe(page, "Neue Dividende");
+});
 
 test("geöffneter Storno-Dialog ist frei von axe-Verstößen", async ({ page, konto }) => {
   await page.goto(`/#/eingaenge/${konto.paymentIds[0] ?? ""}`);

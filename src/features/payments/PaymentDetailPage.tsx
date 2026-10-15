@@ -38,6 +38,7 @@ import {
   StornoDialog,
   type PaymentSummaryData,
 } from "@/features/payments/dialogs";
+import { usePaymentComposer } from "@/features/payments/PaymentComposer";
 
 function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -57,6 +58,7 @@ export function PaymentDetailPage() {
   // wo man sie verlassen hat. Direkt aufgerufen bleibt es die ganze Liste.
   const from = (useLocation().state as { from?: string } | null)?.from;
   const listUrl = from ?? "/eingaenge";
+  const edit = usePaymentComposer({ paymentId: id });
   const { data: payment, isLoading, isError } = usePayment(id);
   const { data: depots = [] } = useDepots();
   const { data: securities = [] } = useSecurities();
@@ -189,13 +191,14 @@ export function PaymentDetailPage() {
         actions={
           <>
             {!cancelled && (
-              <Button variant="outline" size="icon" asChild aria-label="Bearbeiten">
-                <Link
-                  to={`/eingaenge/${payment.id}/bearbeiten`}
-                  state={from ? { from } : undefined}
-                >
-                  <Pencil />
-                </Link>
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label="Bearbeiten"
+                aria-haspopup="dialog"
+                {...edit}
+              >
+                <Pencil />
               </Button>
             )}
             {cancelled ? (

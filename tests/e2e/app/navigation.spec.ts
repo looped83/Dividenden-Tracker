@@ -35,7 +35,7 @@ test("ein Wechsel des Bereichs beginnt oben, der Weg zurueck an Ort und Stelle",
   const unten = await page.evaluate(() => window.scrollY);
   expect(unten).toBeGreaterThan(100);
 
-  await page.getByRole("link", { name: "Bearbeiten" }).last().click();
+  await page.getByRole("main").getByRole("link", { name: "Muster AG" }).last().click();
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
 

@@ -1,7 +1,6 @@
 /** Bereichsnamen zu den Pfaden der Hauptnavigation (PRODUCT_SPEC.md §4). */
 const AREA_NAMES: readonly { prefix: string; name: string; exact?: boolean }[] = [
   { prefix: "/", name: "Übersicht", exact: true },
-  { prefix: "/eingaenge/neu", name: "Neue Dividende" },
   { prefix: "/eingaenge/datenqualitaet", name: "Datenqualität" },
   { prefix: "/eingaenge", name: "Dividenden" },
   { prefix: "/depot/entwicklung", name: "Depot, Entwicklung" },

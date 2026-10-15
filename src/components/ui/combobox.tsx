@@ -76,6 +76,12 @@ export function Combobox({
   const activeOption =
     activeIndex >= 0 && activeIndex < matches.length ? matches[activeIndex] : undefined;
 
+  // Beim Aufklappen die ganze Liste in Sicht holen: Steht das Feld weit unten
+  // (oder ueber der Bildschirmtastatur), laege sie sonst ausserhalb.
+  React.useEffect(() => {
+    if (open) listRef.current?.scrollIntoView({ block: "nearest" });
+  }, [open]);
+
   // Aktive Zeile in Sicht halten (Tastaturbedienung bei langen Listen).
   React.useEffect(() => {
     if (!open) return;
@@ -105,11 +111,14 @@ export function Combobox({
     setOpen(true);
   };
 
+  // Fokus zurueck ins Feld **vor** `onChange`: So darf der Aufrufer den Fokus
+  // gleich weiterreichen (etwa ans naechste Feld), ohne dass er hier wieder
+  // eingefangen wird.
   const commit = (option: ComboboxOption) => {
-    onChange(option.value);
     setOpen(false);
     setQuery("");
     inputRef.current?.focus();
+    onChange(option.value);
   };
 
   const onKeyDown = (event: React.KeyboardEvent) => {
@@ -156,8 +165,21 @@ export function Combobox({
         // zuvor fokussierten Feldes bei — aus dem Betragsfeld heraus stand im
         // Suchfeld der Zahlenblock (siehe ui/input.tsx).
         inputMode="text"
+        // Keine Vorschlaege der Tastatur: Gesucht wird ein Asset, kein Kontakt
+        // und kein Wort. `autoComplete="off"` allein uebergeht iOS — es bot
+        // ueber der Tastatur Kontakte an. Abgeschaltet werden deshalb auch
+        // Autokorrektur, Grossschreibung und Rechtschreibpruefung; das
+        // Wort „Name" bleibt aus Platzhalter und Beschriftung, weil Safari
+        // ein Feld daran als Namensfeld erkennt.
         role="combobox"
+        name={`${id}-search`}
         autoComplete="off"
+        autoCorrect="off"
+        autoCapitalize="none"
+        spellCheck={false}
+        enterKeyHint="search"
+        data-1p-ignore
+        data-lpignore="true"
         aria-expanded={open}
         aria-controls={listId}
         aria-autocomplete="list"
