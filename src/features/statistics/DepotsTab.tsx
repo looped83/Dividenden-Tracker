@@ -128,7 +128,7 @@ export function DepotsTab() {
   }
 
   const distribution = (
-    <Section title="Depotverteilung">
+    <Section title="Verteilung" action={<BreakdownSwitch />} actionClassName="shrink-0">
       <div>
         <RankedBars
           items={distributionItems}
@@ -145,7 +145,10 @@ export function DepotsTab() {
     // Liste, die vollstaendig ins Bild passt, ist ein Bedienelement ohne
     // Aufgabe — anders als bei den Unternehmen, wo Hunderte Zeilen stehen
     // koennen.
-    <Section title={isWide ? "Depotstatistik" : "Depotverteilung"}>
+    <Section
+      title={isWide ? "Depotstatistik" : "Verteilung"}
+      {...(!isWide && { action: <BreakdownSwitch />, actionClassName: "shrink-0" })}
+    >
       <div>
         <StatTable
           rows={stats}
@@ -181,7 +184,6 @@ export function DepotsTab() {
   // Monate, Tabelle.
   return (
     <div className="space-y-10">
-      <BreakdownSwitch />
       {isWide ? distribution : statistic}
       <Section title="Monatliche Verteilung">
         <div>

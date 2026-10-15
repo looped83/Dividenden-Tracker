@@ -62,3 +62,10 @@ export const EMPTY_STATISTICS_FILTER: StatisticsFilter = {
   securityId: null,
   depotId: null,
 };
+
+/** Wie viele Filter wirken — fuer den Schalter im Seitenkopf. */
+export function activeFilterCount(filter: StatisticsFilter, showYear: boolean): number {
+  return [showYear ? filter.year : null, filter.securityId, filter.depotId].filter(
+    (value) => value !== null,
+  ).length;
+}

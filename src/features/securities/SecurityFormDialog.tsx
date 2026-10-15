@@ -254,7 +254,10 @@ export function NewAssetButton() {
 
   return (
     <>
+      {/* Umriss statt Fuellung: im Seitenkopf in der Form der Jahresauswahl
+          der Uebersicht. Gefuellt bleibt allein das Erfassen der Navigation. */}
       <Button
+        variant="outline"
         onClick={() => {
           setOpen(true);
         }}

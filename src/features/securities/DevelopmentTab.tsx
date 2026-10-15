@@ -133,7 +133,7 @@ export function DevelopmentTab() {
           des Vergleichs wirkt. Jahr und Depotkonto waeren wirkungslos (siehe
           `DevelopmentView`), und ein wirkungsloses Bedienelement ist schlimmer
           als keines. */}
-      <FilterBar activeCount={filter.securityId === null ? 0 : 1}>
+      <FilterBar>
         <FilterField id="depot-development-asset" label="Asset">
           <EntitySelect
             id="depot-development-asset"

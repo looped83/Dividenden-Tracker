@@ -5,6 +5,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { SectionButton } from "@/components/ui/section";
+import { SegmentedControl, type SegmentOption } from "@/components/ui/segmented";
 import { useToast } from "@/components/ui/toast";
 import { isoFromRef, refDateFromDate } from "@/lib/statistics";
 import { useToday } from "@/lib/hooks/useToday";
@@ -16,12 +18,21 @@ import { cn } from "@/lib/utils/cn";
 import type { CalendarEvent } from "@/lib/calendar/types";
 import { useAutoCalendarSync, useCalendarSyncStatus, useSyncCalendar } from "./hooks";
 import { useResolvedCalendarEvents } from "./resolvedEvents";
-import { useCalendarViewMode } from "./viewMode";
+import { useCalendarViewMode, type CalendarViewMode } from "./viewMode";
 import { CalendarSummaryTiles } from "./CalendarSummary";
 import { CalendarToolbar } from "./CalendarToolbar";
 import { MonthView } from "./MonthView";
 import { AgendaView } from "./AgendaView";
 import { EventDetailDialog } from "./EventDetailDialog";
+
+/**
+ * Die Liste steht links: Sie ist die Voreinstellung und die Ansicht, mit der
+ * die meisten Wege beginnen — das Monatsraster ist der Nebenweg.
+ */
+const VIEW_OPTIONS: readonly SegmentOption<CalendarViewMode>[] = [
+  { value: "agenda", label: "Liste" },
+  { value: "month", label: "Monat" },
+];
 
 const SYNC_FAILED_HINT =
   "Der Dividendenkalender konnte gerade nicht aktualisiert werden. Die zuletzt gespeicherten Termine werden weiterhin angezeigt.";
@@ -122,28 +133,24 @@ export function CalendarPage() {
   // Blick" sagte dasselbe wie der Titel darüber. Was der Bereich zeigt und was
   // er **nicht** zeigt (erhaltene Zahlungen), steht dort, wo die Frage
   // entsteht — im Detaildialog eines Termins.
+  //
+  // „Kalender" wie in der Navigation. Rechts im Kopf die Wahl der Darstellung
+  // — dort, wo auf der Übersicht die Jahresauswahl steht; sie gilt für die
+  // ganze Seite. Das Aktualisieren gehört zur Angabe, wann zuletzt
+  // abgeglichen wurde, und steht deshalb in deren Zeile am Seitenende.
   const heading = (
     <PageHeader
-      title="Dividendenkalender"
+      title="Kalender"
       actions={
-        // Auf dem Telefon als Symbol neben dem Titel — beschriftet brach die
-        // Schaltflaeche in eine eigene Zeile unter „Dividendenkalender" um.
-        // Ab `sm` mit Text, wie die Datenqualitaet in der Dividendenliste.
-        <Button
-          variant="outline"
-          onClick={() => {
-            runSync({ announce: true });
-          }}
-          disabled={isSyncing}
-          aria-busy={isSyncing}
-          aria-label={isSyncing ? "Wird aktualisiert …" : "Aktualisieren"}
-          className="w-11 px-0 sm:w-auto sm:px-4"
-        >
-          <RefreshCw className={cn(isSyncing && "animate-spin")} aria-hidden />
-          <span className="hidden sm:inline">
-            {isSyncing ? "Wird aktualisiert …" : "Aktualisieren"}
-          </span>
-        </Button>
+        events.length > 0 && !eventsQuery.isError ? (
+          <SegmentedControl
+            variant="pill"
+            label="Darstellung"
+            options={VIEW_OPTIONS}
+            value={viewMode}
+            onChange={setViewMode}
+          />
+        ) : undefined
       }
     />
   );
@@ -188,7 +195,7 @@ export function CalendarPage() {
           }
         />
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-10">
           {syncErrorMessage && (
             <Alert variant="destructive">
               <AlertDescription>{syncErrorMessage}</AlertDescription>
@@ -201,45 +208,45 @@ export function CalendarPage() {
 
           {/* Ohne einen einzigen Termin gibt es nichts zu blaettern und nichts
               umzuschalten; die Bedienleiste bliebe eine leere Geste. */}
-          {events.length > 0 && (
-            <CalendarToolbar
-              mode={viewMode}
-              onModeChange={setViewMode}
-              year={visibleMonth.year}
-              month={visibleMonth.month}
-              onShiftMonth={(delta) => {
-                setVisibleMonth((current) =>
-                  shiftMonth(current.year, current.month, delta),
-                );
-              }}
-              onToday={() => {
-                const ref = refDateFromDate();
-                setVisibleMonth({ year: ref.year, month: ref.month });
-              }}
-            />
-          )}
+          <div className="space-y-4">
+            {events.length > 0 && viewMode === "month" && (
+              <CalendarToolbar
+                year={visibleMonth.year}
+                month={visibleMonth.month}
+                onShiftMonth={(delta) => {
+                  setVisibleMonth((current) =>
+                    shiftMonth(current.year, current.month, delta),
+                  );
+                }}
+                onToday={() => {
+                  const ref = refDateFromDate();
+                  setVisibleMonth({ year: ref.year, month: ref.month });
+                }}
+              />
+            )}
 
-          {events.length === 0 ? (
-            <EmptyState
-              icon={CalendarDays}
-              title="Keine bevorstehenden Zahltage gefunden."
-              description="Neue angekündigte Dividendenzahlungen erscheinen automatisch hier."
-            />
-          ) : viewMode === "month" ? (
-            <MonthView
-              year={visibleMonth.year}
-              month={visibleMonth.month}
-              events={events}
-              today={today}
-              onSelect={selectEvent}
-            />
-          ) : (
-            <AgendaViewWithEmptyState
-              events={events}
-              today={today}
-              onSelect={selectEvent}
-            />
-          )}
+            {events.length === 0 ? (
+              <EmptyState
+                icon={CalendarDays}
+                title="Keine bevorstehenden Zahltage gefunden."
+                description="Neue angekündigte Dividendenzahlungen erscheinen automatisch hier."
+              />
+            ) : viewMode === "month" ? (
+              <MonthView
+                year={visibleMonth.year}
+                month={visibleMonth.month}
+                events={events}
+                today={today}
+                onSelect={selectEvent}
+              />
+            ) : (
+              <AgendaViewWithEmptyState
+                events={events}
+                today={today}
+                onSelect={selectEvent}
+              />
+            )}
+          </div>
         </div>
       )}
 
@@ -251,6 +258,13 @@ export function CalendarPage() {
           lastSuccessAt={lastSuccessAt}
           today={today}
           isSyncing={isSyncing}
+          onSync={
+            neverSynced && events.length === 0
+              ? undefined
+              : () => {
+                  runSync({ announce: true });
+                }
+          }
         />
       )}
 
@@ -295,18 +309,34 @@ function SyncStatusLine({
   lastSuccessAt,
   today,
   isSyncing,
+  onSync,
 }: {
   lastSuccessAt: string | null;
   today: string;
   isSyncing: boolean;
+  /** Fehlt, solange der leere Zustand selbst zum Abgleich auffordert. */
+  onSync?: (() => void) | undefined;
 }) {
   return (
-    <p className="text-xs text-muted-foreground" aria-live="polite">
-      {isSyncing
-        ? "Kalender wird aktualisiert …"
-        : lastSuccessAt
-          ? `Zuletzt aktualisiert: ${lastSyncLabel(lastSuccessAt, today)}`
-          : "Noch nicht aktualisiert."}
-    </p>
+    <div className="flex flex-wrap items-center gap-x-3 text-[0.8125rem] text-muted-foreground">
+      <p aria-live="polite">
+        {isSyncing
+          ? "Kalender wird aktualisiert …"
+          : lastSuccessAt
+            ? `Zuletzt aktualisiert: ${lastSyncLabel(lastSuccessAt, today)}`
+            : "Noch nicht aktualisiert."}
+      </p>
+      {onSync && (
+        <SectionButton
+          icon={RefreshCw}
+          onClick={onSync}
+          disabled={isSyncing}
+          aria-busy={isSyncing}
+          className="text-[0.8125rem]"
+        >
+          {isSyncing ? "Wird aktualisiert …" : "Aktualisieren"}
+        </SectionButton>
+      )}
+    </div>
   );
 }

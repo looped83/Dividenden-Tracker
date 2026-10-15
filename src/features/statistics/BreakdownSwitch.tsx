@@ -1,6 +1,5 @@
 import * as React from "react";
 import { useLocation, useNavigate } from "react-router";
-import { Briefcase, Landmark } from "lucide-react";
 import { prefetchRoute } from "@/app/routeChunks";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { useStatisticsContext } from "./context";
@@ -19,6 +18,9 @@ const PATH: Record<Breakdown, string> = {
  * und der Weg zurück funktionieren wie zuvor —, und der aktive Filter wandert
  * mit, wie bei jedem Sprung innerhalb der Statistik (`statisticsTabHref`).
  *
+ * Er steht rechts im Kopf des ersten Abschnitts „Verteilung" — dieselbe Form
+ * und dieselbe Stelle wie „Assets | Depots" auf der Übersicht (seit 1.9.0).
+ *
  * Die jeweils andere Seite wird beim Anzeigen vorgeladen: Ein Umschalter, der
  * erst nach dem Antippen ein Ladegerüst zeigt, fühlt sich nicht wie einer an.
  */
@@ -35,10 +37,10 @@ export function BreakdownSwitch() {
   return (
     <SegmentedControl<Breakdown>
       label="Aufteilung nach"
-      className="w-full sm:w-auto"
+      variant="pill"
       options={[
-        { value: "unternehmen", label: "Assets", icon: Briefcase },
-        { value: "depots", label: "Depotkonten", icon: Landmark },
+        { value: "unternehmen", label: "Assets" },
+        { value: "depots", label: "Depots" },
       ]}
       value={value}
       onChange={(next) => {

@@ -27,9 +27,12 @@ import {
   FilterField,
   FilterReset,
   FilterSort,
+  FilterToggle,
+  useFilterDisclosure,
 } from "@/components/ui/filter-bar";
+import { Section } from "@/components/ui/section";
 import { Badge } from "@/components/ui/badge";
-import { formatCountNumber } from "@/lib/utils/formatNumber";
+import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
 import { formatCalendarDate } from "@/lib/utils/formatDate";
 import { compareGerman } from "@/lib/utils/compareText";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -191,6 +194,10 @@ export function SecuritiesPage() {
     showArchived ? "archived" : "",
   ].filter((value) => value !== "").length;
   const hasActiveFilters = activeFilterCount > 0;
+  const filterDisclosure = useFilterDisclosure(activeFilterCount);
+  const shownTotal = showArchived
+    ? rows.length
+    : rows.filter(({ security }) => !security.archived_at).length;
 
   const resetFilters = () => {
     setSectorFilter("");
@@ -226,7 +233,7 @@ export function SecuritiesPage() {
   const depotClass = withPositions ? "hidden xl:table-cell" : "hidden lg:table-cell";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       {/* Kennzahlen des Depotstands, sofern einer importiert ist. Sie stehen
           bewusst ueber der Liste: Die Kacheln beantworten „wie steht mein Depot
           insgesamt", die Liste „woraus besteht es". */}
@@ -234,224 +241,248 @@ export function SecuritiesPage() {
 
       {/* Filterleiste in derselben Optik wie Dividenden und Statistik. Die
           Auswahlwerte stammen aus dem Bestand — leere Listen entfallen. */}
-      <FilterBar activeCount={activeFilterCount}>
-        <FilterField id="sec-sector" label="Branche">
-          <Select
-            id="sec-sector"
-            value={sectorFilter}
-            onChange={(event) => {
-              setSectorFilter(event.target.value);
-            }}
-          >
-            <option value="">Alle Branchen</option>
-            {options.sectors.map((sector) => (
-              <option key={sector} value={sector}>
-                {sector}
-              </option>
-            ))}
-          </Select>
-        </FilterField>
+      {/* Die Liste ist ein Abschnitt wie auf der Uebersicht: Ueberschrift mit
+          Anzahl, der Filter rechts im Kopf (auf dem Telefon als Schalter, ab
+          `sm` als Felder darunter) — er filtert die Liste, nicht den
+          Kennzahlkopf darueber. */}
+      <Section
+        title="Assets"
+        // Die Anzahl nur, wenn ein Filter sie verkleinert: Ungefiltert nennt
+        // der Kennzahlkopf die Positionen schon.
+        {...(!isLoading &&
+          visible.length !== shownTotal && {
+            description: `${formatCountNumber(visible.length)} von ${formatCountNoun(shownTotal, "Asset", "Assets")}`,
+          })}
+        action={<FilterToggle disclosure={filterDisclosure} />}
+        actionClassName="-my-2 shrink-0 sm:hidden"
+      >
+        <div className="space-y-6">
+          <FilterBar disclosure={filterDisclosure} className="pt-2">
+            <FilterField id="sec-sector" label="Branche">
+              <Select
+                id="sec-sector"
+                value={sectorFilter}
+                onChange={(event) => {
+                  setSectorFilter(event.target.value);
+                }}
+              >
+                <option value="">Alle Branchen</option>
+                {options.sectors.map((sector) => (
+                  <option key={sector} value={sector}>
+                    {sector}
+                  </option>
+                ))}
+              </Select>
+            </FilterField>
 
-        <FilterField id="sec-currency" label="Währung">
-          <Select
-            id="sec-currency"
-            value={currencyFilter}
-            onChange={(event) => {
-              setCurrencyFilter(event.target.value);
-            }}
-          >
-            <option value="">Alle Währungen</option>
-            {options.currencies.map((currency) => (
-              <option key={currency} value={currency}>
-                {currency}
-              </option>
-            ))}
-          </Select>
-        </FilterField>
+            <FilterField id="sec-currency" label="Währung">
+              <Select
+                id="sec-currency"
+                value={currencyFilter}
+                onChange={(event) => {
+                  setCurrencyFilter(event.target.value);
+                }}
+              >
+                <option value="">Alle Währungen</option>
+                {options.currencies.map((currency) => (
+                  <option key={currency} value={currency}>
+                    {currency}
+                  </option>
+                ))}
+              </Select>
+            </FilterField>
 
-        <FilterField id="sec-depot" label="Depotkonto">
-          <EntitySelect
-            id="sec-depot"
-            options={depotOptions}
-            value={depotFilter}
-            onChange={setDepotFilter}
-            allLabel="Alle Depotkonten"
-          />
-        </FilterField>
+            <FilterField id="sec-depot" label="Depotkonto">
+              <EntitySelect
+                id="sec-depot"
+                options={depotOptions}
+                value={depotFilter}
+                onChange={setDepotFilter}
+                allLabel="Alle Depotkonten"
+              />
+            </FilterField>
 
-        {/* Archivierte sind ein Filter wie jeder andere — dieselbe Stelle wie
+            {/* Archivierte sind ein Filter wie jeder andere — dieselbe Stelle wie
             „Stornierte" in der Dividendenliste. */}
-        <FilterField id="sec-status" label="Status">
-          <Select
-            id="sec-status"
-            value={showArchived ? "all" : ""}
-            onChange={(event) => {
-              setShowArchived(event.target.value === "all");
-            }}
-          >
-            <option value="">Ohne Archivierte</option>
-            <option value="all">Mit Archivierten</option>
-          </Select>
-        </FilterField>
+            <FilterField id="sec-status" label="Status">
+              <Select
+                id="sec-status"
+                value={showArchived ? "all" : ""}
+                onChange={(event) => {
+                  setShowArchived(event.target.value === "all");
+                }}
+              >
+                <option value="">Ohne Archivierte</option>
+                <option value="all">Mit Archivierten</option>
+              </Select>
+            </FilterField>
 
-        {/* Sortierung wie in der Dividendenliste: rechts in der Leiste, vor dem
+            {/* Sortierung wie in der Dividendenliste: rechts in der Leiste, vor dem
             Zuruecksetzen. Mit importiertem Depotstand stehen die Zahlen des
             Bestands zur Wahl — Wert, Ausschuettung, Rendite, Gewinn. */}
-        <FilterSort
-          id="sec-sort"
-          value={effectiveSort.field}
-          direction={effectiveSort.direction}
-          options={sortOptions}
-          onValueChange={(value) => {
-            const field = value as SecuritySortField;
-            // Ein frisch gewaehltes Zahlenfeld beginnt absteigend: Die Frage an
-            // „Nach Wert" ist „was ist meine groesste Position", nicht „meine
-            // kleinste".
-            setSort({ field, direction: defaultDirectionFor(field) });
-          }}
-          onDirectionChange={(direction) => {
-            setSort((current) => ({ ...current, direction }));
-          }}
-        />
-
-        {/* Zuruecksetzen steht wie im Statistikbereich **in** der Leiste. */}
-        {hasActiveFilters && <FilterReset onClick={resetFilters} />}
-      </FilterBar>
-
-      {hasActiveFilters && (
-        <p className="text-sm text-muted-foreground" aria-live="polite">
-          {formatCountNumber(visible.length)} Assets gefunden.
-        </p>
-      )}
-
-      {isLoading ? (
-        <SkeletonRows rows={6} label="Assets" />
-      ) : visible.length === 0 ? (
-        <EmptyState
-          icon={Briefcase}
-          title="Noch kein Asset angelegt"
-          description="Lege dein erstes Asset an — Aktie, ETF, Fonds oder Anleihe —, um Dividendeneingänge zu erfassen."
-          action={
-            <Button
-              onClick={() => {
-                setDialog({ open: true, security: null });
+            <FilterSort
+              id="sec-sort"
+              value={effectiveSort.field}
+              direction={effectiveSort.direction}
+              options={sortOptions}
+              onValueChange={(value) => {
+                const field = value as SecuritySortField;
+                // Ein frisch gewaehltes Zahlenfeld beginnt absteigend: Die Frage an
+                // „Nach Wert" ist „was ist meine groesste Position", nicht „meine
+                // kleinste".
+                setSort({ field, direction: defaultDirectionFor(field) });
               }}
-            >
-              Erstes Asset anlegen
-            </Button>
-          }
-        />
-      ) : isWide ? (
-        <Table>
-          {/* Der Stichtag gehoert zu jeder Positionszahl der Tabelle; sichtbar
+              onDirectionChange={(direction) => {
+                setSort((current) => ({ ...current, direction }));
+              }}
+            />
+
+            {/* Zuruecksetzen steht wie im Statistikbereich **in** der Leiste. */}
+            {hasActiveFilters && <FilterReset onClick={resetFilters} />}
+          </FilterBar>
+
+          {isLoading ? (
+            <SkeletonRows rows={6} label="Assets" />
+          ) : visible.length === 0 ? (
+            <EmptyState
+              icon={Briefcase}
+              title="Noch kein Asset angelegt"
+              description="Lege dein erstes Asset an — Aktie, ETF, Fonds oder Anleihe —, um Dividendeneingänge zu erfassen."
+              action={
+                <Button
+                  onClick={() => {
+                    setDialog({ open: true, security: null });
+                  }}
+                >
+                  Erstes Asset anlegen
+                </Button>
+              }
+            />
+          ) : isWide ? (
+            <Table>
+              {/* Der Stichtag gehoert zu jeder Positionszahl der Tabelle; sichtbar
               traegt ihn die Kachel darueber. */}
-          <caption className="sr-only">
-            {withPositions && asOf
-              ? `Assets mit Position zum Depotstand vom ${formatCalendarDate(asOf)}`
-              : "Assets"}
-          </caption>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Asset</TableHead>
-              {withPositions && (
-                <>
-                  <TableHead className="whitespace-nowrap text-right">Wert</TableHead>
-                  <TableHead className="whitespace-nowrap text-right">
-                    Erwartet p. a.
-                  </TableHead>
-                  <TableHead className="whitespace-nowrap text-right">Gewinn</TableHead>
-                </>
-              )}
-              {/* Ohne Positionen traegt die Branche die Zeile mit: Sie sagt,
-                  wie breit das Depot streut — die Frage, die ohne Depotstand
-                  ueberhaupt beantwortbar ist. */}
-              {!withPositions && (
-                <TableHead className="hidden lg:table-cell">Branche</TableHead>
-              )}
-              <TableHead className={payoutClass}>Ausschüttung</TableHead>
-              <TableHead className={depotClass}>Depotkonto</TableHead>
-              <TableHead className="w-0">
-                <span className="sr-only">Aktionen</span>
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {visible.map((row) => {
-              const { security, position } = row;
-              return (
-                <TableRow key={security.id}>
-                  <TableCell>
-                    <AssetName row={row} />
-                  </TableCell>
+              <caption className="sr-only">
+                {withPositions && asOf
+                  ? `Assets mit Position zum Depotstand vom ${formatCalendarDate(asOf)}`
+                  : "Assets"}
+              </caption>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Asset</TableHead>
                   {withPositions && (
                     <>
-                      <TableCell className="text-right">
-                        <Metric
-                          value={
-                            position?.marketValue ? (
-                              <AmountText
-                                amount={position.marketValue}
-                                className="font-semibold"
-                              />
-                            ) : null
-                          }
-                          detail={percentDetail(position?.allocationPercent, 1, "Anteil")}
-                        />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Metric
-                          value={
-                            position?.annualDividend ? (
-                              <AmountText amount={position.annualDividend} />
-                            ) : null
-                          }
-                          detail={percentDetail(position?.dividendYield, 2, "Rendite")}
-                        />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Metric
-                          value={
-                            position?.gain ? (
-                              <AmountText amount={position.gain} showSign />
-                            ) : null
-                          }
-                          detail={percentDetail(position?.gainPercent, 1)}
-                        />
-                      </TableCell>
+                      <TableHead className="whitespace-nowrap text-right">Wert</TableHead>
+                      <TableHead className="whitespace-nowrap text-right">
+                        Erwartet p. a.
+                      </TableHead>
+                      <TableHead className="whitespace-nowrap text-right">
+                        Gewinn
+                      </TableHead>
                     </>
                   )}
+                  {/* Ohne Positionen traegt die Branche die Zeile mit: Sie sagt,
+                  wie breit das Depot streut — die Frage, die ohne Depotstand
+                  ueberhaupt beantwortbar ist. */}
                   {!withPositions && (
-                    <TableCell className="hidden text-muted-foreground lg:table-cell">
-                      {security.sector ?? "—"}
-                    </TableCell>
+                    <TableHead className="hidden lg:table-cell">Branche</TableHead>
                   )}
-                  <TableCell className={cn("text-muted-foreground", payoutClass)}>
-                    {payoutLabel(security)}
-                  </TableCell>
-                  <TableCell className={cn("text-muted-foreground", depotClass)}>
-                    {row.depotName ?? "—"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">{actionsFor(security)}</div>
-                  </TableCell>
+                  <TableHead className={payoutClass}>Ausschüttung</TableHead>
+                  <TableHead className={depotClass}>Depotkonto</TableHead>
+                  <TableHead className="w-0">
+                    <span className="sr-only">Aktionen</span>
+                  </TableHead>
                 </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      ) : (
-        <ListGroup>
-          {visible.map((row) => (
-            <AssetItem key={row.security.id} row={row} />
-          ))}
-        </ListGroup>
-      )}
+              </TableHeader>
+              <TableBody>
+                {visible.map((row) => {
+                  const { security, position } = row;
+                  return (
+                    <TableRow key={security.id}>
+                      <TableCell>
+                        <AssetName row={row} />
+                      </TableCell>
+                      {withPositions && (
+                        <>
+                          <TableCell className="text-right">
+                            <Metric
+                              value={
+                                position?.marketValue ? (
+                                  <AmountText
+                                    amount={position.marketValue}
+                                    className="font-semibold"
+                                  />
+                                ) : null
+                              }
+                              detail={percentDetail(
+                                position?.allocationPercent,
+                                1,
+                                "Anteil",
+                              )}
+                            />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Metric
+                              value={
+                                position?.annualDividend ? (
+                                  <AmountText amount={position.annualDividend} />
+                                ) : null
+                              }
+                              detail={percentDetail(
+                                position?.dividendYield,
+                                2,
+                                "Rendite",
+                              )}
+                            />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Metric
+                              value={
+                                position?.gain ? (
+                                  <AmountText amount={position.gain} showSign />
+                                ) : null
+                              }
+                              detail={percentDetail(position?.gainPercent, 1)}
+                            />
+                          </TableCell>
+                        </>
+                      )}
+                      {!withPositions && (
+                        <TableCell className="hidden text-muted-foreground lg:table-cell">
+                          {security.sector ?? "—"}
+                        </TableCell>
+                      )}
+                      <TableCell className={cn("text-muted-foreground", payoutClass)}>
+                        {payoutLabel(security)}
+                      </TableCell>
+                      <TableCell className={cn("text-muted-foreground", depotClass)}>
+                        {row.depotName ?? "—"}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          {actionsFor(security)}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          ) : (
+            <ListGroup>
+              {visible.map((row) => (
+                <AssetItem key={row.security.id} row={row} />
+              ))}
+            </ListGroup>
+          )}
+        </div>
+      </Section>
 
       {/* Seltener gebrauchte Importe am Seitenende: die Liste selbst soll den
           oberen Bereich bestimmen. Ist schon ein Depotstand importiert, steht
           sein Import als „Aktualisieren" im Kennzahlkopf; hier nur, solange
           es keinen gibt. Archivierte blendet der Filter ein. */}
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 pt-2">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <SecurityImportButton />
         {snapshots.length === 0 && (
           <PortfolioImportButton onClick={openPortfolioImport} />

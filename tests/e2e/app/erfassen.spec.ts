@@ -85,7 +85,7 @@ test("Abbrechen fuehrt dorthin zurueck, wo man herkam", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/#/kalender");
   await expect(
-    page.getByRole("heading", { name: "Dividendenkalender", level: 1 }),
+    page.getByRole("heading", { name: "Kalender", level: 1 }),
   ).toBeVisible();
 
   await page.getByRole("link", { name: "Neue Dividende erfassen" }).click();

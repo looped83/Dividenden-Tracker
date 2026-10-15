@@ -16,7 +16,12 @@ import { formatCountNumber, statisticsDrillHref } from "./format";
 import { CategoryBarChart } from "./components/charts";
 import { StatTable, type StatColumn } from "./components/StatTable";
 
-export function MonthsTab() {
+export function MonthsTab({
+  switcher,
+}: {
+  /** Umschalter Jahre/Monate — rechts im Kopf des Diagramms, wie auf der Übersicht. */
+  switcher?: React.ReactNode;
+}) {
   const { payments, filter } = useStatisticsContext();
   const navigate = useNavigate();
 
@@ -84,7 +89,10 @@ export function MonthsTab() {
 
   return (
     <div className="space-y-10">
-      <Section title="Monatliche Entwicklung">
+      <Section
+        title="Entwicklung"
+        {...(switcher !== undefined && { action: switcher, actionClassName: "shrink-0" })}
+      >
         <div>
           <CategoryBarChart
             data={chartData}

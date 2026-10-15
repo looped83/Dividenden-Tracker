@@ -16,6 +16,8 @@ import {
   FilterField,
   FilterReset,
   FilterSort,
+  FilterToggle,
+  useFilterDisclosure,
   type FilterSortOption,
 } from "@/components/ui/filter-bar";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -212,6 +214,7 @@ export function PaymentsPage() {
     filterMonth,
     status === "active" ? null : status,
   ].filter((value) => value !== null && value !== "").length;
+  const filterDisclosure = useFilterDisclosure(activeFilterCount);
 
   // Vergleich mit dem Vorjahr ueber den gesamten Bestand — nicht ueber die
   // gefilterte Liste: Ein Depot- oder Jahresfilter darf den Bezug nicht
@@ -379,22 +382,27 @@ export function PaymentsPage() {
       <PageHeader
         title="Dividenden"
         actions={
-          // Die Pruefung der Daten gehoert zur Liste, steht aber nicht in
-          // ihrem Weg: oben als Symbol, ab `md` beschriftet. Zuvor lag sie am
-          // Seitenende, hinter allen Eingaengen.
-          <Button variant="outline" asChild className="w-11 px-0 md:w-auto md:px-4">
-            <Link to="/eingaenge/datenqualitaet" aria-label="Datenqualität">
-              <ShieldCheck />
-              <span className="hidden md:inline">Datenqualität</span>
-            </Link>
-          </Button>
+          <>
+            {/* Auf dem Telefon steht der Filter rechts im Kopf — dort, wo auf
+                der Uebersicht die Jahresauswahl steht. */}
+            <FilterToggle disclosure={filterDisclosure} />
+            {/* Die Pruefung der Daten gehoert zur Liste, steht aber nicht in
+                ihrem Weg: oben als Symbol, ab `md` beschriftet. Zuvor lag sie
+                am Seitenende, hinter allen Eingaengen. */}
+            <Button variant="outline" asChild className="w-11 px-0 md:w-auto md:px-4">
+              <Link to="/eingaenge/datenqualitaet" aria-label="Datenqualität">
+                <ShieldCheck />
+                <span className="hidden md:inline">Datenqualität</span>
+              </Link>
+            </Button>
+          </>
         }
       />
 
       {/* Filterleiste in der Optik des Statistikbereichs (geteiltes Primitive).
           Sortierrichtung als Symbolschalter statt langer Auswahltexte
           („Zahlungsdatum – neueste zuerst“), damit alles in eine Zeile passt. */}
-      <FilterBar activeCount={activeFilterCount}>
+      <FilterBar disclosure={filterDisclosure}>
         <FilterField id="f-security" label="Asset">
           <EntitySelect
             id="f-security"
@@ -530,8 +538,14 @@ export function PaymentsPage() {
               Zeile wurde doppelt gerendert, samt doppelt gebauter
               Money-Objekte. */}
           {isWide ? (
-            <Table>
-              <TableHeader>
+            // Schrift wie die Listen der Uebersicht (15px statt 14px): Die
+            // Tabelle ist hier die Liste der Eingaenge, keine dichte Auswertung.
+            <Table className="text-[0.9375rem]">
+              {/* Spaltenkoepfe nur fuer Hilfsmittel: Datum, Name, Depot und
+                  Betrag erklaeren sich wie in den Listen der Uebersicht selbst,
+                  sortiert wird ueber die Filterleiste. Sichtbar gliedern die
+                  Monate. */}
+              <TableHeader className="sr-only">
                 <TableRow className="hover:bg-transparent">
                   <TableHead>Zahlungsdatum</TableHead>
                   <TableHead>Asset</TableHead>
@@ -542,7 +556,9 @@ export function PaymentsPage() {
                   </TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              {/* Keine Linie unter der letzten Zeile eines Monats — wie in den
+                  Listen trennt der Abstand zur naechsten Ueberschrift. */}
+              <TableBody className="[&_tr:has(+tr[data-month])]:border-0">
                 {/* Nach Datum sortiert gruppiert auch die Tabelle nach Monat —
                     mit derselben Monatsueberschrift und -summe wie die Liste
                     auf dem Telefon. */}
@@ -554,15 +570,18 @@ export function PaymentsPage() {
                   return (
                     <React.Fragment key={group.key}>
                       {groupedByMonth && (
-                        <TableRow className="border-0 hover:bg-transparent">
+                        <TableRow
+                          data-month
+                          className="group/month border-0 hover:bg-transparent"
+                        >
                           <th
                             scope="colgroup"
                             colSpan={3}
-                            className="pb-1 pt-8 text-left text-[0.9375rem] font-semibold"
+                            className="pb-2 pt-10 text-left text-[1.1875rem] font-bold leading-tight tracking-[-0.015em] group-first/month:pt-2"
                           >
                             {monthNameDe(group.month)} {group.year}
                           </th>
-                          <td className="px-3 pb-1 pt-8 text-right text-sm font-medium text-muted-foreground tabular-amount">
+                          <td className="px-3 pb-2 pt-10 text-right text-[0.9375rem] font-medium text-muted-foreground tabular-amount group-first/month:pt-2">
                             {monthTotal && <AmountText amount={monthTotal} />}
                           </td>
                           <td aria-hidden />
@@ -592,7 +611,7 @@ export function PaymentsPage() {
               </TableBody>
             </Table>
           ) : groupedByMonth ? (
-            <div className="space-y-6">
+            <div className="space-y-10">
               {groupByMonth(visibleRows, effectiveDateOf).map((group) => {
                 const monthTotal = totalsByMonth?.get(group.key);
                 return (

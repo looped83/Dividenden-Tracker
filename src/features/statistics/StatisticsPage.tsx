@@ -10,7 +10,9 @@ import { PageSkeleton } from "@/components/layout/PageSkeleton";
 import { TabNav } from "@/components/layout/TabNav";
 import { availableYears, filterPayments } from "@/lib/statistics";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
+import { FilterToggle, useFilterDisclosure } from "@/components/ui/filter-bar";
 import { FilterBar } from "./FilterBar";
+import { activeFilterCount } from "./filterParams";
 import { useStatisticsData, useStatisticsFilter, type StatisticsContext } from "./hooks";
 
 function StatisticsSkeleton() {
@@ -34,6 +36,7 @@ export function StatisticsPage() {
   // grundsaetzlich alle Jahre gegenueber (§11.12) und sagt das, solange ein
   // Jahr gewaehlt ist. Unternehmen und Depotkonto wirken ueberall.
   const isComparison = useMatch("/statistiken/vergleich") !== null;
+  const filterDisclosure = useFilterDisclosure(activeFilterCount(filter, !isComparison));
 
   const years = React.useMemo(() => availableYears(data.payments), [data.payments]);
   const filteredPayments = React.useMemo(
@@ -103,11 +106,18 @@ export function StatisticsPage() {
 
   return (
     <div className="space-y-6">
-      {heading}
+      {/* Der Filter steht auf dem Telefon rechts im Kopf — wie die
+          Jahresauswahl der Uebersicht; seine Felder klappen unter den Reitern
+          auf. Ab `sm` stehen sie dort dauerhaft. */}
+      <PageHeader
+        title="Statistiken"
+        actions={<FilterToggle disclosure={filterDisclosure} />}
+      />
 
       <TabNav label="Statistikbereiche" tabs={STATISTICS_TABS} />
 
       <FilterBar
+        disclosure={filterDisclosure}
         filter={filter}
         setFilter={setFilter}
         years={years}

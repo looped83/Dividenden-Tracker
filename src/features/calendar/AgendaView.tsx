@@ -47,7 +47,7 @@ export function AgendaView({
   const sections = buildAgenda(events, today);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       {sections.map((section) => (
         <ListSection
           key={section.key}

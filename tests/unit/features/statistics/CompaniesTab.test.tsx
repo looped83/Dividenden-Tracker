@@ -179,7 +179,7 @@ describe("Umschalter der Aufteilung", () => {
     );
 
     expect(screen.getByRole("radio", { name: "Assets" })).toBeChecked();
-    fireEvent.click(screen.getByRole("radio", { name: "Depotkonten" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Depots" }));
     expect(screen.getByTestId("ort")).toHaveTextContent("/statistiken/depots?year=2025");
   });
 });

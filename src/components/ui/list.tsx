@@ -2,6 +2,7 @@ import * as React from "react";
 import { ChevronRight } from "lucide-react";
 import { Slot } from "@radix-ui/react-slot";
 import { cn } from "@/lib/utils/cn";
+import { Section } from "@/components/ui/section";
 
 /**
  * Listen (UX_AND_DESIGN_SYSTEM.md §2 `ListGroup`/`ListRow`).
@@ -33,10 +34,12 @@ export function ListGroup({ className, ...props }: React.ComponentProps<"ul">) {
 }
 
 /**
- * Überschrift einer gruppierten Liste (Monat, „Diese Woche") samt optionaler
- * Kennzahl rechts — etwa der Monatssumme. Eine Stufe unter der Überschrift
- * eines Abschnitts (15px gegen 19px), die Summe gedämpft: Sie ordnet, sie
- * konkurriert nicht mit den Einträgen.
+ * Gruppe einer Liste (Monat, „Diese Woche") mit Kennzahl rechts — etwa der
+ * Monatssumme. Seit 1.9.0 ein gewöhnlicher Abschnitt (`Section`): Überschrift
+ * in der Größe der Abschnitte der Übersicht, die Summe gedämpft an der Stelle,
+ * an der dort die Aktion steht. Eine eigene, kleinere Stufe ließ die
+ * Monatslisten wie eine andere App aussehen. Den Abstand zwischen Gruppen
+ * setzt die Seite (40px), wie zwischen Abschnitten.
  */
 export function ListSection({
   title,
@@ -49,18 +52,26 @@ export function ListSection({
   children: React.ReactNode;
   className?: string;
 }) {
+  // Die Summe steht in der Überschrift: Vorgelesen wird „September 2026
+  // erwartet 64,00 €", nicht eine Überschrift und eine lose Zahl daneben.
   return (
-    <section className={cn("space-y-1", className)}>
-      <h2 className="flex items-baseline justify-between gap-3 text-[0.9375rem] font-semibold">
-        <span>{title}</span>
-        {aside !== undefined && (
-          <span className="shrink-0 text-sm font-medium text-muted-foreground tabular-amount">
-            {aside}
+    <Section
+      className={className}
+      title={
+        aside === undefined ? (
+          title
+        ) : (
+          <span className="flex items-baseline justify-between gap-3">
+            <span className="min-w-0">{title}</span>
+            <span className="shrink-0 text-[0.9375rem] font-medium tracking-normal text-muted-foreground tabular-amount">
+              {aside}
+            </span>
           </span>
-        )}
-      </h2>
+        )
+      }
+    >
       {children}
-    </section>
+    </Section>
   );
 }
 

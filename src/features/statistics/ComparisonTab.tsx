@@ -3,10 +3,10 @@ import { Link, useSearchParams } from "react-router";
 import { Info } from "lucide-react";
 import { ListGroup } from "@/components/ui/list";
 import { Section } from "@/components/ui/section";
+import { FilterBar } from "@/components/ui/filter-bar";
 import { Select } from "@/components/ui/select";
 import { KpiHero } from "@/components/domain/KpiHero";
 import { AmountText } from "@/components/money/AmountText";
-import { cn } from "@/lib/utils/cn";
 import { MD_BREAKPOINT_QUERY, useMediaQuery } from "@/lib/hooks/useMediaQuery";
 import type { Money } from "@/lib/money";
 import {
@@ -154,19 +154,14 @@ export function ComparisonTab() {
         <h2 id="comparison-setup" className="sr-only">
           Zeitraumvergleich
         </h2>
-        {/* Zwei Spalten schon auf dem Telefon: „Jahr" und „verglichen mit"
-              gehoeren zusammen — sie bilden den Satz, den die Seite beantwortet
-              („2026 verglichen mit 2025"), und untereinander stand zwischen
-              ihnen ein Feld Luft. Vergleichsart und Monat bestimmen, *was*
-              verglichen wird, und behalten die volle Breite. */}
-        <div
-          className={cn(
-            "grid grid-cols-2 gap-3 [&_select]:rounded-full [&_select]:pl-4",
-            selection.mode === "monate" ? "sm:grid-cols-4" : "sm:grid-cols-3",
-          )}
-        >
-          <label className="col-span-2 space-y-1 sm:col-span-1">
-            <span className="text-[0.8125rem] text-muted-foreground">Vergleichsart</span>
+        {/* Die Wahl der Zeitraeume als Zeile aus Pillen wie die Filterleiste:
+            Sie liest sich als Satz („Jahr gegen Jahr · 2026 · gegen 2025"),
+            die Beschriftungen bleiben fuer Hilfsmittel. Auf dem Telefon stehen
+            Jahr und Vergleichsjahr nebeneinander — sie gehoeren zusammen —,
+            Vergleichsart und Monat in voller Breite. */}
+        <FilterBar>
+          <label className="min-w-0 flex-1 basis-full sm:max-w-72 sm:basis-40">
+            <span className="sr-only">Vergleichsart</span>
             <Select
               value={selection.mode}
               onChange={(event) => {
@@ -183,8 +178,8 @@ export function ComparisonTab() {
           </label>
 
           {selection.mode === "monate" && (
-            <label className="col-span-2 space-y-1 sm:col-span-1">
-              <span className="text-[0.8125rem] text-muted-foreground">Monat</span>
+            <label className="min-w-0 flex-1 basis-full sm:max-w-72 sm:basis-40">
+              <span className="sr-only">Monat</span>
               <Select
                 value={String(selection.month)}
                 onChange={(event) => {
@@ -205,8 +200,8 @@ export function ComparisonTab() {
 
           {selection.mode !== "rollierend" && (
             <>
-              <label className="space-y-1">
-                <span className="text-[0.8125rem] text-muted-foreground">Jahr</span>
+              <label className="min-w-0 flex-1 basis-[calc(50%-0.375rem)] sm:max-w-72 sm:basis-40">
+                <span className="sr-only">Jahr</span>
                 <Select
                   value={String(selection.currentYear)}
                   onChange={(event) => {
@@ -237,10 +232,8 @@ export function ComparisonTab() {
                 </Select>
               </label>
 
-              <label className="space-y-1">
-                <span className="text-[0.8125rem] text-muted-foreground">
-                  verglichen mit
-                </span>
+              <label className="min-w-0 flex-1 basis-[calc(50%-0.375rem)] sm:max-w-72 sm:basis-40">
+                <span className="sr-only">verglichen mit</span>
                 <Select
                   value={String(selection.referenceYear)}
                   onChange={(event) => {
@@ -254,14 +247,14 @@ export function ComparisonTab() {
                     .filter((year) => year !== selection.currentYear)
                     .map((year) => (
                       <option key={year} value={year}>
-                        {year}
+                        gegen {year}
                       </option>
                     ))}
                 </Select>
               </label>
             </>
           )}
-        </div>
+        </FilterBar>
 
         {/* Bis wann gerechnet wurde — ohne diese Angabe fuehren die Kacheln
               darunter in die Irre: Laeuft einer der Zeitraeume noch, endet der

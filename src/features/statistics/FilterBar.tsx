@@ -5,12 +5,15 @@ import {
   FilterBar as FilterBarShell,
   FilterField,
   FilterReset,
+  type FilterDisclosure,
 } from "@/components/ui/filter-bar";
 import { isEmptyFilter, type StatisticsFilter } from "@/lib/statistics";
 import type { EntityInfo } from "@/features/dashboard/format";
 import { EMPTY_STATISTICS_FILTER } from "./filterParams";
 
 interface FilterBarProps {
+  /** Auf- und Zuklappen; der Schalter steht im Seitenkopf. */
+  disclosure: FilterDisclosure;
   filter: StatisticsFilter;
   setFilter: (next: StatisticsFilter) => void;
   years: number[];
@@ -51,6 +54,7 @@ function toOptions(map: Map<string, EntityInfo>): EntityOption[] {
  * Bedienelement ist schlimmer als keines.
  */
 export function FilterBar({
+  disclosure,
   filter,
   setFilter,
   years,
@@ -61,14 +65,9 @@ export function FilterBar({
   const securityOptions = React.useMemo(() => toOptions(securities), [securities]);
   const depotOptions = React.useMemo(() => toOptions(depots), [depots]);
   const active = !isEmptyFilter(filter);
-  const activeCount = [
-    showYear ? filter.year : null,
-    filter.securityId,
-    filter.depotId,
-  ].filter((value) => value !== null).length;
 
   return (
-    <FilterBarShell activeCount={activeCount}>
+    <FilterBarShell disclosure={disclosure}>
       {showYear && (
         <FilterField id="stats-filter-year" label="Jahr">
           <Select

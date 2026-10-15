@@ -48,7 +48,12 @@ function changeCell(change: ComparisonResult, context: string): React.ReactNode 
   return <span className={cn("text-sm", toneClass)}>{described.text}</span>;
 }
 
-export function YearsTab() {
+export function YearsTab({
+  switcher,
+}: {
+  /** Umschalter Jahre/Monate — rechts im Kopf des Diagramms, wie auf der Übersicht. */
+  switcher?: React.ReactNode;
+}) {
   const { payments, filter } = useStatisticsContext();
   const navigate = useNavigate();
   const today = useToday();
@@ -164,7 +169,10 @@ export function YearsTab() {
 
   return (
     <div className="space-y-10">
-      <Section title="Jährliche Entwicklung">
+      <Section
+        title="Entwicklung"
+        {...(switcher !== undefined && { action: switcher, actionClassName: "shrink-0" })}
+      >
         <div>
           <CategoryBarChart
             data={chartData}
