@@ -45,7 +45,7 @@ export function RecentPayments({ payments, securities, depots }: RecentPaymentsP
                 title={security?.name ?? "Unbekannt"}
                 badge={
                   security?.archived ? (
-                    <Badge variant="neutral" className="ml-2 align-middle">
+                    <Badge variant="neutral" className="mr-2 shrink-0">
                       Archiviert
                     </Badge>
                   ) : undefined

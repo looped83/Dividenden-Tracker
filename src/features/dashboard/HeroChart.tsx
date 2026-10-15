@@ -42,8 +42,9 @@ const num = (money: Money): number => money.toChartNumber();
  *
  * **Tastatur und Screenreader.** Das Diagramm ist ein Schieberegler über die
  * Punkte (`role="slider"`): Pfeiltasten, Pos1/Ende, Escape setzt zurück. Der
- * Wert wird über `aria-valuetext` angesagt; die vollständigen Zahlen stehen
- * zusätzlich in der Datentabelle darunter (§17).
+ * Wert wird über `aria-valuetext` angesagt. Eine Datentabelle steht hier seit
+ * 1.11.0 nicht mehr: Jeder Punkt ist ansteuerbar, und die Statistik führt
+ * dieselben Zahlen als Tabelle (§17).
  *
  * „Alle Jahre" ist eine Linie: Gefragt ist der Verlauf über viele Jahre, und
  * fünfzehn Säulen wurden auf dem Telefon zu Strichen.

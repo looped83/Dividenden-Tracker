@@ -1,18 +1,17 @@
 import type { Money } from "@/lib/money";
 import { monthNameDe } from "@/lib/statistics";
-import { addDays, groupByDate, weekdayIndex } from "./month";
+import { groupByDate } from "./month";
 import { expectedTotalOf, isCounted } from "./summary";
 import type { CalendarEvent } from "./types";
 
 /**
- * Gliederung der Listenansicht (Auftrag §10).
+ * Gliederung der Listenansicht (Auftrag §10): **je Monat ein Abschnitt**
+ * („Oktober 2026") — dieselbe Gliederung wie die Dividendenliste.
  *
- * „Heute", „Diese Woche", „Später im …" — und danach **je Monat ein eigener
- * Abschnitt**. „Später" trug zuvor alles, was nach dieser Woche kam: In einem
- * gut gefuellten Kalender standen darin die Termine eines halben Jahres
- * untereinander, ohne dass ein Monatswechsel sichtbar wurde. Jetzt endet
- * „Später" mit dem laufenden Monat, und jeder folgende Monat traegt seine
- * eigene Ueberschrift („September 2026").
+ * Bis 1.10 standen davor „Heute", „Diese Woche" und „Später im Oktober". Drei
+ * Arten von Ueberschrift fuer eine Zeitachse lasen sich unruhig, und das
+ * Datumsfeld jeder Zeile nennt den Tag ohnehin; der naechste Zahltag steht im
+ * Kopf der Seite.
  *
  * Vergangene Termine erscheinen hier bewusst nicht: Die Liste beantwortet die
  * Frage „was kommt". Wer zurueckschauen will, blaettert im Monatsraster.
@@ -23,10 +22,7 @@ export interface AgendaDay {
 }
 
 export interface AgendaSection {
-  /**
-   * Stabiler Schluessel: „today", „week", „later" — oder der Monat als
-   * „YYYY-MM" fuer die Abschnitte danach.
-   */
+  /** Der Monat als „YYYY-MM". */
   key: string;
   label: string;
   days: AgendaDay[];
@@ -49,18 +45,11 @@ function monthLabel(date: string): string {
  * Baut die Abschnitte der Listenansicht. `today` ist ein reines Kalenderdatum;
  * Vergleiche laufen lexikografisch auf dem ISO-Format (fuer "YYYY-MM-DD"
  * identisch zum chronologischen Vergleich).
- *
- * Die Woche endet am Sonntag — die deutsche Kalenderwoche, dieselbe wie im
- * Monatsraster. Reicht sie in den naechsten Monat hinein, gehoeren diese Tage
- * zu „Diese Woche": Der erste passende Abschnitt gewinnt.
  */
 export function buildAgenda(
   events: readonly CalendarEvent[],
   today: string,
 ): AgendaSection[] {
-  const endOfWeek = addDays(today, 6 - weekdayIndex(today));
-  const currentMonth = today.slice(0, 7);
-  const laterLabel = `Später im ${monthNameDe(Number.parseInt(today.slice(5, 7), 10))}`;
   const upcoming = events
     .filter((event) => event.date >= today)
     .slice()
@@ -70,21 +59,12 @@ export function buildAgenda(
   // Reihenfolge bei — die Abschnitte entstehen dadurch bereits in der
   // richtigen Folge, ohne eigene Sortierung.
   const sections = new Map<string, Omit<AgendaSection, "expected">>();
-  const add = (key: string, label: string, day: AgendaDay) => {
+  for (const [date, dayEvents] of groupByDate(upcoming)) {
+    const key = date.slice(0, 7);
+    const day = { date, events: dayEvents };
     const section = sections.get(key);
     if (section) section.days.push(day);
-    else sections.set(key, { key, label, days: [day] });
-  };
-
-  for (const [date, dayEvents] of groupByDate(upcoming)) {
-    const day = { date, events: dayEvents };
-    if (date === today) add("today", "Heute", day);
-    else if (date <= endOfWeek) add("week", "Diese Woche", day);
-    // „Später im September" statt „Später": Allein liess die Ueberschrift offen,
-    // dass sie nur den Rest des laufenden Monats meint — die Monate danach
-    // tragen ihren eigenen Abschnitt.
-    else if (date.slice(0, 7) === currentMonth) add("later", laterLabel, day);
-    else add(date.slice(0, 7), monthLabel(date), day);
+    else sections.set(key, { key, label: monthLabel(date), days: [day] });
   }
 
   return [...sections.values()].map((section) => ({

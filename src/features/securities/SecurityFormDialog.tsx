@@ -1,5 +1,4 @@
 import * as React from "react";
-import { Plus } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { emptyToNull } from "@/lib/utils/emptyToNull";
@@ -240,31 +239,5 @@ export function SecurityFormDialog({
         </form>
       </DialogContent>
     </Dialog>
-  );
-}
-
-/**
- * Die Hauptaktion des Depotbereichs, samt eigenem Dialogzustand — genau wie ihn
- * `SecurityImportButton` traegt. Dadurch kann die Kopfzeile des Bereichs sie
- * zeigen, ohne dass ein Reiter darunter dafuer Zustand nach oben reichen
- * muesste.
- */
-export function NewAssetButton() {
-  const [open, setOpen] = React.useState(false);
-
-  return (
-    <>
-      {/* Umriss statt Fuellung: im Seitenkopf in der Form der Jahresauswahl
-          der Uebersicht. Gefuellt bleibt allein das Erfassen der Navigation. */}
-      <Button
-        variant="outline"
-        onClick={() => {
-          setOpen(true);
-        }}
-      >
-        <Plus /> Neues Asset
-      </Button>
-      <SecurityFormDialog security={null} open={open} onOpenChange={setOpen} />
-    </>
   );
 }

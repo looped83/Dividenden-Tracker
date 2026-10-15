@@ -144,7 +144,7 @@ Eigene zusammengesetzte Komponenten (fachlich):
 |---|---|
 | `AmountText` | Betragsdarstellung: tabular-nums, Währung, Vorzeichen, Farbe (semantisch), niemals Rundung in der Komponente |
 | `KpiHero` / `TrendPill` | **Ein** Kennzahlkopf für alle Bereiche (`components/domain/KpiHero.tsx`): **eine** Hauptzahl groß (32 px), daneben optional der Vergleich als Marke (`TrendPill`: Pfeil **und** Vorzeichen, Bedeutung im `title` und für Sprachausgaben), darunter eine Unterzeile, optional ein Zusatz (Zielbalken) und eine Leiste mit bis zu drei Nebenkennzahlen, durch Linien getrennt. Er ersetzt das frühere Raster gleich großer Kacheln (`StatCard`/`StatGrid`): Vier bis sechs Kacheln kosteten auf dem Telefon 300–700 px, bevor der Inhalt begann, und ließen offen, welche Zahl zählt. Jede Seite beantwortet zuerst **ihre** Frage — Übersicht: Dividenden des Zeitraums; Kalender: nächste 30 Tage; Depot: Depotwert; Statistik: Gesamtsumme; Vergleich: Veränderung; Entwicklung: erwartet p. a.; Assetseite: erhalten insgesamt. Ein Drill-down macht die **ganze Fläche** zur Tippfläche (Link auf dem Wert, per `::after` gedehnt; für die Hauptzahl der obere Teil, für jede Nebenkennzahl ihr Feld) und trägt einen sprechenden Namen (`drillLabel`). Ladegerüst in derselben Form: `KpiHeroSkeleton` |
-| `ListGroup` / `ListRow` / `ListItemBody` / `ListSection` | **Eine Listenform** für Einträge (`components/ui/list.tsx`): Zeilen mit Trennlinien statt einzelner Karten, seit 1.9.0 überall ohne Rahmen (die frühere Fassung `inset` ist die einzige). Zeile 1 der Name (höchstens zwei Zeilen), Zeile 2 Angaben links und Wert rechts; `asChild` macht die ganze Zeile zur Tippfläche. `ListSection` gruppiert (Monat, „Diese Woche") mit Kennzahl im Kopf **Datenlisten ohne Pfeil am Rand und ohne Kalendersymbol vor dem Datum** (Eingänge, Termine, Assets, Statistik, Datenqualität): Beide standen in jeder Zeile, sagten nichts, was Tippfläche und Inhalt nicht schon sagen, und nahmen dem Depot die Breite („Trade Repub…"). `chevron` bleibt einzelnen Navigationszeilen („Gesamt seit März 2019") vorbehalten |
+| `ListGroup` / `ListRow` / `ListItemBody` / `ListSection` | **Eine Listenform** für Einträge (`components/ui/list.tsx`): Zeilen mit Trennlinien statt einzelner Karten, seit 1.9.0 überall ohne Rahmen (die frühere Fassung `inset` ist die einzige). Zeile 1 der Name (seit 1.11.0 **eine** Zeile, lange Namen laufen am Ende aus — `truncate-fade`; Abzeichen wie „Storniert" stehen deshalb in Zeile 2), Zeile 2 Angaben links und Wert rechts; `asChild` macht die ganze Zeile zur Tippfläche. `ListSection` gruppiert (Monat) mit Kennzahl im Kopf **Datenlisten ohne Pfeil am Rand und ohne Kalendersymbol vor dem Datum** (Eingänge, Termine, Assets, Statistik, Datenqualität): Beide standen in jeder Zeile, sagten nichts, was Tippfläche und Inhalt nicht schon sagen, und nahmen dem Depot die Breite („Trade Repub…"). `chevron` bleibt einzelnen Navigationszeilen („Gesamt seit März 2019") vorbehalten |
 | `Section` / `SectionLink` | Abschnitt **ohne Kartenrahmen** (`components/ui/section.tsx`, seit 1.7.0): Überschrift 19 px, rechts höchstens eine Aktion — ein Textlink in Primärblau mit Pfeil (`SectionLink`, „Alle", „Kalender") oder ein Umschalter —, darunter optional eine Zeile Beschreibung. Abschnitte trennen sich durch Abstand (40 px, ab `lg` 48 px) und Überschrift, nicht durch Rahmen. **Wann Abschnitt, wann Karte:** Lese-Seiten gliedern mit Abschnitten (Übersicht, Statistik, Depot-Entwicklung, Assetseite, Ergebnisse des Zeitraumvergleichs). Seit 1.9.0 gliedern auch Einstellungen, Zeitraumvergleich und Detailseiten mit Abschnitten; Karten mit Rahmen bleiben Formularen in Dialogen, dem Import-Assistenten und den Dubletten-Paaren vorbehalten, gleichartige Kacheln (Ziele, „Mehr") stehen auf gedämpfter Fläche (siehe „Eine Linie für alle Seiten") |
 | `SegmentedControl` | Umschalter zwischen wenigen Zuständen (Optionsgruppe). `variant="pill"` ist die leise Fassung für Abschnittsköpfe (Diagrammsicht, Assets/Depots): gedämpfte Fläche, 32 px hoch, Tippfläche per Pseudo-Element 44 px |
 | `PaymentListItem` | Ein Dividendeneingang als Zeile — dieselbe in Dividendenliste, Übersicht und Assetseite und seit 1.11.0 in der Form eines Kalendertermins: links das Datumsfeld (`ListDateTile`, Tag und Monat), daneben Name, darunter Wochentag · Depot und rechts der Betrag (Depot wird gekürzt, nie umbrochen). Ohne Monatsgruppen steht statt des Wochentags das Jahr; Sprachausgaben hören das vollständige Datum. Auf der Assetseite ist das Depot der Titel |
@@ -197,11 +197,13 @@ anders gebaut wirkt als die nächste:
   Liste auf dem Telefon steht rechts in Inhaltsbreite. Der Zeitraumvergleich ist eine
   Pillenzeile, die sich als Satz liest („Jahr gegen Jahr · 2026 · gegen 2025").
 - **Gruppenüberschriften sind Abschnittsüberschriften** (`ListSection` = `Section`):
-  Monate der Dividenden, „Heute"/„Diese Woche" im Kalender stehen in 19 px, die Summe
+  Monate der Dividenden und des Kalenders stehen in 19 px, die Summe
   gedämpft rechts, 40 px zwischen den Gruppen. Am Desktop gruppiert die
   Dividendentabelle ebenso; ihre Spaltenköpfe sind nur für Hilfsmittel da.
-- **Seitenkopf-Aktionen** sind Umriss-Pillen (Neues Asset, Ziel anlegen, Datenqualität)
-  in der Form der Jahresauswahl; gefüllt ist allein das Erfassen der Navigation. Der
+- **Seitenkopf-Aktionen** sind Umriss-Pillen (Ziel anlegen, Datenqualität) in der Form der
+  Jahresauswahl. Im Depot trägt der Kopf seit 1.11.0 den Filter des Reiters (Assets: Schalter,
+  Entwicklung: Assetauswahl, `DepotHeaderActions`); „Neues Asset" steht neben der Überschrift
+  der Assetliste; gefüllt ist allein das Erfassen der Navigation. Der
   Kalender heißt im Kopf „Kalender" wie in der Navigation; „Aktualisieren" steht in der
   Zeile mit dem Stand des Abgleichs.
 - **Erfassen** steht nur in der Navigation, nicht zusätzlich im Kopf der Dividendenliste.
@@ -398,8 +400,9 @@ Fahren oder Wischen wählt einen Punkt, der Kopf zeigt dann dessen Stand samt Ve
 Betrag führt zu diesen Zahlungen. Mit der Maus endet die Auswahl beim Verlassen und ein Klick
 öffnet die Zahlungen; mit dem Finger bleibt sie stehen, bis man den Punkt erneut antippt.
 Tastatur: Das Diagramm ist ein Schieberegler (`role="slider"`, Pfeiltasten, Pos1/Ende, Enter
-öffnet, Escape setzt zurück), der Stand wird über `aria-valuetext` angesagt. Die Datentabelle
-darunter bleibt.
+öffnet, Escape setzt zurück), der Stand wird über `aria-valuetext` angesagt. Eine Datentabelle
+steht darunter seit 1.11.0 nicht mehr: Jeder Punkt ist ansteuerbar, die Statistik führt dieselben
+Zahlen als Tabelle.
 
 **Verteilung:** die fünf stärksten Assets des Zeitraums als schmale Balken in Vordergrundfarbe
 mit Anteil, darunter „Alle 12 Assets" zur Statistik; umschaltbar auf die Depots. Beide

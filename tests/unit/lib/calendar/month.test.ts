@@ -78,44 +78,29 @@ describe("buildMonthGrid", () => {
 describe("buildAgenda", () => {
   const heute = "2026-08-05"; // Mittwoch
 
-  it("gliedert in Heute, Diese Woche und den Rest des Monats", () => {
+  it("gliedert nach Monaten, auch den laufenden", () => {
+    // Bis 1.10 standen davor „Heute", „Diese Woche" und „Später im August".
     const sections = buildAgenda(
       [
         event("1", "2026-08-05", "Heute AG"),
-        event("2", "2026-08-07", "Freitag AG"),
-        event("3", "2026-08-25", "Spaeter AG"),
-      ],
-      heute,
-    );
-
-    expect(sections.map((section) => section.key)).toEqual(["today", "week", "later"]);
-    expect(sections[0].days[0].events[0].title).toBe("Heute AG");
-    expect(sections[1].days[0].date).toBe("2026-08-07");
-    expect(sections[2].days[0].date).toBe("2026-08-25");
-  });
-
-  it("gibt jedem folgenden Monat einen eigenen Abschnitt", () => {
-    // „Später" trug zuvor alles nach dieser Woche — ein halbes Jahr Termine in
-    // einer Reihe, ohne sichtbaren Monatswechsel.
-    const sections = buildAgenda(
-      [
-        event("1", "2026-08-25", "August AG"),
-        event("2", "2026-09-10", "September AG"),
-        event("3", "2026-10-02", "Oktober AG"),
+        event("2", "2026-08-25", "August AG"),
+        event("3", "2026-09-10", "September AG"),
+        event("4", "2026-10-02", "Oktober AG"),
       ],
       heute,
     );
 
     expect(sections.map((section) => section.key)).toEqual([
-      "later",
+      "2026-08",
       "2026-09",
       "2026-10",
     ]);
     expect(sections.map((section) => section.label)).toEqual([
-      "Später im August",
+      "August 2026",
       "September 2026",
       "Oktober 2026",
     ]);
+    expect(sections[0].days.map((day) => day.date)).toEqual(["2026-08-05", "2026-08-25"]);
   });
 
   it("laesst vergangene Termine weg und leere Abschnitte entfallen", () => {
@@ -138,15 +123,9 @@ describe("buildAgenda", () => {
       heute,
     );
 
-    expect(sections.map((section) => section.key)).toEqual(["later", "2026-09"]);
+    expect(sections.map((section) => section.key)).toEqual(["2026-08", "2026-09"]);
     expect(sections[0].days.map((day) => day.date)).toEqual(["2026-08-20"]);
     expect(sections[1].days[0].events).toHaveLength(2);
-  });
-
-  it("zaehlt den Sonntag noch zur laufenden Woche", () => {
-    const sections = buildAgenda([event("1", "2026-08-09", "Sonntag AG")], heute);
-
-    expect(sections[0].key).toBe("week");
   });
 });
 

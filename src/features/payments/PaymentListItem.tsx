@@ -49,7 +49,7 @@ export function PaymentListItem({
   depot?: string | null | undefined;
   amount: Money;
   cancelled?: boolean;
-  /** Zusaetzliches Abzeichen am Titel (etwa „Archiviert"). */
+  /** Zusaetzliches Abzeichen vor dem Datum (etwa „Archiviert"). */
   badge?: React.ReactNode;
   /** Vorjahresvergleich links vom Betrag (`YearOverYearIndicator`). */
   indicator?: React.ReactNode;
@@ -63,21 +63,18 @@ export function PaymentListItem({
         <Link to={to} state={state}>
           <ListItemBody
             leading={<ListDateTile iso={date} muted={cancelled} />}
-            title={
-              <>
-                {title}
-                {badge}
+            title={title}
+            // Eine Zeile: Reicht die Breite neben dem Betrag nicht, wird das
+            // Depot gekuerzt — die Zeile wird nicht hoeher als ihre Nachbarn.
+            // Abzeichen stehen vorn wie „Ex-Tag" im Kalender.
+            meta={
+              <span className="flex min-w-0 items-center">
                 {cancelled && (
-                  <Badge variant="warning" className="ml-2 align-middle">
+                  <Badge variant="warning" className="mr-2 shrink-0">
                     Storniert
                   </Badge>
                 )}
-              </>
-            }
-            // Eine Zeile: Reicht die Breite neben dem Betrag nicht, wird das
-            // Depot gekuerzt — die Zeile wird nicht hoeher als ihre Nachbarn.
-            meta={
-              <span className="flex min-w-0 items-center">
+                {badge}
                 <span className="sr-only">{formatCalendarDate(date)}, </span>
                 <span className="shrink-0">{when}</span>
                 {depot && (

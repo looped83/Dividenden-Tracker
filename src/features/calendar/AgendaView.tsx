@@ -36,8 +36,7 @@ import type { CalendarEvent } from "@/lib/calendar/types";
  * die Monatssumme in der Dividendenliste. Fehlt sie (keine Betraege, mehrere
  * Waehrungen), bleibt die Stelle leer statt eine Null zu behaupten.
  *
- * Ueberschriftenhierarchie: Die Seite traegt die h1, jeder Abschnitt („Heute",
- * „Diese Woche", „Später") eine h2. Das Datum jeder Zeile steht vollstaendig
+ * Ueberschriftenhierarchie: Die Seite traegt die h1, jeder Monat eine h2. Das Datum jeder Zeile steht vollstaendig
  * in ihrer zugaenglichen Bezeichnung.
  */
 export function AgendaView({

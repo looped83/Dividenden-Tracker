@@ -185,6 +185,16 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+/* Eine Zeile, lange Namen laufen am Ende aus statt mit „…" abzubrechen
+   (Listentitel, seit 1.11.0). Nur auf Elementen, die die ganze Breite
+   einnehmen: Auf einem inhaltsbreiten Element verbliche auch ein kurzer Name. */
+@utility truncate-fade {
+  overflow: hidden;
+  white-space: nowrap;
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 2rem), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 2rem), transparent);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

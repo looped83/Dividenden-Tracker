@@ -185,10 +185,9 @@ Zahltage, jeder vergangene Termin fehlt darin zwangsläufig.
 
 Standard ist die **Liste**: je Termin eine Kachel mit Datumsfeld (Tageszahl und
 Monatskürzel), Unternehmen und Wochentag; auf breiten Bildschirmen mehrspaltig,
-gruppiert nach „Heute", „Diese Woche", „Später" — und danach **je Monat ein eigener
-Abschnitt** („September 2026"). „Später" endet mit dem laufenden Monat; zuvor trug es alles,
-was nach dieser Woche kam, sodass in einem gut gefüllten Kalender ein halbes Jahr Termine
-ohne sichtbaren Monatswechsel untereinander stand. Ein Etikett trägt nur der **Ex-Tag**:
+gruppiert **je Monat** („Oktober 2026") wie die Dividendenliste. Bis 1.10 standen davor
+„Heute", „Diese Woche" und „Später im …"; drei Arten von Überschrift für eine Zeitachse
+lasen sich unruhig, und das Datumsfeld nennt den Tag ohnehin. Ein Etikett trägt nur der **Ex-Tag**:
 „Zahltag" stünde an praktisch jedem Termin dieses Kalenders und sagte damit nichts. Für
 Hilfsmittel wird die Art weiterhin in beiden Fällen angesagt.
 

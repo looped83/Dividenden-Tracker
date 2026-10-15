@@ -71,6 +71,11 @@ interface StatTableProps<T> {
 export interface ListSummary<T> {
   /** Die Zusatzzeile, z. B. „31 Zahlungen · Ø 56,29 €". */
   meta: (row: T) => React.ReactNode;
+  /**
+   * Wert rechts neben dem Namen, wenn es nicht die zweite Spalte sein soll —
+   * etwa der Zuwachs, nach dem die Liste sortiert ist.
+   */
+  value?: (row: T) => React.ReactNode;
   /** Balken unter dem Namen: Länge in Prozent der längsten Zeile, Anteil am Ende. */
   bar?: (row: T) => { length: number; label: React.ReactNode };
 }
@@ -473,16 +478,23 @@ function StatList<T>({
               <ListRow interactive={clickable} {...rowInteraction(row)}>
                 <div className="min-w-0 flex-1 space-y-1">
                   <div className="flex items-baseline justify-between gap-3">
-                    {/* Einzeilig: Die Zeilen einer Rangliste sollen gleich hoch
-                        sein, damit die Balken eine Treppe bilden. Der volle
-                        Name steht auf der Assetseite. */}
-                    <div className="min-w-0 font-medium [&_.truncate]:line-clamp-1">
+                    {/* Einzeilig und auslaufend wie jeder Listentitel
+                        (`ListItemBody`): Die Zeilen einer Rangliste sollen
+                        gleich hoch sein, damit die Balken eine Treppe bilden.
+                        Der volle Name steht auf der Assetseite. */}
+                    <div className="min-w-0 flex-1 truncate-fade font-medium">
                       {nameColumn.render(row)}
                     </div>
-                    {valueColumn && (
+                    {summary.value ? (
                       <div className="shrink-0 font-semibold tabular-amount">
-                        {valueColumn.render(row)}
+                        {summary.value(row)}
                       </div>
+                    ) : (
+                      valueColumn && (
+                        <div className="shrink-0 font-semibold tabular-amount">
+                          {valueColumn.render(row)}
+                        </div>
+                      )
                     )}
                   </div>
                   {bar && (
@@ -524,10 +536,9 @@ function StatList<T>({
           >
             <div className="min-w-0 flex-1 space-y-1.5">
               <div className="flex items-baseline justify-between gap-3">
-                {/* Namen duerfen hier auf zwei Zeilen umbrechen (wie in jeder
-                    Liste, `ListItemBody`); die Tabellenzelle kuerzt sie mit
-                    `truncate`, damit die Spalte schmal bleibt. */}
-                <div className="min-w-0 font-medium [&_.truncate]:line-clamp-2 [&_.truncate]:whitespace-normal">
+                {/* Einzeilig und auslaufend wie jeder Listentitel
+                    (`ListItemBody`). */}
+                <div className="min-w-0 flex-1 truncate-fade font-medium">
                   {nameColumn.render(row)}
                 </div>
                 {valueColumn && (

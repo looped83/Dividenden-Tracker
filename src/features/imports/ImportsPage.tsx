@@ -12,6 +12,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ListGroup, ListItemBody, ListRow } from "@/components/ui/list";
+import { MD_BREAKPOINT_QUERY, useMediaQuery } from "@/lib/hooks/useMediaQuery";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import { Money } from "@/lib/money/money";
 import { EUR } from "@/lib/money/currency";
@@ -62,6 +64,7 @@ export function ImportsPage() {
   const rollback = useRollbackImport();
   const discard = useDiscardImport();
   const [actionError, setActionError] = React.useState("");
+  const isWide = useMediaQuery(MD_BREAKPOINT_QUERY);
 
   async function handleRollback(imp: Import) {
     const checksums = imp.checksums as { row_count?: number } | null;
@@ -93,6 +96,36 @@ export function ImportsPage() {
       setActionError(getErrorMessage(err, "Der Entwurf konnte nicht gelöscht werden."));
     }
   }
+
+  // Dieselben Aktionen in Tabelle und Liste.
+  const actionsFor = (imp: Import) => (
+    <>
+      {imp.status === "committed" && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => void handleRollback(imp)}
+          disabled={rollback.isPending}
+        >
+          <RotateCcw /> Rollback
+        </Button>
+      )}
+      {/* Entwuerfe bleiben nach einem gescheiterten Import
+          zurueck; sie tragen keine Zahlungen und lassen sich
+          ohne Rueckfrage entfernen. */}
+      {DRAFT_STATUSES.has(imp.status) && (
+        <Button
+          variant="outline"
+          size="sm"
+          aria-label={`Entwurf ${imp.file_name} löschen`}
+          onClick={() => void handleDiscard(imp)}
+          disabled={discard.isPending}
+        >
+          <Trash2 /> Löschen
+        </Button>
+      )}
+    </>
+  );
 
   if (wizardOpen) {
     return (
@@ -141,7 +174,7 @@ export function ImportsPage() {
               title="Noch keine Importe"
               description="Starte einen Import, um historische Dividendeneingänge aus einer CSV- oder Excel-Datei zu übernehmen."
             />
-          ) : (
+          ) : isWide ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -167,36 +200,40 @@ export function ImportsPage() {
                         {STATUS_LABELS[imp.status].label}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right">
-                      {imp.status === "committed" && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => void handleRollback(imp)}
-                          disabled={rollback.isPending}
-                        >
-                          <RotateCcw /> Rollback
-                        </Button>
-                      )}
-                      {/* Entwuerfe bleiben nach einem gescheiterten Import
-                          zurueck; sie tragen keine Zahlungen und lassen sich
-                          ohne Rueckfrage entfernen. */}
-                      {DRAFT_STATUSES.has(imp.status) && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          aria-label={`Entwurf ${imp.file_name} löschen`}
-                          onClick={() => void handleDiscard(imp)}
-                          disabled={discard.isPending}
-                        >
-                          <Trash2 /> Löschen
-                        </Button>
-                      )}
-                    </TableCell>
+                    <TableCell className="text-right">{actionsFor(imp)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
+          ) : (
+            // Auf dem Telefon eine Liste statt einer Tabelle: Fünf Spalten
+            // passten nicht in die Breite, die Tabelle ließ sich nur seitlich
+            // verschieben.
+            <ListGroup aria-label="Importe">
+              {imports.map((imp) => (
+                <li key={imp.id}>
+                  <ListRow className="items-start">
+                    <ListItemBody
+                      title={imp.file_name}
+                      meta={
+                        <>
+                          <Badge variant={STATUS_LABELS[imp.status].variant}>
+                            {STATUS_LABELS[imp.status].label}
+                          </Badge>
+                          <span>
+                            {formatTimestampDate(imp.committed_at ?? imp.created_at)}
+                          </span>
+                        </>
+                      }
+                      trailing={checksumTotal(imp) ?? undefined}
+                    />
+                  </ListRow>
+                  {(imp.status === "committed" || DRAFT_STATUSES.has(imp.status)) && (
+                    <div className="-mt-1 flex justify-end pb-3">{actionsFor(imp)}</div>
+                  )}
+                </li>
+              ))}
+            </ListGroup>
           )}
         </div>
       </Section>

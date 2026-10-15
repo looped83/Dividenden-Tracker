@@ -2,17 +2,8 @@ import * as React from "react";
 import { Link, useNavigate } from "react-router";
 import { ArrowDownRight, ArrowUpRight, Target } from "lucide-react";
 import { AmountText } from "@/components/money/AmountText";
-import { ChartDataTable, ChartRowHeader } from "@/components/charts/chartTable";
 import { SegmentedControl, type SegmentOption } from "@/components/ui/segmented";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { formatMoney, formatPercent, type Money } from "@/lib/money";
 import { computeGoalProgress, type GoalProgress } from "@/lib/goals";
 import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
@@ -324,15 +315,6 @@ export function DashboardHero({ payments, selection, today }: DashboardHeroProps
             <span>Dez</span>
           </div>
         )}
-        <div className="mt-3">
-          <ChartDataTable>
-            {series.kind === "years" ? (
-              <YearTable bars={series.bars} />
-            ) : (
-              <MonthTable months={series.months} year={series.year} />
-            )}
-          </ChartDataTable>
-        </div>
       </div>
 
       <Stats stats={buildStats(data, monthly, today)} />
@@ -583,70 +565,6 @@ function Legend({
         {year - 1}
       </span>
     </span>
-  );
-}
-
-function MonthTable({
-  months,
-  year,
-}: {
-  months: { month: number; current: Money | null; prior: Money }[];
-  year: number;
-}) {
-  return (
-    <Table>
-      <caption className="sr-only">
-        Monatliche Netto-Dividenden {year} und {year - 1}
-      </caption>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Monat</TableHead>
-          <TableHead className="text-right">{year}</TableHead>
-          <TableHead className="text-right">{year - 1}</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {months.map((row) => (
-          <TableRow key={row.month}>
-            <ChartRowHeader>{monthNameDe(row.month)}</ChartRowHeader>
-            <TableCell className="text-right tabular-nums">
-              {row.current ? formatMoney(row.current) : "noch nicht begonnen"}
-            </TableCell>
-            <TableCell className="text-right tabular-nums">
-              {formatMoney(row.prior)}
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-  );
-}
-
-function YearTable({ bars }: { bars: { year: number; value: Money; count: number }[] }) {
-  return (
-    <Table>
-      <caption className="sr-only">Netto-Dividenden je Jahr</caption>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Jahr</TableHead>
-          <TableHead className="text-right">Nettodividende</TableHead>
-          <TableHead className="text-right">Zahlungen</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {bars.map((row) => (
-          <TableRow key={row.year}>
-            <ChartRowHeader>{row.year}</ChartRowHeader>
-            <TableCell className="text-right tabular-nums">
-              {formatMoney(row.value)}
-            </TableCell>
-            <TableCell className="text-right tabular-nums">
-              {formatCountNumber(row.count)}
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
   );
 }
 

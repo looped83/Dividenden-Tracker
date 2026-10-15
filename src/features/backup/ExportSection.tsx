@@ -57,8 +57,10 @@ export default function ExportSection() {
 
         <div className="space-y-1.5 sm:max-w-xs">
           <Label htmlFor="export-format">Format</Label>
+          {/* Als Pille wie die Felder der Filterleisten. */}
           <Select
             id="export-format"
+            className="rounded-full pl-4"
             value={format}
             onChange={(event) => {
               setFormat(event.target.value as ExportFormat);

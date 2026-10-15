@@ -18,6 +18,9 @@ interface EntitySelectProps {
   onChange: (value: string) => void;
   /** Beschriftung der neutralen Auswahl, z. B. „Alle Unternehmen". */
   allLabel: string;
+  /** Name ohne sichtbares Label (etwa im Seitenkopf). */
+  "aria-label"?: string;
+  className?: string;
 }
 
 /**
@@ -44,6 +47,8 @@ export function EntitySelect({
   value,
   onChange,
   allLabel,
+  "aria-label": ariaLabel,
+  className,
 }: EntitySelectProps) {
   const groups = React.useMemo(() => {
     const sorted = [...options].sort((a, b) => compareGerman(a.name, b.name));
@@ -56,6 +61,8 @@ export function EntitySelect({
   return (
     <Select
       id={id}
+      aria-label={ariaLabel}
+      className={className}
       value={value}
       onChange={(event) => {
         onChange(event.target.value);
