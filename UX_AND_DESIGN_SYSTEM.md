@@ -72,6 +72,12 @@ Orange, gegenüberliegende Farbtöne, ΔE 25,1 hell / 25,3 dunkel bei Protanopie
 Referenzreihe ist zusätzlich gestrichelt oder benannt; Farbe allein trägt die Identität
 nie.
 
+**Ausnahme: der Kopf der Übersicht** (seit 1.7.0). Dort steht das aktuelle Jahr in
+Vordergrundfarbe und das Vorjahr in `--series-prior` (neutrales Grau, 3,6:1 hell / 3,5:1
+dunkel gegen die Seite), als Linie gestrichelt, mit Legende. Der Kopf ist monochrom, damit
+Farbe dort nur Veränderung meint; der Helligkeitsabstand ist größer als zwischen zwei
+Farbtönen gleicher Helligkeit. Alle anderen Diagramme bleiben bei Slot 1 und 2.
+
 **Der Dunkelsatz ist eigens gewählt, keine Aufhellung des hellen.** Sein Band liegt
 tiefer (L 0,48–0,67 gegenüber 0,43–0,77): Marken oberhalb davon blenden auf dunklem
 Grund und verlieren gleichzeitig Sättigung.
@@ -185,8 +191,8 @@ ein anderer Platz fürs Zurücksetzen fallen beim Wechsel sofort auf.
 
 ## 3. Diagramm-Richtlinien
 
-- Balken für Monats-/Jahresreihen (diskrete Zeiträume), Linie nur für rollierende 12-Monats-
-  Reihe; Donut sparsam für Aufteilungen (max. 6 Segmente + „übrige").
+- Balken für Monats-/Jahresreihen (diskrete Zeiträume), Linie für rollierende 12-Monats-Reihen
+  und laufende Jahressummen (Kopf der Übersicht); Donut sparsam für Aufteilungen (max. 6 Segmente + „übrige").
 - Ein Diagramm beantwortet eine Frage; keine Doppelachsen, keine 3D, kein Dekor.
 - Tooltip mit exakten Werten (`AmountText`); X-Achsen-Labels de-DE („Jan", „Feb", …).
 - Vorjahresvergleich als gepaarte Balken oder dezente Vorjahr-Schattenbalken.
@@ -311,18 +317,34 @@ maximaler Kontrast auf Schwarz lässt Schrift auf OLED ausfransen.
 
 ## Dashboard (Phase 5A)
 
-**Aufbau (von oben):** Seitenüberschrift → Zeitraumsteuerung → Kennzahlkopf (`DashboardHero`)
-→ „Demnächst" (nur laufendes Jahr und „Alle Jahre") → monatlicher Verlauf → Top-Unternehmen +
-Depotverteilung (nebeneinander ab `lg`) → letzte Eingänge → Summe seit Beginn. Ruhig, datenorientiert; keine dekorativen Visualisierungen, keine
-3D-Diagramme, keine dauerhafte grün/rot-Bewertung saisonaler Schwankungen.
+**Aufbau (von oben):** Seitenüberschrift mit Jahres-Pille → Kopf (`DashboardHero`: Hauptzahl,
+Veränderung, Jahresziel, Diagramm, Kennzahlen) → „Demnächst" (nur laufendes Jahr und „Alle
+Jahre") → Top-Unternehmen + Depotverteilung (nebeneinander ab `lg`) → letzte Eingänge → Summe
+seit Beginn. Ruhig, datenorientiert; keine dekorativen Visualisierungen, keine 3D-Diagramme,
+keine dauerhafte grün/rot-Bewertung saisonaler Schwankungen.
 
-**Kennzahlkopf:** die Dividenden des Zeitraums als Hauptzahl, daneben der Vorjahresvergleich
-als Marke (im laufenden Jahr gegen denselben Zeitraum), darunter das **Jahresziel** als Balken
-(„46,5 % vom Jahresziel 4.200,00 € · noch 2.248,09 €", führt zur Zieldetailseite; ohne Ziel
-„Jahresziel für 2026 festlegen"). Die Leiste: laufender Monat (mit Monatsziel „19 % vom Ziel",
-sonst Vorjahresvergleich), Ø pro Monat, bester Monat; außerhalb des laufenden Jahres statt des
-Monats die Zahl der Zahlungen samt Breite. Er ersetzt vier Kacheln und die beiden Zielkarten
-darunter — das Ziel stand getrennt von der Summe, auf die es sich bezieht.
+**Kopf (seit 1.7.0, ohne Kartenrahmen):** Drei Ebenen tragen die Rangfolge — Hauptzahl 40 px
+(52 px ab `sm`), Abschnitte, Zeilen. Unter der Zahl die Veränderung als Pfeil und Prozent in
+Grün/Rot, daneben gedämpft der Betrag und der Bezug („+92,20 € ggü. Vorjahreszeitraum"). Darunter
+das **Jahresziel** als 4-px-Balken mit Zeile „40,4 % vom Ziel 3.200,00 €"; rechts im
+laufenden Jahr die **Prognose** (gestrichelte Verlängerung des Balkens, CALCULATION_RULES.md
+§9.7), sonst Restbetrag bzw. Ergebnis. Führt zur Zieldetailseite; ohne Ziel „Jahresziel für 2026
+festlegen". Dann das Diagramm und eine gedämpfte Fläche mit drei Kennzahlen ohne Trennlinien:
+laufender Monat (mit Monatsziel „17 % vom Monatsziel" — nicht „vom Ziel", sonst verwechselbar
+mit dem Jahresziel —, sonst Vorjahresvergleich), Ø pro Monat, bester Monat; außerhalb des
+laufenden Jahres statt des Monats die Zahl der Zahlungen samt Breite.
+
+**Diagramm im Kopf:** ein eigenes SVG (`HeroChart`) statt Recharts — es steht im ersten
+Bildschirm, die Übersicht lädt Recharts damit gar nicht mehr. Ein Jahr hat zwei Sichten
+(Umschalter „Kumuliert | Monatlich", Voreinstellung kumuliert): die laufende Jahressumme als
+Linie gegen das Vorjahr (gestrichelt; im laufenden Jahr endet die Linie heute) oder die
+Monatssummen als Balkenpaare. „Alle Jahre" zeigt eine Säule je Jahr. **Wischen statt Tooltip:**
+Fahren oder Wischen wählt einen Punkt, der Kopf zeigt dann dessen Stand samt Vergleich, und der
+Betrag führt zu diesen Zahlungen. Mit der Maus endet die Auswahl beim Verlassen und ein Klick
+öffnet die Zahlungen; mit dem Finger bleibt sie stehen, bis man den Punkt erneut antippt.
+Tastatur: Das Diagramm ist ein Schieberegler (`role="slider"`, Pfeiltasten, Pos1/Ende, Enter
+öffnet, Escape setzt zurück), der Stand wird über `aria-valuetext` angesagt. Die Datentabelle
+darunter bleibt.
 
 **Demnächst:** die nächsten drei angekündigten Zahltage aus dem Kalender und die erwartete Summe
 der nächsten 30 Tage; „erwartet", weil es Ankündigungen sind, keine Eingänge. Ohne kommende
@@ -332,14 +354,15 @@ Termine entfällt die Karte.
 Jahre steht als eine Zeile „Gesamt seit März 2019 · 412 Zahlungen" am Seitenende (wie die
 Eingänge darüber, führt zur Statistik), nicht zusätzlich als Kachel. Bei „Alle Jahre" entfällt
 die Zeile, weil die Kennzahlen oben dann dieselbe Summe nennen. Früher stand dort eine Karte mit
-sechs Eckdaten, die fast alle schon auf der Seite oder in der Statistik standen. Diagramm füllt die Breite
-(`ResponsiveContainer`), Top-Listen/Depotverteilung als horizontale Balken (auf schmalen Geräten
+sechs Eckdaten, die fast alle schon auf der Seite oder in der Statistik standen. Das Diagramm
+misst seine Breite selbst (`ResizeObserver`) und zeichnet in echten Pixeln, Top-Listen/Depotverteilung als horizontale Balken (auf schmalen Geräten
 untereinander). Touch-Ziele ≥ 44 px (Buttons `size="sm"`/`default`), `overflow-x` nur innerhalb
 scrollbarer Container (Datentabellen).
 
 **Accessibility:**
 - Semantische Überschriften (`h1` „Übersicht", Kartentitel via `CardTitle`).
-- Jedes Diagramm hat `role="img"` mit beschreibendem `aria-label` **und** eine ausklappbare
+- Jedes Diagramm hat eine Beschreibung für Hilfsmittel (`role="img"` mit `aria-label`, das
+  Diagramm im Kopf als Schieberegler mit `aria-valuetext`) **und** eine ausklappbare
   Datentabelle (`<details>` „Datentabelle anzeigen") als text-/tabellarische Alternative.
 - Zeitraum-Buttons mit `aria-pressed`; Fokuszustände sichtbar (`focus-visible:ring`).
 - `prefers-reduced-motion` schaltet Diagramm-Animationen ab.

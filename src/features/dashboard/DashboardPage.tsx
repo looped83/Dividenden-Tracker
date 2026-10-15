@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { KpiHeroSkeleton } from "@/components/domain/KpiHero";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useDepots } from "@/features/depots/hooks";
 import { availableYears, isoFromRef, yearOf } from "@/lib/statistics";
@@ -13,13 +12,10 @@ import { useToday } from "@/lib/hooks/useToday";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { useDashboardYear, useEffectivePayments } from "./hooks";
 import { YearSelector } from "./YearSelector";
-import { DashboardHero } from "./DashboardHero";
+// Das Diagramm steht im Kopf und ist ein eigenes kleines SVG — die Uebersicht
+// laedt Recharts damit gar nicht mehr.
+import { DashboardHero, DashboardHeroSkeleton } from "./DashboardHero";
 import { UpcomingPayments } from "./UpcomingPayments";
-// Recharts wiegt gepackt rund 108 kB und wird nur fuer die Diagramme
-// gebraucht; nachgeladen faellt es aus dem Startpaket heraus.
-const MonthlyChart = React.lazy(async () => ({
-  default: (await import("./MonthlyChart")).MonthlyChart,
-}));
 import { TopCompanies, DepotDistribution } from "./Distributions";
 import { RecentPayments } from "./RecentPayments";
 import { HistoricalOverview } from "./HistoricalOverview";
@@ -29,10 +25,10 @@ function DashboardSkeleton() {
   return (
     <div className="space-y-6" aria-busy="true" aria-live="polite">
       <span className="sr-only">Dashboard wird geladen …</span>
-      <KpiHeroSkeleton />
+      <DashboardHeroSkeleton />
       <Card>
         <CardContent className="p-4 sm:p-6">
-          <Skeleton className="h-72 w-full" />
+          <Skeleton className="h-40 w-full" />
         </CardContent>
       </Card>
     </div>
@@ -158,10 +154,6 @@ export function DashboardPage() {
       {(selection === "all" || selection === today.year) && (
         <UpcomingPayments today={isoFromRef(today)} />
       )}
-
-      <React.Suspense fallback={<Skeleton className="h-72 rounded-lg" />}>
-        <MonthlyChart payments={payments} selection={selection} today={today} />
-      </React.Suspense>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <TopCompanies

@@ -20,6 +20,7 @@ import {
   selectedPeriodAggregate,
   selectedYearComparison,
   shareOfTotal,
+  yearEndForecast,
   yearlyBuckets,
 } from "@/lib/statistics";
 import type { RefDate } from "@/lib/statistics/dates";
@@ -343,6 +344,52 @@ describe("selectedYearComparison (§6.1/§6.2)", () => {
     );
     expect(current.toStringValue()).toBe("190.00");
     expect(prior?.toStringValue()).toBe("130.00");
+  });
+});
+
+describe("yearEndForecast (§9.7)", () => {
+  it("rechnet bis heute plus den Rest des Vorjahres nach dem gleichen Tag", () => {
+    const payments = [
+      p("2025-03-10", "100"),
+      p("2025-07-20", "10"), // am Stichtag selbst: gehoert zum Vorjahr bis heute
+      p("2025-09-10", "80"),
+      p("2025-12-15", "20"),
+      p("2026-03-10", "150"),
+      p("2024-11-10", "999"), // vorvoriges Jahr: spielt keine Rolle
+    ];
+    const { received, remainingPrior, forecast } = yearEndForecast(
+      payments,
+      REF_2026_JUL20,
+    );
+    expect(received.toStringValue()).toBe("150.00");
+    expect(remainingPrior.toStringValue()).toBe("100.00");
+    expect(forecast.toStringValue()).toBe("250.00");
+  });
+
+  it("teilt das Vorjahr genau: Vorjahr bis heute plus Rest ergibt das volle Vorjahr", () => {
+    const payments = [
+      p("2025-02-01", "40"),
+      // Effektiv August, schon am 15.07. eingegangen: zaehlt zum Vorjahr bis heute.
+      p("2025-08-01", "30", { actual: "2025-07-15" }),
+      // Effektiv August, erst am 25.07. eingegangen: zaehlt zum Rest.
+      p("2025-08-01", "20", { actual: "2025-07-25" }),
+    ];
+    const { remainingPrior } = yearEndForecast(payments, REF_2026_JUL20);
+    const { prior } = selectedYearComparison(payments, 2026, REF_2026_JUL20);
+    expect(remainingPrior.toStringValue()).toBe("20.00");
+    expect(prior?.add(remainingPrior).toStringValue()).toBe(
+      aggregateInYear(payments, 2025).net.toStringValue(),
+    );
+  });
+
+  it("bildet den 29. Februar auf den 28. Februar des Vorjahres ab", () => {
+    const payments = [p("2027-02-28", "5"), p("2027-03-01", "7")];
+    const { remainingPrior } = yearEndForecast(payments, {
+      year: 2028,
+      month: 2,
+      day: 29,
+    });
+    expect(remainingPrior.toStringValue()).toBe("7.00");
   });
 });
 

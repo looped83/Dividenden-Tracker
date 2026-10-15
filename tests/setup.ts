@@ -24,3 +24,14 @@ if (
 ) {
   Element.prototype.scrollIntoView = () => undefined;
 }
+
+// Ebenso `ResizeObserver` (das Diagramm im Kopf der Uebersicht misst seine
+// Breite). Ohne Layout gibt es nichts zu messen: Der Stub meldet nie eine
+// Groesse, das Diagramm bleibt ungezeichnet — bedienbar ist es trotzdem.
+if (typeof window !== "undefined" && typeof window.ResizeObserver !== "function") {
+  window.ResizeObserver = class {
+    observe = () => undefined;
+    unobserve = () => undefined;
+    disconnect = () => undefined;
+  };
+}

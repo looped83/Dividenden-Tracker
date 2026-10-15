@@ -259,6 +259,23 @@ unter der Jahressumme (erreichter Anteil, Zielbetrag, Restbetrag bzw. Ergebnis),
 „19 % vom Ziel" im Feld des laufenden Monats. Alle Werte stammen aus `computeGoalProgress` — es ist
 dieselbe Rechnung wie auf der Zielseite (Ist = effektive Monatszuordnung, §10).
 
+### 9.7 Prognose zum Jahresende (`yearEndForecast`, seit 1.7.0)
+
+Im **laufenden Jahr** steht neben einem aktiven Jahresziel eine Prognose:
+
+`Prognose = eingegangen bis heute + Vorjahreszahlungen nach dem gleichen Kalendertag`
+
+- *Eingegangen bis heute* ist genau die Jahressumme im Kopf (`selectedYearComparison`,
+  §9.2): effektives Jahr (§10), abgegrenzt nach dem tatsächlichen Eingang.
+- *Rest des Vorjahres:* Zahlungen mit effektivem Jahr = Vorjahr, deren tatsächlicher
+  Eingang **nach** dem gleichen Kalendertag des Vorjahres liegt (`priorYearSameDay`, 29.02. →
+  28.02.). Vorjahr bis heute plus Rest ergibt damit genau das volle Vorjahr.
+- Bewusst einfach und erklärbar: Käufe, Verkäufe, Kürzungen und Erhöhungen seit dem Vorjahr
+  kennt die Regel nicht. Angezeigt wird sie deshalb als „Prognose", nie als Zielstand.
+- Sie ist **kein Teil des Zielfortschritts**: `computeGoalProgress` (§13) bleibt frei von
+  erwarteten Beträgen; Status, Prozent und Restbetrag eines Ziels ändern sich durch die Prognose
+  nicht. Angezeigt nur, solange das Ziel `active` ist.
+
 ---
 
 ## 10. Effektiver Ausschüttungsmonat (Ausschüttungsplan je Unternehmen)
@@ -624,7 +641,8 @@ Prozentwert wird auch über 100 % angezeigt.
 Kalendertage des Zeitraums; der aktuelle Tag wird inklusiv gezählt (konsistent
 zu den YTD-/Monatszeiträumen). Vor Beginn 0 %, nach Ende 100 %. **Keine**
 Hochrechnung, keine erwartete Zielerreichung, kein voraussichtliches
-Erreichungsdatum.
+Erreichungsdatum. Die Prognose auf der Übersicht (§9.7) ist eine eigene, getrennt
+gerechnete Anzeige daneben, kein Bestandteil des Zielfortschritts.
 
 **Dynamik (§28).** Da Zielstände aus den aktuellen Zahlungen abgeleitet werden,
 aktualisiert jede Zahlungs-/Import-Mutation (Anlegen, Bearbeiten, Datum-/

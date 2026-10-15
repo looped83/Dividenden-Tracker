@@ -30,7 +30,10 @@ export function YearSelector({ selection, onSelect, availableYears }: YearSelect
   return (
     <Select
       aria-label="Jahr"
-      className="w-auto"
+      // Als Pille: Das Jahr gilt fuer die ganze Seite und sitzt deshalb im
+      // Seitenkopf. Der Rahmen bleibt (`--input`, 3:1) — er macht das Feld als
+      // Bedienelement erkennbar (UX_AND_DESIGN_SYSTEM.md §7).
+      className="w-auto rounded-full pl-4 font-semibold"
       value={selection === "all" ? "" : String(selection)}
       onChange={(event) => {
         const value = event.target.value;

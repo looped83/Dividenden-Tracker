@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { EUR, Money } from "@/lib/money";
 import {
@@ -140,20 +141,36 @@ describe("DashboardHero — Ziele im Kontext", () => {
   const JAHRESZIEL_2024 = goal({ goalType: "annual", year: 2024, month: null });
   const MONATSZIEL_JULI = goal({ goalType: "monthly", year: 2026, month: 7 }, "2000.00");
 
-  it("zeigt das Jahresziel des gewählten Jahres als Balken mit Restbetrag", () => {
-    renderHero(2026, PAYMENTS, [JAHRESZIEL_2024, JAHRESZIEL_2026]);
+  it("zeigt das Jahresziel des laufenden Jahres als Balken mit Prognose (§9.7)", () => {
+    // Bis 20. Juli: 500 €. Vorjahr nach dem 20. Juli: 120 € → Prognose 620 €.
+    renderHero(
+      2026,
+      [...PAYMENTS, payment("2025-03-10", "80.00"), payment("2025-11-10", "120.00")],
+      [JAHRESZIEL_2024, JAHRESZIEL_2026],
+    );
     expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "50");
-    expect(screen.getByText(/vom Jahresziel 1\.000,00\s?€/)).toBeInTheDocument();
-    expect(screen.getByText(/noch 500,00\s?€/)).toBeInTheDocument();
+    expect(screen.getByText(/vom Ziel 1\.000,00\s?€/)).toBeInTheDocument();
+    expect(screen.getByText("Prognose", { exact: false })).toHaveTextContent(
+      /Prognose 620,00\s?€/,
+    );
+    expect(
+      screen.getByRole("link", { name: /Prognose bis Jahresende 620,00\s?€/ }),
+    ).toHaveAttribute("href", `/ziele/${JAHRESZIEL_2026.id}`);
+  });
+
+  it("zeigt zu einem anderen Jahr das Ergebnis statt einer Prognose", () => {
+    renderHero(2024, PAYMENTS, [JAHRESZIEL_2024]);
+    expect(screen.queryByText(/Prognose/)).not.toBeInTheDocument();
+    expect(screen.getByText(/vom Ziel 1\.000,00\s?€/)).toBeInTheDocument();
   });
 
   it("nennt das Monatsziel im Feld des Monats, nur im laufenden Jahr", () => {
     const { unmount } = renderHero(2026, PAYMENTS, [MONATSZIEL_JULI]);
-    expect(screen.getByText("25 % vom Ziel")).toBeInTheDocument();
+    expect(screen.getByText("25 % vom Monatsziel")).toBeInTheDocument();
     unmount();
 
     renderHero(2024, PAYMENTS, [JAHRESZIEL_2024, MONATSZIEL_JULI]);
-    expect(screen.queryByText(/vom Ziel$/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/vom Monatsziel$/)).not.toBeInTheDocument();
   });
 
   it('zeigt bei „Alle Jahre" kein Ziel', () => {
@@ -167,5 +184,57 @@ describe("DashboardHero — Ziele im Kontext", () => {
     expect(
       screen.getByRole("link", { name: "Jahresziel für 2025 festlegen" }),
     ).toHaveAttribute("href", "/ziele");
+  });
+});
+
+describe("DashboardHero — Diagramm im Kopf", () => {
+  const PAYMENTS = [
+    payment("2026-02-10", "40.00"),
+    payment("2026-05-10", "200.00"),
+    payment("2026-07-10", "60.00"),
+    payment("2025-05-10", "150.00"),
+  ];
+
+  it("lässt sich per Tastatur durchgehen; der Kopf zeigt den gewählten Stand", async () => {
+    const user = userEvent.setup();
+    renderHero(2026, PAYMENTS);
+    const chart = screen.getByRole("slider");
+    // Ohne Auswahl: der Zeitraum, als letzter Punkt („heute") angesagt.
+    expect(chart).toHaveAttribute(
+      "aria-valuetext",
+      expect.stringMatching(/^bis 20\. Juli 2026: 300,00/),
+    );
+
+    chart.focus();
+    await user.keyboard("{Home}{ArrowRight}");
+    // Ende Februar: 40 €, Vorjahr bis Ende Februar 0 € → „neu".
+    expect(screen.getByText("bis Ende Februar 2026")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Zahlungen bis Ende Februar 2026 anzeigen" }),
+    ).toHaveTextContent(/40,00\s?€/);
+
+    await user.keyboard("{Escape}");
+    expect(screen.getByText("Dividenden 2026")).toBeInTheDocument();
+  });
+
+  it("zeigt monatlich den gewählten Monat mit Vorjahresvergleich und Drill-down", async () => {
+    const user = userEvent.setup();
+    renderHero(2026, PAYMENTS);
+    await user.click(screen.getByRole("button", { name: "Monatlich" }));
+    expect(screen.getByRole("button", { name: "Monatlich" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+
+    const chart = screen.getByRole("slider");
+    chart.focus();
+    // Punkte: Januar bis Juli (August ff. haben noch nicht begonnen).
+    expect(chart).toHaveAttribute("aria-valuemax", "6");
+    await user.keyboard("{Home}{ArrowRight}{ArrowRight}{ArrowRight}{ArrowRight}");
+    expect(screen.getByText("Mai 2026")).toBeInTheDocument();
+    expect(screen.getByText("+33,3 %", { exact: false })).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Zahlungen Mai 2026 anzeigen" }),
+    ).toHaveAttribute("href", "/eingaenge?year=2026&month=5");
   });
 });

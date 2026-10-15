@@ -838,6 +838,41 @@ nichts — weder welcher Stand auf dem Gerät läuft noch aus welchem eine Siche
 
 - Fassungen sollen als Git-Tags oder Releases mit Änderungsprotokoll erscheinen.
 
+## ADR-005: Redesign der Übersicht — monochromer Kopf, eigenes Diagramm, Prognose
+
+**Status:** Accepted  
+**Scope:** UX, Berechnung
+
+### Decision
+
+Ab 1.7.0 folgt die App einer ruhigeren, von Broker-Apps inspirierten Linie, ohne sie zu kopieren:
+Schwarz trägt Daten, das Tiefblau der App markiert Aktionen, Grün/Rot nur Veränderung. Der Kopf
+der Übersicht steht ohne Kartenrahmen, zeigt das Diagramm selbst (eigenes SVG, Wischen statt
+Tooltip, Schieberegler für Tastatur) und neben dem Jahresziel eine Prognose zum Jahresende
+(CALCULATION_RULES.md §9.7). Konzept und Varianten wurden vorab als Vorher/Nachher-Entwurf
+abgestimmt.
+
+### Why
+
+Der alte Kopf ließ offen, ob das Jahresziel erreichbar ist („40 % erreicht" im Oktober), das
+Diagramm stand als eigene Karte weit unten, und Blau markierte gleichzeitig Aktionen, aktive
+Navigation und Daten. Recharts lag im ersten Bildschirm, obwohl dort nur ein einfaches
+Liniendiagramm nötig ist.
+
+### Trade-offs
+
+- Eigenes SVG statt Recharts: weniger Bundle und volle Kontrolle über das Wischen, dafür
+  eigener Code für Skalen und Bedienung (bewusst klein gehalten, `HeroChart.tsx`).
+- Die Prognose ist eine einfache Fortschreibung des Vorjahres. Sie irrt bei Käufen, Verkäufen
+  und Kürzungen und ist deshalb klar als Prognose beschriftet und vom Zielfortschritt getrennt.
+- Monochrome Vergleichsreihe im Kopf statt Slot 1/2 der Diagrammpalette (Ausnahme in
+  UX_AND_DESIGN_SYSTEM.md §1a).
+
+### Revisit When
+
+- Angekündigte Beträge aus dem Dividendenkalender sollen die Prognose für die nächsten Wochen
+  ersetzen (genauer, aber abhängig von der Synchronisation).
+
 ---
 
 # Superseded Decisions
