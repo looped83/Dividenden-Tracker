@@ -107,16 +107,24 @@ export function ListRow({
 }
 
 /**
- * Datumsfeld am Anfang einer Zeile: Tag groß, Monat klein darunter — dieselbe
- * Kachel für Termine (Kalender, „Demnächst") und Eingänge (seit 1.11.0). Ein
- * Datum soll überall gleich aussehen.
+ * Feld am Anfang einer Zeile: Hauptangabe groß, optional eine kleine Zeile
+ * darunter. Dieselbe Kachel trägt ein Datum (Termine, Eingänge), ein Jahr
+ * (Jahresstatistik) oder einen Monat (Monatsvergleich, seit 1.12.0) — ein
+ * Zeitpunkt soll überall gleich aussehen.
  *
- * Rein dekorativ (`aria-hidden`): Die Zeile nennt das Datum vollständig in
+ * Rein dekorativ (`aria-hidden`): Die Zeile nennt den Zeitpunkt vollständig in
  * ihrer Bezeichnung oder als Text für Sprachausgaben. Grau wie die übrigen
  * Flächen: Orange markiert Aktionen, nicht Daten.
  */
-export function ListDateTile({ iso, muted = false }: { iso: string; muted?: boolean }) {
-  const { day, month } = dateTile(iso);
+export function ListTile({
+  primary,
+  secondary,
+  muted = false,
+}: {
+  primary: string;
+  secondary?: string | undefined;
+  muted?: boolean;
+}) {
   return (
     <span
       aria-hidden
@@ -125,12 +133,28 @@ export function ListDateTile({ iso, muted = false }: { iso: string; muted?: bool
         muted ? "text-muted-foreground" : "text-foreground",
       )}
     >
-      <span className="text-base font-semibold leading-none tabular-amount">{day}</span>
-      <span className="mt-0.5 text-[0.625rem] font-semibold uppercase leading-none tracking-wide text-muted-foreground">
-        {month}
+      {/* Vier Ziffern („2026") passen in 16px nicht mit Luft in die Kachel. */}
+      <span
+        className={cn(
+          "font-semibold leading-none tabular-amount",
+          primary.length > 3 ? "text-sm" : "text-base",
+        )}
+      >
+        {primary}
       </span>
+      {secondary !== undefined && (
+        <span className="mt-0.5 text-[0.625rem] font-semibold uppercase leading-none tracking-wide text-muted-foreground">
+          {secondary}
+        </span>
+      )}
     </span>
   );
+}
+
+/** Datumsfeld: Tag groß, Monat klein darunter (seit 1.11.0). */
+export function ListDateTile({ iso, muted = false }: { iso: string; muted?: boolean }) {
+  const { day, month } = dateTile(iso);
+  return <ListTile primary={day} secondary={month} muted={muted} />;
 }
 
 /**

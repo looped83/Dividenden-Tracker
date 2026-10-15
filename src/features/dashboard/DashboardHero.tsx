@@ -282,9 +282,10 @@ export function DashboardHero({ payments, selection, today }: DashboardHeroProps
         </Link>
       ) : null}
 
-      <div className="mt-5 flex min-h-9 items-center justify-between gap-3">
-        <Legend kind={series.kind} year={typeof selection === "number" ? selection : 0} />
-        {!data.isAll && (
+      {/* Ohne Legende (seit 1.12.0): Die Vorjahreslinie trägt ihr Jahr am
+          Ende, und der Kopf nennt beim Wischen beide Jahre. */}
+      {!data.isAll && (
+        <div className="mt-5 flex justify-end">
           <SegmentedControl
             variant="pill"
             label="Diagrammsicht"
@@ -292,9 +293,9 @@ export function DashboardHero({ payments, selection, today }: DashboardHeroProps
             value={kind}
             onChange={setKind}
           />
-        )}
-      </div>
-      <div className="mt-3">
+        </div>
+      )}
+      <div className={data.isAll ? "mt-6" : "mt-3"}>
         {series.points.length === 0 ? (
           <p className="py-10 text-center text-sm text-muted-foreground">
             Für {label} liegen noch keine Dividendeneingänge vor.
@@ -530,41 +531,6 @@ function AnnualGoal({
         </span>
       </span>
     </Link>
-  );
-}
-
-function Legend({
-  kind,
-  year,
-}: {
-  kind: "cumulative" | "monthly" | "years";
-  year: number;
-}) {
-  if (kind === "years") return <span />;
-  const swatch =
-    kind === "cumulative"
-      ? [
-          <span key="c" className="h-0.5 w-3 rounded-full bg-primary" />,
-          <span
-            key="p"
-            className="h-0.5 w-3 bg-[repeating-linear-gradient(90deg,var(--series-prior)_0_2px,transparent_2px_4px)]"
-          />,
-        ]
-      : [
-          <span key="c" className="size-2 rounded-[2px] bg-primary" />,
-          <span key="p" className="size-2 rounded-[2px] bg-series-prior" />,
-        ];
-  return (
-    <span className="flex items-center gap-3 text-xs text-muted-foreground" aria-hidden>
-      <span className="inline-flex items-center gap-1.5">
-        {swatch[0]}
-        {year}
-      </span>
-      <span className="inline-flex items-center gap-1.5">
-        {swatch[1]}
-        {year - 1}
-      </span>
-    </span>
   );
 }
 

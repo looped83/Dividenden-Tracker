@@ -76,6 +76,12 @@ interface CategoryBarChartProps {
   /** Ueberschrift der Kategoriespalte in der Datentabelle. */
   categoryHeader: string;
   emptyMessage?: string;
+  /**
+   * Farbe der Balken. Zeitverläufe (Statistik › Verlauf) stehen in der
+   * Akzentfarbe wie der laufende Zeitraum auf der Übersicht; Ranglisten
+   * bleiben in Vordergrundfarbe.
+   */
+  color?: "foreground" | "primary";
 }
 
 /**
@@ -89,6 +95,7 @@ export function CategoryBarChart({
   ariaLabel,
   categoryHeader,
   emptyMessage = "Keine Daten für die aktuelle Auswahl.",
+  color = "foreground",
 }: CategoryBarChartProps) {
   const navigate = useNavigate();
 
@@ -107,7 +114,7 @@ export function CategoryBarChart({
           <Bar
             dataKey="value"
             name="Nettodividende"
-            fill="var(--foreground)"
+            fill={`var(--${color})`}
             radius={CHART_BAR_RADIUS}
             maxBarSize={CHART_MAX_BAR_SIZE}
             {...CHART_SERIES_PROPS}
@@ -196,12 +203,9 @@ interface ComparisonLineChartProps {
  * auf einen Blick; nebeneinanderstehende Balken muesste man Paar fuer Paar
  * lesen.
  *
- * **Monochrom wie der Kopf der Uebersicht** (seit 1.9.0): der aktuelle
- * Zeitraum in Vordergrundfarbe, die Referenz in `--series-prior` (neutrales
- * Grau, 3,6:1 hell / 3,5:1 dunkel) und gestrichelt. Der Helligkeitsabstand
- * trennt beide Linien staerker als zwei Farbtoene gleicher Helligkeit, und
- * Farbe bleibt auf der ganzen App der Veraenderung vorbehalten
- * (UX_AND_DESIGN_SYSTEM.md §1a).
+ * **Farben wie der Kopf der Uebersicht** (seit 1.12.0): der aktuelle
+ * Zeitraum in der Akzentfarbe (Orange), die Referenz in `--series-prior`
+ * (neutrales Grau, 3,6:1 hell / 3,5:1 dunkel) und gestrichelt.
  *
  * **Identitaet haengt nicht an der Farbe allein:** Die Vergleichsreihe ist
  * zusaetzlich gestrichelt, beide Reihen sind benannt (Legende), und die
@@ -250,7 +254,7 @@ export function ComparisonLineChart({
             type="linear"
             dataKey="current"
             name={currentLabel}
-            stroke="var(--foreground)"
+            stroke="var(--primary)"
             strokeWidth={2.25}
             dot={false}
             activeDot={{ r: 5 }}
@@ -261,7 +265,7 @@ export function ComparisonLineChart({
 
       <ChartLegend
         items={[
-          { label: currentLabel, color: "var(--foreground)" },
+          { label: currentLabel, color: "var(--primary)" },
           { label: referenceLabel, color: "var(--series-prior)", dashed: true },
         ]}
       />

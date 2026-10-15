@@ -13,7 +13,8 @@ import { cn } from "@/lib/utils/cn";
  * Abschnitten setzt die Seite (40px, ab `lg` 48px), nicht der Abschnitt.
  *
  * Die Kopfzeile ist so hoch wie die Überschrift (28px); ein Bedienelement
- * daneben ragt per negativem Rand nicht darüber hinaus.
+ * daneben ragt per negativem Rand nicht darüber hinaus. Mit Beschreibung steht
+ * es mittig zu Überschrift und Beschreibung.
  */
 export function Section({
   title,
@@ -38,12 +39,20 @@ export function Section({
   return (
     <section aria-labelledby={id} className={cn("min-w-0", className)} {...props}>
       <div className="flex min-h-7 flex-wrap items-center justify-between gap-x-3 gap-y-2">
-        <h2
-          id={id}
-          className="min-w-0 flex-1 text-[1.1875rem] font-bold leading-tight tracking-[-0.015em]"
-        >
-          {title}
-        </h2>
+        {/* Die Beschreibung steht mit der Überschrift in einer Spalte: Eine
+            Aktion daneben sitzt so mittig zu beiden Zeilen. Neben der
+            Überschrift allein wirkte sie über einer Beschreibung zu hoch. */}
+        <div className="min-w-0 flex-1">
+          <h2
+            id={id}
+            className="text-[1.1875rem] font-bold leading-tight tracking-[-0.015em]"
+          >
+            {title}
+          </h2>
+          {description !== undefined && (
+            <p className="mt-0.5 text-[0.8125rem] text-muted-foreground">{description}</p>
+          )}
+        </div>
         {action !== undefined && (
           // Felder im Kopf (Auswahl, Suche) als Pillen — wie der Umschalter
           // daneben und die Jahresauswahl der Übersicht (seit 1.9.0).
@@ -57,9 +66,6 @@ export function Section({
           </div>
         )}
       </div>
-      {description !== undefined && (
-        <p className="mt-0.5 text-[0.8125rem] text-muted-foreground">{description}</p>
-      )}
       <div className="mt-2">{children}</div>
     </section>
   );

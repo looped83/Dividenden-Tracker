@@ -1,6 +1,7 @@
 import * as React from "react";
 import { useNavigate } from "react-router";
 import { Section } from "@/components/ui/section";
+import { ListTile } from "@/components/ui/list";
 import { AmountText } from "@/components/money/AmountText";
 import { EmptyState } from "@/components/ui/empty-state";
 import { BarChart3 } from "lucide-react";
@@ -176,6 +177,7 @@ export function YearsTab({
         <div>
           <CategoryBarChart
             data={chartData}
+            color="primary"
             ariaLabel="Netto-Dividenden je Jahr"
             categoryHeader="Jahr"
           />
@@ -202,6 +204,14 @@ export function YearsTab({
             }
             rowLabel={(row) => `Monate von ${String(row.year)} anzeigen`}
             listSummary={{
+              // Das Jahr als Kachel vorn — wie das Datum bei den Eingängen.
+              leading: (row) => (
+                <ListTile
+                  primary={String(row.year)}
+                  secondary={row.year === today.year ? "läuft" : undefined}
+                />
+              ),
+              title: (row) => `${formatCountNumber(row.count)} Zahlungen`,
               meta: (row) => {
                 const { change } = row;
                 const trend =
@@ -218,12 +228,13 @@ export function YearsTab({
                       {row.year === today.year ? " bis heute" : ""}
                     </span>
                   ) : null;
+                const best =
+                  row.bestMonth && `stärkster ${monthNameDe(row.bestMonth.month)}`;
                 return (
                   <>
                     {trend}
-                    {trend && " · "}
-                    {formatCountNumber(row.count)} Zahlungen
-                    {row.bestMonth && ` · stärkster ${monthNameDe(row.bestMonth.month)}`}
+                    {trend && best && " · "}
+                    {best}
                   </>
                 );
               },
