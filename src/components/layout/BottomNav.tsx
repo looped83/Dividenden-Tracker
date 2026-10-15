@@ -2,6 +2,7 @@ import { Plus, MoreHorizontal } from "lucide-react";
 import { NavLink, useLocation } from "react-router";
 import { BOTTOM_NAV_MORE_ITEMS, BOTTOM_NAV_PRIMARY_ITEMS } from "@/app/navigation";
 import { prefetchProps } from "@/app/routeChunks";
+import { useNewPaymentTrigger } from "@/features/payments/PaymentComposer";
 import { cn } from "@/lib/utils/cn";
 
 const ACTIVE = "font-semibold text-foreground";
@@ -21,6 +22,10 @@ const INACTIVE = "text-muted-foreground";
  * App, was eine Aktion ausloest; der aktive Bereich ist ein Ort. Die Leiste
  * ist leicht durchscheinend, damit beim Scrollen sichtbar bleibt, dass die
  * Seite darunter weitergeht.
+ *
+ * **Erfassen oeffnet ein Sheet, keine Seite.** Das Formular faehrt von unten
+ * ueber die aktuelle Seite; nach dem Speichern oder Abbrechen steht man wieder
+ * genau dort, wo man war (siehe `PaymentComposerProvider`).
  */
 export function BottomNav() {
   // „Mehr" steht fuer alle Bereiche dahinter: In Kalender, Depot, Zielen oder
@@ -30,6 +35,7 @@ export function BottomNav() {
   const inMoreArea = BOTTOM_NAV_MORE_ITEMS.some(
     (item) => pathname === item.to || pathname.startsWith(`${item.to}/`),
   );
+  const newPayment = useNewPaymentTrigger();
 
   return (
     <nav
@@ -44,10 +50,11 @@ export function BottomNav() {
         <BottomNavLink key={item.to} to={item.to} label={item.label} icon={item.icon} />
       ))}
 
-      <NavLink
-        to="/eingaenge/neu"
+      <button
+        type="button"
         aria-label="Neue Dividende erfassen"
-        {...prefetchProps("/eingaenge/neu")}
+        aria-haspopup="dialog"
+        {...newPayment}
         className="group flex flex-1 items-center justify-center py-2 outline-none"
       >
         <span
@@ -59,7 +66,7 @@ export function BottomNav() {
         >
           <Plus className="size-6" aria-hidden strokeWidth={2.25} />
         </span>
-      </NavLink>
+      </button>
 
       {BOTTOM_NAV_PRIMARY_ITEMS.slice(2).map((item) => (
         <BottomNavLink key={item.to} to={item.to} label={item.label} icon={item.icon} />

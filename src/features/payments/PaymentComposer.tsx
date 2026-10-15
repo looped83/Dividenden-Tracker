@@ -37,7 +37,7 @@ const ComposerContext = React.createContext<NewPaymentTrigger | null>(null);
 /**
  * Öffnet das Erfassungsformular als Overlay über der aktuellen Seite.
  *
- * Auf breiten Schirmen ist „Neue Dividende" ein Zwischenschritt, keine Reise:
+ * „Neue Dividende" ist ein Zwischenschritt, keine Reise:
  * Wer aus der Liste, der Übersicht oder dem Kalender heraus erfasst, will
  * danach genau dort weitermachen. Als eigene Seite ging der Zusammenhang
  * verloren — die Liste dahinter verschwand, und nach dem Speichern landete man
@@ -45,9 +45,9 @@ const ComposerContext = React.createContext<NewPaymentTrigger | null>(null);
  * stehen; nach dem Speichern schließt es sich, und die Zahlen darunter
  * aktualisieren sich von selbst (React Query invalidiert die Abfragen).
  *
- * Auf dem Telefon bleibt es bei der eigenen Seite ({@link NewPaymentPage}):
- * Dort deckt ein Dialog den Bildschirm ohnehin vollständig ab, und die
- * Bottom-Navigation führt mit einem Fingertipp dorthin.
+ * Auf dem Telefon ist das Overlay ein Sheet, das von unten über Seite und
+ * Bottom-Navigation fährt (`DialogContent`). Die eigene Seite
+ * ({@link NewPaymentPage}) bleibt für Direktlinks und das Bearbeiten.
  */
 export function PaymentComposerProvider({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = React.useState(false);

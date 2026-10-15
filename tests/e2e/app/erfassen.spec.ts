@@ -20,9 +20,8 @@ test("erfasst eine Dividende und zeigt sie in Liste und Übersicht", async ({
   await page.getByRole("combobox", { name: "Asset" }).fill("Muster");
   await page.getByRole("option", { name: konto.securityName }).click();
 
-  await page
-    .getByRole("combobox", { name: "Depot", exact: true })
-    .selectOption({ label: `${konto.depotName} (EUR)` });
+  // Das Depot ergibt sich aus dem Asset (hier: das einzige Depot des Kontos).
+  await expect(page.getByRole("combobox", { name: "Depot", exact: true })).toHaveCount(0);
   await page.getByLabel("Zahlungsdatum").fill("2026-05-14");
   await page.getByLabel("Nettobetrag").fill("123,45");
   await page.getByRole("button", { name: "Speichern" }).click();
@@ -44,7 +43,6 @@ test("weist unvollständige Eingaben zurück, statt sie zu speichern", async ({ 
 
   // Die Meldungen stehen am Feld; gespeichert wird nichts (keine Navigation).
   await expect(page.getByText("Asset ist erforderlich")).toBeVisible();
-  await expect(page.getByText("Depot ist erforderlich")).toBeVisible();
   await expect(page).toHaveURL(/#\/eingaenge\/neu$/);
 });
 
@@ -67,9 +65,6 @@ test("erfasst auf breiten Schirmen im Overlay, ohne die Seite zu verlassen", asy
 
   await dialog.getByRole("combobox", { name: "Asset" }).fill("Muster");
   await page.getByRole("option", { name: konto.securityName }).click();
-  await dialog
-    .getByRole("combobox", { name: "Depot", exact: true })
-    .selectOption({ label: `${konto.depotName} (EUR)` });
   await dialog.getByLabel("Zahlungsdatum").fill("2026-05-14");
   await dialog.getByLabel("Nettobetrag").fill("77,00");
   await dialog.getByRole("button", { name: "Speichern" }).click();
@@ -80,16 +75,40 @@ test("erfasst auf breiten Schirmen im Overlay, ohne die Seite zu verlassen", asy
   await expect(page).toHaveURL(/#\/statistiken$/);
 });
 
-test("Abbrechen fuehrt dorthin zurueck, wo man herkam", async ({ page }) => {
-  // Schmal: Dort fuehrt die Bottom-Navigation auf die eigene Seite.
+test("erfasst auf dem Telefon in einem Sheet über der aktuellen Seite", async ({
+  page,
+  konto,
+}) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/#/kalender");
   await expect(page.getByRole("heading", { name: "Kalender", level: 1 })).toBeVisible();
 
-  await page.getByRole("link", { name: "Neue Dividende erfassen" }).click();
-  await expect(page).toHaveURL(/#\/eingaenge\/neu$/);
+  await page.getByRole("button", { name: "Neue Dividende erfassen" }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByRole("heading", { name: "Neue Dividende" })).toBeVisible();
+  await expect(page).toHaveURL(/#\/kalender$/);
 
-  await page.getByRole("button", { name: "Abbrechen" }).click();
-  // Zurueck in den Kalender — nicht in die Dividendenliste.
+  // Das Sheet faehrt von unten ein und liegt dann am Rand, ueber der
+  // Bottom-Navigation.
+  await expect
+    .poll(async () => {
+      const box = await dialog.boundingBox();
+      return Math.round((box?.y ?? 0) + (box?.height ?? 0));
+    })
+    .toBe(844);
+
+  // Abbrechen schliesst es — der Kalender steht noch da.
+  await dialog.getByRole("button", { name: "Abbrechen" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page).toHaveURL(/#\/kalender$/);
+
+  // Und erfassen klappt ebenso, ohne die Seite zu verlassen.
+  await page.getByRole("button", { name: "Neue Dividende erfassen" }).click();
+  await dialog.getByRole("combobox", { name: "Asset" }).fill("Muster");
+  await page.getByRole("option", { name: konto.securityName }).click();
+  await dialog.getByLabel("Nettobetrag").fill("12,00");
+  await dialog.getByRole("button", { name: "Speichern" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.getByText("Dividende erfasst.")).toBeVisible();
   await expect(page).toHaveURL(/#\/kalender$/);
 });

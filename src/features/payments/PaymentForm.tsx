@@ -39,8 +39,8 @@ function emptyValues(): PaymentFormValues {
 
 /**
  * Das Formular fuer einen Dividendeneingang — **einmal** fuer beide Wege:
- * als Seite (`/eingaenge/neu`, `/eingaenge/:id/bearbeiten`, so kommt das
- * Telefon dorthin) und als Overlay ueber der aktuellen Seite (Desktop, siehe
+ * als Seite (`/eingaenge/neu`, `/eingaenge/:id/bearbeiten`) und als Overlay
+ * ueber der aktuellen Seite (auf dem Telefon ein Sheet, siehe
  * {@link PaymentComposerProvider}). Es kennt weder Route noch Dialog: Wohin es
  * nach dem Speichern oder Abbrechen fuehrt, entscheidet der Aufrufer.
  */
@@ -80,6 +80,7 @@ export function PaymentForm({
     control,
     getValues,
     setValue,
+    setFocus,
     formState: { errors, isSubmitting },
   } = useForm<PaymentFormValues>({
     resolver: zodResolver(paymentFormSchema),
@@ -125,14 +126,42 @@ export function PaymentForm({
     [activeSecurities],
   );
 
+  /**
+   * Das Depot ergibt sich aus dem Asset — gefragt wird nur, wenn es offen ist.
+   *
+   * Erste Wahl ist das Standard-Depot des Assets (sofern nicht archiviert),
+   * sonst das einzige aktive Depot. Ein Feld, das fast immer schon richtig
+   * vorbelegt war, kostete auf dem Telefon eine Bildschirmzeile und einen
+   * Blick. Bleibt es offen (kein Standard, mehrere Depots), erscheint die
+   * Auswahl.
+   */
+  const depotFor = (securityId: string): string => {
+    const security = securities.find((s) => s.id === securityId);
+    const preferred = security?.default_depot_id;
+    if (preferred && activeDepots.some((depot) => depot.id === preferred)) {
+      return preferred;
+    }
+    return activeDepots.length === 1 ? (activeDepots[0]?.id ?? "") : "";
+  };
+  const needsDepotChoice = watchedSecurityId !== "" && depotFor(watchedSecurityId) === "";
+
   const selectSecurity = (securityId: string) => {
     setValue("securityId", securityId, { shouldValidate: true, shouldDirty: true });
-    // Beim Neuanlegen das Standard-Depot des Unternehmens vorbelegen, solange
-    // noch keines gewaehlt ist.
-    if (isEditMode || getValues("depotId")) return;
-    const security = securities.find((s) => s.id === securityId);
-    if (security?.default_depot_id) {
-      setValue("depotId", security.default_depot_id);
+    const depotId = depotFor(securityId);
+    // Beim Bearbeiten bleibt das bisherige Depot, wenn das neue Asset keines
+    // vorgibt — beim Neuanlegen wird dann ausdruecklich gewaehlt.
+    if (depotId || !isEditMode) {
+      setValue("depotId", depotId, { shouldDirty: true });
+    }
+    // Auf Touch-Geraeten weiter zum Betrag: Der Fokus faellt noch im Tippen auf
+    // die Option, iOS oeffnet so gleich den Zahlenblock — ein Antippen weniger.
+    // Mit Maus und Tastatur bleibt der Fokus, wo er ist.
+    if (
+      depotId &&
+      !getValues("netAmount") &&
+      window.matchMedia("(pointer: coarse)").matches
+    ) {
+      setFocus("netAmount");
     }
   };
 
@@ -232,8 +261,7 @@ export function PaymentForm({
       )}
 
       <form onSubmit={(event) => void onSubmit(event)} className="space-y-5" noValidate>
-        {/* Unternehmen zuerst: die Auswahl belegt das Depot aus dem
-            Standard-Depot des Unternehmens vor (siehe selectSecurity). */}
+        {/* Asset zuerst: Es bestimmt das Depot (siehe depotFor). */}
         <div className="space-y-1.5">
           <Label htmlFor="payment-security">Asset</Label>
           <Combobox
@@ -241,7 +269,7 @@ export function PaymentForm({
             options={securityOptions}
             value={watchedSecurityId}
             onChange={selectSecurity}
-            placeholder="Name oder Ticker suchen …"
+            placeholder="Asset oder Ticker suchen …"
             emptyMessage="Kein Asset gefunden"
           />
           {errors.securityId && (
@@ -249,20 +277,22 @@ export function PaymentForm({
           )}
         </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="payment-depot">Depot</Label>
-          <Select id="payment-depot" {...register("depotId")}>
-            <option value="">Bitte wählen</option>
-            {activeDepots.map((depot) => (
-              <option key={depot.id} value={depot.id}>
-                {depot.name} ({depot.base_currency})
-              </option>
-            ))}
-          </Select>
-          {errors.depotId && (
-            <p className="text-sm text-negative">{errors.depotId.message}</p>
-          )}
-        </div>
+        {needsDepotChoice && (
+          <div className="space-y-1.5">
+            <Label htmlFor="payment-depot">Depot</Label>
+            <Select id="payment-depot" {...register("depotId")}>
+              <option value="">Bitte wählen</option>
+              {activeDepots.map((depot) => (
+                <option key={depot.id} value={depot.id}>
+                  {depot.name} ({depot.base_currency})
+                </option>
+              ))}
+            </Select>
+            {errors.depotId && (
+              <p className="text-sm text-negative">{errors.depotId.message}</p>
+            )}
+          </div>
+        )}
 
         {/* Datum und Betrag sind beide kurz und gehoeren fachlich zusammen —
             nebeneinander spart eine Bildschirmzeile. Unter 360px reicht die

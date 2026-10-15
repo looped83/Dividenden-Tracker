@@ -5,11 +5,9 @@ import { PaymentForm } from "@/features/payments/PaymentForm";
  * Das Formular als eigene Seite (`/eingaenge/neu`,
  * `/eingaenge/:id/bearbeiten`).
  *
- * Auf dem Telefon ist das der Weg: Ein Formular mit sechs Feldern in einem
- * Dialog ueber einer Seite, die man ohnehin nicht sieht, gewinnt dort nichts.
- * Auf breiten Schirmen oeffnet dieselbe Aktion ein Overlay ueber der aktuellen
- * Seite ({@link PaymentComposerProvider}) — die Liste dahinter bleibt stehen.
- * Beide Wege teilen sich {@link PaymentForm}.
+ * Der Weg fuer Direktlinks und das Bearbeiten. Neu erfasst wird sonst im
+ * Overlay ueber der aktuellen Seite ({@link PaymentComposerProvider}) — auf
+ * dem Telefon als Sheet von unten. Beide Wege teilen sich {@link PaymentForm}.
  *
  * **Abbrechen fuehrt dorthin zurueck, wo man herkam.** Zuvor landete man immer
  * bei den Dividenden — auch wenn man aus der Uebersicht oder dem Kalender kam.
