@@ -3,7 +3,6 @@ import { Link } from "react-router";
 import { LayoutDashboard, Upload, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useDepots } from "@/features/depots/hooks";
@@ -16,7 +15,7 @@ import { YearSelector } from "./YearSelector";
 // laedt Recharts damit gar nicht mehr.
 import { DashboardHero, DashboardHeroSkeleton } from "./DashboardHero";
 import { UpcomingPayments } from "./UpcomingPayments";
-import { TopCompanies, DepotDistribution } from "./Distributions";
+import { Distribution } from "./Distributions";
 import { RecentPayments } from "./RecentPayments";
 import { HistoricalOverview } from "./HistoricalOverview";
 import { buildEntityMap, describeSelection } from "./format";
@@ -26,11 +25,11 @@ function DashboardSkeleton() {
     <div className="space-y-6" aria-busy="true" aria-live="polite">
       <span className="sr-only">Dashboard wird geladen …</span>
       <DashboardHeroSkeleton />
-      <Card>
-        <CardContent className="p-4 sm:p-6">
-          <Skeleton className="h-40 w-full" />
-        </CardContent>
-      </Card>
+      <div className="space-y-3 pt-4" aria-hidden>
+        <Skeleton className="h-5 w-32" />
+        <Skeleton className="h-14 w-full rounded-xl" />
+        <Skeleton className="h-14 w-full rounded-xl" />
+      </div>
     </div>
   );
 }
@@ -147,32 +146,40 @@ export function DashboardPage() {
         </p>
       )}
 
-      <DashboardHero payments={payments} selection={selection} today={today} />
-
-      {/* Was demnächst kommt, gehört zum Jetzt: im laufenden Jahr und bei
-          „Alle Jahre", nicht beim Blick zurück auf 2024. */}
-      {(selection === "all" || selection === today.year) && (
-        <UpcomingPayments today={isoFromRef(today)} />
-      )}
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <TopCompanies
-          periodPayments={periodPayments}
-          selection={selection}
-          securities={securities}
-          depots={depots}
-        />
-        <DepotDistribution
-          periodPayments={periodPayments}
-          selection={selection}
-          securities={securities}
-          depots={depots}
-        />
+      {/* Telefon: eine Spalte in der Reihenfolge Kopf, Demnächst, Verteilung,
+          Eingänge, Gesamt. Ab `lg` zwei Spalten — links Kopf und Eingänge,
+          rechts was daneben gelesen wird. Die Spalten sind auf dem Telefon
+          `contents`, damit `order` die Abschnitte über beide hinweg ordnet. */}
+      <div className="flex flex-col gap-10 lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start lg:gap-x-16">
+        <div className="contents lg:flex lg:flex-col lg:gap-12">
+          <div className="order-1">
+            <DashboardHero payments={payments} selection={selection} today={today} />
+          </div>
+          <div className="order-4">
+            <RecentPayments payments={payments} securities={securities} depots={depots} />
+          </div>
+        </div>
+        <div className="contents lg:flex lg:flex-col lg:gap-12">
+          {/* Was demnächst kommt, gehört zum Jetzt: im laufenden Jahr und bei
+              „Alle Jahre", nicht beim Blick zurück auf 2024. */}
+          {(selection === "all" || selection === today.year) && (
+            <div className="order-2">
+              <UpcomingPayments today={isoFromRef(today)} />
+            </div>
+          )}
+          <div className="order-3">
+            <Distribution
+              periodPayments={periodPayments}
+              selection={selection}
+              securities={securities}
+              depots={depots}
+            />
+          </div>
+          <div className="order-5 empty:hidden">
+            <HistoricalOverview payments={payments} selection={selection} />
+          </div>
+        </div>
       </div>
-
-      <RecentPayments payments={payments} securities={securities} depots={depots} />
-
-      <HistoricalOverview payments={payments} selection={selection} />
     </div>
   );
 }

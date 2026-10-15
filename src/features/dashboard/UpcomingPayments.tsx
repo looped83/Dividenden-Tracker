@@ -1,8 +1,6 @@
 import * as React from "react";
 import { Link } from "react-router";
-import { CalendarDays } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Section, SectionLink } from "@/components/ui/section";
 import { ListGroup, ListItemBody, ListRow } from "@/components/ui/list";
 import { AmountText } from "@/components/money/AmountText";
 import { formatMoney } from "@/lib/money";
@@ -48,68 +46,56 @@ export function UpcomingPayments({ today }: { today: string }) {
   if (next.length === 0) return null;
 
   return (
-    <Card>
-      <CardHeader className="flex-row items-center justify-between gap-3">
-        <div className="min-w-0 space-y-1.5">
-          <CardTitle>Demnächst</CardTitle>
-          {next30Days.total && (
-            <p className="text-sm text-muted-foreground">
-              <AmountText amount={next30Days.total} /> erwartet in 30 Tagen
-            </p>
-          )}
-        </div>
-        {/* Der Weg zum ganzen Bereich als Symbol rechts neben der Überschrift —
-            dieselbe Form wie der Umschalter beim Dividendenverlauf und dasselbe
-            Symbol wie „Kalender" in der Navigation. */}
-        <Button asChild variant="outline" size="icon" className="-my-2 shrink-0">
-          <Link
-            to="/kalender"
-            aria-label="Zum Dividendenkalender"
-            title="Dividendenkalender"
-          >
-            <CalendarDays aria-hidden />
-          </Link>
-        </Button>
-      </CardHeader>
-      <CardContent>
-        <ListGroup inset aria-label="Nächste angekündigte Zahltage">
-          {next.map((event) => {
-            const { day, month } = dateTile(event.date);
-            const when = relativeDayLabel(daysBetween(today, event.date));
-            const amount = event.expectedAmount;
-            return (
-              <li key={event.id}>
-                <ListRow asChild>
-                  <Link
-                    to="/kalender"
-                    aria-label={`${eventTitle(event)}, ${when}${amount ? `, erwartet ${formatMoney(amount)}` : ""}`}
-                  >
-                    <ListItemBody
-                      // Dasselbe Datumsfeld wie im Kalender, eine Stufe kleiner.
-                      leading={
-                        <span
-                          aria-hidden
-                          className="flex size-10 shrink-0 flex-col items-center justify-center rounded-md bg-primary/10 text-primary"
-                        >
-                          <span className="text-base font-semibold leading-none tabular-amount">
-                            {day}
-                          </span>
-                          <span className="mt-0.5 text-[0.625rem] font-medium uppercase leading-none">
-                            {month}
-                          </span>
+    <Section
+      title="Demnächst"
+      description={
+        next30Days.total ? (
+          <>
+            <AmountText amount={next30Days.total} /> erwartet in 30 Tagen
+          </>
+        ) : undefined
+      }
+      // Der Weg zum ganzen Bereich als Textlink in Primärblau — wie „Alle"
+      // bei den Eingängen. Ein Symbol allein musste man deuten.
+      action={<SectionLink to="/kalender">Kalender</SectionLink>}
+    >
+      <ListGroup inset aria-label="Nächste angekündigte Zahltage">
+        {next.map((event) => {
+          const { day, month } = dateTile(event.date);
+          const when = relativeDayLabel(daysBetween(today, event.date));
+          const amount = event.expectedAmount;
+          return (
+            <li key={event.id}>
+              <ListRow asChild>
+                <Link
+                  to="/kalender"
+                  aria-label={`${eventTitle(event)}, ${when}${amount ? `, erwartet ${formatMoney(amount)}` : ""}`}
+                >
+                  <ListItemBody
+                    // Dasselbe Datumsfeld wie im Kalender, eine Stufe kleiner.
+                    leading={
+                      <span
+                        aria-hidden
+                        className="flex size-11 shrink-0 flex-col items-center justify-center rounded-xl bg-muted"
+                      >
+                        <span className="text-base font-semibold leading-none tabular-amount">
+                          {day}
                         </span>
-                      }
-                      title={eventTitle(event)}
-                      meta={<span>{when}</span>}
-                      trailing={amount ? <AmountText amount={amount} /> : undefined}
-                    />
-                  </Link>
-                </ListRow>
-              </li>
-            );
-          })}
-        </ListGroup>
-      </CardContent>
-    </Card>
+                        <span className="mt-0.5 text-[0.625rem] font-semibold uppercase leading-none tracking-wide text-muted-foreground">
+                          {month}
+                        </span>
+                      </span>
+                    }
+                    title={eventTitle(event)}
+                    meta={<span>{when}</span>}
+                    trailing={amount ? <AmountText amount={amount} /> : undefined}
+                  />
+                </Link>
+              </ListRow>
+            </li>
+          );
+        })}
+      </ListGroup>
+    </Section>
   );
 }

@@ -1,4 +1,6 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import * as React from "react";
+import { Section, SectionLink } from "@/components/ui/section";
+import { SegmentedControl, type SegmentOption } from "@/components/ui/segmented";
 import type { Money } from "@/lib/money";
 import {
   aggregate,
@@ -13,6 +15,13 @@ import { RankedBars, type RankedBarItem } from "./RankedBars";
 
 const TOP_COMPANIES = 5;
 
+type View = "assets" | "depots";
+
+const VIEW_OPTIONS: readonly SegmentOption<View>[] = [
+  { value: "assets", label: "Assets" },
+  { value: "depots", label: "Depots" },
+];
+
 interface DistributionProps {
   /** Bereits auf den ausgewaehlten Zeitraum gefilterte Zahlungen. */
   periodPayments: AnalyticsPayment[];
@@ -25,84 +34,106 @@ function labelOf(map: Map<string, EntityInfo>, key: string): string {
   return map.get(key)?.name ?? "Unbekannt";
 }
 
-/** §9 Top-Unternehmen: die fuenf staerksten Zahler im Zeitraum. */
-export function TopCompanies({
+function toItems(
+  ranked: { key: string; net: Money }[],
+  map: Map<string, EntityInfo>,
+  hrefOf: (key: string) => string,
+): RankedBarItem[] {
+  return ranked.map((bucket) => {
+    const info = map.get(bucket.key);
+    return {
+      key: bucket.key,
+      name: info?.name ?? "Unbekannt",
+      archived: info?.archived ?? false,
+      net: bucket.net,
+      href: hrefOf(bucket.key),
+    };
+  });
+}
+
+/**
+ * „Verteilung" (§9/§10): wer im Zeitraum wie viel beigetragen hat — die fünf
+ * stärksten Assets oder die Depots, umschaltbar.
+ *
+ * Zuvor zwei Karten nebeneinander, Top-Assets und Depotverteilung. Beide
+ * beantworten dieselbe Frage; ein Umschalter spart eine Überschrift und auf dem
+ * Telefon eine ganze Bildschirmhöhe. Mit nur einem Depot wäre die zweite Sicht
+ * leer an Aussage (100 %): Dann entfällt der Umschalter, der Abschnitt heißt
+ * „Top-Assets".
+ */
+export function Distribution({
   periodPayments,
   selection,
   securities,
+  depots,
 }: DistributionProps) {
-  const total: Money = aggregate(periodPayments).net;
-  const ranked = rankGroups(groupBySecurity(periodPayments), (key) =>
-    labelOf(securities, key),
-  ).slice(0, TOP_COMPANIES);
+  const [view, setView] = React.useState<View>("assets");
 
-  const items: RankedBarItem[] = ranked.map((bucket) => {
-    const info = securities.get(bucket.key);
+  const { total, assets, assetCount, depotItems } = React.useMemo(() => {
+    const rankedAssets = rankGroups(groupBySecurity(periodPayments), (key) =>
+      labelOf(securities, key),
+    );
+    const rankedDepots = rankGroups(groupByDepot(periodPayments), (key) =>
+      labelOf(depots, key),
+    );
     return {
-      key: bucket.key,
-      name: info?.name ?? "Unbekannt",
-      archived: info?.archived ?? false,
-      net: bucket.net,
-      href: paymentsListHref({ year: selection, securityId: bucket.key }),
+      total: aggregate(periodPayments).net,
+      assetCount: rankedAssets.length,
+      assets: toItems(rankedAssets.slice(0, TOP_COMPANIES), securities, (key) =>
+        paymentsListHref({ year: selection, securityId: key }),
+      ),
+      depotItems: toItems(rankedDepots, depots, (key) =>
+        paymentsListHref({ year: selection, depotId: key }),
+      ),
     };
-  });
+  }, [periodPayments, selection, securities, depots]);
+
+  const withDepots = depotItems.length > 1;
+  const shown = withDepots ? view : "assets";
+  const statisticsHref = (path: string) =>
+    selection === "all" ? path : `${path}?year=${String(selection)}`;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Top-Assets</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {items.length === 0 ? (
-          <p className="py-6 text-sm text-muted-foreground">
-            Keine Assets im ausgewählten Zeitraum.
-          </p>
-        ) : (
+    <Section
+      title={withDepots ? "Verteilung" : "Top-Assets"}
+      action={
+        withDepots ? (
+          <SegmentedControl
+            variant="pill"
+            label="Verteilung nach"
+            options={VIEW_OPTIONS}
+            value={view}
+            onChange={setView}
+          />
+        ) : undefined
+      }
+    >
+      {assets.length === 0 ? (
+        <p className="py-6 text-sm text-muted-foreground">
+          Keine Assets im ausgewählten Zeitraum.
+        </p>
+      ) : shown === "assets" ? (
+        <>
           <RankedBars
-            items={items}
+            tone="neutral"
+            items={assets}
             total={total}
             ariaLabel="Top-Assets nach Nettodividende"
           />
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-/** §10 Depotverteilung: Nettodividende je Depot im Zeitraum. */
-export function DepotDistribution({
-  periodPayments,
-  selection,
-  depots,
-}: DistributionProps) {
-  const total: Money = aggregate(periodPayments).net;
-  const ranked = rankGroups(groupByDepot(periodPayments), (key) => labelOf(depots, key));
-
-  const items: RankedBarItem[] = ranked.map((bucket) => {
-    const info = depots.get(bucket.key);
-    return {
-      key: bucket.key,
-      name: info?.name ?? "Unbekannt",
-      archived: info?.archived ?? false,
-      net: bucket.net,
-      href: paymentsListHref({ year: selection, depotId: bucket.key }),
-    };
-  });
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Depotverteilung</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {items.length === 0 ? (
-          <p className="py-6 text-sm text-muted-foreground">
-            Keine Depots im ausgewählten Zeitraum.
-          </p>
-        ) : (
-          <RankedBars items={items} total={total} ariaLabel="Nettodividende je Depot" />
-        )}
-      </CardContent>
-    </Card>
+          {assetCount > TOP_COMPANIES && (
+            <SectionLink to={statisticsHref("/statistiken/unternehmen")}>
+              Alle {assetCount} Assets
+            </SectionLink>
+          )}
+        </>
+      ) : (
+        <RankedBars
+          tone="neutral"
+          items={depotItems}
+          total={total}
+          ariaLabel="Nettodividende je Depot"
+        />
+      )}
+    </Section>
   );
 }

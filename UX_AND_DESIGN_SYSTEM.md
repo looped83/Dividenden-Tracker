@@ -145,6 +145,8 @@ Eigene zusammengesetzte Komponenten (fachlich):
 | `AmountText` | Betragsdarstellung: tabular-nums, Währung, Vorzeichen, Farbe (semantisch), niemals Rundung in der Komponente |
 | `KpiHero` / `TrendPill` | **Ein** Kennzahlkopf für alle Bereiche (`components/domain/KpiHero.tsx`): **eine** Hauptzahl groß (32 px), daneben optional der Vergleich als Marke (`TrendPill`: Pfeil **und** Vorzeichen, Bedeutung im `title` und für Sprachausgaben), darunter eine Unterzeile, optional ein Zusatz (Zielbalken) und eine Leiste mit bis zu drei Nebenkennzahlen, durch Linien getrennt. Er ersetzt das frühere Raster gleich großer Kacheln (`StatCard`/`StatGrid`): Vier bis sechs Kacheln kosteten auf dem Telefon 300–700 px, bevor der Inhalt begann, und ließen offen, welche Zahl zählt. Jede Seite beantwortet zuerst **ihre** Frage — Übersicht: Dividenden des Zeitraums; Kalender: nächste 30 Tage; Depot: Depotwert; Statistik: Gesamtsumme; Vergleich: Veränderung; Entwicklung: erwartet p. a.; Assetseite: erhalten insgesamt. Ein Drill-down macht die **ganze Fläche** zur Tippfläche (Link auf dem Wert, per `::after` gedehnt; für die Hauptzahl der obere Teil, für jede Nebenkennzahl ihr Feld) und trägt einen sprechenden Namen (`drillLabel`). Ladegerüst in derselben Form: `KpiHeroSkeleton` |
 | `ListGroup` / `ListRow` / `ListItemBody` / `ListSection` | **Eine Listenform** für Einträge (`components/ui/list.tsx`): eine Fläche mit Trennlinien statt einzelner Karten — auf der Seite ist die Liste selbst die Karte, in einer Karte trägt sie keinen zweiten Rahmen (`inset`). Zeile 1 der Name (höchstens zwei Zeilen), Zeile 2 Angaben links und Wert rechts; `asChild` macht die ganze Zeile zur Tippfläche. `ListSection` gruppiert (Monat, „Diese Woche") mit Kennzahl im Kopf **Datenlisten ohne Pfeil am Rand und ohne Kalendersymbol vor dem Datum** (Eingänge, Termine, Assets, Statistik, Datenqualität): Beide standen in jeder Zeile, sagten nichts, was Tippfläche und Inhalt nicht schon sagen, und nahmen dem Depot die Breite („Trade Repub…"). `chevron` bleibt einzelnen Navigationszeilen („Gesamt seit März 2019") vorbehalten |
+| `Section` / `SectionLink` | Abschnitt **ohne Kartenrahmen** (`components/ui/section.tsx`, seit 1.7.0): Überschrift 19 px, rechts höchstens eine Aktion — ein Textlink in Primärblau mit Pfeil (`SectionLink`, „Alle", „Kalender") oder ein Umschalter —, darunter optional eine Zeile Beschreibung. Abschnitte trennen sich durch Abstand (40 px, ab `lg` 48 px) und Überschrift, nicht durch Rahmen. Bisher auf der Übersicht; die übrigen Seiten folgen |
+| `SegmentedControl` | Umschalter zwischen wenigen Zuständen (Optionsgruppe). `variant="pill"` ist die leise Fassung für Abschnittsköpfe (Diagrammsicht, Assets/Depots): gedämpfte Fläche, 32 px hoch, Tippfläche per Pseudo-Element 44 px |
 | `PaymentListItem` | Ein Dividendeneingang als Zeile — dieselbe in Dividendenliste, Übersicht und Assetseite: Name, Datum · Depot, Betrag (Depot wird gekürzt, nie umbrochen). In Monatsgruppen nur „11.10." (`formatDayMonth`) — Monat und Jahr nennt die Überschrift, Sprachausgaben bekommen das Jahr dennoch mit. Auf der Assetseite ist das Datum der Titel |
 | `PaymentTable` / Liste | Tabelle ab `md` (Aktionen je Zeile) bzw. `PaymentListItem`-Liste auf dem Telefon, nach Datum sortiert nach Monat gruppiert mit Monatssumme im Kopf; darüber Anzahl und Summe der Auswahl; „weitere laden" statt Blättern (die geladene Menge steht in der Adresse, der Weg zurück findet sie wieder) |
 | `DetailHeader` | **Ein** Kopf für Zahlung, Asset und Ziel: Rückweg links und Symbolaktionen rechts in einer Zeile, darunter Titel samt Zustand (nur der Sonderfall), Zusatzzeile und — wo es eine gibt — die Kennzahl (Betrag der Zahlung). Bearbeiten, Stornieren/Archivieren, Löschen stehen hier und nicht in den Listen: Eine Zeile ist **eine** Tippfläche |
@@ -319,9 +321,11 @@ maximaler Kontrast auf Schwarz lässt Schrift auf OLED ausfransen.
 
 **Aufbau (von oben):** Seitenüberschrift mit Jahres-Pille → Kopf (`DashboardHero`: Hauptzahl,
 Veränderung, Jahresziel, Diagramm, Kennzahlen) → „Demnächst" (nur laufendes Jahr und „Alle
-Jahre") → Top-Unternehmen + Depotverteilung (nebeneinander ab `lg`) → letzte Eingänge → Summe
-seit Beginn. Ruhig, datenorientiert; keine dekorativen Visualisierungen, keine 3D-Diagramme,
-keine dauerhafte grün/rot-Bewertung saisonaler Schwankungen.
+Jahre") → „Verteilung" (Assets/Depots umschaltbar) → letzte Eingänge → Summe seit Beginn. Alle
+Abschnitte ohne Kartenrahmen (`Section`). **Ab `lg` zwei Spalten:** links Kopf und letzte
+Eingänge, rechts (352 px) Demnächst, Verteilung, Summe. Ruhig, datenorientiert; keine
+dekorativen Visualisierungen, keine 3D-Diagramme, keine dauerhafte grün/rot-Bewertung
+saisonaler Schwankungen.
 
 **Kopf (seit 1.7.0, ohne Kartenrahmen):** Drei Ebenen tragen die Rangfolge — Hauptzahl 40 px
 (52 px ab `sm`), Abschnitte, Zeilen. Unter der Zahl die Veränderung als Pfeil und Prozent in
@@ -346,21 +350,27 @@ Tastatur: Das Diagramm ist ein Schieberegler (`role="slider"`, Pfeiltasten, Pos1
 öffnet, Escape setzt zurück), der Stand wird über `aria-valuetext` angesagt. Die Datentabelle
 darunter bleibt.
 
+**Verteilung:** die fünf stärksten Assets des Zeitraums als schmale Balken in Vordergrundfarbe
+mit Anteil, darunter „Alle 12 Assets" zur Statistik; umschaltbar auf die Depots. Beide
+beantworten dieselbe Frage, früher standen sie als zwei Karten nebeneinander. Mit nur einem
+Depot entfällt der Umschalter, der Abschnitt heißt „Top-Assets".
+
 **Demnächst:** die nächsten drei angekündigten Zahltage aus dem Kalender und die erwartete Summe
 der nächsten 30 Tage; „erwartet", weil es Ankündigungen sind, keine Eingänge. Ohne kommende
-Termine entfällt die Karte.
+Termine entfällt der Abschnitt. Das Datumsfeld ist grau (`--muted`), nicht blau: Blau
+markiert Aktionen, der Weg zum Kalender ist der Link „Kalender" im Abschnittskopf.
 
-**Responsive:** Kennzahlkopf über die volle Breite; die Gesamtsumme aller
-Jahre steht als eine Zeile „Gesamt seit März 2019 · 412 Zahlungen" am Seitenende (wie die
-Eingänge darüber, führt zur Statistik), nicht zusätzlich als Kachel. Bei „Alle Jahre" entfällt
+**Responsive:** Kopf über die volle Breite (ab `lg` die linke Spalte); die Gesamtsumme aller
+Jahre steht als eine Zeile „Gesamt seit März 2019 · 412 Zahlungen" auf gedämpfter Fläche am
+Ende (führt zur Statistik), nicht zusätzlich als Kachel. Bei „Alle Jahre" entfällt
 die Zeile, weil die Kennzahlen oben dann dieselbe Summe nennen. Früher stand dort eine Karte mit
 sechs Eckdaten, die fast alle schon auf der Seite oder in der Statistik standen. Das Diagramm
-misst seine Breite selbst (`ResizeObserver`) und zeichnet in echten Pixeln, Top-Listen/Depotverteilung als horizontale Balken (auf schmalen Geräten
-untereinander). Touch-Ziele ≥ 44 px (Buttons `size="sm"`/`default`), `overflow-x` nur innerhalb
+misst seine Breite selbst (`ResizeObserver`) und zeichnet in echten Pixeln; die Verteilung als
+horizontale Balken. Touch-Ziele ≥ 44 px (Buttons `size="sm"`/`default`), `overflow-x` nur innerhalb
 scrollbarer Container (Datentabellen).
 
 **Accessibility:**
-- Semantische Überschriften (`h1` „Übersicht", Kartentitel via `CardTitle`).
+- Semantische Überschriften (`h1` „Übersicht", Abschnitte als `h2` über `Section`).
 - Jedes Diagramm hat eine Beschreibung für Hilfsmittel (`role="img"` mit `aria-label`, das
   Diagramm im Kopf als Schieberegler mit `aria-valuetext`) **und** eine ausklappbare
   Datentabelle (`<details>` „Datentabelle anzeigen") als text-/tabellarische Alternative.

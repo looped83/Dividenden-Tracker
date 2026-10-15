@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router";
 import { ArrowDownRight, ArrowUpRight, Target } from "lucide-react";
 import { AmountText } from "@/components/money/AmountText";
 import { ChartDataTable, ChartRowHeader } from "@/components/charts/chartTable";
+import { SegmentedControl, type SegmentOption } from "@/components/ui/segmented";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -44,6 +45,11 @@ import {
 import { describeSelection, paymentsListHref, splitComparison } from "./format";
 import { buildHeroSeries, type HeroChartKind, type HeroPoint } from "./heroSeries";
 import { HeroChart } from "./HeroChart";
+
+const KIND_OPTIONS: readonly SegmentOption<HeroChartKind>[] = [
+  { value: "cumulative", label: "Kumuliert" },
+  { value: "monthly", label: "Monatlich" },
+];
 
 interface DashboardHeroProps {
   payments: AnalyticsPayment[];
@@ -246,7 +252,15 @@ export function DashboardHero({ payments, selection, today }: DashboardHeroProps
 
       <div className="mt-5 flex min-h-9 items-center justify-between gap-3">
         <Legend kind={series.kind} year={typeof selection === "number" ? selection : 0} />
-        {!data.isAll && <KindToggle kind={kind} onChange={setKind} />}
+        {!data.isAll && (
+          <SegmentedControl
+            variant="pill"
+            label="Diagrammsicht"
+            options={KIND_OPTIONS}
+            value={kind}
+            onChange={setKind}
+          />
+        )}
       </div>
       <div className="mt-3">
         {series.points.length === 0 ? (
@@ -519,51 +533,6 @@ function Legend({
         {year - 1}
       </span>
     </span>
-  );
-}
-
-/**
- * Umschalter der Diagrammsicht. 32px hoch, die Tippfläche reicht per
- * Pseudo-Element auf 44px (UX_AND_DESIGN_SYSTEM.md §7).
- */
-function KindToggle({
-  kind,
-  onChange,
-}: {
-  kind: HeroChartKind;
-  onChange: (next: HeroChartKind) => void;
-}) {
-  const options: [HeroChartKind, string][] = [
-    ["cumulative", "Kumuliert"],
-    ["monthly", "Monatlich"],
-  ];
-  return (
-    <div
-      role="group"
-      aria-label="Diagrammsicht"
-      className="inline-flex rounded-full bg-muted p-0.5"
-    >
-      {options.map(([value, text]) => (
-        <button
-          key={value}
-          type="button"
-          aria-pressed={kind === value}
-          onClick={() => {
-            onChange(value);
-          }}
-          className={cn(
-            "relative h-8 rounded-full px-3 text-[0.8125rem] font-semibold outline-none",
-            "after:absolute after:inset-x-0 after:-inset-y-1.5",
-            "focus-visible:ring-2 focus-visible:ring-ring",
-            kind === value
-              ? "bg-background text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground",
-          )}
-        >
-          {text}
-        </button>
-      ))}
-    </div>
   );
 }
 

@@ -220,11 +220,8 @@ describe("DashboardHero — Diagramm im Kopf", () => {
   it("zeigt monatlich den gewählten Monat mit Vorjahresvergleich und Drill-down", async () => {
     const user = userEvent.setup();
     renderHero(2026, PAYMENTS);
-    await user.click(screen.getByRole("button", { name: "Monatlich" }));
-    expect(screen.getByRole("button", { name: "Monatlich" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
+    await user.click(screen.getByRole("radio", { name: "Monatlich" }));
+    expect(screen.getByRole("radio", { name: "Monatlich" })).toBeChecked();
 
     const chart = screen.getByRole("slider");
     chart.focus();
