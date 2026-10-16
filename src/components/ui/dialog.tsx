@@ -7,68 +7,14 @@ import { cn } from "@/lib/utils/cn";
 export const Dialog = DialogPrimitive.Root;
 export const DialogTrigger = DialogPrimitive.Trigger;
 
-/**
- * Haelt das Panel auf dem Telefon ueber der Bildschirmtastatur.
- *
- * iOS legt die Tastatur **ueber** die Seite, statt sie zu verkleinern: Ein
- * unten verankertes Panel lag mit seinen Feldern und „Speichern" darunter, und
- * Safari schob die ganze Seite ruckartig nach oben. Der sichtbare Ausschnitt
- * (`visualViewport`) verraet, wie viel die Tastatur verdeckt; das Panel
- * rueckt um genau diesen Betrag hoch und wird hoechstens so hoch wie der Rest.
- *
- * Geschrieben wird direkt in zwei CSS-Variablen des Panels, nicht in den
- * Zustand: Die Tastatur faehrt in vielen kleinen Schritten aus, und jeder
- * Schritt waere sonst ein Rendern. Ab `sm` ignoriert das Panel die Variablen
- * (dort steht es mittig, ohne Bildschirmtastatur).
- */
-function trackKeyboard(node: HTMLElement): () => void {
-  const viewport = window.visualViewport;
-  if (!viewport) return () => undefined;
-  const update = () => {
-    // Beim Zoomen schrumpft der Ausschnitt ebenfalls — das ist keine Tastatur.
-    const inset =
-      viewport.scale > 1.01
-        ? 0
-        : Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
-    node.style.setProperty("--keyboard-inset", `${String(Math.round(inset))}px`);
-    node.style.setProperty(
-      "--viewport-height",
-      `${String(Math.round(viewport.height))}px`,
-    );
-  };
-  update();
-  viewport.addEventListener("resize", update);
-  viewport.addEventListener("scroll", update);
-  return () => {
-    viewport.removeEventListener("resize", update);
-    viewport.removeEventListener("scroll", update);
-  };
-}
-
 export function DialogContent({
   className,
   children,
-  ref,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content>) {
-  const contentRef = React.useCallback(
-    (node: HTMLDivElement | null) => {
-      if (typeof ref === "function") ref(node);
-      else if (ref) ref.current = node;
-      if (!node) return;
-      const stop = trackKeyboard(node);
-      return () => {
-        stop();
-        if (typeof ref === "function") ref(null);
-        else if (ref) ref.current = null;
-      };
-    },
-    [ref],
-  );
-
   return (
     <DialogPrimitive.Portal>
-      <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 duration-300 sm:duration-150" />
+      <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 duration-150" />
       <DialogPrimitive.Content
         className={cn(
           // **Eine** Breitenklasse, kein `max-w-sm sm:max-w-lg`: Ein `max-w-*`
@@ -77,15 +23,12 @@ export function DialogContent({
           // Dialog stillschweigend wieder auf 512px. Genau das traf die
           // Importdialoge, die ausdruecklich `max-w-2xl`/`max-w-3xl` setzen.
           // Mit einer Gruppe greift eine Ueberschreibung auf allen Breiten.
-          // Schmale Geraete begrenzt weiterhin `w-[calc(100%-1rem)]`.
+          // Schmale Geraete begrenzt `w-[calc(100%-2rem)]` (16px Rand je Seite).
           //
-          // **Auf dem Telefon ein Panel von unten** (Sheet), darueber mittig.
-          // Mittig stand ein Formular bis an den unteren Rand, „Speichern" lag
-          // unter dem Falz, und der Daumen musste bis zur Bildschirmmitte
-          // greifen. Unten verankert liegen die Aktionen dort, wo der Daumen
-          // ist; die Fusszeile bleibt beim Scrollen stehen (`DialogFooter`).
-          // `max-w-lg` gilt ohne Praefix: Auf dem Telefon ist das Panel ohnehin
-          // schmaler, und eine Ueberschreibung wirkt so weiter auf allen Breiten.
+          // **Mittig auf allen Breiten** (seit 1.14.0). Als Panel von unten
+          // (Sheet) rueckte es mit jeder Bildschirmtastatur hoch — beim
+          // Oeffnen eines Formulars sprang es sichtbar. Mittig liegen die
+          // oberen Felder ueber der Tastatur, und nichts verschiebt sich.
           //
           // **Eine Spalte, die nie breiter wird als das Panel.** Die implizite
           // Spalte eines Grids waechst sonst bis zur Mindestbreite ihres
@@ -93,21 +36,12 @@ export function DialogContent({
           // auf dem Telefon auf ~530px, Text lief rechts aus dem Bild, und man
           // musste seitlich scrollen. Mit `minmax(0,1fr)` bleibt die Breite
           // beim Panel; Tabellen scrollen in ihrem eigenen Rahmen.
-          //
-          // **Das Panel faehrt von unten herein** und legt sich ueber Seite und
-          // Bottom-Navigation — wie ein Sheet unter iOS. Ist die Tastatur
-          // offen, steht es ueber ihr (`trackKeyboard`).
-          "fixed left-1/2 z-50 grid w-full max-w-lg -translate-x-1/2 grid-cols-[minmax(0,1fr)]",
-          "bottom-[var(--keyboard-inset,0px)] max-h-[min(92dvh,calc(var(--viewport-height,100dvh)_-_0.5rem))] rounded-t-xl",
-          "sm:bottom-auto sm:top-1/2 sm:w-[calc(100%-1rem)] sm:max-h-[90vh] sm:-translate-y-1/2 sm:rounded-lg",
-          "gap-4 overflow-y-auto overscroll-contain border border-border bg-card p-4 shadow-lg sm:p-6",
-          "pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-6",
-          "data-[state=open]:animate-in data-[state=closed]:animate-out motion-reduce:animate-none",
-          "duration-300 ease-out data-[state=open]:slide-in-from-bottom data-[state=closed]:slide-out-to-bottom",
-          "sm:duration-150 sm:data-[state=open]:fade-in-0 sm:data-[state=open]:slide-in-from-bottom-4 sm:data-[state=closed]:fade-out-0 sm:data-[state=closed]:slide-out-to-bottom-0",
+          "fixed left-1/2 top-1/2 z-50 grid w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 grid-cols-[minmax(0,1fr)]",
+          "max-h-[90dvh] gap-4 overflow-y-auto overscroll-contain rounded-xl border border-border bg-card p-4 shadow-lg outline-none sm:p-6",
+          "duration-150 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
+          "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 motion-reduce:animate-none",
           className,
         )}
-        ref={contentRef}
         {...props}
       >
         {children}
@@ -152,9 +86,9 @@ export function DialogDescription({
 
 /**
  * Aktionen eines Dialogs. Auf dem Telefon bleiben sie am unteren Rand des
- * Panels stehen, waehrend der Inhalt darueber scrollt — die Hauptaktion steht
- * in voller Breite zuoberst in der Reihe (`flex-col-reverse`), der Daumen
- * erreicht sie ohne Umgreifen.
+ * Panels stehen, waehrend ein langer Inhalt darueber scrollt — die
+ * Hauptaktion steht in voller Breite zuoberst in der Reihe
+ * (`flex-col-reverse`).
  */
 export function DialogFooter({ className, ...props }: React.ComponentProps<"div">) {
   return (
@@ -162,15 +96,11 @@ export function DialogFooter({ className, ...props }: React.ComponentProps<"div"
       className={cn(
         "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
         // Der negative Aussenabstand nimmt den unteren Innenabstand des Panels
-        // auf: Die Fusszeile schliesst buendig ab und traegt den Abstand zum
-        // Home-Indicator selbst — sonst stuende er doppelt darunter.
-        //
-        // Derselbe Betrag als negativer `bottom`: `sticky` rechnet vom
-        // Innenabstand des Panels aus, nicht von seiner Kante. Mit `bottom-0`
-        // klebte die Fusszeile so hoch ueber dem Rand, und darunter lief der
-        // Inhalt durchs Bild, solange nicht ganz nach unten gescrollt war.
-        "sticky -bottom-[max(1rem,env(safe-area-inset-bottom))] -mx-4 border-t border-border bg-card px-4 pt-3",
-        "-mb-[max(1rem,env(safe-area-inset-bottom))] pb-[max(1rem,env(safe-area-inset-bottom))]",
+        // auf, damit die Fusszeile buendig abschliesst. Derselbe Betrag als
+        // negativer `bottom`: `sticky` rechnet vom Innenabstand des Panels
+        // aus, nicht von seiner Kante — mit `bottom-0` liefe der Inhalt unter
+        // der Fusszeile durchs Bild.
+        "sticky -bottom-4 -mx-4 -mb-4 border-t border-border bg-card px-4 py-3",
         "sm:static sm:m-0 sm:border-0 sm:p-0",
         className,
       )}

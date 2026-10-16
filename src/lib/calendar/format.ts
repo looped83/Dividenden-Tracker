@@ -40,16 +40,6 @@ export function eventTitle(event: CalendarEvent): string {
   return event.matchedCompanyName ?? event.companyName ?? event.title ?? "Ohne Titel";
 }
 
-/**
- * Der Name der Kalenderquelle, **wenn** die Anzeige einen anderen zeigt — sonst
- * `null`. Damit bleibt in der Detailansicht nachvollziehbar, was tatsaechlich im
- * Feed steht; angeglichen wird nur die Darstellung, nicht die Quelle.
- */
-export function sourceCompanyName(event: CalendarEvent): string | null {
-  if (event.matchedCompanyName === null || event.companyName === null) return null;
-  return event.companyName === event.matchedCompanyName ? null : event.companyName;
-}
-
 /** „Montag, 13.08.2026". */
 export function longDate(iso: string): string {
   return `${WEEKDAYS_DE[weekdayIndex(iso)]}, ${formatCalendarDate(iso)}`;

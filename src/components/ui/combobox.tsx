@@ -17,6 +17,8 @@ interface ComboboxProps {
   onChange: (value: string) => void;
   placeholder?: string;
   emptyMessage?: string;
+  /** Beim Einhaengen fokussieren — ohne den Text zu markieren. */
+  autoFocus?: boolean;
   "aria-describedby"?: string;
 }
 
@@ -45,6 +47,7 @@ export function Combobox({
   onChange,
   placeholder = "Suchen …",
   emptyMessage = "Kein Treffer",
+  autoFocus,
   "aria-describedby": describedBy,
 }: ComboboxProps) {
   const listId = `${id}-listbox`;
@@ -187,6 +190,7 @@ export function Combobox({
           open && activeOption ? `${id}-option-${activeOption.value}` : undefined
         }
         aria-describedby={describedBy}
+        autoFocus={autoFocus}
         placeholder={placeholder}
         value={inputValue}
         onChange={(event) => {

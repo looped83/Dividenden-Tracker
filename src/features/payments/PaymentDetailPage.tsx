@@ -9,7 +9,6 @@ import { Badge } from "@/components/ui/badge";
 import { Section, SectionButton } from "@/components/ui/section";
 import { EmptyState } from "@/components/ui/empty-state";
 import { AmountText } from "@/components/money/AmountText";
-import { DateText } from "@/components/DateText";
 import { AuditTrail } from "@/components/audit/AuditTrail";
 import { Money, toCurrencyCode, toGermanDecimalString } from "@/lib/money";
 import { cn } from "@/lib/utils/cn";
@@ -253,11 +252,28 @@ export function PaymentDetailPage() {
             </Button>
           </>
         }
-        title={security?.name ?? "Dividendeneingang"}
+        // Der Name fuehrt zur Detailseite des Assets — von einer einzelnen
+        // Zahlung zur ganzen Position. Eine eigene Zeile „Asset" in den Details
+        // wiederholte ihn nur.
+        title={
+          security ? (
+            <Link
+              to={`/depot/${security.id}`}
+              className="rounded-sm outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {security.name}
+              {security.archived_at ? " (archiviert)" : ""}
+            </Link>
+          ) : (
+            "Dividendeneingang"
+          )
+        }
         badge={cancelled ? <Badge variant="warning">Storniert</Badge> : undefined}
         subtitle={
           <>
-            <DateText>{formatCalendarDate(payment.pay_date)}</DateText>
+            {/* Ohne Kalendersymbol: Neben dem Depot ist das Datum auch so als
+                Datum zu erkennen. */}
+            <span>{formatCalendarDate(payment.pay_date)}</span>
             <span>·</span>
             <span>
               {depot?.name ?? "—"}
@@ -282,21 +298,6 @@ export function PaymentDetailPage() {
       <div className="grid grid-cols-1 gap-10 pt-4 lg:grid-cols-2 lg:gap-x-16">
         <Section title="Details">
           <div>
-            <DetailRow label="Asset">
-              {/* Von einer einzelnen Zahlung zur Entwicklung der ganzen
-                Position — die Detailseite des Unternehmens. */}
-              {security ? (
-                <Link
-                  to={`/depot/${security.id}`}
-                  className="rounded-sm outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  {security.name}
-                  {security.archived_at ? " (archiviert)" : ""}
-                </Link>
-              ) : (
-                "—"
-              )}
-            </DetailRow>
             <DetailRow label="Währung">{payment.original_currency}</DetailRow>
             <DetailRow label="Datenquelle">{sourceLabel(payment.source)}</DetailRow>
             {payment.note && <DetailRow label="Notiz">{payment.note}</DetailRow>}
