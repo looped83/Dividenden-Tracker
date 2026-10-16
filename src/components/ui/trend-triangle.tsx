@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils/cn";
 
 /**
  * Richtung einer Veränderung als gefülltes Dreieck: ▲ mehr, ▼ weniger.
- * Ein Zeichen für die ganze App (seit 1.22.0) — vorher standen schräge
+ * Ein Zeichen für die ganze App (seit 1.23.0) — vorher standen schräge
  * Pfeile neben dem Dreieck der Übersicht. Die Farbe erbt es vom Text
  * (`text-positive`/`text-negative`), die Größe skaliert mit der Schrift.
  * Die Richtung steckt damit in Form und Farbe (UX_AND_DESIGN_SYSTEM.md §1).
