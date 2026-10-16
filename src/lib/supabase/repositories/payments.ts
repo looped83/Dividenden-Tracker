@@ -96,10 +96,11 @@ export function toListRow(row: DividendPayment): PaymentListRow {
  * Zeilen an Seitengrenzen).
  */
 export async function fetchAllPayments(): Promise<PaymentListRow[]> {
-  const rows = await fetchAllPages<PaymentListRow>((from, to) =>
+  const rows = await fetchAllPages<PaymentListRow>((from, to, withCount) =>
     supabase
       .from("dividend_payments")
-      .select(LIST_COLUMNS)
+      // Die Gesamtzahl laesst die weiteren Seiten parallel laden.
+      .select(LIST_COLUMNS, withCount ? { count: "exact" } : undefined)
       .order("pay_date", { ascending: false })
       .order("id", { ascending: true })
       .range(from, to),
