@@ -69,6 +69,9 @@ function storeKind(kind: HeroChartKind): void {
   }
 }
 
+/** Streifen, den das Diagramm oben für die Sichtwahl freihält. */
+const CHART_TOGGLE_RESERVE = 28;
+
 const KIND_OPTIONS: readonly SegmentOption<HeroChartKind>[] = [
   { value: "cumulative", label: "Kumuliert" },
   { value: "monthly", label: "Monatlich" },
@@ -282,18 +285,22 @@ export function DashboardHero({ payments, selection, today }: DashboardHeroProps
 
       {/* Ohne Legende (seit 1.12.0): Die Vorjahreslinie trägt ihr Jahr am
           Ende, und der Kopf nennt beim Wischen beide Jahre. */}
-      {!data.isAll && (
-        <div className="mt-5 flex justify-end">
+      {/* Die Sichtwahl steht seit 1.19.0 oben links im Diagramm statt in einer
+          eigenen Zeile darüber: Die Ecke war meist leer, und die Kennzahlen
+          rücken nach oben. Das Diagramm hält den
+          Streifen frei (`reserve`), damit auch ein hoher Januar in der
+          Monatssicht nie darunter liegt. „Alle Jahre" hat keine Sicht. */}
+      <div className={cn("relative", data.isAll ? "mt-6" : "mt-5")}>
+        {!data.isAll && series.points.length > 0 && (
           <SegmentedControl
             variant="pill"
             label="Diagrammsicht"
             options={KIND_OPTIONS}
             value={kind}
             onChange={setKind}
+            className="absolute left-0 top-0 z-10"
           />
-        </div>
-      )}
-      <div className={data.isAll ? "mt-6" : "mt-3"}>
+        )}
         {series.points.length === 0 ? (
           <p className="py-10 text-center text-sm text-muted-foreground">
             Für {label} liegen noch keine Dividenden vor.
@@ -306,6 +313,7 @@ export function DashboardHero({ payments, selection, today }: DashboardHeroProps
             label={chartLabel}
             describe={describePoint}
             onOpen={(p) => void navigate(p.href)}
+            reserve={data.isAll ? 0 : CHART_TOGGLE_RESERVE}
           />
         )}
         {series.kind === "cumulative" && series.points.length > 0 && (

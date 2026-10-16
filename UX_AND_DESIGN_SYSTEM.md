@@ -167,8 +167,9 @@ anders gebaut wirkt als die nächste:
   Vordergrundfarbe und halbfett — ein Ort, keine Aktion.
 - **Umschalter** (`SegmentedControl`) haben in beiden Fassungen die Pillenform der
   Übersicht; im Dunkeln liegt die gewählte Pille auf der Akzentstufe.
-- **Auswahl steht rechts im Kopf dessen, was sie steuert** — wie Jahr und „Kumuliert |
-  Monatlich" auf der Übersicht. Seitenweit im Seitenkopf: Jahr (Übersicht), Darstellung
+- **Auswahl steht rechts im Kopf dessen, was sie steuert** — wie das Jahr auf der
+  Übersicht. Ausnahme (seit 1.19.0): „Kumuliert | Monatlich" steht oben links im
+  Diagramm selbst, wo die Ecke sonst leer bliebe; das Diagramm hält den Streifen frei. Seitenweit im Seitenkopf: Jahr (Übersicht), Darstellung
   Liste | Monat (Kalender), auf dem Telefon die Pille „Filter" (Dividenden, Statistik).
   Für einen Abschnitt in dessen Kopf: Jahre | Monate (Verlauf), Assets | Depots
   (Verteilung in Übersicht und Aufteilung), „Filter" der Assetliste im Depot. Ab `sm`
@@ -371,7 +372,7 @@ laufenden Jahres statt des Monats die Zahl der Dividenden samt Breite.
 
 **Diagramm im Kopf:** ein eigenes SVG (`HeroChart`) statt Recharts — es steht im ersten
 Bildschirm, die Übersicht lädt Recharts damit gar nicht mehr. Ein Jahr hat zwei Sichten
-(Umschalter „Kumuliert | Monatlich", Voreinstellung kumuliert): die laufende Jahressumme als
+(Umschalter „Kumuliert | Monatlich" oben links im Diagramm, Voreinstellung kumuliert): die laufende Jahressumme als
 Linie in Orange gegen das Vorjahr (grau gestrichelt; im laufenden Jahr endet die Linie heute) oder die
 Monatssummen als Linie gegen das Vorjahr (seit 1.12.0, zuvor Balkenpaare; ein Punkt je Monat). „Alle Jahre" zeigt den Verlauf der Jahressummen als Linie (seit 1.11.0; fünfzehn Säulen
 wurden auf dem Telefon zu Strichen), beschriftet ist jedes Jahr, für das Platz ist, das
