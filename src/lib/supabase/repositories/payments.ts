@@ -28,7 +28,7 @@ export type DividendPaymentUpdate =
  * alle Seiten die Unternehmen ohnehin ueber `useSecurities` laden und die
  * Namen von dort aufloesen.
  *
- * Beim Erweitern hier **und** im Typ `PaymentListRow` nachziehen, sonst
+ * Beim Erweitern hier, im Typ `PaymentListRow` und in `toListRow` nachziehen, sonst
  * verspricht der Typ ein Feld, das die Antwort nicht enthaelt.
  */
 // Ein einziges Literal, nicht zusammengesetzt: PostgREST leitet den
@@ -54,6 +54,30 @@ export type PaymentListRow = Pick<
   | "created_at"
   | "updated_at"
 >;
+
+/**
+ * Projektion einer vollstaendigen Zeile auf {@link PaymentListRow} — fuer das
+ * direkte Nachtragen einer geaenderten Zahlung in den Cache der Historie.
+ * Dieselben Felder wie {@link LIST_COLUMNS}; ein vergessenes Feld meldet der
+ * Typ.
+ */
+export function toListRow(row: DividendPayment): PaymentListRow {
+  return {
+    id: row.id,
+    security_id: row.security_id,
+    depot_id: row.depot_id,
+    pay_date: row.pay_date,
+    net_amount: row.net_amount,
+    gross_amount: row.gross_amount,
+    original_currency: row.original_currency,
+    payment_type: row.payment_type,
+    source: row.source,
+    import_id: row.import_id,
+    archived_at: row.archived_at,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  };
+}
 
 /**
  * Vollstaendige Zahlungshistorie: laedt seitenweise **alle** Zahlungen,
