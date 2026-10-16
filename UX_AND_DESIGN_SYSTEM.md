@@ -299,13 +299,16 @@ ein anderer Platz fürs Zurücksetzen fallen beim Wechsel sofort auf.
 - Listen statt breiter Tabellen: je Zahlung eine Zeile (`PaymentListItem`), nach Monat
   gruppiert mit Monatssumme; „weitere laden" statt Blättern. Tabellen der Statistik werden zu
   Listen (`StatTable`), die Matrix Jahre × Monate steht gedreht (Monate als Zeilen).
-- Dialoge als Panel am unteren Rand (Sheet): Aktionen in voller Breite in einer Fußzeile, die
-  beim Scrollen stehen bleibt; Schließen mit 44-px-Fläche.
+- Dialoge mittig mit 16 px Rand (seit 1.13.0, zuvor Sheet am unteren Rand): Eine aufgehende
+  Tastatur verschiebt so nichts. Aktionen in voller Breite in einer Fußzeile, die beim
+  Scrollen stehen bleibt; Schließen mit 44-px-Fläche.
 - Unterbereiche hinter „Mehr" (Kalender, Depot, Ziele, Einstellungen) markieren „Mehr" in der
   Bottom-Navigation.
-- Schnelle manuelle Erfassung: Formular als Full-Screen-Sheet, sinnvolle Defaults (heutiges
-  Datum, zuletzt genutztes Depot), Wertpapier-Suchfeld mit Zuletzt-Liste, numerische
-  Tastatur (`inputmode="decimal"`), Einhandbedienung (primäre Aktionen unten).
+- Schnelle manuelle Erfassung: Formular als Overlay über der aktuellen Seite (auch Bearbeiten),
+  sinnvolle Defaults (heutiges Datum; Depot ergibt sich aus dem Asset und wird nur bei
+  Mehrdeutigkeit abgefragt), Asset-Suche ohne Tastaturvorschläge, nach der Wahl direkt zum
+  Betrag mit numerischer Tastatur (`inputmode="decimal"`). Beim Bearbeiten wird kein Feld
+  fokussiert oder markiert.
 - Kompakte Statistiken: Kennzahlkopf (`KpiHero`), Diagramme volle Breite, vier Reiter
   (Übersicht, Verlauf, Vergleich, Aufteilung) — mehr passen bei 390 px nicht nebeneinander.
   „Aufteilung" fasst Unternehmen und Depotkonten zusammen (Umschalter auf der Seite, beide

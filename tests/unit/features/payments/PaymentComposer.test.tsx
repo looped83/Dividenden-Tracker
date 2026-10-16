@@ -11,10 +11,19 @@ import {
 // Das echte Formular braucht Stammdaten und Abfragen; hier geht es nur um das
 // Oeffnen, Nachladen und Schliessen des Overlays.
 vi.mock("@/features/payments/PaymentForm", () => ({
-  PaymentForm: ({ onDone }: { onDone: () => void }) => (
-    <button type="button" onClick={onDone}>
-      Speichern
-    </button>
+  PaymentForm: ({ id, onDone }: { id?: string; onDone: () => void }) => (
+    <>
+      {/* Wie das echte Suchfeld: fokussiert sich beim Erfassen selbst. */}
+      <input
+        id="payment-security"
+        aria-label="Asset"
+        defaultValue="Muster AG"
+        autoFocus={!id}
+      />
+      <button type="button" onClick={onDone}>
+        Speichern
+      </button>
+    </>
   ),
 }));
 
@@ -84,4 +93,34 @@ describe("PaymentComposer", () => {
       ).toHaveTextContent(target);
     },
   );
+
+  it("markiert beim Bearbeiten nichts und fokussiert beim Erfassen die Suche", async () => {
+    function EditTrigger() {
+      return (
+        <button type="button" {...usePaymentComposer({ paymentId: "p1" })}>
+          Bearbeiten
+        </button>
+      );
+    }
+    const user = userEvent.setup();
+    render(
+      <PaymentComposerProvider>
+        <Trigger />
+        <EditTrigger />
+      </PaymentComposerProvider>,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Bearbeiten" }));
+    const dialog = await screen.findByRole("dialog");
+    const search = await screen.findByRole<HTMLInputElement>("textbox", {
+      name: "Asset",
+    });
+    // Der Fokus liegt auf dem Dialog, nicht im Feld — und nichts ist markiert.
+    expect(dialog).toHaveFocus();
+    expect(search.selectionStart).toBe(search.selectionEnd);
+
+    await user.keyboard("{Escape}");
+    await user.click(screen.getByRole("button", { name: "Neue Dividende" }));
+    expect(await screen.findByRole("textbox", { name: "Asset" })).toHaveFocus();
+  });
 });

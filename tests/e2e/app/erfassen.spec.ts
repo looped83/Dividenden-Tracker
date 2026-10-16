@@ -77,7 +77,7 @@ test("erfasst auf breiten Schirmen im Overlay, ohne die Seite zu verlassen", asy
   await expect(page).toHaveURL(/#\/statistiken$/);
 });
 
-test("erfasst auf dem Telefon in einem Sheet über der aktuellen Seite", async ({
+test("erfasst auf dem Telefon in einem Overlay über der aktuellen Seite", async ({
   page,
   konto,
 }) => {
@@ -90,14 +90,13 @@ test("erfasst auf dem Telefon in einem Sheet über der aktuellen Seite", async (
   await expect(dialog.getByRole("heading", { name: "Neue Dividende" })).toBeVisible();
   await expect(page).toHaveURL(/#\/kalender$/);
 
-  // Das Sheet faehrt von unten ein und liegt dann am Rand, ueber der
-  // Bottom-Navigation.
+  // Mittig auf dem Schirm — eine aufgehende Tastatur verschiebt dann nichts.
   await expect
     .poll(async () => {
       const box = await dialog.boundingBox();
-      return Math.round((box?.y ?? 0) + (box?.height ?? 0));
+      return Math.round((box?.y ?? 0) + (box?.height ?? 0) / 2);
     })
-    .toBe(844);
+    .toBe(422);
 
   // Abbrechen schliesst es — der Kalender steht noch da.
   await dialog.getByRole("button", { name: "Abbrechen" }).click();

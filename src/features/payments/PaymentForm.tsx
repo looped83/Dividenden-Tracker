@@ -293,6 +293,9 @@ export function PaymentForm({
             value={watchedSecurityId}
             onChange={selectSecurity}
             placeholder="Asset oder Ticker suchen …"
+            // Neu erfassen beginnt mit der Suche; beim Bearbeiten wird nichts
+            // fokussiert — man tippt das Feld an, das sich ändern soll.
+            autoFocus={!isEditMode}
             emptyMessage="Kein Asset gefunden"
           />
           {errors.securityId && (

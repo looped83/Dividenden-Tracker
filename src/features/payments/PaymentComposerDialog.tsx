@@ -29,7 +29,20 @@ export function PaymentComposerDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent
+        className="max-w-2xl"
+        // Radix fokussiert sonst das erste Feld **und markiert dessen Text** —
+        // beim Bearbeiten stand der Assetname blau hinterlegt im Suchfeld, und
+        // der erste Tastendruck haette ihn ersetzt. Den Fokus setzt das
+        // Formular selbst (`autoFocus` beim Erfassen); bis dahin liegt er auf
+        // dem Dialog, damit die Fokusfalle greift.
+        onOpenAutoFocus={(event) => {
+          event.preventDefault();
+          const content = event.currentTarget as HTMLElement | null;
+          const search = content?.querySelector<HTMLElement>("#payment-security");
+          (target.paymentId ? content : (search ?? content))?.focus();
+        }}
+      >
         <DialogHeader>
           <DialogTitle>
             {target.paymentId ? "Dividende bearbeiten" : "Neue Dividende"}
