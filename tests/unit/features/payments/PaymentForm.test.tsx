@@ -168,4 +168,17 @@ describe("PaymentForm", () => {
 
     expect(screen.getByLabelText("Depot")).toHaveValue("d1");
   });
+
+  it("zeigt das automatisch gewählte Depot und lässt es ändern", async () => {
+    depots.current = [depot("d1", "Depot A"), depot("d2", "Depot B")];
+    renderForm();
+
+    const user = await pick("Apple");
+    expect(screen.getByText("Depot: Depot B")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Depot ändern (Depot B)" }));
+    await user.selectOptions(screen.getByLabelText("Depot"), "d1");
+    await user.type(screen.getByLabelText("Nettobetrag"), "3");
+    await user.click(screen.getByRole("button", { name: "Speichern" }));
+    expect(create).toHaveBeenCalledWith(expect.objectContaining({ depot_id: "d1" }));
+  });
 });
