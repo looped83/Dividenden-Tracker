@@ -88,7 +88,7 @@ export function KpiHero({
       <div className={cn("flex flex-col gap-5", hasStats && sideBySide)}>
         <div className="relative space-y-2">
           <p className="text-[0.9375rem] font-medium text-muted-foreground">{label}</p>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-2">
             {to !== undefined ? (
               <Link
                 to={to}

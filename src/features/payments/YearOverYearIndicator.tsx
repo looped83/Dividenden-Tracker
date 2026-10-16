@@ -32,7 +32,14 @@ export function YearOverYearIndicator({
 
   return (
     <span
-      className={cn("inline-flex shrink-0 items-center", className)}
+      className={cn(
+        "inline-flex shrink-0 items-center",
+        // Das Dreieck steht auf der Grundlinie des Betrags wie im Kopf der
+        // Uebersicht; der Punkt bleibt mittig, auf der Grundlinie laese er
+        // sich als Satzzeichen.
+        direction === "same" && "self-center",
+        className,
+      )}
       title={label}
       data-direction={direction}
     >
