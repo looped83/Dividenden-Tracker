@@ -38,15 +38,17 @@
      ueberall haelt. Strukturlinien (`--border`) sind davon nicht betroffen:
      Karten- und Tabellenraender tragen keine Bedienbedeutung. */
   --input: oklch(0.62 0.004 286);
-  --ring: oklch(0.62 0.16 48);
+  --ring: oklch(0.62 0.165 46);
 
   --muted: oklch(0.965 0.001 286);
   --muted-foreground: oklch(0.5 0.006 286);
 
-  /* Akzent Orange (seit 1.11.0, zuvor Blau): kräftig genug für weiße Schrift
-     auf Knöpfen und als Linktext auf Weiß (4,96:1). */
-  --primary: oklch(0.56 0.155 46);
-  --primary-foreground: oklch(0.98 0.004 60);
+  /* Akzent Orange (seit 1.11.0, zuvor Blau; seit 1.15.0 leuchtender): an der
+     sRGB-Grenze gesetzt — mehr Chroma gibt es bei dieser Helligkeit nicht.
+     Reines Weiss als Schrift, damit Knopftext und Linktext auf Weiss
+     >= 4,5:1 halten (4,6:1). */
+  --primary: oklch(0.58 0.168 44);
+  --primary-foreground: oklch(1 0 0);
 
   /* Hover und aktive Navigation: neutrales Grau statt Orange — Orange heisst
      „hier passiert etwas", nicht „hier bist du". */
@@ -101,13 +103,16 @@
      der hellere Rahmen weniger auf als im hellen Theme — das Feld liest sich
      als eingelassene Flaeche mit klarer Kante. */
   --input: oklch(0.58 0.008 260);
-  --ring: oklch(0.72 0.15 55);
+  --ring: oklch(0.72 0.185 48);
 
   --muted: oklch(0.24 0.006 260);
   --muted-foreground: oklch(0.72 0.012 260);
 
-  /* Hell auf Schwarz, dunkle Schrift auf Knöpfen (9,4:1). */
-  --primary: oklch(0.76 0.16 55);
+  /* Hell auf Schwarz, dunkle Schrift auf Knöpfen (7,1:1). Seit 1.15.0 etwas
+     dunkler, roter und an der sRGB-Grenze gesaettigt: Der fruehere Wert
+     (L 0.76, Farbton 55) lag Richtung Pfirsich und wirkte auf Schwarz
+     verwaschen. Gegen Schwarz 7,9:1, gegen die Karte 7,0:1. */
+  --primary: oklch(0.72 0.185 48);
   --primary-foreground: oklch(0.18 0.03 55);
 
   --accent: oklch(0.29 0.004 286);
