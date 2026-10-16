@@ -42,6 +42,16 @@ jobs:
       - name: Unit tests
         run: npm test
 
+      # Toter Code: ungenutzte Dateien, Exporte und Abhaengigkeiten (knip.json).
+      # Exportierte Typen sind ausgenommen — sie beschreiben Rueckgabeformen und
+      # kosten zur Laufzeit nichts. knip liest vite.config.ts, das ohne
+      # VITE_*-Werte abbricht; Dummies wie beim Build genuegen.
+      - name: Dead code
+        env:
+          VITE_SUPABASE_URL: https://ci-placeholder.supabase.co
+          VITE_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+        run: npm run knip
+
       # Platzhalter-Werte: Der Build ersetzt import.meta.env.VITE_* statisch.
       # Ohne gesetzte Werte faltet der Bundler den Env-Guard in client.ts zu
       # einem unbedingten Top-Level-throw und entfernt die gesamte App als
