@@ -30,7 +30,10 @@ export function PaymentComposerDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-w-2xl"
+        // Schmal (seit 1.17.0): Asset, Datum und Betrag sind kurze Eingaben.
+        // Bei 672px war das Suchfeld ueber 600px lang, Datum und Betrag je
+        // rund 300px — die Feldlaenge passte zu keiner erwarteten Eingabe.
+        className="max-w-md"
         // Radix fokussiert sonst das erste Feld **und markiert dessen Text** —
         // beim Bearbeiten stand der Assetname blau hinterlegt im Suchfeld, und
         // der erste Tastendruck haette ihn ersetzt. Den Fokus setzt das
