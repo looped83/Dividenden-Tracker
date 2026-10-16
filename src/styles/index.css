@@ -210,6 +210,13 @@
     @apply bg-background text-foreground;
     font-variant-numeric: tabular-nums;
   }
+  /* Hand-Zeiger auf allem, was klickbar ist. Tailwind 4 setzt Schaltflaechen
+     auf den Standardzeiger zurueck — mit der Maus wirkte „Neue Dividende"
+     dadurch wie ein Etikett. Gesperrte Schaltflaechen behalten den Pfeil. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
   /* Betraege stellen sich in Tabellenziffern dar (UX_AND_DESIGN_SYSTEM.md #1). */
   .tabular-amount {
     font-variant-numeric: tabular-nums;
