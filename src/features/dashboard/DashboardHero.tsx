@@ -320,12 +320,6 @@ export function DashboardHero({ payments, selection, today }: DashboardHeroProps
             reserve={data.isAll ? 0 : CHART_TOGGLE_RESERVE}
           />
         )}
-        {series.kind === "cumulative" && series.points.length > 0 && (
-          <div className="mt-1.5 flex justify-between px-1 text-xs text-muted-foreground">
-            <span>Jan</span>
-            <span>Dez</span>
-          </div>
-        )}
       </div>
 
       <KpiStats className="mt-5" stats={buildStats(data, monthly, today)} />
