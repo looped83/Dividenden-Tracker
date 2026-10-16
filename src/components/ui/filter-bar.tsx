@@ -181,10 +181,14 @@ export function FilterSort({
 }: {
   id: string;
   value: string;
-  direction: FilterSortDirection;
+  direction?: FilterSortDirection;
   options: readonly FilterSortOption[];
   onValueChange: (value: string) => void;
-  onDirectionChange: (direction: FilterSortDirection) => void;
+  /**
+   * Ohne Handler kein Richtungsschalter: Dann bringt jedes Kriterium seine
+   * Richtung selbst mit (Statistiklisten auf dem Telefon, seit 1.24.0).
+   */
+  onDirectionChange?: (direction: FilterSortDirection) => void;
   label?: string;
   /**
    * In Inhaltsbreite statt in Feldbreite — fuer die Sortierung ueber einer
@@ -217,22 +221,24 @@ export function FilterSort({
             ))}
           </Select>
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          className="shrink-0"
-          aria-label={
-            direction === "asc"
-              ? "Aufsteigend sortiert — zu absteigend wechseln"
-              : "Absteigend sortiert — zu aufsteigend wechseln"
-          }
-          onClick={() => {
-            onDirectionChange(direction === "asc" ? "desc" : "asc");
-          }}
-        >
-          {direction === "asc" ? <ArrowUp /> : <ArrowDown />}
-        </Button>
+        {onDirectionChange && (
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="shrink-0"
+            aria-label={
+              direction === "asc"
+                ? "Aufsteigend sortiert — zu absteigend wechseln"
+                : "Absteigend sortiert — zu aufsteigend wechseln"
+            }
+            onClick={() => {
+              onDirectionChange(direction === "asc" ? "desc" : "asc");
+            }}
+          >
+            {direction === "asc" ? <ArrowUp /> : <ArrowDown />}
+          </Button>
+        )}
       </div>
     </FilterField>
   );

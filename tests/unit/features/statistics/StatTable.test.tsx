@@ -188,7 +188,7 @@ describe("StatTable auf dem Telefon", () => {
     expect(screen.queryByText("Nebenwert")).not.toBeInTheDocument();
   });
 
-  it("sortiert über die Auswahl samt Richtungsschalter", async () => {
+  it("sortiert über die Auswahl, jedes Kriterium in seiner natürlichen Richtung", async () => {
     const user = userEvent.setup();
     render(
       <StatTable
@@ -200,12 +200,35 @@ describe("StatTable auf dem Telefon", () => {
       />,
     );
     expect(listNames()).toEqual(["Alpha", "Gamma", "Beta"]);
-
-    await user.selectOptions(screen.getByRole("combobox"), "Nach Name");
-    expect(listNames()).toEqual(["Gamma", "Beta", "Alpha"]);
-
-    await user.click(screen.getByRole("button", { name: /zu aufsteigend wechseln/ }));
+    // Kein Richtungsschalter mehr: Namen stehen von A bis Z …
+    expect(screen.queryByRole("button", { name: /sortiert/ })).not.toBeInTheDocument();
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Sortierung" }),
+      "Name",
+    );
     expect(listNames()).toEqual(["Alpha", "Beta", "Gamma"]);
+
+    // … Zahlen groesste zuerst (hier die Vorgabe des Aufrufers).
+    await user.selectOptions(screen.getByRole("combobox"), "Betrag");
+    expect(listNames()).toEqual(["Alpha", "Gamma", "Beta"]);
+  });
+
+  it("setzt die Sortierung mit Ueberschrift neben diese", () => {
+    render(
+      <StatTable
+        title="Jahresstatistik"
+        rows={rows}
+        columns={columns}
+        getRowKey={(r) => r.id}
+        caption="Test"
+      />,
+    );
+    const section = screen.getByRole("region", { name: "Jahresstatistik" });
+    const heading = within(section).getByRole("heading", { name: "Jahresstatistik" });
+    // Kopfzeile: Ueberschrift und Auswahl teilen sich denselben Container.
+    expect(heading.parentElement?.parentElement).toContainElement(
+      screen.getByRole("combobox", { name: "Sortierung" }),
+    );
   });
 
   it("löst den Drill-down einer Zeile aus, nicht aber über einen Link darin", async () => {

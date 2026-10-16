@@ -150,7 +150,7 @@ export function YearMonthMatrix() {
  * Wurzelskaliert, damit auch kleine Monate sichtbar bleiben; in
  * Vordergrundfarbe mit hoechstens 22 % Deckkraft (seit 1.9.0 grau statt Akzentfarbe:
  * sie heisst Aktion, und die Tabelle soll ruhig bleiben wie die Uebersicht).
- * Nur in der Ansicht „Summe": Veraenderung und Aufgelaufenes haben eine eigene
+ * Nur in der Ansicht „Summe": Veraenderung und Kumuliert haben eine eigene
  * Skala, die eine gemeinsame Farbe verfaelschen wuerde.
  */
 function useCellTint(matrix: BreakdownMatrix, view: BreakdownView) {
@@ -180,7 +180,7 @@ function useCellTint(matrix: BreakdownMatrix, view: BreakdownView) {
 const CAPTIONS: Readonly<Record<BreakdownView, string>> = {
   summe: "Netto-Dividenden je Monat und Jahr",
   veraenderung: "Veränderung der Netto-Dividenden je Monat gegenüber dem Vorjahresmonat",
-  kumuliert: "Aufgelaufene Netto-Dividenden im Jahresverlauf",
+  kumuliert: "Kumulierte Netto-Dividenden im Jahresverlauf",
 };
 
 const MONTHS = Array.from({ length: 12 }, (_, index) => index + 1);

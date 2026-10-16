@@ -102,3 +102,24 @@ test("auf dem Telefon fuehrt die Zeile zur Detailseite und diese samt Liste zuru
   await page.getByRole("link", { name: "Zu den Dividenden" }).click();
   await expect(page.getByRole("link", { name: /Muster AG/ })).toHaveCount(40);
 });
+
+test("auf dem Telefon scrollt erneutes Tippen auf den aktiven Bereich nach oben", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/#/eingaenge?page=2");
+  await expect(page.getByRole("link", { name: /Muster AG/ })).toHaveCount(40);
+
+  await page.evaluate(() => {
+    window.scrollTo(0, document.body.scrollHeight);
+  });
+  expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(100);
+
+  await page
+    .getByRole("navigation", { name: "Hauptnavigation" })
+    .getByRole("link", { name: "Dividenden" })
+    .click();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+  // Kein Seitenwechsel: Die geladene Menge bleibt in der Adresse.
+  expect(page.url()).toContain("page=2");
+});
