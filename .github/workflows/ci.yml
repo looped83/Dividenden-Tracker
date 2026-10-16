@@ -1,0 +1,218 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Ein neuer Push in einen PR bricht dessen laufende Pruefung ab: Sie galt einem
+# Stand, den niemand mehr zusammenfuehrt, und belegte vier Runner (darunter
+# zwei E2E-Suiten) bis zum Ende. Auf `main` bekommt jeder Commit eine eigene
+# Gruppe (SHA) und damit immer seinen vollstaendigen Lauf.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+# Runner-Image fest auf 24.04 statt `ubuntu-latest`: Das Label wandert ab
+# 19.10.2026 zu Ubuntu 26.04, das Playwright 1.56 nicht unterstuetzt. Der
+# Wechsel erfolgt bewusst zusammen mit einem Playwright-Update (DECISIONS.md D-8-3).
+jobs:
+  quality:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Format check
+        run: npm run format:check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      # Platzhalter-Werte: Der Build ersetzt import.meta.env.VITE_* statisch.
+      # Ohne gesetzte Werte faltet der Bundler den Env-Guard in client.ts zu
+      # einem unbedingten Top-Level-throw und entfernt die gesamte App als
+      # nicht erreichbaren Code — der Build waere gruen, pruefte aber ein
+      # Bundle ohne Anwendung. Echte Keys kommen nur im Deploy-Workflow aus
+      # Secrets; hier genuegen syntaktisch gueltige Dummies.
+      - name: Build
+        env:
+          VITE_SUPABASE_URL: https://ci-placeholder.supabase.co
+          VITE_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+        run: npm run build
+
+  # Jede Aenderung an der App hebt die Versionsnummer (DECISIONS.md ADR-004).
+  # Eigener, kleiner Job: Er braucht die volle Historie fuer den Vergleich mit
+  # der Basis, aber weder Abhaengigkeiten noch ein eigenes Node — das Skript
+  # kommt mit dem Node des Runners aus.
+  version:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Versionsnummer angehoben
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: node scripts/check-version-bump.mjs "origin/$BASE_REF"
+
+  e2e-smoke:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Chromium und WebKit: Der iPhone-Lauf soll im CI mit Safaris Motor
+      # laufen, nicht nur mit Chromiums Geometrie.
+      #
+      # Beide Browser wurden zuvor bei **jedem** Lauf neu geladen — rund
+      # 150 MB Download plus `apt-get` fuer die Systembibliotheken. Der Schritt
+      # dauerte damit laenger als alle Tests zusammen (gemessen: `quality`
+      # 1:29, `db-integration` 0:50, `e2e-smoke` ueber 7 Minuten, davon fast
+      # alles hier).
+      #
+      # Der Cache haengt am Lockfile: Er wird verworfen, sobald sich die
+      # Playwright-Version aendert, und kann deshalb nie zu einem veralteten
+      # Browser fuehren.
+      - name: Playwright-Browser aus dem Cache
+        id: playwright-cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      # Nur beim Cache-Fehlschlag: Browser laden **und** Systempakete setzen.
+      - name: Browser installieren
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium webkit
+
+      # Bei einem Treffer liegen die Browser bereits vor; die Systembibliotheken
+      # gehoeren dem Runner und nicht dem Cache, muessen also weiterhin gesetzt
+      # werden — das ist reines `apt` ohne Download.
+      - name: Systembibliotheken sicherstellen
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium webkit
+
+      # Der Playwright-Server baut selbst und liefert das Ergebnis aus
+      # (playwright.config.ts) — geprueft wird der gebaute Stand.
+      - name: Rauchtests (TEST_STRATEGY.md §7)
+        run: npm run test:e2e
+
+  # Die fuenf Kernablaeufe hinter der Anmeldung, gegen eine echte Datenbank
+  # (TEST_STRATEGY.md §8, docs/AUDIT_2026-07-29.md §4.1). Eigener Job, weil er
+  # als einziger E2E-Lauf PostgreSQL braucht — faellt er aus, bleiben die
+  # oeffentlichen Rauchtests trotzdem aussagekraeftig.
+  e2e-app:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install PostgreSQL client (psql)
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Playwright-Browser aus dem Cache
+        id: playwright-cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Browser installieren
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium webkit
+
+      - name: Systembibliotheken sicherstellen
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium webkit
+
+      # Baut die Testdatenbank aus supabase/migrations auf und faehrt danach
+      # Bruecke, Build und Browsertests (siehe package.json).
+      - name: Angemeldete Ablaeufe (TEST_STRATEGY.md §8)
+        run: npm run test:e2e:app
+
+      - name: Testartefakte sichern
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-e2e-app
+          path: |
+            playwright-report
+            test-results
+          retention-days: 7
+
+  db-integration:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install PostgreSQL client (psql)
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: RLS-, Constraint- und Trigger-Tests (TEST_STRATEGY.md §5, §6)
+        run: npm run test:integration

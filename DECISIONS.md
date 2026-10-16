@@ -1,0 +1,888 @@
+# DECISIONS.md
+
+This file records durable project decisions that future work must respect.
+
+It complements `CLAUDE.md`:
+
+- `CLAUDE.md` defines how work should be approached.
+- `DECISIONS.md` records what this project has already decided.
+
+Only document decisions that materially affect future work.
+
+---
+
+# When to Add a Decision
+
+Add an entry when the decision:
+
+- affects future implementation choices
+- has meaningful alternatives
+- creates a lasting constraint or trade-off
+- would otherwise be discussed again
+- is important for product, architecture, data, UI/UX, security, performance, infrastructure or tooling
+
+Do not document:
+
+- minor implementation details
+- temporary task notes
+- obvious conventions
+- short-lived workarounds
+- decisions already documented elsewhere
+
+Keep entries concise and practical.
+
+---
+
+# Decision Template
+
+## ADR-000: Title
+
+**Status:** Proposed | Accepted | Superseded | Deprecated  
+**Scope:** Product | Architecture | Data | UI/UX | Security | Performance | Infrastructure | Tooling
+
+### Decision
+
+State what was decided in one clear paragraph.
+
+### Why
+
+Explain why this option was selected.
+
+### Alternatives
+
+List only meaningful alternatives and briefly explain why they were not chosen.
+
+### Consequences
+
+**Benefits**
+
+- Main benefits
+
+**Trade-offs**
+
+- Accepted limitations or costs
+
+### Guardrails
+
+- Rules future work must respect
+
+### Revisit When
+
+- Conditions that justify reconsidering the decision
+
+---
+
+# Active Decisions
+
+## Zur Herkunft dieser Liste
+
+Die Einträge **D-002 bis D-6-6** waren im gesamten Projekt referenziert — in
+Quelltextkommentaren, Migrationen und allen Spezifikationsdokumenten —, standen
+aber nie in dieser Datei: Sie enthielt seit dem ersten Commit ausschließlich die
+Vorlage. Rund dreißig Verweise liefen damit ins Leere.
+
+Die Einträge unten wurden am 2026-07-29 aus den Belegen im Repository
+rekonstruiert (Code, Migrationen, Spezifikationen). Sie geben wieder, was das
+Projekt nachweislich umgesetzt hat, und tragen die jeweilige Fundstelle. Die
+ursprünglichen Formulierungen sind nicht wiederherstellbar; wo eine Begründung
+über den Beleg hinausgeht, ist sie als Herleitung gekennzeichnet.
+
+Neue Entscheidungen folgen der Vorlage oben (ADR-Format, fortlaufend ab
+ADR-002).
+
+---
+
+## D-002: Basiswährung EUR, Fremdwährung nur als Herkunftsangabe
+
+**Status:** Accepted · **Scope:** Data
+
+Alle Beträge werden in der Basiswährung des Profils gespeichert und ausgewertet
+(EUR). Eine Zahlung in Fremdwährung führt den Originalbetrag zusätzlich in
+`original_currency`/`original_gross`/`original_net`/`fx_rate` mit; gerechnet
+wird ausschließlich mit dem Basiswährungsbetrag.
+
+*Beleg:* `lib/statistics/mapPayment.ts` (EUR fest), `0009_dividend_payments.sql`
+(`guard_base_currency_change`), CALCULATION_RULES.md §1.
+
+*Nachtrag 2026-07-29:* Der Schutz galt nur für `profiles.base_currency`.
+`depots.base_currency` war ein freies Textfeld — ein abweichender Wert führte zu
+widersprüchlichen Währungszeichen und zur Vermischung von Beträgen.
+Migration 0023 bindet die Depotwährung an die Profilwährung; das Formularfeld
+ist nur noch eine Angabe.
+
+## D-004: Kaufmännische Rundung, keine Bankers-Rundung
+
+**Status:** Accepted · **Scope:** Data
+
+ROUND_HALF_UP überall. HALF_EVEN wäre statistisch neutraler, weicht aber von
+deutschen Broker-Abrechnungen ab; Übereinstimmung mit dem Beleg hat Vorrang.
+
+*Beleg:* CALCULATION_RULES.md §3 (R-1 ff.), `lib/money/rounding.ts`.
+
+## D-005: Steuererstattungen als positiver Netto-Eingang
+
+**Status:** Accepted · **Scope:** Data
+
+`payment_type = 'refund'` wird als positiver Nettobetrag mit Steuerfeldern = 0
+erfasst; negative Steuerfelder gibt es nicht. Die Herkunft gehört in die Notiz.
+
+*Beleg:* CALCULATION_RULES.md §4.
+
+## D-006: Portfolio nur über das Depot, keine Zweitzuordnung
+
+**Status:** Accepted · **Scope:** Data
+
+Ein Dividendeneingang speichert kein Portfolio; es ergibt sich über
+`depot.portfolio_id`. Ebenso ist `securities.default_depot_id` nur eine
+Vorbelegungshilfe, keine Bindung — jede Zahlung wählt ihr Depot unabhängig.
+
+*Herleitung:* Ein zweiter Pfad zur selben Information könnte auseinanderlaufen;
+eine historische Zahlung würde bei einer Umgruppierung still ihr Portfolio
+wechseln.
+
+*Beleg:* DATA_DICTIONARY.md (Feld „Portfolio"), `0014_securities_default_depot.sql`.
+
+## D-007: Kein Unique Constraint auf `business_fingerprint`
+
+**Status:** Accepted · **Scope:** Data
+
+Dubletten werden erkannt und angezeigt, nie technisch verhindert. Mehrere
+Zahlungen desselben Unternehmens am selben Tag im selben Depot sind fachlich
+möglich (Tranchen).
+
+*Beleg:* `0009_dividend_payments.sql`, `lib/payments/dataQuality.ts`.
+
+## D-008: ISIN-Prüfziffer im Client, Format in der Datenbank
+
+**Status:** Accepted · **Scope:** Data
+
+Die Datenbank prüft nur das Format (12 Zeichen, Muster). Die Luhn-Prüfziffer
+prüft der Client — eine Prüfziffernlogik in SQL wäre schwer zu pflegen und
+würde Altbestände blockieren.
+
+*Beleg:* DATA_MODEL.md, `features/securities/schemas.ts`.
+
+## D-009: Keine automatische Entscheidung bei Dubletten
+
+**Status:** Accepted · **Scope:** Product
+
+Der Import markiert mögliche Dubletten und legt sie dem Nutzer vor. Es gibt
+keinen Schwellenwert, ab dem automatisch übersprungen oder zusammengeführt wird.
+
+*Beleg:* IMPORT_SPEC.md §7, `lib/import/pipeline.ts`.
+
+## D-010: `import_status` bleibt der verbindliche Zustandsraum
+
+**Status:** Accepted · **Scope:** Data
+
+`analyzing → pending_confirmation → committed → rolled_back / discarded`. Die
+feineren Schritte des Assistenten sind reine UI-Phasen und werden nicht als
+Enumwerte geführt.
+
+*Beleg:* `0008_imports.sql`, IMPORT_SPEC.md §12.
+
+## D-011: Kein Offline-Schreiben, keine Warteschlange
+
+**Status:** Accepted · **Scope:** Architecture
+
+Erfassen und Importieren erfordern eine Verbindung. Es gibt keine
+Offline-Schreibwarteschlange und keinen IndexedDB-Cache der Finanzdaten.
+
+*Herleitung:* Eine Warteschlange erzeugt genau die Fehlerklassen, die bei
+Finanzdaten am teuersten sind — stille Doppel- und Verlustbuchungen. Der reale
+Bedarf ist gering: Dividenden treffen nicht im Funkloch ein.
+
+*Beleg:* ARCHITECTURE.md §6, `public/sw.js` (nur App-Hülle im Cache).
+
+## D-012: Kein Optimistic Update für Finanzdaten
+
+**Status:** Accepted · **Scope:** Architecture
+
+Nach einer Mutation wird gezielt invalidiert; angezeigt wird erst der bestätigte
+Serverzustand. Ein Betrag, der kurz erscheint und dann verschwindet, ist bei
+Geld die falsche Rückmeldung.
+
+*Beleg:* ARCHITECTURE.md §4.2, `features/*/hooks.ts`.
+
+## D-013: TypeScript auf der 5.9-Linie
+
+**Status:** Accepted · **Scope:** Tooling
+
+Kein Upgrade auf 7.x vor Abschluss des Produktionsaudits; danach als eigener,
+getesteter Schritt.
+
+*Beleg:* ARCHITECTURE.md §2, `package.json`.
+
+## D-014: Kein zusätzlicher App-PIN
+
+**Status:** Accepted · **Scope:** Security
+
+Der Schutz des Geräts ist Sache des Betriebssystems. Ein eigener PIN in der PWA
+gäbe Sicherheit vor, die er nicht liefert (der Browser-Speicher bleibt lesbar).
+
+*Beleg:* SECURITY_MODEL.md §1.
+
+## D-015 / D-026: `xlsx` (SheetJS) nicht aus npm — abgelöst durch exceljs
+
+**Status:** Superseded · **Scope:** Tooling
+
+Das npm-Paket `xlsx` ist bei 0.18.5 mit bekannten CVEs eingefroren; die
+gepflegten Fassungen liegen unter `cdn.sheetjs.com` (D-015). Diese Registry war
+in der Implementierungsumgebung nicht erreichbar (D-026).
+
+**Abgelöst:** Das Projekt verwendet `exceljs` aus npm, dynamisch nachgeladen
+(rund 930 kB, eigener Chunk). Damit entfällt die externe Registry vollständig.
+
+*Beleg:* `lib/import/parseWorkbook.ts`, `package.json`.
+
+## D-017: `numeric`-Spalten sind im Typsystem `string`
+
+**Status:** Accepted · **Scope:** Data
+
+`database.types.ts` typisiert Geldspalten als `string`, obwohl PostgREST auch
+Zahlen liefern kann. Der Umweg über `lib/money` (Decimal) wird dadurch erzwungen
+statt empfohlen.
+
+*Beleg:* `src/lib/supabase/database.types.ts`, `repositories/normalizeAmountFields.ts`.
+
+## D-021: Designsystem auf Tailwind 4 mit Farbrollen statt Farbwerten
+
+**Status:** Accepted · **Scope:** UI/UX
+
+Komponenten verwenden ausschließlich die Rollen des Designsystems
+(`background`, `muted`, `negative`, `positive`, …), nie rohe Tailwind-Farben.
+Nur so trägt der Dunkelmodus ohne Sonderfälle.
+
+*Beleg:* `src/styles/index.css`, `components/ui/*`, UX_AND_DESIGN_SYSTEM.md.
+
+*Nachtrag 2026-07-29:* Das Sicherungsmodul verstieß durchgehend dagegen
+(`bg-green-50`, `bg-blue-50`, `text-gray-600`) und wurde angeglichen.
+
+## D-027: Integrationstests gegen reines PostgreSQL, nicht gegen Supabase
+
+**Status:** Accepted · **Scope:** Tooling
+
+Die Testdatenbank wird aus `supabase/migrations` aufgebaut; `auth` wird über
+`supabase/test-support/local-postgres-bootstrap.sql` emuliert. Die Supabase-CLI
+(Docker) bleibt der Weg für die reguläre Entwicklung, ist für Tests aber nicht
+nötig.
+
+*Beleg:* `scripts/db/reset-test-db.sh`, `.github/workflows/ci.yml` (Job
+`db-integration`).
+
+## D-028: `database.types.ts` wird von Hand gepflegt
+
+**Status:** Accepted · **Scope:** Tooling
+
+`supabase gen types` benötigt Docker, das in der Implementierungsumgebung nicht
+zur Verfügung steht. Die Datei wird deshalb bei jeder Migration von Hand
+nachgezogen und gegen das angewendete Schema geprüft.
+
+*Guardrail:* Sobald Docker oder ein verlinktes Projekt verfügbar ist, ersetzt
+`npm run gen:types` die Datei.
+
+*Beleg:* Dateikopf von `src/lib/supabase/database.types.ts`.
+
+## D-030: Hash-Router wegen GitHub Pages
+
+**Status:** Accepted · **Scope:** Architecture
+
+GitHub Pages kennt kein serverseitiges SPA-Fallback; direkt aufgerufene Routen
+liefen sonst in einen 404. Daher `createHashRouter` (`/#/eingaenge`) und
+`base: "/Dividenden-Tracker/"` im Pages-Build.
+
+*Beleg:* `src/app/router.tsx`, `vite.config.ts`, `.github/workflows/deploy-pages.yml`.
+
+## D-032 / D-035: Unternehmens-Stammdatenimport und Standard-Depot
+
+**Status:** Accepted · **Scope:** Product
+
+Der Excel-Import für Unternehmensstammdaten (Name/Ticker/ISIN/WKN) wurde aus
+Phase 4 vorgezogen (D-032). Eine Depot-/Broker-Spalte setzt per Namensabgleich
+`securities.default_depot_id` als reine Vorbelegungshilfe (D-035) — keine
+Bindung, keine automatische Anlage fehlender Depots.
+
+*Beleg:* `features/securities/xlsxImport.ts`, `0014_securities_default_depot.sql`.
+
+## D-034 / D-039 / D-6-1: Hard Delete als eng begrenzte Ausnahme
+
+**Status:** Accepted · **Scope:** Data
+
+Grundsatz ist Soft Delete (Stornierung). Endgültiges Löschen eines
+Dividendeneingangs ist die einzige Ausnahme: zunächst nur für bereits
+archivierte Zeilen (D-034), später auch für aktive (D-039/D-6-1). Jede Löschung
+erfordert eine ausdrückliche Bestätigung und wird über einen AFTER-DELETE-
+Trigger im Audit Log festgehalten.
+
+*Beleg:* `0013_delete_payment.sql`, `0020_phase6_delete_and_duplicate_review.sql`,
+`features/payments/dialogs.tsx`.
+
+## D-036: `search_path` in jeder Datenbankfunktion festnageln
+
+**Status:** Accepted · **Scope:** Security
+
+Supabase legt pgcrypto in das Schema `extensions`, nicht in `public`. Eine
+Funktion ohne festen `search_path` erbt den des Aufrufers — `archive_payment()`
+scheiterte dadurch auf dem echten Projekt an `digest()`.
+
+*Guardrail:* **Jede** neue Funktion setzt `search_path` explizit.
+
+*Beleg:* `0015_fix_fingerprint_search_path.sql`.
+
+*Nachtrag 2026-07-29:* Die fünf Funktionen aus `0022_restore_backup_rpc.sql`
+hielten sich als einzige nicht daran; Migration 0023 zieht es nach.
+
+## D-8-1: Aus „Unternehmen" wird „Depot", die Einträge heißen „Assets"
+
+**Status:** Accepted · **Scope:** UI/UX
+
+Der Bereich führt nicht nur Aktiengesellschaften, sondern alles, was im Depot
+liegt — ETFs, Fonds, Anleihen. Der alte Name benannte einen Sonderfall als
+Ganzes. Bereich und Route heißen deshalb **Depot** (`/depot`, Detailseite
+`/depot/:id`), die Einträge in der Oberfläche **Assets**, die Hauptaktion
+„＋ Neue Assets".
+
+Mit umgezogen ist der Unterbereich **Entwicklung** aus der Statistik nach
+`/depot/entwicklung`: Er war dort der einzige, der auf den importierten
+Depotständen aufsetzt statt auf den erfassten Zahlungen — eine Frage des
+Depots, keine der Historie.
+
+Damit „Depot" nicht zweierlei heißt, tragen die Konten bei den Brokern in der
+Navigation jetzt **Depotkonten** (Einstellungen und Statistik).
+
+*Guardrails:*
+
+- **Das Datenmodell bleibt unberührt:** Tabellen und Typen heißen weiter
+  `securities` und `depots`. Eine Umbenennung brächte niemandem etwas und
+  riskierte Migrationen, Sicherungen und Importe (Grundsatz: keine Änderung
+  ohne Nutzen).
+- Die alten Pfade `/unternehmen`, `/unternehmen/:id` und
+  `/statistiken/entwicklung` leiten **dauerhaft** um, samt Suchparametern —
+  sonst verlöre ein Lesezeichen auf eine gefilterte Ansicht genau die Auswahl,
+  die es festhalten sollte.
+- ~~Außerhalb des Depotbereichs bleibt „Unternehmen" stehen~~ — seit
+  2026-10-14 heißt es **überall** „Asset": Der Bestand mischt Aktien, ETFs und
+  ETPs, „Unternehmen" traf in Statistik, Formular, Übersicht und Export ebenso
+  wenig zu wie im Depotbereich. URL-Pfade (`/statistiken/unternehmen`) bleiben
+  für Lesezeichen unverändert.
+
+*Beleg:* `src/app/navigation.ts`, `src/app/router.tsx`,
+`src/features/securities/DepotPage.tsx`.
+
+## D-6-2: Archivierung heißt in der Oberfläche „Storno"
+
+**Status:** Accepted · **Scope:** UI/UX
+
+Technisch `archived_at`/`archive_reason`; in der Oberfläche „stornieren" und
+„reaktivieren". Technische Feldnamen erscheinen nirgends im Text.
+
+*Beleg:* `features/payments/PaymentsPage.tsx`, `dialogs.tsx`.
+
+## D-6-3: Optimistic Concurrency über `updated_at`
+
+**Status:** Accepted · **Scope:** Data
+
+Ein UPDATE trifft nur, wenn `updated_at` unverändert ist; sonst meldet die
+Anwendung einen Konflikt und lädt neu, statt still zu überschreiben.
+
+*Beleg:* `repositories/payments.ts` (`PaymentConflictError`), `repositories/goals.ts`.
+
+## D-6-4: „Keine Dublette"-Entscheidungen werden dauerhaft gespeichert
+
+**Status:** Accepted · **Scope:** Product
+
+Ein einmal geprüftes Paar verschwindet dauerhaft aus den offenen Dubletten der
+Datenqualitätsansicht (`duplicate_dismissals`). Sonst müsste dieselbe Entscheidung
+bei jedem Aufruf neu getroffen werden. Widerrufbar: Markierte Paare stehen eingeklappt
+darunter und lassen sich einzeln zurücknehmen.
+
+Seit 2026-10-14 gilt dasselbe für **auffällige Datensätze** („In Ordnung“,
+`anomaly_reviews`, je Eingang und Art der Auffälligkeit). Die Zeile verweist per
+Fremdschlüssel auf den Eingang und verschwindet mit ihm. Beide Tabellen sind
+Arbeitsstand der Ansicht, kein Bestand — sie stehen deshalb nicht in der Sicherung.
+
+*Beleg:* `0020_phase6_delete_and_duplicate_review.sql`, `0033_anomaly_reviews.sql`,
+`repositories/duplicateDismissals.ts`, `repositories/anomalyReviews.ts`.
+
+## D-6-5: Auffälligkeiten benennen, nie automatisch handeln
+
+**Status:** Accepted · **Scope:** Product
+
+Die Datenqualitätsansicht zeigt mögliche Dubletten und ungewöhnliche Beträge an.
+Sie storniert, löscht oder führt nichts von sich aus zusammen.
+
+*Beleg:* `lib/payments/dataQuality.ts` (Dateikopf).
+
+## D-6-6: Suche, Filter und Sortierung auf der geladenen Historie
+
+**Status:** Accepted · **Scope:** Performance
+
+Listenoperationen laufen auf der einmal geladenen, decimal-sicheren Historie im
+Client — konsistent mit der Strategie der Auswertungen. Siehe **ADR-001** für
+die Schwelle.
+
+*Beleg:* `features/payments/PaymentsPage.tsx`, `features/payments/sortRows.ts`.
+
+---
+
+## D-7-1: Zeitraumvergleiche kappen immer beide Seiten
+
+**Status:** Accepted · **Scope:** Fachlogik / Vertrauen in die Zahlen
+
+Ist eines der beiden verglichenen Kalenderjahre das **laufende**, endet der
+Vergleich auf **beiden** Seiten am selben Kalendertag. Ein laufendes Jahr gegen
+ein volles Vorjahr zu stellen ist kein Vergleich, sondern eine systematische
+Untertreibung — im Juli fehlen der einen Seite fünf Monate. Der Fehler fällt
+nicht auf, weil das Ergebnis plausibel aussieht; genau deshalb steht die Regel
+hier und nicht nur im Code.
+
+Die Oberfläche **benennt** den Stichtag, statt ihn nur anzuwenden: Eine Zahl mit
+der Überschrift „2026", die bis Juli reicht, führt sonst in die Irre.
+
+Dasselbe gilt für den Monatsvergleich (laufender Monat) und für die Auswahl
+selbst: Ein Monat, der noch nicht begonnen hat, wird gar nicht erst angeboten.
+
+*Beleg:* `lib/statistics/comparison.ts`, `tests/unit/lib/statistics/comparison.test.ts`
+(25 Fälle), CALCULATION_RULES.md §11.10.
+
+---
+
+## D-7-2: Drill-down nur, wo die Zielliste die Zahl exakt wiedergibt
+
+**Status:** Accepted · **Scope:** Grundsatz 6 (Drill-down-Garantie)
+
+Die Zahlungsliste filtert auf Jahr und Monat, nicht auf einen Tag. Ein am
+Stichtag angeschnittener Monat wird deshalb **nicht** verlinkt, sondern als
+angeschnitten gekennzeichnet und erklärt.
+
+*Warum nicht trotzdem verlinken:* Ein Link, der mehr zeigt als die Zahl daneben,
+beschädigt das Vertrauen in beide. Die Garantie lautet „jede Kennzahl führt auf
+**genau** ihre Zahlungen" — eine Ausnahme, die stillschweigend mehr zeigt, hebt
+sie auf. Lieber kein Link mit Begründung als ein Link mit Abweichung.
+
+*Beleg:* `features/statistics/ComparisonTab.tsx` (`MonthCell`),
+`tests/unit/features/statistics/ComparisonTab.test.tsx`.
+
+---
+
+## D-7-4: Unternehmen und Depots werden überall gleich ausgewählt
+
+**Status:** Accepted · **Scope:** UI/UX
+
+Jede Auswahlliste für Unternehmen oder Depots ist `components/domain/EntitySelect`:
+neutrale Auswahl, dann die Gruppen „Aktiv" und „Archiviert", sortiert nach
+deutschem Alphabet. Keine neue handgebaute Variante.
+
+### Why
+
+Dieselbe Liste stand an vier Stellen — Dividendenliste (Unternehmen, Depot),
+Unternehmensliste (Standard-Depot) und Statistikfilter (Unternehmen, Depot) — in
+zwei Ausprägungen: drei gruppierten nach „Aktiv"/„Archiviert", die Statistik
+hängte stattdessen „(archiviert)" an den Namen und sortierte alles in eine
+Liste. Der Unterschied war nicht entschieden, sondern entstanden. Ein
+Bedienelement, das je Ort anders aussieht, kostet bei jeder Begegnung
+Orientierung — und die Statistik ist genau der Ort, an dem man zwischen
+Unterbereichen hin- und herwechselt.
+
+### Guardrails
+
+- Archivierte Einträge bleiben **wählbar** (sie tragen Historie), nur gruppiert.
+- Formulare bleiben unberührt: Beim Erfassen wird ein Unternehmen *gesucht*
+  (`Combobox`), in Filterleisten wird *eingegrenzt*. Zwei Aufgaben, zwei Muster.
+- Der Import-Assistent behält seine eigene Zuordnungsliste — dort ist die erste
+  Auswahl „Neu anlegen", nicht „Alle".
+
+*Beleg:* `components/domain/EntitySelect.tsx`,
+`tests/unit/components/EntitySelect.test.tsx`, UX_AND_DESIGN_SYSTEM.md #2.
+
+---
+
+## D-7-3: Die Diagrammpalette wird gemessen, nicht ausgesucht
+
+**Status:** Accepted · **Scope:** Designsystem / Barrierefreiheit
+
+`--chart-1…6` sind in beiden Themes gegen die Kartenfläche durchgerechnet
+(Helligkeitsband, Chroma-Untergrenze, CVD-Abstand benachbarter Slots,
+Normalsicht-Abstand, Kontrast) und werden nur mit einem bestandenen Lauf
+geändert. Die Reihenfolge ist fest; eine siebte Serienfarbe entsteht nie.
+
+### Why
+
+Die vorherige Palette war nach Augenmaß gesetzt und fiel in **beiden** Themes
+durch: im Dunkelmodus lagen alle sechs Töne über dem Helligkeitsband, zwei unter
+der Chroma-Untergrenze, und benachbarte Slots trennten mit ΔE 5,9 statt 8. Im
+Hellmodus lagen Blau und Türkis bei ΔE 11,9 — auch mit vollem Farbsehen kaum
+auseinanderzuhalten. `--chart-6` war mit einer Chroma von 0,02 praktisch Grau
+und wurde trotzdem als Serienfarbe neben Blau eingesetzt (Vorjahresbalken im
+Dashboard).
+
+Die Werte sahen plausibel aus. Genau das ist der Punkt: Farbabstand ist
+rechenbar, also wird er gerechnet.
+
+### Guardrails
+
+- Zwei Reihen (aktuell ↔ Referenz) sind immer Slot 1 gegen Slot 2.
+- Statusfarben (`--positive`, `--negative`, `--warning`) sind reserviert.
+- Identität hängt nie an der Farbe allein: Legende, Strichart und Datentabelle
+  tragen dieselbe Aussage.
+
+*Beleg:* `src/styles/index.css`, UX_AND_DESIGN_SYSTEM.md #1a.
+
+---
+
+## D-8-1: Der Ausschüttungsplan zieht auch vorgezogene Zahlungen — höchstens einen Monat
+
+**Status:** Accepted · **Scope:** Fachlogik / Vertrauen in die Zahlen
+
+Bei hinterlegtem Ausschüttungsplan zählt eine Zahlung zu dem geplanten Monat,
+für den sie bestimmt ist — bisher nur **rückwärts** (verspätete Zahlung → letzter
+fälliger Monat). Eine Woche zu früh eingetroffene Dividende landete damit im
+vorigen Planmonat: Bei Plan Jan/Apr/Jul/Okt wanderte eine Zahlung Ende Juni auf
+April, obwohl sie die Juli-Ausschüttung ist. Der laufende Monat zeigte zu wenig,
+der Vor-Vormonat zu viel — und beide Zahlen waren nach der Regel „nach Plan
+auswerten" falsch.
+
+Neu gilt deshalb: Liegt der letzte fällige Planmonat **mehr als einen Monat**
+zurück und ist der **unmittelbar folgende** Monat geplant, zählt die Zahlung
+vorgezogen zu diesem Monat. Bei gleichem Abstand gewinnt der frühere Monat.
+
+*Warum genau ein Monat Vorlauf:* Dividenden kommen häufig zu spät, aber praktisch
+nie mehr als ein paar Tage zu früh. Ein größeres Fenster würde bei jährlich oder
+halbjährlich zahlenden Unternehmen echte Nachzügler in den nächsten Planmonat
+umbuchen — der Fehler wäre derselbe, nur in die andere Richtung.
+
+*Verworfene Alternative:* „nächstgelegener Planmonat" ohne Begrenzung — kippt bei
+weit auseinanderliegenden Planmonaten in dieselbe Fehlzuordnung. Ebenso ein
+Fenster in **Tagen** (z. B. „bis 14 Tage vor dem Planmonat"): genauer in der
+Theorie, aber eine unbelegte Schwelle, die dieselbe Zahlung je nach Zahltag
+unterschiedlich einsortiert.
+
+*Folge:* Der effektive Monat kann einen Monat in der Zukunft liegen. Auswertungen
+mit Zeitraumkappung dürfen ihn deshalb nicht als „noch nicht begonnen" behandeln
+(Monatsdiagramm, Ø pro Monat), und der effektive Tag einer vorgezogenen Zahlung
+ist der 1. des Planmonats — sonst wäre bereits erhaltenes Geld bis zum Zahltag
+in keinem „bis heute"-Zeitraum sichtbar.
+
+*Beleg:* `lib/statistics/effectiveMonth.ts`,
+`tests/unit/lib/statistics/effectiveMonth.test.ts`, CALCULATION_RULES.md §10.
+
+---
+
+## D-8-2: Angemeldete Browsertests laufen gegen die echte Datenbank, nicht gegen Attrappen
+
+**Status:** Accepted · **Scope:** Tooling / Testbarkeit
+
+Die Tests hinter der Anmeldung brauchen einen Server. Statt Supabase-Antworten
+im Browser zu fälschen, läuft die Suite gegen dieselbe PostgreSQL-Testdatenbank
+wie die Integrationstests: `tests/e2e/support/bridge.ts` übersetzt die
+HTTP-Aufrufe von supabase-js in SQL und führt sie mit `set local role
+authenticated` plus JWT-Claim-GUC aus — genau wie PostgREST. RLS, Constraints,
+Trigger und die RPCs sind damit im Browsertest real; nachgebaut ist nur der
+Transportweg.
+
+*Warum nicht abgefangene Antworten:* Der teuerste Fehler dieses Projekts war
+`restore_backup()`, das gegen das echte Schema **nie lauffähig** war, während 63
+Attrappen grünes Licht gaben (Audit §3.4/§3.5). Eine Fixture-Antwort hätte genau
+diese Fehlerklasse wieder unsichtbar gemacht.
+
+*Warum nicht echtes PostgREST/GoTrue:* Beide brauchen Docker im Testlauf. D-027
+hat diese Abhängigkeit bereits für die Integrationstests verworfen; die Brücke
+hält die Testumgebung bei „PostgreSQL und sonst nichts".
+
+*Die Leitplanke, die das trägt:* Was die Brücke nicht kennt — ein Filteroperator,
+ein Parameter, eine eingebettete Beziehung — beantwortet sie mit **501**. Ein
+Test wird dadurch rot statt auf ungefilterten Daten grün. Ohne diese Regel wäre
+die Brücke selbst die nächste Attrappe. Die Formate folgen PostgREST bewusst bis
+ins Detail (`to_jsonb`: `date` als Zeichenkette, `numeric` als JSON-Zahl) — sonst
+liefe der Test auf Daten, die es in der Anwendung nie gibt.
+
+*Grenze:* Passwörter prüft die Brücke nicht (die emulierte `auth.users` speichert
+keine); Registrierung und Passwort-Zurücksetzen bleiben deshalb außerhalb der
+automatisierten Läufe.
+
+*Beleg:* `tests/e2e/support/bridge.ts`, `playwright.app.config.ts`,
+TEST_STRATEGY.md §8.1, CI-Job `e2e-app`.
+
+---
+
+## D-8-3: Runner fest auf Ubuntu 24.04, Playwright auf 1.56
+
+**Status:** Accepted · **Scope:** Tooling / Infrastructure
+
+Alle Workflows laufen auf `ubuntu-24.04` statt `ubuntu-latest`; Playwright
+bleibt auf 1.56.1 (`package.json`, inklusive Override für `playwright-core`).
+Beides wird nur **gemeinsam** angehoben.
+
+*Warum:* `ubuntu-latest` wandert ab 19.10.2026 zu Ubuntu 26.04, das erst
+Playwright ab 1.61 unterstützt. Ein Update auf eine solche Version bricht aber
+die lokalen Browsertests in Claude-Sessions: Die Umgebung bringt nur den zu
+1.56 passenden Chromium mit, und ihre Netzwerkregeln sperren die
+Playwright-Downloadserver (`cdn.playwright.dev`,
+`playwright.download.prss.microsoft.com`).
+
+*Verworfene Alternative:* Update jetzt und Browser beim Sessionstart laden —
+setzt die Freigabe der beiden Adressen voraus und lädt pro Session gut 100 MB,
+ohne dass die Tests dadurch mehr prüfen.
+
+*Leitplanke:* Dependabot hält nur die GitHub Actions aktuell
+(`.github/dependabot.yml`), nicht npm — sonst schlüge es das Playwright-Update
+vor, das diese Entscheidung zurückstellt.
+
+*Neu bewerten, wenn:* die Claude-Umgebung einen neueren Chromium mitbringt oder
+die Playwright-Downloadserver freigegeben sind, oder GitHub das
+24.04-Image abkündigt. Dann Playwright, Override und `runs-on` in einem PR
+anheben.
+
+*Beleg:* `.github/workflows/*.yml` (Kommentar in `ci.yml`),
+`playwright.config.ts`.
+
+## D-8-4: Der Import prüft Dubletten nur auf Dateiebene
+
+**Status:** Accepted · **Scope:** Product
+
+Der Import erkennt eine bereits importierte **Datei** (Stufe 1, IMPORT_SPEC.md §7).
+Überschneidungen einzelner Zeilen mit dem Bestand (Stufen 2–4) prüft er nicht; sie
+findet anschließend die Datenqualitätsansicht.
+
+*Warum:* Die Datenqualitätsansicht erkennt Dubletten unabhängig von ihrer Herkunft —
+auch zwischen manuell erfassten und importierten Eingängen, was ein Zeilen-Fingerprint
+nicht könnte. Eine zweite, schwächere Prüfung im Import brächte eine weitere
+Entscheidungsoberfläche für denselben Befund. Die vorbereitete Stufe 2
+(`markExactDuplicates`) war nie angebunden; die Vorschau wies deshalb stets
+„0 Duplikate" aus, ohne geprüft zu haben. Beides ist entfernt.
+
+*Neu bewerten, wenn:* Importe regelmäßig große Überschneidungen erzeugen, deren
+Bereinigung im Nachhinein mühsam wird. Die Zeilen-Fingerprints liegen dafür
+weiterhin in `dividend_payments.row_fingerprint`.
+
+*Beleg:* `lib/import/pipeline.ts`, `lib/payments/dataQuality.ts`.
+
+---
+
+## ADR-001: Historie vollständig im Client, Schwelle bei 10.000 Zahlungen
+
+**Status:** Accepted  
+**Scope:** Performance
+
+### Decision
+
+Dividendenliste, Übersicht und Statistik laden die **gesamte** Historie einmal in den Client
+(`fetchAllPayments`, in 1.000er-Seiten, ein gemeinsamer Cache-Eintrag) und filtern, sortieren,
+aggregieren und blättern dort. Das bleibt so, solange ein Konto weniger als
+**10.000 Zahlungen** führt.
+
+### Rationale
+
+Die Auswertungen sind decimal-genau und laufen über `lib/money`/`lib/statistics`; sie im Client
+zu halten hält Zahl und Wahrheit an einer Stelle (ARCHITECTURE.md §4.4/§4.5) und macht
+Jahreswechsel, Filter und Drill-downs ohne Netzrunde möglich. Bei 1.439 Zahlungen (heutige
+Kontrollmenge) ist das unmerklich.
+
+**Gemessen am 2026-07-29** (Auswertungsschicht, Desktop-CPU; mobil erfahrungsgemäß Faktor 2–3):
+
+| Datenmenge | JSON-Nutzlast | Money-Parsing | alle Aggregationen |
+|---|---|---|---|
+| 1.439 | 285 KiB | 8 ms | ≈ 52 ms |
+| 10.000 | 1.988 KiB | 18 ms | ≈ 150 ms |
+
+Die Schwelle ist damit belegt und nicht geschätzt: Bei 10.000 Zahlungen wird die
+Übertragungsgrenze von rund 2 MB genau erreicht.
+
+### Trade-offs
+
+- Übertragung und Verarbeitung wachsen linear mit der Historie; jede Zahlung wird beim Laden zu
+  einem `Money`-Objekt.
+- Liste und Auswertungen teilen **eine** Projektion (Schritt 1 der Guardrails, vorgezogen am
+  2026-09-26): Zuvor holten sie die Historie unter zwei Query-Keys getrennt, ein Wechsel
+  zwischen den Bereichen übertrug sie zweimal. Gemessen bei 1.224 Zahlungen, gepackt: 45 KiB
+  (Auswertungen) + 42 KiB (Liste) vorher, 47 KiB einmal nachher — die Auswertungen tragen die
+  stornierten Zeilen und vier Spalten mit, das kostet sie rund 2 KiB.
+
+### Guardrails
+
+- Kein serverseitiges Filtern/Paginieren einführen, solange die Schwelle nicht erreicht ist —
+  es zerteilte die Auswertungen ohne Not.
+- Bei Überschreiten in dieser Reihenfolge vorgehen: (1) ~~beide Abfragen auf **eine** schlanke
+  Projektion vereinheitlichen~~ (erledigt, siehe Trade-offs), (2) Aggregate serverseitig
+  vorrechnen (RPC), (3) erst danach Liste serverseitig filtern und blättern.
+- Jede Abfrage, die eine vollständige Tabelle lädt, läuft über `lib/supabase/fetchAllPages`.
+  Eine Abfrage ohne `range()` liefert stillschweigend höchstens 1.000 Zeilen (siehe ADR-002).
+
+### Revisit When
+
+- Ein Konto überschreitet 10.000 aktive Zahlungen, **oder**
+- das Laden der Liste dauert auf einem iPhone spürbar länger als eine Sekunde, **oder**
+- die Übertragung je Aufruf überschreitet rund 2 MB.
+
+---
+
+## ADR-002: Vollständige Tabellen nur über `fetchAllPages`
+
+**Status:** Accepted  
+**Scope:** Data
+
+### Decision
+
+Jede Abfrage, die eine ganze Tabelle in den Client holt, läuft über
+`src/lib/supabase/fetchAllPages.ts`. Direkte `select()`-Aufrufe ohne `range()`
+sind für vollständige Bestände unzulässig.
+
+### Why
+
+PostgREST liefert nie mehr als `db-max-rows` Zeilen je Antwort (Supabase-Standard
+1.000) und meldet die Kappung **nicht** als Fehler. Eine Abfrage ohne `range()`
+sieht erfolgreich aus und ist unvollständig.
+
+Genau das ist geschehen: Sicherung, Datenexport und die Konflikterkennung beim
+Wiederherstellen luden ohne Paginierung. Bei 1.439 Zahlungen fehlten rund 439 in
+jeder Sicherungsdatei und in jedem Export — ohne Warnung, und der
+Integritätsblock bestätigte die gekappte Menge als korrekt.
+
+### Consequences
+
+**Benefits**
+
+- Die Fehlerklasse existiert an genau einer Stelle und ist dort getestet.
+- Fehler werden weitergereicht statt zu einer leeren Liste zu werden.
+
+**Trade-offs**
+
+- Der Aufrufer muss **eindeutig** sortieren (fachliches Feld plus `id`), sonst
+  kann eine Zeile über die Seitengrenze hinweg doppelt oder gar nicht erscheinen.
+
+### Guardrails
+
+- Sicherung und Export prüfen die geladene Menge zusätzlich gegen `count` der
+  Datenbank und brechen bei Abweichung ab (`assertComplete`). Eine fehlende
+  Sicherung ist harmlos, eine unvollständige nicht.
+
+### Revisit When
+
+- Supabase ändert das Standardlimit, **oder**
+- die Historie überschreitet ADR-001 und wird serverseitig aggregiert.
+
+---
+
+## ADR-003: Bedeutung der beiden Wiederherstellungsmodi
+
+**Status:** Accepted  
+**Scope:** Data
+
+### Decision
+
+- **merge** ergänzt, was fehlt. Vorhandene Zeilen bleiben unangetastet.
+- **replace** stellt den Zustand der Sicherung her: Zeilen aus der Datei
+  gewinnen, alles Übrige wird **storniert** — nie gelöscht.
+
+`restore_backup` läuft vollständig in einer Transaktion; ein clientseitiges
+Zusammenführen findet nicht statt.
+
+### Why
+
+Die ursprüngliche Fassung (0022) archivierte im Modus „replace" zuerst alles und
+fügte anschließend mit `on conflict do nothing` ein. Da eine Sicherung dieselben
+IDs mitbringt, tat jeder INSERT nichts: Wer seine eigene Sicherung einspielte,
+hätte seinen gesamten Bestand storniert und nichts zurückerhalten.
+
+### Guardrails
+
+- „replace" verlangt eine ausdrückliche Bestätigung mit Nennung der Folgen.
+- Kein Pfad der Wiederherstellung löscht Zeilen (Grundsatz 6, D-034).
+- `business_fingerprint` wird beim Einspielen neu berechnet, nie aus der Datei
+  übernommen — ein veralteter Wert verfälschte die Dublettenerkennung dauerhaft.
+- Eine Wiederherstellung setzt `last_backup_at` **nicht**: Sie ist keine Sicherung.
+
+### Revisit When
+
+- Ein Anwendungsfall verlangt echtes Zusammenführen auf Feldebene mit
+  Konfliktauflösung durch den Nutzer.
+
+---
+
+## ADR-004: Versionsnummer nach SemVer, Anhebung durch CI erzwungen
+
+**Status:** Accepted  
+**Scope:** Release
+
+### Decision
+
+Die Fassung steht allein in `package.json` und folgt Semantic Versioning. Jede Änderung, die
+Nutzer erreicht (`src/`, `public/`, `supabase/`, `index.html`), hebt sie an: Patch für
+Fehlerbehebungen, Minor für neue oder spürbar geänderte Funktionen, Major für Brüche (etwa
+Sicherungen, die ältere Fassungen nicht mehr einspielen). Der CI-Job `version` lässt einen
+Pull Request ohne Anhebung nicht durch (`scripts/check-version-bump.mjs`). Startpunkt ist
+**1.5.0** (2026-10-14); zuvor stand die Nummer seit Projektbeginn unverändert auf 0.1.0.
+
+### Why
+
+Die Nummer steht in den Einstellungen und in jeder Sicherungsdatei. Bleibt sie stehen, sagt sie
+nichts — weder welcher Stand auf dem Gerät läuft noch aus welchem eine Sicherung stammt.
+
+### Trade-offs
+
+- Eine von Hand gewählte Stufe statt einer automatisch hochgezählten Build-Nummer: Sie verlangt
+  bei jedem PR eine Entscheidung, sagt dafür aber, **wie viel** sich geändert hat.
+- Zwei offene PRs mit derselben Anhebung kollidieren — der zweite muss nach dem ersten erneut
+  anheben. Das ist gewollt: Jede ausgelieferte Fassung trägt eine eigene Nummer.
+
+### Guardrails
+
+- Verglichen wird mit dem aktuellen Stand der Basis, nicht mit dem Abzweigpunkt.
+- Tests, Doku, CI und Abhängigkeiten allein verlangen keine Anhebung; sie gehen mit der
+  nächsten Änderung an der App hinaus.
+- Jeder PR hebt für sich an — auch ein zweiter PR vom selben Branch, nachdem der erste
+  bereits gemergt ist (so geschehen bei #156: Datenqualität und „Asset“ gingen ohne
+  Anhebung als 1.5.0 hinaus und wurden mit 1.6.0 nachgezogen).
+
+### Revisit When
+
+- Fassungen sollen als Git-Tags oder Releases mit Änderungsprotokoll erscheinen.
+
+## ADR-005: Redesign der Übersicht — monochromer Kopf, eigenes Diagramm, Prognose
+
+**Status:** Accepted  
+**Scope:** UX, Berechnung
+
+### Decision
+
+Ab 1.7.0 folgt die App einer ruhigeren, von Broker-Apps inspirierten Linie, ohne sie zu kopieren:
+Schwarz trägt Daten, das Tiefblau der App markiert Aktionen, Grün/Rot nur Veränderung. Der Kopf
+der Übersicht steht ohne Kartenrahmen, zeigt das Diagramm selbst (eigenes SVG, Wischen statt
+Tooltip, Schieberegler für Tastatur) und neben dem Jahresziel eine Prognose zum Jahresende
+(CALCULATION_RULES.md §9.7). Konzept und Varianten wurden vorab als Vorher/Nachher-Entwurf
+abgestimmt.
+
+### Why
+
+Der alte Kopf ließ offen, ob das Jahresziel erreichbar ist („40 % erreicht" im Oktober), das
+Diagramm stand als eigene Karte weit unten, und Blau markierte gleichzeitig Aktionen, aktive
+Navigation und Daten. Recharts lag im ersten Bildschirm, obwohl dort nur ein einfaches
+Liniendiagramm nötig ist.
+
+### Trade-offs
+
+- Eigenes SVG statt Recharts: weniger Bundle und volle Kontrolle über das Wischen, dafür
+  eigener Code für Skalen und Bedienung (bewusst klein gehalten, `HeroChart.tsx`).
+- Die Prognose ist eine einfache Fortschreibung des Vorjahres. Sie irrt bei Käufen, Verkäufen
+  und Kürzungen und ist deshalb klar als Prognose beschriftet und vom Zielfortschritt getrennt.
+- Monochrome Vergleichsreihe im Kopf statt Slot 1/2 der Diagrammpalette (Ausnahme in
+  UX_AND_DESIGN_SYSTEM.md §1a).
+
+Seit derselben Fassung ersetzen angekündigte Nettobeträge des Dividendenkalenders das Vorjahr
+für die nächsten bis zu 30 Tage (CALCULATION_RULES.md §9.7).
+
+### Revisit When
+
+- Die Prognose soll Käufe und Verkäufe berücksichtigen (etwa über den Depotstand und die
+  erwartete Jahresdividende je Position).
+
+---
+
+# Superseded Decisions
+
+Move replaced decisions here instead of deleting them.
+
+Reference the decision that replaced them.
+
+- **D-015 / D-026** (SheetJS aus der Herstellerregistry) — abgelöst durch
+  `exceljs` aus npm, siehe Eintrag oben.

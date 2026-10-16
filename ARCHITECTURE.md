@@ -1,0 +1,510 @@
+# ARCHITECTURE.md — Dividend Tracker
+
+Stand: 2026-07-19 · Status: Verbindliche technische Architektur (Planungsphase)
+
+---
+
+## 1. Architekturüberblick
+
+Single-Page-Anwendung (React/Vite) als PWA, mit **Supabase Postgres als einziger Source of
+Truth**. Es gibt kein eigenes Backend; die Geschäftslogik verteilt sich auf:
+
+- **Postgres** (Supabase): Schema, Constraints, RLS, Trigger (Audit Log), transaktionale
+  RPC-Funktionen für Import-Commit, Import-Rollback und Restore.
+- **Client** (Browser): UI, Parsing/Validierung von Importdateien (Web Worker), Finanz-
+  arithmetik mit Decimal.js, Darstellung und Caching (TanStack Query).
+
+```
+┌────────────────────────── Browser (Mac / iPad / iPhone) ──────────────────────────┐
+│  React 19 + React Router (SPA)                                                    │
+│  ├─ UI: Tailwind 4 + shadcn/ui + Recharts                                         │
+│  ├─ Formulare: React Hook Form + Zod                                              │
+│  ├─ Server-State: TanStack Query  ──────────────┐                                 │
+│  ├─ Finanzlogik: Decimal.js (kein Float)        │                                 │
+│  ├─ Import (Hauptthread, kein Worker):          │                                 │
+│  │    eigener CSV-Parser · exceljs (XLSX/XLS)   │                                 │
+│  │    Normalisierung · Validierung · Fingerprints                                 │
+│  └─ Service Worker (eigener, ~100 Zeilen):      │                                 │
+│       nur App-Huellen-Cache, niemals Daten      │                                 │
+└─────────────────────────────────────────────────┼─────────────────────────────────┘
+                                                  │ HTTPS (supabase-js, PKCE-Auth)
+┌─────────────────────────────────────────────────▼─────────────────────────────────┐
+│  Supabase (verwaltete Instanz)                                                    │
+│  ├─ Auth (E-Mail/Passwort, PKCE, Session-Refresh)                                 │
+│  ├─ PostgREST-API (ausschließlich RLS-geschützt)                                  │
+│  └─ Postgres = SOURCE OF TRUTH                                                    │
+│       Schema-Migrationen · CHECK/FK/UNIQUE-Constraints · RLS-Policies             │
+│       Trigger → audit_log · RPCs: commit_import, rollback_import, restore_backup  │
+└───────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Zentrale Architekturentscheidung: Source of Truth
+
+Supabase Postgres ist die einzige dauerhafte Datenquelle. Local Storage, IndexedDB, Browser
+Cache, React State und PWA-Speicher dienen **niemals** als alleiniger dauerhafter Speicher.
+Konkret:
+
+- Schreiboperationen gelten erst als erfolgreich, wenn Postgres sie bestätigt hat.
+- Der Offline-Cache (TanStack Query Persist → IndexedDB) ist **lesend**; er wird bei jedem
+  Online-Start gegen den Server revalidiert und kann jederzeit verlustfrei gelöscht werden.
+- In Phase 1–9 gibt es **keine Offline-Schreibwarteschlange** (bewusst, siehe DECISIONS.md
+  D-011): Erfassen und Importieren erfordern eine Verbindung. Das verhindert Konflikt- und
+  Verlustszenarien, die dem Grundsatz „kein stiller Verlust" widersprechen würden.
+
+---
+
+## 2. Tech-Stack und ausgewählte Versionen
+
+Versionsstand geprüft am **2026-07-19** gegen die npm-Registry. Alle Versionen werden in
+`package.json` exakt gepinnt (kein `^`), Updates laufen kontrolliert über Renovate-freie,
+manuelle Review (persönliches Projekt, Nachvollziehbarkeit vor Bequemlichkeit).
+
+| Baustein | Paket | Version | Anmerkung |
+|---|---|---|---|
+| UI-Framework | `react`, `react-dom` | 19.2.7 | Stable, Concurrent Features |
+| Sprache | `typescript` | **5.9.x** | Bewusst nicht 7.x — siehe K-1 |
+| Build | `vite` | 8.1.5 | mit `@vitejs/plugin-react` 6.0.3 |
+| Styling | `tailwindcss` | 4.3.3 | CSS-first-Konfiguration (v4) |
+| Komponenten | shadcn/ui (CLI `shadcn` 4.13.x) | — | Kein Laufzeitpaket; generierte Quellen im Repo |
+| Routing | `react-router` | 8.2.0 | Library/Data Mode, kein Framework-Mode — K-2 |
+| Server-State | `@tanstack/react-query` | 5.101.4 | Kein Persist-Cache — Finanzdaten werden nicht zwischengespeichert (D-011) |
+| Formulare | `react-hook-form` | 7.83.0 | |
+| Validierung | `zod` | 4.4.3 | + `@hookform/resolvers` 5.5.7 (Zod-4-kompatibel) — K-3 |
+| CSV | eigener Parser | — | `src/lib/import/parseCsv.ts`; Papa Parse waere fuer den Umfang eine Abhaengigkeit zu viel |
+| Excel | `exceljs` | 4.4.0 | Dynamisch nachgeladen (~930 kB, eigener Chunk); loest SheetJS ab — K-4 |
+| Dezimalarithmetik | `decimal.js` | 10.6.0 | Konfiguration in CALCULATION_RULES.md §2 |
+| Diagramme | `recharts` | 3.10.1 | React-19-kompatibel; nachgeladen (~103 kB gzip) |
+| Unit-Tests | `vitest` | 4.1.10 | + `@testing-library/react` 16.3.2 |
+| E2E-Tests | `@playwright/test` | 1.56.1 | Chromium/WebKit (WebKit ≈ iOS Safari) |
+| Backend-SDK | `@supabase/auth-js`, `postgrest-js`, `functions-js` | 2.111.0 | PKCE-Flow; ohne Realtime/Storage — K-8 |
+| PWA | eigener Service Worker | — | `public/sw.js`; `vite-plugin-pwa` samt Workbox waere unverhaeltnismaessig (§6) |
+| Supabase CLI | `supabase` | aktuell (≥ 2.x) | Lokale DB, Migrationen, Typen-Generierung |
+
+> Die Versionen entsprechen `package.json` (Stand 2026-07-29). Sie sind exakt
+> gepinnt; Abweichungen zwischen dieser Tabelle und `package.json` sind ein Fehler.
+
+### Kompatibilitätsentscheidungen
+
+- **K-1 TypeScript 5.9 statt 7.x:** npm `latest` ist inzwischen TypeScript 7 (nativer
+  Go-basierter Compiler). Für ein langlebiges Finanzprojekt wird die im gesamten Ökosystem
+  (typescript-eslint, Vitest, IDE-Tooling, generierte Supabase-Typen) vollständig etablierte
+  5.9-Linie gepinnt. Upgrade auf 7.x als eigener, getesteter Schritt nach Phase 10
+  (DECISIONS.md D-013).
+  **Stand 2026-07-29 (Versuch durchgeführt):** `tsc -b` läuft mit 7.0.2 sauber durch, nachdem
+  das entfernte `baseUrl` aus den drei tsconfigs verschwunden ist (die `paths` sind relativ und
+  brauchen es nicht — die Änderung ist auch unter 5.9 wirksam und bleibt bestehen).
+  **Blockiert ist der Schritt an typescript-eslint:** Version 8.65 verweigert TS 7.0 mit einer
+  Ausnahme beim Laden, `npm run lint` bricht damit vollständig ab. Der angebotene Ausweg wäre
+  ein zweiter Compiler (`typescript-6.0`) nur für das Linting — zwei Compiler im Baum für
+  keinen Gewinn. Erneut prüfen, sobald typescript-eslint TS ≥ 7.1 unterstützt
+  (typescript-eslint#10940).
+- **K-2 React Router 8 im Library-Modus:** Kein Framework-/SSR-Modus. Die App ist eine reine
+  SPA hinter Auth; SSR brächte Komplexität ohne Nutzen und kollidiert mit dem PWA-Modell.
+  Die Bildlaufposition übernimmt `<ScrollRestoration>` in der App-Shell, mit `getKey` auf den
+  **Pfad** statt auf den Chronikeintrag: Filter, Sortierung und Seitenzahl stehen in der
+  Adresse, jeder Filterklick wäre sonst ein neuer Ort und risse die Liste nach oben. So
+  beginnt nur der Wechsel des Bereichs oben, und der Weg zurück landet dort, wo man aufgehört
+  hat (`tests/e2e/app/navigation.spec.ts`).
+- **K-3 Zod 4 + @hookform/resolvers ≥ 5:** Resolver-Version 5.x ist die erste mit stabiler
+  Zod-4-Unterstützung; ältere Anleitungen (Zod 3) sind nicht 1:1 übertragbar.
+- **K-4 `exceljs` statt SheetJS:** Das npm-Paket `xlsx` ist bei 0.18.5 eingefroren und enthält
+  bekannte Schwachstellen; die gepflegten Fassungen liegen nur unter `cdn.sheetjs.com`, das aus
+  der Implementierungsumgebung nicht erreichbar war (DECISIONS.md D-015/D-026). Verwendet wird
+  deshalb `exceljs` aus npm, dynamisch nachgeladen. XLS-Altformat wird best effort unterstützt.
+- **K-5 Tailwind 4 + shadcn/ui:** shadcn-CLI ≥ 4 generiert Tailwind-4-kompatible Komponenten
+  (CSS-Variablen, `@theme`). Keine `tailwind.config.js`-Altlasten.
+- **K-6 Recharts 3:** Nur SVG-Rendering, funktioniert ohne Canvas-Abhängigkeiten in WebKit;
+  Accessibility-Layer (Tastatur/ARIA) von v3 wird genutzt.
+- **K-7 Vitest 4 + Vite 8:** Major-Versionen sind aufeinander abgestimmt (gleiche
+  Rollup/esbuild-Basis); Playwright unabhängig davon versioniert.
+- **K-8 Supabase-Client aus Einzelpaketen statt `createClient`:** `lib/supabase/client.ts`
+  setzt Anmeldung (`auth-js`), Datenbank (`postgrest-js`) und Edge Functions
+  (`functions-js`) selbst zusammen. Das Sammelpaket `@supabase/supabase-js` brächte Realtime
+  und Storage mit, die die Anwendung nie nutzt — rund 24 kB gzip, gut ein Zehntel des
+  Startpakets (220,8 → 197,2 kB gzip, gemessen am 2026-09-26). Nachgebildet ist genau das,
+  was `createClient` für diese Teile tut: Adressen, Speicherschlüssel der Sitzung
+  (`sb-<projekt>-auth-token`, bestehende Anmeldungen bleiben gültig) und Kopfzeilen je
+  Anfrage (`tests/unit/lib/supabase/client.test.ts`). Die drei Pakete erscheinen im
+  Gleichschritt und werden gemeinsam auf eine Version gehoben.
+
+---
+
+## 3. Projektstruktur
+
+```
+/
+├── docs → (diese Spezifikationen, Repo-Root)
+├── supabase/
+│   ├── migrations/           # Nummerierte SQL-Migrationen (einzige Schemaquelle)
+│   ├── seed.sql              # Nur Testdaten für lokale Entwicklung
+│   └── config.toml
+├── src/
+│   ├── app/                  # App-Shell: Router, Provider, Layouts, Guards
+│   ├── components/ui/        # shadcn/ui-Basiskomponenten (generiert, angepasst)
+│   ├── components/           # Zusammengesetzte, fachneutrale Komponenten
+│   ├── features/
+│   │   ├── auth/
+│   │   ├── dashboard/
+│   │   ├── payments/         # Dividendeneingänge: Liste, Formular, Detail, Historie
+│   │   ├── securities/       # Depot: Assets (Wertpapiere), Bestände, Entwicklung
+│   │   ├── depots/           # Depotkonten und Portfolios (Einstellungen)
+│   │   ├── statistics/
+│   │   ├── imports/          # Assistent, Historie, Rollback
+│   │   ├── goals/
+│   │   ├── backup/
+│   │   └── settings/
+│   ├── lib/
+│   │   ├── money/            # Decimal-Wrapper, Rundung, Formatierung (CALCULATION_RULES)
+│   │   ├── parsing/          # Zahlen-/Datums-/Währungsparser, Encoding-Erkennung
+│   │   ├── fingerprint/      # SHA-256-Fingerprints (Datei, Zeile, fachlich)
+│   │   ├── statistics/       # Kennzahlfunktionen (pure functions, voll getestet)
+│   │   ├── supabase/         # Client, generierte DB-Typen, typed RPC-Wrapper
+│   │   └── backup/           # Sicherung, Wiederherstellung, Export inkl. Injection-Schutz
+│   └── styles/
+├── tests/
+│   ├── unit/                 # Vitest (lib/, features/, components/)
+│   ├── integration/          # Vitest gegen echtes PostgreSQL (RLS, RPC, Trigger, Restore)
+│   └── e2e/                  # Playwright (Rauch- und Accessibility-Tests)
+└── package.json
+```
+
+Regeln:
+
+- `lib/money`, `lib/parsing`, `lib/fingerprint`, `lib/statistics` sind **reine Funktionen ohne
+  React- oder Supabase-Abhängigkeit** → vollständig unit-testbar.
+- Feature-Ordner kapseln Route-Komponenten, Query-Hooks und feature-lokale Komponenten.
+- Datenbanktypen werden mit `supabase gen types typescript` generiert und eingecheckt; jede
+  Migration aktualisiert die Typen im selben Commit.
+
+---
+
+## 4. Datenfluss und State-Management
+
+### 4.1 Lesen
+
+1. Route-Komponente nutzt Query-Hooks (`useQuery`) mit stabilen Query-Keys
+   (`['payments', filter]`, `['stats','monthly',year]`, …).
+2. supabase-js liest via PostgREST; RLS filtert serverseitig auf `auth.uid()`.
+3. Aggregationen: kleine Datenmengen (≤ einige tausend Zahlungen/Jahr) werden clientseitig aus
+   den Einzelzahlungen mit den Funktionen aus `lib/statistics` berechnet — dieselben Funktionen,
+   die die Unit-Tests abdecken. Damit ist „Kennzahl = Summe der Drill-down-Liste" konstruktiv
+   garantiert (eine Codequelle für beides). Für Gesamtauswertungen über alle Jahre werden
+   Postgres-Views (`v_payment_stats_monthly` u. a.) genutzt, deren Definition testweise gegen
+   die Client-Funktionen abgeglichen wird (TEST_STRATEGY.md §4).
+4. TanStack Query cached im Speicher; Persist-Plugin spiegelt in IndexedDB (nur Cache).
+
+### 4.2 Schreiben
+
+1. Formular (React Hook Form) → Zod-Schema (Strings → Decimal, keine Float-Zwischenwerte).
+2. Mutation via supabase-js `insert/update` bzw. RPC.
+3. Bei Erfolg: gezielte Query-Invalidierung. **Kein Optimistic Update** für finanzielle Daten
+   (DECISIONS.md D-012) — der Nutzer sieht erst den bestätigten Serverzustand.
+4. Audit-Log-Einträge entstehen ausschließlich durch Datenbank-Trigger, nie durch Client-Code.
+
+### 4.3 Transaktionale Operationen (RPC)
+
+Mehrschrittige Schreibvorgänge laufen als Postgres-Funktionen (eine Transaktion, `SECURITY
+INVOKER`, RLS bleibt aktiv):
+
+| RPC | Zweck |
+|---|---|
+| `commit_import(import_id, rows)` | Atomares Anlegen aller bestätigten Zeilen + Statuswechsel + Bilanzprüfung serverseitig |
+| `rollback_import(import_id)` | Archiviert alle Zahlungen des Imports + mitangelegte Stammdaten ohne weitere Referenzen |
+| `restore_backup(payload, mode)` | Validierter Voll- oder Merge-Restore in einer Transaktion |
+| `archive_payment(id, reason)` | Storno/Archivierung mit Pflicht-Audit |
+
+Client-seitige Mehrfach-Inserts ohne Transaktion sind für diese Fälle verboten.
+
+### 4.4 Dashboard-Datenfluss und Query-Strategie (Phase 5A)
+
+Das Dashboard folgt bewusst dem Prinzip aus §4.1 Punkt 3:
+
+- **Eine logische Ladung, alle Kennzahlen — und die Liste.** `fetchAllPayments()`
+  (`lib/supabase/repositories/payments.ts`) lädt die gesamte Historie samt stornierter Zeilen,
+  reduziert auf die Spalten, die Liste, Datenqualität und Analytics-Schicht lesen. Liste und
+  Auswertungen teilen damit **einen** Abruf und Cache-Eintrag; die Auswertungen nehmen per
+  `select` nur die aktiven Zeilen (`activeAnalyticsPayments`, `archived_at is null`). Zuvor
+  holten beide die Historie mit eigener Projektion, ein Wechsel zwischen Übersicht und Liste
+  übertrug sie zweimal (DECISIONS.md ADR-001).
+  Da PostgREST eine Antwort auf `db-max-rows` (Supabase-Default 1000) begrenzt, wird
+  **seitenweise** (`.range()`, 1000er-Seiten) mit stabiler, eindeutiger Sortierung
+  (`pay_date desc, id asc`) bis zur Vollständigkeit paginiert — sonst würden bei > 1000
+  Eingängen Zahlungen fehlen (Kontrollwert 1.439). Keine Übertragung roher Daten je KPI,
+  kein N+1, keine widersprüchlichen Einzelberechnungen. Für den aktuellen Datenumfang
+  (Zielhorizont ≥ 10.000) werden **keine** materialisierten Views eingeführt (DECISIONS.md D-5A-1).
+- **Analytics-Schicht** (`lib/statistics`): geparste `AnalyticsPayment`-Datensätze (Beträge
+  einmalig zu `Money`), rein funktional und decimal-sicher. Einzige Quelle aller
+  Dashboard-Kennzahlen und in Phase 5B für den Statistikbereich wiederverwendbar.
+  „Einmalig" wörtlich: Die `select`-Funktion der Query steht auf Modulebene. Eine
+  Inline-Funktion ist bei jedem Rendern eine neue Referenz, React Query führte sie dann jedes
+  Mal erneut aus — und weil `Money`-Instanzen sich dem strukturellen Teilen entziehen,
+  entstand jedes Mal eine neue Liste, die sämtliche memoisierten Aggregate verwarf.
+- **Effektiver Ausschüttungsmonat:** Vor der Aggregation wird über `withEffectiveDates` je
+  Zahlung ein effektives Datum aus dem Unternehmensplan (`securities.payout_months`) gesetzt
+  (fälliger geplanter Monat, ein Monat Vorlauf für vorgezogene Zahlungen, inkl.
+  Jahresverschiebung — CALCULATION_RULES.md §10). Alle
+  Auswertungen und die Eingangsliste rechnen auf diesem effektiven Datum; das echte `pay_date`
+  bleibt erhalten. Übersicht, Statistik und Ziele beziehen die so angereicherte Historie aus
+  **einem** Hook (`useEffectivePayments`), die Eingangsliste nutzt dieselbe Nachschlagetabelle
+  (`payoutMonthsBySecurity`). Die Eingangsliste lädt dafür alle Zahlungen paginiert und filtert/sortiert
+  clientseitig (kein serverseitiger Datumsfilter, da der Plan clientseitige Stammdaten sind).
+- **Jahresauswahl clientseitig.** Der ausgewählte Zeitraum (`?year=…`) wird auf den bereits
+  geladenen Datensatz angewandt — ein Jahreswechsel löst **keine** neue Abfrage und keine
+  Seitenneuladung aus (schnelle Umschaltung, memoisierte Aggregate).
+- **Query-Key unter dem `payments`-Namespace:** `['payments','list']` (`PAYMENT_HISTORY_KEY`),
+  derselbe wie die Eingangsliste. Dadurch invalidieren
+  alle bestehenden Zahlungs-Mutationen (Anlegen, Bearbeiten, Storno, Reaktivierung) sowie
+  Import-Commit/-Rollback über `invalidateQueries(['payments'])` (Präfix-Match) automatisch auch
+  die Dashboard-Daten. Namen/Archivstatus von Unternehmen und Depots stammen aus
+  `['securities']`/`['depots']` und werden durch deren Mutationen aktualisiert. So zeigt das
+  Dashboard nach Import, Bearbeitung, Storno, Reaktivierung oder Rollback nie veraltete Summen.
+- **URL-Zustand:** Die Jahresauswahl liegt in der URL (`?year=2026` bzw. `?year=all`), bleibt nach
+  Reload erhalten, funktioniert mit Browser-Zurück/-Vorwärts (Push-Historie) und fällt bei
+  ungültigem Parameter sicher auf das aktuelle Jahr zurück. Drill-downs übergeben Filter an die
+  Zahlungsliste (`/eingaenge?year=&month=&security=&depot=`).
+
+### 4.5 Statistik-Datenfluss (Phase 5B)
+
+Der Statistikbereich (`src/features/statistics`) baut vollständig auf 5A auf und führt **keine**
+eigene Query oder Berechnung ein:
+
+- **Geteilter Cache, keine zweite Ladung.** `useStatisticsData()` nutzt denselben Query-Key
+  `['payments','list']` wie das Dashboard (`useDashboardPayments`). Dashboard und Statistik
+  teilen sich damit einen Cache-Eintrag; es entsteht keine zusätzliche Übertragung und keine
+  parallele Aggregation. Der effektive Ausschüttungsmonat (§4.4) wird einmal angewandt.
+- **Analytics-Schicht als einzige Quelle.** Sämtliche Statistik-Kennzahlen (`overviewStatistics`,
+  `yearStatistics`, `monthAcrossYearsStatistics`, `securityStatistics`, `depotStatistics`,
+  `calendarMonthBuckets`, `heatmapByYearMonth`, `breakdownMatrix`, `filterPayments`,
+  `sortSecurityStatistics`) sind
+  reine Funktionen in `src/lib/statistics` (CALCULATION_RULES.md §11). Komponenten und Diagramme
+  enthalten keine Aggregation, Rundung oder Betrags-/Datumssortierung.
+- **Layout mit geteiltem, gefiltertem Datensatz.** Die Layoutseite (`StatisticsPage`) lädt die
+  Daten, wendet den URL-Filter **einmal** an (`filterPayments`, memoisiert) und reicht die
+  gefilterten Zahlungen samt Namensauflösung über den React-Router-`Outlet`-Kontext an die
+  Unterbereiche (Übersicht mit der Matrix Jahre × Monate, Verlauf, Vergleich, Unternehmen,
+  Depots) weiter. Der Kontext
+  ist bewusst frei von Supabase-Abhängigkeiten (`context.ts`), damit Unterbereiche isoliert
+  testbar bleiben. Neben den gefilterten Zahlungen liegt der **ungefilterte** Bestand im Kontext:
+  Vergleich und Matrix brauchen ihn, weil der Jahresfilter dort nicht greifen darf
+  (CALCULATION_RULES.md §11.10 und §11.12).
+- **URL-Filter.** Jahr, Unternehmen, Depot, Datenquelle und Zahlungsart liegen in der URL
+  (`?year=&security=&depot=&source=&type=`), sind kombinierbar, bleiben nach Reload erhalten und
+  funktionieren mit Browser-Zurück/-Vorwärts. Parsing/Serialisierung sind als reine, isoliert
+  getestete Funktionen ausgelagert (`filterParams.ts`).
+- **Tabellen und Performance.** Die generische `StatTable` bietet Sortierung (per Spalten-Compare,
+  Money über `compareTo`), Suche und **Paginierung**; bei langen Listen (≥ 500 Unternehmen)
+  begrenzt die Seitengröße die gerenderten Zeilen. Aggregationen sind O(n) und memoisiert; ein
+  Skalierungstest deckt ≥ 10.000 Eingänge / ≥ 500 Unternehmen ab.
+
+---
+
+## 5. Import-Pipeline (technische Sicht)
+
+Details fachlich in IMPORT_SPEC.md; architektonisch:
+
+1. Datei bleibt im Browser; sie wird **nie** an einen Server hochgeladen (Datenschutz,
+   Größe). Nur die geprüften, normalisierten Zeilen gehen an Postgres.
+2. `src/lib/import/*` übernimmt: Hashing (Web Crypto SHA-256), Parsing (eigener CSV-Parser bzw.
+   `exceljs`), Normalisierung, Zod-Validierung, Fingerprints. Ergebnis ist eine strukturierte
+   Datenstruktur mit vollständiger Zeilenbilanz.
+
+   **Abweichung von der Planung:** Dies läuft im Hauptthread, nicht in einem Web Worker. Für die
+   tatsächliche Nutzung (jährliche Nachträge, Dateien im zweistelligen Kilobyte-Bereich) genügt
+   das. Vorgeschaltet ist eine Größen- und Formatprüfung (`lib/import/fileLimits.ts`, 25 MB),
+   damit ein Fehlgriff eine verständliche Meldung erzeugt statt die Oberfläche einzufrieren.
+   Ein Worker bleibt die Option, sobald reale Dateien das erfordern.
+3. Duplikatabgleich Stufe 3/4 (fachlich) erfolgt gegen die Server-Daten per Fingerprint-Query
+   (indexierte Spalte), nicht durch Vollabzug aller Zahlungen.
+4. Commit ausschließlich über `commit_import`-RPC in einer Transaktion; die Serverfunktion
+   validiert erneut (Constraints + Plausibilitätsprüfungen) und verweigert bei
+   Bilanzabweichung.
+5. Importmetadaten (Hash, Mapping, Bilanz, Bericht) werden in `imports` persistiert.
+
+---
+
+## 6. PWA und Offline-Verhalten
+
+**Umgesetzt:**
+
+- `public/manifest.webmanifest` (Name, `display: standalone`, Theme-Farbe, Icons 192/512 plus
+  maskierbares Icon) und die iOS-Angaben in `index.html`, die Safari statt des Manifests
+  auswertet (`apple-touch-icon`, `apple-mobile-web-app-*`). Damit landet die App mit Icon und
+  eigenem Fenster auf dem Home-Bildschirm.
+- Eigener Service Worker (`public/sw.js`, rund 100 Zeilen) **ohne** zusätzliche Abhängigkeit —
+  `vite-plugin-pwa` samt Workbox wäre für diesen Umfang unverhältnismäßig. Registriert wird er
+  nur im Produktionsbuild (`import.meta.env.PROD`), mit `BASE_URL` als Geltungsbereich, damit er
+  unter dem Pages-Unterpfad ebenso greift.
+- Strategien: Navigation **Netz zuerst, Cache als Rückfall** (neue Fassungen kommen sofort an,
+  offline erscheint trotzdem die Hülle); statische Dateien **Cache zuerst** — ihre Namen tragen
+  einen Hash, veraltete Antworten kann es also nicht geben.
+- **Eine Fassung, ein Cache.** `public/sw.js` ist eine Vorlage; der Build
+  (`vite.config.ts`, `src/lib/config/serviceWorkerBuild.ts`) setzt die Kennung der Fassung
+  (Dateiname des Einstiegs-Bundles mit Inhalts-Hash) und die Dateien des Startpakets ein. Erst
+  dadurch unterscheidet sich `sw.js` nach jedem Deploy, und der Browser bemerkt die neue
+  Fassung. Sie legt bei der Installation Dokument und Startpaket in ihrem eigenen Cache ab — ist
+  also auch offline vollständig, bevor sie übernimmt — und löscht beim Aktivieren die Caches
+  früherer Fassungen, und zwar nur die eigenen (Präfix `dividend-tracker-shell-`): Auf GitHub
+  Pages teilen sich alle Projektseiten eines Kontos eine Herkunft. Ein Rauchtest prüft, dass
+  genau eine Fassung samt Startpaket vorliegt.
+- **Nichts von Supabase wird zwischengespeichert:** Anfragen an eine fremde Herkunft rührt der
+  Service Worker nicht an (SECURITY_MODEL.md §7).
+
+- **Aktualisierungshinweis statt stillem Wechsel:** Eine neue Fassung wartet (`skipWaiting`
+  greift nur bei der Erstinstallation, wo es nichts zu unterbrechen gibt); die Oberfläche weist
+  darauf hin (`UpdatePrompt`), und erst auf Klick übernimmt der neue Service Worker und die
+  Seite lädt neu. Eine Finanzanwendung soll nicht mitten in einer Erfassung die Fassung
+  wechseln. Ausnahme: Läuft die Seite bereits auf der wartenden Fassung — nach einem Deploy
+  frisch geöffnet, denn die Navigation holt zuerst das Netz —, fragt sie den wartenden Service
+  Worker nach seiner Kennung und lässt ihn still übernehmen; es gibt nichts neu zu laden.
+  Beim Zurückkehren in die App (`visibilitychange`, höchstens stündlich) fragt sie nach einer
+  neuen Fassung — eine installierte App bleibt auf dem iPhone oft tagelang im Speicher.
+
+**Bewusst nicht umgesetzt:**
+
+- Kein Offline-Lesen von Finanzdaten (kein IndexedDB-Persist von TanStack Query). Offline zeigt
+  die App ihre Hülle und die Fehlerzustände der Abfragen — kein stiller Blick auf veraltete
+  Beträge.
+- Kein Offline-Banner. Er gehört zu einem ausgebauten Offline-Modus und wäre ohne ihn Zierde.
+
+### 6.1 Ladeverhalten der Bereiche
+
+- **Nachgeladen wird alles außer Hülle und Übersicht.** Beide entscheiden den ersten
+  Bildschirm, alles andere wäre Ballast im Startpaket (`React.lazy` in `app/router.tsx`; der
+  Rauchtest „das Startpaket bleibt schlank" hält die Grenze fest). Auch die Anmeldung wird
+  nachgeladen: Sie zieht react-hook-form und zod nach sich (≈ 28 kB gzip), und wer die
+  installierte App öffnet, ist fast immer schon angemeldet. Ebenso das Erfassungs-Overlay
+  (`PaymentComposerDialog`, Radix-Dialog ≈ 12 kB gzip): Es wird beim ersten Öffnen eingehängt
+  und beim Zeigen auf bzw. Fokussieren von „Neue Dividende" vorab geladen.
+- **Die Anmeldeprüfung umschließt den Inhalt, nicht die Hülle** (`RequireAuth` in
+  `AppShell`). Nach längerer Pause erneuert der Auth-Client beim Start zuerst das Token über das
+  Netz; währenddessen stehen Navigation und `PageSkeleton` bereits. Die Navigation zeigt keine
+  Daten, und geschützte Seiten samt ihren Abfragen hängen erst mit gültiger Sitzung ein.
+- **Dunkles Design vor dem ersten Zeichnen:** Ein Inline-Skript in `index.html` setzt `.dark`,
+  bevor das Startpaket läuft (sonst weißer Blitz bei jedem Start). Die CSP gibt genau dieses
+  Skript per Hash frei (SECURITY_MODEL.md §7).
+- **Die `import()`-Aufrufe stehen gebündelt in `app/routeChunks.ts`**, nicht in der
+  Routentabelle. Grund: Dieselbe Aufrufstelle bedeutet dasselbe Modul in der Registry des
+  Browsers — zwei Aufrufstellen ergäben zwei Teile, und das Vorausladen liefe ins Leere.
+- **Vorausladen bei Absicht:** Navigationspunkte (Sidebar, Bottom-Navigation, „Mehr",
+  Reiternavigation) holen die Teile ihres Ziels schon bei `pointerenter` und `focus`
+  (`prefetchProps`). Zwischen Absicht und Klick liegen auf dem Desktop einige hundert
+  Millisekunden, auf dem Touchgerät die Dauer der Berührung — in der Regel genug, sodass beim
+  Wechsel gar kein Ladezustand mehr erscheint. Verschachtelte Bereiche holen Hülle **und**
+  ersten Reiter. Im Datensparmodus des Geräts (`navigator.connection.saveData`) unterbleibt es;
+  Fehler bleiben folgenlos, der Klick lädt dann regulär.
+- **Ladezustand als Gerüst, nicht als Textzeile** (`components/layout/PageSkeleton.tsx`): eine
+  Kopfzeile in der Höhe des `PageHeader` und ein Block in Kartenform, damit beim Erscheinen des
+  Inhalts nichts springt. `AuthPageSkeleton` ist das Gegenstück für die Seiten außerhalb der
+  Hülle. Statistik und Einstellungen haben eine eigene Suspense-Grenze um ihren Outlet: Beim
+  Reiterwechsel bleiben Kopfzeile und Reiter stehen, nur der Inhalt darunter wartet.
+
+## 7. Umgebungen, Konfiguration, Migrationen
+
+| Umgebung | Zweck | Datenbank |
+|---|---|---|
+| Lokal | Entwicklung + Integrationstests | Supabase CLI (Docker), Seed-Daten |
+| CI | Lint, Unit, Integration (RLS!), E2E | Ephemere lokale Supabase-Instanz |
+| Produktion | Echte Nutzung | Verwaltetes Supabase-Projekt |
+
+- Konfiguration ausschließlich über Vite-Env-Variablen: `VITE_SUPABASE_URL`,
+  `VITE_SUPABASE_ANON_KEY` (Publishable Key — durch RLS geschützt, kein Geheimnis).
+  Service-Role-Keys existieren nur in CI-Secrets/Supabase-Dashboard, niemals im Client oder
+  Repo (SECURITY_MODEL.md §5).
+- Schemaänderungen **nur** über nummerierte SQL-Migrationen (`supabase migration new …`);
+  keine Dashboard-Änderungen an Produktionsschemata. Jede Migration ist idempotent prüfbar
+  und läuft in CI gegen eine leere und eine befüllte Datenbank (TEST_STRATEGY.md §5).
+- Deployment des Frontends: statisches Hosting mit korrekten CSP-Headern (SECURITY_MODEL.md §7).
+
+---
+
+## 8. Fehlerbehandlung und Logging
+
+- Fehlerklassen: Validierungsfehler (erwartbar, feldbezogen angezeigt), Konfliktfehler
+  (Duplikat/Constraint — mit Handlungsoption angezeigt), Netzwerkfehler (Retry durch TanStack
+  Query mit Backoff), unerwartete Fehler (Error Boundary mit Wiederherstellungsoption).
+- Logging nur lokal in der Konsole (Entwicklung) bzw. minimal strukturiert im Client
+  (Produktion, ohne Beträge/Personendaten). **Kein externer Error-Tracking-Dienst**
+  (Grundsatz 15). Fehlermeldungen enthalten nie rohe SQL- oder Tokendetails.
+
+---
+
+### 4.6 Datenmenge im Client (Schwelle)
+
+Die gesamte aktive Historie liegt im Client (§4.4/§4.5). Ab **10.000 Zahlungen** ist zuerst die
+doppelte Abfrage zu vereinheitlichen, danach zu aggregieren, erst zuletzt serverseitig zu
+filtern — Begründung, Abwägung und Auslöser in DECISIONS.md ADR-001.
+
+## 9. Architektur-Risiken und Gegenmaßnahmen
+
+| Risiko | Gegenmaßnahme |
+|---|---|
+| Clientseitige Statistik weicht von SQL-View ab | Eine Codequelle für Drill-down + Kennzahl; Abgleichtests View ↔ lib/statistics |
+| Vollständige Tabelle wird still bei 1.000 Zeilen gekappt | Jede solche Abfrage über `lib/supabase/fetchAllPages`; Sicherung/Export prüfen zusätzlich gegen `count` (ADR-002) |
+| SheetJS-Version veraltet (npm-Falle) | `exceljs` statt `xlsx`; gepinnte Version, `npm audit` in CI (K-4) |
+| Große Importe blockieren UI | Größen-/Formatprüfung vor dem Einlesen (25 MB, `lib/import/fileLimits.ts`); Web Worker als Option bei Bedarf |
+| RLS-Lücke durch neue Tabelle | Migration-Checkliste: keine Tabelle ohne RLS + Policies + Tests (SECURITY_MODEL.md §4) |
+| iOS-PWA-Eigenheiten (Speicherräumung, Datei-Import) | Nur-Cache-Prinzip; Dateiimport über `<input type=file>` (Dateien-App), kein reines Drag-and-drop |
+| Supabase-Ausfall/Vendor-Abhängigkeit | Regelmäßige JSON-Vollbackups (Kernfunktion); Schema als portables SQL; kein Supabase-proprietäres Feature außer Auth/RLS |
+
+## Phase 6 – Cache-Invalidierung & Query-Struktur
+
+Alle Zahlungsabfragen liegen im Namespace `["payments"]` (Historie
+`["payments","list"]` — stornierte eingeschlossen und von Liste,
+Datenqualitätsansicht, Dashboard, Statistik und Zielen geteilt; der Statusfilter
+der Liste wirkt clientseitig, die Auswertungen nehmen nur aktive Zeilen —, Detail
+`["payments","detail",id]`). Die Liste lädt keine Unternehmensnamen mit; sie stammen aus
+`["securities"]`. Jede
+datenverändernde Mutation (Anlegen, Bearbeiten, Storno, Reaktivierung,
+dauerhaftes Löschen) ruft `invalidateAll` und invalidiert damit
+`["payments"]` **und** `["duplicate-dismissals"]` — Liste, Detail, Dashboard,
+Statistik und Datenqualitätsansicht aktualisieren gemeinsam. Nach einer Löschung
+zeigt die Detailroute einen kontrollierten Nicht-gefunden-Zustand (kein
+veralteter Cache). Suche/Filter/Sortierung der Liste arbeiten clientseitig auf
+der einmal geladenen, decimal-sicheren Historie (D-6-6), konsistent mit der
+Lade-/Aggregationsstrategie aus Phase 5A.
+
+Der Cache gehört genau einem Nutzer: `SessionProvider` leert ihn, sobald sich
+die Nutzerkennung der Sitzung ändert — Abmelden, abgelaufene Sitzung oder ein
+anderes Konto (SECURITY_MODEL.md §2). Ein erneuertes Token desselben Nutzers
+lässt ihn unberührt.
+
+---
+
+## Phase 7 — Ziele und Fortschritt
+
+**Goal-Domain-Schicht (`src/lib/goals`).** Reine, typisierte, decimal-sichere
+Domain-Schicht (`period.ts`, `progress.ts`, `types.ts`), die auf der
+Analytics-Schicht aufbaut und die **einzige** Quelle aller Zielkennzahlen ist —
+keine Berechnung in Komponenten. Sie bestimmt Zielzeitraum, Ist-Summe,
+Zielerreichung, Rest-/Überschreitungsbetrag, Zielstatus und Zeitfortschritt und
+sortiert Ziele stabil (CALCULATION_RULES.md §13).
+
+**Feature-Schicht (`src/features/goals`).** `hooks.ts` (React-Query-Anbindung,
+Query-Key `["goals"]`), `schemas.ts` (Zod-Formular), `format.ts` (Anzeige/
+Beschriftungen), `GoalsPage`, `GoalDetailPage`, `GoalCard`, `GoalProgressBar`,
+`GoalFormDialog`, `DeleteGoalDialog`. Dashboard-Integration über den Kennzahlkopf
+`src/features/dashboard/DashboardHero.tsx` (Jahresziel als `GoalProgressBar`, Monatsziel im
+Feld des Monats).
+
+**Repository (`src/lib/supabase/repositories/goals.ts`).** CRUD gegen die
+RLS-geschützte `goals`-Tabelle, mapt `numeric` einmal in `Money`, wirft
+`GoalDuplicateError` (23505) und `GoalConflictError` (Optimistic Concurrency über
+`updated_at`, wie bei Zahlungen).
+
+**Query-Strategie.** Der Zielfortschritt leitet sich aus derselben aktiven
+Dividendenhistorie ab, die das Dashboard bereits lädt (`["payments","list"]`,
+geteilter Cache, keine zusätzliche Roh-Abfrage je Ziel, kein N+1). Es gibt
+bewusst keine neue SECURITY-DEFINER-Funktion oder materialisierte View für die
+aktuelle Datenmenge; die Berechnung ist rein und clientseitig auf der bereits
+übertragenen Historie.
+
+**Cache-Invalidierung.** Zielmutationen invalidieren `["goals"]` (Übersicht,
+Detail, Kennzahlkopf des Dashboards). Zahlungs-/Import-Mutationen invalidieren
+`["payments"]` und aktualisieren dadurch automatisch alle abgeleiteten
+Zielstände. Zentrale Query-Keys, keine verstreuten Schlüssel.
+
+**Dashboard-Interaktion (Auftrag §26).** Einzeljahr → Jahresziel dieses Jahres
+als Balken im Kennzahlkopf (sonst ein Link „Jahresziel für 2026 festlegen");
+„Alle Jahre" → kein Ziel; das Monatsziel des laufenden Monats steht nur im
+laufenden Jahr im Feld des Monats (CALCULATION_RULES.md §9.6). Kein Ziel steht
+neben einer Zahl, die einen anderen Zeitraum meint.
