@@ -52,7 +52,7 @@ export function PortfolioSummary({
             tone={gain.isNegative() ? "negative" : gain.isZero() ? "neutral" : "positive"}
             title="Kursgewinn gegenüber dem Einstand"
           >
-            {`${gain.isPositive() ? "+" : ""}${formatPercent(gainPercent, 1)}`}
+            {formatPercent(gainPercent.abs(), 1)}
           </TrendPill>
         ) : undefined
       }

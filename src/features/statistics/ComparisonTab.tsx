@@ -5,6 +5,7 @@ import { ListGroup, ListTile } from "@/components/ui/list";
 import { Section } from "@/components/ui/section";
 import { FilterBar } from "@/components/ui/filter-bar";
 import { Select } from "@/components/ui/select";
+import { TrendTriangle } from "@/components/ui/trend-triangle";
 import { KpiHero } from "@/components/domain/KpiHero";
 import { AmountText } from "@/components/money/AmountText";
 import { MD_BREAKPOINT_QUERY, useMediaQuery } from "@/lib/hooks/useMediaQuery";
@@ -23,6 +24,7 @@ import {
   type StatisticsFilter,
 } from "@/lib/statistics";
 import { useToday } from "@/lib/hooks/useToday";
+import { cn } from "@/lib/utils/cn";
 import { formatCalendarDate } from "@/lib/utils/formatDate";
 import { useStatisticsContext } from "./context";
 import type { EntityInfo } from "@/features/dashboard/format";
@@ -32,6 +34,7 @@ import {
   formatPayments,
   splitComparison,
   statisticsDrillHref,
+  withoutSign,
 } from "./format";
 import {
   applyComparisonSelection,
@@ -286,7 +289,17 @@ export function ComparisonTab() {
           stand sie zuletzt und allein in einer eigenen Reihe. */}
       <KpiHero
         label="Veränderung"
-        value={<span className={changeTone}>{change.value}</span>}
+        value={
+          <span className={cn("inline-flex items-baseline gap-2", changeTone)}>
+            {change.tone !== "neutral" && (
+              <TrendTriangle
+                direction={change.tone === "negative" ? "down" : "up"}
+                className="size-[0.4em]"
+              />
+            )}
+            {change.tone === "neutral" ? change.value : withoutSign(change.value)}
+          </span>
+        }
         caption={change.caption}
         stats={[
           {
