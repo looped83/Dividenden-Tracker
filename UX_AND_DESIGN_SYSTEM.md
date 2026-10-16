@@ -29,10 +29,9 @@ Umsetzung als CSS-Variablen (Tailwind-4-`@theme`), Hell- und Dunkelmodus über
 | `--muted-foreground` | Sekundärtext, Labels | Grau ≥ 4,5:1 Kontrast | dito |
 | `--primary` | Aktionen: Erfassen, Schaltflächen, Links | leuchtendes Orange `#c84f00` (4,6:1 auf Weiß) | gesättigtes Orange `#fd7920`, dunkle Schrift darauf (7,1:1) |
 | `--accent` | Hover, aktive Navigation (mit halbfetter Schrift) | neutrales Hellgrau | neutrale Stufe über der Karte |
-| `--positive` | Zuwächse, Eingänge | gedecktes Grün | angepasst, Kontrast AA |
+| `--positive` | Zuwächse, Dividenden | gedecktes Grün | angepasst, Kontrast AA |
 | `--negative` | Korrekturen, Rückgänge, Fehler | gedecktes Rot | angepasst |
 | `--warning` | Warnungen, mögliche Duplikate | Gelb (seit 1.11.0, zuvor Bernstein — zu nah am Orange) | angepasst |
-| `--chart-1…6` | Diagrammserien | sechs Farbtöne in fester Reihenfolge (siehe unten) | eigene Dunkel-Stufen, keine Umkehrung |
 
 Regeln: Bedeutung nie durch Farbe allein (immer Text/Symbol dazu, z. B. Vorzeichen);
 alle Text-/Hintergrund-Paare ≥ WCAG AA (4,5:1; große Zahlen 3:1).
@@ -47,28 +46,11 @@ die Hauptaussage der Seite und trägt die Markenfarbe, das Vorjahr bleibt grau. 
 Sekundärtext 6,0:1 auf der Seite und 5,1:1 auf dem Akzent, `--input` ≥ 3,1:1 gegen jede
 Nachbarfläche.
 
-#### 1a Diagrammpalette (kategorial)
+#### 1a Diagrammfarben
 
-Die Reihenfolge ist verbindlich: Slot 1 zuerst, dann 2, dann 3 — **nie** durchrotieren,
-nie eine siebte Farbe erzeugen. Braucht eine Auswertung mehr als sechs Reihen, wird
-zusammengefasst („Sonstige") oder in kleine Einzeldiagramme aufgeteilt.
-
-| Slot | Farbton | Hell | Dunkel |
-|---|---|---|---|
-| 1 | Blau | `oklch(0.52 0.15 255)` `#1f68bc` | `oklch(0.60 0.15 255)` `#3a81d7` |
-| 2 | Orange | `oklch(0.62 0.14 60)` `#c26e12` | `oklch(0.66 0.14 60)` `#cf7b26` |
-| 3 | Türkis | `oklch(0.65 0.105 185)` `#28a497` | `oklch(0.66 0.107 185)` `#29a79b` |
-| 4 | Magenta | `oklch(0.52 0.17 345)` `#a8347f` | `oklch(0.55 0.17 345)` `#b23e88` |
-| 5 | Grün | `oklch(0.60 0.14 150)` `#319751` | `oklch(0.64 0.14 150)` `#40a35c` |
-| 6 | Violett | `oklch(0.46 0.16 300)` `#673ba2` | `oklch(0.55 0.17 300)` `#8254c4` |
-
-**Gemessen, nicht geschätzt.** Beide Sätze bestehen alle rechnerischen Prüfungen gegen
-die Kartenfläche (`#ffffff` hell, `#121417` dunkel): Helligkeitsband, Chroma-Untergrenze,
-CVD-Abstand benachbarter Slots (schlechtestes Paar ΔE 12,1 hell / 10,3 dunkel bei einer
-Schwelle von 8), Normalsicht-Abstand (20,8 hell / 21,9 dunkel bei einer Schwelle von 15)
-und ≥ 3:1 Kontrast. Die ersten **drei** Slots halten die Schwellen zusätzlich über *alle*
-Paare — Darstellungen ohne feste Nachbarschaft (Streudiagramme, Landkarten) sind damit
-auf drei Reihen begrenzt.
+Eine kategoriale Palette gibt es nicht mehr (seit 1.18.0 entfernt): Kein Diagramm zeigt mehr
+als zwei Reihen. Braucht eines künftig mehr, wird zusammengefasst („Sonstige") oder in
+kleine Einzeldiagramme aufgeteilt, bevor eine Palette zurückkommt.
 
 **Ein- und Zweireihendiagramme sind monochrom** (Kopf der Übersicht seit 1.7.0, alle
 übrigen seit 1.9.0): eine Reihe in Vordergrundfarbe; zwei Reihen (aktuell ↔ Referenz)
@@ -77,14 +59,9 @@ gegen die Seite), die Referenz zusätzlich gestrichelt und benannt (Legende). Fa
 damit auf jeder Seite nur Veränderung; der Helligkeitsabstand trennt stärker als zwei
 Farbtöne gleicher Helligkeit. Dasselbe gilt für Rangbalken, Anteilsbalken, Zielbalken und
 die Tönung der Matrix Jahre × Monate (Vordergrundfarbe mit höchstens 22 % Deckkraft).
-Die kategoriale Palette bleibt Darstellungen mit mehr als zwei Reihen vorbehalten.
 Ausnahme seit 1.11.0/1.12.0: Zeitverläufe des aktuellen Zeitraums — Kopf der Übersicht,
 Statistik › Verlauf (Balken) und der kumulierte Vergleich (Linie) — stehen in der
 Akzentfarbe Orange; Ranglisten und Anteile bleiben in Vordergrundfarbe.
-
-**Der Dunkelsatz ist eigens gewählt, keine Aufhellung des hellen.** Sein Band liegt
-tiefer (L 0,48–0,67 gegenüber 0,43–0,77): Marken oberhalb davon blenden auf dunklem
-Grund und verlieren gleichzeitig Sättigung.
 
 Die Statusfarben (`--positive`, `--negative`, `--warning`) sind reserviert und werden nie
 als Serienfarbe benutzt — auch dann nicht, wenn ein Farbton ähnlich aussieht.
@@ -95,12 +72,12 @@ als Serienfarbe benutzt — auch dann nicht, wenn ein Farbton ähnlich aussieht.
   Apple-Geräten, keine externen Fonts (CSP).
 - **Beträge immer in Tabellenziffern** (`font-variant-numeric: tabular-nums`), rechtsbündig
   in Tabellen; Minuswerte mit echtem Minuszeichen und `--negative`.
-- **Jede angezeigte Zahl in deutscher Schreibweise mit Tausenderpunkt** (1.439 Zahlungen,
+- **Jede angezeigte Zahl in deutscher Schreibweise mit Tausenderpunkt** (1.439 Dividenden,
   1.234,56 €) — Beträge und Prozentwerte über `formatMoney`/`formatPercent`, Anzahlen,
   Seiten- und Zeilenangaben über `formatCountNumber`/`formatCountNoun`
   (`lib/utils/formatNumber.ts`). Ausgenommen sind Jahreszahlen (2026, nicht 2.026).
-- Skala: 12 (Meta) · 14 (Body/Tabellen) · 16 (Formulare mobil, verhindert iOS-Zoom) ·
-  18/20 (Abschnittstitel) · 28/32 (Kennzahlwerte). Zeilenhöhe 1,5 für Fließtext.
+- Skala: 12/13 (Meta) · 14/15 (Body/Tabellen) · 16 (Formulare mobil, verhindert iOS-Zoom) ·
+  19 (Abschnittstitel) · 40, im Kopf der Übersicht ab `sm` 52 (Kennzahlwerte). Zeilenhöhe 1,5 für Fließtext.
 - **Formularfelder unterhalb `sm` zwingend 16 px** (`text-base sm:text-sm` in `Input`,
   `Select`, `Textarea`, `Combobox`). iOS Safari zoomt die Seite, sobald ein Feld mit
   kleinerer Schrift den Fokus bekommt — und nach dem Zoom lässt sie sich seitlich
@@ -123,7 +100,7 @@ als Serienfarbe benutzt — auch dann nicht, wenn ein Farbton ähnlich aussieht.
   Bedienelement daneben — `-my-2` bei `size="sm"` (36 px), `sm:-my-3` bei einem Feld mit
   44 px. Ohne das saß die Überschrift einer Karte mit Schaltfläche 10 px tiefer als die der
   Karte daneben, mit Suchfeld 14 px.
-- Radius 8 px für Eingabefelder, 16 px für Karten und gedämpfte Flächen, **Pillen für alle
+- Radius 6 px für Eingabefelder, 16 px für Karten und gedämpfte Flächen, **Pillen für alle
   Schaltflächen** (seit 1.9.0), für Umschalter, Abzeichen und für Auswahlfelder in
   Filterleisten, Seiten- und Abschnittsköpfen (dieselbe Form wie die Jahresauswahl der
   Übersicht). Schatten nur eine dezente Stufe für schwebende
@@ -135,9 +112,9 @@ als Serienfarbe benutzt — auch dann nicht, wenn ein Farbton ähnlich aussieht.
 
 ## 2. Komponentenbibliothek (shadcn/ui-Basis)
 
-Verwendete Basiskomponenten: Button, Input, Select, Combobox, DatePicker, Dialog, Drawer/Sheet,
-Table, Tabs, Badge, Card, Toast/Sonner, Tooltip, DropdownMenu, Form (RHF-Integration),
-Skeleton, Alert.
+Verwendete Basiskomponenten (`components/ui`): Button, Input, Textarea, Select, Checkbox,
+Label, Combobox, Dialog, Disclosure, Table, Badge, Card, Toast, Skeleton, Alert. Formulare
+binden React Hook Form direkt an, ohne eigene Form-Hülle.
 
 Die **Combobox** klappt ihre Vorschlagsliste nur auf ausdrückliche Absicht auf: Antippen,
 Tippen, Pfeil-nach-unten. Der bloße Fokus genügt nicht — als erstes Feld eines Formulars
@@ -149,24 +126,21 @@ Eigene zusammengesetzte Komponenten (fachlich):
 | Komponente | Zweck |
 |---|---|
 | `AmountText` | Betragsdarstellung: tabular-nums, Währung, Vorzeichen, Farbe (semantisch), niemals Rundung in der Komponente |
-| `KpiHero` / `TrendPill` | **Ein** Kennzahlkopf für alle Bereiche (`components/domain/KpiHero.tsx`): **eine** Hauptzahl groß (32 px), daneben optional der Vergleich als Marke (`TrendPill`: Pfeil **und** Vorzeichen, Bedeutung im `title` und für Sprachausgaben), darunter eine Unterzeile, optional ein Zusatz (Zielbalken) und eine Leiste mit bis zu drei Nebenkennzahlen, durch Linien getrennt. Er ersetzt das frühere Raster gleich großer Kacheln (`StatCard`/`StatGrid`): Vier bis sechs Kacheln kosteten auf dem Telefon 300–700 px, bevor der Inhalt begann, und ließen offen, welche Zahl zählt. Jede Seite beantwortet zuerst **ihre** Frage — Übersicht: Dividenden des Zeitraums; Kalender: nächste 30 Tage; Depot: Depotwert; Statistik: Gesamtsumme; Vergleich: Veränderung; Entwicklung: erwartet p. a.; Assetseite: erhalten insgesamt. Ein Drill-down macht die **ganze Fläche** zur Tippfläche (Link auf dem Wert, per `::after` gedehnt; für die Hauptzahl der obere Teil, für jede Nebenkennzahl ihr Feld) und trägt einen sprechenden Namen (`drillLabel`). Ab 48rem eigener Breite (Container Query, nicht Fensterbreite) stehen Hauptzahl links und Leiste rechts nebeneinander (5:7), darunter untereinander. Ladegerüst in derselben Form: `KpiHeroSkeleton` |
-| `ListGroup` / `ListRow` / `ListItemBody` / `ListSection` | **Eine Listenform** für Einträge (`components/ui/list.tsx`): Zeilen mit Trennlinien statt einzelner Karten, seit 1.9.0 überall ohne Rahmen (die frühere Fassung `inset` ist die einzige). Zeile 1 der Name (seit 1.11.0 **eine** Zeile, lange Namen laufen am Ende aus — `truncate-fade`; Abzeichen wie „Storniert" stehen deshalb in Zeile 2), Zeile 2 Angaben links und Wert rechts; `asChild` macht die ganze Zeile zur Tippfläche. `ListSection` gruppiert (Monat) mit Kennzahl im Kopf **Datenlisten ohne Pfeil am Rand und ohne Kalendersymbol vor dem Datum** (Eingänge, Termine, Assets, Statistik, Datenqualität): Beide standen in jeder Zeile, sagten nichts, was Tippfläche und Inhalt nicht schon sagen, und nahmen dem Depot die Breite („Trade Repub…"). `chevron` bleibt einzelnen Navigationszeilen („Gesamt seit März 2019") vorbehalten |
+| `KpiHero` / `TrendPill` | **Ein** Kennzahlkopf für alle Bereiche (`components/domain/KpiHero.tsx`): **eine** Hauptzahl groß (32 px), daneben optional der Vergleich als Marke (`TrendPill`: Pfeil **und** Vorzeichen, Bedeutung im `title` und für Sprachausgaben), darunter eine Unterzeile, optional ein Zusatz (Zielbalken) und eine Leiste mit bis zu drei Nebenkennzahlen (`KpiStats`, auch einzeln im Kopf der Übersicht). Er ersetzt das frühere Raster gleich großer Kacheln (`StatCard`/`StatGrid`): Vier bis sechs Kacheln kosteten auf dem Telefon 300–700 px, bevor der Inhalt begann, und ließen offen, welche Zahl zählt. Jede Seite beantwortet zuerst **ihre** Frage — Übersicht: Dividenden des Zeitraums; Kalender: nächste 30 Tage; Depot: Depotwert; Statistik: Gesamtsumme; Vergleich: Veränderung; Entwicklung: erwartet p. a.; Assetseite: erhalten insgesamt. Ein Drill-down macht die **ganze Fläche** zur Tippfläche (Link auf dem Wert, per `::after` gedehnt; für die Hauptzahl der obere Teil, für jede Nebenkennzahl ihr Feld) und trägt einen sprechenden Namen (`drillLabel`). Ab 48rem eigener Breite (Container Query, nicht Fensterbreite) stehen Hauptzahl links und Leiste rechts nebeneinander (5:7), darunter untereinander. Ladegerüst in derselben Form: `KpiHeroSkeleton` |
+| `ListGroup` / `ListRow` / `ListItemBody` / `ListSection` | **Eine Listenform** für Einträge (`components/ui/list.tsx`): Zeilen mit Trennlinien statt einzelner Karten, seit 1.9.0 überall ohne Rahmen (die frühere Fassung `inset` ist die einzige). Zeile 1 der Name (seit 1.11.0 **eine** Zeile, lange Namen laufen am Ende aus — `truncate-fade`; Abzeichen wie „Storniert" stehen deshalb in Zeile 2), Zeile 2 Angaben links und Wert rechts; `asChild` macht die ganze Zeile zur Tippfläche. `ListSection` gruppiert (Monat) mit Kennzahl im Kopf **Datenlisten ohne Pfeil am Rand und ohne Kalendersymbol vor dem Datum** (Dividenden, Termine, Assets, Statistik, Datenqualität): Beide standen in jeder Zeile, sagten nichts, was Tippfläche und Inhalt nicht schon sagen, und nahmen dem Depot die Breite („Trade Repub…"). `chevron` bleibt einzelnen Navigationszeilen („Gesamt seit März 2019") vorbehalten |
 | `Section` / `SectionLink` | Abschnitt **ohne Kartenrahmen** (`components/ui/section.tsx`, seit 1.7.0): Überschrift 19 px, rechts höchstens eine Aktion — ein Textlink in der Akzentfarbe mit Pfeil (`SectionLink`, „Alle", „Kalender") oder ein Umschalter —, darunter optional eine Zeile Beschreibung. Abschnitte trennen sich durch Abstand (40 px, ab `lg` 48 px) und Überschrift, nicht durch Rahmen. **Wann Abschnitt, wann Karte:** Lese-Seiten gliedern mit Abschnitten (Übersicht, Statistik, Depot-Entwicklung, Assetseite, Ergebnisse des Zeitraumvergleichs). Seit 1.9.0 gliedern auch Einstellungen, Zeitraumvergleich und Detailseiten mit Abschnitten; Karten mit Rahmen bleiben Formularen in Dialogen, dem Import-Assistenten und den Dubletten-Paaren vorbehalten, gleichartige Kacheln (Ziele, „Mehr") stehen auf gedämpfter Fläche (siehe „Eine Linie für alle Seiten") |
-| `SegmentedControl` | Umschalter zwischen wenigen Zuständen (Optionsgruppe). `variant="pill"` ist die leise Fassung für Abschnittsköpfe (Diagrammsicht, Assets/Depots): gedämpfte Fläche, 32 px hoch, Tippfläche per Pseudo-Element 44 px |
-| `PaymentListItem` | Ein Dividendeneingang als Zeile — dieselbe in Dividendenliste, Übersicht und Assetseite und seit 1.11.0 in der Form eines Kalendertermins: links das Datumsfeld (`ListDateTile`, Tag und Monat), daneben Name, darunter Wochentag · Depot und rechts der Betrag (Depot wird gekürzt, nie umbrochen). Ohne Monatsgruppen steht statt des Wochentags das Jahr; Sprachausgaben hören das vollständige Datum. Auf der Assetseite ist das Depot der Titel |
-| `PaymentTable` / Liste | Tabelle ab `md` (Aktionen je Zeile) bzw. `PaymentListItem`-Liste auf dem Telefon, nach Datum sortiert nach Monat gruppiert mit Monatssumme im Kopf; darüber Anzahl und Summe der Auswahl; „weitere laden" statt Blättern (die geladene Menge steht in der Adresse, der Weg zurück findet sie wieder) |
-| `DetailHeader` | **Ein** Kopf für Zahlung, Asset und Ziel: Rückweg links und Symbolaktionen rechts in einer Zeile, darunter Titel samt Zustand (nur der Sonderfall), Zusatzzeile und — wo es eine gibt — die Kennzahl (Betrag der Zahlung). Bearbeiten, Stornieren/Archivieren, Löschen stehen hier und nicht in den Listen: Eine Zeile ist **eine** Tippfläche |
-| `SegmentedControl` | Umschalter zwischen wenigen Zuständen (Erscheinungsbild, Kalenderansicht, Verlauf nach Jahren/Monaten) — immer Symbol **und** Text, als Optionsgruppe (`radiogroup`); auf dem Telefon in voller Breite |
-| `StatTable` | Statistiktabelle ab `md`; auf dem Telefon eine Liste (Name und Kennzahl oben, weitere Spalten beschriftet darunter, Sortierung als `FilterSort`). Nebenkennzahlen (`listHidden`) entfallen dort Ranglisten (Unternehmen, Depotkonten, Entwicklung je Asset) nutzen auf dem Telefon die **kompakte Zeile** (`listSummary`): Name und Kennzahl, optional ein Anteilsbalken mit Prozent am Ende, darunter **eine** Zusatzzeile („31 Zahlungen · Ø 56,29 € · erw. 315,58 € p. a."). Der Name bleibt dort einzeilig, damit die Balken eine Treppe bilden; die Rangbalken-Karte darüber entfällt auf dem Telefon, ab `md` bleibt sie neben der Tabelle |
+| `PaymentListItem` | Eine Dividende als Zeile — dieselbe in Dividendenliste, Übersicht und Assetseite und seit 1.11.0 in der Form eines Kalendertermins: links das Datumsfeld (`ListDateTile`, Tag und Monat), daneben Name, darunter Wochentag · Depot und rechts der Betrag (Depot wird gekürzt, nie umbrochen). Ohne Monatsgruppen steht statt des Wochentags das Jahr; Sprachausgaben hören das vollständige Datum. Auf der Assetseite ist das Depot der Titel |
+| Dividendenliste | Tabelle ab `md` (Aktionen je Zeile) bzw. `PaymentListItem`-Liste auf dem Telefon, nach Datum sortiert nach Monat gruppiert mit Monatssumme im Kopf; darüber Anzahl und Summe der Auswahl; „weitere laden" statt Blättern (die geladene Menge steht in der Adresse, der Weg zurück findet sie wieder) |
+| `DetailHeader` | **Ein** Kopf für Dividende, Asset und Ziel: Rückweg links und Symbolaktionen rechts in einer Zeile, darunter Titel samt Zustand (nur der Sonderfall), Zusatzzeile und — wo es eine gibt — die Kennzahl (Betrag der Dividende). Bearbeiten, Stornieren/Archivieren, Löschen stehen hier und nicht in den Listen: Eine Zeile ist **eine** Tippfläche |
+| `SegmentedControl` | Umschalter zwischen wenigen Zuständen (Erscheinungsbild, Kalenderansicht, Verlauf nach Jahren/Monaten) — immer Symbol **und** Text, als Optionsgruppe (`radiogroup`); auf dem Telefon in voller Breite. `variant="pill"` ist die leise Fassung für Abschnittsköpfe (Diagrammsicht, Assets/Depots): gedämpfte Fläche, 32 px hoch, Tippfläche per Pseudo-Element 44 px |
+| `StatTable` | Statistiktabelle ab `md`; auf dem Telefon eine Liste (Name und Kennzahl oben, weitere Spalten beschriftet darunter, Sortierung als `FilterSort`). Nebenkennzahlen (`listHidden`) entfallen dort Ranglisten (Unternehmen, Depotkonten, Entwicklung je Asset) nutzen auf dem Telefon die **kompakte Zeile** (`listSummary`): Name und Kennzahl, optional ein Anteilsbalken mit Prozent am Ende, darunter **eine** Zusatzzeile („31 Dividenden · Ø 56,29 € · erw. 315,58 € p. a."). Der Name bleibt dort einzeilig, damit die Balken eine Treppe bilden; die Rangbalken-Karte darüber entfällt auf dem Telefon, ab `md` bleibt sie neben der Tabelle |
 | `FilterBar` / `FilterField` / `FilterSort` / `FilterReset` | **Eine** Filterleiste für alle Bereiche (Dividenden, Depot, Statistik) — dieselben Bausteine, dieselben Abstände. Ab `sm` dauerhaft sichtbar, darunter eine aufklappbare Zeile mit der Zahl wirkender Filter. Regeln unten |
 | `ComparisonBreakdown` | Gegenüberstellung Zeile für Zeile (Monate oder Unternehmen): ab `md` eine Tabelle mit vier Spalten, darunter eine Liste — je Zeile Name und Differenz, darunter beide Zeiträume. Vier Spalten passen bei 390 px nicht nebeneinander, und die Seite soll auf dem Telefon nicht seitlich verschiebbar sein |
 | `EntitySelect` | **Die** Auswahlliste für Unternehmen und Depots — überall dieselbe: neutrale Auswahl („Alle Unternehmen"), darunter die Gruppen „Aktiv" und „Archiviert" (leere Gruppe entfällt), sortiert nach deutschem Alphabet. Archivierte bleiben wählbar, stehen aber nicht zwischen den aktiven. Neue Unternehmens-/Depotauswahlen in Filterleisten verwenden ausschließlich diese Komponente |
 | `ImportWizard` | Schrittleiste, Rohdatenvorschau (Monospace-Grid), Mapping-Zeilen, Bilanzanzeige |
-| `BalanceSummary` | Importbilanz-Block (IMPORT_SPEC.md §8) mit aufklappbaren Kategorien |
 | `AuditTrail` | Änderungsverlauf als vertikale Liste: Zeitpunkt, Aktion, Feld-Diffs (alt → neu) |
-| `EmptyState` | Illustration­sfrei: Icon, ein Satz, primäre Aktion („Ersten Eingang erfassen", „Datei importieren") |
-| `ErrorState` / `WarningBanner` | Fehler-/Warnmuster mit konkreter Ursache und Aktion |
-| `ChartPanel` | Recharts-Wrapper: Titel, Zeitraum, Umschalter Diagramm ↔ Datentabelle (Accessibility), Drill-down bei Klick auf Segment |
+| `EmptyState` | Illustration­sfrei: Icon, ein Satz, primäre Aktion („Erste Dividende erfassen", „Datei importieren") |
+| `ConfirmDialog` / `ConfirmSummary` | **Ein** Bestätigungsdialog für Folgenreiches (Stornieren, Löschen; `components/ui/confirm-dialog.tsx`): Titel als Frage („Dividende stornieren?"), betroffene Daten auf gedämpfter Fläche, ein Satz zur Wirkung, optional Eingaben (Grund), dann „Abbrechen" und die benannte Aktion — nie ein generisches „OK" |
 | `GoalProgress` | Zielfortschritt: Balken, „X von Y (Z %)", Kappung 100 % visuell |
 | `ToastProvider` / `useToast` | Kurze Rückmeldung nach abgeschlossenen Aktionen (Speichern, Storno, Reaktivieren): `role="status"`, `aria-live="polite"`, 4 s sichtbar, von Hand schließbar, über der Bottom-Navigation. Nur Bestätigungen und beiläufige Fehler — alles Entscheidungspflichtige bleibt Dialog oder Feldfehler. **Sichtbar gestaltet (seit 1.13.0):** vollflächig grüne (bzw. bei Fehlern rote) Pille, so breit wie der Text, mit Symbol passend zum Ton (Haken bzw. Ausrufezeichen), kräftigem Schatten und kurzem Einblenden von unten (`motion-safe`, 200 ms). Kein Rahmen, kein Farbstreifen: In Kachel-Optik ging der Toast zwischen den Karten der Seite unter. Eine Rückmeldung, die man übersieht, ist keine — und ein Haken an einer Fehlermeldung ist eine falsche. **Deckend:** Der Toast schwebt über scrollendem Inhalt; ein Alpha-Tint ließ Tabellenzeilen und Diagramme durchscheinen. Inhalt mittig in der Zeile, damit der Text nicht über der 44-px-Schließen-Fläche klebt |
 
@@ -176,7 +150,7 @@ Die Übersicht hat die Form vorgegeben; alle übrigen Seiten folgen ihr, damit k
 anders gebaut wirkt als die nächste:
 
 - **Abschnitte statt Karten.** Auch Einstellungen, Depotkonten, Import, Datensicherung,
-  Zahlungs- und Zieldetail gliedern mit `Section` (40 px Abstand, ab `lg` zwei Spalten wo
+  Dividenden- und Zieldetail gliedern mit `Section` (40 px Abstand, ab `lg` zwei Spalten wo
   es passt). Aktionen im Abschnittskopf sind Textaktionen in der Akzentfarbe — `SectionLink`
   zum Weitergehen, `SectionButton` zum Anlegen oder Aufklappen („Neues Depot",
   „Anzeigen"); eine gefüllte Schaltfläche je Abschnitt war lauter als die Überschrift.
@@ -213,7 +187,7 @@ anders gebaut wirkt als die nächste:
   Kalender heißt im Kopf „Kalender" wie in der Navigation; „Aktualisieren" steht in der
   Zeile mit dem Stand des Abgleichs.
 - **Erfassen** steht nur in der Navigation, nicht zusätzlich im Kopf der Dividendenliste.
-- **Detailkopf**: Der Betrag einer Zahlung steht in der Größe der Hauptzahl (40 px).
+- **Detailkopf**: Der Betrag einer Dividende steht in der Größe der Hauptzahl (40 px).
 
 ### Filterleisten — verbindliche Regeln
 
@@ -249,7 +223,7 @@ ein anderer Platz fürs Zurücksetzen fallen beim Wechsel sofort auf.
 ## 3. Diagramm-Richtlinien
 
 - Balken für Monats-/Jahresreihen (diskrete Zeiträume), Linie für rollierende 12-Monats-Reihen
-  und laufende Jahressummen (Kopf der Übersicht); Donut sparsam für Aufteilungen (max. 6 Segmente + „übrige").
+  und laufende Jahressummen (Kopf der Übersicht); Aufteilungen als Rang- bzw. Anteilsbalken, kein Donut.
 - Ein Diagramm beantwortet eine Frage; keine Doppelachsen, keine 3D, kein Dekor.
 - Tooltip mit exakten Werten (`AmountText`); X-Achsen-Labels de-DE („Jan", „Feb", …).
 - Vorjahresvergleich als gepaarte Balken oder dezente Vorjahr-Schattenbalken.
@@ -274,12 +248,10 @@ ein anderer Platz fürs Zurücksetzen fallen beim Wechsel sofort auf.
 
 ### Mac / großer Desktop (≥ 1024 px)
 
-- Dauerhafte Sidebar (240 px) mit den 9 Bereichen; Inhalt max. 1200 px zentriert.
-- Große Datentabellen: Spaltenwahl, Sticky Header, Zeilendichte-Umschalter; Zeilenklick
-  öffnet optionale Detailspalte rechts (Inspector, 380 px) statt Seitenwechsel —
-  effiziente Massenprüfung beim Import/Migration.
-- Drag-and-drop-Import auf die gesamte Import-Seite; sichtbare Filterleiste; Tastaturkürzel:
-  `N` neuer Eingang, `/` Suche, `⌘K` Befehlspalette (Navigation), `Esc` schließt Inspector.
+- Dauerhafte Sidebar (240 px) mit den sieben Bereichen; Inhalt max. 1200 px zentriert.
+- Zeilenklick öffnet die Detailseite; „Neue Dividende" erscheint als Overlay über der
+  aktuellen Seite.
+- Sichtbare Filterleiste; Tastaturkürzel gibt es nicht.
 
 ### iPad (768–1024 px)
 
@@ -291,12 +263,12 @@ ein anderer Platz fürs Zurücksetzen fallen beim Wechsel sofort auf.
 
 ### iPhone (< 768 px)
 
-- Bottom Navigation (5 Slots): Übersicht · Eingänge · **＋ Erfassen** (zentral, als einziger
+- Bottom Navigation (5 Slots): Übersicht · Dividenden · **＋ Erfassen** (zentral, als einziger
   gefüllter Kreis in Orange) · Statistiken · Mehr (Kalender, Depot, Ziele, Einstellungen).
   Erfassen sitzt in der Leiste statt darüber — der herausragende Knopf verdeckte beim Scrollen
-  Inhalt. Die Leiste ist leicht durchscheinend; aktiv ist ein Eintrag in Vordergrundfarbe und
+  Inhalt. Die Leiste ist fast deckend (95 %, ohne Weichzeichner — der kostete auf iOS bei jedem Scrollbild Rechenzeit); aktiv ist ein Eintrag in Vordergrundfarbe und
   halbfett.
-- Listen statt breiter Tabellen: je Zahlung eine Zeile (`PaymentListItem`), nach Monat
+- Listen statt breiter Tabellen: je Dividende eine Zeile (`PaymentListItem`), nach Monat
   gruppiert mit Monatssumme; „weitere laden" statt Blättern. Tabellen der Statistik werden zu
   Listen (`StatTable`), die Matrix Jahre × Monate steht gedreht (Monate als Zeilen).
 - Dialoge mittig mit 16 px Rand (seit 1.14.0, zuvor Sheet am unteren Rand): Eine aufgehende
@@ -322,13 +294,13 @@ ein anderer Platz fürs Zurücksetzen fallen beim Wechsel sofort auf.
 
 | Zustand | Muster |
 |---|---|
-| Leer (neues Konto) | Onboarding-EmptyState: „Eingang erfassen" oder „Aus Numbers importieren" (Verweis Migration) |
+| Leer (neues Konto) | Onboarding-EmptyState: „Dividende erfassen" oder „Aus Numbers importieren" (Verweis Migration) |
 | Laden | Skeletons in Karten-/Tabellenform; keine Spinner-Vollflächen und **keine Textzeile „Wird geladen …"**. Bausteine: `Skeleton` (Fläche, schaltet bei `prefers-reduced-motion` das Pulsieren ab), `SkeletonRows` (Listen und Tabellen), `PageSkeleton` (ganze Seite). Auch der Bereichswechsel: `PageSkeleton` statt einer Textzeile, Kopfzeilenhöhe vorweggenommen, damit nichts springt. Beim Reiterwechsel bleiben Kopfzeile und Reiter stehen (`header={false}`). Navigationspunkte laden ihren Bereich schon beim Zeigen vor, sodass der Zustand meist gar nicht erscheint (ARCHITECTURE.md §6.1) |
-| Fehler | ErrorState mit Ursache + Aktion („Erneut versuchen"); Formularfehler feldnah + Zusammenfassung oben |
+| Fehler | `Alert` mit Ursache + Aktion („Erneut versuchen"); Formularfehler feldnah + Zusammenfassung oben |
 | Offline | Persistenter, dezenter Banner; Schreibaktionen deaktiviert mit Begründung |
-| Warnung (Duplikate, Invariante) | WarningBanner bernstein, niemals blockierend ohne Erklärung, immer mit Detail-Link |
-| Destruktiv-nahe Aktionen (Storno, Rollback, Voll-Restore) | Dialog mit Konsequenzbeschreibung in Zahlen („1.219 Eingänge werden archiviert") + explizite Bestätigung; bei Rollback/Restore zusätzlich Texteingabe „RÜCKGÄNGIG" ab > 100 betroffenen Datensätzen |
-| Erfolg | Toast mit Kernzahl („Import abgeschlossen: 1.219 Eingänge") + Link zum Bericht |
+| Warnung (Duplikate, Invariante) | `Alert` in Gelb, niemals blockierend ohne Erklärung, immer mit Detail-Link |
+| Destruktiv-nahe Aktionen (Storno, Rollback, Voll-Restore) | Dialog mit Konsequenzbeschreibung in Zahlen („1.219 Dividenden werden archiviert"), über `ConfirmDialog` + explizite Bestätigung; bei Rollback/Restore zusätzlich Texteingabe „RÜCKGÄNGIG" ab > 100 betroffenen Datensätzen |
+| Erfolg | Toast mit Kernzahl („Import abgeschlossen: 1.219 Dividenden") + Link zum Bericht |
 
 ## 6. Formulare
 
@@ -380,9 +352,9 @@ maximaler Kontrast auf Schwarz lässt Schrift auf OLED ausfransen.
 
 **Aufbau (von oben):** Seitenüberschrift mit Jahres-Pille → Kopf (`DashboardHero`: Hauptzahl,
 Veränderung, Jahresziel, Diagramm, Kennzahlen) → „Demnächst" (nur laufendes Jahr und „Alle
-Jahre") → „Verteilung" (Assets/Depots umschaltbar) → letzte Eingänge → Summe seit Beginn. Alle
+Jahre") → „Verteilung" (Assets/Depots umschaltbar) → letzte Dividenden → Summe seit Beginn. Alle
 Abschnitte ohne Kartenrahmen (`Section`). **Ab `lg` zwei Spalten:** links Kopf und letzte
-Eingänge, rechts (352 px) Demnächst, Verteilung, Summe. Ruhig, datenorientiert; keine
+Dividenden, rechts (352 px) Demnächst, Verteilung, Summe. Ruhig, datenorientiert; keine
 dekorativen Visualisierungen, keine 3D-Diagramme, keine dauerhafte grün/rot-Bewertung
 saisonaler Schwankungen.
 
@@ -395,7 +367,7 @@ laufenden Jahr die **Prognose** (gestrichelte Verlängerung des Balkens, CALCULA
 festlegen". Dann das Diagramm und eine gedämpfte Fläche mit drei Kennzahlen ohne Trennlinien:
 laufender Monat (mit Monatsziel „17 % vom Ziel" — die Kachel trägt den Monat als Überschrift,
 „vom Monatsziel" brach um —, sonst Vorjahresvergleich), Ø pro Monat, bester Monat; außerhalb des
-laufenden Jahres statt des Monats die Zahl der Zahlungen samt Breite.
+laufenden Jahres statt des Monats die Zahl der Dividenden samt Breite.
 
 **Diagramm im Kopf:** ein eigenes SVG (`HeroChart`) statt Recharts — es steht im ersten
 Bildschirm, die Übersicht lädt Recharts damit gar nicht mehr. Ein Jahr hat zwei Sichten
@@ -406,8 +378,8 @@ wurden auf dem Telefon zu Strichen), beschriftet ist jedes Jahr, für das Platz 
 laufende immer. **Wischen statt Tooltip:**
 Fahren oder Wischen wählt einen Punkt, der Kopf zeigt dann dessen Stand samt Vergleich („Dividenden bis September 2026",
 „+3.059,15 € ggü. 2025" — kurz, damit die Zeile auf dem Telefon nicht umbricht), und der
-Betrag führt zu diesen Zahlungen. Mit der Maus endet die Auswahl beim Verlassen und ein Klick
-öffnet die Zahlungen; mit dem Finger bleibt sie stehen, bis man den Punkt erneut antippt.
+Betrag führt zu diesen Dividenden. Mit der Maus endet die Auswahl beim Verlassen und ein Klick
+öffnet die Dividenden; mit dem Finger bleibt sie stehen, bis man den Punkt erneut antippt.
 Eine Legende steht seit 1.12.0 nicht mehr daneben: Die Vorjahreslinie trägt ihr Jahr am Ende,
 der Kopf nennt beim Wischen beide Jahre.
 Tastatur: Das Diagramm ist ein Schieberegler (`role="slider"`, Pfeiltasten, Pos1/Ende, Enter
@@ -421,12 +393,12 @@ beantworten dieselbe Frage, früher standen sie als zwei Karten nebeneinander. M
 Depot entfällt der Umschalter, der Abschnitt heißt „Top-Assets".
 
 **Demnächst:** die nächsten drei angekündigten Zahltage aus dem Kalender und die erwartete Summe
-der nächsten 30 Tage; „erwartet", weil es Ankündigungen sind, keine Eingänge. Ohne kommende
+der nächsten 30 Tage; „erwartet", weil es Ankündigungen sind, keine erhaltenen Dividenden. Ohne kommende
 Termine entfällt der Abschnitt. Das Datumsfeld ist grau (`--muted`), nicht orange: Orange
 markiert Aktionen, der Weg zum Kalender ist der Link „Kalender" im Abschnittskopf.
 
 **Responsive:** Kopf über die volle Breite (ab `lg` die linke Spalte); die Gesamtsumme aller
-Jahre steht als eine Zeile „Gesamt seit März 2019 · 412 Zahlungen" auf gedämpfter Fläche am
+Jahre steht als eine Zeile „Gesamt seit März 2019 · 412 Dividenden" auf gedämpfter Fläche am
 Ende (führt zur Statistik), nicht zusätzlich als Kachel. Bei „Alle Jahre" entfällt
 die Zeile, weil die Kennzahlen oben dann dieselbe Summe nennen. Früher stand dort eine Karte mit
 sechs Eckdaten, die fast alle schon auf der Seite oder in der Statistik standen. Das Diagramm
@@ -480,7 +452,7 @@ nur über Farbe (Text-Badges), tastaturbedienbare Auswahl.
 **Zielseite (`/ziele`).** Überschrift, primäre Aktion „Ziel anlegen", darunter
 Reiter für aktive, bevorstehende und beendete Ziele als Zielkarten (Grid,
 1/2/3 Spalten je Breite). Detailansicht `/ziele/:id` mit Drill-down zu den
-Eingängen des Zeitraums.
+Dividenden des Zeitraums.
 
 **Reihenfolge je Reiter.** Jeder Reiter beantwortet eine andere Frage und hat
 deshalb seine eigene Ordnung: *Aktiv* das Jahresziel als Rahmen zuerst, darunter
@@ -494,7 +466,7 @@ unterschiedlich aus. Die Übersicht zeigt Ziele seit dem Kennzahlkopf nicht mehr
 als Karte, sondern dort, wo die Summe steht: das Jahresziel als Balken unter der
 Hauptzahl (mit derselben `GoalProgressBar`), das Monatsziel im Feld des Monats. Die ganze Karte führt zur Detailseite;
 „Bearbeiten" und „Löschen" stehen dort im Kopf (`DetailHeader`) — wie bei
-Eingängen und Assets.
+Dividenden und Assets.
 
 **Zeichen und Zielart.** Jahres- und Monatsziel tragen dieselbe dunkle
 36-px-Symbolkachel (`GoalMark`, `CalendarRange`). Bis 1.10 trug das Monatsziel ein
