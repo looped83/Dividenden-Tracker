@@ -252,7 +252,8 @@ Passen zwei eigene Unternehmen auf denselben Schlüssel, bleibt der Name der Que
 eine Ähnlichkeitsstufe wie im Import gibt es hier nicht — dort bestätigt ein Mensch den
 Vorschlag, hier widerspräche niemand. Angeglichen wird **nur die Anzeige**: Der Termin wird
 keinem Unternehmen zugeordnet, nichts wird gespeichert, `company_name` bleibt der Wert des
-Feeds und steht in der Detailansicht als „Unternehmen laut Quelle", sobald er abweicht.
+Feeds. Die Detailansicht nennt ihn seit 1.13.0 nicht mehr gesondert — er wiederholte nur den
+Titel; nachvollziehbar bleibt er über „DivvyDiary öffnen".
 Dieselbe Angleichung nutzt „Demnächst" auf der Übersicht (`useResolvedCalendarEvents`).
 
 Die Abschnittsüberschriften der Liste („Heute", „September 2026") sind gesetzt wie die

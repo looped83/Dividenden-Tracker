@@ -9,14 +9,8 @@ import {
 } from "@/components/ui/dialog";
 import { AmountText } from "@/components/money/AmountText";
 import { Badge } from "@/components/ui/badge";
-import {
-  eventTime,
-  eventTitle,
-  eventTypeLabel,
-  longDate,
-  sourceCompanyName,
-} from "@/lib/calendar/format";
-import { formatCalendarDate } from "@/lib/utils/formatDate";
+import { Button } from "@/components/ui/button";
+import { eventTime, eventTitle, eventTypeLabel, longDate } from "@/lib/calendar/format";
 import type { CalendarEvent } from "@/lib/calendar/types";
 
 /**
@@ -40,12 +34,6 @@ export function EventDetailDialog({
   returnFocusTo: RefObject<HTMLElement | null>;
   onClose: () => void;
 }) {
-  const time = event ? eventTime(event) : null;
-  // Der Titel zeigt den Namen des eigenen Unternehmens; weicht die Quelle davon
-  // ab, steht ihre Schreibweise hier — sonst waere nicht nachvollziehbar, warum
-  // im Feed etwas anderes steht.
-  const sourceName = event ? sourceCompanyName(event) : null;
-
   return (
     <Dialog
       open={event !== null}
@@ -66,15 +54,24 @@ export function EventDetailDialog({
       >
         {event && (
           <>
+            {/* Termin in einer Zeile unter dem Namen: Art, Datum, Uhrzeit.
+                Zuvor stand das Datum zweimal — im Satz unter dem Titel und als
+                eigene Zeile „Datum". */}
             <DialogHeader>
               <DialogTitle className="pr-8">{eventTitle(event)}</DialogTitle>
               <DialogDescription>
-                Angekündigter {eventTypeLabel(event)} am {formatCalendarDate(event.date)}
+                {[
+                  eventTypeLabel(event),
+                  event.endDate
+                    ? `${longDate(event.date)} bis ${longDate(event.endDate)}`
+                    : longDate(event.date),
+                  eventTime(event),
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
               </DialogDescription>
             </DialogHeader>
 
-            {/* Kein Etikett fuer die Terminart: Die Zeile darueber nennt sie
-                bereits im Satz („Angekündigter Zahltag am 13.08.2026"). */}
             <div className="flex flex-wrap items-center gap-2 empty:hidden">
               {event.eventState === "cancelled" && (
                 <Badge variant="negative">Abgesagt</Badge>
@@ -84,49 +81,41 @@ export function EventDetailDialog({
               ))}
             </div>
 
-            <dl className="grid gap-3 text-sm">
-              {event.expectedAmount && (
-                <Detail term="Erwarteter Betrag">
-                  <AmountText
-                    amount={event.expectedAmount}
-                    className="text-base font-semibold"
-                  />
-                </Detail>
-              )}
-              <Detail term="Datum">
-                {longDate(event.date)}
-                {event.endDate && ` bis ${longDate(event.endDate)}`}
-              </Detail>
-              {time && <Detail term="Uhrzeit">{time}</Detail>}
-              {sourceName && <Detail term="Asset laut Quelle">{sourceName}</Detail>}
+            {/* Der Betrag ist die Hauptsache des Termins und steht gross —
+                „erwartet" sagt, dass er angekuendigt und nicht eingegangen ist. */}
+            {event.expectedAmount && (
+              <div>
+                <p className="text-sm text-muted-foreground">Erwarteter Betrag</p>
+                <AmountText
+                  amount={event.expectedAmount}
+                  className="text-3xl font-semibold tracking-tight"
+                />
+              </div>
+            )}
+
+            {/* Nur, was der Feed zusaetzlich nennt. Die Schreibweise des
+                Assets in der Quelle entfaellt: Sie wiederholte den Titel. */}
+            <dl className="divide-y divide-border text-sm empty:hidden">
               {event.sourcePortfolio && (
-                <Detail term="Depot laut Quelle">{event.sourcePortfolio}</Detail>
+                <Detail term="Depot">{event.sourcePortfolio}</Detail>
               )}
               {event.location && <Detail term="Ort">{event.location}</Detail>}
-              {event.description && (
-                <Detail term="Beschreibung">
-                  <span className="whitespace-pre-line">{event.description}</span>
-                </Detail>
-              )}
-              {event.externalUrl && (
-                <Detail term="Details">
-                  <a
-                    href={event.externalUrl}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                    className="inline-flex min-h-11 items-center gap-1.5 text-primary underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    Bei der Quelle öffnen
-                    <ExternalLink className="size-4" aria-hidden />
-                  </a>
-                </Detail>
-              )}
             </dl>
 
-            <p className="text-xs text-muted-foreground">
-              Angekündigter Termin der Kalenderquelle — der Betrag ist eine Ankündigung,
-              keine erhaltene Zahlung. Ob sie eingegangen ist, steht unter „Dividenden“.
-            </p>
+            {event.description && (
+              <p className="whitespace-pre-line text-sm text-muted-foreground">
+                {event.description}
+              </p>
+            )}
+
+            {event.externalUrl && (
+              <Button variant="outline" className="w-full" asChild>
+                <a href={event.externalUrl} target="_blank" rel="noreferrer noopener">
+                  {sourceLinkLabel(event.externalUrl)}
+                  <ExternalLink aria-hidden />
+                </a>
+              </Button>
+            )}
           </>
         )}
       </DialogContent>
@@ -136,9 +125,19 @@ export function EventDetailDialog({
 
 function Detail({ term, children }: { term: string; children: ReactNode }) {
   return (
-    <div className="grid gap-0.5">
-      <dt className="text-[0.8125rem] text-muted-foreground">{term}</dt>
-      <dd className="min-w-0 break-words text-foreground">{children}</dd>
+    <div className="flex items-baseline justify-between gap-4 py-2.5 first:pt-0 last:pb-0">
+      <dt className="shrink-0 text-muted-foreground">{term}</dt>
+      <dd className="min-w-0 break-words text-right text-foreground">{children}</dd>
     </div>
   );
+}
+
+/** „DivvyDiary öffnen", wenn der Link dorthin führt — sonst neutral. */
+function sourceLinkLabel(url: string): string {
+  try {
+    if (new URL(url).hostname.endsWith("divvydiary.com")) return "DivvyDiary öffnen";
+  } catch {
+    // Kein gueltiger Link: neutral beschriften.
+  }
+  return "Bei der Quelle öffnen";
 }

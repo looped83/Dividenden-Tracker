@@ -322,12 +322,28 @@ export function PaymentForm({
 
         {/* Datum und Betrag sind beide kurz und gehoeren fachlich zusammen —
             nebeneinander spart eine Bildschirmzeile. Unter 360px reicht die
-            halbe Breite dem Datumsfeld nicht: Das Kalendersymbol wird dann
-            abgeschnitten, deshalb dort untereinander. */}
+            halbe Breite dem Datumsfeld nicht, deshalb dort untereinander. */}
         <div className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="payment-date">Zahlungsdatum</Label>
-            <Input id="payment-date" type="date" {...register("payDate")} />
+            {/* Ohne Kalendersymbol: Das ganze Feld oeffnet die Auswahl
+                (`showPicker`), das Symbol war nur Ballast in der halben Breite. */}
+            <Input
+              id="payment-date"
+              type="date"
+              className="[&::-webkit-calendar-picker-indicator]:hidden"
+              onClick={(event) => {
+                // Nur mit der Maus: Auf Touch-Geraeten oeffnet das Antippen die
+                // Auswahl ohnehin selbst.
+                if ((event.nativeEvent as PointerEvent).pointerType !== "mouse") return;
+                try {
+                  event.currentTarget.showPicker();
+                } catch {
+                  // Ohne Unterstuetzung bleibt die Eingabe per Tastatur.
+                }
+              }}
+              {...register("payDate")}
+            />
             {errors.payDate && (
               <p className="text-sm text-negative">{errors.payDate.message}</p>
             )}

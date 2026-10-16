@@ -493,7 +493,7 @@ describe("Erwartete Beträge aus dem Feed", () => {
     const dialog = await screen.findByRole("dialog");
     expect(within(dialog).getByText("Erwarteter Betrag")).toBeInTheDocument();
     expect(within(dialog).getByText("51,37 €")).toBeInTheDocument();
-    expect(within(dialog).getByText("Depot laut Quelle")).toBeInTheDocument();
+    expect(within(dialog).getByText("Depot")).toBeInTheDocument();
     expect(within(dialog).getByText("Trade Republic")).toBeInTheDocument();
   });
 });
@@ -518,7 +518,7 @@ describe("Detailansicht", () => {
     const dialog = await screen.findByRole("dialog");
     expect(within(dialog).getByText("Coca-Cola Co.")).toBeInTheDocument();
     expect(
-      within(dialog).getByText("Angekündigter Zahltag am 05.08.2026"),
+      within(dialog).getByText("Zahltag · Mittwoch, 05.08.2026"),
     ).toBeInTheDocument();
     expect(within(dialog).getByText("Quartalsdividende")).toBeInTheDocument();
     // Ohne Angabe im Feed keine erfundene Zeile.
@@ -585,7 +585,7 @@ describe("Namen der angelegten Unternehmen", () => {
     expect(screen.queryByText("Realty Income Corporation")).not.toBeInTheDocument();
   });
 
-  it("nennt in der Detailansicht weiterhin den Namen der Quelle", async () => {
+  it("nennt in der Detailansicht nur den eigenen Namen, ohne Dopplung", async () => {
     const user = userEvent.setup();
     zustand.securities = [{ id: "s1", name: "Realty Income", archived_at: null }];
     zustand.events = [
@@ -596,9 +596,13 @@ describe("Namen der angelegten Unternehmen", () => {
     await user.click(screen.getByRole("button", { name: /Realty Income,/ }));
 
     const dialog = await screen.findByRole("dialog");
-    // Angeglichen wird die Anzeige, nicht die Quelle: Was im Feed steht, bleibt
-    // nachvollziehbar.
-    expect(within(dialog).getByText("Realty Income Corporation")).toBeInTheDocument();
+    // Die Schreibweise der Quelle wiederholte nur den Titel (seit 1.13.0).
+    expect(
+      within(dialog).getByRole("heading", { name: "Realty Income" }),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).queryByText("Realty Income Corporation"),
+    ).not.toBeInTheDocument();
   });
 
   it("laesst unbekannte Unternehmen unveraendert", () => {

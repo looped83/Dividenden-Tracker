@@ -126,11 +126,9 @@ test("Detailansicht öffnet per Tastatur und schließt mit Escape", async ({ pag
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
   await expect(dialog.getByText("Quartalsdividende")).toBeVisible();
-  // Die Feldnamen im Dialog sind per CSS grossgeschrieben; Playwright liest den
-  // dargestellten Text, deshalb ohne Ruecksicht auf Gross-/Kleinschreibung.
-  await expect(dialog.getByText(/erwarteter betrag/i)).toBeVisible();
+  await expect(dialog.getByText("Erwarteter Betrag")).toBeVisible();
   await expect(dialog.getByText("51,37 €")).toBeVisible();
-  await expect(dialog.getByText("Angekündigter Zahltag am 13.03.2099")).toBeVisible();
+  await expect(dialog.getByText("Zahltag · Freitag, 13.03.2099")).toBeVisible();
   await pruefeAxe(page, "Kalender – Detailansicht");
 
   await page.keyboard.press("Escape");
