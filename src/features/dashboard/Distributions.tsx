@@ -51,6 +51,11 @@ function toItems(
   });
 }
 
+/** Verborgene Sicht: belegt Platz, ist aber weder sichtbar noch erreichbar. */
+function hiddenUnless(visible: boolean) {
+  return visible ? {} : { className: "invisible", "aria-hidden": true, inert: true };
+}
+
 /**
  * „Verteilung" (§9/§10): wer im Zeitraum wie viel beigetragen hat — die fünf
  * stärksten Assets oder die Depots, umschaltbar.
@@ -112,25 +117,35 @@ export function Distribution({
         <p className="py-6 text-sm text-muted-foreground">
           Keine Assets im ausgewählten Zeitraum.
         </p>
-      ) : shown === "assets" ? (
-        <>
-          <RankedBars
-            items={assets}
-            total={total}
-            ariaLabel="Top-Assets nach Nettodividende"
-          />
-          {assetCount > TOP_COMPANIES && (
-            <SectionLink to={statisticsHref("/statistiken/unternehmen")}>
-              Alle {assetCount} Assets
-            </SectionLink>
-          )}
-        </>
       ) : (
-        <RankedBars
-          items={depotItems}
-          total={total}
-          ariaLabel="Nettodividende je Depot"
-        />
+        // Beide Sichten liegen übereinander in derselben Rasterzelle, die
+        // verborgene unsichtbar: Der Abschnitt ist so hoch wie die höhere.
+        // Fünf Assets plus Link gegenüber drei Depots ließen ihn sonst beim
+        // Umschalten schrumpfen — alles darunter sprang, und mit dem Bildlauf
+        // auch der Umschalter selbst unter dem Finger weg.
+        <div className="grid [&>*]:col-start-1 [&>*]:row-start-1">
+          <div {...hiddenUnless(shown === "assets")}>
+            <RankedBars
+              items={assets}
+              total={total}
+              ariaLabel="Top-Assets nach Nettodividende"
+            />
+            {assetCount > TOP_COMPANIES && (
+              <SectionLink to={statisticsHref("/statistiken/unternehmen")}>
+                Alle {assetCount} Assets
+              </SectionLink>
+            )}
+          </div>
+          {withDepots && (
+            <div {...hiddenUnless(shown === "depots")}>
+              <RankedBars
+                items={depotItems}
+                total={total}
+                ariaLabel="Nettodividende je Depot"
+              />
+            </div>
+          )}
+        </div>
       )}
     </Section>
   );

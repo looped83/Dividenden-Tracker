@@ -66,6 +66,10 @@ describe("Distribution", () => {
     expect(
       screen.getByRole("list", { name: "Nettodividende je Depot" }),
     ).toBeInTheDocument();
+    // Die Assets halten nur noch den Platz (gleiche Höhe beim Umschalten).
+    expect(
+      screen.queryByRole("list", { name: "Top-Assets nach Nettodividende" }),
+    ).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Depot 2/ })).toHaveTextContent(/100,00\s?€/);
   });
 
