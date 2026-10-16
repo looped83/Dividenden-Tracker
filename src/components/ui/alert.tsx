@@ -25,10 +25,6 @@ export function Alert({
   );
 }
 
-export function AlertTitle({ className, ...props }: React.ComponentProps<"h5">) {
-  return <h5 className={cn("mb-1 font-medium leading-tight", className)} {...props} />;
-}
-
 export function AlertDescription({ className, ...props }: React.ComponentProps<"div">) {
   return <div className={cn("text-sm [&_p]:leading-relaxed", className)} {...props} />;
 }

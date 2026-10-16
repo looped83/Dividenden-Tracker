@@ -6,8 +6,6 @@ import {
   priorYearMonthToDateRange,
   priorYearSameDay,
   refDateFromDate,
-  yearRange,
-  ytdRange,
   type RefDate,
 } from "@/lib/statistics/dates";
 
@@ -32,16 +30,6 @@ describe("dates", () => {
 
   it("belaesst gueltige Tage bei priorYearSameDay", () => {
     expect(priorYearSameDay({ year: 2026, month: 7, day: 20 })).toBe("2025-07-20");
-  });
-
-  it("liefert YTD fuer laufendes und volles Jahr fuer abgeschlossenes Jahr", () => {
-    const ref: RefDate = { year: 2026, month: 7, day: 20 };
-    expect(ytdRange(2026, ref)).toEqual({ start: "2026-01-01", end: "2026-07-20" });
-    expect(ytdRange(2024, ref)).toEqual({ start: "2024-01-01", end: "2024-12-31" });
-  });
-
-  it("liefert vollen Jahresbereich", () => {
-    expect(yearRange(2025)).toEqual({ start: "2025-01-01", end: "2025-12-31" });
   });
 
   it("bildet Monatszeitraeume bis heute und im Vorjahr", () => {

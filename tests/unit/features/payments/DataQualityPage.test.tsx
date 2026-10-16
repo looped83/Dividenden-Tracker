@@ -103,7 +103,7 @@ describe("DataQualityPage – Auffälligkeiten", () => {
 
     await userEvent.click(
       screen.getByRole("button", {
-        name: "Verkauft AG vom 02.06.2025 als geprüft markieren",
+        name: /^Verkauft AG vom 02\.06\.2025 \(.+\) als geprüft markieren$/,
       }),
     );
 
@@ -122,7 +122,7 @@ describe("DataQualityPage – Auffälligkeiten", () => {
     await userEvent.click(screen.getByText("Als geprüft markiert (1)"));
     await userEvent.click(
       screen.getByRole("button", {
-        name: "Markierung für Verkauft AG vom 02.06.2025 zurücknehmen",
+        name: /^Markierung für Verkauft AG vom 02\.06\.2025 \(.+\) zurücknehmen$/,
       }),
     );
 

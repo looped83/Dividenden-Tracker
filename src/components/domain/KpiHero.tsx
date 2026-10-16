@@ -107,59 +107,78 @@ export function KpiHero({
           )}
           {footer !== undefined && <div className="relative z-10 pt-2">{footer}</div>}
         </div>
-        {hasStats && (
-          <dl
-            className={cn(
-              "grid gap-1 rounded-2xl bg-muted p-1.5",
-              stats.length === 1
-                ? "grid-cols-1"
-                : stats.length === 2
-                  ? "grid-cols-2"
-                  : "grid-cols-3",
-            )}
-          >
-            {stats.map((stat) => (
-              // Erst die Beschriftung, dann der Wert — als `dt`/`dd`, damit
-              // Sprachausgaben beides zusammen nennen.
-              <div
-                key={stat.label}
-                className={cn(
-                  "@container relative flex min-w-0 flex-col rounded-xl px-2 py-2 sm:px-4 sm:py-3",
-                  stat.to !== undefined &&
-                    "transition-colors hover:bg-accent motion-reduce:transition-none",
-                )}
-              >
-                <dt className="truncate text-[0.8125rem] text-muted-foreground">
-                  {stat.label}
-                </dt>
-                {/* Die Schrift wächst mit dem Feld (Container Query): Drei
-                    Beträge wie „11.293,36 €" passen so auch auf 360px
-                    Telefonbreite ganz, ab gut 110px Feldbreite gilt die volle
-                    Größe. */}
-                <dd className="mt-0.5 truncate text-[clamp(0.75rem,15cqi,1.0625rem)] font-semibold tracking-[-0.01em] tabular-amount">
-                  {stat.to !== undefined ? (
-                    <Link
-                      to={stat.to}
-                      aria-label={stat.drillLabel ?? stat.label}
-                      className={stretched}
-                    >
-                      {stat.value}
-                    </Link>
-                  ) : (
-                    stat.value
-                  )}
-                </dd>
-                {stat.caption !== undefined && (
-                  <dd className="mt-0.5 text-[0.8125rem] text-muted-foreground">
-                    {stat.caption}
-                  </dd>
-                )}
-              </div>
-            ))}
-          </dl>
-        )}
+        {hasStats && <KpiStats stats={stats} />}
       </div>
     </section>
+  );
+}
+
+/**
+ * Leiste der Nebenkennzahlen auf gedämpfter Fläche — Teil von {@link KpiHero},
+ * einzeln exportiert für den Kopf der Übersicht, der Hauptzahl und Diagramm
+ * selbst baut. **Eine** Leiste für alle Bereiche: Zwei Kopien liefen
+ * auseinander (die Übersicht verpasste die Schriftanpassung für schmale
+ * Telefone).
+ */
+export function KpiStats({
+  stats,
+  className,
+}: {
+  stats: readonly KpiStat[];
+  className?: string;
+}) {
+  if (stats.length === 0) return null;
+  return (
+    <dl
+      className={cn(
+        "grid gap-1 rounded-2xl bg-muted p-1.5",
+        className,
+        stats.length === 1
+          ? "grid-cols-1"
+          : stats.length === 2
+            ? "grid-cols-2"
+            : "grid-cols-3",
+      )}
+    >
+      {stats.map((stat) => (
+        // Erst die Beschriftung, dann der Wert — als `dt`/`dd`, damit
+        // Sprachausgaben beides zusammen nennen.
+        <div
+          key={stat.label}
+          className={cn(
+            "@container relative flex min-w-0 flex-col rounded-xl px-2 py-2 sm:px-4 sm:py-3",
+            stat.to !== undefined &&
+              "transition-colors hover:bg-accent motion-reduce:transition-none",
+          )}
+        >
+          <dt className="truncate text-[0.8125rem] text-muted-foreground">
+            {stat.label}
+          </dt>
+          {/* Die Schrift wächst mit dem Feld (Container Query): Drei
+              Beträge wie „11.293,36 €" passen so auch auf 360px
+              Telefonbreite ganz, ab gut 110px Feldbreite gilt die volle
+              Größe. */}
+          <dd className="mt-0.5 truncate text-[clamp(0.75rem,15cqi,1.0625rem)] font-semibold tracking-[-0.01em] tabular-amount">
+            {stat.to !== undefined ? (
+              <Link
+                to={stat.to}
+                aria-label={stat.drillLabel ?? stat.label}
+                className={cn(stretched, "after:rounded-xl")}
+              >
+                {stat.value}
+              </Link>
+            ) : (
+              stat.value
+            )}
+          </dd>
+          {stat.caption !== undefined && (
+            <dd className="mt-0.5 text-[0.8125rem] text-muted-foreground">
+              {stat.caption}
+            </dd>
+          )}
+        </div>
+      ))}
+    </dl>
   );
 }
 

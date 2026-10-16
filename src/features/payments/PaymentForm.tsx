@@ -39,7 +39,7 @@ function emptyValues(securityId = ""): PaymentFormValues {
 /**
  * Das Formular fuer einen Dividendeneingang — **einmal** fuer beide Wege:
  * als Seite (`/eingaenge/neu`, `/eingaenge/:id/bearbeiten`) und als Overlay
- * ueber der aktuellen Seite (auf dem Telefon ein Sheet, siehe
+ * ueber der aktuellen Seite (ein mittiger Dialog, siehe
  * {@link PaymentComposerProvider}). Es kennt weder Route noch Dialog: Wohin es
  * nach dem Speichern oder Abbrechen fuehrt, entscheidet der Aufrufer.
  */
@@ -105,7 +105,6 @@ export function PaymentForm({
     });
   }, [existingPayment, reset]);
 
-  const activeSecurities = securities.filter((security) => !security.archived_at);
   const activeDepots = React.useMemo(
     () => depots.filter((depot) => !depot.archived_at),
     [depots],
@@ -121,14 +120,23 @@ export function PaymentForm({
   const amountCurrency = currencySymbol(
     depots.find((depot) => depot.id === watchedDepotId)?.base_currency ?? "EUR",
   );
+  // Archivierte Assets und Depots stehen nicht zur Wahl — ausser dem bereits
+  // gewaehlten (Bearbeiten, „Eingang erfassen" auf einem archivierten Asset).
+  // Sonst bliebe das Feld leer, obwohl ein Wert gesetzt ist.
   const securityOptions = React.useMemo(
     () =>
-      activeSecurities.map((security) => ({
-        value: security.id,
-        label: security.name,
-        hint: security.ticker ?? undefined,
-      })),
-    [activeSecurities],
+      securities
+        .filter((security) => !security.archived_at || security.id === watchedSecurityId)
+        .map((security) => ({
+          value: security.id,
+          label: security.archived_at ? `${security.name} (archiviert)` : security.name,
+          hint: security.ticker ?? undefined,
+        })),
+    [securities, watchedSecurityId],
+  );
+  const depotOptions = React.useMemo(
+    () => depots.filter((depot) => !depot.archived_at || depot.id === watchedDepotId),
+    [depots, watchedDepotId],
   );
 
   /**
@@ -163,7 +171,14 @@ export function PaymentForm({
     if (depotId) setValue("depotId", depotId);
   }, [initialSecurityId, securities.length, depots.length, depotFor, setValue]);
 
-  const needsDepotChoice = watchedSecurityId !== "" && depotFor(watchedSecurityId) === "";
+  // Beim Bearbeiten immer sichtbar: Das gebuchte Depot kann vom Standard des
+  // Assets abweichen und muss sich korrigieren lassen. Ein Fehler am Depot
+  // bleibt ebenfalls sichtbar — sonst scheiterte das Speichern ohne Hinweis,
+  // wenn die Depots erst nach der Asset-Wahl geladen waren.
+  const needsDepotChoice =
+    isEditMode ||
+    errors.depotId !== undefined ||
+    (watchedSecurityId !== "" && depotFor(watchedSecurityId) === "");
 
   const selectSecurity = (securityId: string) => {
     setValue("securityId", securityId, { shouldValidate: true, shouldDirty: true });
@@ -308,9 +323,10 @@ export function PaymentForm({
             <Label htmlFor="payment-depot">Depot</Label>
             <Select id="payment-depot" {...register("depotId")}>
               <option value="">Bitte wählen</option>
-              {activeDepots.map((depot) => (
+              {depotOptions.map((depot) => (
                 <option key={depot.id} value={depot.id}>
                   {depot.name} ({depot.base_currency})
+                  {depot.archived_at ? " – archiviert" : ""}
                 </option>
               ))}
             </Select>
@@ -335,7 +351,10 @@ export function PaymentForm({
               onClick={(event) => {
                 // Nur mit der Maus: Auf Touch-Geraeten oeffnet das Antippen die
                 // Auswahl ohnehin selbst.
-                if ((event.nativeEvent as PointerEvent).pointerType !== "mouse") return;
+                // Ohne `pointerType` (aeltere Browser liefern einen reinen
+                // MouseEvent) gilt der Klick ebenfalls als Mausklick.
+                const { pointerType } = event.nativeEvent as Partial<PointerEvent>;
+                if (pointerType === "touch" || pointerType === "pen") return;
                 try {
                   event.currentTarget.showPicker();
                 } catch {

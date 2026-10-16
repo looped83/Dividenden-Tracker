@@ -359,6 +359,29 @@ export function SecuritiesPage() {
 
           {isLoading ? (
             <SkeletonRows rows={6} label="Assets" />
+          ) : visible.length === 0 && rows.length > 0 ? (
+            // Assets gibt es, nur keine fuer diese Filter (oder alle archiviert):
+            // „Noch kein Asset angelegt" stimmte dann nicht.
+            <EmptyState
+              icon={Briefcase}
+              title="Keine Assets für diese Filter"
+              action={
+                hasActiveFilters ? (
+                  <Button variant="outline" onClick={resetFilters}>
+                    Filter zurücksetzen
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowArchived(true);
+                    }}
+                  >
+                    Archivierte zeigen
+                  </Button>
+                )
+              }
+            />
           ) : visible.length === 0 ? (
             <EmptyState
               icon={Briefcase}
