@@ -1,5 +1,6 @@
 import { EUR, Money } from "@/lib/money";
 import {
+  currentMonthComparison,
   lastDayOfMonth,
   monthNameDe,
   monthlyBuckets,
@@ -36,7 +37,6 @@ export interface MonthBar {
   /** `null` für Monate des laufenden Jahres, die noch nicht begonnen haben. */
   current: Money | null;
   prior: Money;
-  count: number;
 }
 
 export type HeroSeries =
@@ -47,13 +47,12 @@ export type HeroSeries =
       line: { x: number; value: Money }[];
       /** Laufende Summe des Vorjahres an den 13 Monatsgrenzen. */
       priorLine: Money[];
-      months: MonthBar[];
       points: HeroPoint[];
     }
   | { kind: "monthly"; year: number; months: MonthBar[]; points: HeroPoint[] }
   | {
       kind: "years";
-      bars: { year: number; value: Money; count: number; partial: boolean }[];
+      bars: { year: number; value: Money }[];
       points: HeroPoint[];
     };
 
@@ -75,7 +74,6 @@ function monthBars(
       month: bucket.month,
       current: notStarted ? null : bucket.net,
       prior: prior[index]?.net ?? ZERO,
-      count: bucket.count,
     };
   });
 }
@@ -141,12 +139,7 @@ export function buildHeroSeries(
     });
     return {
       kind: "years",
-      bars: bars.map(({ year, value, count, partial }) => ({
-        year,
-        value,
-        count,
-        partial,
-      })),
+      bars: bars.map(({ year, value }) => ({ year, value })),
       points,
     };
   }
@@ -155,20 +148,25 @@ export function buildHeroSeries(
   const months = monthBars(payments, year, today);
 
   if (kind === "monthly") {
-    const points = months.flatMap((bar): HeroPoint[] =>
-      bar.current === null
-        ? []
-        : [
-            {
-              x: bar.month - 0.5,
-              label: `${monthNameDe(bar.month)} ${String(year)}`,
-              value: bar.current,
-              prior: bar.prior,
-              priorLabel: `${monthNameDe(bar.month)} ${String(year - 1)}`,
-              href: paymentsListHref({ year, month: bar.month }),
-            },
-          ],
-    );
+    // Der laufende Monat ist erst zum Teil vorbei: Verglichen wird er wie der
+    // Kopf mit dem Vorjahresmonat bis zum gleichen Tag — gegen den ganzen
+    // Vorjahresmonat stand Anfang Oktober sonst „−95 %".
+    const running =
+      year === today.year ? currentMonthComparison(payments, today).prior : null;
+    const points = months.flatMap((bar): HeroPoint[] => {
+      if (bar.current === null) return [];
+      const partial = running !== null && bar.month === today.month;
+      return [
+        {
+          x: bar.month - 0.5,
+          label: `${monthNameDe(bar.month)} ${String(year)}`,
+          value: bar.current,
+          prior: partial ? running : bar.prior,
+          priorLabel: `${partial ? (today.day === 1 ? "1. " : `1.–${String(today.day)}. `) : ""}${monthNameDe(bar.month)} ${String(year - 1)}`,
+          href: paymentsListHref({ year, month: bar.month }),
+        },
+      ];
+    });
     return { kind: "monthly", year, months, points };
   }
 
@@ -208,5 +206,5 @@ export function buildHeroSeries(
       href: paymentsListHref({ year }),
     });
   }
-  return { kind: "cumulative", year, line, priorLine, months, points };
+  return { kind: "cumulative", year, line, priorLine, points };
 }
