@@ -185,9 +185,8 @@ export function KpiStats({
 /**
  * Vergleich neben der Hauptzahl: Dreieck und Prozent in Grün bzw. Rot, ohne
  * Hintergrund (seit 1.7.0, wie im Kopf der Übersicht). Die Richtung steckt in Form
- * **und** Farbe (▲/▼), nie in der Farbe allein; der Text kommt deshalb ohne
- * Vorzeichen
- * (UX_AND_DESIGN_SYSTEM.md §1). Wofür der Vergleich steht, sagt `title` —
+ * **und** Farbe (▲/▼), nie in der Farbe allein (UX_AND_DESIGN_SYSTEM.md §1);
+ * der Text kommt deshalb ohne Vorzeichen. Wofür der Vergleich steht, sagt `title` —
  * für Sprachausgaben zusätzlich als versteckter Text.
  */
 export function TrendPill({
@@ -210,7 +209,7 @@ export function TrendPill({
       )}
     >
       {tone !== "neutral" && (
-        <TrendTriangle direction={tone === "negative" ? "down" : "up"} />
+        <TrendTriangle direction={tone === "negative" ? "down" : "up"} announce />
       )}
       {children}
       <span className="sr-only"> {title}</span>

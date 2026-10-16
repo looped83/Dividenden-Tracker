@@ -294,6 +294,7 @@ export function ComparisonTab() {
             {change.tone !== "neutral" && (
               <TrendTriangle
                 direction={change.tone === "negative" ? "down" : "up"}
+                announce
                 className="size-[0.4em]"
               />
             )}

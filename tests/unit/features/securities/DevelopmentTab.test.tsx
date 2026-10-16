@@ -154,7 +154,7 @@ describe("DevelopmentView", () => {
     // Die Rate steht als Marke neben der Erwartung; wofuer sie gilt, nennt ihr
     // Titel.
     expect(screen.getByTitle("gegenüber den letzten zwölf Monaten")).toHaveTextContent(
-      /^19,0\s%/,
+      /^Plus 19,0\s%/,
     );
   });
 
