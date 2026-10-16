@@ -38,8 +38,14 @@ export function DialogContent({
           // beim Panel; Tabellen scrollen in ihrem eigenen Rahmen.
           "fixed left-1/2 top-1/2 z-50 grid w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 grid-cols-[minmax(0,1fr)]",
           "max-h-[90dvh] gap-4 overflow-y-auto overscroll-contain rounded-xl border border-border bg-card p-4 shadow-lg outline-none sm:p-6",
-          "duration-150 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
-          "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 motion-reduce:animate-none",
+          //
+          // **Einblenden mit Verschieben, nicht mit Zoom.** Waehrend einer
+          // Skalierung rechnet Safari die klebende Fusszeile falsch: Sie stand
+          // bis zu ~30px ueber dem Rand des Panels und sprang erst am Ende der
+          // Animation zurueck. Eine Verschiebung bewegt Panel und Fusszeile
+          // gemeinsam.
+          "duration-150 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:slide-in-from-bottom-2",
+          "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-bottom-2 motion-reduce:animate-none",
           className,
         )}
         {...props}
