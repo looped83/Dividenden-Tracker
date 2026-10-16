@@ -62,8 +62,6 @@ export function HeroChart({
   onOpen,
   reserve = 0,
 }: {
-  /** Zusätzlicher Platz oben, z. B. für einen Umschalter im Diagramm. */
-  reserve?: number;
   series: HeroSeries;
   active: number | null;
   onActiveChange: (index: number | null) => void;
@@ -73,6 +71,8 @@ export function HeroChart({
   describe: (point: HeroPoint) => string;
   /** Klick (Maus) bzw. Enter: die Zahlungen hinter dem Punkt öffnen. */
   onOpen: (point: HeroPoint) => void;
+  /** Freier Streifen über dem Diagramm, etwa für die Sichtwahl oben links. */
+  reserve?: number;
 }) {
   const [ref, width] = useElementWidth();
   // Nur eine Tastaturauswahl endet mit dem Fokus. Eine Auswahl per Finger muss
@@ -187,8 +187,14 @@ export function HeroChart({
               active={active}
             />
           ) : series.kind === "years" ? (
-            <Years series={series} x={x} width={width} height={height}
-              top={top} active={active} />
+            <Years
+              series={series}
+              x={x}
+              width={width}
+              height={height}
+              top={top}
+              active={active}
+            />
           ) : (
             <MonthlyLine
               series={series}
