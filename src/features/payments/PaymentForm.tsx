@@ -381,8 +381,9 @@ export function PaymentForm({
         {/* Auf dem Telefon beide Aktionen in voller Breite, Speichern zuoberst —
             dieselbe Anordnung wie in jedem Dialog (`DialogFooter`). Ein kleiner
             Knopf links unten war die einzige Stelle, an der der Daumen zielen
-            musste. */}
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+            musste. Ab `sm` rechts unten, Speichern ganz rechts; in der
+            Tab-Reihenfolge bleibt Speichern vorn. */}
+        <div className="flex flex-col gap-2 sm:flex-row-reverse sm:items-center sm:gap-3">
           <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
             {isSubmitting ? "Wird gespeichert …" : "Speichern"}
           </Button>
