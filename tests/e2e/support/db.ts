@@ -13,7 +13,7 @@ const connectionString =
   process.env.TEST_DATABASE_URL ??
   "postgresql://postgres:postgres@127.0.0.1:5432/dividend_tracker_test";
 
-export const pool = new Pool({ connectionString, max: 4 });
+const pool = new Pool({ connectionString, max: 4 });
 
 /** Führt Anweisungen als angemeldeter Nutzer aus (RLS aktiv). */
 export async function asUser<T>(
@@ -46,8 +46,4 @@ export async function asSuperuser<T>(fn: (client: PoolClient) => Promise<T>): Pr
   } finally {
     client.release();
   }
-}
-
-export async function closePool(): Promise<void> {
-  await pool.end();
 }

@@ -40,10 +40,10 @@ export class FeedError extends Error {
 }
 
 /** 15 Sekunden: grosszuegig fuer einen Kalenderabruf, kurz genug fuer eine Anfrage. */
-export const DEFAULT_TIMEOUT_MS = 15_000;
+const DEFAULT_TIMEOUT_MS = 15_000;
 
 /** 5 MB — ein persoenlicher Dividendenkalender liegt um Groessenordnungen darunter. */
-export const MAX_FEED_BYTES = 5 * 1024 * 1024;
+const MAX_FEED_BYTES = 5 * 1024 * 1024;
 
 const ACCEPTED_CONTENT_TYPES = [
   "text/calendar",

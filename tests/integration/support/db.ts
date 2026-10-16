@@ -4,7 +4,7 @@ const connectionString =
   process.env.TEST_DATABASE_URL ??
   "postgresql://postgres:postgres@127.0.0.1:5432/dividend_tracker_test";
 
-export const pool = new Pool({ connectionString });
+const pool = new Pool({ connectionString });
 
 /**
  * Emuliert eine einzelne PostgREST-Anfrage eines angemeldeten Nutzers: eine
