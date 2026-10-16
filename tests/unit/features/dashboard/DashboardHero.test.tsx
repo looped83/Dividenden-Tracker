@@ -109,8 +109,22 @@ describe("DashboardHero — eine Hauptzahl statt Kachelraster", () => {
       payment("2025-03-10", "100.00"),
       payment("2025-12-10", "400.00"),
     ]);
-    expect(screen.getByText("+50,0 %", { exact: false })).toBeInTheDocument();
-    expect(screen.getByText(/\+50,00\s?€ ggü\. Vorjahreszeitraum/)).toBeInTheDocument();
+    const trend = screen.getByRole("button", { name: /^Veränderung/ });
+    expect(trend).toHaveTextContent(/^50,00\s?€$/);
+    expect(trend).toHaveAccessibleName(
+      /\+50,00\s?€ \(\+50,0\s?%\) ggü\. Vorjahreszeitraum\. Als Prozent anzeigen/,
+    );
+  });
+
+  it("wechselt die Veränderung per Tipp zwischen Betrag und Prozent", async () => {
+    const user = userEvent.setup();
+    renderHero(2026, [payment("2026-03-10", "150.00"), payment("2025-03-10", "100.00")]);
+    const trend = screen.getByRole("button", { name: /^Veränderung/ });
+    await user.click(trend);
+    expect(trend).toHaveTextContent(/^50,0\s?%$/);
+    expect(trend).toHaveAccessibleName(/Als Betrag anzeigen$/);
+    await user.click(trend);
+    expect(trend).toHaveTextContent(/^50,00\s?€$/);
   });
 
   it("zeigt im laufenden Jahr Monat, Durchschnitt und besten Monat in dieser Folge", () => {
@@ -267,7 +281,9 @@ describe("DashboardHero — Diagramm im Kopf", () => {
     expect(chart).toHaveAttribute("aria-valuemax", "6");
     await user.keyboard("{Home}{ArrowRight}{ArrowRight}{ArrowRight}{ArrowRight}");
     expect(screen.getByText("Dividenden Mai 2026")).toBeInTheDocument();
-    expect(screen.getByText("+33,3 %", { exact: false })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Veränderung/ })).toHaveAccessibleName(
+      /\(\+33,3\s?%\)/,
+    );
     expect(
       screen.getByRole("link", { name: "Dividenden Mai 2026 anzeigen" }),
     ).toHaveAttribute("href", "/eingaenge?year=2026&month=5");

@@ -360,8 +360,10 @@ dekorativen Visualisierungen, keine 3D-Diagramme, keine dauerhafte grün/rot-Bew
 saisonaler Schwankungen.
 
 **Kopf (seit 1.7.0, ohne Kartenrahmen):** Drei Ebenen tragen die Rangfolge — Hauptzahl 40 px
-(52 px ab `sm`), Abschnitte, Zeilen. Unter der Zahl die Veränderung als Pfeil und Prozent in
-Grün/Rot, daneben gedämpft der Betrag und der Bezug („+92,20 € ggü. Vorjahreszeitraum"). Darunter
+(52 px ab `sm`), Abschnitte, Zeilen. Direkt rechts neben der Zahl (seit 1.20.0) die Veränderung
+in Grün mit ▲ bzw. Rot mit ▼, voreingestellt als Betrag; ein Tipp wechselt zu Prozent und zurück
+(echte Schaltfläche, Wahl bleibt auf dem Gerät). Der Bezug („ggü. Vorjahreszeitraum") steht im
+Tooltip und in der Ansage statt in einer eigenen Zeile. Darunter
 das **Jahresziel** als 4-px-Balken mit Zeile „40,4 % vom Ziel 3.200,00 €"; rechts im
 laufenden Jahr die **Prognose** (gestrichelte Verlängerung des Balkens, CALCULATION_RULES.md
 §9.7), sonst Restbetrag bzw. Ergebnis. Führt zur Zieldetailseite; ohne Ziel „Jahresziel für 2026
