@@ -8,7 +8,6 @@
 @theme {
   --font-sans:
     -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif;
-  --radius: 0.5rem;
 }
 
 /* Design-Tokens hell (UX_AND_DESIGN_SYSTEM.md #1) — ruhig, datenorientiert,
@@ -68,17 +67,6 @@
   /* Textfarbe auf hellem Warn-Tint (bg-warning/10) — in beiden Themes >= 4.5:1. */
   --warning-strong: oklch(0.48 0.095 95);
 
-  /* Diagrammfarben (kategorial, feste Reihenfolge — siehe .dark unten und
-     UX_AND_DESIGN_SYSTEM.md #1a). Werte gemessen, nicht geschätzt: alle sechs
-     liegen im Helligkeitsband, über der Chroma-Untergrenze, halten benachbart
-     den CVD-Abstand und erreichen >= 3:1 gegen die Kartenfläche. */
-  --chart-1: oklch(0.52 0.15 255); /* blau     #1f68bc */
-  --chart-2: oklch(0.62 0.14 60); /* orange   #c26e12 */
-  --chart-3: oklch(0.65 0.105 185); /* türkis   #28a497 */
-  --chart-4: oklch(0.52 0.17 345); /* magenta  #a8347f */
-  --chart-5: oklch(0.6 0.14 150); /* grün     #319751 */
-  --chart-6: oklch(0.46 0.16 300); /* violett  #673ba2 */
-
   /* Vergleichsreihe (Vorjahr) im Kopf der Uebersicht: neutrales Grau, das
      aktuelle Jahr steht in Vordergrundfarbe (UX_AND_DESIGN_SYSTEM.md #1a).
      3,6:1 gegen die Seite — als Marke >= 3:1 (1.4.11). */
@@ -128,19 +116,6 @@
   --warning-foreground: oklch(0.2 0.03 98);
   --warning-strong: oklch(0.88 0.14 100);
 
-  /* Dieselben sechs Farbtöne, für die dunkle Fläche neu gesetzt — keine
-     automatische Umkehrung. Das dunkle Band liegt tiefer als das helle
-     (L 0.48–0.67): Marken, die heller sind, blenden auf dunklem Grund und
-     verlieren zugleich Sättigung. Gegen die tiefere Kartenfläche (#121417)
-     steigt der Kontrast jeder Serie, die Werte bleiben deshalb unveraendert
-     (schwaechster Slot 3,5:1 bei einer Schwelle von 3:1). */
-  --chart-1: oklch(0.6 0.15 255); /* blau     #3a81d7 */
-  --chart-2: oklch(0.66 0.14 60); /* orange   #cf7b26 */
-  --chart-3: oklch(0.66 0.107 185); /* türkis   #29a79b */
-  --chart-4: oklch(0.55 0.17 345); /* magenta  #b23e88 */
-  --chart-5: oklch(0.64 0.14 150); /* grün     #40a35c */
-  --chart-6: oklch(0.55 0.17 300); /* violett  #8254c4 */
-
   /* 3,5:1 gegen Schwarz, 3,1:1 gegen die Karte. */
   --series-prior: oklch(0.5 0.004 286);
 }
@@ -167,18 +142,9 @@
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
   --color-warning-strong: var(--warning-strong);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --color-chart-6: var(--chart-6);
   --color-series-prior: var(--series-prior);
-
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  /* Radien: Tailwinds Standard (4/6/8/12px) — eine eigene Kopie derselben
+     Werte entfiel. */
 }
 
 /* Eine Zeile, lange Namen laufen am Ende aus statt mit „…" abzubrechen

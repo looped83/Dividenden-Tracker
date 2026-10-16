@@ -94,7 +94,7 @@ export function eventTime(event: CalendarEvent): string | null {
 }
 
 /** „2 angekündigte Zahltage" / „1 angekündigter Zahltag". */
-export function eventCountLabel(count: number): string {
+function eventCountLabel(count: number): string {
   return formatCountNoun(count, "angekündigter Zahltag", "angekündigte Zahltage");
 }
 

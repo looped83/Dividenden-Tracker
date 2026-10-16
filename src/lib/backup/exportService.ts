@@ -295,7 +295,7 @@ export function exportCellValue(
  * speichert Zahlen als IEEE-754-Double. Alle Betraege sind zuvor auf maximal
  * 6 Nachkommastellen gerundet und damit exakt darstellbar.
  */
-export function toExportNumber(value: string | number | null): number | null {
+function toExportNumber(value: string | number | null): number | null {
   if (typeof value === "number") return Number.isFinite(value) ? value : null;
   if (value === null || value.trim() === "") return null;
   try {

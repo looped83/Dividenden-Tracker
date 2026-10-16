@@ -29,7 +29,7 @@ export interface SecuritySortOption {
 }
 
 /** Beschriftungen der Auswahl; sie benennen die Sortierung selbst. */
-export const SECURITY_SORT_FIELDS: readonly SecuritySortOption[] = [
+const SECURITY_SORT_FIELDS: readonly SecuritySortOption[] = [
   { value: "name", label: "Nach Name" },
   { value: "ticker", label: "Nach Ticker" },
   { value: "sector", label: "Nach Branche" },
@@ -45,7 +45,7 @@ export const SECURITY_SORT_FIELDS: readonly SecuritySortOption[] = [
  * Stammdatenfeldern: Liegt ein Stand vor, sind Wert und Ausschuettung die
  * Fragen an diese Liste, nicht die Schreibweise des Tickers.
  */
-export const SECURITY_POSITION_SORT_FIELDS: readonly SecuritySortOption[] = [
+const SECURITY_POSITION_SORT_FIELDS: readonly SecuritySortOption[] = [
   { value: "value", label: "Nach Wert" },
   { value: "expected", label: "Nach Erwartet p. a." },
   { value: "yield", label: "Nach Rendite" },
@@ -56,7 +56,7 @@ const POSITION_FIELDS = new Set<SecuritySortField>(
   SECURITY_POSITION_SORT_FIELDS.map((option) => option.value),
 );
 
-export function isPositionSortField(
+function isPositionSortField(
   field: SecuritySortField,
 ): field is SecurityPositionSortField {
   return POSITION_FIELDS.has(field);

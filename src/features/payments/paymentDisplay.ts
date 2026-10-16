@@ -2,7 +2,7 @@ import { EUR, Money } from "@/lib/money";
 import type { PaymentSource } from "@/lib/supabase/database.types";
 
 /** Fachliche Bezeichnung der Datenquelle (§1, DATA_DICTIONARY.md). */
-export const SOURCE_LABELS: Record<PaymentSource, string> = {
+const SOURCE_LABELS: Record<PaymentSource, string> = {
   manual: "Manuell",
   csv_import: "CSV-Import",
   excel_import: "Excel-Import",

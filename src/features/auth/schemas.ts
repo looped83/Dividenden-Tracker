@@ -3,12 +3,12 @@ import { z } from "zod";
 // Passwort-Mindestlaenge 12 (SECURITY_MODEL.md §2).
 const MIN_PASSWORD_LENGTH = 12;
 
-export const emailSchema = z
+const emailSchema = z
   .email("Ungültige E-Mail-Adresse")
   .trim()
   .min(1, "E-Mail-Adresse ist erforderlich");
 
-export const newPasswordSchema = z
+const newPasswordSchema = z
   .string()
   .min(
     MIN_PASSWORD_LENGTH,

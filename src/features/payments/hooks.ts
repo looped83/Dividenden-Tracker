@@ -30,15 +30,15 @@ import { anomalyKey, type AnomalyCode } from "@/lib/payments/dataQuality";
  * datenverändernde Mutation über `invalidateQueries(["payments"])` Liste,
  * Detail, Dashboard und Statistik gemeinsam aktualisiert (§22).
  */
-export const PAYMENTS_KEY = ["payments"] as const;
+const PAYMENTS_KEY = ["payments"] as const;
 
 /**
  * Die vollständige Historie — **ein** Cache-Eintrag für Liste,
  * Datenqualität und alle Auswertungen (`useDashboardPayments`).
  */
 export const PAYMENT_HISTORY_KEY = [...PAYMENTS_KEY, "list"] as const;
-export const DUPLICATE_DISMISSALS_KEY = ["duplicate-dismissals"] as const;
-export const ANOMALY_REVIEWS_KEY = ["anomaly-reviews"] as const;
+const DUPLICATE_DISMISSALS_KEY = ["duplicate-dismissals"] as const;
+const ANOMALY_REVIEWS_KEY = ["anomaly-reviews"] as const;
 
 type QueryClient = ReturnType<typeof useQueryClient>;
 

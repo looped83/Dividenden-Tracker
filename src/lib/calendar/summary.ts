@@ -128,7 +128,7 @@ export function buildCalendarSummary(
 }
 
 /** Wie weit Ankündigungen in die Prognose zum Jahresende eingehen (CALCULATION_RULES.md §9.7). */
-export const FORECAST_ANNOUNCED_DAYS = 30;
+const FORECAST_ANNOUNCED_DAYS = 30;
 
 /**
  * Angekündigte Zahlungen der nächsten {@link FORECAST_ANNOUNCED_DAYS} Tage für

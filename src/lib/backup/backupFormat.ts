@@ -30,8 +30,7 @@ export const BACKUP_FORMAT_VERSION = 2;
  * ist, waere genau der Moment, in dem eine Datensicherung nichts mehr wert
  * ist.
  */
-export const READABLE_FORMAT_VERSIONS = [1, 2] as const;
-export const MIN_SCHEMA_VERSION = "0022"; // First schema version supporting backups
+const READABLE_FORMAT_VERSIONS = [1, 2] as const;
 
 // ============================================================================
 // Base Type Schemas
@@ -166,7 +165,7 @@ const uuidString = z.uuid();
 // Entity Schemas
 // ============================================================================
 
-export const portfolioBackupSchema = z.object({
+const portfolioBackupSchema = z.object({
   id: uuidString,
   user_id: uuidString,
   name: z.string().max(100),
@@ -177,7 +176,7 @@ export const portfolioBackupSchema = z.object({
 });
 export type PortfolioBackup = z.infer<typeof portfolioBackupSchema>;
 
-export const depotBackupSchema = z.object({
+const depotBackupSchema = z.object({
   id: uuidString,
   user_id: uuidString,
   name: z.string().max(100),
@@ -192,7 +191,7 @@ export const depotBackupSchema = z.object({
 });
 export type DepotBackup = z.infer<typeof depotBackupSchema>;
 
-export const securityBackupSchema = z.object({
+const securityBackupSchema = z.object({
   id: uuidString,
   user_id: uuidString,
   name: z.string().max(200),
@@ -212,7 +211,7 @@ export const securityBackupSchema = z.object({
 });
 export type SecurityBackup = z.infer<typeof securityBackupSchema>;
 
-export const goalBackupSchema = z.object({
+const goalBackupSchema = z.object({
   id: uuidString,
   user_id: uuidString,
   goal_type: z.enum(["annual", "monthly"]),
@@ -228,7 +227,7 @@ export const goalBackupSchema = z.object({
 });
 export type GoalBackup = z.infer<typeof goalBackupSchema>;
 
-export const importBackupSchema = z.object({
+const importBackupSchema = z.object({
   id: uuidString,
   user_id: uuidString,
   file_name: z.string(),
@@ -267,7 +266,7 @@ export const importBackupSchema = z.object({
 });
 export type ImportBackup = z.infer<typeof importBackupSchema>;
 
-export const dividendPaymentBackupSchema = z.object({
+const dividendPaymentBackupSchema = z.object({
   id: uuidString,
   user_id: uuidString,
   security_id: uuidString,
@@ -308,7 +307,7 @@ export const dividendPaymentBackupSchema = z.object({
 });
 export type DividendPaymentBackup = z.infer<typeof dividendPaymentBackupSchema>;
 
-export const profileBackupSchema = z.object({
+const profileBackupSchema = z.object({
   id: uuidString,
   base_currency: currencyCode,
   locale: z.string(),
@@ -324,7 +323,7 @@ export type ProfileBackup = z.infer<typeof profileBackupSchema>;
 // Integrity Information Schema
 // ============================================================================
 
-export const integritySchema = z.object({
+const integritySchema = z.object({
   record_counts: z.record(z.string(), z.number().int().min(0)),
   totals: z
     .object({
@@ -350,7 +349,7 @@ export type IntegrityInfo = z.infer<typeof integritySchema>;
  * Ohne ihn liesse sich „an diesem Tag kein Upload" nicht von „an diesem Tag
  * keine Positionen" unterscheiden — auch nicht nach einer Wiederherstellung.
  */
-export const snapshotRunBackupSchema = z.object({
+const snapshotRunBackupSchema = z.object({
   id: uuidString,
   user_id: uuidString.optional(),
   as_of: businessDate,
@@ -372,7 +371,7 @@ export type SnapshotRunBackup = z.infer<typeof snapshotRunBackupSchema>;
  * beschreibt, endgueltig weg — anders als die Kalendertermine, die ein
  * erneuter Feed-Abgleich wieder aufbaut.
  */
-export const securitySnapshotBackupSchema = z.object({
+const securitySnapshotBackupSchema = z.object({
   id: uuidString,
   user_id: uuidString.optional(),
   security_id: uuidString,
@@ -408,7 +407,7 @@ export type SecuritySnapshotBackup = z.infer<typeof securitySnapshotBackupSchema
  * Wiederherstellbar waere sie nur, indem der Nutzer jede Zuordnung erneut
  * bestaetigt — Arbeit, die eine Sicherung ihm abnehmen soll.
  */
-export const securityAliasBackupSchema = z.object({
+const securityAliasBackupSchema = z.object({
   id: uuidString,
   user_id: uuidString.optional(),
   alias_normalized: z.string().min(1).max(200),
@@ -418,7 +417,7 @@ export const securityAliasBackupSchema = z.object({
 });
 export type SecurityAliasBackup = z.infer<typeof securityAliasBackupSchema>;
 
-export const backupDataSchema = z.object({
+const backupDataSchema = z.object({
   profile: profileBackupSchema.optional(),
   portfolios: z.array(portfolioBackupSchema).default([]),
   depots: z.array(depotBackupSchema).default([]),
@@ -434,7 +433,7 @@ export const backupDataSchema = z.object({
 });
 export type BackupData = z.infer<typeof backupDataSchema>;
 
-export const backupRootSchema = z.object({
+const backupRootSchema = z.object({
   format: z.literal(BACKUP_FORMAT),
   // Nicht `literal(BACKUP_FORMAT_VERSION)`: Sonst scheiterte eine Datei der
   // Version 1 schon am Schema, lange bevor `validateBackupVersion` sie

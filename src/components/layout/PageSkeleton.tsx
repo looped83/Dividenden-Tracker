@@ -66,7 +66,7 @@ export function AuthPageSkeleton() {
       <span className="sr-only">Inhalt wird geladen …</span>
       <div className="w-full max-w-sm space-y-4">
         <p className="text-center text-base font-semibold tracking-tight">
-          Dividend Tracker
+          Dividenden-Tracker
         </p>
         <div className="space-y-4 rounded-lg border border-border bg-card p-4 sm:p-6">
           <Bar className="h-5 w-32" />

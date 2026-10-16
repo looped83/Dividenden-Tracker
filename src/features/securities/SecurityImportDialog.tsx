@@ -56,7 +56,7 @@ type ImportState =
     }
   | { step: "error"; message: string };
 
-export function SecurityImportDialog({
+function SecurityImportDialog({
   open,
   onOpenChange,
 }: {

@@ -32,7 +32,7 @@ const compactFormatter = new Intl.NumberFormat("de-DE", {
  * nennen Titel, Tooltip und Datentabelle; auf der Achse zaehlt die
  * Groessenordnung.
  */
-export function formatAxisTick(value: number): string {
+function formatAxisTick(value: number): string {
   return Math.abs(value) >= 1_000_000
     ? compactFormatter.format(value)
     : formatCountNumber(value);

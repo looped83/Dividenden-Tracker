@@ -8,7 +8,6 @@ export {
   formatMonthYear,
   describeComparison,
   splitComparison,
-  paymentsListHref,
   type EntityInfo,
   type ComparisonTone,
 } from "@/features/dashboard/format";

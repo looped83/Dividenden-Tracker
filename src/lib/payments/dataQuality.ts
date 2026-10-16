@@ -135,7 +135,7 @@ export function anomalyKey(paymentId: string, code: string): string {
  * Sonderausschüttung. Ein dauerhafter Sprung (Aufstockung) verschwindet von
  * selbst, sobald die folgenden Zahlungen ihn bestätigen.
  */
-export const UNUSUALLY_HIGH_FACTOR = 5;
+const UNUSUALLY_HIGH_FACTOR = 5;
 const NEIGHBOURS_EACH_SIDE = 3;
 const MIN_COMPARISON_COUNT = 3;
 
