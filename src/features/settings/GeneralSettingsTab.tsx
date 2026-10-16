@@ -61,8 +61,10 @@ export function GeneralSettingsTab() {
         title="Über diese App"
         description="Die Version, die auf diesem Gerät läuft."
       >
-        {/* Wie eine Listenzeile: Beschriftung links, Wert rechts. */}
-        <dl className="text-[0.9375rem]">
+        {/* Wie eine Listenzeile: Beschriftung links, Wert rechts. Ab `sm` etwa so
+            breit wie der Umschalter darüber, nicht wie die Seite — sonst stand
+            die Nummer am rechten Fensterrand, weit weg von ihrer Beschriftung. */}
+        <dl className="text-[0.9375rem] sm:max-w-72">
           <div className="flex items-baseline justify-between gap-4 py-3">
             <dt className="text-muted-foreground">Version</dt>
             <dd className="font-medium tabular-nums">{__APP_VERSION__}</dd>
