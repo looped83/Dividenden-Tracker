@@ -44,7 +44,7 @@ function renderSection(payments: AnalyticsPayment[]) {
 }
 
 describe("Distribution", () => {
-  it("zeigt so viele Assets wie Depots (mind. drei) und schaltet um", async () => {
+  it("zeigt die fünf stärksten Assets und schaltet auf die Depots um", async () => {
     const user = userEvent.setup();
     renderSection([
       payment("A", "Depot 1", "60.00"),
@@ -56,8 +56,7 @@ describe("Distribution", () => {
     ]);
     expect(screen.getByRole("heading", { name: "Verteilung" })).toBeInTheDocument();
     const assets = screen.getByRole("list", { name: "Top-Assets nach Nettodividende" });
-    // Gleiche Zeilenzahl in beiden Sichten: Der Abschnitt springt nicht.
-    expect(assets.querySelectorAll("li")).toHaveLength(3);
+    expect(assets.querySelectorAll("li")).toHaveLength(5);
     expect(screen.getByRole("link", { name: "Alle 6 Assets" })).toHaveAttribute(
       "href",
       "/statistiken/unternehmen?year=2026",
@@ -68,10 +67,6 @@ describe("Distribution", () => {
       screen.getByRole("list", { name: "Nettodividende je Depot" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Depot 2/ })).toHaveTextContent(/100,00\s?€/);
-    expect(screen.getByRole("link", { name: "Alle 2 Depots" })).toHaveAttribute(
-      "href",
-      "/statistiken/depots?year=2026",
-    );
   });
 
   it("verzichtet mit nur einem Depot auf den Umschalter", () => {

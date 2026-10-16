@@ -3,18 +3,18 @@ import { expect, test } from "../support/appTest";
 
 /**
  * „Verteilung" auf der Übersicht: Der Umschalter zwischen Assets und Depots
- * darf die Seite nicht springen lassen.
+ * bleibt beim Umschalten an seiner Stelle im Fenster.
  *
- * Früher standen fünf Assets mit Link gegen drei Depots: Der Abschnitt
- * schrumpfte beim Umschalten und alles darunter rutschte. Jetzt zeigen beide
- * Sichten gleich viele Zeilen und je einen Link. Höhen gibt es nur
- * im Browser; in jsdom ist jede Liste 0 px hoch.
+ * Fünf Assets mit Link „Alle 6 Assets" sind höher als drei Depots. Dass sich
+ * der Inhalt darunter verschiebt, ist gewollt (kein Weißraum, keine gekürzte
+ * Liste) — der Umschalter selbst darf dabei aber nicht unter dem Finger
+ * wegspringen. Positionen gibt es nur im Browser; in jsdom ist alles 0 px.
  */
 
 const DEPOTS = ["Depot 2", "Depot 3"];
 const ASSETS = ["Alpha AG", "Beta AG", "Gamma AG", "Delta AG", "Epsilon AG"];
 
-test("Verteilung: Umschalten ändert die Höhe nicht", async ({ page, konto }) => {
+test("Verteilung: Umschalter bleibt beim Umschalten stehen", async ({ page, konto }) => {
   await asUser(konto.userId, async (client) => {
     const depotIds = [konto.depotId];
     for (const name of DEPOTS) {
@@ -24,7 +24,7 @@ test("Verteilung: Umschalten ändert die Höhe nicht", async ({ page, konto }) =
       );
       depotIds.push(depot.rows[0]?.id ?? "");
     }
-    // Sechstes Asset: mehr Assets als Zeilen, wie im echten Bestand.
+    // Sechstes Asset: So erscheint unter den fünf der Link „Alle 6 Assets".
     await client.query(
       `insert into dividend_payments
          (security_id, depot_id, pay_date, gross_amount, net_amount,
@@ -56,13 +56,27 @@ test("Verteilung: Umschalten ändert die Höhe nicht", async ({ page, konto }) =
   await expect(
     section.getByRole("list", { name: "Top-Assets nach Nettodividende" }),
   ).toBeVisible();
-  const before = await section.boundingBox();
+
+  // Wie beim Lesen auf dem Telefon: Die Überschrift steht im oberen Drittel,
+  // die Liste reicht bis unter den Fensterrand.
+  await section.evaluate((element) => {
+    window.scrollTo(0, element.getBoundingClientRect().top + window.scrollY - 200);
+  });
+  const toggle = section.getByRole("radiogroup", { name: "Verteilung nach" });
+  const before = await toggle.boundingBox();
 
   await section.getByRole("radio", { name: "Depots" }).click();
   await expect(
     section.getByRole("list", { name: "Nettodividende je Depot" }),
   ).toBeVisible();
-  const after = await section.boundingBox();
+  const afterDepots = await toggle.boundingBox();
 
-  expect(after?.height).toBe(before?.height);
+  await section.getByRole("radio", { name: "Assets" }).click();
+  await expect(
+    section.getByRole("list", { name: "Top-Assets nach Nettodividende" }),
+  ).toBeVisible();
+  const afterAssets = await toggle.boundingBox();
+
+  expect(afterDepots?.y).toBeCloseTo(before?.y ?? Number.NaN, 0);
+  expect(afterAssets?.y).toBeCloseTo(before?.y ?? Number.NaN, 0);
 });

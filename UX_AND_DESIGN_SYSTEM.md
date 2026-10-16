@@ -390,12 +390,10 @@ Tastatur: Das Diagramm ist ein Schieberegler (`role="slider"`, Pfeiltasten, Pos1
 steht darunter seit 1.11.0 nicht mehr: Jeder Punkt ist ansteuerbar, die Statistik führt dieselben
 Zahlen als Tabelle.
 
-**Verteilung:** die stärksten Assets des Zeitraums als schmale Balken in Vordergrundfarbe
+**Verteilung:** die fünf stärksten Assets des Zeitraums als schmale Balken in Vordergrundfarbe
 mit Anteil, darunter „Alle 12 Assets" zur Statistik; umschaltbar auf die Depots. Beide
 beantworten dieselbe Frage, früher standen sie als zwei Karten nebeneinander. Mit nur einem
-Depot entfällt der Umschalter, der Abschnitt heißt „Top-Assets". Mit Umschalter zeigen beide
-Sichten gleich viele Zeilen (so viele wie Depots, 3 bis 5) und je einen Link „Alle …" — seit
-1.21.2, damit beim Umschalten nichts springt.
+Depot entfällt der Umschalter, der Abschnitt heißt „Top-Assets".
 
 **Demnächst:** die nächsten drei angekündigten Zahltage aus dem Kalender und die erwartete Summe
 der nächsten 30 Tage; „erwartet", weil es Ankündigungen sind, keine erhaltenen Dividenden. Ohne kommende
