@@ -8,6 +8,7 @@ export {
   formatMonthYear,
   describeComparison,
   splitComparison,
+  withoutSign,
   type EntityInfo,
   type ComparisonTone,
 } from "@/features/dashboard/format";

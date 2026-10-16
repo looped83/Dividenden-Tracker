@@ -759,7 +759,7 @@ function PaymentRow({
       <TableCell className="text-right font-semibold">
         {/* Der Indikator steht links des Betrags, damit die Ziffern der Spalte
             buendig bleiben. */}
-        <span className="inline-flex items-center justify-end gap-1.5">
+        <span className="inline-flex items-baseline justify-end gap-1.5">
           {comparison && <YearOverYearIndicator comparison={comparison} />}
           <AmountText amount={amount} />
         </span>

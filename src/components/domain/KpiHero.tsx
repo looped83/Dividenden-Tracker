@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router";
-import { ArrowDownRight, ArrowUpRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TrendTriangle } from "@/components/ui/trend-triangle";
 import { cn } from "@/lib/utils/cn";
 
 export interface KpiStat {
@@ -88,7 +88,7 @@ export function KpiHero({
       <div className={cn("flex flex-col gap-5", hasStats && sideBySide)}>
         <div className="relative space-y-2">
           <p className="text-[0.9375rem] font-medium text-muted-foreground">{label}</p>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-2">
             {to !== undefined ? (
               <Link
                 to={to}
@@ -183,10 +183,10 @@ export function KpiStats({
 }
 
 /**
- * Vergleich neben der Hauptzahl: Pfeil und Prozent in Grün bzw. Rot, ohne
+ * Vergleich neben der Hauptzahl: Dreieck und Prozent in Grün bzw. Rot, ohne
  * Hintergrund (seit 1.7.0, wie im Kopf der Übersicht). Die Richtung steckt in Form
- * **und** Farbe (Pfeil, Vorzeichen im Text), nie in der Farbe allein
- * (UX_AND_DESIGN_SYSTEM.md §1). Wofür der Vergleich steht, sagt `title` —
+ * **und** Farbe (▲/▼), nie in der Farbe allein (UX_AND_DESIGN_SYSTEM.md §1);
+ * der Text kommt deshalb ohne Vorzeichen. Wofür der Vergleich steht, sagt `title` —
  * für Sprachausgaben zusätzlich als versteckter Text.
  */
 export function TrendPill({
@@ -198,18 +198,19 @@ export function TrendPill({
   children: ReactNode;
   title: string;
 }) {
-  const Icon = tone === "negative" ? ArrowDownRight : ArrowUpRight;
   return (
     <span
       title={title}
       className={cn(
-        "inline-flex items-center gap-0.5 text-[0.9375rem] font-semibold tabular-amount",
+        "inline-flex items-baseline gap-1 text-[0.9375rem] font-semibold tabular-amount",
         tone === "positive" && "text-positive",
         tone === "negative" && "text-negative",
         tone === "neutral" && "text-muted-foreground",
       )}
     >
-      {tone !== "neutral" && <Icon className="size-4" aria-hidden strokeWidth={2.5} />}
+      {tone !== "neutral" && (
+        <TrendTriangle direction={tone === "negative" ? "down" : "up"} announce />
+      )}
       {children}
       <span className="sr-only"> {title}</span>
     </span>

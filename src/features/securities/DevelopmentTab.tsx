@@ -437,7 +437,7 @@ export function DevelopmentView({
               }
               title="gegenüber den letzten zwölf Monaten"
             >
-              {`${growthPercent.isPositive() ? "+" : ""}${formatPercent(growthPercent, 1)}`}
+              {formatPercent(growthPercent.abs(), 1)}
             </TrendPill>
           ) : undefined
         }

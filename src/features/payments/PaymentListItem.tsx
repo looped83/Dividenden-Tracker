@@ -86,7 +86,7 @@ export function PaymentListItem({
               </span>
             }
             trailing={
-              <span className="flex items-center gap-1.5">
+              <span className="flex items-baseline gap-1.5">
                 {indicator}
                 <AmountText amount={amount} />
               </span>
