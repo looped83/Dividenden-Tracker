@@ -111,7 +111,7 @@ export function HeroChart({
       aria-valuenow={shown}
       aria-valuetext={points[shown] ? describe(points[shown]) : undefined}
       className="relative touch-pan-y select-none rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4 ring-offset-background"
-      style={{ height: height + (series.kind === "cumulative" ? 0 : LABELS) }}
+      style={{ height: height + LABELS }}
       onPointerMove={(event) => {
         // Mit dem Finger nur beim Ziehen; ein Antippen wählt per pointerdown.
         // Nur bei einem anderen Punkt melden: Jede Mausbewegung loeste sonst
@@ -173,7 +173,7 @@ export function HeroChart({
       {width > 0 && (
         <svg
           width={width}
-          height={height + (series.kind === "cumulative" ? 0 : LABELS)}
+          height={height + LABELS}
           aria-hidden
           className="block overflow-visible"
         >
@@ -321,8 +321,53 @@ function Cumulative({
           strokeWidth={2}
         />
       )}
+      <MonthAxis
+        x={x}
+        y={height + LABELS - 6}
+        strong={Math.ceil((point ?? series.points[series.points.length - 1]).x)}
+      />
     </>
   );
+}
+
+/** Mindestbreite je Monatskürzel („Mär" in 11 px samt Luft). */
+const MONTH_TICK_WIDTH = 26;
+
+/**
+ * Monatsachse beider Jahressichten (seit 1.21.0, zuvor Anfangsbuchstaben bzw.
+ * nur „Jan" und „Dez"): dieselben Kürzel an denselben Stellen, damit beim
+ * Umschalten nichts springt. Der gewählte bzw. letzte Monat steht kräftiger.
+ * Auf sehr schmalen Schirmen steht jeder zweite Monat; der Dezember bleibt als
+ * Rahmen stehen.
+ */
+function MonthAxis({
+  x,
+  y,
+  strong,
+}: {
+  x: (slot: number) => number;
+  y: number;
+  strong: number;
+}) {
+  const step = x(1) - x(0) >= MONTH_TICK_WIDTH ? 1 : 2;
+  return MONTH_NAMES_DE_SHORT.map((name, index) => {
+    const month = index + 1;
+    const isStrong = month === strong;
+    if (!isStrong && month !== 12 && index % step !== 0) return null;
+    return (
+      <text
+        key={name}
+        x={x(index + 0.5)}
+        y={y}
+        textAnchor="middle"
+        fontSize={11}
+        fontWeight={isStrong ? 700 : 500}
+        fill={isStrong ? "var(--foreground)" : "var(--muted-foreground)"}
+      >
+        {name}
+      </text>
+    );
+  });
 }
 
 /** Mindestbreite je Jahresbeschriftung („2026" in 11 px samt Luft). */
@@ -444,8 +489,6 @@ function MonthlyLine({
   const last = current.length - 1;
   const point = active === null ? null : points[active];
   const priorEnd = prior[prior.length - 1];
-  // Der aktuelle Monat steht in der Beschriftung kräftiger.
-  const thisMonth = [...months].reverse().find((bar) => bar.current !== null)?.month;
   const marked = active ?? last;
 
   return (
@@ -521,22 +564,9 @@ function MonthlyLine({
           strokeWidth={2}
         />
       )}
-      {months.map((bar) => {
-        const strong = bar.month === thisMonth;
-        return (
-          <text
-            key={bar.month}
-            x={x(bar.month - 0.5)}
-            y={height + LABELS - 6}
-            textAnchor="middle"
-            fontSize={11}
-            fontWeight={strong ? 700 : 500}
-            fill={strong ? "var(--foreground)" : "var(--muted-foreground)"}
-          >
-            {(MONTH_NAMES_DE_SHORT[bar.month - 1] ?? "").charAt(0)}
-          </text>
-        );
-      })}
+      {current.length > 0 && (
+        <MonthAxis x={x} y={height + LABELS - 6} strong={Math.ceil(points[marked].x)} />
+      )}
     </>
   );
 }
