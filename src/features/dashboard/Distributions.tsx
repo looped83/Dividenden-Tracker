@@ -52,6 +52,78 @@ function toItems(
 }
 
 /**
+ * Hält den Abschnitt beim Umschalten an seiner Stelle im Fenster.
+ *
+ * Fünf Assets plus Link sind höher als drei Depots. Was darunter steht, darf
+ * nachrücken — der Umschalter selbst aber nicht unter dem Finger wegspringen.
+ * Genau das tat er am Seitenende: Schrumpft die Seite, setzt der Browser den
+ * Bildlauf zurück, und alles rutscht um die Differenz nach unten. Deshalb hält
+ * `capture` die Seitenhöhe kurz fest; nach dem Rendern bleibt nur so viel
+ * davon, wie das Fenster gerade braucht, und der Rest schmilzt beim
+ * Zurückscrollen weg. Weicht der Abschnitt trotzdem ab (Scroll-Anchoring der
+ * Browser verhält sich unterschiedlich), gleicht `scrollBy` es aus.
+ */
+function useStableToggle(view: unknown) {
+  const ref = React.useRef<HTMLElement>(null);
+  const before = React.useRef<{ top: number; height: number; page: number } | null>(null);
+  /** Höhe des Inhalts, solange eine Seitenhöhe festgehalten wird. */
+  const held = React.useRef<number | null>(null);
+
+  const capture = () => {
+    const section = ref.current;
+    if (!section) return;
+    const root = document.documentElement;
+    const rect = section.getBoundingClientRect();
+    before.current = {
+      top: rect.top,
+      height: rect.height,
+      page: held.current ?? root.scrollHeight,
+    };
+    root.style.minHeight = `${String(root.scrollHeight)}px`;
+  };
+
+  React.useLayoutEffect(() => {
+    const previous = before.current;
+    const section = ref.current;
+    before.current = null;
+    if (!previous || !section) return;
+    const root = document.documentElement;
+    const rect = section.getBoundingClientRect();
+    // Seitenhöhe ohne Festhalten: vorher plus Änderung des Abschnitts.
+    const natural = previous.page + rect.height - previous.height;
+    held.current = natural;
+
+    /** Hält nur so viel Höhe, wie das Fenster braucht; `true`, wenn nichts mehr. */
+    const release = () => {
+      const needed = window.scrollY + window.innerHeight;
+      if (needed > natural) {
+        root.style.minHeight = `${String(needed)}px`;
+        return false;
+      }
+      root.style.minHeight = "";
+      held.current = null;
+      window.removeEventListener("scroll", release);
+      return true;
+    };
+    const shift = rect.top - previous.top;
+    if (shift !== 0) window.scrollBy(0, shift);
+    if (release()) return;
+    window.addEventListener("scroll", release, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", release);
+      // Beim nächsten Umschalten bleibt die Höhe stehen, `capture` hat sie
+      // gerade erst gesetzt. Nur beim Verlassen der Seite fällt sie weg.
+      if (before.current === null) {
+        root.style.minHeight = "";
+        held.current = null;
+      }
+    };
+  }, [view]);
+
+  return { ref, capture };
+}
+
+/**
  * „Verteilung" (§9/§10): wer im Zeitraum wie viel beigetragen hat — die fünf
  * stärksten Assets oder die Depots, umschaltbar.
  *
@@ -68,6 +140,11 @@ export function Distribution({
   depots,
 }: DistributionProps) {
   const [view, setView] = React.useState<View>("assets");
+  const { ref, capture } = useStableToggle(view);
+  const changeView = (next: View) => {
+    capture();
+    setView(next);
+  };
 
   const { total, assets, assetCount, depotItems } = React.useMemo(() => {
     const rankedAssets = rankGroups(groupBySecurity(periodPayments), (key) =>
@@ -95,6 +172,7 @@ export function Distribution({
 
   return (
     <Section
+      ref={ref}
       title={withDepots ? "Verteilung" : "Top-Assets"}
       action={
         withDepots ? (
@@ -103,7 +181,7 @@ export function Distribution({
             label="Verteilung nach"
             options={VIEW_OPTIONS}
             value={view}
-            onChange={setView}
+            onChange={changeView}
           />
         ) : undefined
       }
