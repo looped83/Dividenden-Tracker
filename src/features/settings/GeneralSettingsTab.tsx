@@ -49,19 +49,13 @@ export function GeneralSettingsTab() {
         </div>
       </Section>
 
-      <Section
-        title="Darstellung"
-        description="Hell, dunkel oder passend zur Einstellung des Systems."
-      >
+      <Section title="Darstellung">
         <div className="pt-2">
           <ThemeToggle />
         </div>
       </Section>
 
-      <Section
-        title="Über diese App"
-        description="Die Version, die auf diesem Gerät läuft."
-      >
+      <Section title="Über diese App">
         {/* Die Nummer als Etikett direkt hinter der Beschriftung: Als
             rechtsbündiger Wert stand sie auf breiten Flächen am Fensterrand,
             weit weg von „Version“. */}
