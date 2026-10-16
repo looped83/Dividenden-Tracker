@@ -56,8 +56,8 @@ const ComposerContext = React.createContext<((target: ComposerTarget) => void) |
  * stehen; nach dem Speichern schließt es sich, und die Zahlen darunter
  * aktualisieren sich von selbst (React Query invalidiert die Abfragen).
  *
- * Auf dem Telefon ist es ein Sheet, das von unten über Seite und
- * Bottom-Navigation fährt (`DialogContent`). Die alten Adressen
+ * Auf allen Breiten ein mittiger Dialog über Seite und Bottom-Navigation
+ * (`DialogContent`, seit 1.14.0). Die alten Adressen
  * (`/eingaenge/neu`, `/eingaenge/:id/bearbeiten`) öffnen es ebenfalls
  * ({@link PaymentComposerRoute}).
  */

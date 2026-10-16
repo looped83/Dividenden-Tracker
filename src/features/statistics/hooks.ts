@@ -14,7 +14,7 @@ import { useDepots } from "@/features/depots/hooks";
 import {
   applyStatisticsFilter,
   EMPTY_STATISTICS_FILTER,
-  parseStatisticsFilter,
+  statisticsFilterOf,
 } from "./filterParams";
 
 export interface StatisticsData {
@@ -111,7 +111,16 @@ export function useStatisticsFilter(): {
   setFilter: (next: StatisticsFilter) => void;
 } {
   const [searchParams, setSearchParams] = useSearchParams();
-  const filter = React.useMemo(() => parseStatisticsFilter(searchParams), [searchParams]);
+  // Nur die drei Filterwerte entscheiden ueber das Objekt. Andere Parameter
+  // (Matrixsicht, Verlaufsebene, Vergleichsauswahl) aendern die URL ebenfalls;
+  // ein neues Filterobjekt liesse dann jede Auswertung neu rechnen.
+  const year = searchParams.get("year");
+  const security = searchParams.get("security");
+  const depot = searchParams.get("depot");
+  const filter = React.useMemo(
+    () => statisticsFilterOf(year, security, depot),
+    [year, security, depot],
+  );
 
   const setFilter = React.useCallback(
     (next: StatisticsFilter) => {

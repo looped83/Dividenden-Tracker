@@ -21,13 +21,7 @@ export function useImports() {
 function useInvalidateAll() {
   const queryClient = useQueryClient();
   return () => {
-    for (const key of [
-      ["imports"],
-      ["payments"],
-      ["securities"],
-      ["depots"],
-      ["statistics"],
-    ]) {
+    for (const key of [["imports"], ["payments"], ["securities"], ["depots"]]) {
       void queryClient.invalidateQueries({ queryKey: key });
     }
   };

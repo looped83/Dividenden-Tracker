@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Link, useNavigate } from "react-router";
 import { ArrowDownRight, ArrowUpRight, Target } from "lucide-react";
+import { KpiStats, type KpiStat } from "@/components/domain/KpiHero";
 import { AmountText } from "@/components/money/AmountText";
 import { SegmentedControl, type SegmentOption } from "@/components/ui/segmented";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -72,14 +73,6 @@ interface DashboardHeroProps {
   payments: AnalyticsPayment[];
   selection: YearSelection;
   today: RefDate;
-}
-
-interface Stat {
-  label: string;
-  value: React.ReactNode;
-  caption?: React.ReactNode;
-  to?: string;
-  drillLabel?: string;
 }
 
 /** Nur ein echter Prozentvergleich (oder „neu") ergibt eine Veränderung. */
@@ -275,7 +268,7 @@ export function DashboardHero({ payments, selection, today }: DashboardHeroProps
       goals !== undefined && typeof selection === "number" ? (
         <Link
           to="/ziele"
-          className="mt-4 inline-flex min-h-7 w-fit items-center gap-2 rounded-sm text-[0.9375rem] font-medium text-primary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+          className="mt-4 inline-flex min-h-7 w-fit pointer-coarse:min-h-11 items-center gap-2 rounded-sm text-[0.9375rem] font-medium text-primary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Target className="size-4" aria-hidden />
           Jahresziel für {selection} festlegen
@@ -318,7 +311,7 @@ export function DashboardHero({ payments, selection, today }: DashboardHeroProps
         )}
       </div>
 
-      <Stats stats={buildStats(data, monthly, today)} />
+      <KpiStats className="mt-5" stats={buildStats(data, monthly, today)} />
     </section>
   );
 }
@@ -335,8 +328,8 @@ function buildStats(
   },
   monthly: GoalProgress | null,
   today: RefDate,
-): Stat[] {
-  const stats: Stat[] = [];
+): KpiStat[] {
+  const stats: KpiStat[] = [];
   if (data.isAll || data.isCurrentYear) {
     const month = splitComparison(data.monthResult, "ggü. Vj.");
     stats.push({
@@ -382,61 +375,6 @@ function buildStats(
     });
   }
   return stats;
-}
-
-/**
- * Drei Kennzahlen auf einer gedämpften Fläche — gleich gebaut, ohne
- * Trennlinien. Erst die Beschriftung, dann der Wert (`dt`/`dd`), damit
- * Sprachausgaben beides zusammen nennen. Ein Drill-down macht das ganze Feld
- * zur Tippfläche.
- */
-function Stats({ stats }: { stats: Stat[] }) {
-  if (stats.length === 0) return null;
-  return (
-    <dl
-      className={cn(
-        "mt-5 grid gap-1 rounded-2xl bg-muted p-1.5",
-        stats.length === 1
-          ? "grid-cols-1"
-          : stats.length === 2
-            ? "grid-cols-2"
-            : "grid-cols-3",
-      )}
-    >
-      {stats.map((stat) => (
-        <div
-          key={stat.label}
-          className={cn(
-            "relative flex min-w-0 flex-col rounded-xl px-2.5 py-2 sm:px-4 sm:py-3",
-            stat.to !== undefined &&
-              "transition-colors hover:bg-accent motion-reduce:transition-none",
-          )}
-        >
-          <dt className="truncate text-[0.8125rem] text-muted-foreground">
-            {stat.label}
-          </dt>
-          <dd className="mt-0.5 truncate text-[1.0625rem] font-semibold tracking-[-0.01em] tabular-amount">
-            {stat.to !== undefined ? (
-              <Link
-                to={stat.to}
-                aria-label={stat.drillLabel ?? stat.label}
-                className="rounded-sm outline-none after:absolute after:inset-0 after:rounded-xl focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-ring"
-              >
-                {stat.value}
-              </Link>
-            ) : (
-              stat.value
-            )}
-          </dd>
-          {stat.caption !== undefined && (
-            <dd className="mt-0.5 text-[0.8125rem] text-muted-foreground">
-              {stat.caption}
-            </dd>
-          )}
-        </div>
-      ))}
-    </dl>
-  );
 }
 
 /**

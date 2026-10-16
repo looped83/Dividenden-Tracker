@@ -29,6 +29,7 @@ import {
   statisticsDrillHref,
 } from "./format";
 import { StatSearch, StatTable, type StatColumn } from "./components/StatTable";
+import { formatDateRange } from "@/lib/utils/formatDate";
 
 const TOP_COMPANIES = 10;
 
@@ -48,7 +49,7 @@ function periodCell(first: string | null, last: string | null): React.ReactNode 
   // Gewoehnliche Leerzeichen um den Halbgeviertstrich: Auf schmalen Geraeten
   // darf der Zeitraum umbrechen, statt die Spalte auf seine volle Laenge zu
   // zwingen.
-  return `${formatIsoDate(first)} – ${formatIsoDate(last)}`;
+  return formatDateRange(first, last);
 }
 
 export function CompaniesTab() {

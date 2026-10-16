@@ -133,7 +133,7 @@ export function ImportsPage() {
         <div>
           <h2 className="text-xl font-semibold">Import-Assistent</h2>
           <p className="text-sm text-muted-foreground">
-            CSV-/Excel-Import historischer Dividendeneingänge (IMPORT_SPEC.md).
+            CSV-/Excel-Import historischer Dividendeneingänge.
           </p>
         </div>
         <ImportWizard

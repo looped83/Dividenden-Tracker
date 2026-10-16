@@ -11,6 +11,7 @@ const depots = vi.hoisted(() => ({
   current: [] as { id: string; name: string; base_currency: string; archived_at: null }[],
 }));
 const create = vi.hoisted(() => vi.fn());
+const existing = vi.hoisted(() => ({ current: undefined as object | undefined }));
 
 vi.mock("@/features/securities/hooks", () => ({
   useSecurities: () => ({
@@ -38,7 +39,7 @@ vi.mock("@/features/depots/hooks", () => ({
 }));
 
 vi.mock("@/features/payments/hooks", () => ({
-  usePayment: () => ({ data: undefined, isLoading: false, refetch: vi.fn() }),
+  usePayment: () => ({ data: existing.current, isLoading: false, refetch: vi.fn() }),
   useCreatePayment: () => ({ mutateAsync: create }),
   useUpdatePayment: () => ({ mutateAsync: vi.fn() }),
 }));
@@ -70,6 +71,7 @@ async function pick(name: string) {
 describe("PaymentForm", () => {
   afterEach(() => {
     create.mockReset();
+    existing.current = undefined;
   });
 
   it("bucht ins Standard-Depot des Assets, ohne danach zu fragen", async () => {
@@ -144,5 +146,26 @@ describe("PaymentForm", () => {
     depots.current = [depot("d1", "Depot A")];
     renderForm();
     expect(screen.queryByLabelText(/Notiz/)).not.toBeInTheDocument();
+  });
+
+  it("zeigt beim Bearbeiten das gebuchte Depot, auch abweichend vom Standard", () => {
+    depots.current = [depot("d1", "Depot A"), depot("d2", "Depot B")];
+    // Apple hat Depot B als Standard, gebucht wurde in Depot A.
+    existing.current = {
+      id: "p1",
+      security_id: "s1",
+      depot_id: "d1",
+      pay_date: "2026-03-10",
+      net_amount: "3.00",
+      note: null,
+      archived_at: null,
+    };
+    render(
+      <ToastProvider>
+        <PaymentForm id="p1" onDone={vi.fn()} onCancel={vi.fn()} />
+      </ToastProvider>,
+    );
+
+    expect(screen.getByLabelText("Depot")).toHaveValue("d1");
   });
 });
