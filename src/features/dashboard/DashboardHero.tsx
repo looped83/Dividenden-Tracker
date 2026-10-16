@@ -69,8 +69,8 @@ function storeKind(kind: HeroChartKind): void {
   }
 }
 
-/** Höhe der Sichtwahl im Diagramm, die das Diagramm oben freihält. */
-const CHART_TABS_HEIGHT = 24;
+/** Streifen, den das Diagramm oben für die Sichtwahl freihält. */
+const CHART_TOGGLE_RESERVE = 28;
 
 const KIND_OPTIONS: readonly SegmentOption<HeroChartKind>[] = [
   { value: "cumulative", label: "Kumuliert" },
@@ -285,15 +285,15 @@ export function DashboardHero({ payments, selection, today }: DashboardHeroProps
 
       {/* Ohne Legende (seit 1.12.0): Die Vorjahreslinie trägt ihr Jahr am
           Ende, und der Kopf nennt beim Wischen beide Jahre. */}
-      {/* Die Sichtwahl steht seit 1.19.0 als Textreiter oben links im
-          Diagramm statt in einer eigenen Zeile darüber: Die Ecke war meist
-          leer, und die Kennzahlen rücken nach oben. Das Diagramm hält den
+      {/* Die Sichtwahl steht seit 1.19.0 oben links im Diagramm statt in einer
+          eigenen Zeile darüber: Die Ecke war meist leer, und die Kennzahlen
+          rücken nach oben. Das Diagramm hält den
           Streifen frei (`reserve`), damit auch ein hoher Januar in der
           Monatssicht nie darunter liegt. „Alle Jahre" hat keine Sicht. */}
       <div className={cn("relative", data.isAll ? "mt-6" : "mt-5")}>
         {!data.isAll && series.points.length > 0 && (
           <SegmentedControl
-            variant="tabs"
+            variant="pill"
             label="Diagrammsicht"
             options={KIND_OPTIONS}
             value={kind}
@@ -313,7 +313,7 @@ export function DashboardHero({ payments, selection, today }: DashboardHeroProps
             label={chartLabel}
             describe={describePoint}
             onOpen={(p) => void navigate(p.href)}
-            reserve={data.isAll ? 0 : CHART_TABS_HEIGHT}
+            reserve={data.isAll ? 0 : CHART_TOGGLE_RESERVE}
           />
         )}
         {series.kind === "cumulative" && series.points.length > 0 && (
