@@ -5,6 +5,7 @@ import { KpiStats, type KpiStat } from "@/components/domain/KpiHero";
 import { AmountText } from "@/components/money/AmountText";
 import { SegmentedControl, type SegmentOption } from "@/components/ui/segmented";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TrendTriangle } from "@/components/ui/trend-triangle";
 import { formatMoney, formatPercent, type Money } from "@/lib/money";
 import { computeGoalProgress, type GoalProgress } from "@/lib/goals";
 import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
@@ -42,6 +43,7 @@ import {
   formatMonthYear,
   paymentsListHref,
   splitComparison,
+  withoutSign,
 } from "./format";
 import { buildHeroSeries, type HeroChartKind, type HeroPoint } from "./heroSeries";
 import { HeroChart } from "./HeroChart";
@@ -363,18 +365,9 @@ function TrendToggle({
       )}
     >
       {trend.tone !== "neutral" && (
-        <svg
-          viewBox="0 0 10 8"
-          aria-hidden
-          className={cn(
-            "size-[0.6em] fill-current",
-            trend.tone === "negative" && "rotate-180",
-          )}
-        >
-          <path d="M5 0 10 8H0z" />
-        </svg>
+        <TrendTriangle direction={trend.tone === "negative" ? "down" : "up"} />
       )}
-      {(unit === "money" ? money : percent).replace(/^[+\-−]\s?/, "")}
+      {withoutSign(unit === "money" ? money : percent)}
     </button>
   );
 }

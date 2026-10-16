@@ -102,6 +102,11 @@ export function splitComparison(
   }
 }
 
+/** Entfernt das fuehrende Vorzeichen: Neben ▲/▼ waere es doppelt. */
+export function withoutSign(text: string): string {
+  return text.replace(/^[+\-−]\s?/, "");
+}
+
 /**
  * Baut das Ziel fuer den Drill-down auf die Zahlungsliste (§13). Leere/`all`-
  * Werte werden weggelassen, damit keine unnoetigen Filter entstehen.

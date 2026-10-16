@@ -152,7 +152,11 @@ describe("ComparisonTab — gleicher Ausschnitt", () => {
     renderTab();
     // Betrag als Kennzahl, Prozentzahl mit Bezugszeitraum darunter — in der
     // halbbreiten Kachel des Telefons trägt jede Zeile genau eine Zahl.
-    expect(screen.getByText("+120,00 €")).toBeInTheDocument();
+    // Ohne Vorzeichen: Die Richtung traegt das gruene Dreieck davor.
+    const change = screen
+      .getAllByText("120,00 €")
+      .find((element) => element.querySelector("svg"));
+    expect(change).toHaveClass("text-positive");
     expect(screen.getByText("+60,0 % gegenüber 2025")).toBeInTheDocument();
   });
 
@@ -232,7 +236,7 @@ describe("ComparisonTab — Auswahl", () => {
       target: { value: "2024" },
     });
     // 320 € (2026 bis zum Stichtag) gegen 90 € (2024) = +230,00 € / +255,6 %.
-    expect(screen.getByText("+230,00 €")).toBeInTheDocument();
+    expect(screen.getByText("230,00 €")).toBeInTheDocument();
     expect(screen.getByText("+255,6 % gegenüber 2024")).toBeInTheDocument();
   });
 
