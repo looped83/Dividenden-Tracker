@@ -60,7 +60,10 @@ export function HeroChart({
   label,
   describe,
   onOpen,
+  reserve = 0,
 }: {
+  /** Zusätzlicher Platz oben, z. B. für einen Umschalter im Diagramm. */
+  reserve?: number;
   series: HeroSeries;
   active: number | null;
   onActiveChange: (index: number | null) => void;
@@ -76,7 +79,8 @@ export function HeroChart({
   // stehen bleiben, wenn man danach den Betrag im Kopf antippt.
   const viaKeyboard = React.useRef(false);
   const pointer = React.useRef("");
-  const height = width >= 640 ? 200 : 140;
+  const height = (width >= 640 ? 200 : 140) + reserve;
+  const top = TOP + reserve;
   const { points } = series;
   const slots = series.kind === "years" ? series.bars.length : 12;
   const x = (slot: number) => INSET + (slot / slots) * (width - 2 * INSET);
@@ -179,16 +183,19 @@ export function HeroChart({
               x={x}
               width={width}
               height={height}
+              top={top}
               active={active}
             />
           ) : series.kind === "years" ? (
-            <Years series={series} x={x} width={width} height={height} active={active} />
+            <Years series={series} x={x} width={width} height={height}
+              top={top} active={active} />
           ) : (
             <MonthlyLine
               series={series}
               x={x}
               width={width}
               height={height}
+              top={top}
               active={active}
             />
           )}
@@ -199,6 +206,7 @@ export function HeroChart({
 }
 
 interface Geometry {
+  top: number;
   x: (slot: number) => number;
   width: number;
   height: number;
@@ -211,6 +219,7 @@ function Cumulative({
   width,
   height,
   active,
+  top,
 }: Geometry & { series: Extract<HeroSeries, { kind: "cumulative" }> }) {
   const max =
     Math.max(
@@ -218,7 +227,7 @@ function Cumulative({
       ...series.line.map((point) => num(point.value)),
       1,
     ) * 1.06;
-  const y = (value: number) => TOP + (1 - value / max) * (height - TOP - 2);
+  const y = (value: number) => top + (1 - value / max) * (height - top - 2);
   const path = (values: { x: number; value: number }[]) =>
     values
       .map((p, i) => `${i ? "L" : "M"}${x(p.x).toFixed(1)},${y(p.value).toFixed(1)}`)
@@ -272,7 +281,7 @@ function Cumulative({
           <line
             x1={x(point.x)}
             x2={x(point.x)}
-            y1={TOP - 8}
+            y1={top - 8}
             y2={y(0)}
             stroke="var(--muted-foreground)"
             strokeWidth={1}
@@ -318,10 +327,11 @@ function Years({
   x,
   height,
   active,
+  top,
 }: Geometry & { series: Extract<HeroSeries, { kind: "years" }> }) {
   const { bars, points } = series;
   const max = Math.max(...bars.map((bar) => num(bar.value)), 1) * 1.06;
-  const y = (value: number) => TOP + (1 - value / max) * (height - TOP - 2);
+  const y = (value: number) => top + (1 - value / max) * (height - top - 2);
   const coords = bars.map((bar, index) => ({
     x: x(index + 0.5),
     y: y(Math.max(0, num(bar.value))),
@@ -351,7 +361,7 @@ function Years({
         <line
           x1={x(point.x)}
           x2={x(point.x)}
-          y1={TOP - 8}
+          y1={top - 8}
           y2={y(0)}
           stroke="var(--muted-foreground)"
           strokeWidth={1}
@@ -410,6 +420,7 @@ function MonthlyLine({
   width,
   height,
   active,
+  top,
 }: Geometry & { series: Extract<HeroSeries, { kind: "monthly" }> }) {
   const { months, points } = series;
   const max =
@@ -417,7 +428,7 @@ function MonthlyLine({
       ...months.flatMap((bar) => [num(bar.prior), bar.current ? num(bar.current) : 0]),
       1,
     ) * 1.06;
-  const y = (value: number) => TOP + (1 - Math.max(0, value) / max) * (height - TOP - 2);
+  const y = (value: number) => top + (1 - Math.max(0, value) / max) * (height - top - 2);
   const path = (coords: { x: number; y: number }[]) =>
     coords.map((p, i) => `${i ? "L" : "M"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join("");
   const prior = months.map((bar) => ({ x: x(bar.month - 0.5), y: y(num(bar.prior)) }));
@@ -445,7 +456,7 @@ function MonthlyLine({
         <line
           x1={x(point.x)}
           x2={x(point.x)}
-          y1={TOP - 8}
+          y1={top - 8}
           y2={y(0)}
           stroke="var(--muted-foreground)"
           strokeWidth={1}

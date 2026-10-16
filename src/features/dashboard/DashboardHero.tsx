@@ -69,6 +69,49 @@ function storeKind(kind: HeroChartKind): void {
   }
 }
 
+// TEMP Variantenvergleich (nicht committen)
+const VARIANT = (() => {
+  try {
+    return window.localStorage.getItem("variante-umschalter") ?? "";
+  } catch {
+    return "";
+  }
+})();
+
+function TextTabs({
+  value,
+  onChange,
+}: {
+  value: HeroChartKind;
+  onChange: (v: HeroChartKind) => void;
+}) {
+  return (
+    <div role="radiogroup" aria-label="Diagrammsicht" className="flex items-center gap-4">
+      {KIND_OPTIONS.map((o) => {
+        const on = o.value === value;
+        return (
+          <button
+            key={o.value}
+            type="button"
+            role="radio"
+            aria-checked={on}
+            onClick={() => {
+              onChange(o.value);
+            }}
+            className={cn(
+              "relative h-6 text-[0.8125rem] font-semibold outline-none after:absolute after:inset-x-0 after:-inset-y-2.5 focus-visible:ring-2 focus-visible:ring-ring",
+              on ? "text-foreground" : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {o.label}
+            {on && <span className="absolute inset-x-0 -bottom-0.5 h-0.5 rounded-full bg-primary" />}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 const KIND_OPTIONS: readonly SegmentOption<HeroChartKind>[] = [
   { value: "cumulative", label: "Kumuliert" },
   { value: "monthly", label: "Monatlich" },
@@ -176,6 +219,7 @@ export function DashboardHero({ payments, selection, today }: DashboardHeroProps
   );
 
   const label = describeSelection(selection);
+  const inChart = !data.isAll && (VARIANT === "a" || VARIANT === "c");
   const active = selected?.series === series ? selected.index : null;
   const setActive = (index: number | null) => {
     setSelected(index === null ? null : { series, index });
@@ -282,8 +326,8 @@ export function DashboardHero({ payments, selection, today }: DashboardHeroProps
 
       {/* Ohne Legende (seit 1.12.0): Die Vorjahreslinie trägt ihr Jahr am
           Ende, und der Kopf nennt beim Wischen beide Jahre. */}
-      {!data.isAll && (
-        <div className="mt-5 flex justify-end">
+      {!data.isAll && VARIANT !== "a" && VARIANT !== "c" && (
+        <div className={cn("mt-5 flex", VARIANT === "b" ? "justify-start" : "justify-end")}>
           <SegmentedControl
             variant="pill"
             label="Diagrammsicht"
@@ -293,7 +337,22 @@ export function DashboardHero({ payments, selection, today }: DashboardHeroProps
           />
         </div>
       )}
-      <div className={data.isAll ? "mt-6" : "mt-3"}>
+      <div className={cn("relative", data.isAll ? "mt-6" : inChart ? "mt-5" : "mt-3")}>
+        {inChart && series.points.length > 0 && (
+          <div className="absolute left-0 top-0 z-10">
+            {VARIANT === "a" ? (
+              <SegmentedControl
+                variant="pill"
+                label="Diagrammsicht"
+                options={KIND_OPTIONS}
+                value={kind}
+                onChange={setKind}
+              />
+            ) : (
+              <TextTabs value={kind} onChange={setKind} />
+            )}
+          </div>
+        )}
         {series.points.length === 0 ? (
           <p className="py-10 text-center text-sm text-muted-foreground">
             Für {label} liegen noch keine Dividenden vor.
@@ -306,6 +365,7 @@ export function DashboardHero({ payments, selection, today }: DashboardHeroProps
             label={chartLabel}
             describe={describePoint}
             onOpen={(p) => void navigate(p.href)}
+            reserve={inChart ? (VARIANT === "a" ? 28 : 18) : 0}
           />
         )}
         {series.kind === "cumulative" && series.points.length > 0 && (
