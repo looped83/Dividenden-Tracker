@@ -15,6 +15,13 @@ export interface KpiStat {
   drillLabel?: string | undefined;
 }
 
+/**
+ * Hauptzahl links, Leiste rechts, sobald der Kopf breit genug ist. 5:7, damit
+ * drei Nebenkennzahlen mit vierstelligen Beträgen ohne Kürzen Platz haben.
+ */
+const sideBySide =
+  "@3xl:grid @3xl:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] @3xl:items-center @3xl:gap-8";
+
 const stretched = cn(
   "rounded-sm outline-none after:absolute after:inset-0",
   "focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-ring",
@@ -32,6 +39,13 @@ const stretched = cn(
  * Seit 1.7.0 ohne Kartenrahmen, in der Form des Kopfes der Übersicht: Zahl
  * 40px, darunter die Nebenkennzahlen auf einer gedämpften Fläche ohne
  * Trennlinien. Die Größe trägt die Rangfolge, nicht ein Rahmen.
+ *
+ * Seit 1.16.0 stehen Hauptzahl und Leiste ab einer Breite des Kopfes von
+ * 48rem nebeneinander (Hauptzahl links, Leiste rechts): Auf dem Desktop blieb
+ * rechts neben der Hauptzahl sonst eine leere Fläche, und die Leiste zog sich
+ * über die ganze Breite. Gemessen wird die eigene Breite (Container Query),
+ * nicht das Fenster — die Seitenleiste nimmt ab `lg` Platz weg. Auf dem
+ * Telefon bleibt alles untereinander.
  *
  * Reine Darstellung: Werte kommen fertig formatiert, gerechnet wird in den
  * Fachmodulen. Ein Drill-down macht die ganze Fläche zur Tippfläche (Link
@@ -67,76 +81,80 @@ export function KpiHero({
   const valueClass =
     "text-[2.5rem] font-bold leading-[1.05] tracking-[-0.035em] tabular-amount";
 
+  const hasStats = stats !== undefined && stats.length > 0;
+
   return (
-    <section className={cn("flex flex-col", className)}>
-      <div className="relative space-y-2">
-        <p className="text-[0.9375rem] font-medium text-muted-foreground">{label}</p>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          {to !== undefined ? (
-            <Link
-              to={to}
-              aria-label={drillLabel}
-              className={cn(valueClass, stretched, "after:rounded-sm")}
-            >
-              {value}
-            </Link>
-          ) : (
-            <span className={valueClass}>{value}</span>
+    <section className={cn("@container", className)}>
+      <div className={cn("flex flex-col gap-5", hasStats && sideBySide)}>
+        <div className="relative space-y-2">
+          <p className="text-[0.9375rem] font-medium text-muted-foreground">{label}</p>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            {to !== undefined ? (
+              <Link
+                to={to}
+                aria-label={drillLabel}
+                className={cn(valueClass, stretched, "after:rounded-sm")}
+              >
+                {value}
+              </Link>
+            ) : (
+              <span className={valueClass}>{value}</span>
+            )}
+            {trend}
+          </div>
+          {caption !== undefined && (
+            <p className="text-[0.9375rem] text-muted-foreground">{caption}</p>
           )}
-          {trend}
+          {footer !== undefined && <div className="relative z-10 pt-2">{footer}</div>}
         </div>
-        {caption !== undefined && (
-          <p className="text-[0.9375rem] text-muted-foreground">{caption}</p>
-        )}
-        {footer !== undefined && <div className="relative z-10 pt-2">{footer}</div>}
-      </div>
-      {stats && stats.length > 0 && (
-        <dl
-          className={cn(
-            "mt-5 grid gap-1 rounded-2xl bg-muted p-1.5",
-            stats.length === 1
-              ? "grid-cols-1"
-              : stats.length === 2
-                ? "grid-cols-2"
-                : "grid-cols-3",
-          )}
-        >
-          {stats.map((stat) => (
-            // Erst die Beschriftung, dann der Wert — als `dt`/`dd`, damit
-            // Sprachausgaben beides zusammen nennen.
-            <div
-              key={stat.label}
-              className={cn(
-                "relative flex min-w-0 flex-col rounded-xl px-2.5 py-2 sm:px-4 sm:py-3",
-                stat.to !== undefined &&
-                  "transition-colors hover:bg-accent motion-reduce:transition-none",
-              )}
-            >
-              <dt className="truncate text-[0.8125rem] text-muted-foreground">
-                {stat.label}
-              </dt>
-              <dd className="mt-0.5 truncate text-[1.0625rem] font-semibold tracking-[-0.01em] tabular-amount">
-                {stat.to !== undefined ? (
-                  <Link
-                    to={stat.to}
-                    aria-label={stat.drillLabel ?? stat.label}
-                    className={stretched}
-                  >
-                    {stat.value}
-                  </Link>
-                ) : (
-                  stat.value
+        {hasStats && (
+          <dl
+            className={cn(
+              "grid gap-1 rounded-2xl bg-muted p-1.5",
+              stats.length === 1
+                ? "grid-cols-1"
+                : stats.length === 2
+                  ? "grid-cols-2"
+                  : "grid-cols-3",
+            )}
+          >
+            {stats.map((stat) => (
+              // Erst die Beschriftung, dann der Wert — als `dt`/`dd`, damit
+              // Sprachausgaben beides zusammen nennen.
+              <div
+                key={stat.label}
+                className={cn(
+                  "relative flex min-w-0 flex-col rounded-xl px-2.5 py-2 sm:px-4 sm:py-3",
+                  stat.to !== undefined &&
+                    "transition-colors hover:bg-accent motion-reduce:transition-none",
                 )}
-              </dd>
-              {stat.caption !== undefined && (
-                <dd className="mt-0.5 text-[0.8125rem] text-muted-foreground">
-                  {stat.caption}
+              >
+                <dt className="truncate text-[0.8125rem] text-muted-foreground">
+                  {stat.label}
+                </dt>
+                <dd className="mt-0.5 truncate text-[1.0625rem] font-semibold tracking-[-0.01em] tabular-amount">
+                  {stat.to !== undefined ? (
+                    <Link
+                      to={stat.to}
+                      aria-label={stat.drillLabel ?? stat.label}
+                      className={stretched}
+                    >
+                      {stat.value}
+                    </Link>
+                  ) : (
+                    stat.value
+                  )}
                 </dd>
-              )}
-            </div>
-          ))}
-        </dl>
-      )}
+                {stat.caption !== undefined && (
+                  <dd className="mt-0.5 text-[0.8125rem] text-muted-foreground">
+                    {stat.caption}
+                  </dd>
+                )}
+              </div>
+            ))}
+          </dl>
+        )}
+      </div>
     </section>
   );
 }
@@ -181,22 +199,26 @@ export function TrendPill({
  */
 export function KpiHeroSkeleton({ stats = 3 }: { stats?: 2 | 3 }) {
   return (
-    <div className="flex flex-col" aria-hidden>
-      <Skeleton className="h-4 w-28" />
-      <Skeleton className="mt-3 h-10 w-52" />
-      <Skeleton className="mt-3 h-4 w-40" />
-      <div
-        className={cn(
-          "mt-5 grid gap-1 rounded-2xl bg-muted p-1.5",
-          stats === 2 ? "grid-cols-2" : "grid-cols-3",
-        )}
-      >
-        {Array.from({ length: stats }).map((_, index) => (
-          <div key={index} className="space-y-2 px-2.5 py-2 sm:px-4 sm:py-3">
-            <Skeleton className="h-3 w-14 bg-background" />
-            <Skeleton className="h-5 w-20 bg-background" />
-          </div>
-        ))}
+    <div className="@container" aria-hidden>
+      <div className={cn("flex flex-col gap-5", sideBySide)}>
+        <div>
+          <Skeleton className="h-4 w-28" />
+          <Skeleton className="mt-3 h-10 w-52" />
+          <Skeleton className="mt-3 h-4 w-40" />
+        </div>
+        <div
+          className={cn(
+            "grid gap-1 rounded-2xl bg-muted p-1.5",
+            stats === 2 ? "grid-cols-2" : "grid-cols-3",
+          )}
+        >
+          {Array.from({ length: stats }).map((_, index) => (
+            <div key={index} className="space-y-2 px-2.5 py-2 sm:px-4 sm:py-3">
+              <Skeleton className="h-3 w-14 bg-background" />
+              <Skeleton className="h-5 w-20 bg-background" />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
