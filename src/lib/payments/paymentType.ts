@@ -19,12 +19,3 @@ const PAYMENT_TYPE_LABELS: Record<PaymentType, string> = {
 export function describePaymentType(type: PaymentType): string {
   return PAYMENT_TYPE_LABELS[type];
 }
-
-export const PAYMENT_TYPE_VALUES: readonly PaymentType[] = [
-  "regular",
-  "special",
-  "correction",
-  "cancellation",
-  "refund",
-  "other",
-];

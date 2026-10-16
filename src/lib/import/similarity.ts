@@ -3,7 +3,7 @@
  * (IMPORT_SPEC.md §6/§7, Stufe D). Dient AUSSCHLIESSLICH als Hinweis fuer den
  * Nutzer — niemals als automatische Zusammenfuehrung.
  */
-export function levenshtein(a: string, b: string): number {
+function levenshtein(a: string, b: string): number {
   if (a === b) return 0;
   if (a.length === 0) return b.length;
   if (b.length === 0) return a.length;
@@ -26,7 +26,7 @@ export function levenshtein(a: string, b: string): number {
 }
 
 /** Aehnlichkeit in [0,1]; 1 = identisch. */
-export function similarityRatio(a: string, b: string): number {
+function similarityRatio(a: string, b: string): number {
   if (a.length === 0 && b.length === 0) return 1;
   const distance = levenshtein(a, b);
   const maxLen = Math.max(a.length, b.length);

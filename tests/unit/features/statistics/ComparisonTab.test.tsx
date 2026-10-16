@@ -132,8 +132,8 @@ describe("ComparisonTab — gleicher Ausschnitt", () => {
     renderTab();
     // Die Spanne („01.01.2026 – 29.07.2026") stand frueher unter jedem Betrag
     // und wiederholte damit in jeder Kachel, was die Ueberschrift schon sagt.
-    expect(screen.getByText("3 Zahlungen")).toBeInTheDocument();
-    expect(screen.getByText("2 Zahlungen")).toBeInTheDocument();
+    expect(screen.getByText("3 Dividenden")).toBeInTheDocument();
+    expect(screen.getByText("2 Dividenden")).toBeInTheDocument();
   });
 
   it("nennt den Stichtag genau einmal, als Satz unter der Auswahl", () => {
@@ -322,7 +322,7 @@ describe("ComparisonTab — Monat gegen Monat", () => {
   it("meldet einen Monat ohne Zahlungen, statt eine leere Tabelle zu zeigen", () => {
     renderTab("?modus=monate&monat=2&basis=2026&referenz=2025");
     expect(
-      screen.getByText(/In keinem der beiden Monate gab es Dividendeneingänge/),
+      screen.getByText(/In keinem der beiden Monate gab es Dividenden/),
     ).toBeInTheDocument();
   });
 });

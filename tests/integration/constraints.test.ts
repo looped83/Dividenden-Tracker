@@ -140,7 +140,7 @@ describe("CHECK-Constraints (TEST_STRATEGY.md §5)", () => {
 });
 
 describe("Foreign Keys", () => {
-  it("lehnt einen Dividendeneingang mit unbekanntem Wertpapier ab", async () => {
+  it("lehnt einen Dividende mit unbekanntem Wertpapier ab", async () => {
     // Faengt seit 0030 die Eigentumspruefung ab (`trg_02x_…`), noch vor der
     // Fingerprint-Berechnung und lange vor der FK-Constraint. Fuer eine
     // unbekannte Kennung ist die Aussage dieselbe wie fuer eine fremde: Sie
@@ -157,7 +157,7 @@ describe("Foreign Keys", () => {
     ).rejects.toThrow(/security_id .* gehoert nicht zum eigenen Bestand/);
   });
 
-  it("lehnt einen Dividendeneingang mit unbekanntem Depot ab", async () => {
+  it("lehnt einen Dividende mit unbekanntem Depot ab", async () => {
     // Seit 0030 greift hier die Eigentumspruefung (`trg_02y_…`) vor der
     // FK-Constraint. Der Zugriff wird weiterhin abgelehnt — nur mit einer
     // Meldung, die den Grund nennt, statt den Constraint-Namen.

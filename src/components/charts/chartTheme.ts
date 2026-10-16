@@ -1,3 +1,5 @@
+import { formatCountNumber } from "@/lib/utils/formatNumber";
+
 /**
  * Gemeinsame Grundlage aller Diagramme (UX_AND_DESIGN_SYSTEM.md §1).
  *
@@ -13,7 +15,6 @@
  * Einstellungen sind deshalb Objekte zum Ausbreiten, keine Komponenten.
  */
 
-const groupedFormatter = new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 });
 const compactFormatter = new Intl.NumberFormat("de-DE", {
   notation: "compact",
   maximumFractionDigits: 1,
@@ -31,10 +32,10 @@ const compactFormatter = new Intl.NumberFormat("de-DE", {
  * nennen Titel, Tooltip und Datentabelle; auf der Achse zaehlt die
  * Groessenordnung.
  */
-export function formatAxisTick(value: number): string {
+function formatAxisTick(value: number): string {
   return Math.abs(value) >= 1_000_000
     ? compactFormatter.format(value)
-    : groupedFormatter.format(value);
+    : formatCountNumber(value);
 }
 
 /** `left: 0` — die Achsenspalte traegt den Abstand bereits selbst. */

@@ -22,7 +22,7 @@ import { useEffectivePayments } from "@/features/dashboard/hooks";
  * Invalidierung durch Zahlungs-/Import-Mutationen aktualisiert die Zielstände
  * automatisch, ohne dass Ziele hier zusätzlich invalidiert werden müssen.
  */
-export const GOALS_KEY = ["goals"] as const;
+const GOALS_KEY = ["goals"] as const;
 
 export interface GoalWithMeta extends Goal {
   /** Fuer Optimistic Concurrency in Bearbeiten-Dialogen. */

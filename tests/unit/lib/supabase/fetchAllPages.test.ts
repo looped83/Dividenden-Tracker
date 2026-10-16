@@ -56,4 +56,37 @@ describe("fetchAllPages", () => {
     );
     await expect(fetchAllPages(source)).rejects.toThrow("Verbindung unterbrochen");
   });
+
+  it("laedt mit Gesamtzahl die weiteren Seiten parallel", async () => {
+    let open = 0;
+    let maxOpen = 0;
+    const source = vi.fn(async (from: number, to: number, withCount: boolean) => {
+      open += 1;
+      maxOpen = Math.max(maxOpen, open);
+      await Promise.resolve();
+      open -= 1;
+      return {
+        data: rows(3439).slice(from, to + 1),
+        error: null,
+        count: withCount ? 3439 : null,
+      };
+    });
+    const result = await fetchAllPages(source);
+    expect(result).toHaveLength(3439);
+    expect(result.map((row) => row.id)).toEqual(rows(3439).map((row) => row.id));
+    expect(source).toHaveBeenCalledTimes(4);
+    // Seite 2 bis 4 gleichzeitig.
+    expect(maxOpen).toBe(3);
+  });
+
+  it("wirft auch bei parallelem Laden den Fehler einer Seite weiter", async () => {
+    const source = vi.fn((from: number, _to: number, withCount: boolean) =>
+      Promise.resolve(
+        from === 2 * PAGE_SIZE
+          ? { data: null, error: { message: "Seite fehlt" }, count: null }
+          : { data: rows(PAGE_SIZE), error: null, count: withCount ? 2500 : null },
+      ),
+    );
+    await expect(fetchAllPages(source)).rejects.toThrow("Seite fehlt");
+  });
 });

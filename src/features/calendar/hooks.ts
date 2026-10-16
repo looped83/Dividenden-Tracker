@@ -20,10 +20,10 @@ import {
  * tatsaechlich erhaltene Zahlungen sind zwei Datenarten und werden nicht
  * vermischt (Auftrag §18).
  */
-export const CALENDAR_KEY = ["calendar"] as const;
+const CALENDAR_KEY = ["calendar"] as const;
 
 /** Nach dieser Zeit gilt der Bestand als veraltet und wird erneuert. */
-export const CALENDAR_STALE_AFTER_MS = 12 * 60 * 60 * 1000;
+const CALENDAR_STALE_AFTER_MS = 12 * 60 * 60 * 1000;
 
 // Ausserhalb des Hooks, damit `select` eine stabile Referenz hat und nicht bei
 // jedem Rendern erneut laeuft (siehe `useDashboardPayments`).

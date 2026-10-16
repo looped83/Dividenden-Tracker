@@ -379,7 +379,7 @@ async function fetchDividendPayments(): Promise<DividendPaymentBackup[]> {
         .range(from, to),
     ),
   ]);
-  assertComplete(data.length, expected, "Dividendeneingänge");
+  assertComplete(data.length, expected, "Dividenden");
 
   return data.map(
     (p) =>

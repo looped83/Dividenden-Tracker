@@ -134,7 +134,7 @@ export function CategoryBarChart({
             <TableRow>
               <TableHead>{categoryHeader}</TableHead>
               <TableHead className="text-right">Nettodividende</TableHead>
-              <TableHead className="text-right">Zahlungen</TableHead>
+              <TableHead className="text-right">Anzahl</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

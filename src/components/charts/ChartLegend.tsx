@@ -1,7 +1,7 @@
 export interface ChartLegendItem {
   /** Beschriftung der Reihe, z. B. „2026". */
   label: string;
-  /** CSS-Farbe der Reihe, z. B. `var(--chart-1)`. */
+  /** CSS-Farbe der Reihe, z. B. `var(--primary)`. */
   color: string;
   /** Gestrichelt dargestellte Reihe (Vergleichslinie). */
   dashed?: boolean;

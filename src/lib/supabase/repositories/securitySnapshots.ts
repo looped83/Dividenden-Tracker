@@ -9,7 +9,7 @@ export type SecuritySnapshotRun =
   Database["public"]["Tables"]["security_snapshot_runs"]["Row"];
 
 /** Quelle dieser Staende; eine Stelle fuer Abfrage und Anzeige. */
-export const SNAPSHOT_SOURCE = "divvydiary_csv";
+const SNAPSHOT_SOURCE = "divvydiary_csv";
 
 const NUMERIC_FIELDS = [
   "quantity",

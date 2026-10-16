@@ -19,7 +19,7 @@ export function AuthLayout({ title, description, children, footer }: AuthLayoutP
     <div className="flex min-h-dvh items-center justify-center bg-background px-4 py-12">
       <div className="w-full max-w-sm space-y-4">
         <p className="text-center text-base font-semibold tracking-tight">
-          Dividend Tracker
+          Dividenden-Tracker
         </p>
         <Card>
           <CardHeader>

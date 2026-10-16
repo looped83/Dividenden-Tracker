@@ -61,7 +61,7 @@ describe("aggregate + selectedPeriod", () => {
     expect(aggregateInYear(payments, 2026).net.toStringValue()).toBe("0.30");
   });
 
-  it("zaehlt Zahlungen im Jahr", () => {
+  it("zaehlt Dividenden im Jahr", () => {
     const payments = [p("2026-01-10", "5"), p("2026-05-10", "5"), p("2025-05-10", "5")];
     const agg = selectedPeriodAggregate(payments, 2026);
     expect(agg.count).toBe(2);

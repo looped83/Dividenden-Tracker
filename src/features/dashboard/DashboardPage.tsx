@@ -111,12 +111,12 @@ export function DashboardPage() {
         {heading}
         <EmptyState
           icon={LayoutDashboard}
-          title="Noch keine Dividendeneingänge vorhanden"
-          description="Erfasse deinen ersten Eingang oder importiere deine bisherige Historie, um Kennzahlen zu sehen."
+          title="Noch keine Dividenden vorhanden"
+          description="Erfasse deine erste Dividende oder importiere deine bisherige Historie, um Kennzahlen zu sehen."
           action={
             <div className="flex flex-wrap justify-center gap-2">
               <Button aria-haspopup="dialog" {...newPayment}>
-                <Plus /> Ersten Eingang erfassen
+                <Plus /> Erste Dividende erfassen
               </Button>
               <Button asChild variant="outline">
                 <Link to="/einstellungen/importe">
@@ -141,7 +141,7 @@ export function DashboardPage() {
           role="status"
           className="rounded-md border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground"
         >
-          Für {describeSelection(selection)} liegen keine Dividendeneingänge vor. Die
+          Für {describeSelection(selection)} liegen keine Dividenden vor. Die
           zeitraumunabhängigen Kennzahlen (aktueller Monat, Historie) bleiben sichtbar.
         </p>
       )}

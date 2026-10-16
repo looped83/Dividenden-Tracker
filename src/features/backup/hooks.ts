@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchLastBackupAt } from "@/lib/backup/backupService";
 import { formatTimestampDate } from "@/lib/utils/formatDate";
 
-export const LAST_BACKUP_KEY = ["profile", "last-backup"] as const;
+const LAST_BACKUP_KEY = ["profile", "last-backup"] as const;
 
 /** Ganze Tage zwischen zwei Zeitpunkten (nur zur Anzeige, keine Geldarithmetik). */
 function daysSince(iso: string, now: Date): number {

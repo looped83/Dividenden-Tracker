@@ -86,6 +86,19 @@ Diese 15 Grundsätze sind Abnahmekriterien für jede Phase (siehe IMPLEMENTATION
 14. Secrets liegen niemals im Frontend oder Repository.
 15. Keine Werbe-, Tracking- oder externen Analytics-Dienste. Einzige externen Endpunkte: die eigene Supabase-Instanz.
 
+### Begriffe in der Oberfläche
+
+| Begriff | Bedeutung |
+|---|---|
+| **Dividende** | eine erhaltene Ausschüttung, also ein erfasster oder importierter Datensatz (früher auch „Eingang" oder „Zahlung"). Mehrzahl und Anzahl: „Dividenden" |
+| **Erwartete Dividende** | angekündigter Termin im Kalender, noch nicht erhalten; zählt in Summen nur mit dem Zahltag, nie mit dem Ex-Tag |
+| **Asset** | ein Wertpapier (Aktie, ETF, Fonds) |
+| **Depot** | ein Konto bei einer Bank oder einem Broker; jede Dividende gehört zu genau einem |
+| **Portfolio** | eine eigene Gruppierung mehrerer Depots, unabhängig von der Bank |
+| **Stornieren** | eine Dividende ausblenden, ohne sie zu löschen; sie bleibt im Verlauf und lässt sich reaktivieren |
+
+Feldnamen wie „Zahlungsdatum" und „Zahlungsart" bleiben, ebenso die Adresse `/eingaenge`.
+
 ---
 
 ## 4. Hauptnavigation

@@ -329,7 +329,7 @@ describe("securityStatistics + sortSecurityStatistics (§11.5)", () => {
     expect(sorted.map((s) => s.securityId)).toEqual(["a", "b"]); // Alpha vor Beta
   });
 
-  it("sortiert nach letzter Zahlung (neueste zuerst)", () => {
+  it("sortiert nach letzter Dividende (neueste zuerst)", () => {
     const sorted = sortSecurityStatistics(
       securityStatistics(payments),
       "lastPayment",

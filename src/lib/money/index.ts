@@ -1,5 +1,4 @@
 export { MoneyDecimal, type DecimalInstance } from "./decimalConfig";
-export { roundHalfUp } from "./rounding";
 export { parseCanonicalDecimal, InvalidDecimalStringError } from "./parsing";
 export {
   toCurrencyCode,
@@ -7,7 +6,7 @@ export {
   type CurrencyCode,
   InvalidCurrencyCodeError,
 } from "./currency";
-export { Money, sumMoney, MONEY_SCALE, CurrencyMismatchError } from "./money";
+export { Money, sumMoney, CurrencyMismatchError } from "./money";
 export {
   formatAmount,
   formatMoney,

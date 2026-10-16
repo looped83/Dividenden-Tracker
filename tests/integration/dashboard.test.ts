@@ -108,7 +108,7 @@ afterAll(async () => {
 });
 
 describe("Dashboard-Datenbasis", () => {
-  it("liefert aktive Zahlungen des Nutzers und schliesst stornierte aus", async () => {
+  it("liefert aktive Dividenden des Nutzers und schliesst stornierte aus", async () => {
     const ids = await dashboardIds(userA);
 
     expect(ids).toContain(activePaymentId);

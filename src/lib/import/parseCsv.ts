@@ -22,7 +22,7 @@ export interface CsvParseResult {
 const DELIMITERS: Delimiter[] = [";", ",", "\t"];
 
 /** Decodiert einen Byte-Puffer als UTF-8 und meldet ein evtl. vorhandenes BOM. */
-export function decodeCsv(buffer: ArrayBuffer): {
+function decodeCsv(buffer: ArrayBuffer): {
   text: string;
   hadBom: boolean;
   warnings: string[];
@@ -50,7 +50,7 @@ export function decodeCsv(buffer: ArrayBuffer): {
  * Erkennt das Trennzeichen anhand mehrerer nicht-leerer Zeilen: gewaehlt wird
  * das Zeichen mit konsistenter, hoechster Spaltenzahl (> 1).
  */
-export function detectDelimiter(text: string): Delimiter {
+function detectDelimiter(text: string): Delimiter {
   const lines = text
     .split(/\r\n|\n|\r/)
     .filter((l) => l.trim() !== "")

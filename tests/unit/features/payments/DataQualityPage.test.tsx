@@ -147,7 +147,7 @@ describe("DataQualityPage – markierte Paare", () => {
 
     // Erledigt, nicht „keine vorhanden": Das markierte Paar gibt es ja.
     expect(screen.getByText("Keine offenen Dubletten")).toBeInTheDocument();
-    expect(screen.queryByText(/Keine Zahlungen mit gleichem/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Keine Dividenden mit gleichem/)).not.toBeInTheDocument();
     await userEvent.click(screen.getByText("Als keine Dublette markiert (1)"));
     await userEvent.click(
       screen.getByRole("button", {

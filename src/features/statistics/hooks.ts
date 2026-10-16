@@ -132,4 +132,4 @@ export function useStatisticsFilter(): {
   return { filter, setFilter };
 }
 
-export { useStatisticsContext, type StatisticsContext } from "./context";
+export type { StatisticsContext } from "./context";

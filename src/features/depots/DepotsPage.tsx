@@ -475,7 +475,7 @@ export function DepotsPage() {
             <EmptyState
               icon={Landmark}
               title="Noch kein Depot angelegt"
-              description="Lege dein erstes Depot an, um Dividendeneingänge zu erfassen."
+              description="Lege dein erstes Depot an, um Dividenden zu erfassen."
               action={
                 <Button
                   onClick={() => {

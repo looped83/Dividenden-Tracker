@@ -12,7 +12,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
  * Das Geheimnis ist ein Testwert und steht bewusst im Repository: Es schuetzt
  * nichts ausser einer lokalen Wegwerf-Datenbank.
  */
-export const JWT_SECRET = "e2e-test-jwt-secret-nicht-fuer-produktion";
+const JWT_SECRET = "e2e-test-jwt-secret-nicht-fuer-produktion";
 
 export interface AccessTokenClaims {
   sub: string;

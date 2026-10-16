@@ -137,6 +137,20 @@ describe("expectedTotalOf", () => {
     expect(total.mixedCurrencies).toBe(false);
   });
 
+  it("zaehlt eine Dividende nicht doppelt, wenn auch der Ex-Tag einen Betrag nennt", () => {
+    const total = expectedTotalOf([
+      event("ex", "2026-08-03", "A", {
+        eventType: "ex_date",
+        expectedAmount: betrag("10.00"),
+      }),
+      event("zahl", "2026-08-20", "A", { expectedAmount: betrag("10.00") }),
+    ]);
+
+    expect(total.total?.toStringValue()).toBe("10.00");
+    expect(total.withAmount).toBe(1);
+    expect(total.count).toBe(1);
+  });
+
   it("zaehlt Termine ohne Betrag mit, ohne sie als Null zu verrechnen", () => {
     const total = expectedTotalOf([
       event("1", "2026-08-13", "A", { expectedAmount: betrag("10.00") }),

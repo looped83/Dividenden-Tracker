@@ -36,7 +36,7 @@ test("importiert eine CSV-Datei und rollt sie wieder zurück", async ({ page, ko
 
   // Schritt 3: Vorschau und endgültiger Import.
   const importieren = page.getByRole("button", {
-    name: /Eingänge endgültig importieren/,
+    name: /Dividenden endgültig importieren/,
   });
   await expect(importieren).toBeEnabled();
   await importieren.click();
@@ -100,7 +100,7 @@ test("räumt den Entwurf auf, wenn der Import scheitert", async ({ page, konto }
   await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: "Weiter zur Zuordnung" }).click();
   await page.getByRole("button", { name: "Weiter zur Vorschau" }).click();
-  await page.getByRole("button", { name: /Eingänge endgültig importieren/ }).click();
+  await page.getByRole("button", { name: /Dividenden endgültig importieren/ }).click();
 
   await expect(page.getByText("Kontrollsumme Zeilenanzahl weicht ab")).toBeVisible();
   await expect

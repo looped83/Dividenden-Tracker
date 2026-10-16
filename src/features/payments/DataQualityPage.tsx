@@ -133,7 +133,6 @@ export function DataQualityPage() {
 
   // Aktionsziele für die geteilten Dialoge.
   const [stornoTarget, setStornoTarget] = React.useState<PaymentListRow | null>(null);
-  const [stornoReason, setStornoReason] = React.useState("");
   const [stornoError, setStornoError] = React.useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = React.useState<PaymentListRow | null>(null);
   const [deleteError, setDeleteError] = React.useState<string | null>(null);
@@ -148,7 +147,7 @@ export function DataQualityPage() {
     source: sourceLabel(p.source),
   });
 
-  const handleStorno = async () => {
+  const handleStorno = async (stornoReason: string) => {
     if (!stornoTarget) return;
     setStornoError(null);
     try {
@@ -157,10 +156,9 @@ export function DataQualityPage() {
         reason: stornoReason || undefined,
       });
       setStornoTarget(null);
-      setStornoReason("");
     } catch (error) {
       setStornoError(
-        getErrorMessage(error, "Der Dividendeneingang konnte nicht storniert werden."),
+        getErrorMessage(error, "Die Dividende konnte nicht storniert werden."),
       );
     }
   };
@@ -175,7 +173,7 @@ export function DataQualityPage() {
       setDeleteError(
         getErrorMessage(
           error,
-          "Der Dividendeneingang konnte nicht gelöscht werden. Die Daten wurden nicht verändert.",
+          "Die Dividende konnte nicht gelöscht werden. Die Daten wurden nicht verändert.",
         ),
       );
     }
@@ -241,7 +239,7 @@ export function DataQualityPage() {
                 ) : (
                   <AllClear
                     title="Keine möglichen Dubletten"
-                    description="Keine Zahlungen mit gleichem Asset, Depot und Zahlungsdatum."
+                    description="Keine Dividenden mit gleichem Asset, Depot und Zahlungsdatum."
                   />
                 )
               ) : (
@@ -257,7 +255,6 @@ export function DataQualityPage() {
                         dismiss.mutate({ idA: pair.a.id, idB: pair.b.id });
                       }}
                       onStorno={(p) => {
-                        setStornoReason("");
                         setStornoError(null);
                         setStornoTarget(p);
                       }}
@@ -462,11 +459,9 @@ export function DataQualityPage() {
           if (!open) setStornoTarget(null);
         }}
         summary={stornoTarget ? summaryOf(stornoTarget) : null}
-        reason={stornoReason}
-        onReasonChange={setStornoReason}
         error={stornoError}
         isPending={archivePayment.isPending}
-        onConfirm={() => void handleStorno()}
+        onConfirm={(reason) => void handleStorno(reason)}
       />
 
       <DeleteDialog

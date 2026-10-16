@@ -89,7 +89,7 @@ test.describe("Rauchtest", () => {
 
   test("die Anwendung meldet sich mit Titel und Sprache", async ({ page }) => {
     await page.goto("/#/login");
-    await expect(page).toHaveTitle(/Dividend Tracker/);
+    await expect(page).toHaveTitle(/Dividenden-Tracker/);
     await expect(page.locator("html")).toHaveAttribute("lang", "de");
   });
 
@@ -106,7 +106,7 @@ test.describe("Rauchtest", () => {
       display: string;
       icons: { sizes: string; purpose?: string }[];
     };
-    expect(manifest.name).toBe("Dividend Tracker");
+    expect(manifest.name).toBe("Dividenden-Tracker");
     expect(manifest.display).toBe("standalone");
     expect(manifest.icons.map((icon) => icon.sizes)).toContain("512x512");
     expect(manifest.icons.some((icon) => icon.purpose === "maskable")).toBe(true);

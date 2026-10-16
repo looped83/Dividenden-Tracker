@@ -67,7 +67,6 @@ export function PaymentDetailPage() {
   const { notify } = useToast();
 
   const [stornoOpen, setStornoOpen] = React.useState(false);
-  const [stornoReason, setStornoReason] = React.useState("");
   const [stornoError, setStornoError] = React.useState<string | null>(null);
   const [deleteOpen, setDeleteOpen] = React.useState(false);
   const [deleteError, setDeleteError] = React.useState<string | null>(null);
@@ -109,8 +108,8 @@ export function PaymentDetailPage() {
         {backLink}
         <EmptyState
           icon={Trash2}
-          title="Dividendeneingang nicht gefunden"
-          description="Dieser Dividendeneingang existiert nicht (mehr). Möglicherweise wurde er dauerhaft gelöscht."
+          title="Dividende nicht gefunden"
+          description="Diese Dividende existiert nicht (mehr). Möglicherweise wurde sie dauerhaft gelöscht."
           action={
             <Button asChild>
               <Link to="/eingaenge">Zurück zur Übersicht</Link>
@@ -148,7 +147,7 @@ export function PaymentDetailPage() {
     importedNet !== null && amountDiffers(importedNet, payment.net_amount);
   const dateChanged = importedPayDate !== null && importedPayDate !== payment.pay_date;
 
-  const handleStorno = async () => {
+  const handleStorno = async (stornoReason: string) => {
     setStornoError(null);
     try {
       await archivePayment.mutateAsync({
@@ -156,10 +155,9 @@ export function PaymentDetailPage() {
         reason: stornoReason || undefined,
       });
       setStornoOpen(false);
-      setStornoReason("");
     } catch (error) {
       setStornoError(
-        getErrorMessage(error, "Der Dividendeneingang konnte nicht storniert werden."),
+        getErrorMessage(error, "Die Dividende konnte nicht storniert werden."),
       );
     }
   };
@@ -173,7 +171,7 @@ export function PaymentDetailPage() {
       setDeleteError(
         getErrorMessage(
           error,
-          "Der Dividendeneingang konnte nicht gelöscht werden. Die Daten wurden nicht verändert.",
+          "Die Dividende konnte nicht gelöscht werden. Die Daten wurden nicht verändert.",
         ),
       );
     }
@@ -209,13 +207,13 @@ export function PaymentDetailPage() {
                 onClick={() => {
                   unarchivePayment.mutate(payment.id, {
                     onSuccess: () => {
-                      notify("Dividendeneingang reaktiviert.");
+                      notify("Dividende reaktiviert.");
                     },
                     onError: (error) => {
                       notify(
                         getErrorMessage(
                           error,
-                          "Der Eingang konnte nicht reaktiviert werden.",
+                          "Die Dividende konnte nicht reaktiviert werden.",
                         ),
                         "negative",
                       );
@@ -231,7 +229,6 @@ export function PaymentDetailPage() {
                 size="icon"
                 aria-label="Stornieren"
                 onClick={() => {
-                  setStornoReason("");
                   setStornoError(null);
                   setStornoOpen(true);
                 }}
@@ -265,7 +262,7 @@ export function PaymentDetailPage() {
               {security.archived_at ? " (archiviert)" : ""}
             </Link>
           ) : (
-            "Dividendeneingang"
+            "Dividende"
           )
         }
         badge={cancelled ? <Badge variant="warning">Storniert</Badge> : undefined}
@@ -359,7 +356,7 @@ export function PaymentDetailPage() {
               )}
               {(netChanged || dateChanged) && (
                 <p className="pt-2 text-sm text-muted-foreground">
-                  Dieser importierte Eingang wurde nach dem Import manuell angepasst. Die
+                  Diese importierte Dividende wurde nach dem Import manuell angepasst. Die
                   Importherkunft bleibt dennoch erhalten.
                 </p>
               )}
@@ -404,11 +401,9 @@ export function PaymentDetailPage() {
         open={stornoOpen}
         onOpenChange={setStornoOpen}
         summary={summary}
-        reason={stornoReason}
-        onReasonChange={setStornoReason}
         error={stornoError}
         isPending={archivePayment.isPending}
-        onConfirm={() => void handleStorno()}
+        onConfirm={(reason) => void handleStorno(reason)}
       />
 
       <DeleteDialog

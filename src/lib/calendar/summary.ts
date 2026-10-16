@@ -34,9 +34,9 @@ export interface NextPayday {
  */
 export interface ExpectedTotal {
   total: Money | null;
-  /** Termine des Zeitraums, die einen Betrag mitbringen. */
+  /** Zahltage des Zeitraums, die einen Betrag mitbringen. */
   withAmount: number;
-  /** Termine des Zeitraums insgesamt. */
+  /** Zahltage des Zeitraums insgesamt (ohne Ex-Tage). */
   count: number;
   mixedCurrencies: boolean;
 }
@@ -69,13 +69,18 @@ export function isCounted(event: CalendarEvent): boolean {
  * Bildet die Summe der erwarteten Betraege einer Terminmenge. Summiert wird
  * ausschliesslich ueber `lib/money` (Decimal) — nie mit `+` auf rohen Zahlen
  * (CALCULATION_RULES.md §8).
+ *
+ * Gezaehlt werden nur Zahltage: Zu einer Dividende gehoeren Ex-Tag **und**
+ * Zahltag. Nennt der Feed den Betrag an beiden, stuende dieselbe Dividende
+ * sonst zweimal in der Summe (wie in {@link announcedForForecast}).
  */
 export function expectedTotalOf(events: readonly CalendarEvent[]): ExpectedTotal {
   const amounts: Money[] = [];
   let currency: CurrencyCode | null = null;
   let mixedCurrencies = false;
+  const paydays = events.filter((event) => event.eventType === "payment");
 
-  for (const event of events) {
+  for (const event of paydays) {
     const amount = event.expectedAmount;
     if (!amount) continue;
     if (currency === null) currency = amount.currency;
@@ -86,7 +91,7 @@ export function expectedTotalOf(events: readonly CalendarEvent[]): ExpectedTotal
   const total =
     currency !== null && !mixedCurrencies ? sumMoney(amounts, currency) : null;
 
-  return { total, withAmount: amounts.length, count: events.length, mixedCurrencies };
+  return { total, withAmount: amounts.length, count: paydays.length, mixedCurrencies };
 }
 
 export function buildCalendarSummary(
@@ -123,7 +128,7 @@ export function buildCalendarSummary(
 }
 
 /** Wie weit Ankündigungen in die Prognose zum Jahresende eingehen (CALCULATION_RULES.md §9.7). */
-export const FORECAST_ANNOUNCED_DAYS = 30;
+const FORECAST_ANNOUNCED_DAYS = 30;
 
 /**
  * Angekündigte Zahlungen der nächsten {@link FORECAST_ANNOUNCED_DAYS} Tage für

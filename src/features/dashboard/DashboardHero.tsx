@@ -37,7 +37,12 @@ import {
   type RefDate,
   type YearSelection,
 } from "@/lib/statistics";
-import { describeSelection, paymentsListHref, splitComparison } from "./format";
+import {
+  describeSelection,
+  formatMonthYear,
+  paymentsListHref,
+  splitComparison,
+} from "./format";
 import { buildHeroSeries, type HeroChartKind, type HeroPoint } from "./heroSeries";
 import { HeroChart } from "./HeroChart";
 
@@ -185,7 +190,7 @@ export function DashboardHero({ payments, selection, today }: DashboardHeroProps
         result: comparePeriods(point.value, point.prior),
         reference: `ggü. ${point.priorLabel}`,
         to: point.href,
-        drillLabel: `Zahlungen ${point.label} anzeigen`,
+        drillLabel: `Dividenden ${point.label} anzeigen`,
       }
     : {
         label: `Dividenden ${label}`,
@@ -193,7 +198,7 @@ export function DashboardHero({ payments, selection, today }: DashboardHeroProps
         result: data.yearResult,
         reference: data.isCurrentYear ? "ggü. Vorjahreszeitraum" : "ggü. Vorjahr",
         to: paymentsListHref({ year: selection }),
-        drillLabel: `Zahlungen ${label} anzeigen`,
+        drillLabel: `Dividenden ${label} anzeigen`,
       };
   const trend = splitComparison(head.result, "");
 
@@ -250,7 +255,7 @@ export function DashboardHero({ payments, selection, today }: DashboardHeroProps
           !point &&
           data.firstYear !== null && (
             <span className="text-muted-foreground">
-              {formatCountNoun(payments.length, "Zahlung", "Zahlungen")} seit{" "}
+              {formatCountNoun(payments.length, "Dividende", "Dividenden")} seit{" "}
               {data.firstYear}
             </span>
           )
@@ -291,7 +296,7 @@ export function DashboardHero({ payments, selection, today }: DashboardHeroProps
       <div className={data.isAll ? "mt-6" : "mt-3"}>
         {series.points.length === 0 ? (
           <p className="py-10 text-center text-sm text-muted-foreground">
-            Für {label} liegen noch keine Dividendeneingänge vor.
+            Für {label} liegen noch keine Dividenden vor.
           </p>
         ) : (
           <HeroChart
@@ -344,7 +349,7 @@ function buildStats(
           ? month.caption
           : undefined,
       to: paymentsListHref({ year: today.year, month: today.month }),
-      drillLabel: "Zahlungen des aktuellen Monats anzeigen",
+      drillLabel: "Dividenden des aktuellen Monats anzeigen",
     });
   }
   if (data.average) {
@@ -358,7 +363,7 @@ function buildStats(
   // Zahlungen und ihre Breite füllen die Fläche.
   if (!data.isCurrentYear) {
     stats.push({
-      label: "Zahlungen",
+      label: "Anzahl",
       value: formatCountNumber(data.period.length),
       caption: formatCountNoun(distinctSecurities(data.period), "Asset", "Assets"),
     });
@@ -368,10 +373,10 @@ function buildStats(
       label: "Bester Monat",
       value: <AmountText amount={data.best.net} />,
       caption: data.isAll
-        ? `${monthNameDe(data.best.month)} ${String(data.best.year)}`
+        ? formatMonthYear(data.best.year, data.best.month)
         : monthNameDe(data.best.month),
       to: paymentsListHref({ year: data.best.year, month: data.best.month }),
-      drillLabel: "Zahlungen des besten Monats anzeigen",
+      drillLabel: "Dividenden des besten Monats anzeigen",
     });
   }
   return stats;

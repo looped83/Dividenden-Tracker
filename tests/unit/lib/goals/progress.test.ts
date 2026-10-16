@@ -126,7 +126,7 @@ describe("computeGoalProgress – Zielstatus", () => {
 });
 
 describe("computeGoalProgress – Berechnungsgrundlage", () => {
-  it("nur Zahlungen im Zielzeitraum zählen (fachliches Zahlungsdatum)", () => {
+  it("nur Dividenden im Zielzeitraum zählen (fachliches Zahlungsdatum)", () => {
     const goal = annualGoal();
     const payments = [
       payment("2026-12-31", "1000.00"), // vorheriges Jahr
@@ -137,7 +137,7 @@ describe("computeGoalProgress – Berechnungsgrundlage", () => {
     expect(progress.actual.toStringValue()).toBe("2000.00");
   });
 
-  it("Monatsziel zählt nur Zahlungen des Zielmonats", () => {
+  it("Monatsziel zählt nur Dividenden des Zielmonats", () => {
     const goal = annualGoal({
       goalType: "monthly",
       month: 3,

@@ -174,7 +174,7 @@ describe("PaymentsPage", () => {
       zahlung({ id: "a", net_amount: "20.00" }),
       zahlung({ id: "b", net_amount: "30.50" }),
     ]);
-    expect(screen.getByText(/^2 Eingänge/)).toHaveTextContent("2 Eingänge · 50,50 €");
+    expect(screen.getByText(/^2 Dividenden/)).toHaveTextContent("2 Dividenden · 50,50 €");
   });
 
   it("filtert nach Asset und nennt die Trefferzahl", async () => {
@@ -186,7 +186,7 @@ describe("PaymentsPage", () => {
 
     await user.selectOptions(screen.getByLabelText("Asset"), "s1");
 
-    expect(screen.getByText(/^1 Eingang/)).toBeInTheDocument();
+    expect(screen.getByText(/^1 Dividende/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Apple Inc\./ })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Allianz SE/ })).not.toBeInTheDocument();
   });
@@ -288,7 +288,7 @@ describe("PaymentsPage", () => {
   it("zaehlt nur stornierte Eingaenge nicht als Bestand", () => {
     // Geladen wird immer alles; der Leerzustand folgt trotzdem dem Filter.
     renderList([zahlung({ id: "a", archived_at: "2026-04-01T00:00:00Z" })]);
-    expect(screen.getByText("Noch kein Dividendeneingang erfasst")).toBeInTheDocument();
+    expect(screen.getByText("Noch keine Dividende erfasst")).toBeInTheDocument();
   });
 
   it("bietet Jahre nur stornierter Eingaenge erst mit den Stornierten an", async () => {
@@ -312,7 +312,7 @@ describe("PaymentsPage", () => {
 
   it("erklaert den leeren Zustand ohne Eingaenge", () => {
     renderList([]);
-    expect(screen.getByText("Noch kein Dividendeneingang erfasst")).toBeInTheDocument();
+    expect(screen.getByText("Noch keine Dividende erfasst")).toBeInTheDocument();
   });
 
   it("unterscheidet den leeren Bestand von einer leeren Auswahl", async () => {
@@ -322,10 +322,8 @@ describe("PaymentsPage", () => {
     await user.selectOptions(screen.getByLabelText("Asset"), "s2");
 
     expect(
-      screen.getByText("Keine Eingänge für die aktuelle Auswahl"),
+      screen.getByText("Keine Dividenden für die aktuelle Auswahl"),
     ).toBeInTheDocument();
-    expect(
-      screen.queryByText("Noch kein Dividendeneingang erfasst"),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Noch keine Dividende erfasst")).not.toBeInTheDocument();
   });
 });
