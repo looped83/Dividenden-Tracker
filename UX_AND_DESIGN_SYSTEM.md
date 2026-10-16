@@ -27,7 +27,7 @@ Umsetzung als CSS-Variablen (Tailwind-4-`@theme`), Hell- und Dunkelmodus über
 | `--input` | Rahmen von Bedienelementen | Grau ≥ 3:1 gegen jede Nachbarfläche | dito, heller gesetzt |
 | `--foreground` | Text | fast Schwarz | helles Grau |
 | `--muted-foreground` | Sekundärtext, Labels | Grau ≥ 4,5:1 Kontrast | dito |
-| `--primary` | Aktionen: Erfassen, Schaltflächen, Links | gebranntes Orange `#ba5006` (4,96:1 auf Weiß) | helles Orange `#fd923e`, dunkle Schrift darauf |
+| `--primary` | Aktionen: Erfassen, Schaltflächen, Links | leuchtendes Orange `#c84f00` (4,6:1 auf Weiß) | gesättigtes Orange `#fd7920`, dunkle Schrift darauf (7,1:1) |
 | `--accent` | Hover, aktive Navigation (mit halbfetter Schrift) | neutrales Hellgrau | neutrale Stufe über der Karte |
 | `--positive` | Zuwächse, Eingänge | gedecktes Grün | angepasst, Kontrast AA |
 | `--negative` | Korrekturen, Rückgänge, Fehler | gedecktes Rot | angepasst |
