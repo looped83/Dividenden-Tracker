@@ -10,7 +10,7 @@ import {
   type RefDate,
   type YearSelection,
 } from "@/lib/statistics";
-import { paymentsListHref } from "./format";
+import { formatMonthYear, paymentsListHref } from "./format";
 
 const ZERO = Money.zero(EUR);
 
@@ -159,10 +159,10 @@ export function buildHeroSeries(
       return [
         {
           x: bar.month - 0.5,
-          label: `${monthNameDe(bar.month)} ${String(year)}`,
+          label: formatMonthYear(year, bar.month),
           value: bar.current,
           prior: partial ? running : bar.prior,
-          priorLabel: `${partial ? (today.day === 1 ? "1. " : `1.–${String(today.day)}. `) : ""}${monthNameDe(bar.month)} ${String(year - 1)}`,
+          priorLabel: `${partial ? (today.day === 1 ? "1. " : `1.–${String(today.day)}. `) : ""}${formatMonthYear(year - 1, bar.month)}`,
           href: paymentsListHref({ year, month: bar.month }),
         },
       ];

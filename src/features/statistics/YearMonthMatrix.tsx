@@ -24,10 +24,11 @@ import {
   type StatisticsFilter,
 } from "@/lib/statistics";
 import { useToday } from "@/lib/hooks/useToday";
+import { formatCalendarDate } from "@/lib/utils/formatDate";
 import { useStatisticsContext } from "./context";
 import {
   describeComparison,
-  formatIsoDate,
+  formatMonthYear,
   formatPayments,
   statisticsDrillHref,
 } from "./format";
@@ -128,7 +129,7 @@ export function YearMonthMatrix() {
             {runningYear && (
               <>
                 <span aria-hidden>* </span>
-                {`${String(runningYear.year)} läuft noch — gerechnet bis ${formatIsoDate(
+                {`${String(runningYear.year)} läuft noch — gerechnet bis ${formatCalendarDate(
                   matrix.cutoff,
                 )}.`}
               </>
@@ -504,7 +505,7 @@ function MatrixCell({
   filter: StatisticsFilter;
   compact?: boolean;
 }) {
-  const period = `${monthNameDe(cell.month)} ${String(cell.year)}`;
+  const period = formatMonthYear(cell.year, cell.month);
 
   if (cell.future) {
     return <span className="sr-only">{period}: noch nicht erreicht</span>;
@@ -514,7 +515,7 @@ function MatrixCell({
     return (
       <ChangeValue
         change={cell.change}
-        context={`ggü. ${monthNameDe(cell.month)} ${String(cell.year - 1)}`}
+        context={`ggü. ${formatMonthYear(cell.year - 1, cell.month)}`}
       />
     );
   }

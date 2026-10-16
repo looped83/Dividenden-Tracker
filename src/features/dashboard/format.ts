@@ -17,9 +17,6 @@ export function buildEntityMap(
   );
 }
 
-/** Kalenderdatum als `29.07.2026` ({@link formatCalendarDate}). */
-export { formatCalendarDate as formatIsoDate } from "@/lib/utils/formatDate";
-
 /** „Juli 2026" bzw. „Alle Jahre" fuer die Zeitraumbeschriftung. */
 export function describeSelection(selection: YearSelection): string {
   return selection === "all" ? "Alle Jahre" : String(selection);

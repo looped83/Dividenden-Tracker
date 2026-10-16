@@ -24,12 +24,11 @@ import {
   entityArchived,
   entityName,
   formatCountNumber,
-  formatIsoDate,
   formatPayments,
   statisticsDrillHref,
 } from "./format";
 import { StatSearch, StatTable, type StatColumn } from "./components/StatTable";
-import { formatDateRange } from "@/lib/utils/formatDate";
+import { formatDateRange, formatCalendarDate } from "@/lib/utils/formatDate";
 
 const TOP_COMPANIES = 10;
 
@@ -45,7 +44,8 @@ const TOP_COMPANIES = 10;
 function periodCell(first: string | null, last: string | null): React.ReactNode {
   const single = first ?? last;
   if (single === null) return <span className="text-muted-foreground">—</span>;
-  if (first === null || last === null || first === last) return formatIsoDate(single);
+  if (first === null || last === null || first === last)
+    return formatCalendarDate(single);
   // Gewoehnliche Leerzeichen um den Halbgeviertstrich: Auf schmalen Geraeten
   // darf der Zeitraum umbrechen, statt die Spalte auf seine volle Laenge zu
   // zwingen.

@@ -23,12 +23,12 @@ import {
   type StatisticsFilter,
 } from "@/lib/statistics";
 import { useToday } from "@/lib/hooks/useToday";
+import { formatCalendarDate } from "@/lib/utils/formatDate";
 import { useStatisticsContext } from "./context";
 import type { EntityInfo } from "@/features/dashboard/format";
 import {
   entityArchived,
   entityName,
-  formatIsoDate,
   formatPayments,
   splitComparison,
   statisticsDrillHref,
@@ -265,8 +265,8 @@ export function ComparisonTab() {
               sie dort, wo der Zeitraum gewaehlt wird. */}
         <p className="text-sm text-muted-foreground">
           {comparison.truncated
-            ? `Gerechnet bis ${formatIsoDate(comparison.cutoff)} — beide Seiten am selben Kalendertag gekappt.`
-            : `Volle Zeiträume, gerechnet bis ${formatIsoDate(comparison.cutoff)}.`}
+            ? `Gerechnet bis ${formatCalendarDate(comparison.cutoff)} — beide Seiten am selben Kalendertag gekappt.`
+            : `Volle Zeiträume, gerechnet bis ${formatCalendarDate(comparison.cutoff)}.`}
         </p>
 
         {filter.year !== null && (

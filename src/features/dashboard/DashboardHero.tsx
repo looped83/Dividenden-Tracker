@@ -37,7 +37,12 @@ import {
   type RefDate,
   type YearSelection,
 } from "@/lib/statistics";
-import { describeSelection, paymentsListHref, splitComparison } from "./format";
+import {
+  describeSelection,
+  formatMonthYear,
+  paymentsListHref,
+  splitComparison,
+} from "./format";
 import { buildHeroSeries, type HeroChartKind, type HeroPoint } from "./heroSeries";
 import { HeroChart } from "./HeroChart";
 
@@ -368,7 +373,7 @@ function buildStats(
       label: "Bester Monat",
       value: <AmountText amount={data.best.net} />,
       caption: data.isAll
-        ? `${monthNameDe(data.best.month)} ${String(data.best.year)}`
+        ? formatMonthYear(data.best.year, data.best.month)
         : monthNameDe(data.best.month),
       to: paymentsListHref({ year: data.best.year, month: data.best.month }),
       drillLabel: "Dividenden des besten Monats anzeigen",

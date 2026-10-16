@@ -57,6 +57,7 @@ import {
 import { sortRows, type SortableRow } from "@/features/payments/sortRows";
 import { sourceLabel } from "@/features/payments/paymentDisplay";
 import { formatCalendarDate } from "@/lib/utils/formatDate";
+import { formatMonthYear } from "@/features/dashboard/format";
 import {
   DeleteDialog,
   StornoDialog,
@@ -616,7 +617,7 @@ export function PaymentsPage() {
                 return (
                   <ListSection
                     key={group.key}
-                    title={`${monthNameDe(group.month)} ${String(group.year)}`}
+                    title={formatMonthYear(group.year, group.month)}
                     aside={monthTotal ? <AmountText amount={monthTotal} /> : undefined}
                   >
                     <ListGroup>

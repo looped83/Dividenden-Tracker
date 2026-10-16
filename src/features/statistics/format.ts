@@ -5,7 +5,6 @@ import type { StatisticsFilter } from "@/lib/statistics";
 import { applyStatisticsFilter } from "./filterParams";
 
 export {
-  formatIsoDate,
   formatMonthYear,
   describeComparison,
   splitComparison,
