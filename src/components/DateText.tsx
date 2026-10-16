@@ -4,8 +4,8 @@ import { cn } from "@/lib/utils/cn";
 
 /**
  * Datum mit vorangestelltem Kalendersymbol — dort, wo ein Datum ohne eigene
- * Beschriftung fuer sich steht und hervortreten soll (Detailkopf,
- * Dublettenvergleich). In Listenzeilen bleibt es aus: Dort stand es in jeder
+ * Beschriftung fuer sich steht und hervortreten soll (Dublettenvergleich). Im
+ * Kopf der Detailseite eines Eingangs entfiel es (seit 1.13.0). In Listenzeilen bleibt es aus: Dort stand es in jeder
  * Zeile und nahm dem Depot daneben die Breite. In Tabellen mit Spaltenkopf und
  * in beschrifteten Feldern ebenso — dort sagt die Beschriftung bereits, was die
  * Zahl bedeutet.

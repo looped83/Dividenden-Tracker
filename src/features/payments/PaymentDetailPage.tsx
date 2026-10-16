@@ -9,7 +9,6 @@ import { Badge } from "@/components/ui/badge";
 import { Section, SectionButton } from "@/components/ui/section";
 import { EmptyState } from "@/components/ui/empty-state";
 import { AmountText } from "@/components/money/AmountText";
-import { DateText } from "@/components/DateText";
 import { AuditTrail } from "@/components/audit/AuditTrail";
 import { Money, toCurrencyCode, toGermanDecimalString } from "@/lib/money";
 import { cn } from "@/lib/utils/cn";
@@ -257,7 +256,9 @@ export function PaymentDetailPage() {
         badge={cancelled ? <Badge variant="warning">Storniert</Badge> : undefined}
         subtitle={
           <>
-            <DateText>{formatCalendarDate(payment.pay_date)}</DateText>
+            {/* Ohne Kalendersymbol: Neben dem Depot ist das Datum auch so als
+                Datum zu erkennen. */}
+            <span>{formatCalendarDate(payment.pay_date)}</span>
             <span>·</span>
             <span>
               {depot?.name ?? "—"}
