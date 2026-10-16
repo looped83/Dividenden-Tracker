@@ -1,0 +1,72 @@
+import type { GoalProgress } from "@/lib/goals";
+import { cn } from "@/lib/utils/cn";
+import {
+  accessibleProgressLabel,
+  achievementText,
+  cappedBarPercent,
+  statusTone,
+} from "./format";
+
+interface GoalProgressBarProps {
+  progress: GoalProgress;
+  /**
+   * Prozentwert als Text unter dem Balken. Die Zielkarte nennt ihn bereits in
+   * der Betragszeile daneben und blendet ihn hier aus.
+   */
+  showPercent?: boolean;
+  className?: string;
+}
+
+const trackToneClass: Record<"positive" | "neutral" | "negative", string> = {
+  positive: "bg-positive",
+  neutral: "bg-foreground",
+  negative: "bg-negative",
+};
+
+/**
+ * Zugaengliche Fortschrittsanzeige (Auftrag §19): role="progressbar" mit
+ * aktuellem Wert und aussagekraeftigem aria-valuetext (Betrag + Prozent, bei
+ * Überschreitung inkl. übertroffenem Betrag). Der Balken ist visuell bei 100 %
+ * begrenzt; der tatsaechliche Prozentwert steht zusaetzlich als Text daneben.
+ * Die Information funktioniert nicht ausschliesslich ueber Farbe.
+ *
+ * Seit 1.9.0 in der Form des Zielbalkens im Kopf der Uebersicht: 4px hoch,
+ * Spur in Haarlinienfarbe, laufend in Vordergrundfarbe statt Akzentfarbe.
+ */
+export function GoalProgressBar({
+  progress,
+  showPercent = true,
+  className,
+}: GoalProgressBarProps) {
+  const barValue = cappedBarPercent(progress.percent);
+  const tone = statusTone(progress.status);
+  const label = accessibleProgressLabel(progress);
+
+  return (
+    <div className={cn("space-y-1", className)}>
+      <div
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(barValue)}
+        aria-valuetext={label}
+        className="h-1 w-full overflow-hidden rounded-full bg-border"
+      >
+        <div
+          className={cn(
+            "h-full rounded-full transition-[width] motion-reduce:transition-none",
+            trackToneClass[tone],
+          )}
+          style={{ width: `${String(barValue)}%` }}
+        />
+      </div>
+      {/* Nur der erreichte Anteil: „Ziel 100 %" am rechten Ende stand unter
+          jedem Balken und sagte immer dasselbe. */}
+      {showPercent && (
+        <p className="text-xs tabular-nums text-muted-foreground">
+          {achievementText(progress.percent)}
+        </p>
+      )}
+    </div>
+  );
+}

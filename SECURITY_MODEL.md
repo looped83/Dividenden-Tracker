@@ -1,0 +1,334 @@
+# SECURITY_MODEL.md — Dividend Tracker
+
+Stand: 2026-07-19 · Status: Verbindliches Sicherheitsmodell (Planungsphase)
+
+---
+
+## 1. Schutzziele und Bedrohungsmodell
+
+Schutzgüter: persönliche Finanzhistorie (Vertraulichkeit), Korrektheit und Vollständigkeit der
+Zahlungsdaten (Integrität), langfristige Verfügbarkeit (Backups).
+
+| Bedrohung | Relevanz | Primäre Gegenmaßnahme |
+|---|---|---|
+| Fremder Zugriff auf Daten anderer Nutzer | hoch | RLS auf jeder Tabelle, automatisiert getestet (§4, §10) |
+| Direkte API-Aufrufe unter fremder/ manipulierter `user_id` | hoch | RLS + `enforce_user_id`-Trigger; `user_id` wird serverseitig aus `auth.uid()` gesetzt |
+| Session-Diebstahl (XSS) | mittel | CSP ohne `unsafe-inline`-Skripte, keine Fremdskripte, Framework-Escaping, keine `dangerouslySetInnerHTML` |
+| CSV-Formula-Injection (Export öffnet in Excel/Numbers) | mittel | Escaping beim Export (§9) |
+| Bösartige/beschädigte Importdateien | mittel | Größen-/Typ-/Magic-Byte-Prüfung, Worker-Isolation, Timeouts (IMPORT_SPEC.md §2, §9) |
+| Stiller Datenverlust durch Fehlbedienung | hoch | Kein Hard Delete, Audit Log, Import-Rollback, Backups |
+| Secrets-Leck über Repo/Client | hoch | Nur Publishable Key im Client; Service-Role nie im Frontend/Repo (§5) |
+| Abhängigkeits-Schwachstellen (z. B. veraltetes `xlsx`) | mittel | Gepinnte Versionen, SheetJS 0.20.x aus Herstellerregistry, `npm audit` in CI |
+
+Nicht im Modell: Angriffe auf Supabase selbst (Vertrauensgrenze verwalteter Dienst),
+physischer Gerätezugriff (OS-Verantwortung; kein zusätzlicher App-Pin in v1 — DECISIONS.md
+D-014).
+
+## 2. Authentifizierung und Session
+
+- Supabase Auth, E-Mail + Passwort, **PKCE-Flow**; optionale spätere Erweiterung Passkeys.
+- Registrierung nur mit E-Mail-Bestätigung; Passwort-Mindestlänge 12, Prüfung gegen
+  Leaked-Password-Schutz von Supabase Auth.
+- Session: Access-Token kurzlebig (Standard 1 h), Auto-Refresh durch den Auth-Client (`@supabase/auth-js`); Logout
+  invalidiert Refresh-Token und **löscht den lokalen Query-Persist-Cache und alle
+  Auth-Artefakte** (Finanzdaten dürfen nicht für den nächsten Gerätenutzer lesbar bleiben).
+- Anmeldeversuche sind durch Supabase-Rate-Limits begrenzt; keine eigene Implementierung.
+- Selbstregistrierung bleibt aktiviert (Mandantenfähigkeit), bringt aber keine Sichtbarkeit
+  fremder Daten (RLS). Optional per Supabase-Konfiguration abschaltbar (privates Deployment).
+
+## 3. Autorisierung: Row Level Security
+
+Verbindliche Regeln:
+
+1. `alter table … enable row level security` auf **jeder** Tabelle im Schema `public` —
+   ohne Ausnahme, auch für Views gilt `security_invoker = on`.
+2. Basis-Policy-Muster für fachliche Tabellen (`profiles`, `portfolios`, `depots`,
+   `securities`, `dividend_payments`, `imports`, `goals`):
+
+```sql
+create policy sel on <t> for select using (user_id = auth.uid());
+create policy ins on <t> for insert with check (user_id = auth.uid());
+create policy upd on <t> for update using (user_id = auth.uid())
+                                   with check (user_id = auth.uid());
+-- DELETE: bewusst KEINE Policy auf fachlichen Tabellen (kein Hard Delete).
+```
+
+3. Abweichungen:
+   - `profiles`: `id = auth.uid()` statt `user_id`; kein INSERT/DELETE über API (Anlage per Trigger).
+   - `imports`: zusätzlich `delete using (user_id = auth.uid() and status in ('analyzing','pending_confirmation','discarded'))`.
+   - `dividend_payments`: zusätzlich `delete using (user_id = auth.uid() and archived_at is not null)`
+     — engste Ausnahme vom Hard-Delete-Verbot, nur für bereits archivierte eigene Zeilen, audit-
+     protokolliert (`action = 'delete'`, siehe D-034).
+   - `audit_log`: nur `select using (user_id = auth.uid())`; INSERT ausschließlich über
+     `security definer`-Triggerfunktion; kein UPDATE/DELETE für niemanden (insert-only).
+4. `anon`-Rolle hat keinerlei Zugriff auf `public`-Tabellen (Policies gelten für
+   `authenticated`); Grants werden explizit minimal gesetzt (Least Privilege): `revoke all …
+   from anon, authenticated` gefolgt von gezielten `grant select/insert/update`.
+5. RPCs (`commit_import`, `rollback_import`, `restore_backup`, `archive_payment`):
+   `security invoker`, geprüfter `search_path`, Eingabevalidierung in der Funktion; sie können
+   RLS nicht umgehen.
+6. **Eigentum referenzierter Stammdaten** (Migration 0030): Ein Fremdschlüssel prüft nur,
+   dass die referenzierte Zeile *existiert* — nicht, wem sie gehört. RLS verhindert das
+   Lesen fremder Zeilen, nicht das *Verweisen* auf sie. Die Trigger
+   `enforce_own_security` und `enforce_own_depot` schließen das für
+   `dividend_payments.security_id`/`.depot_id` und `security_snapshots.security_id`.
+   Sie vergleichen `user_id` ausdrücklich (statt sich auf die Sichtbarkeit durch RLS zu
+   verlassen), damit die Regel auch in `security definer`-Kontexten und für
+   `service_role` gilt. Neue Tabellen mit einem Fremdschlüssel auf nutzereigene
+   Stammdaten brauchen denselben Trigger.
+
+## 4. Migration-Sicherheitscheckliste
+
+Jede Migration wird nur gemerged, wenn:
+
+- [ ] RLS aktiviert für jede neue Tabelle
+- [ ] Policies für SELECT/INSERT/UPDATE (DELETE nur begründet) vorhanden
+- [ ] Grants minimal (kein impliziter `public`-Zugriff)
+- [ ] `user_id`-Spalte not null + FK + Trigger `enforce_user_id`
+- [ ] Fremdschlüssel auf nutzereigene Stammdaten zusätzlich durch einen
+      Eigentums-Trigger abgesichert (§3, Punkt 6)
+- [ ] Audit-Trigger angebunden (fachliche Tabellen)
+- [ ] RLS-Tests für die neue Tabelle ergänzt (§10)
+
+## 5. Secrets und Konfiguration
+
+| Wert | Ablageort | Im Client? |
+|---|---|---|
+| `VITE_SUPABASE_URL`, Publishable/Anon Key | `.env` (gitignored), Hosting-Env, CI-Var | ja (public by design, RLS schützt) |
+| Service-Role-Key | ausschließlich Supabase-Dashboard/CI-Secret für Migrationen | **niemals** |
+| DB-Passwort, Access-Tokens | Passwortmanager / CI-Secrets | niemals |
+
+- `.env*` in `.gitignore`; `.env.example` ohne Werte im Repo.
+- CI-Check (z. B. gitleaks) gegen versehentliche Key-Commits.
+- Es existiert kein Server-Code, der den Service-Role-Key benötigt; sollte später eine Edge
+  Function nötig werden, erhält sie den Key als Supabase-Secret, nie über das Repo.
+
+## 6. Input-Validierung
+
+- **Doppelte Validierung**: Zod im Client (Formulare, Importzeilen, Backup-Dateien) und
+  Constraints/Trigger in Postgres (CHECK, FK, UNIQUE, Längen, Wertebereiche). Der Client ist
+  Komfort, die Datenbank ist die Autorität.
+- Alle Texteingaben längenbegrenzt (DATA_MODEL.md); keine HTML-Interpretation von Nutzertext
+  (React-Escaping; Notizen sind reiner Text).
+- Datei-Uploads: nur lokal verarbeitet (kein Upload-Endpunkt); Typ-/Größen-/Struktur-Prüfung
+  vor dem Parsen (IMPORT_SPEC.md §2).
+
+## 7. Content Security Policy und Header
+
+Auslieferung des Frontends mit:
+
+```
+Content-Security-Policy:
+  default-src 'self';
+  script-src 'self' 'sha256-…';           # plus genau ein Inline-Skript, per Hash (s. u.)
+  style-src 'self' 'unsafe-inline';        # Tailwind-Injektion; keine externen Styles
+  img-src 'self' data:;
+  font-src 'self';
+  connect-src 'self' https://<projekt>.supabase.co;
+  worker-src 'self';
+  frame-ancestors 'none';
+  base-uri 'self';
+  form-action 'self'
+Referrer-Policy: no-referrer
+X-Content-Type-Options: nosniff
+Permissions-Policy: camera=(), microphone=(), geolocation=()
+Strict-Transport-Security: max-age=63072000; includeSubDomains
+```
+
+**Stand der Umsetzung.** Ausgeliefert wird über GitHub Pages, das **keine eigenen Kopfzeilen**
+zulässt. Die Richtlinie steht deshalb als `<meta http-equiv="Content-Security-Policy">` in
+`index.html`; die Supabase-Adresse für `connect-src` setzt der Build aus `%VITE_SUPABASE_URL%`
+ein. Als Meta-Element wirksam sind `default-src`, `script-src`, `style-src`, `img-src`,
+`font-src`, `connect-src`, `worker-src`, `manifest-src`, `base-uri`, `form-action` und
+`object-src`; die Referrer-Regel steht als `<meta name="referrer">` daneben.
+
+**Ein Inline-Skript, per Hash freigegeben.** `index.html` setzt das dunkle Design vor dem ersten
+Zeichnen (sonst blitzte bei jedem Start eine weiße Seite auf). `script-src` erlaubt dafür nicht
+`'unsafe-inline'`, sondern ausschließlich dieses eine Skript über seinen SHA-256-Hash; jede
+Änderung am Skript, auch an Einrückung oder Zeilenumbruch, macht den Hash ungültig. Ein
+Unit-Test (`tests/unit/app/themeBootstrap.test.ts`) prüft, dass Hash und Skript
+zusammenpassen, und nennt bei Abweichung den neuen Wert.
+
+**Nicht abbildbar und offen:** `frame-ancestors`, `Strict-Transport-Security`,
+`X-Content-Type-Options` und `Permissions-Policy` wirken ausschließlich als echte Kopfzeile.
+Sie bleiben offen, solange über GitHub Pages ausgeliefert wird — mit einem Hosting, das Header
+setzen kann (Cloudflare Pages, Netlify, eigener Server), sind sie ohne Codeänderung nachzurüsten.
+Ein Rauchtest prüft, dass die Richtlinie ankommt, der Platzhalter ersetzt ist und beim Laden der
+Anwendung nichts dagegen verstößt (`tests/e2e/smoke.spec.ts`).
+
+Keine externen CDNs, Fonts oder Skripte (Grundsatz 15) — alles wird gebundelt.
+
+### 7.1 Service-Worker-Cache
+
+Der Service Worker (`public/sw.js`) speichert ausschließlich **eigene statische Dateien**
+(Dokument, JS, CSS, Icons). Anfragen an fremde Herkünfte — insbesondere die Supabase-API und
+alles Auth-Bezogene — werden nicht abgefangen und damit nie zwischengespeichert. Finanzdaten
+und Sitzungen überleben so kein geteiltes Gerät im Cache. Der Cache trägt die Kennung der
+Fassung im Namen; beim Aktivieren einer neuen Fassung werden die Bestände früherer Fassungen
+gelöscht (nur die eigenen, erkennbar am Präfix `dividend-tracker-shell-`).
+
+## 8. Audit Log
+
+Auditiert werden Änderungen an: Dividendeneingängen, Unternehmen, Depots, Portfolios, Zielen,
+Imports (Commit/Rollback), Wiederherstellungen, Profil (fachliche Felder).
+
+Jeder Eintrag: Nutzer, Entität, Entitäts-ID, Aktion, vorherige Werte, neue Werte, Zeitpunkt,
+Herkunft (`ui`/`import`/`rollback`/`restore`/`migration`) — siehe DATA_MODEL.md §3.8.
+
+**Nicht protokolliert werden** (Ausschlussliste):
+
+- technische Felder: `updated_at`, `created_at`, Fingerprints (nur Änderungs-Flag, nicht Wert)
+- unveränderte Felder (nur Diff)
+- Auth-Daten: Passwörter/Hashes, Tokens, Session-IDs (liegen ohnehin nie in `public`)
+- vollständige Importdatei-Inhalte (nur Metadaten/Bericht in `imports`)
+
+Das Audit Log ist insert-only (keine UPDATE/DELETE-Pfade, auch nicht für den Eigentümer) und
+Teil des Backups.
+
+## 9. Export-/Import-Härtung
+
+- **CSV/Excel-Formula-Injection:** Beim Export erhalten Zellen, die mit `=`, `+`, `-`, `@`,
+  Tab oder CR beginnen, ein führendes `'`; Zahlenzellen werden als Zahlen (nicht Text)
+  geschrieben und sind davon ausgenommen. Beim Import werden Formeln nie ausgewertet.
+- JSON-Backup-Restore validiert Format, Schemaversion und Integritätssummen, bevor irgendetwas
+  geschrieben wird (BACKUP_AND_RESTORE.md §5); Fremd-`user_id`s im Backup werden ignoriert und
+  durch `auth.uid()` ersetzt.
+- Exportdateien enthalten keine internen Tokens oder fremde Daten (RLS-gefiltert erzeugt).
+
+## 10. Automatisierte Sicherheitstests (Pflicht, CI-blockierend)
+
+Mit **zwei Testnutzern A und B** gegen lokale Supabase-Instanz (Details TEST_STRATEGY.md §6):
+
+1. A liest nur eigene Zeilen jeder Tabelle (Zählvergleich nach Seed mit Daten für A und B).
+2. B kann Zeilen von A nicht lesen (`select` liefert leer, nicht Fehler-Leak).
+3. INSERT mit fremder `user_id` → abgelehnt bzw. serverseitig auf `auth.uid()` gesetzt.
+4. UPDATE/Archivierung fremder Zeilen → 0 betroffene Zeilen.
+5. DELETE auf fachlichen Tabellen → abgelehnt (keine Policy), auch für eigene Zeilen.
+6. Anfragen ohne Session (`anon`) → kein Zugriff auf irgendeine Tabelle/View/RPC.
+7. Direkte PostgREST-Aufrufe (ohne App) mit manipulierten Filtern/Headern → RLS hält.
+8. RPCs mit fremden IDs (`rollback_import`, `archive_payment`, `restore_backup`) → kein Effekt.
+9. `audit_log`: INSERT/UPDATE/DELETE über API → abgelehnt; SELECT nur eigene Einträge.
+10. Views (`v_stats_*`) liefern nur eigene Daten (security_invoker-Test).
+
+## 11. Fehlerprotokollierung
+
+- Produktions-Logs (Konsole) enthalten Fehlerklasse und Korrelation (Query-Key, Route), aber
+  **keine Beträge, Notizen, Dateiinhalte, Tokens oder E-Mail-Adressen**.
+- Kein externer Logging-/Tracking-Dienst (Grundsatz 15).
+- Supabase-seitige Logs verbleiben im verwalteten Projekt (Zugriff nur Projektinhaber).
+
+---
+
+## Phase 4 — Import-Sicherheit (umgesetzt)
+
+### RLS neuer Objekte
+
+- `security_aliases`, `import_rows`: RLS aktiv, `revoke all from anon`,
+  Policies `using/with check (user_id = auth.uid())`, `enforce_user_id`-Trigger.
+- `commit_import`/`rollback_import` laufen als **security invoker** — RLS bleibt
+  aktiv, jede eingefügte Zeile durchläuft dieselben Trigger/Checks wie eine
+  manuelle Eingabe. Beide sperren den Importdatensatz per `for update` und
+  prüfen `user_id = auth.uid()`; „nicht gefunden" und „keine Berechtigung" sind
+  ununterscheidbar (kein Info-Leak).
+
+### Serverseitige Kontrollen (nicht nur Frontend)
+
+- Kontrollsummen werden in `commit_import` **erneut** aus den gespeicherten
+  Zeilen berechnet und gegen `expected` geprüft; Manipulation der erwarteten
+  Werte oder der Zeilenzahl → `raise` → Rollback (Test: „manipulierter
+  Zeilenzahl-Erwartungswert wird komplett abgelehnt").
+- `guard_import_status()` verhindert, dass ein Client `imports.status` selbst auf
+  `committed`/`rolled_back` setzt (nur über die RPCs, GUC `app.import_txn`).
+
+### Automatisiert getestete Angriffe (`tests/integration/import.test.ts`, `rls.test.ts`)
+
+- Nutzer B sieht Import/Importzeilen/Zahlungen von Nutzer A nicht.
+- Nutzer B kann den Import von Nutzer A nicht zurückrollen.
+- Ein nicht angemeldeter Nutzer kann keinen Import anlegen (anon revoked).
+- Ein Client kann einen Import nicht selbst als `committed` markieren.
+- Ein manipulierter Erwartungswert bricht den gesamten Import ab (Atomarität).
+
+## Dashboard (Phase 5A)
+
+- Das Dashboard führt **keine neuen RLS-Policies** ein. Der Lesezugriff
+  (`fetchAllPayments`, derselbe Abruf wie die Zahlungsliste) läuft über die bestehende Policy
+  `dividend_payments_select_own` (`user_id = auth.uid()`); die
+  Nutzertrennung ist damit serverseitig identisch zur Zahlungsliste.
+- Der Ausschluss stornierter/zurückgerollter Zahlungen (`archived_at is null`)
+  ist ein fachlicher Filter **innerhalb** der eigenen Daten, kein
+  Sicherheitsmechanismus — die Isolation greift unabhängig davon.
+- Namen und Archivstatus von Unternehmen/Depots stammen aus `securities`/`depots`,
+  die ebenfalls per Owner-Policy nur eigene Zeilen liefern.
+- Integrationstest `tests/integration/dashboard.test.ts` verifiziert die Isolation
+  (Nutzer B sieht keine Dashboard-Daten von A) sowie Storno-Ausschluss und
+  Archiv-Unternehmen-Einbeziehung auf SQL-Ebene.
+
+## Phase 6 – Ergänzungen
+
+**`dividend_payments` DELETE (0020).** Policy `dividend_payments_delete_own`
+(`user_id = auth.uid()`) ersetzt die frühere „nur stornierte"-Bedingung. Ein
+Nutzer kann ausschließlich eigene Eingänge löschen (aktiv oder storniert);
+fremde IDs betreffen 0 Zeilen (kein Fehler-Leak). Die Absicherung ist
+vollständig serverseitig (RLS) — clientseitige Filter sind keine
+Sicherheitsmaßnahme. Die Löschung wird über den security-definer-Audit-Trigger
+atomar protokolliert; UI-Bestätigung ersetzt den früheren „erst stornieren"-
+Zwang als Schutz vor versehentlicher Löschung.
+
+**`duplicate_dismissals` (0020).** RLS: select/insert/delete nur eigene Zeilen,
+kein UPDATE, kein anon-Zugriff (`revoke all`, dann minimale Grants). Der
+`enforce_user_id`-Trigger verhindert das Unterschieben einer fremden `user_id`.
+
+**`anomaly_reviews` (0033).** Dieselben Regeln; zusätzlich prüft
+`enforce_own_payment`, dass der markierte Eingang dem Nutzer gehört — ein
+Fremdschlüssel allein prüft nur, dass er existiert (vgl. 0030).
+
+Schreibzugriffe erfolgen ausschließlich je einzelnem Datensatz und jeweils
+RLS-geprüft (kein globaler Bypass, keine Massenaktionen); fremde
+Datensätze/Unternehmen/Depots sind damit nicht erreichbar.
+
+---
+
+## Phase 7 — Ziele (RLS)
+
+Die `goals`-Tabelle (Migration 0021) ist von Beginn an RLS-geschützt. `anon` hat
+keinerlei Zugriff (`revoke all`). `authenticated` erhält `select, insert, update,
+delete` **ausschließlich auf eigene Zeilen** über vier Policies
+(`goals_select_own`, `goals_insert_own`, `goals_update_own`, `goals_delete_own`,
+jeweils `user_id = auth.uid()`). Der `enforce_user_id`-Trigger erzwingt zusätzlich
+`user_id = auth.uid()` beim Insert und macht den Eigentümer unveränderlich
+(Defense in Depth). Ein Zugriff auf fremde Ziele über eine direkte ID betrifft
+0 Zeilen statt eines Fehlers (kein Leak).
+
+Der Fortschritt eines Ziels wird ausschließlich aus den **eigenen** aktiven
+Dividendeneingängen des Nutzers berechnet (dieselbe RLS-geschützte Datenbasis wie
+Dashboard/Statistik); fremde Zahlungen sind serverseitig unsichtbar. Es wird
+keine neue SECURITY-DEFINER-Funktion eingeführt — damit entfällt jede
+Umgehungsfläche über unsichere Funktionen. Clientseitige Filter sind nirgends
+Sicherheitsmaßnahme. Anlegen, Ändern und Löschen eines Ziels werden über den
+generischen Audit-Trigger (`entity_type = 'goal'`, Aktion insert/update/delete)
+protokolliert.
+
+## Dividendenkalender (Migration 0027, Edge Function)
+
+Der DivvyDiary-Feed ist eine persönliche Adresse **mit Token**. Er wird ausschließlich
+serverseitig verwendet; das Frontend kennt ihn nicht.
+
+- **Secret**: `DIVVYDIARY_ICAL_URL` liegt allein als Supabase-Secret vor (kein
+  `VITE_`-Präfix, nicht im Repository, nicht in einer öffentlichen Env-Variablen).
+  `.env.example` enthält nur einen leeren Platzhalter.
+- **Authentifizierung**: Die Edge Function `sync-divvydiary-calendar` läuft mit
+  `verify_jwt = true`; zusätzlich bestimmt sie die Nutzerkennung über `auth.getUser()`
+  aus dem geprüften JWT. Eine vom Client übergebene `user_id` wird nie verwendet.
+- **Schreibrechte**: Der Client hat auf `dividend_calendar_events` und
+  `calendar_sync_status` **nur SELECT** auf eigene Zeilen und keinerlei
+  Schreib-Policy. Geschrieben wird mit service_role, das jede Anweisung zusätzlich auf
+  die ermittelte `user_id` einschränkt; ein DELETE-Recht besitzt es nicht.
+- **Fehlerprotokollierung**: Weder Antwort noch Log enthalten die Feed-Adresse, den
+  Token oder iCal-Rohdaten. Protokolliert wird ausschließlich ein Code
+  (`feed:timeout`, `feed:http:403`, `ical:parse`, …); die Nutzermeldung entsteht aus
+  einer festen Tabelle, nie aus dem ursprünglichen Fehlertext (`_shared/messages.ts`).
+- **Verfügbarkeit**: Abruf und Parsen laufen vollständig vor dem ersten Schreibzugriff.
+  Ein Ausfall der Quelle kann gespeicherte Termine daher nicht beschädigen.
+- **Geprüft** in `tests/integration/calendar.test.ts` (RLS, Grants, Eindeutigkeit,
+  Sperre) und `tests/unit/calendar/feed.test.ts` (keine Adresse und kein Token in
+  Meldungen oder Logcodes).

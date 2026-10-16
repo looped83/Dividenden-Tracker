@@ -1,0 +1,17 @@
+# Haelt die GitHub Actions aktuell, damit keine Laeufe mehr auf abgekuendigten
+# Laufzeiten (z. B. Node 20) haengen bleiben. npm bewusst nicht: Playwright ist
+# festgesetzt (DECISIONS.md D-8-3).
+#
+# Die Workflows referenzieren Major-Tags (`@v7`); Dependabot meldet sich also
+# nur bei einer neuen Major-Version — alle Actions gesammelt in einem PR.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: ci

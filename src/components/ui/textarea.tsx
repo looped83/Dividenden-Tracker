@@ -1,0 +1,30 @@
+import * as React from "react";
+import { cn } from "@/lib/utils/cn";
+
+export function Textarea({
+  className,
+  inputMode,
+  ...props
+}: React.ComponentProps<"textarea">) {
+  return (
+    <textarea
+      // Wie beim Input: ohne ausdruecklichen `inputmode` behaelt iOS die
+      // Tastatur des zuvor fokussierten Feldes bei (z. B. den Zahlenblock des
+      // Betragsfeldes) — siehe input.tsx.
+      inputMode={inputMode ?? "text"}
+      className={cn(
+        // 16 px auf schmalen Geraeten — sonst zoomt iOS Safari beim Fokussieren.
+        // Zwei Zeilen hoch: Notizen und Begruendungen sind in diesem Programm
+        // Ausnahmen; vier leere Zeilen schoben auf dem Telefon die Aktionen aus
+        // dem Bild. Das Feld laesst sich aufziehen.
+        "flex min-h-16 w-full rounded-md border border-input bg-background px-3 py-2",
+        "text-base sm:text-sm",
+        "placeholder:text-muted-foreground outline-none",
+        "focus-visible:ring-2 focus-visible:ring-ring",
+        "disabled:cursor-not-allowed disabled:opacity-50",
+        className,
+      )}
+      {...props}
+    />
+  );
+}

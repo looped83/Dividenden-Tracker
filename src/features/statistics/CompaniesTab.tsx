@@ -1,0 +1,355 @@
+import * as React from "react";
+import { Link, useNavigate } from "react-router";
+import { BarChart3 } from "lucide-react";
+import { Section } from "@/components/ui/section";
+import { AmountText } from "@/components/money/AmountText";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { EmptyState } from "@/components/ui/empty-state";
+import {
+  aggregate,
+  shareOfTotal,
+  securityStatistics,
+  sortSecurityStatistics,
+  type SecurityStatistics,
+} from "@/lib/statistics";
+import { formatPercent } from "@/lib/money";
+import { compareGerman } from "@/lib/utils/compareText";
+import { MD_BREAKPOINT_QUERY, useMediaQuery } from "@/lib/hooks/useMediaQuery";
+import { RankedBars, type RankedBarItem } from "@/features/dashboard/RankedBars";
+import { barLength } from "@/features/dashboard/format";
+import { useStatisticsContext } from "./context";
+import { BreakdownSwitch } from "./BreakdownSwitch";
+import {
+  entityArchived,
+  entityName,
+  formatCountNumber,
+  formatPayments,
+  statisticsDrillHref,
+} from "./format";
+import { StatSearch, StatTable, type StatColumn } from "./components/StatTable";
+import { formatDateRange, formatCalendarDate } from "@/lib/utils/formatDate";
+
+const TOP_COMPANIES = 10;
+
+/**
+ * Erste und letzte Zahlung in **einer** Spalte.
+ *
+ * Als zwei Spalten („Erste Zahlung", „Letzte Zahlung") lief die Tabelle auf
+ * dem Schreibtisch rechts aus dem Bild — zwei Spaltenkoepfe und vier
+ * Innenabstaende fuer zwei Daten, die ohnehin zusammen gelesen werden. Als
+ * Zeitraum stehen beide weiterhin da und brauchen die Haelfte des Platzes.
+ * Faellt beides auf denselben Tag, steht er einmal.
+ */
+function periodCell(first: string | null, last: string | null): React.ReactNode {
+  const single = first ?? last;
+  if (single === null) return <span className="text-muted-foreground">—</span>;
+  if (first === null || last === null || first === last)
+    return formatCalendarDate(single);
+  // Gewoehnliche Leerzeichen um den Halbgeviertstrich: Auf schmalen Geraeten
+  // darf der Zeitraum umbrechen, statt die Spalte auf seine volle Laenge zu
+  // zwingen.
+  return formatDateRange(first, last);
+}
+
+export function CompaniesTab() {
+  const { payments, securities, filter, portfolio } = useStatisticsContext();
+  const expectedById = portfolio.expectedBySecurity;
+  const navigate = useNavigate();
+
+  const labelOf = React.useCallback(
+    (securityId: string) => entityName(securities, securityId),
+    [securities],
+  );
+
+  // Die Suche liegt hier statt in der Tabelle: Auf breiten Schirmen steht sie
+  // in der Kopfzeile der Kachel, neben der Ueberschrift.
+  const [query, setQuery] = React.useState("");
+  // Archivierte Unternehmen sind abgeschlossene Positionen und wuerden die
+  // Tabelle verlaengern, ohne die laufende Entwicklung zu erklaeren. Sie bleiben
+  // wie in der Unternehmensverwaltung zuschaltbar (unterhalb der Tabelle).
+  const [showArchived, setShowArchived] = React.useState(false);
+
+  const stats = React.useMemo(() => securityStatistics(payments), [payments]);
+  const sorted = React.useMemo(
+    () => sortSecurityStatistics(stats, "net", labelOf),
+    [stats, labelOf],
+  );
+
+  const hasArchived = React.useMemo(
+    () => sorted.some((row) => entityArchived(securities, row.securityId)),
+    [sorted, securities],
+  );
+  const tableRows = React.useMemo(
+    () =>
+      showArchived
+        ? sorted
+        : sorted.filter((row) => !entityArchived(securities, row.securityId)),
+    [sorted, showArchived, securities],
+  );
+
+  const total = React.useMemo(() => aggregate(payments).net, [payments]);
+  const maxNet = React.useMemo(
+    () => tableRows.reduce((max, row) => Math.max(max, row.net.toChartNumber()), 0),
+    [tableRows],
+  );
+  const isWide = useMediaQuery(MD_BREAKPOINT_QUERY);
+  // Die Rangliste zeigt **nur aktive** Unternehmen: Sie beantwortet „woher
+  // kommen meine Dividenden", und eine geschlossene Position gehoert nicht mehr
+  // zu dieser Antwort — sie stand in der Vergangenheit oft weit oben und
+  // verdraengte die laufenden Zahler aus den ersten zehn Plaetzen. Die
+  // Gesamtsumme bleibt die des Zeitraums (auch mit archivierten Zahlungen); die
+  // Anteile sagen damit weiterhin „so viel Prozent aller Dividenden".
+  // Archivierte bleiben in der Tabelle darunter zuschaltbar.
+  const topItems = React.useMemo<RankedBarItem[]>(
+    () =>
+      sorted
+        .filter((stat) => !entityArchived(securities, stat.securityId))
+        .slice(0, TOP_COMPANIES)
+        .map((stat) => ({
+          key: stat.securityId,
+          name: entityName(securities, stat.securityId),
+          archived: false,
+          net: stat.net,
+          href: statisticsDrillHref(filter, { securityId: stat.securityId }),
+        })),
+    [sorted, securities, filter],
+  );
+
+  const columns = React.useMemo<StatColumn<SecurityStatistics>[]>(
+    () => [
+      {
+        key: "name",
+        header: "Asset",
+        headerLabel: "Name (alphabetisch)",
+        compare: (a, b) => compareGerman(labelOf(a.securityId), labelOf(b.securityId)),
+        render: (row) => (
+          <span className="flex min-w-0 items-center gap-1.5">
+            {/* Der Name fuehrt auf die Detailseite des Unternehmens; die
+                uebrigen Zellen bleiben Drill-downs in die Zahlungsliste. Die
+                Zeile beantwortet damit beide Fragen: „welche Zahlungen?" und
+                „wie hat sich diese Position entwickelt?" */}
+            <Link
+              to={`/depot/${row.securityId}`}
+              className="truncate rounded-sm font-medium outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {entityName(securities, row.securityId)}
+            </Link>
+            {entityArchived(securities, row.securityId) && (
+              <Badge variant="neutral" className="shrink-0">
+                Archiviert
+              </Badge>
+            )}
+          </span>
+        ),
+      },
+      {
+        key: "net",
+        header: "Gesamtsumme",
+        headerLabel: "Gesamtsumme",
+        align: "right",
+        compare: (a, b) => a.net.compareTo(b.net),
+        render: (row) => <AmountText amount={row.net} />,
+      },
+      // Die erwartete Jahresdividende steht direkt neben der erhaltenen Summe:
+      // erst dort laesst sich beides zusammen lesen. Sie erscheint
+      // nur, wenn ein Depotstand importiert ist — eine Spalte voller
+      // Gedankenstriche waere nichts als verbrauchte Breite.
+      ...(expectedById.size > 0
+        ? [
+            {
+              key: "expected",
+              header: "Erwartet p. a.",
+              headerLabel: "Erwartete Jahresdividende laut Depotstand",
+              align: "right" as const,
+              className: "hidden lg:table-cell",
+              compare: (a: SecurityStatistics, b: SecurityStatistics) =>
+                (expectedById.get(a.securityId)?.toChartNumber() ?? 0) -
+                (expectedById.get(b.securityId)?.toChartNumber() ?? 0),
+              render: (row: SecurityStatistics) => {
+                const expected = expectedById.get(row.securityId);
+                return expected ? (
+                  <AmountText amount={expected} />
+                ) : (
+                  <span className="text-muted-foreground">—</span>
+                );
+              },
+            },
+          ]
+        : []),
+      {
+        key: "count",
+        header: "Anzahl",
+        headerLabel: "Anzahl Dividenden",
+        align: "right",
+        compare: (a, b) => a.count - b.count,
+        render: (row) => formatCountNumber(row.count),
+      },
+      {
+        key: "average",
+        header: "Ø Dividende",
+        headerLabel: "Durchschnittszahlung",
+        align: "right",
+        compare: (a, b) => a.averagePayment.compareTo(b.averagePayment),
+        render: (row) => <AmountText amount={row.averagePayment} />,
+      },
+      {
+        key: "largest",
+        listHidden: true,
+        header: "Größte Dividende",
+        headerLabel: "Größte Einzelzahlung",
+        align: "right",
+        // Die Nebenkennzahl der Tabelle — sie tritt zurueck, wo der Platz nicht
+        // fuer alle Spalten reicht (unter 1280px bleiben neben der Sidebar
+        // keine 700px). Auf der Unternehmensseite steht sie unabhaengig davon.
+        className: "hidden xl:table-cell",
+        compare: (a, b) =>
+          (a.largestPayment?.toChartNumber() ?? 0) -
+          (b.largestPayment?.toChartNumber() ?? 0),
+        render: (row) =>
+          row.largestPayment ? (
+            <AmountText amount={row.largestPayment} />
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          ),
+      },
+      {
+        key: "period",
+        header: "Zeitraum",
+        headerLabel: "Zeitraum, nach letzter Dividende",
+        // Sortiert wird nach der **letzten** Zahlung: Die Frage an dieser
+        // Spalte ist „wer zahlt noch?", nicht „wer zahlte zuerst?".
+        compare: (a, b) => (a.lastPayDate ?? "").localeCompare(b.lastPayDate ?? ""),
+        render: (row) => periodCell(row.firstPayDate, row.lastPayDate),
+      },
+    ],
+    [labelOf, securities, expectedById],
+  );
+
+  if (stats.length === 0) {
+    return (
+      <EmptyState
+        icon={BarChart3}
+        title="Keine Daten zu Assets"
+        description="Für den aktuellen Filter liegen keine Dividenden vor."
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-10">
+      {/* Auf dem Telefon ist die Liste darunter selbst die Rangliste (Balken
+          je Zeile); dieselben Summen ein zweites Mal als Balken darueber
+          verdoppelten dort die Seite. Ab `md` steht die Tabelle — sie zeigt
+          keine Balken, deshalb bleibt die Rangliste dort. */}
+      {isWide && (
+        // „Verteilung" mit dem Umschalter Assets | Depots rechts — dieselbe
+        // Ueberschrift und dieselbe Stelle wie auf der Uebersicht.
+        <Section
+          title="Verteilung"
+          action={<BreakdownSwitch />}
+          actionClassName="shrink-0"
+        >
+          <div>
+            {topItems.length === 0 ? (
+              <p className="py-6 text-sm text-muted-foreground">
+                Kein aktives Asset in dieser Auswahl — die Tabelle darunter zeigt die
+                archivierten.
+              </p>
+            ) : (
+              <RankedBars
+                items={topItems}
+                total={total}
+                ariaLabel="Aktive Assets nach Nettodividende"
+                columns
+              />
+            )}
+          </div>
+        </Section>
+      )}
+
+      {/* Auf dem Telefon traegt diese Liste die Verteilung und damit auch
+          den Umschalter; das Suchfeld steht dann als erste Zeile darunter. */}
+      <Section
+        title={isWide ? "Statistik je Asset" : "Verteilung"}
+        actionClassName={isWide ? "w-64 -my-3" : "shrink-0"}
+        action={
+          isWide ? (
+            <StatSearch value={query} onChange={setQuery} placeholder="Assets suchen …" />
+          ) : (
+            <BreakdownSwitch />
+          )
+        }
+      >
+        <div className="space-y-3">
+          {!isWide && (
+            <div className="pt-1 [&_input]:rounded-full">
+              <StatSearch
+                value={query}
+                onChange={setQuery}
+                placeholder="Assets suchen …"
+              />
+            </div>
+          )}
+          <StatTable
+            rows={tableRows}
+            columns={columns}
+            getRowKey={(row) => row.securityId}
+            caption="Kennzahlen je Asset"
+            searchOf={(row) => entityName(securities, row.securityId)}
+            query={query}
+            initialSort={{ key: "net", direction: "desc" }}
+            emptyMessage={
+              tableRows.length === 0 && hasArchived
+                ? "Nur archivierte Assets in dieser Auswahl — unten einblenden."
+                : "Keine Daten für die aktuelle Auswahl."
+            }
+            onRowClick={(row) =>
+              void navigate(statisticsDrillHref(filter, { securityId: row.securityId }))
+            }
+            rowLabel={(row) =>
+              `Dividenden von ${entityName(securities, row.securityId)} anzeigen`
+            }
+            listSummary={{
+              bar: (row) => {
+                const share = shareOfTotal(row.net, total);
+                return {
+                  length: barLength(row.net, maxNet),
+                  label: share ? formatPercent(share) : "—",
+                };
+              },
+              meta: (row) => {
+                const expected = expectedById.get(row.securityId);
+                return (
+                  <>
+                    {formatPayments(row.count)} · Ø{" "}
+                    <AmountText amount={row.averagePayment} />
+                    {expected && (
+                      <>
+                        {" "}
+                        · erw. <AmountText amount={expected} /> p. a.
+                      </>
+                    )}
+                  </>
+                );
+              },
+            }}
+          />
+          {/* Nebenschalter unter der Liste — ohne Trennlinie: Die Liste endet
+              ohne Rahmen, eine Linie darunter sah aus wie eine leere Zeile. */}
+          <div className="pt-2">
+            <label className="flex min-h-11 items-center gap-2 text-sm text-muted-foreground">
+              <Checkbox
+                checked={showArchived}
+                onChange={(event) => {
+                  setShowArchived(event.target.checked);
+                }}
+              />
+              Archivierte anzeigen
+            </label>
+          </div>
+        </div>
+      </Section>
+    </div>
+  );
+}
