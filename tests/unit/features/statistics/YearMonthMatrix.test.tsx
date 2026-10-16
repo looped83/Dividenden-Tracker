@@ -128,7 +128,7 @@ describe("YearMonthMatrix ab md", () => {
     expect(screen.getAllByText(/400,00\s?€/).length).toBeGreaterThan(0);
   });
 
-  it('summiert in der Ansicht „Aufgelaufen" über das Jahr', () => {
+  it('summiert in der Ansicht „Kumuliert" über das Jahr', () => {
     renderMatrix();
     fireEvent.change(screen.getByLabelText("Ansicht"), {
       target: { value: "kumuliert" },

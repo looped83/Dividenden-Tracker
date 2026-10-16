@@ -1,4 +1,5 @@
 import { Plus, MoreHorizontal } from "lucide-react";
+import type * as React from "react";
 import { NavLink, useLocation } from "react-router";
 import { BOTTOM_NAV_MORE_ITEMS, BOTTOM_NAV_PRIMARY_ITEMS } from "@/app/navigation";
 import { prefetchProps } from "@/app/routeChunks";
@@ -27,6 +28,11 @@ const INACTIVE = "text-muted-foreground";
  * **Erfassen oeffnet einen Dialog, keine Seite.** Das Formular liegt mittig
  * ueber der aktuellen Seite; nach dem Speichern oder Abbrechen steht man wieder
  * genau dort, wo man war (siehe `PaymentComposerProvider`).
+ *
+ * **Erneutes Tippen auf den aktiven Bereich scrollt nach oben** — wie in
+ * iOS-Apps. Nur auf genau dieser Seite und nur, wenn sie heruntergescrollt
+ * ist: Dann bleiben Filter und Ansicht in der Adresse erhalten. Oben
+ * angekommen, verhaelt sich der Eintrag wie jeder Link.
  */
 export function BottomNav() {
   // „Mehr" steht fuer alle Bereiche dahinter: In Kalender, Depot, Zielen oder
@@ -76,6 +82,9 @@ export function BottomNav() {
       <NavLink
         to="/mehr"
         {...prefetchProps("/mehr")}
+        onClick={(event) => {
+          scrollToTopIfCurrent(event, pathname, "/mehr");
+        }}
         className={({ isActive }) =>
           cn(
             "flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-xs outline-none",
@@ -100,11 +109,15 @@ function BottomNavLink({
   label: string;
   icon: (typeof BOTTOM_NAV_PRIMARY_ITEMS)[number]["icon"];
 }) {
+  const { pathname } = useLocation();
   return (
     <NavLink
       to={to}
       end={to === "/"}
       {...prefetchProps(to)}
+      onClick={(event) => {
+        scrollToTopIfCurrent(event, pathname, to);
+      }}
       className={({ isActive }) =>
         cn(
           "flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-xs outline-none",
@@ -117,4 +130,15 @@ function BottomNavLink({
       {label}
     </NavLink>
   );
+}
+
+function scrollToTopIfCurrent(
+  event: React.MouseEvent<HTMLAnchorElement>,
+  pathname: string,
+  to: string,
+) {
+  if (pathname !== to || window.scrollY <= 0) return;
+  event.preventDefault();
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
 }
