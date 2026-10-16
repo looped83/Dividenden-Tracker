@@ -12,10 +12,14 @@ export type BreakdownView = "summe" | "veraenderung" | "kumuliert";
 
 const VIEWS: readonly BreakdownView[] = ["summe", "veraenderung", "kumuliert"];
 
+/**
+ * Kurz gehalten: Die Auswahl steht neben der Ueberschrift und ist so breit wie
+ * ihre laengste Option. Was genau gezaehlt wird, sagt die Tabellenbeschriftung.
+ */
 export const BREAKDOWN_VIEW_LABELS: Readonly<Record<BreakdownView, string>> = {
-  summe: "Summe je Monat",
-  veraenderung: "Δ zum Vorjahresmonat",
-  kumuliert: "Aufgelaufen im Jahr",
+  summe: "Monatssumme",
+  veraenderung: "Δ Vorjahr",
+  kumuliert: "Aufgelaufen",
 };
 
 /** Liest die Ansicht aus der URL; unbekannte Werte fallen still auf „summe" zurueck. */

@@ -305,7 +305,7 @@ Die Übersicht trägt unter den Kennzahlen die Matrix **Jahre × Monate**: alle 
 in **einer** Tabelle — eine Zeile je Kalenderjahr (neueste zuerst), eine Spalte je Monat, dazu
 Jahressummen, Monatssummen über alle Jahre und die Veränderung zum Vorjahr. Hier geht es um den
 Abgleich Zahl gegen Zahl (Januar 2024 gegen Januar 2025 gegen Januar 2026). In der Ansicht
-„Summe je Monat" sind die Zellen nach der Höhe ihres Betrags getönt — das ist die frühere
+„Monatssumme" sind die Zellen nach der Höhe ihres Betrags getönt — das ist die frühere
 Heatmap. Umschaltbar zwischen Monatssumme, Veränderung zum Vorjahresmonat und aufgelaufener
 Jahressumme (CALCULATION_RULES.md §11.12). Auf dem iPhone steht die Matrix gedreht: Monate als
 Zeilen, Jahre als Spalten, das jüngste Jahr vorn.

@@ -45,7 +45,7 @@ import {
  *
  * Hier sind zwei fruehere Darstellungen derselben Frage zusammengefuehrt: die
  * Heatmap der Uebersicht (Farbe je Monat, ohne Zahl) und der eigene Reiter
- * „Breakdown" (Zahl je Monat, ohne Farbe). In der Ansicht „Summe je Monat"
+ * „Breakdown" (Zahl je Monat, ohne Farbe). In der Ansicht „Monatssumme"
  * tragen die Zellen jetzt beides — den Betrag und eine Toenung nach seiner
  * Hoehe. Jede Zahl fuehrt in die Zahlungsliste dahinter (§11.9).
  *
@@ -80,16 +80,20 @@ export function YearMonthMatrix() {
   if (matrix.years.length === 0) return null;
 
   return (
-    // Die Ansichtswahl steht in der Kopfzeile rechts: Sie gehoert zum
-    // Abschnitt, nicht zu seinem Inhalt, und braucht dort keine eigene
-    // Beschriftung — die Auswahl benennt sich selbst („Summe je Monat"). Fuer
-    // Hilfsmittel traegt sie den Namen als `aria-label`.
+    // Die Ansichtswahl steht in der Kopfzeile rechts neben der Ueberschrift,
+    // auch auf dem Telefon: Sie gehoert zum Abschnitt, nicht zu seinem Inhalt,
+    // und braucht dort keine eigene Beschriftung — die Auswahl benennt sich
+    // selbst („Monatssumme"). Als Pille so breit wie ihre laengste Option, wie
+    // die Jahresauswahl der Uebersicht. Fuer Hilfsmittel traegt sie den Namen
+    // als `aria-label`.
     <Section
       title="Jahre × Monate"
-      actionClassName="w-full sm:-my-3 sm:w-56"
+      // Ohne negativen Rand: Die 44px hohe Pille stiesse sonst an die Tabelle.
+      actionClassName="shrink-0"
       action={
         <Select
           aria-label="Ansicht"
+          className="w-auto"
           value={view}
           onChange={(event) => {
             setView(event.target.value as BreakdownView);
