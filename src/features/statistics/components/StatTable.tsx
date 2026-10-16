@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FilterSort } from "@/components/ui/filter-bar";
 import { ListGroup, ListRow } from "@/components/ui/list";
+import { Section } from "@/components/ui/section";
 import { MD_BREAKPOINT_QUERY, useMediaQuery } from "@/lib/hooks/useMediaQuery";
 import { cn } from "@/lib/utils/cn";
 import { formatCountNumber } from "@/lib/utils/formatNumber";
@@ -53,6 +54,12 @@ interface StatTableProps<T> {
    */
   query?: string;
   initialSort?: { key: string; direction: SortDirection };
+  /**
+   * Ueberschrift des Abschnitts. Ist sie gesetzt, rahmt die Tabelle sich
+   * selbst als {@link Section} — und die Sortierauswahl des Telefons steht
+   * rechts neben der Ueberschrift statt in einer eigenen Zeile darunter.
+   */
+  title?: React.ReactNode;
   pageSize?: number;
   caption: string;
   emptyMessage?: string;
@@ -129,6 +136,20 @@ function columnName<T>(column: StatColumn<T>): string {
 }
 
 /**
+ * Richtung, die ein Kriterium in der Liste mitbringt — einen Schalter dafuer
+ * gibt es auf dem Telefon nicht mehr (seit 1.24.0): Die Vorgabe des Aufrufers
+ * bleibt, Zahlen stehen groesste zuerst, Namen und Monate in ihrer
+ * natuerlichen Reihenfolge.
+ */
+function naturalDirection<T>(
+  column: StatColumn<T>,
+  initialSort: { key: string; direction: SortDirection } | undefined,
+): SortDirection {
+  if (initialSort?.key === column.key) return initialSort.direction;
+  return column.align === "right" ? "desc" : "asc";
+}
+
+/**
  * Ein Klick auf einen Link in der Zeile (etwa den Namen, der zur Detailseite
  * fuehrt) gehoert dem Link. Ohne diese Pruefung loeste er zusaetzlich den
  * Drill-down der Zeile aus, und die zweite Navigation gewann.
@@ -158,6 +179,7 @@ export function StatTable<T>({
   searchPlaceholder = "Suchen …",
   query: externalQuery,
   initialSort,
+  title,
   pageSize = 25,
   caption,
   emptyMessage = "Keine Daten für die aktuelle Auswahl.",
@@ -254,7 +276,28 @@ export function StatTable<T>({
         }
       : {};
 
-  return (
+  // Rechts und in Inhaltsbreite — wie die Umschalter in den Köpfen der
+  // Abschnitte, nicht als Feld über die ganze Breite.
+  const sortControl =
+    !isWide && activeSort && sortableColumns.length > 1 ? (
+      <FilterSort
+        compact
+        id={sortId}
+        value={activeSort.key}
+        options={sortableColumns.map((column) => ({
+          value: column.key,
+          label: columnName(column),
+        }))}
+        onValueChange={(key) => {
+          const column = columnByKey.get(key);
+          if (!column) return;
+          setPage(1);
+          setSort({ key, direction: naturalDirection(column, initialSort) });
+        }}
+      />
+    ) : null;
+
+  const table = (
     <div className="space-y-3">
       {searchOf && !controlled && (
         <div className="max-w-xs">
@@ -366,30 +409,7 @@ export function StatTable<T>({
         </div>
       ) : (
         <>
-          {activeSort && sortableColumns.length > 1 && (
-            // Rechts und in Inhaltsbreite — wie die Umschalter in den Köpfen
-            // der Abschnitte, nicht als Feld über die ganze Breite.
-            <div className="flex justify-end">
-              <FilterSort
-                compact
-                id={sortId}
-                value={activeSort.key}
-                direction={activeSort.direction}
-                options={sortableColumns.map((column) => ({
-                  value: column.key,
-                  label: `Nach ${columnName(column)}`,
-                }))}
-                onValueChange={(key) => {
-                  setPage(1);
-                  setSort({ key, direction: activeSort.direction });
-                }}
-                onDirectionChange={(direction) => {
-                  setPage(1);
-                  setSort({ key: activeSort.key, direction });
-                }}
-              />
-            </div>
-          )}
+          {!title && sortControl && <div className="flex justify-end">{sortControl}</div>}
           {pageRows.length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">
               {emptyMessage}
@@ -445,6 +465,14 @@ export function StatTable<T>({
         </div>
       )}
     </div>
+  );
+
+  return title === undefined ? (
+    table
+  ) : (
+    <Section title={title} {...(sortControl && { action: sortControl })}>
+      {table}
+    </Section>
   );
 }
 

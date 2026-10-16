@@ -106,26 +106,23 @@ export function MonthsTab({
         </div>
       </Section>
 
-      <Section title="Monatsstatistik">
-        <div>
-          <StatTable
-            rows={stats}
-            columns={columns}
-            getRowKey={(row) => String(row.month)}
-            caption="Kennzahlen je Kalendermonat über alle Jahre"
-            onRowClick={(row) =>
-              void navigate(statisticsDrillHref(filter, { month: row.month }))
-            }
-            rowLabel={(row) => `Alle Dividenden im ${monthNameDe(row.month)} anzeigen`}
-            listSummary={{
-              // Der Monat als Kachel vorn — wie im Vergleich und bei den Jahren.
-              leading: (row) => <ListTile primary={monthNameDeShort(row.month)} />,
-              title: (row) => formatPayments(row.count),
-              meta: (row) => `Ø ${formatMoney(row.averagePayment)} je Dividende`,
-            }}
-          />
-        </div>
-      </Section>
+      <StatTable
+        title="Monatsstatistik"
+        rows={stats}
+        columns={columns}
+        getRowKey={(row) => String(row.month)}
+        caption="Kennzahlen je Kalendermonat über alle Jahre"
+        onRowClick={(row) =>
+          void navigate(statisticsDrillHref(filter, { month: row.month }))
+        }
+        rowLabel={(row) => `Alle Dividenden im ${monthNameDe(row.month)} anzeigen`}
+        listSummary={{
+          // Der Monat als Kachel vorn — wie im Vergleich und bei den Jahren.
+          leading: (row) => <ListTile primary={monthNameDeShort(row.month)} />,
+          title: (row) => formatPayments(row.count),
+          meta: (row) => `Ø ${formatMoney(row.averagePayment)} je Dividende`,
+        }}
+      />
     </div>
   );
 }

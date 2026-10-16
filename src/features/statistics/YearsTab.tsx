@@ -176,59 +176,55 @@ export function YearsTab({
         </div>
       </Section>
 
-      <Section title="Jahresstatistik">
-        <div>
-          <StatTable
-            rows={stats}
-            columns={columns}
-            getRowKey={(row) => String(row.year)}
-            caption="Kennzahlen je Kalenderjahr"
-            initialSort={{ key: "year", direction: "desc" }}
-            onRowClick={(row) =>
-              void navigate(
-                statisticsTabHref(
-                  "/statistiken/verlauf",
-                  filter,
-                  { year: row.year },
-                  { nach: "monate" },
-                ),
-              )
-            }
-            rowLabel={(row) => `Monate von ${String(row.year)} anzeigen`}
-            listSummary={{
-              // Das Jahr als Kachel vorn — wie das Datum bei den Eingängen.
-              leading: (row) => <ListTile primary={String(row.year)} />,
-              title: (row) => formatPayments(row.count),
-              meta: (row) => {
-                const { change } = row;
-                const trend =
-                  change.kind === "percent" ? (
-                    <span
-                      className={cn(
-                        "font-medium",
-                        change.absolute.isNegative() && "text-negative",
-                        change.absolute.isPositive() && "text-positive",
-                      )}
-                    >
-                      {change.percent.isPositive() ? "+" : ""}
-                      {formatPercent(change.percent)}
-                      {row.year === today.year ? " bis heute" : ""}
-                    </span>
-                  ) : null;
-                const best =
-                  row.bestMonth && `stärkster ${monthNameDe(row.bestMonth.month)}`;
-                return (
-                  <>
-                    {trend}
-                    {trend && best && " · "}
-                    {best}
-                  </>
-                );
-              },
-            }}
-          />
-        </div>
-      </Section>
+      <StatTable
+        title="Jahresstatistik"
+        rows={stats}
+        columns={columns}
+        getRowKey={(row) => String(row.year)}
+        caption="Kennzahlen je Kalenderjahr"
+        initialSort={{ key: "year", direction: "desc" }}
+        onRowClick={(row) =>
+          void navigate(
+            statisticsTabHref(
+              "/statistiken/verlauf",
+              filter,
+              { year: row.year },
+              { nach: "monate" },
+            ),
+          )
+        }
+        rowLabel={(row) => `Monate von ${String(row.year)} anzeigen`}
+        listSummary={{
+          // Das Jahr als Kachel vorn — wie das Datum bei den Eingängen.
+          leading: (row) => <ListTile primary={String(row.year)} />,
+          title: (row) => formatPayments(row.count),
+          meta: (row) => {
+            const { change } = row;
+            const trend =
+              change.kind === "percent" ? (
+                <span
+                  className={cn(
+                    "font-medium",
+                    change.absolute.isNegative() && "text-negative",
+                    change.absolute.isPositive() && "text-positive",
+                  )}
+                >
+                  {change.percent.isPositive() ? "+" : ""}
+                  {formatPercent(change.percent)}
+                  {row.year === today.year ? " bis heute" : ""}
+                </span>
+              ) : null;
+            const best = row.bestMonth && `stärkster ${monthNameDe(row.bestMonth.month)}`;
+            return (
+              <>
+                {trend}
+                {trend && best && " · "}
+                {best}
+              </>
+            );
+          },
+        }}
+      />
     </div>
   );
 }
