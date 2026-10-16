@@ -124,7 +124,7 @@ export function KpiHero({
               <div
                 key={stat.label}
                 className={cn(
-                  "relative flex min-w-0 flex-col rounded-xl px-2.5 py-2 sm:px-4 sm:py-3",
+                  "@container relative flex min-w-0 flex-col rounded-xl px-2 py-2 sm:px-4 sm:py-3",
                   stat.to !== undefined &&
                     "transition-colors hover:bg-accent motion-reduce:transition-none",
                 )}
@@ -132,7 +132,11 @@ export function KpiHero({
                 <dt className="truncate text-[0.8125rem] text-muted-foreground">
                   {stat.label}
                 </dt>
-                <dd className="mt-0.5 truncate text-[1.0625rem] font-semibold tracking-[-0.01em] tabular-amount">
+                {/* Die Schrift wächst mit dem Feld (Container Query): Drei
+                    Beträge wie „11.293,36 €" passen so auch auf 360px
+                    Telefonbreite ganz, ab gut 110px Feldbreite gilt die volle
+                    Größe. */}
+                <dd className="mt-0.5 truncate text-[clamp(0.75rem,15cqi,1.0625rem)] font-semibold tracking-[-0.01em] tabular-amount">
                   {stat.to !== undefined ? (
                     <Link
                       to={stat.to}
@@ -213,7 +217,7 @@ export function KpiHeroSkeleton({ stats = 3 }: { stats?: 2 | 3 }) {
           )}
         >
           {Array.from({ length: stats }).map((_, index) => (
-            <div key={index} className="space-y-2 px-2.5 py-2 sm:px-4 sm:py-3">
+            <div key={index} className="space-y-2 px-2 py-2 sm:px-4 sm:py-3">
               <Skeleton className="h-3 w-14 bg-background" />
               <Skeleton className="h-5 w-20 bg-background" />
             </div>
