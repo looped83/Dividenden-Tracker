@@ -1,5 +1,6 @@
 import * as React from "react";
 import { useNavigate } from "react-router";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Section } from "@/components/ui/section";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
@@ -61,14 +62,16 @@ export function GeneralSettingsTab() {
         title="Über diese App"
         description="Die Version, die auf diesem Gerät läuft."
       >
-        {/* Wie eine Listenzeile: Beschriftung links, Wert rechts. Ab `sm` etwa so
-            breit wie der Umschalter darüber, nicht wie die Seite — sonst stand
-            die Nummer am rechten Fensterrand, weit weg von ihrer Beschriftung. */}
-        <dl className="text-[0.9375rem] sm:max-w-72">
-          <div className="flex items-baseline justify-between gap-4 py-3">
-            <dt className="text-muted-foreground">Version</dt>
-            <dd className="font-medium tabular-nums">{__APP_VERSION__}</dd>
-          </div>
+        {/* Die Nummer als Etikett direkt hinter der Beschriftung: Als
+            rechtsbündiger Wert stand sie auf breiten Flächen am Fensterrand,
+            weit weg von „Version“. */}
+        <dl className="flex items-center gap-2 py-3 text-[0.9375rem]">
+          <dt className="text-muted-foreground">Version</dt>
+          <dd>
+            <Badge variant="primary" className="tabular-nums">
+              {__APP_VERSION__}
+            </Badge>
+          </dd>
         </dl>
       </Section>
     </div>
