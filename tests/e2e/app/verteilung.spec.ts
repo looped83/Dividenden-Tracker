@@ -5,9 +5,9 @@ import { expect, test } from "../support/appTest";
  * „Verteilung" auf der Übersicht: Der Umschalter zwischen Assets und Depots
  * darf die Seite nicht springen lassen.
  *
- * Fünf Assets mit Link „Alle … Assets" sind höher als drei Depots. Wechselte
- * die Höhe des Abschnitts mit der Sicht, rutschte alles darunter — und mit dem
- * Bildlauf auch der Umschalter selbst unter dem Finger weg. Höhen gibt es nur
+ * Früher standen fünf Assets mit Link gegen drei Depots: Der Abschnitt
+ * schrumpfte beim Umschalten und alles darunter rutschte. Jetzt zeigen beide
+ * Sichten gleich viele Zeilen und je einen Link. Höhen gibt es nur
  * im Browser; in jsdom ist jede Liste 0 px hoch.
  */
 
@@ -24,7 +24,7 @@ test("Verteilung: Umschalten ändert die Höhe nicht", async ({ page, konto }) =
       );
       depotIds.push(depot.rows[0]?.id ?? "");
     }
-    // Sechstes Asset: So erscheint unter den fünf der Link „Alle 6 Assets".
+    // Sechstes Asset: mehr Assets als Zeilen, wie im echten Bestand.
     await client.query(
       `insert into dividend_payments
          (security_id, depot_id, pay_date, gross_amount, net_amount,

@@ -13,7 +13,10 @@ import {
 import { paymentsListHref, type EntityInfo } from "./format";
 import { RankedBars, type RankedBarItem } from "./RankedBars";
 
-const TOP_COMPANIES = 5;
+/** Höchstens so viele Zeilen je Sicht. */
+const MAX_ROWS = 5;
+/** Mindestens so viele Assets, auch bei nur zwei Depots. */
+const MIN_ROWS = 3;
 
 type View = "assets" | "depots";
 
@@ -51,13 +54,8 @@ function toItems(
   });
 }
 
-/** Verborgene Sicht: belegt Platz, ist aber weder sichtbar noch erreichbar. */
-function hiddenUnless(visible: boolean) {
-  return visible ? {} : { className: "invisible", "aria-hidden": true, inert: true };
-}
-
 /**
- * „Verteilung" (§9/§10): wer im Zeitraum wie viel beigetragen hat — die fünf
+ * „Verteilung" (§9/§10): wer im Zeitraum wie viel beigetragen hat — die
  * stärksten Assets oder die Depots, umschaltbar.
  *
  * Zuvor zwei Karten nebeneinander, Top-Assets und Depotverteilung. Beide
@@ -65,6 +63,12 @@ function hiddenUnless(visible: boolean) {
  * Telefon eine ganze Bildschirmhöhe. Mit nur einem Depot wäre die zweite Sicht
  * leer an Aussage (100 %): Dann entfällt der Umschalter, der Abschnitt heißt
  * „Top-Assets".
+ *
+ * Mit Umschalter zeigen beide Sichten gleich viele Zeilen — so viele, wie es
+ * Depots gibt (3 bis 5) — und enden beide mit einem Link in die Statistik.
+ * Vorher standen fünf Assets plus Link gegen drei Depots: Der Abschnitt
+ * schrumpfte beim Umschalten um zwei Zeilen und alles darunter sprang (seit
+ * 1.21.2). Platz freihalten hätte Weißraum unter den Depots bedeutet.
  */
 export function Distribution({
   periodPayments,
@@ -74,26 +78,31 @@ export function Distribution({
 }: DistributionProps) {
   const [view, setView] = React.useState<View>("assets");
 
-  const { total, assets, assetCount, depotItems } = React.useMemo(() => {
+  const { total, assets, assetCount, depotItems, depotCount } = React.useMemo(() => {
     const rankedAssets = rankGroups(groupBySecurity(periodPayments), (key) =>
       labelOf(securities, key),
     );
     const rankedDepots = rankGroups(groupByDepot(periodPayments), (key) =>
       labelOf(depots, key),
     );
+    const rows =
+      rankedDepots.length > 1
+        ? Math.min(MAX_ROWS, Math.max(MIN_ROWS, rankedDepots.length))
+        : MAX_ROWS;
     return {
       total: aggregate(periodPayments).net,
       assetCount: rankedAssets.length,
-      assets: toItems(rankedAssets.slice(0, TOP_COMPANIES), securities, (key) =>
+      depotCount: rankedDepots.length,
+      assets: toItems(rankedAssets.slice(0, rows), securities, (key) =>
         paymentsListHref({ year: selection, securityId: key }),
       ),
-      depotItems: toItems(rankedDepots, depots, (key) =>
+      depotItems: toItems(rankedDepots.slice(0, rows), depots, (key) =>
         paymentsListHref({ year: selection, depotId: key }),
       ),
     };
   }, [periodPayments, selection, securities, depots]);
 
-  const withDepots = depotItems.length > 1;
+  const withDepots = depotCount > 1;
   const shown = withDepots ? view : "assets";
   const statisticsHref = (path: string) =>
     selection === "all" ? path : `${path}?year=${String(selection)}`;
@@ -117,35 +126,30 @@ export function Distribution({
         <p className="py-6 text-sm text-muted-foreground">
           Keine Assets im ausgewählten Zeitraum.
         </p>
-      ) : (
-        // Beide Sichten liegen übereinander in derselben Rasterzelle, die
-        // verborgene unsichtbar: Der Abschnitt ist so hoch wie die höhere.
-        // Fünf Assets plus Link gegenüber drei Depots ließen ihn sonst beim
-        // Umschalten schrumpfen — alles darunter sprang, und mit dem Bildlauf
-        // auch der Umschalter selbst unter dem Finger weg.
-        <div className="grid [&>*]:col-start-1 [&>*]:row-start-1">
-          <div {...hiddenUnless(shown === "assets")}>
-            <RankedBars
-              items={assets}
-              total={total}
-              ariaLabel="Top-Assets nach Nettodividende"
-            />
-            {assetCount > TOP_COMPANIES && (
-              <SectionLink to={statisticsHref("/statistiken/unternehmen")}>
-                Alle {assetCount} Assets
-              </SectionLink>
-            )}
-          </div>
-          {withDepots && (
-            <div {...hiddenUnless(shown === "depots")}>
-              <RankedBars
-                items={depotItems}
-                total={total}
-                ariaLabel="Nettodividende je Depot"
-              />
-            </div>
+      ) : shown === "assets" ? (
+        <>
+          <RankedBars
+            items={assets}
+            total={total}
+            ariaLabel="Top-Assets nach Nettodividende"
+          />
+          {(withDepots || assetCount > assets.length) && (
+            <SectionLink to={statisticsHref("/statistiken/unternehmen")}>
+              Alle {assetCount} Assets
+            </SectionLink>
           )}
-        </div>
+        </>
+      ) : (
+        <>
+          <RankedBars
+            items={depotItems}
+            total={total}
+            ariaLabel="Nettodividende je Depot"
+          />
+          <SectionLink to={statisticsHref("/statistiken/depots")}>
+            Alle {depotCount} Depots
+          </SectionLink>
+        </>
       )}
     </Section>
   );
