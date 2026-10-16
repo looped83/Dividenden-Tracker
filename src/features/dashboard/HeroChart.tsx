@@ -9,6 +9,11 @@ const TOP = 20;
 const LABELS = 22;
 /** Seitlicher Rand, damit Endpunkte nicht am Rand abgeschnitten werden. */
 const INSET = 5;
+/**
+ * Rechter Rand in „Kumuliert": Dort endet die Linie mit dem Dezember, und
+ * dessen Kürzel steht mittig darunter — es braucht seine halbe Breite Platz.
+ */
+const INSET_MONTH_END = 12;
 
 function useElementWidth(): [React.RefObject<HTMLDivElement | null>, number] {
   const ref = React.useRef<HTMLDivElement>(null);
@@ -83,7 +88,8 @@ export function HeroChart({
   const top = TOP + reserve;
   const { points } = series;
   const slots = series.kind === "years" ? series.bars.length : 12;
-  const x = (slot: number) => INSET + (slot / slots) * (width - 2 * INSET);
+  const right = series.kind === "cumulative" ? INSET_MONTH_END : INSET;
+  const x = (slot: number) => INSET + (slot / slots) * (width - INSET - right);
 
   const nearest = (clientX: number): number => {
     const box = ref.current?.getBoundingClientRect();
@@ -324,6 +330,7 @@ function Cumulative({
       <MonthAxis
         x={x}
         y={height + LABELS - 6}
+        atMonthEnd
         strong={Math.ceil((point ?? series.points[series.points.length - 1]).x)}
       />
     </>
@@ -335,29 +342,35 @@ const MONTH_TICK_WIDTH = 26;
 
 /**
  * Monatsachse beider Jahressichten (seit 1.21.0, zuvor Anfangsbuchstaben bzw.
- * nur „Jan" und „Dez"): dieselben Kürzel an denselben Stellen, damit beim
- * Umschalten nichts springt. Der gewählte bzw. letzte Monat steht kräftiger.
- * Auf sehr schmalen Schirmen steht jeder zweite Monat; der Dezember bleibt als
- * Rahmen stehen.
+ * nur „Jan" und „Dez"). Jedes Kürzel steht dort, wo die Punkte des Monats
+ * liegen: in „Monatlich" in der Monatsmitte, in „Kumuliert" am Monatsende
+ * (`atMonthEnd`, seit 1.21.1) — dort steht die Summe „bis Ende Mai". Der
+ * gewählte bzw. letzte Monat steht kräftiger. Auf sehr schmalen Schirmen
+ * steht jeder zweite Monat, gezählt vom Dezember aus.
  */
 function MonthAxis({
   x,
   y,
   strong,
+  atMonthEnd = false,
 }: {
   x: (slot: number) => number;
   y: number;
   strong: number;
+  atMonthEnd?: boolean;
 }) {
   const step = x(1) - x(0) >= MONTH_TICK_WIDTH ? 1 : 2;
   return MONTH_NAMES_DE_SHORT.map((name, index) => {
     const month = index + 1;
     const isStrong = month === strong;
-    if (!isStrong && month !== 12 && index % step !== 0) return null;
+    // Ein gewählter Monat zwischen zwei Kürzeln verdrängt seine Nachbarn.
+    if (!isStrong && ((12 - month) % step !== 0 || Math.abs(month - strong) < step)) {
+      return null;
+    }
     return (
       <text
         key={name}
-        x={x(index + 0.5)}
+        x={x(atMonthEnd ? month : index + 0.5)}
         y={y}
         textAnchor="middle"
         fontSize={11}
