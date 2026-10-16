@@ -54,9 +54,60 @@
     <meta name="apple-mobile-web-app-title" content="Dividenden" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>Dividenden-Tracker</title>
+    <!-- Startbild bis React uebernimmt. Ohne es blieb die Seite leer, bis rund
+         200 kB JavaScript geladen waren — auf einem langsamen Telefon drei
+         Sekunden (Lighthouse). Das Bild braucht nur dieses Inline-CSS und
+         erscheint, sobald das HTML da ist; der erste Render von React ersetzt
+         den Inhalt von #root. Farben wie die Tokens in styles/index.css;
+         `.dark` setzt das Skript oben. Keine Animation: Es steht meist nur
+         Sekundenbruchteile. -->
+    <style>
+      .boot {
+        display: flex;
+        min-height: 100vh;
+        min-height: 100dvh;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        background: #fff;
+        color: oklch(0.5 0.006 286);
+        font:
+          500 0.9375rem -apple-system,
+          BlinkMacSystemFont,
+          "SF Pro Text",
+          "Inter",
+          system-ui,
+          sans-serif;
+      }
+      .boot-mark {
+        display: grid;
+        width: 56px;
+        height: 56px;
+        place-items: center;
+        border-radius: 14px;
+        background: oklch(0.58 0.168 44);
+        color: #fff;
+        font-size: 30px;
+        font-weight: 700;
+      }
+      .dark .boot {
+        background: #000;
+        color: oklch(0.72 0.012 260);
+      }
+      .dark .boot-mark {
+        background: oklch(0.72 0.185 48);
+        color: #000;
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="boot" role="status">
+        <span class="boot-mark" aria-hidden="true">€</span>
+        Dividenden-Tracker
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
