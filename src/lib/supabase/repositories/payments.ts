@@ -137,7 +137,7 @@ export async function createPayment(
 export class PaymentConflictError extends Error {
   constructor() {
     super(
-      "Der Dividendeneingang wurde zwischenzeitlich geändert. Die aktuellen Daten wurden neu geladen.",
+      "Die Dividende wurde zwischenzeitlich geändert. Die aktuellen Daten wurden neu geladen.",
     );
     this.name = "PaymentConflictError";
   }
@@ -205,14 +205,14 @@ export async function deletePayment(id: string): Promise<void> {
     // entkoppelt (ON DELETE SET NULL); diese Meldung ist eine Absicherung.
     if (error.code === "23503") {
       throw new Error(
-        "Der Dividendeneingang konnte nicht gelöscht werden, weil noch andere Datensätze darauf verweisen. Die Daten wurden nicht verändert.",
+        "Die Dividende konnte nicht gelöscht werden, weil noch andere Datensätze darauf verweisen. Die Daten wurden nicht verändert.",
       );
     }
     throw error;
   }
   if (count === 0) {
     throw new Error(
-      "Der Dividendeneingang konnte nicht gelöscht werden (nicht gefunden oder keine Berechtigung). Die Daten wurden nicht verändert.",
+      "Die Dividende konnte nicht gelöscht werden (nicht gefunden oder keine Berechtigung). Die Daten wurden nicht verändert.",
     );
   }
 }

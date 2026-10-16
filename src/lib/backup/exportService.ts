@@ -555,7 +555,7 @@ export async function executeExport(
         success: false,
         fileName: "",
         mimeType: "",
-        error: "Es gibt keine Eingänge, die exportiert werden könnten.",
+        error: "Es gibt keine Dividenden, die exportiert werden könnten.",
       };
     }
 

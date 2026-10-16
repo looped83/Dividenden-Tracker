@@ -148,7 +148,7 @@ describe("CompaniesTab auf dem Telefon", () => {
     if (!alpha) throw new Error("Zeile nicht gefunden.");
     // 300 von 400 € — Anteil am Balkenende, darunter eine Zusatzzeile.
     expect(alpha).toHaveTextContent("75,0 %");
-    expect(alpha).toHaveTextContent(/2 Zahlungen · Ø 150,00\s€/);
+    expect(alpha).toHaveTextContent(/2 Dividenden · Ø 150,00\s€/);
   });
 });
 

@@ -335,7 +335,7 @@ export function ComparisonTab() {
           <div>
             {comparison.securities.length === 0 ? (
               <p className="py-8 text-center text-sm text-muted-foreground">
-                In keinem der beiden Monate gab es Dividendeneingänge.
+                In keinem der beiden Monate gab es Dividenden.
               </p>
             ) : (
               <ComparisonBreakdown
@@ -480,7 +480,9 @@ function ComparisonBreakdown({
                   <ListTile primary={row.tile} />
                   <span className="sr-only">{row.label}</span>
                   {leer ? (
-                    <span className="text-sm text-muted-foreground">keine Zahlungen</span>
+                    <span className="text-sm text-muted-foreground">
+                      keine Dividenden
+                    </span>
                   ) : (
                     <>
                       <div className="min-w-0 flex-1 space-y-0.5 tabular-amount">
@@ -515,7 +517,9 @@ function ComparisonBreakdown({
                     <BreakdownLabel row={row} />
                   </span>
                   {leer ? (
-                    <span className="text-sm text-muted-foreground">keine Zahlungen</span>
+                    <span className="text-sm text-muted-foreground">
+                      keine Dividenden
+                    </span>
                   ) : (
                     <span className="whitespace-nowrap font-medium">
                       <BreakdownDifference amount={row.difference} />
@@ -607,7 +611,7 @@ function BreakdownAmount({ value }: { value: BreakdownValue }) {
           <span aria-hidden className="text-muted-foreground">
             —
           </span>
-          <span className="sr-only">Keine Zahlungen</span>
+          <span className="sr-only">Keine Dividenden</span>
         </>
       );
     }
@@ -638,7 +642,7 @@ function monthRows(
     ...(value.complete && !value.net.isZero()
       ? {
           href: statisticsDrillHref(filter, { year: value.year, month: value.month }),
-          linkLabel: `Zahlungen im ${monthNameDe(value.month)} ${String(value.year)} anzeigen`,
+          linkLabel: `Dividenden im ${monthNameDe(value.month)} ${String(value.year)} anzeigen`,
         }
       : {}),
   });
@@ -666,7 +670,7 @@ function securityRows(
     ...(!comparison.truncated && !money.isZero()
       ? {
           href: statisticsDrillHref(filter, { year, month, securityId }),
-          linkLabel: `Zahlungen im ${monthNameDe(month)} ${String(year)} anzeigen`,
+          linkLabel: `Dividenden im ${monthNameDe(month)} ${String(year)} anzeigen`,
         }
       : {}),
   });

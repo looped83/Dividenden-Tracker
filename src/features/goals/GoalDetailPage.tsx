@@ -204,7 +204,7 @@ export function GoalDetailPage() {
           className="h-auto min-h-11 w-full whitespace-normal py-2 sm:w-auto"
         >
           <Link to={drillDownHref(goal)}>
-            <ExternalLink aria-hidden className="shrink-0" /> Eingänge des Zeitraums
+            <ExternalLink aria-hidden className="shrink-0" /> Dividenden des Zeitraums
             anzeigen
           </Link>
         </Button>

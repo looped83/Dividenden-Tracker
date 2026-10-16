@@ -114,12 +114,12 @@ describe("SecurityDetailPage", () => {
 
   it("zaehlt die Eingaenge", () => {
     renderPage();
-    expect(screen.getByText(/^3 Eingänge/)).toBeInTheDocument();
+    expect(screen.getByText(/^3 Dividenden/)).toBeInTheDocument();
   });
 
   it("stellt die letzten Eingaenge vor Ausschuettungsplan und Stammdaten", () => {
     renderPage();
-    const eingaenge = screen.getByRole("heading", { name: "Letzte Eingänge" });
+    const eingaenge = screen.getByRole("heading", { name: "Letzte Dividenden" });
     for (const name of ["Ausschüttungsplan", "Stammdaten"]) {
       const spaeter = screen.getByRole("heading", { name });
       expect(
@@ -134,7 +134,7 @@ describe("SecurityDetailPage", () => {
     // Der Betrag steht sowohl im Kennzahlkopf als auch in der Liste der
     // letzten Eingaenge — beide Vorkommen sind richtig.
     expect(screen.getAllByText("150,00 €").length).toBeGreaterThan(0);
-    const card = screen.getByText("Größter Eingang").closest("div")?.parentElement;
+    const card = screen.getByText("Größte Dividende").closest("div")?.parentElement;
     if (!card) throw new Error("Kennzahl nicht gefunden.");
     expect(within(card).getByText("150,00 €")).toBeInTheDocument();
   });

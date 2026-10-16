@@ -1,11 +1,4 @@
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useErrorState } from "@/lib/hooks/useErrorState";
 import { useDeleteSecurity } from "@/features/securities/hooks";
 import type { Security } from "@/lib/supabase/repositories/securities";
@@ -42,37 +35,19 @@ export function DeleteSecurityDialog({
   };
 
   return (
-    <Dialog
+    <ConfirmDialog
       open={security !== null}
       onOpenChange={(open) => {
         if (!open) clearError();
         onOpenChange(open);
       }}
-    >
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Asset endgültig löschen</DialogTitle>
-        </DialogHeader>
-        <p className="text-sm text-muted-foreground">
-          {security?.name} wird unwiderruflich entfernt und kann nicht wiederhergestellt
-          werden. Das ist nur möglich, solange keine Dividendeneingänge mehr auf dieses
-          Asset verweisen.
-        </p>
-        {error && (
-          <p role="alert" className="text-sm text-negative">
-            {error}
-          </p>
-        )}
-        <DialogFooter>
-          <Button
-            variant="destructive"
-            disabled={deleteSecurity.isPending}
-            onClick={() => void handleDelete()}
-          >
-            {deleteSecurity.isPending ? "Wird gelöscht …" : "Endgültig löschen"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      title="Asset dauerhaft löschen?"
+      description={`${security?.name ?? "Das Asset"} wird endgültig entfernt und lässt sich nicht wiederherstellen. Das geht nur, solange keine Dividenden mehr auf dieses Asset verweisen.`}
+      error={error}
+      isPending={deleteSecurity.isPending}
+      confirmLabel="Dauerhaft löschen"
+      pendingLabel="Wird gelöscht …"
+      onConfirm={() => void handleDelete()}
+    />
   );
 }

@@ -63,7 +63,7 @@ export function describeComparison(
         tone: "positive",
       };
     case "both-zero":
-      return { text: "Keine Zahlungen in beiden Zeiträumen", tone: "neutral" };
+      return { text: "Keine Dividenden in beiden Zeiträumen", tone: "neutral" };
     case "no-comparison":
       return { text: `Kein Vergleichswert verfügbar ${NOT_AVAILABLE}`, tone: "neutral" };
   }

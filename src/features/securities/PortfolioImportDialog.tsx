@@ -356,8 +356,8 @@ export function PortfolioImportDialog({
           <DialogTitle>Depotstand aus DivvyDiary importieren</DialogTitle>
           <DialogDescription>
             Liest den Portfolio-Export (CSV) und speichert je Position einen Stand zum
-            gewählten Stichtag. Zeilen ohne Bestand werden übersprungen. Es entsteht kein
-            Dividendeneingang — erhaltene Zahlungen bleiben unberührt.
+            gewählten Stichtag. Zeilen ohne Bestand werden übersprungen. Es entsteht keine
+            Dividende — erfasste Dividenden bleiben unberührt.
           </DialogDescription>
         </DialogHeader>
 

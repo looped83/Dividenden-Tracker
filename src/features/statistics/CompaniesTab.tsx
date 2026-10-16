@@ -179,15 +179,15 @@ export function CompaniesTab() {
         : []),
       {
         key: "count",
-        header: "Zahlungen",
-        headerLabel: "Anzahl Zahlungen",
+        header: "Anzahl",
+        headerLabel: "Anzahl Dividenden",
         align: "right",
         compare: (a, b) => a.count - b.count,
         render: (row) => formatCountNumber(row.count),
       },
       {
         key: "average",
-        header: "Ø Zahlung",
+        header: "Ø Dividende",
         headerLabel: "Durchschnittszahlung",
         align: "right",
         compare: (a, b) => a.averagePayment.compareTo(b.averagePayment),
@@ -196,7 +196,7 @@ export function CompaniesTab() {
       {
         key: "largest",
         listHidden: true,
-        header: "Größte Zahlung",
+        header: "Größte Dividende",
         headerLabel: "Größte Einzelzahlung",
         align: "right",
         // Die Nebenkennzahl der Tabelle — sie tritt zurueck, wo der Platz nicht
@@ -216,7 +216,7 @@ export function CompaniesTab() {
       {
         key: "period",
         header: "Zeitraum",
-        headerLabel: "Zeitraum, nach letzter Zahlung",
+        headerLabel: "Zeitraum, nach letzter Dividende",
         // Sortiert wird nach der **letzten** Zahlung: Die Frage an dieser
         // Spalte ist „wer zahlt noch?", nicht „wer zahlte zuerst?".
         compare: (a, b) => (a.lastPayDate ?? "").localeCompare(b.lastPayDate ?? ""),
@@ -231,7 +231,7 @@ export function CompaniesTab() {
       <EmptyState
         icon={BarChart3}
         title="Keine Daten zu Assets"
-        description="Für den aktuellen Filter liegen keine Dividendeneingänge vor."
+        description="Für den aktuellen Filter liegen keine Dividenden vor."
       />
     );
   }
@@ -308,7 +308,7 @@ export function CompaniesTab() {
               void navigate(statisticsDrillHref(filter, { securityId: row.securityId }))
             }
             rowLabel={(row) =>
-              `Dividendeneingänge von ${entityName(securities, row.securityId)} anzeigen`
+              `Dividenden von ${entityName(securities, row.securityId)} anzeigen`
             }
             listSummary={{
               bar: (row) => {

@@ -179,7 +179,7 @@ export default function RestoreSection() {
               <p className="text-sm text-muted-foreground">
                 {mode === "merge"
                   ? "Der bestehende Bestand bleibt unverändert."
-                  : "Alle vorhandenen Dividendeneingänge werden storniert und durch die Sicherung ersetzt."}
+                  : "Alle vorhandenen Dividenden werden storniert und durch die Sicherung ersetzt."}
               </p>
             </div>
 
@@ -246,8 +246,8 @@ const RECORD_LABELS: Record<string, string> = {
   depots: "Depots",
   security: "Assets",
   securities: "Assets",
-  dividend_payment: "Dividendeneingänge",
-  dividend_payments: "Dividendeneingänge",
+  dividend_payment: "Dividenden",
+  dividend_payments: "Dividenden",
   goal: "Ziele",
   goals: "Ziele",
   portfolio: "Portfolios",
@@ -291,7 +291,7 @@ function ConfirmRestoreDialog({
 
         {contents && (
           <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 rounded-md bg-muted/50 p-3 text-sm">
-            <dt className="text-muted-foreground">Dividendeneingänge</dt>
+            <dt className="text-muted-foreground">Dividenden</dt>
             <dd className="text-right font-medium tabular-nums">
               {formatCountNumber(contents["dividend_payments"] ?? 0)}
             </dd>
@@ -323,7 +323,7 @@ function ConfirmRestoreDialog({
 
         <p className="text-sm text-muted-foreground">
           {mode === "replace"
-            ? "Alle bisher erfassten Dividendeneingänge werden storniert und durch den Inhalt dieser Datei ersetzt. Das lässt sich nicht rückgängig machen. Erstelle vorher eine Sicherung des aktuellen Standes."
+            ? "Alle bisher erfassten Dividenden werden storniert und durch den Inhalt dieser Datei ersetzt. Das lässt sich nicht rückgängig machen. Erstelle vorher eine Sicherung des aktuellen Standes."
             : "Fehlende Datensätze aus der Datei werden ergänzt. Bereits vorhandene Datensätze bleiben unverändert."}
         </p>
 

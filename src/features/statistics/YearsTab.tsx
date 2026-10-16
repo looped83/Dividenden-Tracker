@@ -93,8 +93,8 @@ export function YearsTab({
       },
       {
         key: "count",
-        header: "Zahlungen",
-        headerLabel: "Anzahl Zahlungen",
+        header: "Anzahl",
+        headerLabel: "Anzahl Dividenden",
         align: "right",
         compare: (a, b) => a.count - b.count,
         render: (row) => formatCountNumber(row.count),
@@ -119,7 +119,7 @@ export function YearsTab({
       },
       {
         key: "average",
-        header: "Ø Zahlung",
+        header: "Ø Dividende",
         headerLabel: "Durchschnittszahlung",
         align: "right",
         compare: (a, b) => a.averagePayment.compareTo(b.averagePayment),
@@ -155,7 +155,7 @@ export function YearsTab({
       <EmptyState
         icon={BarChart3}
         title="Keine Jahresdaten"
-        description="Für den aktuellen Filter liegen keine Dividendeneingänge vor."
+        description="Für den aktuellen Filter liegen keine Dividenden vor."
       />
     );
   }

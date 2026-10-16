@@ -69,7 +69,7 @@ export function statisticsTabHref(
 
 /** „1 Zahlung" / „1.439 Zahlungen". */
 export function formatPayments(count: number): string {
-  return formatCountNoun(count, "Zahlung", "Zahlungen");
+  return formatCountNoun(count, "Dividende", "Dividenden");
 }
 
 /** Anzeigename eines Unternehmens/Depots; „Unbekannt", wenn nicht auflösbar. */

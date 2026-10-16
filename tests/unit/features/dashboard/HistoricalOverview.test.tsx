@@ -43,7 +43,7 @@ describe("HistoricalOverview", () => {
     expect(link).toHaveAttribute("href", "/statistiken");
     // Unabhaengig vom gewaehlten Jahr: alle drei Eingaenge.
     expect(link).toHaveTextContent(/350,00\s€/);
-    expect(link).toHaveTextContent("3 Zahlungen");
+    expect(link).toHaveTextContent("3 Dividenden");
   });
 
   it('entfällt bei „Alle Jahre"', () => {

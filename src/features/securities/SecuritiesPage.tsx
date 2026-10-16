@@ -386,7 +386,7 @@ export function SecuritiesPage() {
             <EmptyState
               icon={Briefcase}
               title="Noch kein Asset angelegt"
-              description="Lege dein erstes Asset an — Aktie, ETF, Fonds oder Anleihe —, um Dividendeneingänge zu erfassen."
+              description="Lege dein erstes Asset an — Aktie, ETF, Fonds oder Anleihe —, um Dividenden zu erfassen."
               action={
                 <Button
                   onClick={() => {

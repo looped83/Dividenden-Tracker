@@ -74,7 +74,7 @@ export function ImportsPage() {
         : formatCountNumber(checksums.row_count);
     if (
       !window.confirm(
-        `Diesen Import vollständig zurückrollen? ${rows} importierte Eingänge werden archiviert. ` +
+        `Diesen Import vollständig zurückrollen? ${rows} importierte Dividenden werden archiviert. ` +
           "Der Vorgang ist auditiert und der Importdatensatz bleibt als Historie erhalten.",
       )
     ) {
@@ -133,7 +133,7 @@ export function ImportsPage() {
         <div>
           <h2 className="text-xl font-semibold">Import-Assistent</h2>
           <p className="text-sm text-muted-foreground">
-            CSV-/Excel-Import historischer Dividendeneingänge.
+            CSV-/Excel-Import historischer Dividenden.
           </p>
         </div>
         <ImportWizard
@@ -172,7 +172,7 @@ export function ImportsPage() {
           ) : imports.length === 0 ? (
             <EmptyState
               title="Noch keine Importe"
-              description="Starte einen Import, um historische Dividendeneingänge aus einer CSV- oder Excel-Datei zu übernehmen."
+              description="Starte einen Import, um historische Dividenden aus einer CSV- oder Excel-Datei zu übernehmen."
             />
           ) : isWide ? (
             <Table>

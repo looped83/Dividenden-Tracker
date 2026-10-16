@@ -1,3 +1,4 @@
+import * as React from "react";
 import { Link } from "react-router";
 import { AmountText } from "@/components/money/AmountText";
 import { ListGroup, ListItemBody, ListRow } from "@/components/ui/list";
@@ -30,9 +31,9 @@ interface HistoricalOverviewProps {
  * Summe und dieselbe Zahl der Zahlungen.
  */
 export function HistoricalOverview({ payments, selection }: HistoricalOverviewProps) {
+  const summary = React.useMemo(() => historicalSummary(payments), [payments]);
   if (selection === "all") return null;
 
-  const summary = historicalSummary(payments);
   const first = summary.firstPayDate;
   if (first === null) return null;
 
@@ -47,7 +48,7 @@ export function HistoricalOverview({ payments, selection }: HistoricalOverviewPr
           <Link to="/statistiken">
             <ListItemBody
               title={`Gesamt seit ${formatMonthYear(yearOf(first), monthOf(first))}`}
-              meta={formatCountNoun(summary.count, "Zahlung", "Zahlungen")}
+              meta={formatCountNoun(summary.count, "Dividende", "Dividenden")}
               trailing={<AmountText amount={summary.net} />}
               chevron
             />

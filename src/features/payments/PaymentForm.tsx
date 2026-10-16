@@ -285,7 +285,7 @@ export function PaymentForm({
     return (
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          Dieser Eingang ist storniert und kann nur reaktiviert, nicht bearbeitet werden.
+          Diese Dividende ist storniert und kann nur reaktiviert, nicht bearbeitet werden.
         </p>
         <Button variant="ghost" onClick={onCancel}>
           Zurück
@@ -301,9 +301,9 @@ export function PaymentForm({
           role="alert"
           className="rounded-md bg-warning/10 p-3 text-sm text-warning-strong"
         >
-          Dieser Dividendeneingang wurde zwischenzeitlich an anderer Stelle geändert. Die
-          aktuellen Werte wurden neu geladen. Bitte prüfe deine Eingaben und speichere
-          erneut, um sie zu übernehmen.
+          Diese Dividende wurde zwischenzeitlich an anderer Stelle geändert. Die aktuellen
+          Werte wurden neu geladen. Bitte prüfe deine Eingaben und speichere erneut, um
+          sie zu übernehmen.
         </p>
       )}
 

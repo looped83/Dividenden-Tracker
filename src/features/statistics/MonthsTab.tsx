@@ -62,15 +62,15 @@ export function MonthsTab({
       },
       {
         key: "count",
-        header: "Zahlungen",
-        headerLabel: "Anzahl Zahlungen",
+        header: "Anzahl",
+        headerLabel: "Anzahl Dividenden",
         align: "right",
         compare: (a, b) => a.count - b.count,
         render: (row) => formatCountNumber(row.count),
       },
       {
         key: "average",
-        header: "Ø Zahlung",
+        header: "Ø Dividende",
         headerLabel: "Durchschnittszahlung",
         align: "right",
         compare: (a, b) => a.averagePayment.compareTo(b.averagePayment),
@@ -85,7 +85,7 @@ export function MonthsTab({
       <EmptyState
         icon={BarChart3}
         title="Keine Monatsdaten"
-        description="Für den aktuellen Filter liegen keine Dividendeneingänge vor."
+        description="Für den aktuellen Filter liegen keine Dividenden vor."
       />
     );
   }
@@ -116,12 +116,12 @@ export function MonthsTab({
             onRowClick={(row) =>
               void navigate(statisticsDrillHref(filter, { month: row.month }))
             }
-            rowLabel={(row) => `Alle Zahlungen im ${monthNameDe(row.month)} anzeigen`}
+            rowLabel={(row) => `Alle Dividenden im ${monthNameDe(row.month)} anzeigen`}
             listSummary={{
               // Der Monat als Kachel vorn — wie im Vergleich und bei den Jahren.
               leading: (row) => <ListTile primary={monthNameDeShort(row.month)} />,
               title: (row) => formatPayments(row.count),
-              meta: (row) => `Ø ${formatMoney(row.averagePayment)} je Zahlung`,
+              meta: (row) => `Ø ${formatMoney(row.averagePayment)} je Dividende`,
             }}
           />
         </div>
