@@ -5,17 +5,40 @@ import type {
   Database,
 } from "@/lib/supabase/database.types";
 
-export type CalendarEventRow =
-  Database["public"]["Tables"]["dividend_calendar_events"]["Row"];
+/**
+ * Zeile, wie die App sie laedt — nur die Spalten, die {@link mapCalendarEvent}
+ * liest. Beim Erweitern hier **und** in `CALENDAR_EVENT_COLUMNS`
+ * (repositories/calendarEvents.ts) nachziehen.
+ */
+export type CalendarEventRow = Pick<
+  Database["public"]["Tables"]["dividend_calendar_events"]["Row"],
+  | "id"
+  | "external_uid"
+  | "event_type"
+  | "event_state"
+  | "title"
+  | "company_name"
+  | "expected_amount"
+  | "expected_currency"
+  | "source_portfolio"
+  | "description"
+  | "location"
+  | "external_url"
+  | "categories"
+  | "event_date"
+  | "end_date"
+  | "starts_at"
+  | "ends_at"
+  | "is_all_day"
+>;
 export type CalendarSyncStatusRow =
   Database["public"]["Tables"]["calendar_sync_status"]["Row"];
 
 /**
  * Ein angekuendigter Termin des Dividendenkalenders.
  *
- * Bewusst **kein** Betrag und keine Waehrung: Der Feed liefert beides nicht,
- * und ein geschaetzter Wert waere eine Behauptung (Auftrag §3/§18). Was der
- * Feed zusaetzlich mitgibt, steht in `description`.
+ * Ein Betrag steht nur dort, wo der Feed ihn nennt (`expectedAmount`) —
+ * geschaetzt wird nie (Auftrag §3/§18).
  *
  * `date` ist ein reines Kalenderdatum ("YYYY-MM-DD") und wird nie ueber `Date`
  * geparst — genau daran verschieben sich ganztaegige Termine sonst um einen Tag

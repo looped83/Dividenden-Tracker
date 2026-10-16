@@ -25,7 +25,7 @@ import {
   type StatisticsFilter,
 } from "@/lib/statistics";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
-import { formatCalendarDate } from "@/lib/utils/formatDate";
+import { formatCalendarDate, formatDateRange } from "@/lib/utils/formatDate";
 import { compareGerman } from "@/lib/utils/compareText";
 import type { EntityInfo } from "@/features/dashboard/format";
 import { useStatisticsData, useStatisticsFilter } from "@/features/statistics/hooks";
@@ -454,7 +454,7 @@ export function DevelopmentView({
           {
             label: "Erhalten (12 Monate)",
             value: <AmountText amount={received} />,
-            caption: `${formatCalendarDate(range.start)} – ${formatCalendarDate(range.end)}`,
+            caption: formatDateRange(range.start, range.end),
           },
           {
             label: "Rendite auf Einstand",

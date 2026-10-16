@@ -110,8 +110,11 @@ export function HeroChart({
       style={{ height: height + (series.kind === "cumulative" ? 0 : LABELS) }}
       onPointerMove={(event) => {
         // Mit dem Finger nur beim Ziehen; ein Antippen wählt per pointerdown.
+        // Nur bei einem anderen Punkt melden: Jede Mausbewegung loeste sonst
+        // ein Neuzeichnen des ganzen Kopfs aus, auch ohne sichtbare Aenderung.
         if (event.pointerType === "mouse" || event.buttons > 0) {
-          onActiveChange(nearest(event.clientX));
+          const index = nearest(event.clientX);
+          if (index !== active) onActiveChange(index);
         }
       }}
       onPointerDown={(event) => {

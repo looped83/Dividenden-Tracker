@@ -30,10 +30,23 @@ function parseId(raw: string | null): string | null {
 }
 
 export function parseStatisticsFilter(params: URLSearchParams): StatisticsFilter {
+  return statisticsFilterOf(
+    params.get("year"),
+    params.get("security"),
+    params.get("depot"),
+  );
+}
+
+/** Filter aus den drei Rohwerten der URL — fuer ein Memo, das nur an ihnen haengt. */
+export function statisticsFilterOf(
+  year: string | null,
+  security: string | null,
+  depot: string | null,
+): StatisticsFilter {
   return {
-    year: parseYear(params.get("year")),
-    securityId: parseId(params.get("security")),
-    depotId: parseId(params.get("depot")),
+    year: parseYear(year),
+    securityId: parseId(security),
+    depotId: parseId(depot),
   };
 }
 

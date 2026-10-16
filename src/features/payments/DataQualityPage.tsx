@@ -197,12 +197,30 @@ export function DataQualityPage() {
       {/* Auf gedämpfter Fläche wie die Kennzahlen im Kopf der Übersicht. */}
       <div className="rounded-2xl bg-muted p-4 sm:px-5">
         <dl className="grid grid-cols-2 gap-x-4 gap-y-4 sm:grid-cols-3 lg:grid-cols-6">
-          <OverviewItem label="Mögliche Dubletten" value={overview.duplicates} />
-          <OverviewItem label="Auffällige Datensätze" value={overview.anomalies} />
-          <OverviewItem label="Stornierte" value={overview.cancelled} />
-          <OverviewItem label="Importe mit Änderung" value={overview.importedModified} />
-          <OverviewItem label="Archivierte Assets" value={overview.archivedAssets} />
-          <OverviewItem label="Archivierte Depots" value={overview.archivedDepots} />
+          <OverviewItem
+            label="Mögliche Dubletten"
+            value={isLoading ? null : overview.duplicates}
+          />
+          <OverviewItem
+            label="Auffällige Datensätze"
+            value={isLoading ? null : overview.anomalies}
+          />
+          <OverviewItem
+            label="Stornierte"
+            value={isLoading ? null : overview.cancelled}
+          />
+          <OverviewItem
+            label="Importe mit Änderung"
+            value={isLoading ? null : overview.importedModified}
+          />
+          <OverviewItem
+            label="Archivierte Assets"
+            value={isLoading ? null : overview.archivedAssets}
+          />
+          <OverviewItem
+            label="Archivierte Depots"
+            value={isLoading ? null : overview.archivedDepots}
+          />
         </dl>
       </div>
 
@@ -375,7 +393,7 @@ export function DataQualityPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            aria-label={`${asset} vom ${date} als geprüft markieren`}
+                            aria-label={`${asset} vom ${date} (${anomaly.message}) als geprüft markieren`}
                             disabled={reviewAnomaly.isPending}
                             onClick={() => {
                               setReviewed(anomaly, true);
@@ -418,7 +436,7 @@ export function DataQualityPage() {
                               variant="ghost"
                               size="sm"
                               className="-my-2 shrink-0"
-                              aria-label={`Markierung für ${asset} vom ${date} zurücknehmen`}
+                              aria-label={`Markierung für ${asset} vom ${date} (${anomaly.message}) zurücknehmen`}
                               disabled={reviewAnomaly.isPending}
                               onClick={() => {
                                 setReviewed(anomaly, false);
@@ -482,14 +500,15 @@ function AllClear({ title, description }: { title: string; description?: string 
   );
 }
 
-function OverviewItem({ label, value }: { label: string; value: number }) {
+// `null` solange geladen wird: Eine Null stuende sonst kurz als Befund da.
+function OverviewItem({ label, value }: { label: string; value: number | null }) {
   return (
     // Erst die Beschriftung, dann der Wert — wie die Kennzahlen im Kopf der
     // Übersicht.
     <div className="flex flex-col">
       <dt className="text-[0.8125rem] text-muted-foreground">{label}</dt>
       <dd className="text-[1.0625rem] font-semibold tabular-nums">
-        {formatCountNumber(value)}
+        {value === null ? "–" : formatCountNumber(value)}
       </dd>
     </div>
   );
