@@ -64,6 +64,66 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ci-placeholder-anon-key
         run: npm run build
 
+      # Groesse des gebauten Bundles (gzip): Start und jedes nachgeladene
+      # Stueck. Grenzen und ihre Begruendung stehen im Skript.
+      - name: Bundle-Budget
+        run: node scripts/check-bundle-size.mjs
+
+  # Ladezeit, Barrierefreiheit und Best Practices des gebauten Stands
+  # (lighthouserc.json). Gemessen wird der erste Aufruf ohne Anmeldung, also
+  # App-Shell und Anmeldeseite — genau das, was jeder Start laden muss.
+  # Drei Laeufe, bewertet wird der mittlere; die Leistungsgrenze liegt unter
+  # dem heutigen Wert, damit Messrauschen nicht rot macht, ein echter
+  # Rueckschritt aber schon.
+  lighthouse:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        env:
+          VITE_SUPABASE_URL: https://ci-placeholder.supabase.co
+          VITE_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+        run: npm run build
+
+      # Feste Version per npx statt als Abhaengigkeit: Lighthouse bringt rund
+      # 100 MB mit, die sonst jeder `npm ci` in jedem Job laden wuerde.
+      - name: Lighthouse
+        run: npx -y @lhci/cli@0.15.1 autorun
+
+      - name: Berichte sichern
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: lighthouse
+          path: .lighthouseci
+          retention-days: 7
+
+  # Typpruefung der Edge Function mit Deno, dem Laufzeitsystem von Supabase.
+  # Vitest testet die Logik, prueft aber weder die Deno-Importe (deno.json)
+  # noch die Typen von supabase-js — ein Fehler dort fiele sonst erst beim
+  # Deploy oder beim naechsten Kalenderabgleich auf.
+  edge-functions:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.5.6
+
+      - name: Deno-Typpruefung
+        working-directory: supabase/functions/sync-divvydiary-calendar
+        run: deno check index.ts ../_shared/*.ts
+
   # Jede Aenderung an der App hebt die Versionsnummer (DECISIONS.md ADR-004).
   # Eigener, kleiner Job: Er braucht die volle Historie fuer den Vergleich mit
   # der Basis, aber weder Abhaengigkeiten noch ein eigenes Node — das Skript
