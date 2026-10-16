@@ -727,7 +727,7 @@ describe("createBackup — Fehlerfaelle", () => {
     const result = await createBackup();
 
     expect(result.success).toBe(false);
-    expect(result.errorDetails).toMatch(/von 20 Dividendeneingänge/);
+    expect(result.errorDetails).toMatch(/von 20 Dividenden/);
   });
 
   it("bricht ab, wenn Depotstaende fehlen", async () => {

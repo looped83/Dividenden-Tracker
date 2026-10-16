@@ -135,7 +135,7 @@ export function anomalyKey(paymentId: string, code: string): string {
  * Sonderausschüttung. Ein dauerhafter Sprung (Aufstockung) verschwindet von
  * selbst, sobald die folgenden Zahlungen ihn bestätigen.
  */
-export const UNUSUALLY_HIGH_FACTOR = 5;
+const UNUSUALLY_HIGH_FACTOR = 5;
 const NEIGHBOURS_EACH_SIDE = 3;
 const MIN_COMPARISON_COUNT = 3;
 
@@ -224,10 +224,10 @@ export function detectAnomalies<T extends PaymentLike>(
     }
 
     if (!payment.security_id) {
-      add(payment, "missing_security", "Dem Eingang ist kein Asset zugeordnet.");
+      add(payment, "missing_security", "Der Dividende ist kein Asset zugeordnet.");
     }
     if (!payment.depot_id) {
-      add(payment, "missing_depot", "Dem Eingang ist kein Depot zugeordnet.");
+      add(payment, "missing_depot", "Der Dividende ist kein Depot zugeordnet.");
     }
 
     if (
@@ -237,7 +237,7 @@ export function detectAnomalies<T extends PaymentLike>(
       add(
         payment,
         "import_without_reference",
-        "Importierter Eingang ohne Importreferenz.",
+        "Importierte Dividende ohne Importreferenz.",
       );
     }
 
@@ -252,7 +252,7 @@ export function detectAnomalies<T extends PaymentLike>(
           add(
             payment,
             "unusually_high",
-            "Der Betrag liegt deutlich über den benachbarten Zahlungen dieses Assets. Bitte prüfen.",
+            "Der Betrag liegt deutlich über den benachbarten Dividenden dieses Assets. Bitte prüfen.",
           );
         }
       }

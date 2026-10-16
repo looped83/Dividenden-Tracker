@@ -57,6 +57,7 @@ import {
 import { sortRows, type SortableRow } from "@/features/payments/sortRows";
 import { sourceLabel } from "@/features/payments/paymentDisplay";
 import { formatCalendarDate } from "@/lib/utils/formatDate";
+import { formatMonthYear } from "@/features/dashboard/format";
 import {
   DeleteDialog,
   StornoDialog,
@@ -316,16 +317,15 @@ export function PaymentsPage() {
   const reactivate = async (id: string) => {
     try {
       await unarchivePayment.mutateAsync(id);
-      notify("Dividendeneingang reaktiviert.");
+      notify("Dividende reaktiviert.");
     } catch (error) {
       notify(
-        getErrorMessage(error, "Der Eingang konnte nicht reaktiviert werden."),
+        getErrorMessage(error, "Die Dividende konnte nicht reaktiviert werden."),
         "negative",
       );
     }
   };
   const [stornoTarget, setStornoTarget] = React.useState<Row | null>(null);
-  const [stornoReason, setStornoReason] = React.useState("");
   const [stornoError, setStornoError] = React.useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = React.useState<Row | null>(null);
   const [deleteError, setDeleteError] = React.useState<string | null>(null);
@@ -338,7 +338,7 @@ export function PaymentsPage() {
     source: sourceLabel(row.payment.source),
   });
 
-  const handleStorno = async () => {
+  const handleStorno = async (stornoReason: string) => {
     if (!stornoTarget) return;
     setStornoError(null);
     try {
@@ -347,11 +347,10 @@ export function PaymentsPage() {
         reason: stornoReason || undefined,
       });
       setStornoTarget(null);
-      setStornoReason("");
-      notify("Dividendeneingang storniert.");
+      notify("Dividende storniert.");
     } catch (error) {
       setStornoError(
-        getErrorMessage(error, "Der Dividendeneingang konnte nicht storniert werden."),
+        getErrorMessage(error, "Die Dividende konnte nicht storniert werden."),
       );
     }
   };
@@ -362,12 +361,12 @@ export function PaymentsPage() {
     try {
       await deletePayment.mutateAsync(deleteTarget.payment.id);
       setDeleteTarget(null);
-      notify("Dividendeneingang dauerhaft gelöscht.");
+      notify("Dividende dauerhaft gelöscht.");
     } catch (error) {
       setDeleteError(
         getErrorMessage(
           error,
-          "Der Dividendeneingang konnte nicht gelöscht werden. Die Daten wurden nicht verändert.",
+          "Die Dividende konnte nicht gelöscht werden. Die Daten wurden nicht verändert.",
         ),
       );
     }
@@ -504,7 +503,7 @@ export function PaymentsPage() {
 
       {!isLoading && rows.length > 0 && (
         <p className="text-sm text-muted-foreground" aria-live="polite">
-          {formatCountNoun(rows.length, "Eingang", "Eingänge")}
+          {formatCountNoun(rows.length, "Dividende", "Dividenden")}
           {total && (
             <>
               {" · "}
@@ -515,23 +514,23 @@ export function PaymentsPage() {
       )}
 
       {isLoading ? (
-        <SkeletonRows rows={8} label="Dividendeneingänge" />
+        <SkeletonRows rows={8} label="Dividenden" />
       ) : statusPayments.length === 0 && !hasActiveFilters ? (
         <EmptyState
           icon={Wallet}
-          title="Noch kein Dividendeneingang erfasst"
-          description="Erfasse deinen ersten Dividendeneingang."
+          title="Noch keine Dividende erfasst"
+          description="Erfasse deine erste Dividende."
           action={
             <Button aria-haspopup="dialog" {...newPayment}>
-              Ersten Eingang erfassen
+              Erste Dividende erfassen
             </Button>
           }
         />
       ) : rows.length === 0 ? (
         <EmptyState
           icon={Wallet}
-          title="Keine Eingänge für die aktuelle Auswahl"
-          description="Passe die Filter an, um Dividendeneingänge zu sehen."
+          title="Keine Dividenden für die aktuelle Auswahl"
+          description="Passe die Filter an, um Dividenden zu sehen."
         />
       ) : (
         <>
@@ -596,7 +595,6 @@ export function PaymentsPage() {
                           comparison={yearOverYear.get(row.id)}
                           listUrl={listUrl}
                           onStorno={() => {
-                            setStornoReason("");
                             setStornoError(null);
                             setStornoTarget(row);
                           }}
@@ -619,7 +617,7 @@ export function PaymentsPage() {
                 return (
                   <ListSection
                     key={group.key}
-                    title={`${monthNameDe(group.month)} ${String(group.year)}`}
+                    title={formatMonthYear(group.year, group.month)}
                     aside={monthTotal ? <AmountText amount={monthTotal} /> : undefined}
                   >
                     <ListGroup>
@@ -675,11 +673,9 @@ export function PaymentsPage() {
           if (!open) setStornoTarget(null);
         }}
         summary={stornoTarget ? summaryOf(stornoTarget) : null}
-        reason={stornoReason}
-        onReasonChange={setStornoReason}
         error={stornoError}
         isPending={archivePayment.isPending}
-        onConfirm={() => void handleStorno()}
+        onConfirm={(reason) => void handleStorno(reason)}
       />
 
       <DeleteDialog
@@ -712,7 +708,7 @@ interface RowActionProps {
  * einer Seite nicht auseinanderhalten.
  */
 function actionSubject({ companyName, effectiveDate }: Row): string {
-  return `${companyName || "Eingang"} vom ${formatCalendarDate(effectiveDate)}`;
+  return `${companyName || "Dividende"} vom ${formatCalendarDate(effectiveDate)}`;
 }
 
 function PaymentRow({

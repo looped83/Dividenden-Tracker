@@ -532,7 +532,7 @@ export function ImportWizard({ onFinished }: { onFinished: () => void }) {
                 <TableHeader className="sticky top-0 bg-background">
                   <TableRow>
                     <TableHead>Quellname</TableHead>
-                    <TableHead className="text-right">Zahlungen</TableHead>
+                    <TableHead className="text-right">Anzahl</TableHead>
                     <TableHead className="text-right">Summe</TableHead>
                     <TableHead>Vorschlag</TableHead>
                     <TableHead>Entscheidung</TableHead>
@@ -568,7 +568,7 @@ export function ImportWizard({ onFinished }: { onFinished: () => void }) {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Quellbroker</TableHead>
-                    <TableHead className="text-right">Zahlungen</TableHead>
+                    <TableHead className="text-right">Anzahl</TableHead>
                     <TableHead>Vorschlag</TableHead>
                     <TableHead>Entscheidung</TableHead>
                   </TableRow>
@@ -730,7 +730,7 @@ export function ImportWizard({ onFinished }: { onFinished: () => void }) {
               onClick={() => void handleCommit()}
               disabled={invalidCount > 0 || importable.length === 0}
             >
-              {formatCountNumber(importable.length)} Eingänge endgültig importieren
+              {formatCountNumber(importable.length)} Dividenden endgültig importieren
             </Button>
           </div>
         </div>
@@ -747,7 +747,7 @@ export function ImportWizard({ onFinished }: { onFinished: () => void }) {
           <p className="flex items-center gap-2 text-sm">
             <CheckCircle2 className="size-5 text-positive" aria-hidden />
             <span>
-              Import abgeschlossen: {formatCountNumber(importable.length)} Eingänge über{" "}
+              Import abgeschlossen: {formatCountNumber(importable.length)} Dividenden über{" "}
               {eur(checksums.totalNet)} gespeichert und serverseitig verifiziert.
             </span>
           </p>

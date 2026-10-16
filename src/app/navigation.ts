@@ -40,7 +40,7 @@ export const PRIMARY_NAV_ITEMS: readonly NavItem[] = [
     to: "/eingaenge",
     label: "Dividenden",
     icon: Wallet,
-    description: "Erhaltene Zahlungen erfassen und prüfen",
+    description: "Erhaltene Dividenden erfassen und prüfen",
   },
   // Direkt hinter den erfassten Eingaengen: Beide Bereiche beantworten dieselbe
   // Frage entlang der Zeit — was kam an, was ist angekuendigt. Getrennte

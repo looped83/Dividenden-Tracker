@@ -19,8 +19,7 @@ import type {
 export const CALENDAR_SOURCE = "divvydiary";
 
 /** Die Schritte, an denen ein Schreib- oder Lesezugriff scheitern kann. */
-export const STORE_FAILURES = ["load", "insert", "update", "remove"] as const;
-export type StoreFailure = (typeof STORE_FAILURES)[number];
+export type StoreFailure = "load" | "insert" | "update" | "remove";
 
 /**
  * Die eigene Datenbank hat den Zugriff abgelehnt — nicht die Kalenderquelle.

@@ -66,6 +66,17 @@ describe("buildHeroSeries", () => {
     expect(series.points[1].href).toBe("/eingaenge?year=2026&month=2");
   });
 
+  it("vergleicht monatlich den laufenden Monat mit dem Vorjahresmonat bis zum gleichen Tag", () => {
+    const series = buildHeroSeries(PAYMENTS, 2026, TODAY, "monthly");
+    const july = series.points[6];
+    // Die 70 € vom 25. Juli 2025 liegen nach dem 20.: nicht im Vergleich.
+    expect(july.prior?.toStringValue()).toBe("0.00");
+    expect(july.priorLabel).toBe("1.–20. Juli 2025");
+    // Abgeschlossene Monate bleiben beim ganzen Vorjahresmonat.
+    expect(series.points[1].prior?.toStringValue()).toBe("30.00");
+    expect(series.points[1].priorLabel).toBe("Februar 2025");
+  });
+
   it("vergleicht bei „Alle Jahre“ das laufende Jahr mit dem Vorjahr bis heute", () => {
     const series = buildHeroSeries(PAYMENTS, "all", TODAY, "cumulative");
     expect(series.kind).toBe("years");

@@ -24,10 +24,11 @@ import {
   type StatisticsFilter,
 } from "@/lib/statistics";
 import { useToday } from "@/lib/hooks/useToday";
+import { formatCalendarDate } from "@/lib/utils/formatDate";
 import { useStatisticsContext } from "./context";
 import {
   describeComparison,
-  formatIsoDate,
+  formatMonthYear,
   formatPayments,
   statisticsDrillHref,
 } from "./format";
@@ -128,7 +129,7 @@ export function YearMonthMatrix() {
             {runningYear && (
               <>
                 <span aria-hidden>* </span>
-                {`${String(runningYear.year)} läuft noch — gerechnet bis ${formatIsoDate(
+                {`${String(runningYear.year)} läuft noch — gerechnet bis ${formatCalendarDate(
                   matrix.cutoff,
                 )}.`}
               </>
@@ -322,7 +323,7 @@ function BreakdownMatrixTable({ matrix, view, filter }: MatrixProps) {
                 className="z-10 whitespace-nowrap border-b border-l border-border bg-card px-3 py-2 text-right font-medium tabular-nums sm:sticky sm:right-0"
                 title={`${String(row.year)}: ${formatMoney(row.net)} · ${formatPayments(
                   row.count,
-                )} · Zahlungen in ${String(row.activeMonths)} von 12 Monaten`}
+                )} · Dividenden in ${String(row.activeMonths)} von 12 Monaten`}
               >
                 <AmountText amount={row.net} />
                 <span className="block text-xs font-normal">
@@ -350,7 +351,7 @@ function BreakdownMatrixTable({ matrix, view, filter }: MatrixProps) {
                 )} · ${formatPayments(month.count)}`}
               >
                 {month.count === 0 ? (
-                  <Dash label={`${monthNameDe(month.month)}: keine Zahlungen`} />
+                  <Dash label={`${monthNameDe(month.month)}: keine Dividenden`} />
                 ) : (
                   <AmountText amount={month.net} />
                 )}
@@ -504,7 +505,7 @@ function MatrixCell({
   filter: StatisticsFilter;
   compact?: boolean;
 }) {
-  const period = `${monthNameDe(cell.month)} ${String(cell.year)}`;
+  const period = formatMonthYear(cell.year, cell.month);
 
   if (cell.future) {
     return <span className="sr-only">{period}: noch nicht erreicht</span>;
@@ -514,7 +515,7 @@ function MatrixCell({
     return (
       <ChangeValue
         change={cell.change}
-        context={`ggü. ${monthNameDe(cell.month)} ${String(cell.year - 1)}`}
+        context={`ggü. ${formatMonthYear(cell.year - 1, cell.month)}`}
       />
     );
   }
@@ -530,7 +531,7 @@ function MatrixCell({
     );
   }
 
-  if (cell.count === 0) return <Dash label={`${period}: keine Zahlungen`} />;
+  if (cell.count === 0) return <Dash label={`${period}: keine Dividenden`} />;
 
   return (
     <Link
@@ -543,7 +544,7 @@ function MatrixCell({
       <span className="sr-only">
         {" "}
         — {period}, {formatPayments(cell.count)}
-        {cell.partial ? ", Monat läuft noch" : ""}, Zahlungen anzeigen
+        {cell.partial ? ", Monat läuft noch" : ""}, Dividenden anzeigen
       </span>
     </Link>
   );

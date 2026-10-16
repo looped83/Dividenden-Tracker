@@ -182,8 +182,8 @@ Eindeutigkeit: `goals_unique_period (user_id, goal_type, year, coalesce(month,0)
 
 Das aktuelle manuelle Erfassungsformular (`src/features/payments/PaymentForm.tsx`) fragt
 nach einer Vereinfachung auf Nutzerwunsch nur noch vier Felder ab. Dasselbe Formular trägt
-beide Wege dorthin: die eigene Seite (`NewPaymentPage`, so kommt das iPhone dorthin) und das
-Overlay über der aktuellen Seite auf breiten Schirmen (`PaymentComposer`).
+jeden Weg dorthin: das Overlay `PaymentComposer` über der aktuellen Seite, auch beim
+direkten Aufruf von `/eingaenge/neu`.
 
 1. Depot (`depot_id`) — ggf. vorbelegt aus dem am Unternehmen hinterlegten Depot
    (`securities.default_depot_id`, siehe §2, D-035)

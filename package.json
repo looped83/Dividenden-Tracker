@@ -1,7 +1,7 @@
 {
   "name": "dividend-tracker",
   "private": true,
-  "version": "1.17.1",
+  "version": "1.18.0",
   "type": "module",
   "engines": {
     "node": ">=22"
@@ -20,6 +20,7 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "knip": "knip",
     "test": "vitest run",
     "test:watch": "vitest",
     "db:test:reset": "bash scripts/db/reset-test-db.sh",
@@ -63,13 +64,13 @@
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.4",
-    "@vitest/ui": "4.1.10",
     "eslint": "10.8.0",
     "eslint-plugin-react-hooks": "7.1.1",
     "eslint-plugin-react-refresh": "0.5.3",
     "globals": "17.8.0",
     "ical.js": "2.2.1",
     "jsdom": "30.0.1",
+    "knip": "6.41.0",
     "pg": "8.22.0",
     "prettier": "3.9.6",
     "tailwindcss": "4.3.3",

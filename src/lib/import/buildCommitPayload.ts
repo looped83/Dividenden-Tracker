@@ -65,7 +65,7 @@ export interface BuildPayloadInput {
 }
 
 /** Zeilen, die tatsaechlich importiert werden (gueltig, nicht ausgeschlossen, kein Duplikat-Skip). */
-export function selectImportableRows(
+function selectImportableRows(
   rows: NormalizedRow[],
   companyDecisions: Map<string, CompanyDecision>,
 ): NormalizedRow[] {

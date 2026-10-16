@@ -175,10 +175,19 @@ export function PaymentForm({
   // Assets abweichen und muss sich korrigieren lassen. Ein Fehler am Depot
   // bleibt ebenfalls sichtbar — sonst scheiterte das Speichern ohne Hinweis,
   // wenn die Depots erst nach der Asset-Wahl geladen waren.
+  // Beim Erfassen steht das automatisch gewaehlte Depot als kurze Zeile da,
+  // sobald es mehr als eines gibt: Haelt man ein Asset in zwei Depots, bleibt
+  // die Buchung sichtbar und mit einem Tippen aenderbar.
+  const [depotOpened, setDepotOpened] = React.useState(false);
   const needsDepotChoice =
     isEditMode ||
+    depotOpened ||
     errors.depotId !== undefined ||
     (watchedSecurityId !== "" && depotFor(watchedSecurityId) === "");
+  const autoDepot =
+    !needsDepotChoice && watchedSecurityId !== "" && activeDepots.length > 1
+      ? depots.find((depot) => depot.id === watchedDepotId)
+      : undefined;
 
   const selectSecurity = (securityId: string) => {
     setValue("securityId", securityId, { shouldValidate: true, shouldDirty: true });
@@ -276,7 +285,7 @@ export function PaymentForm({
     return (
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          Dieser Eingang ist storniert und kann nur reaktiviert, nicht bearbeitet werden.
+          Diese Dividende ist storniert und kann nur reaktiviert, nicht bearbeitet werden.
         </p>
         <Button variant="ghost" onClick={onCancel}>
           Zurück
@@ -292,9 +301,9 @@ export function PaymentForm({
           role="alert"
           className="rounded-md bg-warning/10 p-3 text-sm text-warning-strong"
         >
-          Dieser Dividendeneingang wurde zwischenzeitlich an anderer Stelle geändert. Die
-          aktuellen Werte wurden neu geladen. Bitte prüfe deine Eingaben und speichere
-          erneut, um sie zu übernehmen.
+          Diese Dividende wurde zwischenzeitlich an anderer Stelle geändert. Die aktuellen
+          Werte wurden neu geladen. Bitte prüfe deine Eingaben und speichere erneut, um
+          sie zu übernehmen.
         </p>
       )}
 
@@ -315,6 +324,26 @@ export function PaymentForm({
           />
           {errors.securityId && (
             <p className="text-sm text-negative">{errors.securityId.message}</p>
+          )}
+          {autoDepot && (
+            <p className="flex items-center gap-1.5 text-[0.8125rem] text-muted-foreground">
+              <span>Depot: {autoDepot.name}</span>
+              <span aria-hidden>·</span>
+              <button
+                type="button"
+                className="rounded-sm font-medium text-primary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring pointer-coarse:min-h-11"
+                aria-label={`Depot ändern (${autoDepot.name})`}
+                onClick={() => {
+                  setDepotOpened(true);
+                  // Erst nach dem Zeichnen gibt es das Feld, das den Fokus erhaelt.
+                  requestAnimationFrame(() => {
+                    setFocus("depotId");
+                  });
+                }}
+              >
+                ändern
+              </button>
+            </p>
           )}
         </div>
 

@@ -20,8 +20,8 @@
  * Fassung auf dieselbe Weise zu bestimmen.
  */
 
-export const BUILD_ID_PLACEHOLDER = '"__BUILD_ID__"';
-export const PRECACHE_PLACEHOLDER = '["__PRECACHE__"]';
+const BUILD_ID_PLACEHOLDER = '"__BUILD_ID__"';
+const PRECACHE_PLACEHOLDER = '["__PRECACHE__"]';
 
 /** Kennung einer Fassung: Dateiname des Einstiegs-Bundles (mit Inhalts-Hash). */
 export function buildIdOf(entryPath: string): string {

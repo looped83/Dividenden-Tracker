@@ -93,7 +93,7 @@ test("gesetzte Filter sind frei von axe-Verstößen", async ({ page, konto }) =>
   await expect(page.getByLabel("Monat")).toHaveValue("1");
   // `#f-security`: „Unternehmen" heisst auch der Navigationspunkt daneben.
   await expect(page.locator("#f-security")).toHaveValue(konto.securityId);
-  await expect(page.getByText(/^1 Eingang/)).toBeVisible();
+  await expect(page.getByText(/^1 Dividende/)).toBeVisible();
   await pruefeAxe(page, "Eingangsliste mit Filtern");
 });
 
@@ -108,6 +108,6 @@ test("eingeblendete Rückmeldung ist frei von axe-Verstößen", async ({ page, k
 test("Fehlerzustand ist frei von axe-Verstößen", async ({ page }) => {
   // Eine fremde/unbekannte Id: die Seite meldet „nicht gefunden".
   await page.goto("/#/eingaenge/00000000-0000-4000-8000-000000000000");
-  await expect(page.getByText("Dividendeneingang nicht gefunden")).toBeVisible();
+  await expect(page.getByText("Dividende nicht gefunden")).toBeVisible();
   await pruefeAxe(page, "Nicht gefunden");
 });

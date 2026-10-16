@@ -99,8 +99,8 @@ export function DepotsTab() {
       },
       {
         key: "count",
-        header: "Zahlungen",
-        headerLabel: "Anzahl Zahlungen",
+        header: "Anzahl",
+        headerLabel: "Anzahl Dividenden",
         align: "right",
         compare: (a, b) => a.count - b.count,
         render: (row) => formatCountNumber(row.count),
@@ -122,7 +122,7 @@ export function DepotsTab() {
       <EmptyState
         icon={BarChart3}
         title="Keine Depotdaten"
-        description="Für den aktuellen Filter liegen keine Dividendeneingänge vor."
+        description="Für den aktuellen Filter liegen keine Dividenden vor."
       />
     );
   }
@@ -160,7 +160,7 @@ export function DepotsTab() {
             void navigate(statisticsDrillHref(filter, { depotId: row.depotId }))
           }
           rowLabel={(row) =>
-            `Dividendeneingänge im Depot ${entityName(depots, row.depotId)} anzeigen`
+            `Dividenden im Depot ${entityName(depots, row.depotId)} anzeigen`
           }
           listSummary={{
             bar: (row) => {

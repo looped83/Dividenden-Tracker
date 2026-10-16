@@ -3,7 +3,7 @@ import { fetchAllPages } from "@/lib/supabase/fetchAllPages";
 import type { CalendarEventRow, CalendarSyncStatusRow } from "@/lib/calendar/types";
 
 /** Name der Edge Function; eine Stelle fuer Aufruf und Dokumentation. */
-export const CALENDAR_SYNC_FUNCTION = "sync-divvydiary-calendar";
+const CALENDAR_SYNC_FUNCTION = "sync-divvydiary-calendar";
 
 /**
  * Die angekuendigten Termine des angemeldeten Nutzers (RLS).

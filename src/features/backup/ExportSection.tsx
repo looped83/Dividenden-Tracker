@@ -81,7 +81,7 @@ export default function ExportSection() {
             }}
             disabled={isExporting}
           />
-          Stornierte Eingänge einschließen
+          Stornierte Dividenden einschließen
         </label>
 
         {isExporting && <ProgressIndicator progress={{ stage: "formatting" }} />}

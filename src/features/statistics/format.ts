@@ -5,11 +5,9 @@ import type { StatisticsFilter } from "@/lib/statistics";
 import { applyStatisticsFilter } from "./filterParams";
 
 export {
-  formatIsoDate,
   formatMonthYear,
   describeComparison,
   splitComparison,
-  paymentsListHref,
   type EntityInfo,
   type ComparisonTone,
 } from "@/features/dashboard/format";
@@ -69,7 +67,7 @@ export function statisticsTabHref(
 
 /** „1 Zahlung" / „1.439 Zahlungen". */
 export function formatPayments(count: number): string {
-  return formatCountNoun(count, "Zahlung", "Zahlungen");
+  return formatCountNoun(count, "Dividende", "Dividenden");
 }
 
 /** Anzeigename eines Unternehmens/Depots; „Unbekannt", wenn nicht auflösbar. */

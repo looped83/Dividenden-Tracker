@@ -1,3 +1,4 @@
+import * as React from "react";
 import { Section, SectionLink } from "@/components/ui/section";
 import { Badge } from "@/components/ui/badge";
 import { ListGroup } from "@/components/ui/list";
@@ -20,18 +21,18 @@ interface RecentPaymentsProps {
  * Liste ersetzen — dafuer steht der Weg zu allen Eingaengen daneben.
  */
 export function RecentPayments({ payments, securities, depots }: RecentPaymentsProps) {
-  const recent = recentPayments(payments, 5);
+  const recent = React.useMemo(() => recentPayments(payments, 5), [payments]);
 
   return (
     // „Letzte Eingänge" statt „Letzte Dividendeneingänge": Dieselbe Überschrift
     // trägt die Liste auf der Assetseite. „Alle" führt zur ganzen Liste.
     <Section
-      title="Letzte Eingänge"
+      title="Letzte Dividenden"
       action={<SectionLink to="/eingaenge">Alle</SectionLink>}
     >
       {recent.length === 0 ? (
         <p className="py-6 text-sm text-muted-foreground">
-          Noch keine Dividendeneingänge vorhanden.
+          Noch keine Dividenden vorhanden.
         </p>
       ) : (
         <ListGroup>

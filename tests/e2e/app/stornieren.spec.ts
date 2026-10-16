@@ -27,7 +27,7 @@ test("storniert einen Eingang mit Grund und reaktiviert ihn wieder", async ({
   await page.getByRole("button", { name: "Stornieren", exact: true }).click();
   const dialog = page.getByRole("dialog");
   await expect(
-    dialog.getByRole("heading", { name: "Dividendeneingang stornieren?" }),
+    dialog.getByRole("heading", { name: "Dividende stornieren?" }),
   ).toBeVisible();
   await dialog.getByLabel("Stornogrund (optional)").fill("Doppelt erfasst");
   await dialog.getByRole("button", { name: "Stornieren" }).click();

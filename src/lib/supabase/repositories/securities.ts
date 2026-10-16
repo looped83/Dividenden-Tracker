@@ -63,7 +63,7 @@ export async function deleteSecurity(id: string): Promise<void> {
   if (error) {
     if (error.code === "23503") {
       throw new Error(
-        "Das Asset kann nicht gelöscht werden, solange noch Dividendeneingänge darauf verweisen. Lösche zuerst die zugehörigen Eingänge.",
+        "Das Asset kann nicht gelöscht werden, solange noch Dividenden darauf verweisen. Lösche zuerst die zugehörigen Dividenden.",
       );
     }
     throw error;

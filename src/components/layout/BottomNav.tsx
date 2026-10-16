@@ -21,7 +21,8 @@ const INACTIVE = "text-muted-foreground";
  * **Aktiv heisst Vordergrund und Gewicht, nicht Orange.** Orange markiert in der
  * App, was eine Aktion ausloest; der aktive Bereich ist ein Ort. Die Leiste
  * ist leicht durchscheinend, damit beim Scrollen sichtbar bleibt, dass die
- * Seite darunter weitergeht.
+ * Seite darunter weitergeht — ohne Weichzeichner: Der musste auf iOS bei
+ * jedem Scrollbild neu berechnet werden und kostete Akku.
  *
  * **Erfassen oeffnet einen Dialog, keine Seite.** Das Formular liegt mittig
  * ueber der aktuellen Seite; nach dem Speichern oder Abbrechen steht man wieder
@@ -42,7 +43,7 @@ export function BottomNav() {
       aria-label="Hauptnavigation"
       className={cn(
         "fixed inset-x-0 bottom-0 z-40 flex items-stretch justify-around",
-        "border-t border-border bg-card/90 backdrop-blur-xl md:hidden",
+        "border-t border-border bg-card/95 md:hidden",
         "pb-[env(safe-area-inset-bottom)]",
       )}
     >

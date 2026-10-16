@@ -66,7 +66,7 @@ export function startsAtLabel(goal: Pick<Goal, "goalType" | "year" | "month">): 
   return `Beginnt am 01.${String(month).padStart(2, "0")}.${String(goal.year)}`;
 }
 
-export const STATUS_LABELS: Record<GoalStatus, string> = {
+const STATUS_LABELS: Record<GoalStatus, string> = {
   upcoming: "Bevorstehend",
   active: "Aktiv",
   reached: "Erreicht",

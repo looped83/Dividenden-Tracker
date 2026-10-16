@@ -1,0 +1,13 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": ["supabase/functions/*/index.ts", "public/sw.js", "scripts/**/*.{mjs,ts}"],
+  "project": [
+    "src/**/*.{ts,tsx,css}",
+    "supabase/functions/**/*.ts",
+    "scripts/**/*.{mjs,ts}",
+    "tests/**/*.{ts,tsx}"
+  ],
+  "ignoreBinaries": ["supabase"],
+  "ignoreDependencies": ["@supabase/supabase-js"],
+  "exclude": ["types"]
+}

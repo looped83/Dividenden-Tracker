@@ -28,7 +28,7 @@ export type DividendPaymentUpdate =
  * alle Seiten die Unternehmen ohnehin ueber `useSecurities` laden und die
  * Namen von dort aufloesen.
  *
- * Beim Erweitern hier **und** im Typ `PaymentListRow` nachziehen, sonst
+ * Beim Erweitern hier, im Typ `PaymentListRow` und in `toListRow` nachziehen, sonst
  * verspricht der Typ ein Feld, das die Antwort nicht enthaelt.
  */
 // Ein einziges Literal, nicht zusammengesetzt: PostgREST leitet den
@@ -56,6 +56,30 @@ export type PaymentListRow = Pick<
 >;
 
 /**
+ * Projektion einer vollstaendigen Zeile auf {@link PaymentListRow} — fuer das
+ * direkte Nachtragen einer geaenderten Zahlung in den Cache der Historie.
+ * Dieselben Felder wie {@link LIST_COLUMNS}; ein vergessenes Feld meldet der
+ * Typ.
+ */
+export function toListRow(row: DividendPayment): PaymentListRow {
+  return {
+    id: row.id,
+    security_id: row.security_id,
+    depot_id: row.depot_id,
+    pay_date: row.pay_date,
+    net_amount: row.net_amount,
+    gross_amount: row.gross_amount,
+    original_currency: row.original_currency,
+    payment_type: row.payment_type,
+    source: row.source,
+    import_id: row.import_id,
+    archived_at: row.archived_at,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  };
+}
+
+/**
  * Vollstaendige Zahlungshistorie: laedt seitenweise **alle** Zahlungen,
  * stornierte eingeschlossen. Liste und Datenqualitaet filtern den Status
  * clientseitig, die Auswertungen nehmen nur die aktiven
@@ -72,10 +96,11 @@ export type PaymentListRow = Pick<
  * Zeilen an Seitengrenzen).
  */
 export async function fetchAllPayments(): Promise<PaymentListRow[]> {
-  const rows = await fetchAllPages<PaymentListRow>((from, to) =>
+  const rows = await fetchAllPages<PaymentListRow>((from, to, withCount) =>
     supabase
       .from("dividend_payments")
-      .select(LIST_COLUMNS)
+      // Die Gesamtzahl laesst die weiteren Seiten parallel laden.
+      .select(LIST_COLUMNS, withCount ? { count: "exact" } : undefined)
       .order("pay_date", { ascending: false })
       .order("id", { ascending: true })
       .range(from, to),
@@ -112,7 +137,7 @@ export async function createPayment(
 export class PaymentConflictError extends Error {
   constructor() {
     super(
-      "Der Dividendeneingang wurde zwischenzeitlich geändert. Die aktuellen Daten wurden neu geladen.",
+      "Die Dividende wurde zwischenzeitlich geändert. Die aktuellen Daten wurden neu geladen.",
     );
     this.name = "PaymentConflictError";
   }
@@ -180,14 +205,14 @@ export async function deletePayment(id: string): Promise<void> {
     // entkoppelt (ON DELETE SET NULL); diese Meldung ist eine Absicherung.
     if (error.code === "23503") {
       throw new Error(
-        "Der Dividendeneingang konnte nicht gelöscht werden, weil noch andere Datensätze darauf verweisen. Die Daten wurden nicht verändert.",
+        "Die Dividende konnte nicht gelöscht werden, weil noch andere Datensätze darauf verweisen. Die Daten wurden nicht verändert.",
       );
     }
     throw error;
   }
   if (count === 0) {
     throw new Error(
-      "Der Dividendeneingang konnte nicht gelöscht werden (nicht gefunden oder keine Berechtigung). Die Daten wurden nicht verändert.",
+      "Die Dividende konnte nicht gelöscht werden (nicht gefunden oder keine Berechtigung). Die Daten wurden nicht verändert.",
     );
   }
 }

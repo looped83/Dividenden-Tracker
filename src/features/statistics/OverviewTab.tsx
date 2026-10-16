@@ -29,7 +29,7 @@ export function OverviewTab() {
         label="Gesamtsumme"
         value={<AmountText amount={stats.net} />}
         to={statisticsDrillHref(filter)}
-        drillLabel="Alle Zahlungen dieser Auswahl anzeigen"
+        drillLabel="Alle Dividenden dieser Auswahl anzeigen"
         caption={[
           stats.firstPayDate && stats.lastPayDate
             ? formatYearSpan(stats.firstPayDate, stats.lastPayDate)
@@ -52,7 +52,7 @@ export function OverviewTab() {
             to: bestYear
               ? statisticsDrillHref(filter, { year: bestYear.year })
               : undefined,
-            drillLabel: "Zahlungen des besten Jahres anzeigen",
+            drillLabel: "Dividenden des besten Jahres anzeigen",
           },
           {
             label: "Bester Monat",
@@ -66,7 +66,7 @@ export function OverviewTab() {
                   month: bestMonth.month,
                 })
               : undefined,
-            drillLabel: "Zahlungen des besten Monats anzeigen",
+            drillLabel: "Dividenden des besten Monats anzeigen",
           },
         ]}
       />

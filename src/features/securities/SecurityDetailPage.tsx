@@ -252,11 +252,11 @@ export function SecurityDetailPage() {
       {stats.count === 0 ? (
         <EmptyState
           icon={Briefcase}
-          title="Noch kein Dividendeneingang"
-          description="Für dieses Asset ist bisher keine Zahlung erfasst."
+          title="Noch keine Dividende"
+          description="Für dieses Asset ist bisher keine Dividende erfasst."
           action={
             <Button aria-haspopup="dialog" {...newPayment}>
-              Eingang erfassen
+              Dividende erfassen
             </Button>
           }
         />
@@ -266,17 +266,17 @@ export function SecurityDetailPage() {
             label="Erhalten insgesamt"
             value={<AmountText amount={stats.net} />}
             to={`/eingaenge?security=${id}`}
-            drillLabel={`Alle Eingänge von ${security.name} anzeigen`}
+            drillLabel={`Alle Dividenden von ${security.name} anzeigen`}
             caption={[
-              formatCountNoun(stats.count, "Eingang", "Eingänge"),
+              formatCountNoun(stats.count, "Dividende", "Dividenden"),
               stats.first && stats.last ? formatYearSpan(stats.first, stats.last) : null,
             ]
               .filter(Boolean)
               .join(" · ")}
             stats={[
-              { label: "Ø je Eingang", value: <AmountText amount={stats.average} /> },
+              { label: "Ø je Dividende", value: <AmountText amount={stats.average} /> },
               {
-                label: "Größter Eingang",
+                label: "Größte Dividende",
                 value: stats.largest ? <AmountText amount={stats.largest} /> : "—",
               },
             ]}
@@ -286,7 +286,7 @@ export function SecurityDetailPage() {
             <div>
               <CategoryBarChart
                 data={yearData}
-                ariaLabel={`Jährliche Dividendeneingänge von ${security.name}`}
+                ariaLabel={`Jährliche Dividenden von ${security.name}`}
                 categoryHeader="Jahr"
               />
             </div>
@@ -298,7 +298,7 @@ export function SecurityDetailPage() {
         // Kopf wie „Letzte Eingänge" auf der Uebersicht: der Weg zur ganzen
         // Liste rechts neben der Ueberschrift.
         <Section
-          title="Letzte Eingänge"
+          title="Letzte Dividenden"
           // Die Seite steht im 24px-Takt des Detailkopfs; Abschnitte ohne
           // Rahmen brauchen 40px Luft, sonst kleben sie aneinander.
           className="pt-4"
@@ -374,7 +374,7 @@ export function SecurityDetailPage() {
           <div>
             {payoutMonths.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                Kein Plan hinterlegt. Zahlungen zählen dann für den Monat, in dem sie
+                Kein Plan hinterlegt. Dividenden zählen dann für den Monat, in dem sie
                 tatsächlich eingegangen sind.
               </p>
             ) : (
@@ -405,8 +405,8 @@ export function SecurityDetailPage() {
                     als der Plan selbst. */}
                 <Disclosure summary="Wie wird gezählt?">
                   <p className="text-muted-foreground">
-                    Eine später eingetroffene Zahlung zählt für den geplanten Monat, für
-                    den sie fällig war. Eine Zahlung im Monat direkt davor zählt für den
+                    Eine später eingetroffene Dividende zählt für den geplanten Monat, für
+                    den sie fällig war. Eine Dividende im Monat direkt davor zählt für den
                     kommenden geplanten Monat — beides auch über den Jahreswechsel hinweg.
                   </p>
                 </Disclosure>

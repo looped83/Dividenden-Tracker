@@ -97,8 +97,8 @@ export function StatisticsPage() {
         {heading}
         <EmptyState
           icon={BarChart3}
-          title="Noch keine Dividendeneingänge vorhanden"
-          description="Sobald Dividendeneingänge erfasst oder importiert sind, erscheinen hier tiefergehende historische Auswertungen."
+          title="Noch keine Dividenden vorhanden"
+          description="Sobald Dividenden erfasst oder importiert sind, erscheinen hier tiefergehende historische Auswertungen."
         />
       </div>
     );

@@ -79,7 +79,7 @@ function renderHero(
   );
 }
 
-const MONATSLINK = { name: "Zahlungen des aktuellen Monats anzeigen" };
+const MONATSLINK = { name: "Dividenden des aktuellen Monats anzeigen" };
 
 // Die Diagrammsicht bleibt im Speicher des Geräts stehen; jeder Test beginnt
 // mit der Voreinstellung.
@@ -96,7 +96,7 @@ describe("DashboardHero — eine Hauptzahl statt Kachelraster", () => {
       payment("2020-05-10", "70.00", "sec-b"),
     ]);
     expect(
-      screen.getByRole("link", { name: "Zahlungen 2026 anzeigen" }),
+      screen.getByRole("link", { name: "Dividenden 2026 anzeigen" }),
     ).toHaveTextContent(/50,00\s?€/);
     expect(screen.queryByText(/120,00\s?€/)).not.toBeInTheDocument();
   });
@@ -137,7 +137,7 @@ describe("DashboardHero — eine Hauptzahl statt Kachelraster", () => {
     ]);
     expect(screen.queryByRole("link", MONATSLINK)).not.toBeInTheDocument();
     const labels = screen.getAllByRole("term").map((term) => term.textContent);
-    expect(labels).toEqual(["Ø pro Monat", "Zahlungen", "Bester Monat"]);
+    expect(labels).toEqual(["Ø pro Monat", "Anzahl", "Bester Monat"]);
     expect(screen.getByText("2 Assets")).toBeInTheDocument();
   });
 
@@ -248,7 +248,7 @@ describe("DashboardHero — Diagramm im Kopf", () => {
     // Ende Februar: 40 €, Vorjahr bis Februar 0 € → „neu".
     expect(screen.getByText("Dividenden bis Februar 2026")).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "Zahlungen bis Februar 2026 anzeigen" }),
+      screen.getByRole("link", { name: "Dividenden bis Februar 2026 anzeigen" }),
     ).toHaveTextContent(/40,00\s?€/);
 
     await user.keyboard("{Escape}");
@@ -269,7 +269,7 @@ describe("DashboardHero — Diagramm im Kopf", () => {
     expect(screen.getByText("Dividenden Mai 2026")).toBeInTheDocument();
     expect(screen.getByText("+33,3 %", { exact: false })).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "Zahlungen Mai 2026 anzeigen" }),
+      screen.getByRole("link", { name: "Dividenden Mai 2026 anzeigen" }),
     ).toHaveAttribute("href", "/eingaenge?year=2026&month=5");
   });
 });
