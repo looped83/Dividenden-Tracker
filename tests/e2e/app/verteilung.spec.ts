@@ -1,5 +1,6 @@
 import { asUser } from "../support/db";
-import { expect, test } from "../support/appTest";
+import type { Page } from "@playwright/test";
+import { expect, test, type Konto } from "../support/appTest";
 
 /**
  * „Verteilung" auf der Übersicht: Der Umschalter zwischen Assets und Depots
@@ -14,7 +15,7 @@ import { expect, test } from "../support/appTest";
 const DEPOTS = ["Depot 2", "Depot 3"];
 const ASSETS = ["Alpha AG", "Beta AG", "Gamma AG", "Delta AG", "Epsilon AG"];
 
-test("Verteilung: Umschalter bleibt beim Umschalten stehen", async ({ page, konto }) => {
+async function seedDistribution(konto: Konto) {
   await asUser(konto.userId, async (client) => {
     const depotIds = [konto.depotId];
     for (const name of DEPOTS) {
@@ -50,18 +51,11 @@ test("Verteilung: Umschalter bleibt beim Umschalten stehen", async ({ page, kont
       );
     }
   });
+}
 
-  await page.goto("/#/");
+/** Schaltet hin und zurück; der Umschalter muss jedes Mal dort stehen bleiben. */
+async function expectToggleStays(page: Page) {
   const section = page.getByRole("region", { name: "Verteilung" });
-  await expect(
-    section.getByRole("list", { name: "Top-Assets nach Nettodividende" }),
-  ).toBeVisible();
-
-  // Wie beim Lesen auf dem Telefon: Die Überschrift steht im oberen Drittel,
-  // die Liste reicht bis unter den Fensterrand.
-  await section.evaluate((element) => {
-    window.scrollTo(0, element.getBoundingClientRect().top + window.scrollY - 200);
-  });
   const toggle = section.getByRole("radiogroup", { name: "Verteilung nach" });
   const before = await toggle.boundingBox();
 
@@ -79,4 +73,49 @@ test("Verteilung: Umschalter bleibt beim Umschalten stehen", async ({ page, kont
 
   expect(afterDepots?.y).toBeCloseTo(before?.y ?? Number.NaN, 0);
   expect(afterAssets?.y).toBeCloseTo(before?.y ?? Number.NaN, 0);
+}
+
+async function openOverview(page: Page) {
+  await page.goto("/#/");
+  await expect(
+    page
+      .getByRole("region", { name: "Verteilung" })
+      .getByRole("list", { name: "Top-Assets nach Nettodividende" }),
+  ).toBeVisible();
+}
+
+test("Verteilung: Umschalter bleibt mitten auf der Seite stehen", async ({
+  page,
+  konto,
+}) => {
+  await seedDistribution(konto);
+  await openOverview(page);
+  // Wie beim Lesen auf dem Telefon: Die Überschrift steht im oberen Drittel,
+  // die Liste reicht bis unter den Fensterrand.
+  await page.getByRole("region", { name: "Verteilung" }).evaluate((element) => {
+    window.scrollTo(0, element.getBoundingClientRect().top + window.scrollY - 200);
+  });
+  await expectToggleStays(page);
+});
+
+test("Verteilung: Umschalter bleibt am Seitenende stehen", async ({ page, konto }) => {
+  // Hohes Fenster: Ganz unten ist der Umschalter noch zu sehen. Ohne
+  // Gegenmaßnahme schrumpft die Seite unter dem Fenster weg, der Browser setzt
+  // den Bildlauf zurück und der Umschalter rutscht um die Differenz nach unten.
+  await page.setViewportSize({ width: 390, height: 1300 });
+  await seedDistribution(konto);
+  await openOverview(page);
+  await page.evaluate(() => {
+    window.scrollTo(0, document.documentElement.scrollHeight);
+  });
+  await expectToggleStays(page);
+
+  // Der festgehaltene Platz am Seitenende schmilzt beim Zurückscrollen weg.
+  await page.getByRole("radio", { name: "Depots" }).click();
+  await page.evaluate(() => {
+    window.scrollTo(0, 0);
+  });
+  await expect
+    .poll(() => page.evaluate(() => document.documentElement.style.minHeight))
+    .toBe("");
 });
