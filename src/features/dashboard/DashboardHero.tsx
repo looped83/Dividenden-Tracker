@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Link, useNavigate } from "react-router";
-import { ArrowDownRight, ArrowUpRight, Target } from "lucide-react";
+import { Target } from "lucide-react";
 import { KpiStats, type KpiStat } from "@/components/domain/KpiHero";
 import { AmountText } from "@/components/money/AmountText";
 import { SegmentedControl, type SegmentOption } from "@/components/ui/segmented";
@@ -64,6 +64,30 @@ function readStoredKind(): HeroChartKind {
 function storeKind(kind: HeroChartKind): void {
   try {
     window.localStorage.setItem(KIND_KEY, kind);
+  } catch {
+    // Ohne Speicher gilt die Wahl nur bis zum Neuladen.
+  }
+}
+
+/**
+ * Ob die Veränderung neben der Hauptzahl als Betrag oder Prozent steht —
+ * ebenfalls eine Ansichtsvorliebe dieses Geräts, Voreinstellung Betrag.
+ */
+const TREND_KEY = "dividend-tracker:dashboard-trend";
+
+type TrendUnit = "money" | "percent";
+
+function readStoredUnit(): TrendUnit {
+  try {
+    return window.localStorage.getItem(TREND_KEY) === "percent" ? "percent" : "money";
+  } catch {
+    return "money";
+  }
+}
+
+function storeUnit(unit: TrendUnit): void {
+  try {
+    window.localStorage.setItem(TREND_KEY, unit);
   } catch {
     // Ohne Speicher gilt die Wahl nur bis zum Neuladen.
   }
@@ -203,7 +227,6 @@ export function DashboardHero({ payments, selection, today }: DashboardHeroProps
         to: paymentsListHref({ year: selection }),
         drillLabel: `Dividenden ${label} anzeigen`,
       };
-  const trend = splitComparison(head.result, "");
 
   const describePoint = (p: HeroPoint): string => {
     const result = comparePeriods(p.value, p.prior);
@@ -223,47 +246,28 @@ export function DashboardHero({ payments, selection, today }: DashboardHeroProps
   return (
     <section aria-label="Kennzahlen" className="flex flex-col">
       <p className="text-[0.9375rem] font-medium text-muted-foreground">{head.label}</p>
-      <Link
-        to={head.to}
-        aria-label={head.drillLabel}
-        className="mt-1 w-fit rounded-sm text-[2.5rem] font-bold leading-[1.05] tracking-[-0.035em] tabular-amount outline-none focus-visible:ring-2 focus-visible:ring-ring sm:text-[3.25rem]"
-      >
-        <AmountText amount={head.value} />
-      </Link>
-      <p className="mt-2 flex min-h-5 flex-wrap items-baseline gap-x-2 text-[0.9375rem]">
-        {hasTrend(head.result) ? (
-          <>
-            <span
-              className={cn(
-                "inline-flex items-center gap-0.5 self-center font-semibold tabular-amount",
-                trend.tone === "positive" && "text-positive",
-                trend.tone === "negative" && "text-negative",
-                trend.tone === "neutral" && "text-muted-foreground",
-              )}
-            >
-              {trend.tone !== "neutral" &&
-                (trend.tone === "negative" ? (
-                  <ArrowDownRight className="size-4" aria-hidden strokeWidth={2.5} />
-                ) : (
-                  <ArrowUpRight className="size-4" aria-hidden strokeWidth={2.5} />
-                ))}
-              {trend.caption}
-            </span>
-            <span className="text-muted-foreground tabular-amount">
-              {trend.value} {head.reference}
-            </span>
-          </>
-        ) : (
-          data.isAll &&
-          !point &&
-          data.firstYear !== null && (
-            <span className="text-muted-foreground">
-              {formatCountNoun(payments.length, "Dividende", "Dividenden")} seit{" "}
-              {data.firstYear}
-            </span>
-          )
+      {/* Seit 1.20.0 steht die Veränderung direkt neben der Summe, als
+          Betrag oder per Tipp als Prozent. Der Bezug („ggü.
+          Vorjahreszeitraum") steckt im Tooltip und in der Ansage — eine
+          eigene Zeile darunter sparte das nicht auf. */}
+      <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <Link
+          to={head.to}
+          aria-label={head.drillLabel}
+          className="w-fit rounded-sm text-[2.5rem] font-bold leading-[1.05] tracking-[-0.035em] tabular-amount outline-none focus-visible:ring-2 focus-visible:ring-ring sm:text-[3.25rem]"
+        >
+          <AmountText amount={head.value} />
+        </Link>
+        {hasTrend(head.result) && (
+          <TrendToggle result={head.result} reference={head.reference} />
         )}
-      </p>
+      </div>
+      {data.isAll && !point && !hasTrend(head.result) && data.firstYear !== null && (
+        <p className="mt-2 text-[0.9375rem] text-muted-foreground">
+          {formatCountNoun(payments.length, "Dividende", "Dividenden")} seit{" "}
+          {data.firstYear}
+        </p>
+      )}
 
       {annual ? (
         <AnnualGoal
@@ -276,7 +280,7 @@ export function DashboardHero({ payments, selection, today }: DashboardHeroProps
       goals !== undefined && typeof selection === "number" ? (
         <Link
           to="/ziele"
-          className="mt-4 inline-flex min-h-7 w-fit pointer-coarse:min-h-11 items-center gap-2 rounded-sm text-[0.9375rem] font-medium text-primary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+          className="mt-5 inline-flex min-h-7 w-fit pointer-coarse:min-h-11 items-center gap-2 rounded-sm text-[0.9375rem] font-medium text-primary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Target className="size-4" aria-hidden />
           Jahresziel für {selection} festlegen
@@ -326,6 +330,58 @@ export function DashboardHero({ payments, selection, today }: DashboardHeroProps
 
       <KpiStats className="mt-5" stats={buildStats(data, monthly, today)} />
     </section>
+  );
+}
+
+/**
+ * Die Veränderung neben der Hauptzahl: grün mit ▲, rot mit ▼. Ein Tipp
+ * wechselt zwischen Betrag und Prozent; die Wahl bleibt auf diesem Gerät.
+ */
+function TrendToggle({
+  result,
+  reference,
+}: {
+  result: ComparisonResult;
+  reference: string;
+}) {
+  const [unit, setUnitState] = React.useState<TrendUnit>(readStoredUnit);
+  const trend = splitComparison(result, "");
+  const percent = trend.caption;
+  const money = trend.value;
+  const next: TrendUnit = unit === "money" ? "percent" : "money";
+  const description = `${money} (${percent}) ${reference}`;
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        setUnitState(next);
+        storeUnit(next);
+      }}
+      title={description}
+      aria-label={`Veränderung ${description}. Als ${
+        next === "percent" ? "Prozent" : "Betrag"
+      } anzeigen`}
+      className={cn(
+        "relative inline-flex items-baseline gap-1 rounded-sm text-[1.0625rem] font-semibold tabular-amount outline-none after:absolute after:-inset-2.5 focus-visible:ring-2 focus-visible:ring-ring sm:text-xl",
+        trend.tone === "positive" && "text-positive",
+        trend.tone === "negative" && "text-negative",
+        trend.tone === "neutral" && "text-muted-foreground",
+      )}
+    >
+      {trend.tone !== "neutral" && (
+        <svg
+          viewBox="0 0 10 8"
+          aria-hidden
+          className={cn(
+            "size-[0.6em] fill-current",
+            trend.tone === "negative" && "rotate-180",
+          )}
+        >
+          <path d="M5 0 10 8H0z" />
+        </svg>
+      )}
+      {(unit === "money" ? money : percent).replace(/^[+\-−]\s?/, "")}
+    </button>
   );
 }
 
@@ -432,7 +488,7 @@ function AnnualGoal({
             }`
           : ""
       }`}
-      className="mt-4 block space-y-2 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4 ring-offset-background"
+      className="mt-5 block space-y-2 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4 ring-offset-background"
     >
       <span
         role="progressbar"
@@ -493,9 +549,11 @@ export function DashboardHeroSkeleton() {
   return (
     <div className="flex flex-col" aria-hidden>
       <Skeleton className="h-4 w-28" />
-      <Skeleton className="mt-2 h-10 w-56" />
-      <Skeleton className="mt-3 h-4 w-44" />
-      <Skeleton className="mt-5 h-1 w-full" />
+      <div className="mt-2 flex items-end gap-3">
+        <Skeleton className="h-10 w-56" />
+        <Skeleton className="h-5 w-20" />
+      </div>
+      <Skeleton className="mt-6 h-1 w-full" />
       <Skeleton className="mt-8 h-36 w-full rounded-xl sm:h-52" />
       <Skeleton className="mt-5 h-20 w-full rounded-2xl" />
     </div>
