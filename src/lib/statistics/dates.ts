@@ -64,20 +64,6 @@ export interface DateRange {
   end: string;
 }
 
-/** Ganzes Kalenderjahr als inklusiver Bereich. */
-export function yearRange(year: number): DateRange {
-  return { start: isoDate(year, 1, 1), end: isoDate(year, 12, 31) };
-}
-
-/**
- * Jahr-bis-heute (YTD): 1. Januar bis zum Referenztag des gleichen Jahres.
- * Fuer abgeschlossene Jahre ist `ref` der 31.12. dieses Jahres.
- */
-export function ytdRange(year: number, ref: RefDate): DateRange {
-  const end = year === ref.year ? isoFromRef(ref) : isoDate(year, 12, 31);
-  return { start: isoDate(year, 1, 1), end };
-}
-
 /** Aktueller Monat bis heute: 1. des Referenzmonats bis Referenztag. */
 export function monthToDateRange(ref: RefDate): DateRange {
   return { start: isoDate(ref.year, ref.month, 1), end: isoFromRef(ref) };

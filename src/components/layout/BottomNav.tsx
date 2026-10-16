@@ -23,8 +23,8 @@ const INACTIVE = "text-muted-foreground";
  * ist leicht durchscheinend, damit beim Scrollen sichtbar bleibt, dass die
  * Seite darunter weitergeht.
  *
- * **Erfassen oeffnet ein Sheet, keine Seite.** Das Formular faehrt von unten
- * ueber die aktuelle Seite; nach dem Speichern oder Abbrechen steht man wieder
+ * **Erfassen oeffnet einen Dialog, keine Seite.** Das Formular liegt mittig
+ * ueber der aktuellen Seite; nach dem Speichern oder Abbrechen steht man wieder
  * genau dort, wo man war (siehe `PaymentComposerProvider`).
  */
 export function BottomNav() {

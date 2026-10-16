@@ -107,8 +107,3 @@ export const paymentFormSchema = z.object({
   note: z.string().trim().max(5000, "Notiz: höchstens 5000 Zeichen").optional(),
 });
 export type PaymentFormValues = z.infer<typeof paymentFormSchema>;
-
-export const archivePaymentSchema = z.object({
-  reason: z.string().trim().max(500).optional().or(z.literal("")),
-});
-export type ArchivePaymentFormValues = z.infer<typeof archivePaymentSchema>;

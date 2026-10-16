@@ -15,11 +15,17 @@ export const CALENDAR_SYNC_FUNCTION = "sync-divvydiary-calendar";
  * Eindeutige Sortierung (Datum plus `id`), weil `fetchAllPages` sonst ueber
  * Seitengrenzen hinweg Zeilen doppelt oder gar nicht sehen kann.
  */
+// Ohne `raw_data` (rohe ICS-Eigenschaften) und Verwaltungsspalten: Die App
+// liest sie nie, der Kalender laedt aber auf dem ersten Bildschirm. Ein einziges
+// Literal, damit PostgREST den Ergebnistyp ableiten kann (wie `LIST_COLUMNS`).
+// prettier-ignore
+const CALENDAR_EVENT_COLUMNS = "id, external_uid, event_type, event_state, title, company_name, expected_amount, expected_currency, source_portfolio, description, location, external_url, categories, event_date, end_date, starts_at, ends_at, is_all_day";
+
 export async function fetchCalendarEvents(): Promise<CalendarEventRow[]> {
   return fetchAllPages<CalendarEventRow>((from, to) =>
     supabase
       .from("dividend_calendar_events")
-      .select("*")
+      .select(CALENDAR_EVENT_COLUMNS)
       .neq("event_state", "removed_from_source")
       .order("event_date", { ascending: true })
       .order("id", { ascending: true })
