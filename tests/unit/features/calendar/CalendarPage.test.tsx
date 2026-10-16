@@ -596,7 +596,7 @@ describe("Namen der angelegten Unternehmen", () => {
     await user.click(screen.getByRole("button", { name: /Realty Income,/ }));
 
     const dialog = await screen.findByRole("dialog");
-    // Die Schreibweise der Quelle wiederholte nur den Titel (seit 1.13.0).
+    // Die Schreibweise der Quelle wiederholte nur den Titel (seit 1.14.0).
     expect(
       within(dialog).getByRole("heading", { name: "Realty Income" }),
     ).toBeInTheDocument();

@@ -299,7 +299,7 @@ ein anderer Platz fürs Zurücksetzen fallen beim Wechsel sofort auf.
 - Listen statt breiter Tabellen: je Zahlung eine Zeile (`PaymentListItem`), nach Monat
   gruppiert mit Monatssumme; „weitere laden" statt Blättern. Tabellen der Statistik werden zu
   Listen (`StatTable`), die Matrix Jahre × Monate steht gedreht (Monate als Zeilen).
-- Dialoge mittig mit 16 px Rand (seit 1.13.0, zuvor Sheet am unteren Rand): Eine aufgehende
+- Dialoge mittig mit 16 px Rand (seit 1.14.0, zuvor Sheet am unteren Rand): Eine aufgehende
   Tastatur verschiebt so nichts. Aktionen in voller Breite in einer Fußzeile, die beim
   Scrollen stehen bleibt; Schließen mit 44-px-Fläche.
 - Unterbereiche hinter „Mehr" (Kalender, Depot, Ziele, Einstellungen) markieren „Mehr" in der

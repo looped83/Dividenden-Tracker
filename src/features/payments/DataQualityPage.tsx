@@ -11,7 +11,6 @@ import { Disclosure } from "@/components/ui/disclosure";
 import { useToast } from "@/components/ui/toast";
 import { ListGroup, ListItemBody, ListRow } from "@/components/ui/list";
 import { AmountText } from "@/components/money/AmountText";
-import { DateText } from "@/components/DateText";
 import { formatCountNumber } from "@/lib/utils/formatNumber";
 import { formatCalendarDate, formatTimestamp } from "@/lib/utils/formatDate";
 import { Money, toCurrencyCode } from "@/lib/money";
@@ -269,7 +268,7 @@ export function DataQualityPage() {
                                 {company}
                               </span>
                               <span className="flex flex-wrap gap-x-2 text-sm text-muted-foreground">
-                                <DateText>{date}</DateText>
+                                <span>{date}</span>
                                 <span>{depotName(pair.a.depot_id)}</span>
                                 <span>
                                   <AmountText
@@ -406,7 +405,7 @@ export function DataQualityPage() {
                                 {asset}
                               </span>
                               <span className="flex flex-wrap gap-x-2 text-sm text-muted-foreground">
-                                <DateText>{date}</DateText>
+                                <span>{date}</span>
                                 <AmountText
                                   amount={Money.fromString(
                                     anomaly.payment.net_amount,
@@ -529,9 +528,7 @@ function DuplicateCard({
             {[pair.a, pair.b].map((p) => (
               <div key={p.id} className="rounded-xl bg-muted p-3 text-sm">
                 <div className="flex items-center justify-between">
-                  <DateText className="font-medium">
-                    {formatCalendarDate(p.pay_date)}
-                  </DateText>
+                  <span className="font-medium">{formatCalendarDate(p.pay_date)}</span>
                   <AmountText
                     amount={Money.fromString(p.net_amount, currencyOf(p.depot_id))}
                   />

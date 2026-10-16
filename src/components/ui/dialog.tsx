@@ -25,7 +25,7 @@ export function DialogContent({
           // Mit einer Gruppe greift eine Ueberschreibung auf allen Breiten.
           // Schmale Geraete begrenzt `w-[calc(100%-2rem)]` (16px Rand je Seite).
           //
-          // **Mittig auf allen Breiten** (seit 1.13.0). Als Panel von unten
+          // **Mittig auf allen Breiten** (seit 1.14.0). Als Panel von unten
           // (Sheet) rueckte es mit jeder Bildschirmtastatur hoch — beim
           // Oeffnen eines Formulars sprang es sichtbar. Mittig liegen die
           // oberen Felder ueber der Tastatur, und nichts verschiebt sich.
