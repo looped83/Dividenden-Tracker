@@ -1,0 +1,41 @@
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "target": "ES2023",
+    "useDefineForClassFields": true,
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "types": ["vite/client", "vitest/globals", "@testing-library/jest-dom"],
+
+    "skipLibCheck": true,
+
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true,
+    "noImplicitReturns": true,
+    "noImplicitOverride": true,
+    "exactOptionalPropertyTypes": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "forceConsistentCasingInFileNames": true,
+
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  // `supabase/functions/_shared` enthaelt die laufzeitunabhaengige Logik der
+  // Kalendersynchronisation (iCal-Verarbeitung, Abgleich). Sie laeuft in der
+  // Edge Function unter Deno und in den Unit-Tests unter Node — geprueft wird
+  // sie deshalb hier mit. Der Deno-Einstiegspunkt (`*/index.ts`) steht bewusst
+  // nicht im Projekt: Er nutzt `Deno`-Globals, die es hier nicht gibt.
+  "include": ["src", "tests/unit", "tests/setup.ts", "supabase/functions/_shared"]
+}
