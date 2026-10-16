@@ -1,0 +1,153 @@
+import * as React from "react";
+import { Outlet, useNavigate } from "react-router";
+import { Plus, Target } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { TabNav } from "@/components/layout/TabNav";
+import { useToday } from "@/lib/hooks/useToday";
+import { computeGoalProgress, sortGoalProgress } from "@/lib/goals";
+import { getErrorMessage } from "@/lib/utils/errorMessage";
+import { useGoalProgressPayments, useGoals } from "./hooks";
+import { GoalFormDialog } from "./GoalFormDialog";
+import type { GoalsContext } from "./context";
+
+function GoalsSkeleton() {
+  return (
+    <div
+      className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2 xl:grid-cols-3"
+      aria-busy="true"
+    >
+      <span className="sr-only">Ziele werden geladen …</span>
+      {Array.from({ length: 3 }).map((_, index) => (
+        // Dieselben Zeilen wie die Zielkarte: Kopf, Betragszeile, Balken —
+        // sonst springt die Seite, sobald die Ziele da sind.
+        <div key={index} className="flex flex-col gap-3 rounded-2xl bg-muted p-4 sm:p-5">
+          <div className="flex items-center gap-3">
+            <Skeleton className="size-9 shrink-0 rounded-xl bg-background" />
+            <Skeleton className="h-5 w-40 bg-background" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="h-7 w-48 bg-background" />
+            <Skeleton className="h-1 w-full bg-background" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function GoalsPage() {
+  const navigate = useNavigate();
+  const today = useToday();
+  const goalsQuery = useGoals();
+  const { payments, isLoading: paymentsLoading } = useGoalProgressPayments();
+  // Hier wird nur angelegt; Bearbeiten und Loeschen stehen auf der
+  // Detailseite, die jede Zielkarte oeffnet.
+  const [formOpen, setFormOpen] = React.useState(false);
+
+  const goals = React.useMemo(() => goalsQuery.data ?? [], [goalsQuery.data]);
+
+  const progressList = React.useMemo(
+    () => goals.map((goal) => computeGoalProgress(goal, payments, today)),
+    [goals, payments, today],
+  );
+
+  const byStatus = React.useMemo(
+    () => ({
+      // Jede Gruppe in ihrer eigenen Ordnung: laufend nach Rahmen (Jahresziel
+      // vor Monatszielen), bevorstehend das naechste zuerst, beendet das
+      // zuletzt beendete zuerst.
+      current: sortGoalProgress(
+        progressList.filter((p) => p.time.status === "current"),
+        "current",
+      ),
+      upcoming: sortGoalProgress(
+        progressList.filter((p) => p.time.status === "upcoming"),
+        "upcoming",
+      ),
+      ended: sortGoalProgress(
+        progressList.filter((p) => p.time.status === "ended"),
+        "ended",
+      ),
+    }),
+    [progressList],
+  );
+
+  const openCreate = () => {
+    setFormOpen(true);
+  };
+
+  const context: GoalsContext = React.useMemo(() => ({ byStatus }), [byStatus]);
+
+  // Die Zahl in der Beschriftung erspart den Klick in einen leeren Reiter.
+  const tabs = [
+    { to: "/ziele", label: `Aktiv (${String(byStatus.current.length)})`, end: true },
+    {
+      to: "/ziele/bevorstehend",
+      label: `Bevorstehend (${String(byStatus.upcoming.length)})`,
+    },
+    { to: "/ziele/beendet", label: `Beendet (${String(byStatus.ended.length)})` },
+  ];
+
+  const heading = (
+    <PageHeader
+      title="Ziele"
+      actions={
+        // Umriss wie die Jahresauswahl der Uebersicht; gefuellt bleibt allein
+        // das Erfassen in der Navigation.
+        <Button variant="outline" onClick={openCreate}>
+          <Plus aria-hidden /> Ziel anlegen
+        </Button>
+      }
+    />
+  );
+
+  return (
+    <div className="space-y-6">
+      {heading}
+
+      {goalsQuery.isLoading || paymentsLoading ? (
+        <GoalsSkeleton />
+      ) : goalsQuery.isError ? (
+        <EmptyState
+          icon={Target}
+          title="Ziele konnten nicht geladen werden"
+          description={getErrorMessage(
+            goalsQuery.error,
+            "Beim Laden der Ziele ist ein Fehler aufgetreten.",
+          )}
+          action={
+            <Button onClick={() => void goalsQuery.refetch()}>Erneut versuchen</Button>
+          }
+        />
+      ) : goals.length === 0 ? (
+        <EmptyState
+          icon={Target}
+          title="Noch keine Ziele angelegt"
+          description="Lege ein Jahres- oder Monatsziel fest, um deine tatsächlich erhaltenen Dividendeneinnahmen damit zu vergleichen."
+          action={
+            <Button onClick={openCreate}>
+              <Plus aria-hidden /> Erstes Ziel anlegen
+            </Button>
+          }
+        />
+      ) : (
+        <div className="space-y-6">
+          <TabNav label="Zielgruppen" tabs={tabs} />
+          <Outlet context={context} />
+        </div>
+      )}
+
+      <GoalFormDialog
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        goal={null}
+        onSaved={(goalId) => {
+          void navigate(`/ziele/${goalId}`);
+        }}
+      />
+    </div>
+  );
+}

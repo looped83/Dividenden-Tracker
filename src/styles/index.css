@@ -1,0 +1,270 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* Klassenbasierter Dark Mode: `.dark` auf <html> wird von ThemeProvider gesetzt
+   (hell / dunkel / System) — UX_AND_DESIGN_SYSTEM.md #8. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif;
+  --radius: 0.5rem;
+}
+
+/* Design-Tokens hell (UX_AND_DESIGN_SYSTEM.md #1) — ruhig, datenorientiert,
+   keine dekorativen Farbverlaeufe. Alle Text/Hintergrund-Paare >= WCAG AA.
+
+   Neutrale Toene ohne Blaustich (Chroma <= 0.006): Schwarz und Grau tragen die
+   Daten, Farbe bleibt Bedeutung vorbehalten — Orange fuer Aktionen, Gruen
+   und Rot fuer Veraenderung. Gemessen: Vordergrund 18,1:1 auf der Seite,
+   Sekundaertext 6,0:1 auf der Seite und 5,1:1 auf dem Akzent. */
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.2 0.004 286);
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.2 0.004 286);
+
+  /* Haarlinie: trennt, ohne ein Gitter zu zeichnen. */
+  --border: oklch(0.925 0.002 286);
+  /* Rahmen von Eingabefeldern, Auswahllisten, Kontrollkaestchen und
+     Umriss-Schaltflaechen. Dieser Rahmen ist bei einem leeren Feld das
+     einzige, was die Bedienelemente ueberhaupt sichtbar macht — WCAG 2.2
+     (1.4.11) verlangt dafuer 3:1 gegen jede angrenzende Flaeche. Der frueher
+     helle Wert (0.88) erreichte 1,4:1. Gemessen gegen alle Nachbarflaechen:
+     Karte 3,6:1, Seite 3,6:1, gedaempft 3,3:1, Akzent (Hover) 3,1:1.
+     Deutlich dunkler ginge, wuerde die ruhigen Formulare aber in ein Gitter
+     aus Kaesten verwandeln — 0.62 ist der hellste Wert, der die Schwelle
+     ueberall haelt. Strukturlinien (`--border`) sind davon nicht betroffen:
+     Karten- und Tabellenraender tragen keine Bedienbedeutung. */
+  --input: oklch(0.62 0.004 286);
+  --ring: oklch(0.62 0.165 46);
+
+  --muted: oklch(0.965 0.001 286);
+  --muted-foreground: oklch(0.5 0.006 286);
+
+  /* Akzent Orange (seit 1.11.0, zuvor Blau; seit 1.15.0 leuchtender): an der
+     sRGB-Grenze gesetzt — mehr Chroma gibt es bei dieser Helligkeit nicht.
+     Reines Weiss als Schrift, damit Knopftext und Linktext auf Weiss
+     >= 4,5:1 halten (4,6:1). */
+  --primary: oklch(0.58 0.168 44);
+  --primary-foreground: oklch(1 0 0);
+
+  /* Hover und aktive Navigation: neutrales Grau statt Orange — Orange heisst
+     „hier passiert etwas", nicht „hier bist du". */
+  --accent: oklch(0.945 0.002 286);
+  --accent-foreground: oklch(0.2 0.004 286);
+
+  --positive: oklch(0.45 0.11 155);
+  --positive-foreground: oklch(0.98 0.004 260);
+
+  --negative: oklch(0.5 0.16 25);
+  --negative-foreground: oklch(0.98 0.004 260);
+
+  /* Gelb statt Bernstein (seit 1.11.0): Neben dem orangen Akzent hätte ein
+     „Storniert" wie eine Aktion ausgesehen. */
+  --warning: oklch(0.8 0.15 95);
+  --warning-foreground: oklch(0.2 0.02 260);
+  /* Textfarbe auf hellem Warn-Tint (bg-warning/10) — in beiden Themes >= 4.5:1. */
+  --warning-strong: oklch(0.48 0.095 95);
+
+  /* Diagrammfarben (kategorial, feste Reihenfolge — siehe .dark unten und
+     UX_AND_DESIGN_SYSTEM.md #1a). Werte gemessen, nicht geschätzt: alle sechs
+     liegen im Helligkeitsband, über der Chroma-Untergrenze, halten benachbart
+     den CVD-Abstand und erreichen >= 3:1 gegen die Kartenfläche. */
+  --chart-1: oklch(0.52 0.15 255); /* blau     #1f68bc */
+  --chart-2: oklch(0.62 0.14 60); /* orange   #c26e12 */
+  --chart-3: oklch(0.65 0.105 185); /* türkis   #28a497 */
+  --chart-4: oklch(0.52 0.17 345); /* magenta  #a8347f */
+  --chart-5: oklch(0.6 0.14 150); /* grün     #319751 */
+  --chart-6: oklch(0.46 0.16 300); /* violett  #673ba2 */
+
+  /* Vergleichsreihe (Vorjahr) im Kopf der Uebersicht: neutrales Grau, das
+     aktuelle Jahr steht in Vordergrundfarbe (UX_AND_DESIGN_SYSTEM.md #1a).
+     3,6:1 gegen die Seite — als Marke >= 3:1 (1.4.11). */
+  --series-prior: oklch(0.62 0.004 286);
+}
+
+/* Design-Tokens dunkel — echtes Schwarz als Grundflaeche (OLED: Pixel bleiben
+   aus). Die Hierarchie traegt nicht mehr der Helligkeitsabstand zum Rahmen des
+   Fensters, sondern die gestufte Flaeche darueber: Karte 0.19, gedaempfte
+   Flaeche 0.24, Rahmen 0.30. Fast ohne Chroma — ein Blaustich laesst neben
+   reinem Schwarz die Flaechen schmutzig wirken. */
+.dark {
+  --background: oklch(0 0 0);
+  --foreground: oklch(0.94 0.004 260);
+
+  --card: oklch(0.19 0.006 260);
+  --card-foreground: oklch(0.94 0.004 260);
+
+  --border: oklch(0.3 0.008 260);
+  /* Wie im hellen Theme 3:1 gegen jede Nachbarflaeche (1.4.11): Seite 4,9:1,
+     Karte 4,3:1, gedaempft 3,8:1, Akzent 3,3:1. Auf schwarzem Grund faellt
+     der hellere Rahmen weniger auf als im hellen Theme — das Feld liest sich
+     als eingelassene Flaeche mit klarer Kante. */
+  --input: oklch(0.58 0.008 260);
+  --ring: oklch(0.72 0.185 48);
+
+  --muted: oklch(0.24 0.006 260);
+  --muted-foreground: oklch(0.72 0.012 260);
+
+  /* Hell auf Schwarz, dunkle Schrift auf Knöpfen (7,1:1). Seit 1.15.0 etwas
+     dunkler, roter und an der sRGB-Grenze gesaettigt: Der fruehere Wert
+     (L 0.76, Farbton 55) lag Richtung Pfirsich und wirkte auf Schwarz
+     verwaschen. Gegen Schwarz 7,9:1, gegen die Karte 7,0:1. */
+  --primary: oklch(0.72 0.185 48);
+  --primary-foreground: oklch(0.18 0.03 55);
+
+  --accent: oklch(0.29 0.004 286);
+  --accent-foreground: oklch(0.94 0.004 260);
+
+  --positive: oklch(0.72 0.13 155);
+  --positive-foreground: oklch(0.16 0.03 155);
+
+  --negative: oklch(0.72 0.15 25);
+  --negative-foreground: oklch(0.18 0.03 25);
+
+  --warning: oklch(0.86 0.15 98);
+  --warning-foreground: oklch(0.2 0.03 98);
+  --warning-strong: oklch(0.88 0.14 100);
+
+  /* Dieselben sechs Farbtöne, für die dunkle Fläche neu gesetzt — keine
+     automatische Umkehrung. Das dunkle Band liegt tiefer als das helle
+     (L 0.48–0.67): Marken, die heller sind, blenden auf dunklem Grund und
+     verlieren zugleich Sättigung. Gegen die tiefere Kartenfläche (#121417)
+     steigt der Kontrast jeder Serie, die Werte bleiben deshalb unveraendert
+     (schwaechster Slot 3,5:1 bei einer Schwelle von 3:1). */
+  --chart-1: oklch(0.6 0.15 255); /* blau     #3a81d7 */
+  --chart-2: oklch(0.66 0.14 60); /* orange   #cf7b26 */
+  --chart-3: oklch(0.66 0.107 185); /* türkis   #29a79b */
+  --chart-4: oklch(0.55 0.17 345); /* magenta  #b23e88 */
+  --chart-5: oklch(0.64 0.14 150); /* grün     #40a35c */
+  --chart-6: oklch(0.55 0.17 300); /* violett  #8254c4 */
+
+  /* 3,5:1 gegen Schwarz, 3,1:1 gegen die Karte. */
+  --series-prior: oklch(0.5 0.004 286);
+}
+
+/* Tokens fuer Tailwind-Utilities verfuegbar machen (bg-background, text-foreground, ...). */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-positive: var(--positive);
+  --color-positive-foreground: var(--positive-foreground);
+  --color-negative: var(--negative);
+  --color-negative-foreground: var(--negative-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-strong: var(--warning-strong);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
+  --color-series-prior: var(--series-prior);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* Eine Zeile, lange Namen laufen am Ende aus statt mit „…" abzubrechen
+   (Listentitel, seit 1.11.0). Nur auf Elementen, die die ganze Breite
+   einnehmen: Auf einem inhaltsbreiten Element verbliche auch ein kurzer Name. */
+@utility truncate-fade {
+  overflow: hidden;
+  white-space: nowrap;
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 2rem), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 2rem), transparent);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  /* Native Bestandteile (Auswahllisten, Datumsauswahl, Bildlaufleisten) folgen
+     `color-scheme`. Mit dem Wert `light dark` richteten sie sich nach dem
+     System, waehrend die App ihrem eigenen Theme folgt — wer „hell" waehlt,
+     bekam auf einem dunklen System dunkle Auswahlfelder in heller Oberflaeche.
+     Deshalb je Theme ein fester Wert; `.dark` setzt der ThemeProvider. */
+  html {
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Hand-Zeiger auf allem, was klickbar ist. Tailwind 4 setzt Schaltflaechen
+     auf den Standardzeiger zurueck — mit der Maus wirkte „Neue Dividende"
+     dadurch wie ein Etikett. Gesperrte Schaltflaechen behalten den Pfeil. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+  /* Betraege stellen sich in Tabellenziffern dar (UX_AND_DESIGN_SYSTEM.md #1). */
+  .tabular-amount {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* iOS Safari gibt input[type="date"] eine eigene intrinsische Groesse: Das
+     Feld wird hoeher als die uebrigen Formularfelder und laeuft auf schmalen
+     Viewports rechts aus dem Container. Ursache ist die native Darstellung
+     zusammen mit den Standardabstaenden des Wert-Pseudoelements. Beides wird
+     hier zurueckgesetzt, damit das Feld exakt der Hoehe und Breite der
+     uebrigen Eingabefelder folgt. */
+  input[type="date"] {
+    -webkit-appearance: none;
+    appearance: none;
+    min-width: 0;
+  }
+  input[type="date"]::-webkit-date-and-time-value {
+    margin: 0;
+    padding: 0;
+    min-height: 0;
+    line-height: normal;
+    text-align: left;
+  }
+}
+
+/* iOS Safari zoomt beim Fokus in ein Formularfeld, dessen Schrift kleiner als
+   16px ist — die Seite bleibt danach vergroessert zurueck. Auf Zeigegeraeten
+   ohne feine Steuerung (Touch) tragen Eingabefelder deshalb 16px; auf Maus-
+   Geraeten bleibt die kompaktere Groesse des Design-Systems (14px).
+
+   Bewusst ausserhalb aller Cascade-Layer: Tailwind-Utilities (`text-sm`) liegen
+   in der utilities-Layer, ungeschichtete Regeln stehen in der Kaskade darueber
+   und gewinnen ohne !important. */
+@media (pointer: coarse) {
+  input:not([type="checkbox"], [type="radio"]),
+  select,
+  textarea {
+    font-size: 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

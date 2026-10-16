@@ -1,0 +1,4 @@
+symbol;isin;wkn;name;quantity;buyin;buyinTotal;price;value;gain;gainRel;currency;allocation;allocationOnBuyin;dividendYield;dividendYieldOnBuyin;totalDividendRate;dividendRate;dividendFrequency;dividendCagr;dividendCagrPeriod;sector;securityType;country;originalDividendCurrency;transactions;exDate;payDate;gainPrev;gainPrevRel;prevPricePeriod;note;taxRate
+MSTR;DE0001234567;A1B2C3;Muster AG;10;80;800;100;1000;200;0,25;EUR;0,6667;0,6154;0,04;0,05;40;4;quarterly;0,05;5Y;Industrials;EQUITY;DE;EUR;12;2026-09-01;2026-09-15;1;0,01;1D;;0,26375
+BSP;DE0007654321;D4E5F6;Beispiel SE;5;100;500;100;500;0;0;EUR;0,3333;0,3846;0,02;0,02;10;2;annually;0;5Y;mixed;ETF;mixed;EUR;3;2026-10-01;2026-10-15;0;0;1D;;0,26375
+NIX;DE0009999999;G7H8I9;Ohne Bestand AG;0;0;0;50;0;;;EUR;0;;0,03;0;0;1,5;quarterly;0;5Y;Energy;EQUITY;DE;EUR;5;2026-08-01;2026-08-15;0,1;0,002;1D;;0,26375

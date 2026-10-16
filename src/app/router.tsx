@@ -1,0 +1,247 @@
+/* eslint-disable react-refresh/only-export-components --
+   Die Routentabelle exportiert `router` und definiert daneben die nachgeladenen
+   Seiten. Fast Refresh greift fuer eine Routentabelle ohnehin nicht; dieselbe
+   Ausnahme nutzen button.tsx und ThemeProvider.tsx. */
+import * as React from "react";
+import { createHashRouter, Navigate, useLocation, useParams } from "react-router";
+import { AppShell } from "@/app/AppShell";
+import { NotFoundPage } from "@/app/NotFoundPage";
+import { AuthPageSkeleton } from "@/components/layout/PageSkeleton";
+import { DashboardPage } from "@/features/dashboard/DashboardPage";
+import { PaymentComposerRoute } from "@/features/payments/PaymentComposer";
+import { routeChunks } from "@/app/routeChunks";
+
+/**
+ * Routing (PRODUCT_SPEC.md §4). Der Kalenderbereich (`/kalender`) kam mit der
+ * DivvyDiary-Integration hinzu (docs/CALENDAR_INTEGRATION.md).
+ * React Router 8 im Library-Modus (kein SSR/Framework-Modus, ARCHITECTURE.md K-2).
+ * Hash-Router statt Browser-Router: GitHub Pages unterstuetzt kein
+ * server-seitiges SPA-Fallback fuer direkt aufgerufene/neu geladene Routen
+ * (DECISIONS.md D-030). URLs haben dadurch die Form `/#/login` statt `/login`.
+ *
+ * Nachgeladen wird alles ausser dem Geruest und der Uebersicht: Beide
+ * entscheiden den ersten Bildschirm, alles andere waere Ballast im Startpaket.
+ * Auch die Anmeldung wird nachgeladen — sie zieht Formular- und
+ * Pruefbibliotheken (react-hook-form, zod) nach sich, und wer die installierte
+ * App oeffnet, ist fast immer schon angemeldet.
+ *
+ * `React.lazy` statt der `lazy`-Route-Eigenschaft, weil der Ladezustand so
+ * sichtbar bleibt (Suspense-Rahmen in der App-Huelle) statt die Navigation
+ * stumm zu verzoegern.
+ *
+ * Die `import()`-Aufrufe stehen in `routeChunks.ts`, damit das Vorausladen der
+ * Navigation dieselben Teile anfordert wie die Routentabelle.
+ */
+const PaymentsPage = React.lazy(async () => ({
+  default: (await routeChunks.payments()).PaymentsPage,
+}));
+const PaymentDetailPage = React.lazy(async () => ({
+  default: (await routeChunks.paymentDetail()).PaymentDetailPage,
+}));
+const DataQualityPage = React.lazy(async () => ({
+  default: (await routeChunks.dataQuality()).DataQualityPage,
+}));
+const CalendarPage = React.lazy(async () => ({
+  default: (await routeChunks.calendar()).CalendarPage,
+}));
+const DepotPage = React.lazy(async () => ({
+  default: (await routeChunks.depot()).DepotPage,
+}));
+const SecuritiesPage = React.lazy(async () => ({
+  default: (await routeChunks.securities()).SecuritiesPage,
+}));
+const DevelopmentTab = React.lazy(async () => ({
+  default: (await routeChunks.depotDevelopment()).DevelopmentTab,
+}));
+const SecurityDetailPage = React.lazy(async () => ({
+  default: (await import("@/features/securities/SecurityDetailPage")).SecurityDetailPage,
+}));
+const StatisticsPage = React.lazy(async () => ({
+  default: (await routeChunks.statistics()).StatisticsPage,
+}));
+const OverviewTab = React.lazy(async () => ({
+  default: (await routeChunks.statisticsOverview()).OverviewTab,
+}));
+const HistoryTab = React.lazy(async () => ({
+  default: (await routeChunks.statisticsHistory()).HistoryTab,
+}));
+const ComparisonTab = React.lazy(async () => ({
+  default: (await routeChunks.statisticsComparison()).ComparisonTab,
+}));
+const CompaniesTab = React.lazy(async () => ({
+  default: (await routeChunks.statisticsCompanies()).CompaniesTab,
+}));
+const DepotsTab = React.lazy(async () => ({
+  default: (await routeChunks.statisticsDepots()).DepotsTab,
+}));
+const GoalsPage = React.lazy(async () => ({
+  default: (await routeChunks.goals()).GoalsPage,
+}));
+const GoalsTab = React.lazy(async () => ({
+  default: (await routeChunks.goalsTab()).GoalsTab,
+}));
+const GoalDetailPage = React.lazy(async () => ({
+  default: (await routeChunks.goalDetail()).GoalDetailPage,
+}));
+const SettingsPage = React.lazy(async () => ({
+  default: (await routeChunks.settings()).SettingsPage,
+}));
+const GeneralSettingsTab = React.lazy(async () => ({
+  default: (await routeChunks.settingsGeneral()).GeneralSettingsTab,
+}));
+const DepotsPage = React.lazy(async () => ({
+  default: (await routeChunks.settingsDepots()).DepotsPage,
+}));
+const ImportsPage = React.lazy(async () => ({
+  default: (await routeChunks.settingsImports()).ImportsPage,
+}));
+const BackupPage = React.lazy(async () => ({
+  default: (await routeChunks.settingsBackup()).BackupPage,
+}));
+const MorePage = React.lazy(async () => ({
+  default: (await routeChunks.more()).MorePage,
+}));
+const LoginPage = React.lazy(async () => ({
+  default: (await routeChunks.login()).LoginPage,
+}));
+const RegisterPage = React.lazy(async () => ({
+  default: (await routeChunks.register()).RegisterPage,
+}));
+const ResetPasswordRequestPage = React.lazy(async () => ({
+  default: (await routeChunks.resetPasswordRequest()).ResetPasswordRequestPage,
+}));
+const ResetPasswordConfirmPage = React.lazy(async () => ({
+  default: (await routeChunks.resetPasswordConfirm()).ResetPasswordConfirmPage,
+}));
+
+function standalone(element: React.ReactNode): React.ReactElement {
+  return <React.Suspense fallback={<AuthPageSkeleton />}>{element}</React.Suspense>;
+}
+
+/**
+ * Dauerhafte Weiterleitung, die die Suchparameter mitnimmt. `<Navigate>` allein
+ * verwuerfe sie — ein Lesezeichen auf `…/entwicklung?security=…` verloere damit
+ * genau die Auswahl, die es festhalten sollte.
+ */
+function RedirectTo({
+  pathname,
+  set,
+}: {
+  pathname: string;
+  /** Suchparameter, die das neue Ziel zusaetzlich braucht. */
+  set?: Record<string, string>;
+}): React.ReactElement {
+  const { search } = useLocation();
+  const params = new URLSearchParams(search);
+  for (const [key, value] of Object.entries(set ?? {})) params.set(key, value);
+  const query = params.toString();
+  return <Navigate to={{ pathname, search: query ? `?${query}` : "" }} replace />;
+}
+
+/** Weiterleitung einer Detailseite: `/unternehmen/:id` → `/depot/:id`. */
+function RedirectToAsset(): React.ReactElement {
+  const { id = "" } = useParams();
+  return <RedirectTo pathname={`/depot/${id}`} />;
+}
+
+export const router = createHashRouter([
+  { path: "/login", element: standalone(<LoginPage />) },
+  { path: "/registrieren", element: standalone(<RegisterPage />) },
+  { path: "/passwort-vergessen", element: standalone(<ResetPasswordRequestPage />) },
+  { path: "/passwort-zuruecksetzen", element: standalone(<ResetPasswordConfirmPage />) },
+  {
+    path: "/",
+    // Die Anmeldepruefung sitzt in der Huelle um den Inhalt (AppShell), nicht
+    // um die Huelle: So steht die Navigation sofort, waehrend der Auth-Client die
+    // Sitzung prueft bzw. ein abgelaufenes Token erneuert.
+    element: <AppShell />,
+    children: [
+      { index: true, element: <DashboardPage /> },
+      { path: "eingaenge", element: <PaymentsPage /> },
+      { path: "eingaenge/neu", element: <PaymentComposerRoute /> },
+      { path: "eingaenge/datenqualitaet", element: <DataQualityPage /> },
+      { path: "eingaenge/:id", element: <PaymentDetailPage /> },
+      { path: "eingaenge/:id/bearbeiten", element: <PaymentComposerRoute /> },
+      { path: "kalender", element: <CalendarPage /> },
+      {
+        path: "depot",
+        element: <DepotPage />,
+        children: [
+          { index: true, element: <SecuritiesPage /> },
+          { path: "entwicklung", element: <DevelopmentTab /> },
+        ],
+      },
+      // Die Detailseite steht **neben** der Reiterhuelle, nicht in ihr: Sie
+      // zeigt eine einzelne Position, und Reiter darueber gehoerten zu einer
+      // Ebene, die sie verlassen hat. Der statische Reiterpfad rankt vor dem
+      // dynamischen Segment; ein Asset mit der Kennung „entwicklung" gibt es
+      // nicht (UUIDs).
+      { path: "depot/:id", element: <SecurityDetailPage /> },
+      {
+        path: "statistiken",
+        element: <StatisticsPage />,
+        children: [
+          { index: true, element: <OverviewTab /> },
+          { path: "verlauf", element: <HistoryTab /> },
+          { path: "vergleich", element: <ComparisonTab /> },
+          { path: "unternehmen", element: <CompaniesTab /> },
+          { path: "depots", element: <DepotsTab /> },
+        ],
+      },
+      {
+        path: "ziele",
+        element: <GoalsPage />,
+        children: [
+          { index: true, element: <GoalsTab status="current" /> },
+          { path: "bevorstehend", element: <GoalsTab status="upcoming" /> },
+          { path: "beendet", element: <GoalsTab status="ended" /> },
+        ],
+      },
+      // Statische Reiterpfade ranken vor dem dynamischen Segment; ein Ziel mit
+      // der Kennung „beendet" gibt es nicht (UUIDs).
+      { path: "ziele/:id", element: <GoalDetailPage /> },
+      {
+        path: "einstellungen",
+        element: <SettingsPage />,
+        children: [
+          { index: true, element: <GeneralSettingsTab /> },
+          { path: "depots", element: <DepotsPage /> },
+          { path: "importe", element: <ImportsPage /> },
+          { path: "datensicherung", element: <BackupPage /> },
+        ],
+      },
+      // Aus „Unternehmen" ist „Depot" geworden, und die „Entwicklung" ist aus
+      // der Statistik dorthin gewandert. Die alten Pfade bleiben als dauerhafte
+      // Weiterleitung bestehen — samt Suchparametern, damit ein Lesezeichen auf
+      // eine gefilterte Ansicht sie nicht unterwegs verliert.
+      { path: "unternehmen", element: <RedirectTo pathname="/depot" /> },
+      { path: "unternehmen/:id", element: <RedirectToAsset /> },
+      {
+        path: "statistiken/entwicklung",
+        element: <RedirectTo pathname="/depot/entwicklung" />,
+      },
+      // „Jahre" und „Monate" sind der Reiter „Verlauf", der „Breakdown" ist die
+      // Matrix der Uebersicht. Die alten Pfade leiten samt Filtern dorthin.
+      {
+        path: "statistiken/jahre",
+        element: <RedirectTo pathname="/statistiken/verlauf" />,
+      },
+      {
+        path: "statistiken/monate",
+        element: <RedirectTo pathname="/statistiken/verlauf" set={{ nach: "monate" }} />,
+      },
+      { path: "statistiken/breakdown", element: <RedirectTo pathname="/statistiken" /> },
+      // Die drei Bereiche sind in die Einstellungen verschoben. Die alten
+      // Pfade bleiben als dauerhafte Weiterleitung bestehen, damit bestehende
+      // Links, Lesezeichen und der Verlauf weiter funktionieren.
+      { path: "depots", element: <Navigate to="/einstellungen/depots" replace /> },
+      { path: "importe", element: <Navigate to="/einstellungen/importe" replace /> },
+      {
+        path: "datensicherung",
+        element: <Navigate to="/einstellungen/datensicherung" replace />,
+      },
+      { path: "mehr", element: <MorePage /> },
+      { path: "*", element: <NotFoundPage /> },
+    ],
+  },
+]);

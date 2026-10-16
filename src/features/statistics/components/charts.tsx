@@ -1,0 +1,328 @@
+import { Link, useNavigate } from "react-router";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Line,
+  LineChart,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import { ChartLegend } from "@/components/charts/ChartLegend";
+import {
+  ChartCanvas,
+  ChartDataTable,
+  ChartEmpty,
+  ChartRowHeader,
+  ChartTooltipBox,
+} from "@/components/charts/chart";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  CHART_BAR_CURSOR,
+  CHART_BAR_RADIUS,
+  CHART_MAX_BAR_SIZE,
+  CHART_GRID_PROPS,
+  CHART_LINE_CURSOR,
+  CHART_MARGIN,
+  CHART_SERIES_PROPS,
+  CHART_X_AXIS_PROPS,
+  CHART_Y_AXIS_PROPS,
+} from "@/components/charts/chartTheme";
+import { formatMoney, type Money } from "@/lib/money";
+import { formatPayments } from "../format";
+import { formatCountNumber } from "@/lib/utils/formatNumber";
+
+/** Vorberechneter Balkenpunkt. Die Werte stammen ausschliesslich aus der Analytics-Schicht. */
+export interface CategoryDatum {
+  key: string;
+  label: string;
+  /** Rein visueller Balkenwert (Money.toChartNumber, §1). */
+  value: number;
+  money: Money;
+  count: number;
+  /** Optionales Drill-down-Ziel. */
+  href?: string;
+}
+
+interface CategoryTooltipProps {
+  active?: boolean;
+  payload?: { payload: CategoryDatum }[];
+}
+
+function CategoryTooltip({ active, payload }: CategoryTooltipProps) {
+  if (!active || !payload || payload.length === 0) return null;
+  const row = payload[0].payload;
+  return (
+    <ChartTooltipBox>
+      <p className="font-medium">{row.label}</p>
+      <p>{formatMoney(row.money)}</p>
+      <p className="text-muted-foreground">{formatPayments(row.count)}</p>
+    </ChartTooltipBox>
+  );
+}
+
+interface CategoryBarChartProps {
+  data: CategoryDatum[];
+  /** Beschriftung fuer das `role="img"` und die Datentabelle. */
+  ariaLabel: string;
+  /** Ueberschrift der Kategoriespalte in der Datentabelle. */
+  categoryHeader: string;
+  emptyMessage?: string;
+  /**
+   * Farbe der Balken. Zeitverläufe (Statistik › Verlauf) stehen in der
+   * Akzentfarbe wie der laufende Zeitraum auf der Übersicht; Ranglisten
+   * bleiben in Vordergrundfarbe.
+   */
+  color?: "foreground" | "primary";
+}
+
+/**
+ * Vertikales Balkendiagramm fuer Zeitreihen (Jahres-/Monatsentwicklung).
+ * Enthaelt **keine** Berechnung — alle Werte sind vorab aggregiert. Zu jedem
+ * Diagramm gehoert eine zugaengliche Datentabelle (§17). Ein Klick auf einen
+ * Balken folgt dem hinterlegten Drill-down-Ziel.
+ */
+export function CategoryBarChart({
+  data,
+  ariaLabel,
+  categoryHeader,
+  emptyMessage = "Keine Daten für die aktuelle Auswahl.",
+  color = "foreground",
+}: CategoryBarChartProps) {
+  const navigate = useNavigate();
+
+  if (data.length === 0 || data.every((row) => row.value === 0)) {
+    return <ChartEmpty>{emptyMessage}</ChartEmpty>;
+  }
+
+  return (
+    <div className="space-y-4">
+      <ChartCanvas ariaLabel={ariaLabel}>
+        <BarChart data={data} margin={CHART_MARGIN}>
+          <CartesianGrid {...CHART_GRID_PROPS} />
+          <XAxis dataKey="label" {...CHART_X_AXIS_PROPS} />
+          <YAxis {...CHART_Y_AXIS_PROPS} />
+          <Tooltip content={<CategoryTooltip />} cursor={CHART_BAR_CURSOR} />
+          <Bar
+            dataKey="value"
+            name="Nettodividende"
+            fill={`var(--${color})`}
+            radius={CHART_BAR_RADIUS}
+            maxBarSize={CHART_MAX_BAR_SIZE}
+            {...CHART_SERIES_PROPS}
+            cursor="pointer"
+            onClick={(entry) => {
+              const row = (entry as unknown as { payload?: CategoryDatum }).payload;
+              if (row?.href) void navigate(row.href);
+            }}
+          />
+        </BarChart>
+      </ChartCanvas>
+
+      <ChartDataTable>
+        <Table>
+          <caption className="sr-only">{ariaLabel}</caption>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{categoryHeader}</TableHead>
+              <TableHead className="text-right">Nettodividende</TableHead>
+              <TableHead className="text-right">Zahlungen</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data.map((row) => (
+              <TableRow key={row.key}>
+                {/* Der Drill-down lag zuvor ausschliesslich auf dem Balken —
+                    als `onClick`. Damit war er per Maus erreichbar und sonst
+                    gar nicht: Tastatur und Screenreader kamen nicht zu den
+                    Zahlen hinter einer Kennzahl. Die Datentabelle ist der
+                    zugaengliche Zwilling des Diagramms und traegt das Ziel
+                    deshalb als echten Link. */}
+                <ChartRowHeader>
+                  {row.href ? (
+                    <Link
+                      to={row.href}
+                      className="rounded-sm outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      {row.label}
+                    </Link>
+                  ) : (
+                    row.label
+                  )}
+                </ChartRowHeader>
+                <TableCell className="text-right tabular-nums">
+                  {formatMoney(row.money)}
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {formatCountNumber(row.count)}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </ChartDataTable>
+    </div>
+  );
+}
+
+// ============================================================================
+// Zeitraumvergleich (zwei Reihen)
+// ============================================================================
+
+/** Ein Punkt der Gegenüberstellung; beide Werte sind vorab aggregiert. */
+export interface ComparisonPoint {
+  label: string;
+  current: number;
+  reference: number;
+  currentMoney: Money;
+  referenceMoney: Money;
+}
+
+interface ComparisonLineChartProps {
+  points: ComparisonPoint[];
+  /** Beschriftung der aktuellen Reihe, z. B. „2026". */
+  currentLabel: string;
+  /** Beschriftung der Vergleichsreihe, z. B. „2025". */
+  referenceLabel: string;
+  ariaLabel: string;
+}
+
+/**
+ * Kumulierter Verlauf zweier Zeitraeume als Linien.
+ *
+ * **Linien, keine Balken:** Gefragt ist der Verlauf — „liege ich vorn oder
+ * zurueck, und seit wann?". Der Abstand zwischen zwei Linien beantwortet das
+ * auf einen Blick; nebeneinanderstehende Balken muesste man Paar fuer Paar
+ * lesen.
+ *
+ * **Farben wie der Kopf der Uebersicht** (seit 1.12.0): der aktuelle
+ * Zeitraum in der Akzentfarbe (Orange), die Referenz in `--series-prior`
+ * (neutrales Grau, 3,6:1 hell / 3,5:1 dunkel) und gestrichelt.
+ *
+ * **Identitaet haengt nicht an der Farbe allein:** Die Vergleichsreihe ist
+ * zusaetzlich gestrichelt, beide Reihen sind benannt (Legende), und die
+ * Datentabelle traegt dieselben Werte als Text.
+ */
+export function ComparisonLineChart({
+  points,
+  currentLabel,
+  referenceLabel,
+  ariaLabel,
+}: ComparisonLineChartProps) {
+  if (points.length === 0) {
+    return <ChartEmpty>Keine Daten für die aktuelle Auswahl.</ChartEmpty>;
+  }
+
+  return (
+    <div className="space-y-4">
+      <ChartCanvas ariaLabel={ariaLabel}>
+        <LineChart data={points} margin={CHART_MARGIN}>
+          <CartesianGrid {...CHART_GRID_PROPS} />
+          <XAxis dataKey="label" {...CHART_X_AXIS_PROPS} />
+          <YAxis {...CHART_Y_AXIS_PROPS} />
+          <Tooltip
+            content={
+              <ComparisonTooltip
+                currentLabel={currentLabel}
+                referenceLabel={referenceLabel}
+              />
+            }
+            cursor={CHART_LINE_CURSOR}
+          />
+          {/* Die Vergleichsreihe liegt hinten und traegt einen Strich: Der
+                Blick soll zuerst auf dem aktuellen Zeitraum landen. */}
+          <Line
+            type="linear"
+            dataKey="reference"
+            name={referenceLabel}
+            stroke="var(--series-prior)"
+            strokeWidth={1.5}
+            strokeDasharray="3 3"
+            dot={false}
+            activeDot={{ r: 5 }}
+            {...CHART_SERIES_PROPS}
+          />
+          <Line
+            type="linear"
+            dataKey="current"
+            name={currentLabel}
+            stroke="var(--primary)"
+            strokeWidth={2.25}
+            dot={false}
+            activeDot={{ r: 5 }}
+            {...CHART_SERIES_PROPS}
+          />
+        </LineChart>
+      </ChartCanvas>
+
+      <ChartLegend
+        items={[
+          { label: currentLabel, color: "var(--primary)" },
+          { label: referenceLabel, color: "var(--series-prior)", dashed: true },
+        ]}
+      />
+
+      <ChartDataTable>
+        <Table>
+          <caption className="sr-only">{ariaLabel}</caption>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Monat</TableHead>
+              <TableHead className="text-right">{currentLabel}</TableHead>
+              <TableHead className="text-right">{referenceLabel}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {points.map((point) => (
+              <TableRow key={point.label}>
+                <ChartRowHeader>{point.label}</ChartRowHeader>
+                <TableCell className="text-right tabular-nums">
+                  {formatMoney(point.currentMoney)}
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {formatMoney(point.referenceMoney)}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </ChartDataTable>
+    </div>
+  );
+}
+
+interface ComparisonTooltipProps {
+  active?: boolean;
+  payload?: { payload?: ComparisonPoint }[];
+  currentLabel: string;
+  referenceLabel: string;
+}
+
+function ComparisonTooltip({
+  active,
+  payload,
+  currentLabel,
+  referenceLabel,
+}: ComparisonTooltipProps) {
+  const row = payload?.[0]?.payload;
+  if (!active || !row) return null;
+  return (
+    <ChartTooltipBox>
+      <p className="font-medium">{row.label}</p>
+      <p>
+        {currentLabel}: {formatMoney(row.currentMoney)}
+      </p>
+      <p className="text-muted-foreground">
+        {referenceLabel}: {formatMoney(row.referenceMoney)}
+      </p>
+    </ChartTooltipBox>
+  );
+}
