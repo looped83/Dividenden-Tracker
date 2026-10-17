@@ -308,9 +308,11 @@ export function SecurityDetailPage() {
     });
   }
 
+  // Reihenfolge wie bei Banken und Kursportalen: ISIN, WKN, Ticker.
   const identity: [label: string, value: string][] = [];
-  if (security.ticker?.trim()) identity.push(["Ticker", security.ticker.trim()]);
   if (security.isin?.trim()) identity.push(["ISIN", security.isin.trim()]);
+  if (security.wkn?.trim()) identity.push(["WKN", security.wkn.trim()]);
+  if (security.ticker?.trim()) identity.push(["Ticker", security.ticker.trim()]);
 
   return (
     <div className="space-y-6">
@@ -359,14 +361,16 @@ export function SecurityDetailPage() {
         title={security.name}
         badge={archived ? <Badge variant="warning">Archiviert</Badge> : undefined}
         subtitle={
-          identity.length > 0
-            ? identity.map(([label, value], index) => (
-                <React.Fragment key={label}>
-                  {index > 0 && <span aria-hidden>·</span>}
-                  <CopyText label={label} value={value} />
-                </React.Fragment>
-              ))
-            : undefined
+          identity.length > 0 ? (
+            // Ohne Trennpunkte: Das Kopiersymbol hinter jedem Wert trennt
+            // schon, und beim Umbruch auf schmalen Telefonen bliebe sonst ein
+            // Punkt am Zeilenende haengen.
+            <span className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              {identity.map(([label, value]) => (
+                <CopyText key={label} label={label} value={value} />
+              ))}
+            </span>
+          ) : undefined
         }
       />
 
@@ -527,9 +531,9 @@ export function SecurityDetailPage() {
           >
             <div className="space-y-4">
               <div>
-                <Field label="Ticker" value={security.ticker} copyable />
                 <Field label="ISIN" value={security.isin} copyable />
                 <Field label="WKN" value={security.wkn} copyable />
+                <Field label="Ticker" value={security.ticker} copyable />
                 <Field label="Land" value={security.country} />
                 <Field label="Branche" value={security.sector} />
                 <Field label="Währung" value={security.currency} />
