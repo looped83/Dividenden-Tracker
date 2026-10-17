@@ -41,11 +41,12 @@ function DeltaText({ delta }: { delta: Delta }) {
   );
 }
 
-type HistoryView = "payments" | "years";
+type HistoryView = "monthly" | "cumulative";
 
+// Wortlaut und Reihenfolge wie der Umschalter der Uebersicht.
 const VIEW_OPTIONS: readonly SegmentOption<HistoryView>[] = [
-  { value: "payments", label: "Dividenden" },
-  { value: "years", label: "Jahre" },
+  { value: "cumulative", label: "Kumuliert" },
+  { value: "monthly", label: "Monatlich" },
 ];
 
 /**
@@ -55,8 +56,8 @@ const VIEW_OPTIONS: readonly SegmentOption<HistoryView>[] = [
  * Assetseite (seit 1.26.0; zuvor eigene CSS-Balken) — gleiche Achsen, gleicher
  * Tooltip, gleiche Datentabelle. Die geoeffnete Dividende steht in der
  * Akzentfarbe; die Balken fuehren bewusst nirgendwohin, der Tooltip zeigt
- * Datum und Betrag. Der Umschalter zeigt dieselbe Historie je Jahr (seit
- * 1.27.0), mit dem Jahr dieser Dividende hervorgehoben.
+ * Datum und Betrag. Der Umschalter zeigt dieselben Dividenden kumuliert —
+ * insgesamt erhalten bis zur jeweiligen Zahlung (seit 1.27.0).
  */
 export function PaymentInsightsView({
   insights,
@@ -109,38 +110,29 @@ export function PaymentInsightsView({
     });
   }
 
-  const [view, setView] = React.useState<HistoryView>("payments");
+  const [view, setView] = React.useState<HistoryView>("monthly");
+  const { historyTotals } = insights;
 
-  const paymentData = React.useMemo<CategoryDatum[]>(
+  const chartData = React.useMemo<CategoryDatum[]>(
     () =>
-      history.map((entry) => ({
-        key: entry.id,
-        label: monthNameDeShort(monthOf(entry.payDate)),
-        detail: formatCalendarDate(entry.actualPayDate),
-        value: entry.netAmount.toChartNumber(),
-        money: entry.netAmount,
-        count: 1,
-        highlight: entry.id === paymentId,
-      })),
-    [history, paymentId],
+      history.map((entry, index) => {
+        // Kumuliert: insgesamt erhalten bis einschliesslich dieser Dividende.
+        const money =
+          view === "cumulative"
+            ? (historyTotals[index] ?? entry.netAmount)
+            : entry.netAmount;
+        return {
+          key: entry.id,
+          label: monthNameDeShort(monthOf(entry.payDate)),
+          detail: formatCalendarDate(entry.actualPayDate),
+          value: money.toChartNumber(),
+          money,
+          count: 1,
+          highlight: entry.id === paymentId,
+        };
+      }),
+    [history, historyTotals, paymentId, view],
   );
-
-  const yearData = React.useMemo<CategoryDatum[]>(
-    () =>
-      insights.perYear.map((bucket) => ({
-        key: String(bucket.year),
-        label: String(bucket.year),
-        value: bucket.net.toChartNumber(),
-        money: bucket.net,
-        count: bucket.count,
-        highlight: bucket.year === insights.year.year,
-      })),
-    [insights.perYear, insights.year.year],
-  );
-
-  // Die Jahressicht lohnt erst ab zwei Jahren; sonst entfaellt der Umschalter.
-  const hasYears = yearData.length > 1;
-  const shown = hasYears ? view : "payments";
 
   const summary: KpiStat[] = [
     {
@@ -171,38 +163,31 @@ export function PaymentInsightsView({
       {stats.length > 0 && <KpiStats stats={stats} />}
 
       <div className="grid grid-cols-1 gap-10 pt-4 lg:grid-cols-2 lg:gap-x-16">
-        {paymentData.length > 1 && (
+        {chartData.length > 1 && (
           <Section
             title="Verlauf"
             action={
-              hasYears ? (
-                <SegmentedControl
-                  variant="pill"
-                  label="Verlauf nach"
-                  options={VIEW_OPTIONS}
-                  value={view}
-                  onChange={setView}
-                />
-              ) : undefined
+              <SegmentedControl
+                variant="pill"
+                label="Verlauf als"
+                options={VIEW_OPTIONS}
+                value={view}
+                onChange={setView}
+              />
             }
           >
             <div>
-              {shown === "payments" ? (
-                <CategoryBarChart
-                  data={paymentData}
-                  ariaLabel={`Dividenden von ${securityName}`}
-                  categoryHeader="Datum"
-                  showCount={false}
-                  tableOrder="desc"
-                />
-              ) : (
-                <CategoryBarChart
-                  data={yearData}
-                  ariaLabel={`Dividenden von ${securityName} je Jahr`}
-                  categoryHeader="Jahr"
-                  tableOrder="desc"
-                />
-              )}
+              <CategoryBarChart
+                data={chartData}
+                ariaLabel={
+                  view === "cumulative"
+                    ? `Kumulierte Dividenden von ${securityName}`
+                    : `Dividenden von ${securityName}`
+                }
+                categoryHeader="Datum"
+                showCount={false}
+                tableOrder="desc"
+              />
             </div>
           </Section>
         )}

@@ -51,11 +51,9 @@ describe("derivePaymentInsights", () => {
     expect(result?.year.net.toStringValue()).toBe("685.00");
     expect(result?.total.toStringValue()).toBe("1476.00");
     expect(result?.firstDate).toBe("2024-11-15");
-    expect(result?.perYear.map((bucket) => [bucket.year, bucket.count])).toEqual([
-      [2024, 2],
-      [2025, 12],
-      [2026, 10],
-    ]);
+    // Kumuliert ab der ersten Dividende: p0..p11 vor dem Fenster (50..61 = 666 €)
+    expect(result?.historyTotals[0]?.toStringValue()).toBe("728.00");
+    expect(result?.historyTotals.at(-1)?.toStringValue()).toBe("1476.00");
   });
 
   it("füllt den Verlauf einer frühen Dividende mit späteren auf", () => {

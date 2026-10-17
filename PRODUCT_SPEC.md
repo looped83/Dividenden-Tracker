@@ -179,7 +179,7 @@ laufendes Jahr). Die Summe der gefilterten Liste muss exakt der Kennzahl entspre
 - Detailansicht ordnet die Dividende ein (seit 1.25.0): Vergleich mit dem Ø der letzten zwölf Monate,
   Rang und — je nach Ausschüttungsplan — mit der vorherigen Dividende (monatliche Zahler) oder der
   Dividende ein Jahr zuvor (alle übrigen; ohne Plan entscheidet die Historie); Verlauf der letzten
-  zwölf Dividenden des Assets im Balkendiagramm der Statistik (Tooltip, Datentabelle, Umschalter Dividenden/Jahre),
+  zwölf Dividenden des Assets im Balkendiagramm der Statistik (Tooltip, Datentabelle, Umschalter Monatlich/Kumuliert),
   Jahres- und Gesamtsumme, nächste erwartete Zahlung; Brutto-zu-Netto nur, wenn Abzüge erfasst sind.
   Metadaten (Quelle, Zeitstempel, Änderungsverlauf, Importherkunft) zeigt sie nicht mehr — das Audit
   Log bleibt in der Datenbank und in der Sicherung erhalten
