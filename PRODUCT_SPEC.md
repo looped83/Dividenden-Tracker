@@ -176,7 +176,11 @@ laufendes Jahr). Die Summe der gefilterten Liste muss exakt der Kennzahl entspre
 - Kontrollierte Bearbeitung: Änderungsdialog mit Begründungsfeld (optional), jede Änderung im Audit Log
 - Storno (Korrektur-Gegenbuchung oder Kennzeichnung) und Archivierung — kein Löschen, außer
   endgültiges Entfernen eines **bereits archivierten** Eingangs (enge Ausnahme, DECISIONS.md D-034)
-- Detailansicht mit: allen Feldern, Änderungsverlauf, Herkunft (manuell/Import), Link zum ursprünglichen Import inkl. Dateiname und Zeilennummer
+- Detailansicht ordnet die Dividende ein (seit 1.25.0): Vergleich mit der vorherigen Dividende, dem
+  Vorjahr und dem Ø der letzten zwölf Monate, Rang, Verlauf der letzten zwölf Dividenden des Assets,
+  Jahres- und Gesamtsumme, nächste erwartete Zahlung; Brutto-zu-Netto nur, wenn Abzüge erfasst sind.
+  Metadaten (Quelle, Zeitstempel, Änderungsverlauf, Importherkunft) zeigt sie nicht mehr — das Audit
+  Log bleibt in der Datenbank und in der Sicherung erhalten
 
 ### 5.3 Depot
 
