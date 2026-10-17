@@ -20,7 +20,7 @@ import {
 } from "@/features/payments/paymentInsights";
 
 /** „▲ 7,8 %" in Gruen, „▼ 2,1 %" in Rot, „±0 %" gedaempft. */
-function DeltaText({ delta }: { delta: Delta }) {
+export function DeltaText({ delta }: { delta: Delta }) {
   if (delta.percent === null) return <span>—</span>;
   const direction = delta.difference.isPositive()
     ? "up"
