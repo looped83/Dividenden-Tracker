@@ -138,7 +138,6 @@ Eigene zusammengesetzte Komponenten (fachlich):
 | `ComparisonBreakdown` | Gegenüberstellung Zeile für Zeile (Monate oder Unternehmen): ab `md` eine Tabelle mit vier Spalten, darunter eine Liste — je Zeile Name und Differenz, darunter beide Zeiträume. Vier Spalten passen bei 390 px nicht nebeneinander, und die Seite soll auf dem Telefon nicht seitlich verschiebbar sein |
 | `EntitySelect` | **Die** Auswahlliste für Unternehmen und Depots — überall dieselbe: neutrale Auswahl („Alle Unternehmen"), darunter die Gruppen „Aktiv" und „Archiviert" (leere Gruppe entfällt), sortiert nach deutschem Alphabet. Archivierte bleiben wählbar, stehen aber nicht zwischen den aktiven. Neue Unternehmens-/Depotauswahlen in Filterleisten verwenden ausschließlich diese Komponente |
 | `ImportWizard` | Schrittleiste, Rohdatenvorschau (Monospace-Grid), Mapping-Zeilen, Bilanzanzeige |
-| `AuditTrail` | Änderungsverlauf als vertikale Liste: Zeitpunkt, Aktion, Feld-Diffs (alt → neu) |
 | `EmptyState` | Illustration­sfrei: Icon, ein Satz, primäre Aktion („Erste Dividende erfassen", „Datei importieren") |
 | `ConfirmDialog` / `ConfirmSummary` | **Ein** Bestätigungsdialog für Folgenreiches (Stornieren, Löschen; `components/ui/confirm-dialog.tsx`): Titel als Frage („Dividende stornieren?"), betroffene Daten auf gedämpfter Fläche, ein Satz zur Wirkung, optional Eingaben (Grund), dann „Abbrechen" und die benannte Aktion — nie ein generisches „OK" |
 | `GoalProgress` | Zielfortschritt: Balken, „X von Y (Z %)", Kappung 100 % visuell |
