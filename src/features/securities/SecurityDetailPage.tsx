@@ -463,7 +463,10 @@ export function SecurityDetailPage() {
               ) : (
                 // Die Zaehlregel steht nicht mehr hier: Sie gilt fuer jeden Plan
                 // gleich und sagte auf der Seite eines Assets nichts Eigenes.
-                <ul className="flex flex-wrap gap-1.5">
+                // Zwei Reihen zu je sechs Monaten in gleich breiten Spalten
+                // (seit 1.30.1): Zuvor brach die Reihe je nach Breite nach
+                // sieben, neun oder elf Monaten um.
+                <ul className="grid w-fit grid-cols-6 gap-1.5">
                   {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => {
                     const planned = payoutMonths.includes(month);
                     return (
@@ -471,8 +474,8 @@ export function SecurityDetailPage() {
                         <span
                           className={
                             planned
-                              ? "inline-flex min-w-11 justify-center rounded-full bg-accent px-2 py-1 text-sm font-semibold text-foreground"
-                              : "inline-flex min-w-11 justify-center rounded-full px-2 py-1 text-sm text-muted-foreground"
+                              ? "flex min-w-11 justify-center rounded-full bg-accent px-2 py-1 text-sm font-semibold text-foreground"
+                              : "flex min-w-11 justify-center rounded-full px-2 py-1 text-sm text-muted-foreground"
                           }
                         >
                           <span className="sr-only">
