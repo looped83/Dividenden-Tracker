@@ -5,12 +5,7 @@ import { Section } from "@/components/ui/section";
 import { Select } from "@/components/ui/select";
 import { AmountText } from "@/components/money/AmountText";
 import { cn } from "@/lib/utils/cn";
-import {
-  formatAmount,
-  formatMoney,
-  formatPercent,
-  type Money,
-} from "@/lib/money";
+import { formatAmount, formatMoney, formatPercent, type Money } from "@/lib/money";
 import { MD_BREAKPOINT_QUERY, useMediaQuery } from "@/lib/hooks/useMediaQuery";
 import {
   breakdownMatrix,
