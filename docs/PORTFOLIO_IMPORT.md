@@ -101,10 +101,11 @@ mehr gibt. Ohne diese Unterscheidung bliebe eine verkaufte Position dauerhaft mi
 letzten Stand stehen — still falsch, und das ist die schlimmste Art falsch. Überschrift und
 gelbe Datumsmarke sagen das allein; ein zusätzlicher Erklärsatz entfällt.
 
-Die Karte „Position" zeigt oben vier Kennzahlen: erwartete Jahresdividende neben dem tatsächlich
-Erhaltenen des letzten abgeschlossenen Kalenderjahres, darunter Marktwert (mit Gewinn) und
-Rendite (mit Rendite auf Einstand). Stückzahl, Kurs, Einstand, Dividende je Aktie, Rhythmus und
-Wachstum stehen unter „Alle Kennzahlen".
+Seit 1.30.0 steht die erwartete Jahresdividende im Kopf der Assetseite, neben dem tatsächlich
+Erhaltenen des letzten abgeschlossenen Kalenderjahres und der nächsten geplanten Dividende. Der
+Abschnitt „Position" folgt nach Verlauf und letzten Dividenden: Marktwert (mit Gewinn) und
+Rendite (mit Rendite auf Einstand) als Kennzahlen, darunter Stückzahl, Kurs, Einstand, Dividende
+je Aktie, Rhythmus und Wachstum offen als Zeilen.
 
 ## 5. Zuordnung und Stammdaten
 

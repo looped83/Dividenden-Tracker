@@ -6,6 +6,7 @@ import { PageSkeleton } from "@/components/layout/PageSkeleton";
 import { DetailBackLink, DetailHeader } from "@/components/layout/DetailHeader";
 import { Badge } from "@/components/ui/badge";
 import { Section } from "@/components/ui/section";
+import { DetailRow } from "@/components/ui/detail-row";
 import { EmptyState } from "@/components/ui/empty-state";
 import { AmountText } from "@/components/money/AmountText";
 import { TrendPill } from "@/components/domain/KpiHero";
@@ -35,15 +36,6 @@ import {
   percentChange,
 } from "@/features/payments/paymentInsights";
 import { PaymentInsightsView } from "@/features/payments/PaymentInsightsView";
-
-function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex justify-between gap-4 border-b border-border py-3 text-[0.9375rem] last:border-0">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="text-right">{children}</span>
-    </div>
-  );
-}
 
 /**
  * Dezimalwert ohne bedeutungslose Nullen, mit mindestens `minDigits`
