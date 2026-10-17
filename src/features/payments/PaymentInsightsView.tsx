@@ -1,10 +1,11 @@
 import * as React from "react";
 import { KpiStats, type KpiStat } from "@/components/domain/KpiHero";
-import { Section, SectionLink } from "@/components/ui/section";
+import { Section } from "@/components/ui/section";
+import { SegmentedControl, type SegmentOption } from "@/components/ui/segmented";
 import { TrendTriangle } from "@/components/ui/trend-triangle";
 import { AmountText } from "@/components/money/AmountText";
 import { formatPercent } from "@/lib/money";
-import { monthNameDe, monthNameDeShort, monthOf, yearOf } from "@/lib/statistics";
+import { monthNameDeShort, monthOf, yearOf } from "@/lib/statistics";
 import { cn } from "@/lib/utils/cn";
 import { formatCalendarDate } from "@/lib/utils/formatDate";
 import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
@@ -40,28 +41,13 @@ function DeltaText({ delta }: { delta: Delta }) {
   );
 }
 
-function Row({
-  label,
-  caption,
-  children,
-}: {
-  label: string;
-  /** Zusatz unter dem Wert, gedaempft — statt einer zweiten Zeile mit eigener Beschriftung. */
-  caption?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-baseline justify-between gap-4 border-b border-border py-3 text-[0.9375rem] last:border-0">
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="text-right tabular-amount">
-        {children}
-        {caption !== undefined && (
-          <span className="block text-[0.8125rem] text-muted-foreground">{caption}</span>
-        )}
-      </dd>
-    </div>
-  );
-}
+type HistoryView = "monthly" | "cumulative";
+
+// Die einzelnen Dividenden zuerst und vorausgewaehlt, die Summe danach.
+const VIEW_OPTIONS: readonly SegmentOption<HistoryView>[] = [
+  { value: "monthly", label: "Übersicht" },
+  { value: "cumulative", label: "Kumuliert" },
+];
 
 /**
  * Die Einordnung einer Dividende: Vergleich, Verlauf, Summen.
@@ -70,7 +56,8 @@ function Row({
  * Assetseite (seit 1.26.0; zuvor eigene CSS-Balken) — gleiche Achsen, gleicher
  * Tooltip, gleiche Datentabelle. Die geoeffnete Dividende steht in der
  * Akzentfarbe; die Balken fuehren bewusst nirgendwohin, der Tooltip zeigt
- * Datum und Betrag.
+ * Datum und Betrag. Der Umschalter zeigt dieselben Dividenden kumuliert —
+ * insgesamt erhalten bis zur jeweiligen Zahlung (seit 1.27.0).
  */
 export function PaymentInsightsView({
   insights,
@@ -123,19 +110,53 @@ export function PaymentInsightsView({
     });
   }
 
+  const [view, setView] = React.useState<HistoryView>("monthly");
+  const { historyTotals } = insights;
+
   const chartData = React.useMemo<CategoryDatum[]>(
     () =>
-      history.map((entry) => ({
-        key: entry.id,
-        label: monthNameDeShort(monthOf(entry.payDate)),
-        detail: formatCalendarDate(entry.actualPayDate),
-        value: entry.netAmount.toChartNumber(),
-        money: entry.netAmount,
-        count: 1,
-        highlight: entry.id === paymentId,
-      })),
-    [history, paymentId],
+      history.map((entry, index) => {
+        // Kumuliert: insgesamt erhalten bis einschliesslich dieser Dividende.
+        const money =
+          view === "cumulative"
+            ? (historyTotals[index] ?? entry.netAmount)
+            : entry.netAmount;
+        return {
+          key: entry.id,
+          label: monthNameDeShort(monthOf(entry.payDate)),
+          detail: formatCalendarDate(entry.actualPayDate),
+          value: money.toChartNumber(),
+          money,
+          count: 1,
+          highlight: entry.id === paymentId,
+        };
+      }),
+    [history, historyTotals, paymentId, view],
   );
+
+  const summary: KpiStat[] = [
+    {
+      label: `Im Jahr ${String(insights.year.year)}`,
+      value: <AmountText amount={insights.year.net} />,
+      caption: formatCountNoun(insights.year.count, "Dividende", "Dividenden"),
+      to: `/eingaenge?security=${securityId}&year=${String(insights.year.year)}`,
+      drillLabel: `Dividenden von ${securityName} im Jahr ${String(insights.year.year)} anzeigen`,
+    },
+    {
+      label: "Insgesamt",
+      value: <AmountText amount={insights.total} />,
+      caption: `seit ${monthNameDeShort(monthOf(insights.firstDate))} ${String(yearOf(insights.firstDate))}`,
+      to: `/eingaenge?security=${securityId}`,
+      drillLabel: `Alle ${formatCountNumber(insights.count)} Dividenden von ${securityName} anzeigen`,
+    },
+  ];
+  if (insights.nextExpected) {
+    summary.push({
+      label: "Nächste",
+      value: `${monthNameDeShort(monthOf(insights.nextExpected))} ${String(yearOf(insights.nextExpected))}`,
+      caption: "laut Plan",
+    });
+  }
 
   return (
     <>
@@ -146,43 +167,35 @@ export function PaymentInsightsView({
           <Section
             title="Verlauf"
             action={
-              <SectionLink to={`/eingaenge?security=${securityId}`}>
-                Alle {formatCountNumber(insights.count)}
-              </SectionLink>
+              <SegmentedControl
+                variant="pill"
+                label="Verlauf als"
+                options={VIEW_OPTIONS}
+                value={view}
+                onChange={setView}
+              />
             }
           >
             <div>
               <CategoryBarChart
                 data={chartData}
-                ariaLabel={`Verlauf der Dividenden von ${securityName}`}
+                ariaLabel={
+                  view === "cumulative"
+                    ? `Kumulierte Dividenden von ${securityName}`
+                    : `Dividenden von ${securityName}`
+                }
                 categoryHeader="Datum"
                 showCount={false}
+                tableOrder="desc"
               />
             </div>
           </Section>
         )}
 
+        {/* Dieselbe Kennzahlleiste wie oben statt einer Zeilenliste: Summen
+            sind Kennzahlen, und die Leiste fuehrt per Tipp in die Liste. */}
         <Section title="Einordnung">
-          <dl>
-            <Row
-              label={`Im Jahr ${String(insights.year.year)}`}
-              caption={formatCountNoun(insights.year.count, "Dividende", "Dividenden")}
-            >
-              <AmountText amount={insights.year.net} />
-            </Row>
-            <Row
-              label="Insgesamt"
-              caption={`${formatCountNoun(insights.count, "Dividende", "Dividenden")} seit ${monthNameDeShort(monthOf(insights.firstDate))} ${String(yearOf(insights.firstDate))}`}
-            >
-              <AmountText amount={insights.total} />
-            </Row>
-            {insights.nextExpected && (
-              <Row label="Nächste erwartet">
-                {monthNameDe(monthOf(insights.nextExpected))}{" "}
-                {String(yearOf(insights.nextExpected))}
-              </Row>
-            )}
-          </dl>
+          <KpiStats stats={summary} />
         </Section>
       </div>
     </>
