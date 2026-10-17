@@ -289,12 +289,17 @@ export function StatTable<T>({
         }
       : {};
 
+  const toolbarAbove = !isWide && title !== undefined && titleAction !== undefined;
+
   // Rechts und in Inhaltsbreite — wie die Umschalter in den Köpfen der
-  // Abschnitte, nicht als Feld über die ganze Breite.
+  // Abschnitte, nicht als Feld über die ganze Breite. Über der Überschrift
+  // dagegen in fester halber Breite: Die Inhaltsbreite eines `select` folgt
+  // seiner längsten Option, und die Pille spränge beim Wechsel Assets |
+  // Depots sonst in Breite und Lage.
   const sortControl =
     !isWide && activeSort && sortableColumns.length > 1 ? (
       <FilterSort
-        compact
+        compact={!toolbarAbove}
         id={sortId}
         value={activeSort.key}
         options={sortableColumns.map((column) => ({
@@ -309,8 +314,6 @@ export function StatTable<T>({
         }}
       />
     ) : null;
-
-  const toolbarAbove = !isWide && title !== undefined && titleAction !== undefined;
 
   const table = (
     <div className="space-y-3">
@@ -493,9 +496,9 @@ export function StatTable<T>({
     return (
       <div className="space-y-5">
         {(beforeSort ?? sortControl) && (
-          <div className="flex items-center justify-end gap-3">
-            {beforeSort && <div className="min-w-0 flex-1">{beforeSort}</div>}
-            {sortControl}
+          <div className="grid grid-cols-2 items-center gap-3">
+            {beforeSort && <div className="min-w-0">{beforeSort}</div>}
+            <div className="col-start-2 min-w-0">{sortControl}</div>
           </div>
         )}
         <Section title={title} action={titleAction} actionClassName="shrink-0">
