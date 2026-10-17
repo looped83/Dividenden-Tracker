@@ -1,14 +1,22 @@
-import { Link } from "react-router";
+import * as React from "react";
 import { KpiStats, type KpiStat } from "@/components/domain/KpiHero";
 import { Section, SectionLink } from "@/components/ui/section";
 import { TrendTriangle } from "@/components/ui/trend-triangle";
 import { AmountText } from "@/components/money/AmountText";
-import { formatMoney, formatPercent } from "@/lib/money";
+import { formatPercent } from "@/lib/money";
 import { monthNameDe, monthNameDeShort, monthOf, yearOf } from "@/lib/statistics";
 import { cn } from "@/lib/utils/cn";
 import { formatCalendarDate } from "@/lib/utils/formatDate";
 import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
-import type { Delta, PaymentInsights } from "@/features/payments/paymentInsights";
+import {
+  CategoryBarChart,
+  type CategoryDatum,
+} from "@/features/statistics/components/charts";
+import {
+  deltaOf as delta,
+  type Delta,
+  type PaymentInsights,
+} from "@/features/payments/paymentInsights";
 
 /** „▲ 7,8 %" in Gruen, „▼ 2,1 %" in Rot, „±0 %" gedaempft. */
 function DeltaText({ delta }: { delta: Delta }) {
@@ -58,36 +66,45 @@ function Row({
 /**
  * Die Einordnung einer Dividende: Vergleich, Verlauf, Summen.
  *
- * Der Verlauf ist bewusst kein Diagramm aus der Statistik (Recharts), sondern
- * eine Reihe schlichter Balken aus CSS: zwoelf Werte brauchen weder Achsen
- * noch Tooltips, und die Detailseite laedt so keine Diagrammbibliothek nach.
- * Jeder Balken ist ein Link zu seiner Dividende — man blaettert durch die
- * Historie, ohne zur Liste zurueckzumuessen.
+ * Der Verlauf ist dasselbe Balkendiagramm wie in Statistik und auf der
+ * Assetseite (seit 1.26.0; zuvor eigene CSS-Balken) — gleiche Achsen, gleicher
+ * Tooltip, gleiche Datentabelle. Die geoeffnete Dividende steht in der
+ * Akzentfarbe; die Balken fuehren bewusst nirgendwohin, der Tooltip zeigt
+ * Datum und Betrag.
  */
 export function PaymentInsightsView({
   insights,
   paymentId,
   securityId,
   securityName,
-  listState,
 }: {
   insights: PaymentInsights;
   paymentId: string;
   securityId: string;
   securityName: string;
-  /** Rueckweg zur Liste, an die naechste Detailseite weitergereicht. */
-  listState: string | undefined;
 }) {
-  const { previous, trailingAverage, history } = insights;
+  const { previous, yearAgo, trailingAverage, history } = insights;
 
   const stats: KpiStat[] = [];
-  if (previous) {
+  // Erste Kachel je nach Rhythmus (Ausschuettungsplan des Assets): monatlich
+  // die vorherige Dividende, sonst dieselbe Dividende ein Jahr zuvor.
+  if (insights.monthly) {
+    if (previous) {
+      stats.push({
+        label: "Vorherige",
+        value: <AmountText amount={previous.reference} />,
+        caption: <DeltaText delta={previous} />,
+        to: `/eingaenge/${previous.id}`,
+        drillLabel: `Vorherige Dividende vom ${formatCalendarDate(previous.date)} öffnen`,
+      });
+    }
+  } else if (yearAgo) {
     stats.push({
-      label: "Vorherige",
-      value: <AmountText amount={previous.reference} />,
-      caption: <DeltaText delta={previous} />,
-      to: `/eingaenge/${previous.id}`,
-      drillLabel: `Vorherige Dividende vom ${formatCalendarDate(previous.date)} öffnen`,
+      label: "Vorjahr",
+      value: <AmountText amount={yearAgo.previousAmount} />,
+      caption: <DeltaText delta={delta(yearAgo.difference, yearAgo.previousAmount)} />,
+      to: `/eingaenge/${yearAgo.previousId}`,
+      drillLabel: `Dividende vom ${formatCalendarDate(yearAgo.previousDate)} öffnen`,
     });
   }
   if (trailingAverage) {
@@ -110,10 +127,18 @@ export function PaymentInsightsView({
     });
   }
 
-  // Rein visuelle Hoehe (toChartNumber, §1) — gerechnet wird damit nichts.
-  const maxValue = Math.max(
-    0,
-    ...history.map((entry) => entry.netAmount.toChartNumber()),
+  const chartData = React.useMemo<CategoryDatum[]>(
+    () =>
+      history.map((entry) => ({
+        key: entry.id,
+        label: monthNameDeShort(monthOf(entry.payDate)),
+        detail: formatCalendarDate(entry.actualPayDate),
+        value: entry.netAmount.toChartNumber(),
+        money: entry.netAmount,
+        count: 1,
+        highlight: entry.id === paymentId,
+      })),
+    [history, paymentId],
   );
 
   return (
@@ -121,89 +146,23 @@ export function PaymentInsightsView({
       {stats.length > 0 && <KpiStats stats={stats} />}
 
       <div className="grid grid-cols-1 gap-10 pt-4 lg:grid-cols-2 lg:gap-x-16">
-        {history.length > 1 && (
+        {chartData.length > 1 && (
           <Section
             title="Verlauf"
-            description={`${formatCountNoun(history.length, "Dividende", "Dividenden")} von ${securityName}`}
             action={
               <SectionLink to={`/eingaenge?security=${securityId}`}>
                 Alle {formatCountNumber(insights.count)}
               </SectionLink>
             }
           >
-            <ol
-              aria-label={`Verlauf der Dividenden von ${securityName}`}
-              className="flex h-36 items-stretch gap-1 pt-6"
-            >
-              {history.map((entry, index) => {
-                const current = entry.id === paymentId;
-                const height =
-                  maxValue > 0 ? (entry.netAmount.toChartNumber() / maxValue) * 100 : 0;
-                const label = `${formatCalendarDate(entry.actualPayDate)}: ${formatMoney(entry.netAmount)}`;
-                const bar = (
-                  <span
-                    className={cn(
-                      "relative block w-full rounded-t-md transition-colors motion-reduce:transition-none",
-                      current
-                        ? "bg-primary"
-                        : "bg-foreground/15 group-hover:bg-foreground/30",
-                    )}
-                    style={{ height: `${String(Math.max(height, 4))}%` }}
-                  >
-                    {current && (
-                      <span
-                        className={cn(
-                          "absolute -top-5 whitespace-nowrap text-[0.6875rem] font-semibold tabular-amount",
-                          // Am Rand buendig statt mittig, sonst ragt der
-                          // Betrag ueber den Balken des Randes hinaus.
-                          index === 0
-                            ? "left-0"
-                            : index === history.length - 1
-                              ? "right-0"
-                              : "left-1/2 -translate-x-1/2",
-                        )}
-                      >
-                        {formatMoney(entry.netAmount)}
-                      </span>
-                    )}
-                  </span>
-                );
-                return (
-                  <li key={entry.id} className="flex min-w-0 flex-1 flex-col gap-1.5">
-                    {current ? (
-                      <span
-                        aria-current="page"
-                        aria-label={label}
-                        className="flex flex-1 items-end"
-                      >
-                        {bar}
-                      </span>
-                    ) : (
-                      <Link
-                        to={`/eingaenge/${entry.id}`}
-                        state={{ from: listState }}
-                        aria-label={label}
-                        title={label}
-                        className="group flex flex-1 items-end rounded-t-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      >
-                        {bar}
-                      </Link>
-                    )}
-                    <span
-                      aria-hidden
-                      className={cn(
-                        "truncate text-center text-[0.6875rem]",
-                        current
-                          ? "font-semibold text-foreground"
-                          : "text-muted-foreground",
-                      )}
-                    >
-                      {monthNameDeShort(monthOf(entry.payDate))}
-                    </span>
-                  </li>
-                );
-              })}
-            </ol>
+            <div>
+              <CategoryBarChart
+                data={chartData}
+                ariaLabel={`Verlauf der Dividenden von ${securityName}`}
+                categoryHeader="Datum"
+                showCount={false}
+              />
+            </div>
           </Section>
         )}
 

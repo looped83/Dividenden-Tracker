@@ -16,6 +16,8 @@ export interface YearOverYearEntry {
 
 export interface YearOverYearComparison {
   direction: YearOverYearDirection;
+  /** Id der Vergleichszahlung (fuer den Weg dorthin). */
+  previousId: string;
   /** Betrag der Vergleichszahlung. */
   previousAmount: Money;
   /** Effektives Datum der Vergleichszahlung. */
@@ -89,6 +91,7 @@ export function compareToPreviousYear(
     const comparison = entry.amount.compareTo(reference.amount);
     result.set(entry.id, {
       direction: comparison > 0 ? "up" : comparison < 0 ? "down" : "same",
+      previousId: reference.id,
       previousAmount: reference.amount,
       previousDate: reference.effectiveDate,
       difference: entry.amount.subtract(reference.amount),
