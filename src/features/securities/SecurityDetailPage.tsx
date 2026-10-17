@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Section, SectionExternalLink, SectionLink } from "@/components/ui/section";
 import { EmptyState } from "@/components/ui/empty-state";
 import { DetailRow } from "@/components/ui/detail-row";
+import { CopyText } from "@/components/ui/copy-text";
 import { SegmentedControl, type SegmentOption } from "@/components/ui/segmented";
 import { DetailBackLink, DetailHeader } from "@/components/layout/DetailHeader";
 import { ListGroup } from "@/components/ui/list";
@@ -307,9 +308,9 @@ export function SecurityDetailPage() {
     });
   }
 
-  const identity = [security.ticker, security.isin]
-    .filter((part): part is string => Boolean(part?.trim()))
-    .join(" · ");
+  const identity: [label: string, value: string][] = [];
+  if (security.ticker?.trim()) identity.push(["Ticker", security.ticker.trim()]);
+  if (security.isin?.trim()) identity.push(["ISIN", security.isin.trim()]);
 
   return (
     <div className="space-y-6">
@@ -357,7 +358,16 @@ export function SecurityDetailPage() {
         }
         title={security.name}
         badge={archived ? <Badge variant="warning">Archiviert</Badge> : undefined}
-        subtitle={identity || undefined}
+        subtitle={
+          identity.length > 0
+            ? identity.map(([label, value], index) => (
+                <React.Fragment key={label}>
+                  {index > 0 && <span aria-hidden>·</span>}
+                  <CopyText label={label} value={value} />
+                </React.Fragment>
+              ))
+            : undefined
+        }
       />
 
       {/* Reihenfolge seit 1.30.0 wie auf der Detailseite einer Dividende:
@@ -517,9 +527,9 @@ export function SecurityDetailPage() {
           >
             <div className="space-y-4">
               <div>
-                <Field label="Ticker" value={security.ticker} />
-                <Field label="ISIN" value={security.isin} />
-                <Field label="WKN" value={security.wkn} />
+                <Field label="Ticker" value={security.ticker} copyable />
+                <Field label="ISIN" value={security.isin} copyable />
+                <Field label="WKN" value={security.wkn} copyable />
                 <Field label="Land" value={security.country} />
                 <Field label="Branche" value={security.sector} />
                 <Field label="Währung" value={security.currency} />
@@ -575,10 +585,26 @@ function divvyDiaryUrl(isin: string): string {
 }
 
 /** Ein Stammdatenfeld; leere Felder bleiben sichtbar, damit Lücken auffallen. */
-function Field({ label, value }: { label: string; value: string | null }) {
+function Field({
+  label,
+  value,
+  copyable = false,
+}: {
+  label: string;
+  value: string | null;
+  /** Kennungen (Ticker, ISIN, WKN) legt ein Klick in die Zwischenablage. */
+  copyable?: boolean;
+}) {
+  const text = value?.trim();
   return (
     <DetailRow label={label}>
-      {value?.trim() ? value : <span className="text-muted-foreground">—</span>}
+      {!text ? (
+        <span className="text-muted-foreground">—</span>
+      ) : copyable ? (
+        <CopyText label={label} value={text} />
+      ) : (
+        text
+      )}
     </DetailRow>
   );
 }
