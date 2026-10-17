@@ -250,7 +250,7 @@ export function ComparisonTab() {
                     .filter((year) => year !== selection.currentYear)
                     .map((year) => (
                       <option key={year} value={year}>
-                        gegen {year}
+                        {year}
                       </option>
                     ))}
                 </Select>
