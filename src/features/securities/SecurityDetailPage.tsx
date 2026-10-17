@@ -288,6 +288,7 @@ export function SecurityDetailPage() {
                 data={yearData}
                 ariaLabel={`Jährliche Dividenden von ${security.name}`}
                 categoryHeader="Jahr"
+                tableOrder="desc"
               />
             </div>
           </Section>

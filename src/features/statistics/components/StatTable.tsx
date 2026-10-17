@@ -65,6 +65,12 @@ interface StatTableProps<T> {
    * rechts neben der Ueberschrift statt in einer eigenen Zeile darunter.
    */
   title?: React.ReactNode;
+  /**
+   * Aktion rechts neben der Ueberschrift (z. B. ein Umschalter). Belegt sie
+   * den Platz, stehen Suche und Sortierung des Telefons in einer eigenen Zeile
+   * **ueber** der Ueberschrift — so bleibt der Umschalter an seiner Stelle.
+   */
+  titleAction?: React.ReactNode;
   pageSize?: number;
   caption: string;
   emptyMessage?: string;
@@ -186,6 +192,7 @@ export function StatTable<T>({
   beforeSort,
   initialSort,
   title,
+  titleAction,
   pageSize = 25,
   caption,
   emptyMessage = "Keine Daten für die aktuelle Auswahl.",
@@ -303,6 +310,8 @@ export function StatTable<T>({
       />
     ) : null;
 
+  const toolbarAbove = !isWide && title !== undefined && titleAction !== undefined;
+
   const table = (
     <div className="space-y-3">
       {searchOf && !controlled && (
@@ -415,7 +424,7 @@ export function StatTable<T>({
         </div>
       ) : (
         <>
-          {(beforeSort ?? (!title && sortControl)) && (
+          {!toolbarAbove && (beforeSort ?? (!title && sortControl)) && (
             <div className="flex items-center justify-end gap-3">
               {beforeSort && <div className="min-w-0 flex-1">{beforeSort}</div>}
               {!title && sortControl}
@@ -478,9 +487,25 @@ export function StatTable<T>({
     </div>
   );
 
-  return title === undefined ? (
-    table
-  ) : (
+  if (title === undefined) return table;
+
+  if (toolbarAbove) {
+    return (
+      <div className="space-y-5">
+        {(beforeSort ?? sortControl) && (
+          <div className="flex items-center justify-end gap-3">
+            {beforeSort && <div className="min-w-0 flex-1">{beforeSort}</div>}
+            {sortControl}
+          </div>
+        )}
+        <Section title={title} action={titleAction} actionClassName="shrink-0">
+          {table}
+        </Section>
+      </div>
+    );
+  }
+
+  return (
     <Section title={title} {...(sortControl && { action: sortControl })}>
       {table}
     </Section>
