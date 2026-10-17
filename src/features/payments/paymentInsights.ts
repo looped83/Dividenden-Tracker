@@ -20,6 +20,13 @@ export interface PaymentInsights {
   previous: (Delta & { date: string; id: string }) | null;
   /** Gleicher Ausschuettungsmonat im Vorjahr — dieselbe Regel wie die Liste. */
   yearAgo: YearOverYearComparison | null;
+  /**
+   * Monatlicher Zahler: Dann sagt der Vergleich mit der vorherigen Dividende
+   * etwas aus. Bei Quartals- oder Jahreszahlern taugt nur das Vorjahr — die
+   * vorherige Zahlung kann eine Sonder- oder Zwischendividende sein, und
+   * Erhoehungen kommen meist einmal im Jahr.
+   */
+  monthly: boolean;
   /** Durchschnitt je Dividende in den zwoelf Monaten davor. */
   trailingAverage: (Delta & { count: number }) | null;
   /** 1 = hoechste Dividende des Assets; Gleichstand teilt sich den Rang. */
@@ -53,12 +60,16 @@ function chronological(a: AnalyticsPayment, b: AnalyticsPayment): number {
     : a.payDate.localeCompare(b.payDate);
 }
 
-function delta(current: Money, reference: Money): Delta {
-  const difference = current.subtract(reference);
+/** Veraenderung gegenueber `reference`, aus der Differenz. */
+export function deltaOf(difference: Money, reference: Money): Delta {
   const percent = reference.isPositive()
     ? difference.toDecimal().div(reference.toDecimal()).times(100)
     : null;
   return { reference, difference, percent };
+}
+
+function delta(current: Money, reference: Money): Delta {
+  return deltaOf(current.subtract(reference), reference);
 }
 
 /** Erster Tag des Monats `months` Monate nach (oder vor) `iso`. */
@@ -150,9 +161,14 @@ export function derivePaymentInsights(
     }
   }
 
+  // Massgeblich ist der Ausschuettungsplan des Assets; ohne Plan entscheidet
+  // die Historie (mindestens zehn Zahlungen in den zwoelf Monaten davor).
+  const monthly = months.size > 0 ? months.size === 12 : trailing.length >= 10;
+
   return {
     previous,
     yearAgo,
+    monthly,
     trailingAverage,
     rank: 1 + sorted.filter((payment) => payment.netAmount.compareTo(amount) > 0).length,
     ordinal: index + 1,

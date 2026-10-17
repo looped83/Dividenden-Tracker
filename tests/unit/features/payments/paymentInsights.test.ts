@@ -85,3 +85,30 @@ describe("derivePaymentInsights", () => {
     expect(derivePaymentInsights("storniert", monthly, [])).toBeNull();
   });
 });
+
+describe("derivePaymentInsights · Rhythmus", () => {
+  const quarterly = [
+    "2025-03-15",
+    "2025-06-15",
+    "2025-09-15",
+    "2025-12-15",
+    "2026-03-15",
+  ].map((date, index) => payment(`q${String(index)}`, date, `${String(40 + index)}.00`));
+
+  it("erkennt monatliche Zahler am Ausschüttungsplan", () => {
+    const all = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+    expect(derivePaymentInsights("p23", monthly, all)?.monthly).toBe(true);
+    expect(derivePaymentInsights("q4", quarterly, [3, 6, 9, 12])?.monthly).toBe(false);
+  });
+
+  it("schließt ohne Plan aus der Historie der letzten zwölf Monate", () => {
+    expect(derivePaymentInsights("p23", monthly, [])?.monthly).toBe(true);
+    expect(derivePaymentInsights("q4", quarterly, [])?.monthly).toBe(false);
+  });
+
+  it("liefert für Quartalszahler den Vergleich mit dem Vorjahr samt Id", () => {
+    const result = derivePaymentInsights("q4", quarterly, [3, 6, 9, 12]);
+    expect(result?.yearAgo?.previousId).toBe("q0");
+    expect(result?.yearAgo?.difference.toStringValue()).toBe("4.00");
+  });
+});
