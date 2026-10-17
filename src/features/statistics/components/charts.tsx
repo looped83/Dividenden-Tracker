@@ -3,6 +3,8 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Rectangle,
+  type BarShapeProps,
   Line,
   LineChart,
   Tooltip,
@@ -50,21 +52,26 @@ export interface CategoryDatum {
   count: number;
   /** Optionales Drill-down-Ziel. */
   href?: string;
+  /** Ueberschrift im Tooltip und in der Datentabelle, wenn sie mehr sagt als die Achse. */
+  detail?: string;
+  /** Hebt den Balken in der Akzentfarbe hervor (z. B. die gerade geoeffnete Dividende). */
+  highlight?: boolean;
 }
 
 interface CategoryTooltipProps {
   active?: boolean;
   payload?: { payload: CategoryDatum }[];
+  showCount?: boolean;
 }
 
-function CategoryTooltip({ active, payload }: CategoryTooltipProps) {
+function CategoryTooltip({ active, payload, showCount = true }: CategoryTooltipProps) {
   if (!active || !payload || payload.length === 0) return null;
   const row = payload[0].payload;
   return (
     <ChartTooltipBox>
-      <p className="font-medium">{row.label}</p>
+      <p className="font-medium">{row.detail ?? row.label}</p>
       <p>{formatMoney(row.money)}</p>
-      <p className="text-muted-foreground">{formatPayments(row.count)}</p>
+      {showCount && <p className="text-muted-foreground">{formatPayments(row.count)}</p>}
     </ChartTooltipBox>
   );
 }
@@ -82,6 +89,11 @@ interface CategoryBarChartProps {
    * bleiben in Vordergrundfarbe.
    */
   color?: "foreground" | "primary";
+  /**
+   * Anzahl der Zahlungen in Tooltip und Tabelle. Aus, wenn jeder Balken genau
+   * eine Zahlung ist — „1 Zahlung" unter jedem Betrag saete nur Rauschen.
+   */
+  showCount?: boolean;
 }
 
 /**
@@ -96,8 +108,12 @@ export function CategoryBarChart({
   categoryHeader,
   emptyMessage = "Keine Daten für die aktuelle Auswahl.",
   color = "foreground",
+  showCount = true,
 }: CategoryBarChartProps) {
   const navigate = useNavigate();
+
+  const hasDrillDown = data.some((row) => row.href !== undefined);
+  const hasHighlight = data.some((row) => row.highlight);
 
   if (data.length === 0 || data.every((row) => row.value === 0)) {
     return <ChartEmpty>{emptyMessage}</ChartEmpty>;
@@ -110,7 +126,10 @@ export function CategoryBarChart({
           <CartesianGrid {...CHART_GRID_PROPS} />
           <XAxis dataKey="label" {...CHART_X_AXIS_PROPS} />
           <YAxis {...CHART_Y_AXIS_PROPS} />
-          <Tooltip content={<CategoryTooltip />} cursor={CHART_BAR_CURSOR} />
+          <Tooltip
+            content={<CategoryTooltip showCount={showCount} />}
+            cursor={CHART_BAR_CURSOR}
+          />
           <Bar
             dataKey="value"
             name="Nettodividende"
@@ -118,11 +137,26 @@ export function CategoryBarChart({
             radius={CHART_BAR_RADIUS}
             maxBarSize={CHART_MAX_BAR_SIZE}
             {...CHART_SERIES_PROPS}
-            cursor="pointer"
+            cursor={hasDrillDown ? "pointer" : undefined}
             onClick={(entry) => {
               const row = (entry as unknown as { payload?: CategoryDatum }).payload;
               if (row?.href) void navigate(row.href);
             }}
+            // Ein hervorgehobener Balken in der Akzentfarbe, die uebrigen wie
+            // sonst. Nur dann eine eigene Form — ohne Hervorhebung bleibt der
+            // Standardbalken.
+            {...(hasHighlight && {
+              shape: (props: BarShapeProps) => (
+                <Rectangle
+                  {...props}
+                  fill={
+                    (props.payload as CategoryDatum).highlight
+                      ? "var(--primary)"
+                      : `var(--${color})`
+                  }
+                />
+              ),
+            })}
           />
         </BarChart>
       </ChartCanvas>
@@ -134,7 +168,7 @@ export function CategoryBarChart({
             <TableRow>
               <TableHead>{categoryHeader}</TableHead>
               <TableHead className="text-right">Nettodividende</TableHead>
-              <TableHead className="text-right">Anzahl</TableHead>
+              {showCount && <TableHead className="text-right">Anzahl</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -155,15 +189,17 @@ export function CategoryBarChart({
                       {row.label}
                     </Link>
                   ) : (
-                    row.label
+                    (row.detail ?? row.label)
                   )}
                 </ChartRowHeader>
                 <TableCell className="text-right tabular-nums">
                   {formatMoney(row.money)}
                 </TableCell>
-                <TableCell className="text-right tabular-nums">
-                  {formatCountNumber(row.count)}
-                </TableCell>
+                {showCount && (
+                  <TableCell className="text-right tabular-nums">
+                    {formatCountNumber(row.count)}
+                  </TableCell>
+                )}
               </TableRow>
             ))}
           </TableBody>
