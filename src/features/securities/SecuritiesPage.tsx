@@ -83,11 +83,11 @@ import type { Security } from "@/lib/supabase/repositories/securities";
  * **Die Liste zeigt, was eine Position ausmacht, nicht was sie heisst.** Sie
  * fuehrte lange nur Stammdaten (Ticker, ISIN, Land, Status) — Felder, die beim
  * Wiederfinden helfen, aber keine einzige Frage an ein Depot beantworten.
- * Sobald ein Depotstand importiert ist, stehen deshalb Wert, erwartete
- * Jahresausschuettung und Gewinn in der Zeile; Ticker und ISIN ruecken unter
- * den Namen, wo sie zur Identifikation weiterhin genuegen. Ohne importierten
- * Stand entfallen diese Spalten ganz, statt eine Wand aus Gedankenstrichen zu
- * zeigen (wie in der Unternehmensstatistik).
+ * Sobald ein Depotstand importiert ist, stehen deshalb Wert, Anteil, erwartete
+ * Jahresausschuettung, Rendite und Gewinn in der Zeile; Ticker und ISIN nennt
+ * die Detailseite. Ohne importierten Stand entfallen diese Spalten ganz,
+ * statt eine Wand aus Gedankenstrichen zu zeigen (wie in der
+ * Unternehmensstatistik).
  *
  * Alles Weitere — Stueckzahl, Kurs, Einstand, Rhythmus, Verlauf und die
  * Zahlungshistorie — steht eine Ebene tiefer auf der Detailseite, die der Name
@@ -403,13 +403,17 @@ export function SecuritiesPage() {
                   <TableHead>Asset</TableHead>
                   {withPositions && (
                     <>
-                      <TableHead className="w-1/6 whitespace-nowrap text-right">
-                        Wert
+                      <TableHead className="whitespace-nowrap text-right">Wert</TableHead>
+                      <TableHead className="whitespace-nowrap text-right">
+                        Anteil
                       </TableHead>
-                      <TableHead className="w-1/6 whitespace-nowrap text-right">
+                      <TableHead className="whitespace-nowrap text-right">
                         Erwartet p. a.
                       </TableHead>
-                      <TableHead className="w-1/6 whitespace-nowrap text-right">
+                      <TableHead className="whitespace-nowrap text-right">
+                        Rendite
+                      </TableHead>
+                      <TableHead className="whitespace-nowrap text-right">
                         Gewinn
                       </TableHead>
                     </>
@@ -451,12 +455,10 @@ export function SecuritiesPage() {
                                   />
                                 ) : null
                               }
-                              detail={percentDetail(
-                                position?.allocationPercent,
-                                1,
-                                "Anteil",
-                              )}
                             />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <PercentCell value={position?.allocationPercent} digits={1} />
                           </TableCell>
                           <TableCell className="text-right">
                             <Metric
@@ -465,12 +467,10 @@ export function SecuritiesPage() {
                                   <AmountText amount={position.annualDividend} />
                                 ) : null
                               }
-                              detail={percentDetail(
-                                position?.dividendYield,
-                                2,
-                                "Rendite",
-                              )}
                             />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <PercentCell value={position?.dividendYield} digits={2} />
                           </TableCell>
                           <TableCell className="text-right">
                             <Metric
@@ -564,14 +564,6 @@ function payoutLabel(security: Security): string {
   return months.map((month) => monthNameDeShort(month)).join(", ");
 }
 
-/** Ticker und ISIN als eine Zeile — die Identitaet des Papiers, klein gesetzt. */
-function identityLabel(security: Security): string | null {
-  const parts = [security.ticker, security.isin].filter((part): part is string =>
-    Boolean(part?.trim()),
-  );
-  return parts.length === 0 ? null : parts.join(" · ");
-}
-
 /**
  * Prozentangabe unter einem Betrag; `null`, wenn die Quelle keine liefert —
  * dann bleibt die Zeile leer statt eine 0 zu behaupten.
@@ -579,47 +571,56 @@ function identityLabel(security: Security): string | null {
 function percentDetail(
   value: DecimalInstance | null | undefined,
   digits: number,
-  suffix?: string,
 ): string | null {
   if (value === null || value === undefined) return null;
-  const formatted = formatPercent(value, digits);
-  return suffix ? `${formatted} ${suffix}` : formatted;
+  return formatPercent(value, digits);
+}
+
+/**
+ * Anteil und Rendite in eigener Spalte: Unter Wert und Erwartung standen sie
+ * als Nebenzeile und liessen sich nicht ueber die Zeilen hinweg vergleichen.
+ * Ohne Wert ein Strich, wie bei den Betraegen.
+ */
+function PercentCell({
+  value,
+  digits,
+}: {
+  value: DecimalInstance | null | undefined;
+  digits: number;
+}) {
+  const formatted = percentDetail(value, digits);
+  if (!formatted) return <span className="text-muted-foreground">—</span>;
+  return <span className="whitespace-nowrap tabular-nums">{formatted}</span>;
 }
 
 /**
  * Der Name fuehrt zur Detailseite — sie beantwortet die Frage nach Verlauf und
- * Zahlungen dieser Position, die die Uebersicht bewusst nicht stellt. Darunter
- * Ticker und ISIN: zum Wiedererkennen genuegen sie klein, eine eigene Spalte
- * brauchen sie nicht.
+ * Zahlungen dieser Position, die die Uebersicht bewusst nicht stellt. Ticker
+ * und ISIN stehen dort; in der Liste machten sie jede Zeile zweizeilig, ohne
+ * beim Vergleichen zu helfen.
  */
 function AssetName({ row }: { row: AssetRow }) {
   const { security } = row;
-  const identity = identityLabel(security);
   return (
-    <div className="flex min-w-0 flex-col gap-0.5">
-      <span className="flex flex-wrap items-center gap-2">
-        <Link
-          to={`/depot/${security.id}`}
-          className="rounded-sm font-medium outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          {security.name}
-        </Link>
-        {/* Nur der Sonderfall traegt ein Etikett. „Aktiv" stand zuvor an fast
-            jeder Zeile und sagte damit nichts. */}
-        {security.archived_at && (
-          <Badge variant="neutral" className="shrink-0">
-            Archiviert
-          </Badge>
-        )}
-      </span>
-      {identity && (
-        <span className="truncate text-xs text-muted-foreground">{identity}</span>
+    <span className="flex flex-wrap items-center gap-2">
+      <Link
+        to={`/depot/${security.id}`}
+        className="rounded-sm font-medium outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        {security.name}
+      </Link>
+      {/* Nur der Sonderfall traegt ein Etikett. „Aktiv" stand zuvor an fast
+          jeder Zeile und sagte damit nichts. */}
+      {security.archived_at && (
+        <Badge variant="neutral" className="shrink-0">
+          Archiviert
+        </Badge>
       )}
-    </div>
+    </span>
   );
 }
 
-/** Eine Zahl mit ihrer Erlaeuterung darunter (Anteil, Rendite, Gewinnquote). */
+/** Eine Zahl, optional mit ihrer Erlaeuterung darunter (Gewinnquote). */
 function Metric({ value, detail }: { value: React.ReactNode; detail?: string | null }) {
   if (!value) return <span className="text-muted-foreground">—</span>;
   return (
@@ -636,15 +637,14 @@ function Metric({ value, detail }: { value: React.ReactNode; detail?: string | n
 
 /**
  * Ein Asset auf dem Telefon: eine Zeile, die als Ganzes zur Detailseite
- * fuehrt. Oben Name und Wert, darunter Ticker, erwartete Ausschuettung und
- * Rendite links, der Kursgewinn in Prozent rechts — dieselbe Form wie eine
- * Zeile der Statistiklisten: was es ist und was es wert ist oben, die
- * Ableitungen darunter.
+ * fuehrt. Oben Name und Wert, darunter erwartete Ausschuettung und Rendite
+ * links, der Kursgewinn in Prozent rechts — dieselbe Form wie eine Zeile der
+ * Statistiklisten: was es ist und was es wert ist oben, die Ableitungen
+ * darunter.
  *
- * Der Ticker steht in der zweiten Zeile und der Gewinn nur als Prozent (den
- * Betrag nennt die Detailseite): Hinter dem Namen und mit Betrag brachen
- * beide Zeilen bei laengeren Namen um, eine Position belegte bis zu fuenf
- * Zeilen. Ohne Pfeil am Rand, wie alle Listen (`ListItemBody`).
+ * Der Gewinn steht nur als Prozent (den Betrag nennt die Detailseite), der
+ * Ticker gar nicht (wie in der Tabelle): Mit beiden brach die zweite Zeile bei
+ * laengeren Betraegen um. Ohne Pfeil am Rand, wie alle Listen (`ListItemBody`).
  *
  * Bearbeiten und Archivieren stehen auf der Detailseite. Als Symbole in jeder
  * Karte verlaengerten sie sie um eine Zeile, und die Karte hatte drei kleine
@@ -685,7 +685,6 @@ function AssetItem({ row }: { row: AssetRow }) {
                 <>
                   <span className="min-w-0 truncate">
                     {archivedBadge}
-                    {security.ticker && <>{security.ticker} · </>}
                     {position.annualDividend ? (
                       <>
                         <AmountText amount={position.annualDividend} /> p. a.

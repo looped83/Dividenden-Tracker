@@ -123,12 +123,14 @@ describe("SecuritiesPage", () => {
       screen.getByRole("columnheader", { name: "Erwartet p. a." }),
     ).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "Gewinn" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Anteil" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Rendite" })).toBeInTheDocument();
 
     const zeile = screen.getByRole("row", { name: /Alpha AG/ });
     expect(within(zeile).getByText(/1\.200,00\s€/)).toBeInTheDocument();
-    expect(within(zeile).getByText(/4,5\s%\sAnteil/)).toBeInTheDocument();
+    expect(within(zeile).getByText(/^4,5\s%$/)).toBeInTheDocument();
     expect(within(zeile).getByText(/60,00\s€/)).toBeInTheDocument();
-    expect(within(zeile).getByText(/5,00\s%\sRendite/)).toBeInTheDocument();
+    expect(within(zeile).getByText(/^5,00\s%$/)).toBeInTheDocument();
     expect(within(zeile).getByText(/\+200,00\s€/)).toBeInTheDocument();
 
     // Ohne Position im jüngsten Stand bleiben die Zellen leer statt 0 zu behaupten.
