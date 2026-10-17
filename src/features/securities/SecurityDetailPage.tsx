@@ -5,14 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Section, SectionLink } from "@/components/ui/section";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Disclosure } from "@/components/ui/disclosure";
+import { DetailRow } from "@/components/ui/detail-row";
+import { SegmentedControl, type SegmentOption } from "@/components/ui/segmented";
 import { DetailBackLink, DetailHeader } from "@/components/layout/DetailHeader";
 import { ListGroup } from "@/components/ui/list";
 import { PageSkeleton } from "@/components/layout/PageSkeleton";
-import { KpiHero } from "@/components/domain/KpiHero";
+import { KpiHero, type KpiStat } from "@/components/domain/KpiHero";
 import { AmountText } from "@/components/money/AmountText";
 import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
-import { formatDayMonth, formatYearSpan } from "@/lib/utils/formatDate";
+import { formatDayMonth } from "@/lib/utils/formatDate";
+import { formatPercent, toCurrencyCode, Money } from "@/lib/money";
 import {
   aggregate,
   averagePayment,
@@ -20,7 +22,9 @@ import {
   largestPayment,
   lastPayDate,
   monthNameDeShort,
+  monthOf,
   normalizePayoutMonths,
+  yearOf,
   yearlyBuckets,
 } from "@/lib/statistics";
 import { useEffectivePayments } from "@/features/dashboard/hooks";
@@ -36,8 +40,10 @@ import {
 import { SecurityFormDialog } from "@/features/securities/SecurityFormDialog";
 import { DeleteSecurityDialog } from "@/features/securities/DeleteSecurityDialog";
 import { PaymentListItem } from "@/features/payments/PaymentListItem";
+import { DeltaText } from "@/features/payments/PaymentInsightsView";
+import { deltaOf } from "@/features/payments/paymentInsights";
 import { PositionCard } from "@/features/securities/PositionCard";
-import { latestAsOf, statusOf } from "@/features/securities/snapshots";
+import { latestAsOf, ratioToPercent, statusOf } from "@/features/securities/snapshots";
 import { useDepots } from "@/features/depots/hooks";
 import { useArchiveToggle } from "@/components/domain/useArchiveToggle";
 import { deriveDataQuality } from "@/features/securities/dataQuality";
@@ -48,6 +54,40 @@ import { usePaymentComposer } from "@/features/payments/PaymentComposer";
  * Die ganze Liste liegt einen Tipp entfernt.
  */
 const RECENT_LIMIT = 5;
+
+type HistoryView = "yearly" | "cumulative";
+
+// Wie auf der Detailseite einer Dividende: die einzelnen Jahre zuerst und
+// vorausgewaehlt, die Summe danach.
+const VIEW_OPTIONS: readonly SegmentOption<HistoryView>[] = [
+  { value: "yearly", label: "Je Jahr" },
+  { value: "cumulative", label: "Kumuliert" },
+];
+
+/**
+ * Der naechste geplante Ausschuettungsmonat („Nov 2026"): nach der letzten
+ * Dividende, fruehestens aber der laufende Monat — eine ausgebliebene Zahlung
+ * schiebt die Angabe nicht in die Vergangenheit.
+ */
+function nextPlannedMonth(
+  lastPayDate: string,
+  payoutMonths: readonly number[],
+  today: Date,
+): string | null {
+  if (payoutMonths.length === 0) return null;
+  const start = Math.max(
+    yearOf(lastPayDate) * 12 + monthOf(lastPayDate) - 1,
+    today.getFullYear() * 12 + today.getMonth() - 1,
+  );
+  for (let step = 1; step <= 12; step += 1) {
+    const index = start + step;
+    const month = (index % 12) + 1;
+    if (payoutMonths.includes(month)) {
+      return `${monthNameDeShort(month)} ${String(Math.floor(index / 12))}`;
+    }
+  }
+  return null;
+}
 
 /**
  * Detailseite eines Assets.
@@ -116,20 +156,27 @@ export function SecurityDetailPage() {
     };
   }, [own]);
 
-  const yearData = React.useMemo<CategoryDatum[]>(
-    () =>
-      stats.perYear.map((bucket) => ({
+  const [view, setView] = React.useState<HistoryView>("yearly");
+
+  // Je Jahr oder kumuliert: insgesamt erhalten bis einschliesslich des Jahres.
+  // Die Balken fuehren bewusst nirgendwohin (wie auf der Dividendenseite); der
+  // Weg zur Liste steht unter „Letzte Dividenden".
+  const yearData = React.useMemo<CategoryDatum[]>(() => {
+    const rows: CategoryDatum[] = [];
+    let running: Money | null = null;
+    for (const bucket of stats.perYear) {
+      running = running ? running.add(bucket.net) : bucket.net;
+      const money = view === "cumulative" ? running : bucket.net;
+      rows.push({
         key: String(bucket.year),
         label: String(bucket.year),
-        value: bucket.net.toChartNumber(),
-        money: bucket.net,
+        value: money.toChartNumber(),
+        money,
         count: bucket.count,
-        // Drill-down in die gefilterte Liste — dieselbe Garantie wie im
-        // Statistikbereich: jede Zahl fuehrt zu den Zeilen dahinter.
-        href: `/eingaenge?security=${id}&year=${String(bucket.year)}`,
-      })),
-    [stats.perYear, id],
-  );
+      });
+    }
+    return rows;
+  }, [stats.perYear, view]);
 
   const recent = React.useMemo(
     () =>
@@ -188,6 +235,67 @@ export function SecurityDetailPage() {
   const quality = deriveDataQuality(security);
   const archived = Boolean(security.archived_at);
 
+  // Kopf: was dieses Papier bringt. Erwartet (laut Depotstand) neben dem
+  // zuletzt abgeschlossenen Jahr — ein laufendes Jahr liesse die Erwartung
+  // zwangslaeufig zu hoch aussehen.
+  const { snapshot, current } = snapshotStatus;
+  const today = new Date();
+  const thisYear = today.getFullYear();
+  const lastFullYear = stats.perYear.filter((bucket) => bucket.year < thisYear).at(-1);
+  const yearBefore = lastFullYear
+    ? stats.perYear.find((bucket) => bucket.year === lastFullYear.year - 1)
+    : undefined;
+  const nextPlanned =
+    !archived && (snapshot === null || current) && stats.last
+      ? nextPlannedMonth(stats.last, payoutMonths, today)
+      : null;
+
+  const heroStats: KpiStat[] = [];
+  if (snapshot && current && snapshot.annual_dividend_total !== null) {
+    const dividendYield = ratioToPercent(snapshot.dividend_yield);
+    heroStats.push({
+      label: "Erwartet p. a.",
+      value: (
+        <AmountText
+          amount={Money.fromString(
+            snapshot.annual_dividend_total,
+            toCurrencyCode(snapshot.currency),
+          )}
+        />
+      ),
+      caption: dividendYield ? `Rendite ${formatPercent(dividendYield, 2)}` : undefined,
+    });
+  }
+  if (lastFullYear) {
+    heroStats.push({
+      label: `Erhalten ${String(lastFullYear.year)}`,
+      value: <AmountText amount={lastFullYear.net} />,
+      caption: yearBefore ? (
+        <DeltaText
+          delta={deltaOf(lastFullYear.net.subtract(yearBefore.net), yearBefore.net)}
+        />
+      ) : undefined,
+      to: `/eingaenge?security=${id}&year=${String(lastFullYear.year)}`,
+      drillLabel: `Dividenden von ${security.name} im Jahr ${String(lastFullYear.year)} anzeigen`,
+    });
+  }
+  if (nextPlanned) {
+    heroStats.push({ label: "Nächste", value: nextPlanned, caption: "laut Plan" });
+  }
+  // Fehlt Depotstand oder Plan, ruecken die Durchschnittswerte nach.
+  if (heroStats.length < 3) {
+    heroStats.push({
+      label: "Ø je Dividende",
+      value: <AmountText amount={stats.average} />,
+    });
+  }
+  if (heroStats.length < 3 && stats.largest) {
+    heroStats.push({
+      label: "Größte Dividende",
+      value: <AmountText amount={stats.largest} />,
+    });
+  }
+
   const identity = [security.ticker, security.isin]
     .filter((part): part is string => Boolean(part?.trim()))
     .join(" · ");
@@ -241,14 +349,11 @@ export function SecurityDetailPage() {
         subtitle={identity || undefined}
       />
 
-      {/* Reihenfolge nach der Haeufigkeit der Frage: erst die Position (Wert,
-          Erwartung, Rendite), dann was kam (Summe, Verlauf, letzte Eingaenge),
-          zuletzt Ausschuettungsplan und Stammdaten. Zuvor stand die Position
-          hinter vier Kacheln und dem Diagramm, die Stammdaten vor den letzten
-          Eingaengen. Die Position steht ausserhalb der Bedingung unten: Ein
-          frisch gekauftes Papier hat einen Bestand, aber noch keinen Eingang. */}
-      <PositionCard status={snapshotStatus} perYear={stats.perYear} />
-
+      {/* Reihenfolge seit 1.30.0 wie auf der Detailseite einer Dividende:
+          erst was das Papier bringt (Summe, Erwartung, letztes Jahr, naechste
+          Zahlung), dann der Verlauf und die letzten Eingaenge, zuletzt Position,
+          Ausschuettungsplan und Stammdaten. Zuvor standen Position und
+          „Erhalten insgesamt" als zwei gleich starke Koepfe untereinander. */}
       {stats.count === 0 ? (
         <EmptyState
           icon={Briefcase}
@@ -269,117 +374,95 @@ export function SecurityDetailPage() {
             drillLabel={`Alle Dividenden von ${security.name} anzeigen`}
             caption={[
               formatCountNoun(stats.count, "Dividende", "Dividenden"),
-              stats.first && stats.last ? formatYearSpan(stats.first, stats.last) : null,
+              stats.first
+                ? `seit ${monthNameDeShort(monthOf(stats.first))} ${String(yearOf(stats.first))}`
+                : null,
             ]
               .filter(Boolean)
               .join(" · ")}
-            stats={[
-              { label: "Ø je Dividende", value: <AmountText amount={stats.average} /> },
-              {
-                label: "Größte Dividende",
-                value: stats.largest ? <AmountText amount={stats.largest} /> : "—",
-              },
-            ]}
+            stats={heroStats.slice(0, 3)}
           />
 
-          <Section title="Entwicklung je Jahr" className="pt-4">
-            <div>
-              <CategoryBarChart
-                data={yearData}
-                ariaLabel={`Jährliche Dividenden von ${security.name}`}
-                categoryHeader="Jahr"
-                tableOrder="desc"
-              />
-            </div>
-          </Section>
+          <div className="grid grid-cols-1 gap-10 pt-4 lg:grid-cols-2 lg:gap-x-16">
+            <Section
+              title="Verlauf"
+              action={
+                <SegmentedControl
+                  variant="pill"
+                  label="Verlauf als"
+                  options={VIEW_OPTIONS}
+                  value={view}
+                  onChange={setView}
+                />
+              }
+            >
+              <div>
+                <CategoryBarChart
+                  data={yearData}
+                  ariaLabel={
+                    view === "cumulative"
+                      ? `Kumulierte Dividenden von ${security.name}`
+                      : `Jährliche Dividenden von ${security.name}`
+                  }
+                  categoryHeader="Jahr"
+                  showCount={view === "yearly"}
+                  tableOrder="desc"
+                />
+              </div>
+            </Section>
+
+            {/* Kopf wie „Letzte Eingänge" auf der Uebersicht: der Weg zur
+                ganzen Liste rechts neben der Ueberschrift. */}
+            <Section
+              title="Letzte Dividenden"
+              action={
+                <SectionLink to={`/eingaenge?security=${id}`}>
+                  Alle {formatCountNumber(stats.count)}
+                </SectionLink>
+              }
+            >
+              <div>
+                {/* Der Name stuende in jeder Zeile wie in der Ueberschrift;
+                    hier ist das Depot der Titel. */}
+                <ListGroup>
+                  {recent.map((payment) => (
+                    <PaymentListItem
+                      key={payment.id}
+                      to={`/eingaenge/${payment.id}`}
+                      title={depotName(payment.depotId)}
+                      date={payment.payDate}
+                      showYear
+                      note={
+                        payment.payDate !== payment.actualPayDate
+                          ? `tatsächlich ${formatDayMonth(payment.actualPayDate)}`
+                          : undefined
+                      }
+                      amount={payment.netAmount}
+                    />
+                  ))}
+                </ListGroup>
+              </div>
+            </Section>
+          </div>
         </>
       )}
 
-      {recent.length > 0 && (
-        // Kopf wie „Letzte Eingänge" auf der Uebersicht: der Weg zur ganzen
-        // Liste rechts neben der Ueberschrift.
-        <Section
-          title="Letzte Dividenden"
-          // Die Seite steht im 24px-Takt des Detailkopfs; Abschnitte ohne
-          // Rahmen brauchen 40px Luft, sonst kleben sie aneinander.
-          className="pt-4"
-          action={
-            <SectionLink to={`/eingaenge?security=${id}`}>
-              Alle {formatCountNumber(stats.count)}
-            </SectionLink>
-          }
-        >
-          <div>
-            {/* Der Name stuende in jeder Zeile wie in der Ueberschrift; hier
-                ist das Depot der Titel. */}
-            <ListGroup>
-              {recent.map((payment) => (
-                <PaymentListItem
-                  key={payment.id}
-                  to={`/eingaenge/${payment.id}`}
-                  title={depotName(payment.depotId)}
-                  date={payment.payDate}
-                  showYear
-                  note={
-                    payment.payDate !== payment.actualPayDate
-                      ? `tatsächlich ${formatDayMonth(payment.actualPayDate)}`
-                      : undefined
-                  }
-                  amount={payment.netAmount}
-                />
-              ))}
-            </ListGroup>
-          </div>
-        </Section>
-      )}
-
+      {/* Die Position steht ausserhalb der Bedingung oben: Ein frisch gekauftes
+          Papier hat einen Bestand, aber noch keinen Eingang. */}
       <div className="grid grid-cols-1 gap-10 pt-4 lg:grid-cols-2 lg:gap-x-16">
-        <Section title="Stammdaten">
-          <div className="space-y-4">
-            <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
-              <Field label="Ticker" value={security.ticker} />
-              <Field label="ISIN" value={security.isin} />
-              <Field label="WKN" value={security.wkn} />
-              <Field label="Land" value={security.country} />
-              <Field label="Branche" value={security.sector} />
-              <Field label="Währung" value={security.currency} />
-              <Field
-                label="Depot"
-                value={
-                  security.default_depot_id ? depotName(security.default_depot_id) : null
-                }
-              />
-            </dl>
+        <PositionCard status={snapshotStatus} />
 
-            {quality === "incomplete" && (
-              <p className="flex gap-2 rounded-2xl bg-muted p-3 text-sm text-muted-foreground">
-                <ShieldAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
-                <span>
-                  Die Stammdaten sind unvollständig. Das beeinträchtigt nichts an den
-                  Auswertungen — es erschwert aber das Wiederfinden und den Abgleich mit
-                  Broker-Belegen.
-                </span>
-              </p>
-            )}
-
-            {security.note && (
-              <div className="border-t border-border pt-3">
-                <p className="text-sm text-muted-foreground">Notiz</p>
-                <p className="whitespace-pre-wrap text-sm">{security.note}</p>
-              </div>
-            )}
-          </div>
-        </Section>
-
-        <Section title="Ausschüttungsplan">
-          <div>
-            {payoutMonths.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Kein Plan hinterlegt. Dividenden zählen dann für den Monat, in dem sie
-                tatsächlich eingegangen sind.
-              </p>
-            ) : (
-              <div className="space-y-3">
+        <div className="space-y-10">
+          <Section title="Ausschüttungsplan">
+            <div>
+              {payoutMonths.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Kein Plan hinterlegt. Dividenden zählen dann für den Monat, in dem sie
+                  tatsächlich eingegangen sind.
+                </p>
+              ) : (
+                // Die Zaehlregel steht nicht mehr hier: Sie gilt fuer jeden Plan
+                // gleich und sagte auf der Seite eines Assets nichts Eigenes.
                 <ul className="flex flex-wrap gap-1.5">
                   {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => {
                     const planned = payoutMonths.includes(month);
@@ -401,20 +484,50 @@ export function SecurityDetailPage() {
                     );
                   })}
                 </ul>
-                {/* Die Zaehlregel gilt fuer jeden Plan gleich; ausgeschrieben
-                    stand sie dreizeilig unter jeder Monatsreihe und war laenger
-                    als der Plan selbst. */}
-                <Disclosure summary="Wie wird gezählt?">
-                  <p className="text-muted-foreground">
-                    Eine später eingetroffene Dividende zählt für den geplanten Monat, für
-                    den sie fällig war. Eine Dividende im Monat direkt davor zählt für den
-                    kommenden geplanten Monat — beides auch über den Jahreswechsel hinweg.
-                  </p>
-                </Disclosure>
+              )}
+            </div>
+          </Section>
+
+          {/* Dieselben Zeilen wie Position und „Brutto zu Netto". */}
+          <Section title="Stammdaten">
+            <div className="space-y-4">
+              <div>
+                <Field label="Ticker" value={security.ticker} />
+                <Field label="ISIN" value={security.isin} />
+                <Field label="WKN" value={security.wkn} />
+                <Field label="Land" value={security.country} />
+                <Field label="Branche" value={security.sector} />
+                <Field label="Währung" value={security.currency} />
+                <Field
+                  label="Depot"
+                  value={
+                    security.default_depot_id
+                      ? depotName(security.default_depot_id)
+                      : null
+                  }
+                />
               </div>
-            )}
-          </div>
-        </Section>
+
+              {quality === "incomplete" && (
+                <p className="flex gap-2 rounded-2xl bg-muted p-3 text-sm text-muted-foreground">
+                  <ShieldAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+                  <span>
+                    Die Stammdaten sind unvollständig. Das beeinträchtigt nichts an den
+                    Auswertungen — es erschwert aber das Wiederfinden und den Abgleich mit
+                    Broker-Belegen.
+                  </span>
+                </p>
+              )}
+
+              {security.note && (
+                <div className="border-t border-border pt-3">
+                  <p className="text-sm text-muted-foreground">Notiz</p>
+                  <p className="whitespace-pre-wrap text-sm">{security.note}</p>
+                </div>
+              )}
+            </div>
+          </Section>
+        </div>
       </div>
 
       <SecurityFormDialog
@@ -434,11 +547,8 @@ export function SecurityDetailPage() {
 /** Ein Stammdatenfeld; leere Felder bleiben sichtbar, damit Lücken auffallen. */
 function Field({ label, value }: { label: string; value: string | null }) {
   return (
-    <>
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="text-right">
-        {value?.trim() ? value : <span className="text-muted-foreground">—</span>}
-      </dd>
-    </>
+    <DetailRow label={label}>
+      {value?.trim() ? value : <span className="text-muted-foreground">—</span>}
+    </DetailRow>
   );
 }

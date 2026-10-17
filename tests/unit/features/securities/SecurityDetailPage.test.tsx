@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import { ToastProvider } from "@/components/ui/toast";
 import { PaymentComposerProvider } from "@/features/payments/PaymentComposer";
@@ -100,6 +100,15 @@ function renderPage(id = SECURITY_ID) {
 }
 
 describe("SecurityDetailPage", () => {
+  // Das letzte volle Jahr und die naechste Dividende haengen am heutigen Tag.
+  beforeAll(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-17T12:00:00"));
+  });
+  afterAll(() => {
+    vi.useRealTimers();
+  });
+
   it("nennt das Asset in der Ueberschrift", () => {
     renderPage();
     expect(screen.getByRole("heading", { name: /Alpha AG/ })).toBeInTheDocument();
@@ -129,23 +138,29 @@ describe("SecurityDetailPage", () => {
     }
   });
 
-  it("weist den groessten Eingang aus", () => {
+  it("stellt das letzte volle Jahr, die naechste Dividende und den Schnitt in den Kopf", () => {
     renderPage();
-    // Der Betrag steht sowohl im Kennzahlkopf als auch in der Liste der
-    // letzten Eingaenge — beide Vorkommen sind richtig.
-    expect(screen.getAllByText("150,00 €").length).toBeGreaterThan(0);
-    const card = screen.getByText("Größte Dividende").closest("div")?.parentElement;
-    if (!card) throw new Error("Kennzahl nicht gefunden.");
-    expect(within(card).getByText("150,00 €")).toBeInTheDocument();
+    const kopf = (label: string) => {
+      const feld = screen.getByText(label).closest("div");
+      if (!feld) throw new Error(`Kennzahl ${label} nicht gefunden.`);
+      return within(feld);
+    };
+    // 2026 laeuft noch — verglichen wird 2025 (150) mit 2024 (220).
+    expect(kopf("Erhalten 2025").getByText("150,00 €")).toBeInTheDocument();
+    expect(kopf("Erhalten 2025").getByText(/31,8\s%/)).toBeInTheDocument();
+    // Plan Maerz/September, letzte Zahlung Maerz 2025: Der September 2025
+    // liegt in der Vergangenheit, die naechste steht im Maerz 2027.
+    expect(kopf("Nächste").getByText("Mär 2027")).toBeInTheDocument();
+    // Ohne Depotstand rueckt der Schnitt nach: 370 / 3.
+    expect(kopf("Ø je Dividende").getByText("123,33 €")).toBeInTheDocument();
   });
 
-  it("fuehrt von jedem Jahr in die gefilterte Zahlungsliste", () => {
+  it("fuehrt vom letzten vollen Jahr in die gefilterte Zahlungsliste", () => {
     renderPage();
-    // Die Datentabelle des Diagramms traegt die Drill-down-Ziele.
-    const links = screen.getAllByRole("link");
-    const hrefs = links.map((link) => link.getAttribute("href"));
-    expect(hrefs).toContain(`/eingaenge?security=${SECURITY_ID}&year=2024`);
+    const hrefs = screen.getAllByRole("link").map((link) => link.getAttribute("href"));
     expect(hrefs).toContain(`/eingaenge?security=${SECURITY_ID}&year=2025`);
+    // Die Balken und ihre Datentabelle fuehren nirgendwohin, nur der Tooltip.
+    expect(hrefs).not.toContain(`/eingaenge?security=${SECURITY_ID}&year=2024`);
   });
 
   it("zeigt den Ausschuettungsplan und kennzeichnet die geplanten Monate", () => {
