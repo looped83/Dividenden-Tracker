@@ -13,7 +13,7 @@ import { PageSkeleton } from "@/components/layout/PageSkeleton";
 import { KpiHero, type KpiStat } from "@/components/domain/KpiHero";
 import { AmountText } from "@/components/money/AmountText";
 import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
-import { formatDayMonth } from "@/lib/utils/formatDate";
+import { formatCalendarDate, formatDayMonth } from "@/lib/utils/formatDate";
 import { formatPercent, toCurrencyCode, Money } from "@/lib/money";
 import {
   aggregate,
@@ -23,6 +23,7 @@ import {
   lastPayDate,
   monthNameDeShort,
   monthOf,
+  isoFromRef,
   normalizePayoutMonths,
   yearOf,
   yearlyBuckets,
@@ -48,6 +49,9 @@ import { useDepots } from "@/features/depots/hooks";
 import { useArchiveToggle } from "@/components/domain/useArchiveToggle";
 import { deriveDataQuality } from "@/features/securities/dataQuality";
 import { usePaymentComposer } from "@/features/payments/PaymentComposer";
+import { useResolvedCalendarEvents } from "@/features/calendar/resolvedEvents";
+import { useToday } from "@/lib/hooks/useToday";
+import { nextDividend } from "@/features/securities/nextDividend";
 
 /**
  * Wie viele Zahlungen die Seite direkt zeigt — so viele wie die Uebersicht.
@@ -63,31 +67,6 @@ const VIEW_OPTIONS: readonly SegmentOption<HistoryView>[] = [
   { value: "yearly", label: "Je Jahr" },
   { value: "cumulative", label: "Kumuliert" },
 ];
-
-/**
- * Der naechste geplante Ausschuettungsmonat („Nov 2026"): nach der letzten
- * Dividende, fruehestens aber der laufende Monat — eine ausgebliebene Zahlung
- * schiebt die Angabe nicht in die Vergangenheit.
- */
-function nextPlannedMonth(
-  lastPayDate: string,
-  payoutMonths: readonly number[],
-  today: Date,
-): string | null {
-  if (payoutMonths.length === 0) return null;
-  const start = Math.max(
-    yearOf(lastPayDate) * 12 + monthOf(lastPayDate) - 1,
-    today.getFullYear() * 12 + today.getMonth() - 1,
-  );
-  for (let step = 1; step <= 12; step += 1) {
-    const index = start + step;
-    const month = (index % 12) + 1;
-    if (payoutMonths.includes(month)) {
-      return `${monthNameDeShort(month)} ${String(Math.floor(index / 12))}`;
-    }
-  }
-  return null;
-}
 
 /**
  * Detailseite eines Assets.
@@ -124,6 +103,8 @@ export function SecurityDetailPage() {
   const { data: securities = [], isLoading: securitiesLoading } = useSecurities();
   const { data: snapshots = [] } = useSecuritySnapshots();
   const { data: depots = [] } = useDepots();
+  const { events: calendarEvents } = useResolvedCalendarEvents();
+  const todayRef = useToday();
 
   // Der Depotstand dieser Position und die Auskunft, ob er noch der juengste
   // ist — ohne sie stuende auf der Seite einer verkauften Position dauerhaft
@@ -239,15 +220,23 @@ export function SecurityDetailPage() {
   // zuletzt abgeschlossenen Jahr — ein laufendes Jahr liesse die Erwartung
   // zwangslaeufig zu hoch aussehen.
   const { snapshot, current } = snapshotStatus;
-  const today = new Date();
-  const thisYear = today.getFullYear();
+  const thisYear = todayRef.year;
   const lastFullYear = stats.perYear.filter((bucket) => bucket.year < thisYear).at(-1);
   const yearBefore = lastFullYear
     ? stats.perYear.find((bucket) => bucket.year === lastFullYear.year - 1)
     : undefined;
-  const nextPlanned =
-    !archived && (snapshot === null || current) && stats.last
-      ? nextPlannedMonth(stats.last, payoutMonths, today)
+  // Angekuendigt (Kalender) vor vermutet (Plan und Historie); die Herkunft
+  // steht in der Beschriftung. Verkauft oder archiviert kommt keine mehr.
+  const next =
+    !archived && (snapshot === null || current)
+      ? nextDividend({
+          securityName: security.name,
+          events: calendarEvents,
+          own,
+          payoutMonths,
+          today: todayRef,
+          todayIso: isoFromRef(todayRef),
+        })
       : null;
 
   const heroStats: KpiStat[] = [];
@@ -279,8 +268,30 @@ export function SecurityDetailPage() {
       drillLabel: `Dividenden von ${security.name} im Jahr ${String(lastFullYear.year)} anzeigen`,
     });
   }
-  if (nextPlanned) {
-    heroStats.push({ label: "Nächste", value: nextPlanned, caption: "laut Plan" });
+  if (next) {
+    heroStats.push({
+      label: "Nächste",
+      value:
+        next.source === "calendar"
+          ? formatCalendarDate(next.date)
+          : `${monthNameDeShort(next.month)} ${String(next.year)}`,
+      caption: (
+        // Betrag und Herkunft brechen je als Ganzes um, nie mitten darin.
+        <>
+          {next.amount && (
+            <>
+              <span className="whitespace-nowrap">
+                {next.source === "estimate" && "≈ "}
+                <AmountText amount={next.amount} />
+              </span>{" "}
+            </>
+          )}
+          <span className="whitespace-nowrap">
+            {next.source === "calendar" ? "laut Kalender" : "vermutet"}
+          </span>
+        </>
+      ),
+    });
   }
   // Fehlt Depotstand oder Plan, ruecken die Durchschnittswerte nach.
   if (heroStats.length < 3) {
