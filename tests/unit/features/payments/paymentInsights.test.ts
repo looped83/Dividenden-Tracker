@@ -106,9 +106,9 @@ describe("derivePaymentInsights · Rhythmus", () => {
     expect(derivePaymentInsights("q4", quarterly, [])?.monthly).toBe(false);
   });
 
-  it("liefert für Quartalszahler den Vergleich mit dem Vorjahr samt Id", () => {
+  it("liefert für Quartalszahler den Vergleich mit dem Vorjahr", () => {
     const result = derivePaymentInsights("q4", quarterly, [3, 6, 9, 12]);
-    expect(result?.yearAgo?.previousId).toBe("q0");
+    expect(result?.yearAgo?.previousDate).toBe("2025-03-15");
     expect(result?.yearAgo?.difference.toStringValue()).toBe("4.00");
   });
 });

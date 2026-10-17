@@ -94,8 +94,6 @@ export function PaymentInsightsView({
         label: "Vorherige",
         value: <AmountText amount={previous.reference} />,
         caption: <DeltaText delta={previous} />,
-        to: `/eingaenge/${previous.id}`,
-        drillLabel: `Vorherige Dividende vom ${formatCalendarDate(previous.date)} öffnen`,
       });
     }
   } else if (yearAgo) {
@@ -103,8 +101,6 @@ export function PaymentInsightsView({
       label: "Vorjahr",
       value: <AmountText amount={yearAgo.previousAmount} />,
       caption: <DeltaText delta={delta(yearAgo.difference, yearAgo.previousAmount)} />,
-      to: `/eingaenge/${yearAgo.previousId}`,
-      drillLabel: `Dividende vom ${formatCalendarDate(yearAgo.previousDate)} öffnen`,
     });
   }
   if (trailingAverage) {
