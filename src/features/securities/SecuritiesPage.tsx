@@ -226,14 +226,6 @@ export function SecuritiesPage() {
     />
   );
 
-  // Wo der Platz knapp wird, treten Spalten zurueck — nach ihrer Bedeutung fuer
-  // ein Depot. Mit Positionen tragen Wert, erwartete Ausschuettung und Gewinn
-  // die Zeile; Ausschuettungsplan und Depotkonto kommen dazu, sobald Breite
-  // dafuer da ist. Ohne Positionen sind genau sie (mit der Branche) der Inhalt
-  // und stehen entsprechend frueher.
-  const payoutClass = withPositions ? "hidden xl:table-cell" : undefined;
-  const depotClass = withPositions ? "hidden xl:table-cell" : "hidden lg:table-cell";
-
   return (
     <div className="space-y-10">
       {/* Kennzahlen des Depotstands, sofern einer importiert ist. Sie stehen
@@ -411,23 +403,29 @@ export function SecuritiesPage() {
                   <TableHead>Asset</TableHead>
                   {withPositions && (
                     <>
-                      <TableHead className="whitespace-nowrap text-right">Wert</TableHead>
-                      <TableHead className="whitespace-nowrap text-right">
+                      <TableHead className="w-1/6 whitespace-nowrap text-right">
+                        Wert
+                      </TableHead>
+                      <TableHead className="w-1/6 whitespace-nowrap text-right">
                         Erwartet p. a.
                       </TableHead>
-                      <TableHead className="whitespace-nowrap text-right">
+                      <TableHead className="w-1/6 whitespace-nowrap text-right">
                         Gewinn
                       </TableHead>
                     </>
                   )}
-                  {/* Ohne Positionen traegt die Branche die Zeile mit: Sie sagt,
-                  wie breit das Depot streut — die Frage, die ohne Depotstand
-                  ueberhaupt beantwortbar ist. */}
+                  {/* Ohne Positionen tragen Branche, Ausschuettungsplan und
+                  Depotkonto die Zeile: Sie sind das, was ohne Depotstand
+                  ueberhaupt bekannt ist. Mit Positionen genuegen Wert,
+                  Erwartung und Gewinn: Den Plan zeigt die Detailseite, das
+                  Depotkonto bleibt als Filter. */}
                   {!withPositions && (
-                    <TableHead className="hidden lg:table-cell">Branche</TableHead>
+                    <>
+                      <TableHead className="hidden lg:table-cell">Branche</TableHead>
+                      <TableHead>Ausschüttung</TableHead>
+                      <TableHead className="hidden lg:table-cell">Depotkonto</TableHead>
+                    </>
                   )}
-                  <TableHead className={payoutClass}>Ausschüttung</TableHead>
-                  <TableHead className={depotClass}>Depotkonto</TableHead>
                   <TableHead className="w-0">
                     <span className="sr-only">Aktionen</span>
                   </TableHead>
@@ -487,16 +485,18 @@ export function SecuritiesPage() {
                         </>
                       )}
                       {!withPositions && (
-                        <TableCell className="hidden text-muted-foreground lg:table-cell">
-                          {security.sector ?? "—"}
-                        </TableCell>
+                        <>
+                          <TableCell className="hidden text-muted-foreground lg:table-cell">
+                            {security.sector ?? "—"}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {payoutLabel(security)}
+                          </TableCell>
+                          <TableCell className="hidden text-muted-foreground lg:table-cell">
+                            {row.depotName ?? "—"}
+                          </TableCell>
+                        </>
                       )}
-                      <TableCell className={cn("text-muted-foreground", payoutClass)}>
-                        {payoutLabel(security)}
-                      </TableCell>
-                      <TableCell className={cn("text-muted-foreground", depotClass)}>
-                        {row.depotName ?? "—"}
-                      </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
                           {actionsFor(security)}

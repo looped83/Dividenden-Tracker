@@ -53,6 +53,11 @@ interface StatTableProps<T> {
    * Aufrufer hinsetzt (z. B. in der Kopfzeile der Kachel, {@link StatSearch}).
    */
   query?: string;
+  /**
+   * Auf dem Telefon links neben der Sortierauswahl, in derselben Zeile —
+   * z. B. das von aussen gesteuerte Suchfeld.
+   */
+  beforeSort?: React.ReactNode;
   initialSort?: { key: string; direction: SortDirection };
   /**
    * Ueberschrift des Abschnitts. Ist sie gesetzt, rahmt die Tabelle sich
@@ -178,6 +183,7 @@ export function StatTable<T>({
   searchOf,
   searchPlaceholder = "Suchen …",
   query: externalQuery,
+  beforeSort,
   initialSort,
   title,
   pageSize = 25,
@@ -409,7 +415,12 @@ export function StatTable<T>({
         </div>
       ) : (
         <>
-          {!title && sortControl && <div className="flex justify-end">{sortControl}</div>}
+          {(beforeSort ?? (!title && sortControl)) && (
+            <div className="flex items-center justify-end gap-3">
+              {beforeSort && <div className="min-w-0 flex-1">{beforeSort}</div>}
+              {!title && sortControl}
+            </div>
+          )}
           {pageRows.length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">
               {emptyMessage}
