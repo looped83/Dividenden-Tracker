@@ -10,6 +10,7 @@ import { DetailRow } from "@/components/ui/detail-row";
 import { EmptyState } from "@/components/ui/empty-state";
 import { AmountText } from "@/components/money/AmountText";
 import { TrendPill } from "@/components/domain/KpiHero";
+import { SecurityIdentifiers } from "@/components/domain/SecurityIdentifiers";
 import { Money, currencySymbol, formatPercent, toCurrencyCode } from "@/lib/money";
 import { normalizePayoutMonths } from "@/lib/statistics";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
@@ -289,6 +290,11 @@ export function PaymentDetailPage() {
         badge={cancelled ? <Badge variant="warning">Storniert</Badge> : undefined}
         subtitle={
           <>
+            {/* Kennungen in eigener Zeile direkt unter dem Namen — wie im Kopf
+                der Asset-Detailseite; Datum und Depot darunter. */}
+            {security && (
+              <SecurityIdentifiers security={security} className="basis-full" />
+            )}
             {/* Ohne Kalendersymbol: Neben dem Depot ist das Datum auch so als
                 Datum zu erkennen. */}
             <span>{formatCalendarDate(payment.pay_date)}</span>
