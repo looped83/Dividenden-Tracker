@@ -83,7 +83,7 @@ describe("YearMonthMatrix ab md", () => {
     const jahre = within(table)
       .getAllByRole("rowheader")
       .map((zelle) => zelle.textContent);
-    expect(jahre).toEqual(["2026* (laufendes Jahr)", "2025", "2024", "Gesamt"]);
+    expect(jahre).toEqual(["2026 (laufendes Jahr)", "2025", "2024", "Gesamt"]);
   });
 
   it("stellt die zwölf Monate als Spalten dar", () => {
@@ -169,7 +169,7 @@ describe("YearMonthMatrix auf dem Telefon", () => {
     const jahre = within(table)
       .getAllByRole("columnheader")
       .map((zelle) => zelle.textContent);
-    expect(jahre).toEqual(["Monat", "2026* (laufendes Jahr)", "2025", "2024"]);
+    expect(jahre).toEqual(["Monat", "2026 (laufendes Jahr)", "2025", "2024"]);
     expect(within(table).getByRole("rowheader", { name: "Gesamt" })).toBeInTheDocument();
     // Zwoelf Monatszeilen plus Kopf- und Summenzeile.
     expect(within(table).getAllByRole("row")).toHaveLength(14);
@@ -178,9 +178,9 @@ describe("YearMonthMatrix auf dem Telefon", () => {
     ).toBeInTheDocument();
   });
 
-  it("nennt die Waehrung einmal statt in jeder Zelle — vorgelesen wird der volle Betrag", () => {
+  it("zeigt Beträge ohne Währung und ohne Hinweis darunter — vorgelesen wird der volle Betrag", () => {
     renderMatrix();
-    expect(screen.getByText(/Beträge in €/)).toBeInTheDocument();
+    expect(screen.queryByText(/Beträge in|läuft noch/)).not.toBeInTheDocument();
     const link = screen.getByRole("link", { name: /März 2025/ });
     expect(link).toHaveTextContent(/150,00\s€/);
     expect(link.querySelector("[aria-hidden]")?.textContent).toBe("150,00");
