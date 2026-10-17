@@ -7,7 +7,7 @@ import { monthOf, yearOf, type AnalyticsPayment, type RefDate } from "@/lib/stat
  * Die naechste Dividende eines Assets — entweder **angekuendigt** (Zahltag im
  * Dividendenkalender, mit genauem Datum und dem Betrag der Quelle) oder
  * **vermutet** (naechster Monat des Ausschuettungsplans, Betrag aus der
- * Historie). Die Herkunft steht dabei, weil beides verschieden belastbar ist.
+ * Historie). Nur die Vermutung wird als solche beschriftet.
  */
 export type NextDividend =
   | { source: "calendar"; date: string; amount: Money | null }
