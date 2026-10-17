@@ -1,7 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { EUR, Money } from "@/lib/money";
-import type { YearBucket } from "@/lib/statistics";
 import type { SecuritySnapshot } from "@/lib/supabase/repositories/securitySnapshots";
 import { PositionCard } from "@/features/securities/PositionCard";
 
@@ -36,60 +34,31 @@ function snapshot(overrides: Partial<SecuritySnapshot> = {}): SecuritySnapshot {
   };
 }
 
-const PER_YEAR: YearBucket[] = [
-  { year: 2025, net: Money.fromString("351.84", EUR), count: 12 },
-  { year: 2026, net: Money.fromString("280.00", EUR), count: 9 },
-];
-
 describe("PositionCard", () => {
-  it("nennt oben Erwartung und das letzte abgeschlossene Jahr nebeneinander", () => {
-    render(
-      <PositionCard
-        status={{ snapshot: snapshot(), current: true }}
-        perYear={PER_YEAR}
-      />,
-    );
-    expect(screen.getByText("Erwartet p. a.")).toBeInTheDocument();
-    expect(screen.getByText(/^372,00\s€$/)).toBeInTheDocument();
-    // 2026 laeuft noch — verglichen wird mit 2025.
-    expect(screen.getByText("Erhalten 2025")).toBeInTheDocument();
-    expect(screen.getByText(/^351,84\s€$/)).toBeInTheDocument();
+  it("zeigt Marktwert und Rendite als Kennzahlen", () => {
+    render(<PositionCard status={{ snapshot: snapshot(), current: true }} />);
     expect(screen.getByText("Marktwert")).toBeInTheDocument();
     expect(screen.getByText(/^\+888,00\s€$/)).toBeInTheDocument();
     expect(screen.getByText(/^auf Einstand 6,08\s%$/)).toBeInTheDocument();
+    // Die Erwartung steht seit 1.30.0 im Kopf der Seite, nicht mehr hier.
+    expect(screen.queryByText("Erwartet p. a.")).not.toBeInTheDocument();
   });
 
-  it("legt die uebrigen Werte unter „Alle Kennzahlen“", () => {
-    render(
-      <PositionCard
-        status={{ snapshot: snapshot(), current: true }}
-        perYear={PER_YEAR}
-      />,
+  it("zeigt die uebrigen Werte offen als Zeilen", () => {
+    const { container } = render(
+      <PositionCard status={{ snapshot: snapshot(), current: true }} />,
     );
-    const details = screen.getByText("Alle Kennzahlen").closest("details");
-    expect(details).not.toBeNull();
-    expect(details).not.toHaveAttribute("open");
-    expect(details).toHaveTextContent("Stückzahl");
-    expect(details).toHaveTextContent("monatlich");
-    expect(details?.textContent).toMatch(/4,2\s% p\. a\. über 5 Jahre/);
-  });
-
-  it("sagt ohne abgeschlossenes Jahr, dass der Vergleich noch fehlt", () => {
-    render(
-      <PositionCard
-        status={{ snapshot: snapshot(), current: true }}
-        perYear={[{ year: 2026, net: Money.fromString("280.00", EUR), count: 9 }]}
-      />,
-    );
-    expect(screen.getByText("Erhalten")).toBeInTheDocument();
-    expect(screen.getByText("noch kein volles Jahr")).toBeInTheDocument();
+    expect(container.querySelector("details")).toBeNull();
+    expect(screen.getByText("Stückzahl")).toBeInTheDocument();
+    expect(screen.getByText("120")).toBeInTheDocument();
+    expect(screen.getByText("monatlich")).toBeInTheDocument();
+    expect(screen.getByText(/4,2\s% p\. a\. über 5 Jahre/)).toBeInTheDocument();
   });
 
   it("kennzeichnet einen verkauften Bestand in der Ueberschrift", () => {
     render(
       <PositionCard
         status={{ snapshot: snapshot({ as_of: "2026-03-31" }), current: false }}
-        perYear={PER_YEAR}
       />,
     );
     expect(
