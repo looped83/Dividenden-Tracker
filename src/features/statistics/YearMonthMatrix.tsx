@@ -6,7 +6,6 @@ import { Select } from "@/components/ui/select";
 import { AmountText } from "@/components/money/AmountText";
 import { cn } from "@/lib/utils/cn";
 import {
-  currencySymbol,
   formatAmount,
   formatMoney,
   formatPercent,
@@ -24,7 +23,6 @@ import {
   type StatisticsFilter,
 } from "@/lib/statistics";
 import { useToday } from "@/lib/hooks/useToday";
-import { formatCalendarDate } from "@/lib/utils/formatDate";
 import { useStatisticsContext } from "./context";
 import {
   describeComparison,
@@ -75,8 +73,6 @@ export function YearMonthMatrix() {
     setSearchParams((prev) => applyBreakdownView(prev, next), { replace: true });
   };
 
-  const runningYear = matrix.years.find((row) => row.running);
-
   if (matrix.years.length === 0) return null;
 
   return (
@@ -122,23 +118,6 @@ export function YearMonthMatrix() {
           <BreakdownMatrixTable matrix={matrix} view={view} filter={filter} />
         ) : (
           <TransposedMatrixTable matrix={matrix} view={view} filter={filter} />
-        )}
-
-        {/* Einziger Hinweis unter der Tabelle: das Sternchen am laufenden
-            Jahr. Alles Weitere steht dort, wo es gebraucht wird — als Titel
-            und Screenreader-Text an der jeweiligen Zelle. */}
-        {(runningYear !== undefined || !isWide) && (
-          <p className="text-sm text-muted-foreground">
-            {!isWide && `Beträge in ${currencySymbol(matrix.totals.net.currency)}. `}
-            {runningYear && (
-              <>
-                <span aria-hidden>* </span>
-                {`${String(runningYear.year)} läuft noch — gerechnet bis ${formatCalendarDate(
-                  matrix.cutoff,
-                )}.`}
-              </>
-            )}
-          </p>
         )}
       </div>
     </Section>
@@ -301,12 +280,7 @@ function BreakdownMatrixTable({ matrix, view, filter }: MatrixProps) {
                 className="sticky left-0 z-10 whitespace-nowrap border-b border-r border-border bg-card px-3 py-2 text-left font-medium tabular-nums"
               >
                 {row.year}
-                {row.running && (
-                  <>
-                    <span aria-hidden>*</span>
-                    <span className="sr-only"> (laufendes Jahr)</span>
-                  </>
-                )}
+                {row.running && <span className="sr-only"> (laufendes Jahr)</span>}
               </th>
               {row.cells.map((cell) => (
                 <td
@@ -412,12 +386,7 @@ function TransposedMatrixTable({ matrix, view, filter }: MatrixProps) {
                 className="whitespace-nowrap border-b border-border bg-muted px-1.5 py-2 text-right font-medium tabular-nums text-muted-foreground"
               >
                 {row.year}
-                {row.running && (
-                  <>
-                    <span aria-hidden>*</span>
-                    <span className="sr-only"> (laufendes Jahr)</span>
-                  </>
-                )}
+                {row.running && <span className="sr-only"> (laufendes Jahr)</span>}
               </th>
             ))}
           </tr>
@@ -530,7 +499,6 @@ function MatrixCell({
     ) : (
       <span title={`${period}: ${formatMoney(cell.cumulative)} seit Jahresbeginn`}>
         <MatrixAmount amount={cell.cumulative} compact={compact} />
-        {cell.partial && <span aria-hidden>*</span>}
       </span>
     );
   }
@@ -544,7 +512,6 @@ function MatrixCell({
       className="rounded-sm underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <MatrixAmount amount={cell.net} compact={compact} />
-      {cell.partial && <span aria-hidden>*</span>}
       <span className="sr-only">
         {" "}
         — {period}, {formatPayments(cell.count)}
