@@ -1,36 +1,28 @@
 import * as React from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router";
-import { useQuery } from "@tanstack/react-query";
-import { Ban, ChevronDown, Pencil, RotateCcw, Trash2 } from "lucide-react";
+import { Ban, Pencil, RotateCcw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageSkeleton } from "@/components/layout/PageSkeleton";
 import { DetailBackLink, DetailHeader } from "@/components/layout/DetailHeader";
 import { Badge } from "@/components/ui/badge";
-import { Section, SectionButton } from "@/components/ui/section";
+import { Section } from "@/components/ui/section";
 import { EmptyState } from "@/components/ui/empty-state";
 import { AmountText } from "@/components/money/AmountText";
-import { AuditTrail } from "@/components/audit/AuditTrail";
-import { Money, toCurrencyCode, toGermanDecimalString } from "@/lib/money";
-import { cn } from "@/lib/utils/cn";
+import { TrendPill } from "@/components/domain/KpiHero";
+import { Money, currencySymbol, formatPercent, toCurrencyCode } from "@/lib/money";
+import { normalizePayoutMonths } from "@/lib/statistics";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { useToast } from "@/components/ui/toast";
 import { useDepots } from "@/features/depots/hooks";
 import { useSecurities } from "@/features/securities/hooks";
-import {
-  fetchImportById,
-  fetchImportRowForPayment,
-} from "@/lib/supabase/repositories/imports";
+import { useEffectivePayments } from "@/features/dashboard/hooks";
 import {
   useArchivePayment,
   useDeletePayment,
   usePayment,
   useUnarchivePayment,
 } from "@/features/payments/hooks";
-import {
-  amountDiffers,
-  isImported,
-  sourceLabel,
-} from "@/features/payments/paymentDisplay";
+import { sourceLabel } from "@/features/payments/paymentDisplay";
 import { formatCalendarDate, formatTimestamp } from "@/lib/utils/formatDate";
 import {
   DeleteDialog,
@@ -38,6 +30,11 @@ import {
   type PaymentSummaryData,
 } from "@/features/payments/dialogs";
 import { usePaymentComposer } from "@/features/payments/PaymentComposer";
+import {
+  derivePaymentInsights,
+  percentChange,
+} from "@/features/payments/paymentInsights";
+import { PaymentInsightsView } from "@/features/payments/PaymentInsightsView";
 
 function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -46,6 +43,16 @@ function DetailRow({ label, children }: { label: string; children: React.ReactNo
       <span className="text-right">{children}</span>
     </div>
   );
+}
+
+/**
+ * Dezimalwert ohne bedeutungslose Nullen, mit mindestens `minDigits`
+ * Nachkommastellen: „0.30660000" → „0,3066", „300.000000" → „300".
+ */
+function formatDecimal(value: string, minDigits = 0): string {
+  const [whole = "0", fraction = ""] = value.split(".");
+  const digits = fraction.replace(/0+$/, "").padEnd(minDigits, "0");
+  return digits ? `${whole},${digits}` : whole;
 }
 
 export function PaymentDetailPage() {
@@ -70,20 +77,25 @@ export function PaymentDetailPage() {
   const [stornoError, setStornoError] = React.useState<string | null>(null);
   const [deleteOpen, setDeleteOpen] = React.useState(false);
   const [deleteError, setDeleteError] = React.useState<string | null>(null);
-  const [historyOpen, setHistoryOpen] = React.useState(false);
-
-  // Provenance importierter Eingänge (§6): Herkunftszeile + Importlauf.
-  const imported = payment ? isImported(payment.source) : false;
-  const { data: importRow } = useQuery({
-    queryKey: ["payments", "import-row", id],
-    queryFn: () => fetchImportRowForPayment(id ?? ""),
-    enabled: Boolean(id) && imported,
-  });
-  const { data: importRun } = useQuery({
-    queryKey: ["payments", "import-run", payment?.import_id],
-    queryFn: () => fetchImportById(payment?.import_id ?? ""),
-    enabled: Boolean(payment?.import_id),
-  });
+  // Seit 1.25.0 ordnet die Seite die Dividende ein, statt Metadaten zu
+  // zeigen (Waehrung, Quelle, Zeitstempel, Aenderungsverlauf, Importherkunft):
+  // Die Frage beim Antippen ist „war das viel?", nicht „wann wurde das
+  // gespeichert?". Grundlage ist die bereits geladene Historie — derselbe
+  // Cache wie Liste und Statistik, also keine zusaetzliche Abfrage.
+  const { payments: effectivePayments } = useEffectivePayments();
+  const securityId = payment?.security_id;
+  const payoutMonths = securities.find((s) => s.id === securityId)?.payout_months;
+  const insights = React.useMemo(
+    () =>
+      id && securityId
+        ? derivePaymentInsights(
+            id,
+            effectivePayments.filter((entry) => entry.securityId === securityId),
+            normalizePayoutMonths(payoutMonths),
+          )
+        : null,
+    [id, securityId, effectivePayments, payoutMonths],
+  );
 
   // Der Rueckweg steht oben, nicht am Seitenende: Auf einer langen Detailseite
   // ist ein Zurueck unter dem letzten Abschnitt praktisch unauffindbar, und die
@@ -135,17 +147,34 @@ export function PaymentDetailPage() {
     source: sourceLabel(payment.source),
   };
 
-  // Vergleich Ursprungswert ↔ aktueller Wert (§6): weicht der gespeicherte Wert
-  // vom normalisierten Importwert ab, liegt eine spätere manuelle Änderung vor.
-  const normalized = (importRow?.normalized ?? null) as Record<string, unknown> | null;
-  const rawNet = normalized?.["net_amount"];
-  const importedNet =
-    typeof rawNet === "string" || typeof rawNet === "number" ? String(rawNet) : null;
-  const rawPayDate = normalized?.["pay_date"];
-  const importedPayDate = typeof rawPayDate === "string" ? rawPayDate : null;
-  const netChanged =
-    importedNet !== null && amountDiffers(importedNet, payment.net_amount);
-  const dateChanged = importedPayDate !== null && importedPayDate !== payment.pay_date;
+  // Abzuege, soweit erfasst (in der Regel nur bei importierten Dividenden).
+  const deductions = (
+    [
+      ["Quellensteuer", payment.withholding_tax],
+      ["Kapitalertragsteuer", payment.domestic_tax],
+      ["Solidaritätszuschlag", payment.solidarity_surcharge],
+      ["Kirchensteuer", payment.church_tax],
+      ["Gebühren", payment.fees],
+    ] satisfies [string, string | null][]
+  ).flatMap(([label, value]) =>
+    value !== null && Money.fromString(value, currency).isPositive()
+      ? [{ label, value }]
+      : [],
+  );
+  const gross = Money.fromString(payment.gross_amount, currency);
+  const taxRate =
+    deductions.length > 0 && gross.isPositive()
+      ? gross
+          .subtract(Money.fromString(payment.net_amount, currency))
+          .toDecimal()
+          .div(gross.toDecimal())
+          .times(100)
+      : null;
+  const perShare =
+    payment.amount_per_share !== null && payment.quantity !== null
+      ? `${formatDecimal(payment.amount_per_share, 2)} ${currencySymbol(payment.original_currency)} · ${formatDecimal(payment.quantity)} Stück`
+      : null;
+  const yearAgo = insights?.yearAgo ?? null;
 
   const handleStorno = async (stornoReason: string) => {
     setStornoError(null);
@@ -278,124 +307,100 @@ export function PaymentDetailPage() {
             </span>
           </>
         }
-        figure={<AmountText amount={Money.fromString(payment.net_amount, currency)} />}
+        figure={
+          <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <AmountText amount={Money.fromString(payment.net_amount, currency)} />
+            {/* Der Vorjahresvergleich der Liste, hier ausgeschrieben. */}
+            {/* Eigene Laufweite: Die grosse Zahl ist enger gesetzt. */}
+            {yearAgo && (
+              <span className="tracking-normal">
+                <TrendPill
+                  tone={
+                    yearAgo.direction === "up"
+                      ? "positive"
+                      : yearAgo.direction === "down"
+                        ? "negative"
+                        : "neutral"
+                  }
+                  title={`gegenüber ${formatCalendarDate(yearAgo.previousDate)}`}
+                >
+                  {percentChange(yearAgo.difference, yearAgo.previousAmount)} zum Vorjahr
+                </TrendPill>
+              </span>
+            )}
+          </span>
+        }
       />
 
-      {/* Zwei Spalten ab `lg` statt einer schmalen Saeule: Die Seite war als
-          einzige auf `max-w-2xl` begrenzt und wirkte neben den uebrigen
-          Bereichen wie ein Fremdkoerper. Sie schlicht breitzuziehen haette
-          aber nur sehr lange Beschriftungszeilen erzeugt — nebeneinander
-          fuellen die Karten die Breite und bleiben lesbar.
-
-          Welche Karte wo landet, haengt davon ab, ob es eine Importherkunft
-          gibt: Mit ihr stehen Details und Herkunft nebeneinander und der
-          Verlauf darunter ueber beide Spalten; ohne sie ruecken Details und
-          Verlauf nebeneinander. So bleibt in keinem Fall eine halbe Seite
-          leer. */}
-      <div className="grid grid-cols-1 gap-10 pt-4 lg:grid-cols-2 lg:gap-x-16">
-        <Section title="Details">
+      {cancelled && (
+        <Section title="Storniert" className="pt-4">
           <div>
-            <DetailRow label="Währung">{payment.original_currency}</DetailRow>
-            <DetailRow label="Datenquelle">{sourceLabel(payment.source)}</DetailRow>
-            {payment.note && <DetailRow label="Notiz">{payment.note}</DetailRow>}
-            <DetailRow label="Erstellt">{formatTimestamp(payment.created_at)}</DetailRow>
-            <DetailRow label="Zuletzt geändert">
-              {formatTimestamp(payment.updated_at)}
-            </DetailRow>
-            {cancelled && payment.archived_at && (
+            {payment.archived_at && (
               <DetailRow label="Storniert am">
                 {formatTimestamp(payment.archived_at)}
               </DetailRow>
             )}
-            {cancelled && payment.archive_reason && (
-              <DetailRow label="Stornogrund">{payment.archive_reason}</DetailRow>
+            {payment.archive_reason && (
+              <DetailRow label="Grund">{payment.archive_reason}</DetailRow>
             )}
           </div>
         </Section>
+      )}
 
-        {imported && (
-          <Section title="Importherkunft">
-            <div>
-              <DetailRow label="Importdatei">
-                {payment.source_file_name ?? importRun?.file_name ?? "—"}
-              </DetailRow>
-              {payment.import_id && (
-                <DetailRow label="Import-ID">
-                  <span className="font-mono text-xs">{payment.import_id}</span>
-                </DetailRow>
-              )}
-              {importRun?.committed_at && (
-                <DetailRow label="Importiert am">
-                  {formatTimestamp(importRun.committed_at)}
-                </DetailRow>
-              )}
-              {payment.source_row_number !== null && (
-                <DetailRow label="Ursprüngliche Zeile">
-                  {payment.source_row_number}
-                </DetailRow>
-              )}
-              {importedNet !== null && (
-                <DetailRow label="Importierter Nettobetrag">
-                  {toGermanDecimalString(importedNet)}
-                  {netChanged && (
-                    <span className="ml-2 text-warning-strong">
-                      (nachträglich geändert)
-                    </span>
-                  )}
-                </DetailRow>
-              )}
-              {importedPayDate !== null && (
-                <DetailRow label="Importiertes Zahlungsdatum">
-                  {formatCalendarDate(importedPayDate)}
-                  {dateChanged && (
-                    <span className="ml-2 text-warning-strong">
-                      (nachträglich geändert)
-                    </span>
-                  )}
-                </DetailRow>
-              )}
-              {(netChanged || dateChanged) && (
-                <p className="pt-2 text-sm text-muted-foreground">
-                  Diese importierte Dividende wurde nach dem Import manuell angepasst. Die
-                  Importherkunft bleibt dennoch erhalten.
-                </p>
-              )}
-            </div>
-          </Section>
-        )}
+      {insights && (
+        <PaymentInsightsView
+          insights={insights}
+          paymentId={payment.id}
+          securityId={payment.security_id}
+          securityName={security?.name ?? "diesem Asset"}
+          listState={from}
+        />
+      )}
 
-        {/* Eingeklappt: Der Verlauf ist Nachschlagewerk, keine Kernaussage.
-            Er wird erst beim Aufklappen gerendert und damit auch erst dann
-            geladen — die Seite spart die Abfrage, solange niemand fragt. */}
-        <Section
-          title="Änderungsverlauf"
-          className={imported ? "lg:col-span-2" : undefined}
-          action={
-            <SectionButton
-              aria-expanded={historyOpen}
-              aria-controls="payment-history"
-              onClick={() => {
-                setHistoryOpen((open) => !open);
-              }}
-            >
-              {historyOpen ? "Ausblenden" : "Anzeigen"}
-              <ChevronDown
-                className={cn(
-                  "size-4 shrink-0 transition-transform motion-reduce:transition-none",
-                  historyOpen && "rotate-180",
+      {(deductions.length > 0 || perShare !== null || payment.note) && (
+        <div className="grid grid-cols-1 gap-10 pt-4 lg:grid-cols-2 lg:gap-x-16">
+          {(deductions.length > 0 || perShare !== null) && (
+            // Nur wenn es etwas abzuziehen gibt: Manuell erfasste Dividenden
+            // tragen allein den Nettobetrag, eine Zeile „Brutto = Netto"
+            // sagte nichts.
+            <Section title="Brutto zu Netto">
+              <div>
+                {deductions.length > 0 && (
+                  <>
+                    <DetailRow label="Brutto">
+                      <AmountText
+                        amount={Money.fromString(payment.gross_amount, currency)}
+                      />
+                    </DetailRow>
+                    {deductions.map((row) => (
+                      <DetailRow key={row.label} label={row.label}>
+                        −&#8239;
+                        <AmountText amount={Money.fromString(row.value, currency)} />
+                      </DetailRow>
+                    ))}
+                    <DetailRow label="Netto">
+                      <span className="font-semibold">
+                        <AmountText
+                          amount={Money.fromString(payment.net_amount, currency)}
+                        />
+                      </span>
+                    </DetailRow>
+                    {taxRate !== null && (
+                      <DetailRow label="Abzugsquote">{formatPercent(taxRate)}</DetailRow>
+                    )}
+                  </>
                 )}
-                aria-hidden
-              />
-            </SectionButton>
-          }
-        >
-          {historyOpen && (
-            <div id="payment-history" className="pt-2">
-              <AuditTrail entityType="dividend_payment" entityId={payment.id} />
-            </div>
+                {perShare !== null && <DetailRow label="Je Aktie">{perShare}</DetailRow>}
+              </div>
+            </Section>
           )}
-        </Section>
-      </div>
+          {payment.note && (
+            <Section title="Notiz">
+              <p className="whitespace-pre-line pt-1 text-[0.9375rem]">{payment.note}</p>
+            </Section>
+          )}
+        </div>
+      )}
 
       <StornoDialog
         open={stornoOpen}
