@@ -269,7 +269,7 @@ export function CompaniesTab() {
       )}
 
       {/* Auf dem Telefon traegt diese Liste die Verteilung und damit auch
-          den Umschalter; das Suchfeld steht dann als erste Zeile darunter. */}
+          den Umschalter; das Suchfeld steht darunter neben der Sortierung. */}
       <Section
         title={isWide ? "Statistik je Asset" : "Verteilung"}
         actionClassName={isWide ? "w-64 -my-3" : "shrink-0"}
@@ -282,15 +282,6 @@ export function CompaniesTab() {
         }
       >
         <div className="space-y-3">
-          {!isWide && (
-            <div className="pt-1 [&_input]:rounded-full">
-              <StatSearch
-                value={query}
-                onChange={setQuery}
-                placeholder="Assets suchen …"
-              />
-            </div>
-          )}
           <StatTable
             rows={tableRows}
             columns={columns}
@@ -298,6 +289,13 @@ export function CompaniesTab() {
             caption="Kennzahlen je Asset"
             searchOf={(row) => entityName(securities, row.securityId)}
             query={query}
+            // Auf dem Telefon teilen sich Suche und Sortierung eine Zeile; der
+            // kurze Platzhalter passt dort ungekuerzt in das halbe Feld.
+            beforeSort={
+              isWide ? undefined : (
+                <StatSearch value={query} onChange={setQuery} placeholder="Suchen …" />
+              )
+            }
             initialSort={{ key: "net", direction: "desc" }}
             emptyMessage={
               tableRows.length === 0 && hasArchived

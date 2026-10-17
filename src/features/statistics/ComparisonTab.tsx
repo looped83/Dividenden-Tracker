@@ -25,7 +25,6 @@ import {
 } from "@/lib/statistics";
 import { useToday } from "@/lib/hooks/useToday";
 import { cn } from "@/lib/utils/cn";
-import { formatCalendarDate } from "@/lib/utils/formatDate";
 import { useStatisticsContext } from "./context";
 import type { EntityInfo } from "@/features/dashboard/format";
 import {
@@ -251,7 +250,7 @@ export function ComparisonTab() {
                     .filter((year) => year !== selection.currentYear)
                     .map((year) => (
                       <option key={year} value={year}>
-                        gegen {year}
+                        {year}
                       </option>
                     ))}
                 </Select>
@@ -259,18 +258,6 @@ export function ComparisonTab() {
             </>
           )}
         </FilterBar>
-
-        {/* Bis wann gerechnet wurde — ohne diese Angabe fuehren die Kacheln
-              darunter in die Irre: Laeuft einer der Zeitraeume noch, endet der
-              Vergleich auf **beiden** Seiten am selben Kalendertag (PRODUCT_SPEC.md
-              §5.5, DECISIONS.md D-7-1). Eine eigene Kachel dafuer kostete auf
-              dem Telefon eine halbe Reihe; als Satz unter der Auswahl steht
-              sie dort, wo der Zeitraum gewaehlt wird. */}
-        <p className="text-sm text-muted-foreground">
-          {comparison.truncated
-            ? `Gerechnet bis ${formatCalendarDate(comparison.cutoff)} — beide Seiten am selben Kalendertag gekappt.`
-            : `Volle Zeiträume, gerechnet bis ${formatCalendarDate(comparison.cutoff)}.`}
-        </p>
 
         {filter.year !== null && (
           <p className="flex items-start gap-2 rounded-2xl bg-muted p-3 text-sm text-muted-foreground">
@@ -324,6 +311,10 @@ export function ComparisonTab() {
                 points={points}
                 currentLabel={comparison.current.label}
                 referenceLabel={comparison.reference.label}
+                // Die Reihen erklaeren sich hier selbst: Orange ist wie ueberall
+                // der aktuelle Zeitraum, die Jahre stehen in der Auswahl darueber
+                // und im Tooltip.
+                showLegend={false}
                 ariaLabel={`Kumulierte Netto-Dividenden: ${comparison.current.label} gegenüber ${comparison.reference.label}`}
               />
             </div>
@@ -337,9 +328,6 @@ export function ComparisonTab() {
                 currentLabel={comparison.current.label}
                 referenceLabel={comparison.reference.label}
                 caption={`Netto-Dividenden je Monat: ${comparison.current.label} gegenüber ${comparison.reference.label}`}
-                hasPartial={comparison.months.some(
-                  (month) => !month.current.complete || !month.reference.complete,
-                )}
               />
             </div>
           </Section>
@@ -358,7 +346,6 @@ export function ComparisonTab() {
                 currentLabel={comparison.current.label}
                 referenceLabel={comparison.reference.label}
                 caption={`Netto-Dividenden je Asset: ${comparison.current.label} gegenüber ${comparison.reference.label}`}
-                hasPartial={comparison.truncated}
               />
             )}
           </div>
@@ -412,8 +399,6 @@ interface ComparisonBreakdownProps {
   referenceLabel: string;
   /** Beschriftung fuer Hilfsmittel (Tabellen-`caption`, Listenbeschriftung). */
   caption: string;
-  /** Wahr, wenn irgendeine Zeile angeschnitten ist — dann erscheint die Fussnote. */
-  hasPartial: boolean;
 }
 
 /**
@@ -435,7 +420,6 @@ function ComparisonBreakdown({
   currentLabel,
   referenceLabel,
   caption,
-  hasPartial,
 }: ComparisonBreakdownProps) {
   const isWide = useMediaQuery(MD_BREAKPOINT_QUERY);
 
@@ -560,13 +544,6 @@ function ComparisonBreakdown({
             );
           })}
         </ListGroup>
-      )}
-
-      {hasPartial && (
-        <p className="text-sm text-muted-foreground">
-          <span aria-hidden>*</span> Angeschnittener Monat: nur bis zum Stichtag
-          gerechnet.
-        </p>
       )}
     </div>
   );

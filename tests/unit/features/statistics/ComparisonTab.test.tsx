@@ -136,16 +136,11 @@ describe("ComparisonTab — gleicher Ausschnitt", () => {
     expect(screen.getByText("2 Dividenden")).toBeInTheDocument();
   });
 
-  it("nennt den Stichtag genau einmal, als Satz unter der Auswahl", () => {
+  it("zeigt unter der Auswahl keinen Stichtag-Hinweis", () => {
     renderTab();
-    // Zusage 1 der Oberflaeche: Die Kappung wird benannt. Genau einmal — je
-    // Kachel wiederholt waere es wieder die Spanne von frueher.
-    expect(screen.getAllByText(/29\.07\.2026/)).toHaveLength(1);
-    expect(
-      screen.getByText(
-        "Gerechnet bis 29.07.2026 — beide Seiten am selben Kalendertag gekappt.",
-      ),
-    ).toBeInTheDocument();
+    // Der Satz „Gerechnet bis …" entfiel auf Wunsch (1.28.0): Die Auswahl
+    // darueber sagt, was verglichen wird.
+    expect(screen.queryByText(/Gerechnet bis/)).not.toBeInTheDocument();
   });
 
   it("weist die Veraenderung gegenueber dem Vergleichsjahr aus", () => {
@@ -165,11 +160,6 @@ describe("ComparisonTab — gleicher Ausschnitt", () => {
     // Volles Jahr 2025: 200 + 1.000 = 1.200 € — die 1.000 € aus September und
     // Dezember zaehlen mit, weil hier nichts gekappt wird.
     expect(screen.getAllByText("1.200,00 €").length).toBeGreaterThan(0);
-    // Und der Satz unter der Auswahl sagt es: Hier ist nichts gekappt,
-    // gezaehlt wurde bis zum letzten Tag des Jahres.
-    expect(
-      screen.getByText("Volle Zeiträume, gerechnet bis 31.12.2025."),
-    ).toBeInTheDocument();
   });
 });
 
@@ -194,7 +184,8 @@ describe("ComparisonTab — Drill-down", () => {
     renderTab();
     const july = monthRow("Juli");
     expect(within(july).queryByRole("link")).not.toBeInTheDocument();
-    expect(screen.getByText(/Angeschnittener Monat/)).toBeInTheDocument();
+    // Ohne Fussnote: Das Sternchen erklaert sein Tooltip.
+    expect(screen.queryByText(/Angeschnittener Monat:/)).not.toBeInTheDocument();
   });
 
   it("verlinkt keinen Monat ohne Zahlungen", () => {
@@ -245,8 +236,8 @@ describe("ComparisonTab — Auswahl", () => {
     const options = within(screen.getByLabelText("verglichen mit")).getAllByRole(
       "option",
     );
-    expect(options.map((option) => option.textContent)).not.toContain("gegen 2026");
-    expect(options.map((option) => option.textContent)).toContain("gegen 2025");
+    expect(options.map((option) => option.textContent)).not.toContain("2026");
+    expect(options.map((option) => option.textContent)).toContain("2025");
   });
 
   it("sagt, dass der Jahresfilter hier nicht wirkt", () => {
