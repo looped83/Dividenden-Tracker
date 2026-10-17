@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Outlet, ScrollRestoration } from "react-router";
+import { Outlet, ScrollRestoration, type ScrollRestorationProps } from "react-router";
 import { Sidebar, CompactSidebar } from "@/components/layout/Sidebar";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -7,6 +7,12 @@ import { RouteAnnouncer } from "@/components/layout/RouteAnnouncer";
 import { PageSkeleton } from "@/components/layout/PageSkeleton";
 import { PaymentComposerProvider } from "@/features/payments/PaymentComposer";
 import { RequireAuth } from "@/app/auth/RequireAuth";
+
+/** Schluessel der Bildlaufposition: Detailseite je Besuch, Bereich je Pfad. */
+const scrollKey: NonNullable<ScrollRestorationProps["getKey"]> = (location, matches) =>
+  matches.some((match) => Object.keys(match.params).length > 0)
+    ? location.key
+    : location.pathname;
 
 /**
  * Responsive App-Shell (IMPLEMENTATION_PLAN.md Phase 1):
@@ -32,8 +38,11 @@ export function AppShell() {
           Eintrags in der Chronik): Filter, Sortierung und Seitenzahl stehen
           in der Adresse: Jeder Filterklick waere sonst ein neuer Ort und
           risse die Liste nach oben. So zaehlt nur der Wechsel des Bereichs —
-          und der Weg zurueck landet wieder dort, wo man aufgehoert hat. */}
-      <ScrollRestoration getKey={(location) => location.pathname} />
+          und der Weg zurueck landet wieder dort, wo man aufgehoert hat.
+          Detailseiten (Routen mit `:id`) dagegen nach dem Chronikeintrag:
+          Mit dem Pfad als Schluessel oeffnete ein schon einmal besuchtes
+          Asset dort, wo man es zuletzt verlassen hatte, statt oben. */}
+      <ScrollRestoration getKey={scrollKey} />
       <ErrorBoundary>
         <PaymentComposerProvider>
           <div className="flex min-h-dvh flex-col bg-background text-foreground md:flex-row">

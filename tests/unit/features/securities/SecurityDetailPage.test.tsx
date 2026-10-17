@@ -224,6 +224,14 @@ describe("SecurityDetailPage", () => {
     expect(screen.getByText(/Stammdaten sind unvollständig/)).toBeInTheDocument();
   });
 
+  it("verlinkt die Stammdaten ueber die ISIN auf DivvyDiary", () => {
+    renderPage();
+    expect(screen.getByRole("link", { name: /DivvyDiary/ })).toHaveAttribute(
+      "href",
+      "https://divvydiary.com/DE0001234567",
+    );
+  });
+
   it("verlinkt die letzten Eingaenge auf ihre Detailseite", () => {
     renderPage();
     const hrefs = screen.getAllByRole("link").map((l) => l.getAttribute("href"));
