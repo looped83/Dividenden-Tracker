@@ -43,10 +43,10 @@ function DeltaText({ delta }: { delta: Delta }) {
 
 type HistoryView = "monthly" | "cumulative";
 
-// Wortlaut und Reihenfolge wie der Umschalter der Uebersicht.
+// Die einzelnen Dividenden zuerst und vorausgewaehlt, die Summe danach.
 const VIEW_OPTIONS: readonly SegmentOption<HistoryView>[] = [
+  { value: "monthly", label: "Übersicht" },
   { value: "cumulative", label: "Kumuliert" },
-  { value: "monthly", label: "Monatlich" },
 ];
 
 /**
