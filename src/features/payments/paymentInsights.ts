@@ -37,6 +37,11 @@ export interface PaymentInsights {
   /** Bis zu {@link HISTORY_SIZE} Dividenden um diese herum, chronologisch. */
   history: AnalyticsPayment[];
   year: { year: number; net: Money; count: number };
+  /**
+   * Bis einschliesslich der jeweiligen Dividende insgesamt erhalten — je
+   * Eintrag von {@link history}, fuer die kumulierte Sicht des Verlaufs.
+   */
+  historyTotals: Money[];
   total: Money;
   firstDate: string;
   /**
@@ -148,6 +153,13 @@ export function derivePaymentInsights(
     Math.min(index - HISTORY_SIZE + 1, sorted.length - HISTORY_SIZE),
   );
   const history = sorted.slice(start, start + HISTORY_SIZE);
+  let running = sumMoney(
+    sorted.slice(0, start).map((payment) => payment.netAmount),
+    currency,
+  );
+  const historyTotals = history.map(
+    (payment) => (running = running.add(payment.netAmount)),
+  );
 
   const year = yearOf(current.payDate);
   const inYear = sorted.filter((payment) => yearOf(payment.payDate) === year);
@@ -182,6 +194,7 @@ export function derivePaymentInsights(
       ),
       count: inYear.length,
     },
+    historyTotals,
     total: sumMoney(
       sorted.map((payment) => payment.netAmount),
       currency,
