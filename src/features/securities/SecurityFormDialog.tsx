@@ -142,7 +142,10 @@ export function SecurityFormDialog({
         <DialogHeader>
           <DialogTitle>{security ? "Asset bearbeiten" : "Neues Asset"}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={(event) => void onSubmit(event)} className="space-y-3 sm:space-y-4">
+        <form
+          onSubmit={(event) => void onSubmit(event)}
+          className="space-y-3 sm:space-y-4"
+        >
           {/* Kurze Felder teilen sich eine Zeile, damit das Formular auf dem
               Telefon ohne Scrollen passt. Sechs Spalten tragen beide Raster:
               mobil ISIN | WKN, Ticker | Land | Währung, Branche | Depotkonto;
