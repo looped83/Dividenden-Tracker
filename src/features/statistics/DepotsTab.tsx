@@ -140,42 +140,46 @@ export function DepotsTab() {
     </Section>
   );
 
-  const statistic = (
-    // Ohne Suchfeld: Depots zaehlt man an einer Hand. Ein Filter fuer eine
-    // Liste, die vollstaendig ins Bild passt, ist ein Bedienelement ohne
-    // Aufgabe — anders als bei den Unternehmen, wo Hunderte Zeilen stehen
-    // koennen.
-    <Section
-      title={isWide ? "Depotstatistik" : "Verteilung"}
-      {...(!isWide && { action: <BreakdownSwitch />, actionClassName: "shrink-0" })}
-    >
-      <div>
-        <StatTable
-          rows={stats}
-          columns={columns}
-          getRowKey={(row) => row.depotId}
-          caption="Kennzahlen je Depot"
-          initialSort={{ key: "net", direction: "desc" }}
-          onRowClick={(row) =>
-            void navigate(statisticsDrillHref(filter, { depotId: row.depotId }))
-          }
-          rowLabel={(row) =>
-            `Dividenden im Depot ${entityName(depots, row.depotId)} anzeigen`
-          }
-          listSummary={{
-            bar: (row) => {
-              const share = shareOfTotal(row.net, total);
-              return {
-                length: barLength(row.net, maxNet),
-                label: share ? formatPercent(share) : "—",
-              };
-            },
-            meta: (row) =>
-              `${formatPayments(row.count)} · ${formatCountNoun(row.distinctSecurities, "Asset", "Assets")}`,
-          }}
-        />
-      </div>
+  // Ohne Suchfeld: Depots zaehlt man an einer Hand. Ein Filter fuer eine
+  // Liste, die vollstaendig ins Bild passt, ist ein Bedienelement ohne
+  // Aufgabe — anders als bei den Unternehmen, wo Hunderte Zeilen stehen
+  // koennen.
+  const depotTable = (
+    <StatTable
+      rows={stats}
+      columns={columns}
+      getRowKey={(row) => row.depotId}
+      caption="Kennzahlen je Depot"
+      initialSort={{ key: "net", direction: "desc" }}
+      // Auf dem Telefon wie bei den Assets: die Sortierung ueber der
+      // Ueberschrift, der Umschalter daneben bleibt an seiner Stelle.
+      {...(!isWide && { title: "Verteilung", titleAction: <BreakdownSwitch /> })}
+      onRowClick={(row) =>
+        void navigate(statisticsDrillHref(filter, { depotId: row.depotId }))
+      }
+      rowLabel={(row) =>
+        `Dividenden im Depot ${entityName(depots, row.depotId)} anzeigen`
+      }
+      listSummary={{
+        bar: (row) => {
+          const share = shareOfTotal(row.net, total);
+          return {
+            length: barLength(row.net, maxNet),
+            label: share ? formatPercent(share) : "—",
+          };
+        },
+        meta: (row) =>
+          `${formatPayments(row.count)} · ${formatCountNoun(row.distinctSecurities, "Asset", "Assets")}`,
+      }}
+    />
+  );
+
+  const statistic = isWide ? (
+    <Section title="Depotstatistik">
+      <div>{depotTable}</div>
     </Section>
+  ) : (
+    depotTable
   );
 
   // Auf dem Telefon traegt die Liste die Verteilung selbst (Balken je Zeile)
