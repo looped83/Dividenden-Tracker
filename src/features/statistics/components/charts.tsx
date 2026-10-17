@@ -232,6 +232,8 @@ interface ComparisonLineChartProps {
   /** Beschriftung der Vergleichsreihe, z. B. „2025". */
   referenceLabel: string;
   ariaLabel: string;
+  /** Legende unter dem Diagramm; aus, wo die Auswahl darueber die Reihen schon benennt. */
+  showLegend?: boolean;
 }
 
 /**
@@ -247,7 +249,8 @@ interface ComparisonLineChartProps {
  * (neutrales Grau, 3,6:1 hell / 3,5:1 dunkel) und gestrichelt.
  *
  * **Identitaet haengt nicht an der Farbe allein:** Die Vergleichsreihe ist
- * zusaetzlich gestrichelt, beide Reihen sind benannt (Legende), und die
+ * zusaetzlich gestrichelt, beide Reihen sind benannt (Legende oder Auswahl
+ * darueber, dazu der Tooltip), und die
  * Datentabelle traegt dieselben Werte als Text.
  */
 export function ComparisonLineChart({
@@ -255,6 +258,7 @@ export function ComparisonLineChart({
   currentLabel,
   referenceLabel,
   ariaLabel,
+  showLegend = true,
 }: ComparisonLineChartProps) {
   if (points.length === 0) {
     return <ChartEmpty>Keine Daten für die aktuelle Auswahl.</ChartEmpty>;
@@ -302,12 +306,14 @@ export function ComparisonLineChart({
         </LineChart>
       </ChartCanvas>
 
-      <ChartLegend
-        items={[
-          { label: currentLabel, color: "var(--primary)" },
-          { label: referenceLabel, color: "var(--series-prior)", dashed: true },
-        ]}
-      />
+      {showLegend && (
+        <ChartLegend
+          items={[
+            { label: currentLabel, color: "var(--primary)" },
+            { label: referenceLabel, color: "var(--series-prior)", dashed: true },
+          ]}
+        />
+      )}
 
       <ChartDataTable>
         <Table>
