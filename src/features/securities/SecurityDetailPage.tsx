@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from "react-router";
 import { Archive, Briefcase, Pencil, RotateCcw, ShieldAlert, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Section, SectionLink } from "@/components/ui/section";
+import { Section, SectionExternalLink, SectionLink } from "@/components/ui/section";
 import { EmptyState } from "@/components/ui/empty-state";
 import { DetailRow } from "@/components/ui/detail-row";
 import { SegmentedControl, type SegmentOption } from "@/components/ui/segmented";
@@ -503,7 +503,18 @@ export function SecurityDetailPage() {
           </Section>
 
           {/* Dieselben Zeilen wie Position und „Brutto zu Netto". */}
-          <Section title="Stammdaten">
+          {/* DivvyDiary findet das Papier ueber die ISIN und leitet auf seine
+              Seite weiter — ohne ISIN gibt es kein verlaessliches Ziel. */}
+          <Section
+            title="Stammdaten"
+            action={
+              security.isin?.trim() && (
+                <SectionExternalLink href={divvyDiaryUrl(security.isin.trim())}>
+                  DivvyDiary
+                </SectionExternalLink>
+              )
+            }
+          >
             <div className="space-y-4">
               <div>
                 <Field label="Ticker" value={security.ticker} />
@@ -556,6 +567,11 @@ export function SecurityDetailPage() {
       />
     </div>
   );
+}
+
+/** Die Seite des Papiers bei DivvyDiary, gefunden ueber die ISIN. */
+function divvyDiaryUrl(isin: string): string {
+  return `https://divvydiary.com/${encodeURIComponent(isin)}`;
 }
 
 /** Ein Stammdatenfeld; leere Felder bleiben sichtbar, damit Lücken auffallen. */

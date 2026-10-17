@@ -124,7 +124,18 @@ export function SecurityFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent
+        // Radix fokussiert sonst das erste Feld **und markiert dessen Text** —
+        // beim Bearbeiten stand der Name blau hinterlegt, und der erste
+        // Tastendruck haette ihn ersetzt (wie in `PaymentComposerDialog`).
+        // Beim Bearbeiten nimmt der Dialog selbst den Fokus; beim Anlegen
+        // bleibt das leere Namensfeld das Ziel.
+        onOpenAutoFocus={(event) => {
+          if (!security) return;
+          event.preventDefault();
+          (event.currentTarget as HTMLElement | null)?.focus();
+        }}
+      >
         <DialogHeader>
           <DialogTitle>{security ? "Asset bearbeiten" : "Neues Asset"}</DialogTitle>
         </DialogHeader>
