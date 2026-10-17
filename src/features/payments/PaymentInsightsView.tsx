@@ -1,10 +1,11 @@
 import * as React from "react";
 import { KpiStats, type KpiStat } from "@/components/domain/KpiHero";
-import { Section, SectionLink } from "@/components/ui/section";
+import { Section } from "@/components/ui/section";
+import { SegmentedControl, type SegmentOption } from "@/components/ui/segmented";
 import { TrendTriangle } from "@/components/ui/trend-triangle";
 import { AmountText } from "@/components/money/AmountText";
 import { formatPercent } from "@/lib/money";
-import { monthNameDe, monthNameDeShort, monthOf, yearOf } from "@/lib/statistics";
+import { monthNameDeShort, monthOf, yearOf } from "@/lib/statistics";
 import { cn } from "@/lib/utils/cn";
 import { formatCalendarDate } from "@/lib/utils/formatDate";
 import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
@@ -40,28 +41,12 @@ function DeltaText({ delta }: { delta: Delta }) {
   );
 }
 
-function Row({
-  label,
-  caption,
-  children,
-}: {
-  label: string;
-  /** Zusatz unter dem Wert, gedaempft — statt einer zweiten Zeile mit eigener Beschriftung. */
-  caption?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-baseline justify-between gap-4 border-b border-border py-3 text-[0.9375rem] last:border-0">
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="text-right tabular-amount">
-        {children}
-        {caption !== undefined && (
-          <span className="block text-[0.8125rem] text-muted-foreground">{caption}</span>
-        )}
-      </dd>
-    </div>
-  );
-}
+type HistoryView = "payments" | "years";
+
+const VIEW_OPTIONS: readonly SegmentOption<HistoryView>[] = [
+  { value: "payments", label: "Dividenden" },
+  { value: "years", label: "Jahre" },
+];
 
 /**
  * Die Einordnung einer Dividende: Vergleich, Verlauf, Summen.
@@ -70,7 +55,8 @@ function Row({
  * Assetseite (seit 1.26.0; zuvor eigene CSS-Balken) — gleiche Achsen, gleicher
  * Tooltip, gleiche Datentabelle. Die geoeffnete Dividende steht in der
  * Akzentfarbe; die Balken fuehren bewusst nirgendwohin, der Tooltip zeigt
- * Datum und Betrag.
+ * Datum und Betrag. Der Umschalter zeigt dieselbe Historie je Jahr (seit
+ * 1.27.0), mit dem Jahr dieser Dividende hervorgehoben.
  */
 export function PaymentInsightsView({
   insights,
@@ -123,7 +109,9 @@ export function PaymentInsightsView({
     });
   }
 
-  const chartData = React.useMemo<CategoryDatum[]>(
+  const [view, setView] = React.useState<HistoryView>("payments");
+
+  const paymentData = React.useMemo<CategoryDatum[]>(
     () =>
       history.map((entry) => ({
         key: entry.id,
@@ -137,52 +125,92 @@ export function PaymentInsightsView({
     [history, paymentId],
   );
 
+  const yearData = React.useMemo<CategoryDatum[]>(
+    () =>
+      insights.perYear.map((bucket) => ({
+        key: String(bucket.year),
+        label: String(bucket.year),
+        value: bucket.net.toChartNumber(),
+        money: bucket.net,
+        count: bucket.count,
+        highlight: bucket.year === insights.year.year,
+      })),
+    [insights.perYear, insights.year.year],
+  );
+
+  // Die Jahressicht lohnt erst ab zwei Jahren; sonst entfaellt der Umschalter.
+  const hasYears = yearData.length > 1;
+  const shown = hasYears ? view : "payments";
+
+  const summary: KpiStat[] = [
+    {
+      label: `Im Jahr ${String(insights.year.year)}`,
+      value: <AmountText amount={insights.year.net} />,
+      caption: formatCountNoun(insights.year.count, "Dividende", "Dividenden"),
+      to: `/eingaenge?security=${securityId}&year=${String(insights.year.year)}`,
+      drillLabel: `Dividenden von ${securityName} im Jahr ${String(insights.year.year)} anzeigen`,
+    },
+    {
+      label: "Insgesamt",
+      value: <AmountText amount={insights.total} />,
+      caption: `seit ${monthNameDeShort(monthOf(insights.firstDate))} ${String(yearOf(insights.firstDate))}`,
+      to: `/eingaenge?security=${securityId}`,
+      drillLabel: `Alle ${formatCountNumber(insights.count)} Dividenden von ${securityName} anzeigen`,
+    },
+  ];
+  if (insights.nextExpected) {
+    summary.push({
+      label: "Nächste",
+      value: `${monthNameDeShort(monthOf(insights.nextExpected))} ${String(yearOf(insights.nextExpected))}`,
+      caption: "laut Plan",
+    });
+  }
+
   return (
     <>
       {stats.length > 0 && <KpiStats stats={stats} />}
 
       <div className="grid grid-cols-1 gap-10 pt-4 lg:grid-cols-2 lg:gap-x-16">
-        {chartData.length > 1 && (
+        {paymentData.length > 1 && (
           <Section
             title="Verlauf"
             action={
-              <SectionLink to={`/eingaenge?security=${securityId}`}>
-                Alle {formatCountNumber(insights.count)}
-              </SectionLink>
+              hasYears ? (
+                <SegmentedControl
+                  variant="pill"
+                  label="Verlauf nach"
+                  options={VIEW_OPTIONS}
+                  value={view}
+                  onChange={setView}
+                />
+              ) : undefined
             }
           >
             <div>
-              <CategoryBarChart
-                data={chartData}
-                ariaLabel={`Verlauf der Dividenden von ${securityName}`}
-                categoryHeader="Datum"
-                showCount={false}
-              />
+              {shown === "payments" ? (
+                <CategoryBarChart
+                  data={paymentData}
+                  ariaLabel={`Dividenden von ${securityName}`}
+                  categoryHeader="Datum"
+                  showCount={false}
+                  tableOrder="desc"
+                />
+              ) : (
+                <CategoryBarChart
+                  data={yearData}
+                  ariaLabel={`Dividenden von ${securityName} je Jahr`}
+                  categoryHeader="Jahr"
+                  tableOrder="desc"
+                />
+              )}
             </div>
           </Section>
         )}
 
+        {/* Dieselbe Kennzahlleiste wie oben statt einer Zeilenliste: Summen
+            sind Kennzahlen, und die Leiste fuehrt per Tipp in die Liste. */}
         <Section title="Einordnung">
-          <dl>
-            <Row
-              label={`Im Jahr ${String(insights.year.year)}`}
-              caption={formatCountNoun(insights.year.count, "Dividende", "Dividenden")}
-            >
-              <AmountText amount={insights.year.net} />
-            </Row>
-            <Row
-              label="Insgesamt"
-              caption={`${formatCountNoun(insights.count, "Dividende", "Dividenden")} seit ${monthNameDeShort(monthOf(insights.firstDate))} ${String(yearOf(insights.firstDate))}`}
-            >
-              <AmountText amount={insights.total} />
-            </Row>
-            {insights.nextExpected && (
-              <Row label="Nächste erwartet">
-                {monthNameDe(monthOf(insights.nextExpected))}{" "}
-                {String(yearOf(insights.nextExpected))}
-              </Row>
-            )}
-          </dl>
+          <KpiStats stats={summary} />
         </Section>
       </div>
     </>

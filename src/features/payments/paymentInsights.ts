@@ -1,5 +1,11 @@
 import { Money, formatPercent, sumMoney, type DecimalInstance } from "@/lib/money";
-import { monthOf, yearOf, type AnalyticsPayment } from "@/lib/statistics";
+import {
+  monthOf,
+  yearOf,
+  yearlyBuckets,
+  type AnalyticsPayment,
+  type YearBucket,
+} from "@/lib/statistics";
 import {
   compareToPreviousYear,
   type YearOverYearComparison,
@@ -37,6 +43,8 @@ export interface PaymentInsights {
   /** Bis zu {@link HISTORY_SIZE} Dividenden um diese herum, chronologisch. */
   history: AnalyticsPayment[];
   year: { year: number; net: Money; count: number };
+  /** Jahressummen des Assets fuer die Jahressicht des Verlaufs. */
+  perYear: YearBucket[];
   total: Money;
   firstDate: string;
   /**
@@ -182,6 +190,7 @@ export function derivePaymentInsights(
       ),
       count: inYear.length,
     },
+    perYear: yearlyBuckets(sorted),
     total: sumMoney(
       sorted.map((payment) => payment.netAmount),
       currency,

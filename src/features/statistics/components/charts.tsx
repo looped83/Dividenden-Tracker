@@ -94,6 +94,8 @@ interface CategoryBarChartProps {
    * eine Zahlung ist — „1 Zahlung" unter jedem Betrag saete nur Rauschen.
    */
   showCount?: boolean;
+  /** Reihenfolge der Datentabelle; „desc" zeigt das Juengste zuerst. */
+  tableOrder?: "asc" | "desc";
 }
 
 /**
@@ -109,6 +111,7 @@ export function CategoryBarChart({
   emptyMessage = "Keine Daten für die aktuelle Auswahl.",
   color = "foreground",
   showCount = true,
+  tableOrder = "asc",
 }: CategoryBarChartProps) {
   const navigate = useNavigate();
 
@@ -172,7 +175,7 @@ export function CategoryBarChart({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.map((row) => (
+            {(tableOrder === "desc" ? data.toReversed() : data).map((row) => (
               <TableRow key={row.key}>
                 {/* Der Drill-down lag zuvor ausschliesslich auf dem Balken —
                     als `onClick`. Damit war er per Maus erreichbar und sonst
