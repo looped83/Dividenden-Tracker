@@ -172,6 +172,7 @@ export function YearsTab({
             color="primary"
             ariaLabel="Netto-Dividenden je Jahr"
             categoryHeader="Jahr"
+            tableOrder="desc"
           />
         </div>
       </Section>

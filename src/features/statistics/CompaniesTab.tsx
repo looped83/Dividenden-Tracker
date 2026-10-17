@@ -236,6 +236,77 @@ export function CompaniesTab() {
     );
   }
 
+  const assetList = (
+    <div className="space-y-3">
+      <StatTable
+        rows={tableRows}
+        columns={columns}
+        getRowKey={(row) => row.securityId}
+        caption="Kennzahlen je Asset"
+        searchOf={(row) => entityName(securities, row.securityId)}
+        query={query}
+        // Auf dem Telefon traegt die Liste die Verteilung und damit den
+        // Umschalter; Suche und Sortierung teilen sich eine Zeile ueber der
+        // Ueberschrift. Der kurze Platzhalter passt dort ungekuerzt.
+        {...(!isWide && {
+          title: "Verteilung",
+          titleAction: <BreakdownSwitch />,
+          beforeSort: (
+            <StatSearch value={query} onChange={setQuery} placeholder="Suchen …" />
+          ),
+        })}
+        initialSort={{ key: "net", direction: "desc" }}
+        emptyMessage={
+          tableRows.length === 0 && hasArchived
+            ? "Nur archivierte Assets in dieser Auswahl — unten einblenden."
+            : "Keine Daten für die aktuelle Auswahl."
+        }
+        onRowClick={(row) =>
+          void navigate(statisticsDrillHref(filter, { securityId: row.securityId }))
+        }
+        rowLabel={(row) =>
+          `Dividenden von ${entityName(securities, row.securityId)} anzeigen`
+        }
+        listSummary={{
+          bar: (row) => {
+            const share = shareOfTotal(row.net, total);
+            return {
+              length: barLength(row.net, maxNet),
+              label: share ? formatPercent(share) : "—",
+            };
+          },
+          meta: (row) => {
+            const expected = expectedById.get(row.securityId);
+            return (
+              <>
+                {formatPayments(row.count)} · Ø <AmountText amount={row.averagePayment} />
+                {expected && (
+                  <>
+                    {" "}
+                    · erw. <AmountText amount={expected} /> p. a.
+                  </>
+                )}
+              </>
+            );
+          },
+        }}
+      />
+      {/* Nebenschalter unter der Liste — ohne Trennlinie: Die Liste endet
+          ohne Rahmen, eine Linie darunter sah aus wie eine leere Zeile. */}
+      <div className="pt-2">
+        <label className="flex min-h-11 items-center gap-2 text-sm text-muted-foreground">
+          <Checkbox
+            checked={showArchived}
+            onChange={(event) => {
+              setShowArchived(event.target.checked);
+            }}
+          />
+          Archivierte anzeigen
+        </label>
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-10">
       {/* Auf dem Telefon ist die Liste darunter selbst die Rangliste (Balken
@@ -268,86 +339,19 @@ export function CompaniesTab() {
         </Section>
       )}
 
-      {/* Auf dem Telefon traegt diese Liste die Verteilung und damit auch
-          den Umschalter; das Suchfeld steht darunter neben der Sortierung. */}
-      <Section
-        title={isWide ? "Statistik je Asset" : "Verteilung"}
-        actionClassName={isWide ? "w-64 -my-3" : "shrink-0"}
-        action={
-          isWide ? (
+      {isWide ? (
+        <Section
+          title="Statistik je Asset"
+          actionClassName="w-64 -my-3"
+          action={
             <StatSearch value={query} onChange={setQuery} placeholder="Assets suchen …" />
-          ) : (
-            <BreakdownSwitch />
-          )
-        }
-      >
-        <div className="space-y-3">
-          <StatTable
-            rows={tableRows}
-            columns={columns}
-            getRowKey={(row) => row.securityId}
-            caption="Kennzahlen je Asset"
-            searchOf={(row) => entityName(securities, row.securityId)}
-            query={query}
-            // Auf dem Telefon teilen sich Suche und Sortierung eine Zeile; der
-            // kurze Platzhalter passt dort ungekuerzt in das halbe Feld.
-            beforeSort={
-              isWide ? undefined : (
-                <StatSearch value={query} onChange={setQuery} placeholder="Suchen …" />
-              )
-            }
-            initialSort={{ key: "net", direction: "desc" }}
-            emptyMessage={
-              tableRows.length === 0 && hasArchived
-                ? "Nur archivierte Assets in dieser Auswahl — unten einblenden."
-                : "Keine Daten für die aktuelle Auswahl."
-            }
-            onRowClick={(row) =>
-              void navigate(statisticsDrillHref(filter, { securityId: row.securityId }))
-            }
-            rowLabel={(row) =>
-              `Dividenden von ${entityName(securities, row.securityId)} anzeigen`
-            }
-            listSummary={{
-              bar: (row) => {
-                const share = shareOfTotal(row.net, total);
-                return {
-                  length: barLength(row.net, maxNet),
-                  label: share ? formatPercent(share) : "—",
-                };
-              },
-              meta: (row) => {
-                const expected = expectedById.get(row.securityId);
-                return (
-                  <>
-                    {formatPayments(row.count)} · Ø{" "}
-                    <AmountText amount={row.averagePayment} />
-                    {expected && (
-                      <>
-                        {" "}
-                        · erw. <AmountText amount={expected} /> p. a.
-                      </>
-                    )}
-                  </>
-                );
-              },
-            }}
-          />
-          {/* Nebenschalter unter der Liste — ohne Trennlinie: Die Liste endet
-              ohne Rahmen, eine Linie darunter sah aus wie eine leere Zeile. */}
-          <div className="pt-2">
-            <label className="flex min-h-11 items-center gap-2 text-sm text-muted-foreground">
-              <Checkbox
-                checked={showArchived}
-                onChange={(event) => {
-                  setShowArchived(event.target.checked);
-                }}
-              />
-              Archivierte anzeigen
-            </label>
-          </div>
-        </div>
-      </Section>
+          }
+        >
+          {assetList}
+        </Section>
+      ) : (
+        assetList
+      )}
     </div>
   );
 }
