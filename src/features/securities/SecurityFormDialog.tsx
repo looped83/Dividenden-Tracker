@@ -125,6 +125,9 @@ export function SecurityFormDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
+        // Breiter als der Standard, damit Branche und Depotkonto in der
+        // zweiten Zeile nicht abgeschnitten werden.
+        className="max-w-2xl"
         // Radix fokussiert sonst das erste Feld **und markiert dessen Text** —
         // beim Bearbeiten stand der Name blau hinterlegt, und der erste
         // Tastendruck haette ihn ersetzt (wie in `PaymentComposerDialog`).
@@ -139,74 +142,75 @@ export function SecurityFormDialog({
         <DialogHeader>
           <DialogTitle>{security ? "Asset bearbeiten" : "Neues Asset"}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={(event) => void onSubmit(event)} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="security-name">Name</Label>
-            <Input id="security-name" {...register("name")} />
-            {errors.name && (
-              <p className="text-sm text-negative">{errors.name.message}</p>
-            )}
-          </div>
-          {/* Kennungen in einer Zeile, darunter die Einordnung. */}
-          <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="security-ticker">Ticker</Label>
-              <Input id="security-ticker" {...register("ticker")} />
-              {errors.ticker && (
-                <p className="text-sm text-negative">{errors.ticker.message}</p>
+        <form onSubmit={(event) => void onSubmit(event)} className="space-y-3 sm:space-y-4">
+          {/* Kurze Felder teilen sich eine Zeile, damit das Formular auf dem
+              Telefon ohne Scrollen passt. Sechs Spalten tragen beide Raster:
+              mobil ISIN | WKN, Ticker | Land | Währung, Branche | Depotkonto;
+              ab `sm` Kennungen in einer Zeile, darunter die Einordnung.
+              Reihenfolge der Kennungen wie im Kopf der Detailseite. */}
+          <div className="grid grid-cols-6 gap-3 sm:gap-4">
+            <div className="col-span-6 space-y-1.5">
+              <Label htmlFor="security-name">Name</Label>
+              <Input id="security-name" {...register("name")} />
+              {errors.name && (
+                <p className="text-sm text-negative">{errors.name.message}</p>
               )}
             </div>
-            <div className="space-y-1.5">
+            <div className="col-span-3 space-y-1.5 sm:col-span-2">
               <Label htmlFor="security-isin">ISIN</Label>
               <Input id="security-isin" {...register("isin")} />
               {errors.isin && (
                 <p className="text-sm text-negative">{errors.isin.message}</p>
               )}
             </div>
-            <div className="space-y-1.5">
+            <div className="col-span-3 space-y-1.5 sm:col-span-2">
               <Label htmlFor="security-wkn">WKN</Label>
               <Input id="security-wkn" {...register("wkn")} />
               {errors.wkn && (
                 <p className="text-sm text-negative">{errors.wkn.message}</p>
               )}
             </div>
-          </div>
-          <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="security-sector">Branche</Label>
-              <Input id="security-sector" {...register("sector")} />
+            <div className="col-span-2 space-y-1.5">
+              <Label htmlFor="security-ticker">Ticker</Label>
+              <Input id="security-ticker" {...register("ticker")} />
+              {errors.ticker && (
+                <p className="text-sm text-negative">{errors.ticker.message}</p>
+              )}
             </div>
-            <div className="space-y-1.5">
+            <div className="col-span-2 space-y-1.5 sm:col-span-1">
               <Label htmlFor="security-country">Land</Label>
               <Input id="security-country" {...register("country")} />
               {errors.country && (
                 <p className="text-sm text-negative">{errors.country.message}</p>
               )}
             </div>
-            <div className="space-y-1.5">
+            <div className="col-span-2 space-y-1.5 sm:col-span-1">
               <Label htmlFor="security-currency">Währung</Label>
               <Input id="security-currency" {...register("currency")} />
               {errors.currency && (
                 <p className="text-sm text-negative">{errors.currency.message}</p>
               )}
             </div>
-          </div>
-          {/* Halbe Breite: ein Depotname braucht nicht die ganze Zeile. */}
-          <div className="space-y-1.5 sm:w-1/2 sm:pr-2">
-            <Label htmlFor="security-default-depot">Depotkonto</Label>
-            <Select id="security-default-depot" {...register("defaultDepotId")}>
-              <option value="">Kein Depotkonto</option>
-              {activeDepots.map((depot) => (
-                <option key={depot.id} value={depot.id}>
-                  {depot.name}
-                </option>
-              ))}
-            </Select>
+            <div className="col-span-3 space-y-1.5 sm:col-span-2">
+              <Label htmlFor="security-sector">Branche</Label>
+              <Input id="security-sector" {...register("sector")} />
+            </div>
+            <div className="col-span-3 space-y-1.5 sm:col-span-2">
+              <Label htmlFor="security-default-depot">Depotkonto</Label>
+              <Select id="security-default-depot" {...register("defaultDepotId")}>
+                <option value="">Kein Depotkonto</option>
+                {activeDepots.map((depot) => (
+                  <option key={depot.id} value={depot.id}>
+                    {depot.name}
+                  </option>
+                ))}
+              </Select>
+            </div>
           </div>
           <div className="space-y-1.5">
             <Label>Ausschüttungsmonate (optional)</Label>
             <div
-              className="grid grid-cols-3 gap-1.5 sm:grid-cols-6"
+              className="grid grid-cols-6 gap-1.5"
               role="group"
               aria-label="Ausschüttungsmonate"
             >
