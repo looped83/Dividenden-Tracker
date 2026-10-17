@@ -145,8 +145,8 @@ export function CompaniesTab() {
       },
       {
         key: "net",
-        header: "Gesamtsumme",
-        headerLabel: "Gesamtsumme",
+        header: "Summe",
+        headerLabel: "Summe",
         align: "right",
         compare: (a, b) => a.net.compareTo(b.net),
         render: (row) => <AmountText amount={row.net} />,
