@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Section, SectionLink } from "@/components/ui/section";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Disclosure } from "@/components/ui/disclosure";
 import { DetailRow } from "@/components/ui/detail-row";
 import { SegmentedControl, type SegmentOption } from "@/components/ui/segmented";
 import { DetailBackLink, DetailHeader } from "@/components/layout/DetailHeader";
@@ -462,40 +461,29 @@ export function SecurityDetailPage() {
                   tatsächlich eingegangen sind.
                 </p>
               ) : (
-                <div className="space-y-3">
-                  <ul className="flex flex-wrap gap-1.5">
-                    {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => {
-                      const planned = payoutMonths.includes(month);
-                      return (
-                        <li key={month}>
-                          <span
-                            className={
-                              planned
-                                ? "inline-flex min-w-11 justify-center rounded-full bg-accent px-2 py-1 text-sm font-semibold text-foreground"
-                                : "inline-flex min-w-11 justify-center rounded-full px-2 py-1 text-sm text-muted-foreground"
-                            }
-                          >
-                            <span className="sr-only">
-                              {planned ? "Geplant: " : "Nicht geplant: "}
-                            </span>
-                            {monthNameDeShort(month)}
+                // Die Zaehlregel steht nicht mehr hier: Sie gilt fuer jeden Plan
+                // gleich und sagte auf der Seite eines Assets nichts Eigenes.
+                <ul className="flex flex-wrap gap-1.5">
+                  {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => {
+                    const planned = payoutMonths.includes(month);
+                    return (
+                      <li key={month}>
+                        <span
+                          className={
+                            planned
+                              ? "inline-flex min-w-11 justify-center rounded-full bg-accent px-2 py-1 text-sm font-semibold text-foreground"
+                              : "inline-flex min-w-11 justify-center rounded-full px-2 py-1 text-sm text-muted-foreground"
+                          }
+                        >
+                          <span className="sr-only">
+                            {planned ? "Geplant: " : "Nicht geplant: "}
                           </span>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                  {/* Die Zaehlregel gilt fuer jeden Plan gleich; ausgeschrieben
-                      stand sie dreizeilig unter jeder Monatsreihe und war
-                      laenger als der Plan selbst. */}
-                  <Disclosure summary="Wie wird gezählt?">
-                    <p className="text-muted-foreground">
-                      Eine später eingetroffene Dividende zählt für den geplanten Monat,
-                      für den sie fällig war. Eine Dividende im Monat direkt davor zählt
-                      für den kommenden geplanten Monat — beides auch über den
-                      Jahreswechsel hinweg.
-                    </p>
-                  </Disclosure>
-                </div>
+                          {monthNameDeShort(month)}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
               )}
             </div>
           </Section>
