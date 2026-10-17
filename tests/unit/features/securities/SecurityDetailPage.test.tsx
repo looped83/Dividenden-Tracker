@@ -1,10 +1,11 @@
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import { ToastProvider } from "@/components/ui/toast";
 import { PaymentComposerProvider } from "@/features/payments/PaymentComposer";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { EUR, Money } from "@/lib/money";
 import type { AnalyticsPayment } from "@/lib/statistics";
+import type { CalendarEvent } from "@/lib/calendar/types";
 
 /**
  * Detailseite eines Unternehmens.
@@ -79,6 +80,11 @@ vi.mock("@/features/securities/hooks", () => ({
   useCreateSecurity: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useUpdateSecurity: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
+// Termine des Dividendenkalenders; einzelne Tests setzen einen Zahltag.
+let calendarEvents: CalendarEvent[] = [];
+vi.mock("@/features/calendar/resolvedEvents", () => ({
+  useResolvedCalendarEvents: () => ({ events: calendarEvents }),
+}));
 vi.mock("@/features/depots/hooks", () => ({
   useDepots: () => ({ data: [{ id: "dep-1", name: "Hauptdepot", archived_at: null }] }),
 }));
@@ -107,6 +113,9 @@ describe("SecurityDetailPage", () => {
   });
   afterAll(() => {
     vi.useRealTimers();
+  });
+  afterEach(() => {
+    calendarEvents = [];
   });
 
   it("nennt das Asset in der Ueberschrift", () => {
@@ -151,8 +160,43 @@ describe("SecurityDetailPage", () => {
     // Plan Maerz/September, letzte Zahlung Maerz 2025: Der September 2025
     // liegt in der Vergangenheit, die naechste steht im Maerz 2027.
     expect(kopf("Nächste").getByText("Mär 2027")).toBeInTheDocument();
+    // Ohne Termin im Kalender vermutet: Maerz 2026 fehlt, also die letzte (150).
+    expect(screen.getByText("Nächste").closest("div")).toHaveTextContent(
+      /≈ 150,00\s€ vermutet/,
+    );
     // Ohne Depotstand rueckt der Schnitt nach: 370 / 3.
     expect(kopf("Ø je Dividende").getByText("123,33 €")).toBeInTheDocument();
+  });
+
+  it("nimmt die naechste Dividende mit Datum aus dem Kalender, wenn angekuendigt", () => {
+    calendarEvents = [
+      {
+        id: "ev-1",
+        externalUid: "uid-1",
+        eventType: "payment",
+        eventState: "active",
+        title: "Alpha AG",
+        companyName: "Alpha AG",
+        matchedCompanyName: "Alpha AG",
+        expectedAmount: Money.fromString("160.00", EUR),
+        sourcePortfolio: null,
+        description: null,
+        location: null,
+        externalUrl: null,
+        categories: [],
+        date: "2026-11-20",
+        endDate: null,
+        startsAt: null,
+        endsAt: null,
+        isAllDay: true,
+      },
+    ];
+    renderPage();
+    const feld = screen.getByText("Nächste").closest("div");
+    if (!feld) throw new Error("Kennzahl Nächste nicht gefunden.");
+    expect(within(feld).getByText("20.11.2026")).toBeInTheDocument();
+    expect(feld).toHaveTextContent(/160,00\s€/);
+    expect(feld).not.toHaveTextContent(/vermutet|Kalender/);
   });
 
   it("fuehrt vom letzten vollen Jahr in die gefilterte Zahlungsliste", () => {
