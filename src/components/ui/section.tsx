@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Link } from "react-router";
-import { ChevronRight, type LucideIcon } from "lucide-react";
+import { ChevronRight, ExternalLink, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
 /**
@@ -95,6 +95,33 @@ export function SectionLink({
       {children}
       <ChevronRight className="size-4" aria-hidden />
     </Link>
+  );
+}
+
+/**
+ * Wie {@link SectionLink}, aber zu einer anderen Seite im Netz: neuer Tab und
+ * das Symbol fuer „extern" statt des Pfeils.
+ */
+export function SectionExternalLink({
+  href,
+  children,
+  className,
+}: {
+  href: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer noopener"
+      className={cn(sectionActionClass, "gap-1", className)}
+    >
+      {children}
+      <ExternalLink className="size-4" aria-hidden />
+      <span className="sr-only">(öffnet in neuem Tab)</span>
+    </a>
   );
 }
 

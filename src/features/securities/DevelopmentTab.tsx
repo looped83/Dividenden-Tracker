@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { KpiHero, KpiHeroSkeleton, TrendPill } from "@/components/domain/KpiHero";
 import { AmountText } from "@/components/money/AmountText";
 import { EntitySelect, type EntityOption } from "@/components/domain/EntitySelect";
+import { MD_BREAKPOINT_QUERY, useMediaQuery } from "@/lib/hooks/useMediaQuery";
 import { DepotHeaderActions } from "./DepotHeaderActions";
 import {
   EUR,
@@ -202,6 +203,10 @@ export function DevelopmentView({
   portfolio: PortfolioSeries;
 }) {
   const [query, setQuery] = React.useState("");
+  const isWide = useMediaQuery(MD_BREAKPOINT_QUERY);
+  const search = (
+    <StatSearch value={query} onChange={setQuery} placeholder="Asset suchen …" />
+  );
 
   const latest = portfolio.latest;
 
@@ -485,17 +490,21 @@ export function DevelopmentView({
               currentLabel="Erhalten (12 Monate)"
               referenceLabel="Erwartet p. a."
               ariaLabel="Erwartete und tatsächlich erhaltene Dividenden je Stichtag"
+              // Die Ueberschrift nennt beide Linien, der Tooltip benennt sie
+              // je Stichtag; eine Legende darunter wiederholte nur das.
+              showLegend={false}
             />
           )}
         </div>
       </Section>
 
+      {/* Breit sitzt die Suche rechts neben der Ueberschrift, auf dem Telefon
+          in einer Zeile mit der Sortierung (wie in der Unternehmensstatistik)
+          — darueber in eigener Zeile kostete sie eine ganze Zeilenhoehe. */}
       <Section
         title="Erwartet gegen erhalten je Asset"
-        actionClassName="w-full sm:-my-3 sm:w-64"
-        action={
-          <StatSearch value={query} onChange={setQuery} placeholder="Asset suchen …" />
-        }
+        actionClassName="-my-3 w-64"
+        {...(isWide && { action: search })}
       >
         <div>
           <StatTable
@@ -504,6 +513,7 @@ export function DevelopmentView({
             getRowKey={(row) => row.securityId}
             query={query}
             searchOf={(row) => row.name}
+            {...(!isWide && { beforeSort: search })}
             initialSort={{ key: "growth", direction: "desc" }}
             caption="Erwartete und erhaltene Dividenden je gehaltenem Asset"
             emptyMessage="Kein Asset im aktuellen Depotstand."
