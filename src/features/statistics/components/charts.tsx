@@ -165,13 +165,13 @@ export function CategoryBarChart({
       </ChartCanvas>
 
       <ChartDataTable>
-        <Table>
+        <Table className="w-auto">
           <caption className="sr-only">{ariaLabel}</caption>
           <TableHeader>
             <TableRow>
               <TableHead>{categoryHeader}</TableHead>
-              <TableHead className="text-right">Nettodividende</TableHead>
-              {showCount && <TableHead className="text-right">Anzahl</TableHead>}
+              <TableHead className="pl-10 text-right">Nettodividende</TableHead>
+              {showCount && <TableHead className="pl-10 text-right">Anzahl</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -195,11 +195,11 @@ export function CategoryBarChart({
                     (row.detail ?? row.label)
                   )}
                 </ChartRowHeader>
-                <TableCell className="text-right tabular-nums">
+                <TableCell className="pl-10 text-right tabular-nums">
                   {formatMoney(row.money)}
                 </TableCell>
                 {showCount && (
-                  <TableCell className="text-right tabular-nums">
+                  <TableCell className="pl-10 text-right tabular-nums">
                     {formatCountNumber(row.count)}
                   </TableCell>
                 )}
@@ -316,23 +316,23 @@ export function ComparisonLineChart({
       )}
 
       <ChartDataTable>
-        <Table>
+        <Table className="w-auto">
           <caption className="sr-only">{ariaLabel}</caption>
           <TableHeader>
             <TableRow>
               <TableHead>Monat</TableHead>
-              <TableHead className="text-right">{currentLabel}</TableHead>
-              <TableHead className="text-right">{referenceLabel}</TableHead>
+              <TableHead className="pl-10 text-right">{currentLabel}</TableHead>
+              <TableHead className="pl-10 text-right">{referenceLabel}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {points.map((point) => (
               <TableRow key={point.label}>
                 <ChartRowHeader>{point.label}</ChartRowHeader>
-                <TableCell className="text-right tabular-nums">
+                <TableCell className="pl-10 text-right tabular-nums">
                   {formatMoney(point.currentMoney)}
                 </TableCell>
-                <TableCell className="text-right tabular-nums">
+                <TableCell className="pl-10 text-right tabular-nums">
                   {formatMoney(point.referenceMoney)}
                 </TableCell>
               </TableRow>
