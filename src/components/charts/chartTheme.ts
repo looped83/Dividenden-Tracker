@@ -51,12 +51,18 @@ export const CHART_GRID_PROPS = {
  * Achsen ohne Linien und Striche (seit 1.9.0, wie im Kopf der Uebersicht):
  * Das Raster traegt die Groessenordnung, die Beschriftung den Wert. Eine
  * dunkle Achsenlinie samt Strichen an jedem Wert war das Lauteste im Bild.
+ *
+ * Beschriftungen in festem Takt, gezählt vom Ende (seit 1.27.1): alle oder
+ * jede zweite, nie eine einzelne Lücke. Recharts' Vorgabe „preserveEnd" liess
+ * auf dem iPhone mitten in der Monatsachse „Nov" weg.
  */
 export const CHART_X_AXIS_PROPS = {
   tick: { fontSize: 12, fill: "var(--muted-foreground)" },
   tickMargin: 8,
   axisLine: { stroke: "var(--border)" },
   tickLine: false,
+  interval: "equidistantPreserveEnd",
+  minTickGap: 2,
 } as const;
 
 /**
