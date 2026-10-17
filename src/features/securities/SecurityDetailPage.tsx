@@ -225,8 +225,7 @@ export function SecurityDetailPage() {
   const yearBefore = lastFullYear
     ? stats.perYear.find((bucket) => bucket.year === lastFullYear.year - 1)
     : undefined;
-  // Angekuendigt (Kalender) vor vermutet (Plan und Historie); die Herkunft
-  // steht in der Beschriftung. Verkauft oder archiviert kommt keine mehr.
+  // Angekuendigt (Kalender) vor vermutet (Plan und Historie). Verkauft oder archiviert kommt keine mehr.
   const next =
     !archived && (snapshot === null || current)
       ? nextDividend({
@@ -275,22 +274,23 @@ export function SecurityDetailPage() {
         next.source === "calendar"
           ? formatCalendarDate(next.date)
           : `${monthNameDeShort(next.month)} ${String(next.year)}`,
-      caption: (
-        // Betrag und Herkunft brechen je als Ganzes um, nie mitten darin.
-        <>
-          {next.amount && (
-            <>
-              <span className="whitespace-nowrap">
-                {next.source === "estimate" && "≈ "}
-                <AmountText amount={next.amount} />
-              </span>{" "}
-            </>
-          )}
-          <span className="whitespace-nowrap">
-            {next.source === "calendar" ? "laut Kalender" : "vermutet"}
-          </span>
-        </>
-      ),
+      // Ein Kalendertermin steht fuer sich, nur der vermutete Wert sagt es dazu.
+      caption:
+        next.source === "calendar" ? (
+          next.amount && <AmountText amount={next.amount} />
+        ) : (
+          // Betrag und Hinweis brechen je als Ganzes um, nie mitten darin.
+          <>
+            {next.amount && (
+              <>
+                <span className="whitespace-nowrap">
+                  ≈ <AmountText amount={next.amount} />
+                </span>{" "}
+              </>
+            )}
+            <span className="whitespace-nowrap">vermutet</span>
+          </>
+        ),
     });
   }
   // Fehlt Depotstand oder Plan, ruecken die Durchschnittswerte nach.

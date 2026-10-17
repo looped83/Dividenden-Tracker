@@ -195,7 +195,8 @@ describe("SecurityDetailPage", () => {
     const feld = screen.getByText("Nächste").closest("div");
     if (!feld) throw new Error("Kennzahl Nächste nicht gefunden.");
     expect(within(feld).getByText("20.11.2026")).toBeInTheDocument();
-    expect(feld).toHaveTextContent(/160,00\s€ laut Kalender/);
+    expect(feld).toHaveTextContent(/160,00\s€/);
+    expect(feld).not.toHaveTextContent(/vermutet|Kalender/);
   });
 
   it("fuehrt vom letzten vollen Jahr in die gefilterte Zahlungsliste", () => {
