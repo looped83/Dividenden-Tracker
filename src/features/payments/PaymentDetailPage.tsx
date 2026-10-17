@@ -311,8 +311,10 @@ export function PaymentDetailPage() {
           <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
             <AmountText amount={Money.fromString(payment.net_amount, currency)} />
             {/* Der Vorjahresvergleich der Liste, hier ausgeschrieben. */}
-            {/* Eigene Laufweite: Die grosse Zahl ist enger gesetzt. */}
-            {yearAgo && (
+            {/* Eigene Laufweite: Die grosse Zahl ist enger gesetzt. Nur bei
+                monatlichen Zahlern — sonst steht der Vorjahresvergleich schon
+                in der ersten Kachel. */}
+            {yearAgo && insights?.monthly && (
               <span className="tracking-normal">
                 <TrendPill
                   tone={
@@ -353,7 +355,6 @@ export function PaymentDetailPage() {
           paymentId={payment.id}
           securityId={payment.security_id}
           securityName={security?.name ?? "diesem Asset"}
-          listState={from}
         />
       )}
 
