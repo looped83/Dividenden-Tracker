@@ -43,3 +43,28 @@ test("kopiert die Kennungen eines Assets per Klick", async ({
   await page.getByRole("button", { name: "ISIN US0378331005 kopieren" }).first().click();
   await expect(page.getByText("ISIN kopiert").first()).toBeVisible();
 });
+
+test.describe("auf der Detailseite einer Dividende", () => {
+  test.use({ seed: { payments: [{ payDate: "2026-03-10", netAmount: "12.34" }] } });
+
+  test("kopiert die Kennungen unter dem Namen des Assets", async ({
+    page,
+    konto,
+    browserName,
+  }) => {
+    await asUser(konto.userId, async (client) => {
+      await client.query(
+        "update securities set ticker = 'AAPL', isin = 'US0378331005', wkn = '865985' where id = $1",
+        [konto.securityId],
+      );
+    });
+
+    if (browserName === "chromium") {
+      await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+    }
+
+    await page.goto(`/#/eingaenge/${konto.paymentIds[0] ?? ""}`);
+    await page.getByRole("button", { name: "WKN 865985 kopieren" }).click();
+    await expect(page.getByText("WKN kopiert")).toBeVisible();
+  });
+});
