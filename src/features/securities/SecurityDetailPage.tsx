@@ -12,6 +12,7 @@ import { DetailBackLink, DetailHeader } from "@/components/layout/DetailHeader";
 import { ListGroup } from "@/components/ui/list";
 import { PageSkeleton } from "@/components/layout/PageSkeleton";
 import { KpiHero, type KpiStat } from "@/components/domain/KpiHero";
+import { SecurityIdentifiers } from "@/components/domain/SecurityIdentifiers";
 import { AmountText } from "@/components/money/AmountText";
 import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
 import { formatCalendarDate, formatDayMonth } from "@/lib/utils/formatDate";
@@ -308,12 +309,6 @@ export function SecurityDetailPage() {
     });
   }
 
-  // Reihenfolge wie bei Banken und Kursportalen: ISIN, WKN, Ticker.
-  const identity: [label: string, value: string][] = [];
-  if (security.isin?.trim()) identity.push(["ISIN", security.isin.trim()]);
-  if (security.wkn?.trim()) identity.push(["WKN", security.wkn.trim()]);
-  if (security.ticker?.trim()) identity.push(["Ticker", security.ticker.trim()]);
-
   return (
     <div className="space-y-6">
       {/* Bearbeiten, Archivieren und (nur archiviert) Loeschen stehen hier,
@@ -361,15 +356,8 @@ export function SecurityDetailPage() {
         title={security.name}
         badge={archived ? <Badge variant="warning">Archiviert</Badge> : undefined}
         subtitle={
-          identity.length > 0 ? (
-            // Ohne Trennpunkte: Das Kopiersymbol hinter jedem Wert trennt
-            // schon, und beim Umbruch auf schmalen Telefonen bliebe sonst ein
-            // Punkt am Zeilenende haengen.
-            <span className="flex flex-wrap items-center gap-x-4 gap-y-1">
-              {identity.map(([label, value]) => (
-                <CopyText key={label} label={label} value={value} />
-              ))}
-            </span>
+          security.isin?.trim() || security.wkn?.trim() || security.ticker?.trim() ? (
+            <SecurityIdentifiers security={security} />
           ) : undefined
         }
       />
