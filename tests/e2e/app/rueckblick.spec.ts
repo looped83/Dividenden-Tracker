@@ -29,7 +29,7 @@ test("Rückblick öffnet als Story und kehrt zur Statistik zurück", async ({ pa
   await expect(story).toBeVisible();
   await expect(story.getByText("Dein Dividendenjahr")).toBeVisible();
 
-  await story.getByRole("button", { name: "Nächste Seite" }).click();
+  await page.keyboard.press("ArrowRight");
   await expect(story.getByText("Netto erhalten")).toBeVisible();
   await expect(story.getByText("115,00 €")).toBeVisible();
 
@@ -94,22 +94,21 @@ test("Zurück startet die Zeit neu, nach der letzten Karte schließt die Story",
   await page.goto("/#/statistiken?year=2025");
   await page.getByRole("link", { name: "Jahresrückblick 2025 ansehen" }).click();
   const story = page.getByRole("dialog", { name: "Rückblick 2025" });
-  await story.getByRole("button", { name: "Nächste Seite" }).click();
+  await expect(story.getByText("Dein Dividendenjahr")).toBeVisible();
+  await page.keyboard.press("ArrowRight");
   await expect(story.getByText("Netto erhalten")).toBeVisible();
 
   // Pause gilt nur der Karte: Zurück lässt die Zeit wieder laufen.
   await story.getByRole("button", { name: "Anhalten" }).click();
-  await story.getByRole("button", { name: "Vorherige Seite" }).click();
+  await page.keyboard.press("ArrowLeft");
   await page.clock.runFor(7500);
   await expect(story.getByText("Netto erhalten")).toBeVisible();
 
   // Bis zur letzten Karte blättern und nur deren Standzeit (höchstens 9 s)
   // ablaufen lassen. Die Uhr über alle Karten laufen zu lassen hieße Tausende
   // Animationsbilder — in WebKit länger als das Zeitlimit des Tests.
-  const fertig = story.getByRole("button", { name: "Fertig" });
-  while (!(await fertig.isVisible())) {
-    await story.getByRole("button", { name: "Nächste Seite" }).click();
-  }
+  for (let i = 0; i < 20; i++) await page.keyboard.press("ArrowRight");
+  await expect(story.getByText(/in Zahlen/)).toBeVisible();
   await page.clock.runFor(10_000);
   await expect(story).toBeHidden();
   await expect(page).toHaveURL(/#\/statistiken\?year=2025$/);
