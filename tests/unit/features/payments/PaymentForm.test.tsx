@@ -169,16 +169,15 @@ describe("PaymentForm", () => {
     expect(screen.getByLabelText("Depot")).toHaveValue("d1");
   });
 
-  it("zeigt das automatisch gewählte Depot und lässt es ändern", async () => {
+  it("bucht das Standard-Depot ohne zusätzlichen Hinweis", async () => {
     depots.current = [depot("d1", "Depot A"), depot("d2", "Depot B")];
     renderForm();
 
     const user = await pick("Apple");
-    expect(screen.getByText("Depot: Depot B")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Depot ändern (Depot B)" }));
-    await user.selectOptions(screen.getByLabelText("Depot"), "d1");
+    expect(screen.queryByText(/Depot: /)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Depot")).not.toBeInTheDocument();
     await user.type(screen.getByLabelText("Nettobetrag"), "3");
     await user.click(screen.getByRole("button", { name: "Speichern" }));
-    expect(create).toHaveBeenCalledWith(expect.objectContaining({ depot_id: "d1" }));
+    expect(create).toHaveBeenCalledWith(expect.objectContaining({ depot_id: "d2" }));
   });
 });
