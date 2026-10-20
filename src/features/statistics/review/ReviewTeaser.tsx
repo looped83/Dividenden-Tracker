@@ -12,26 +12,26 @@ import { reviewHref } from "@/lib/statistics";
  * Schrift auf dem Akzent haelt in beiden Themes >= 4,5:1.
  */
 export function ReviewTeaser({ year }: { year: number }) {
+  // Eine Zeile hoch: Die Farbe macht das Banner auffaellig, nicht die Hoehe.
   return (
     <Link
       to={reviewHref(year)}
       aria-label={`Jahresrückblick ${String(year)} ansehen`}
-      className="group flex items-center gap-4 rounded-2xl bg-primary p-5 text-primary-foreground outline-none transition-[filter] hover:brightness-105 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none sm:gap-6 sm:p-7"
+      className="group flex items-center gap-3 rounded-2xl bg-primary px-4 py-3 text-primary-foreground outline-none transition-[filter] hover:brightness-105 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none sm:px-5"
     >
       <span className="min-w-0 flex-1">
-        <span className="block text-sm font-semibold">Jahresrückblick</span>
-        <span className="mt-1 block text-[clamp(2.75rem,12vw,4rem)] font-bold leading-none tracking-[-0.04em] tabular-amount">
-          {year}
+        <span className="block truncate text-base font-bold tracking-[-0.01em] sm:text-lg">
+          Jahresrückblick {year}
         </span>
-        <span className="mt-3 block text-[0.9375rem] font-medium">
-          Dein Dividendenjahr als Story: Summe, Rekordmonat, Top-Zahler und mehr.
+        <span className="block truncate text-sm font-medium">
+          Dein Dividendenjahr als Story
         </span>
       </span>
       <span
         aria-hidden
-        className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary-foreground text-primary transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none sm:size-14"
+        className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary-foreground text-primary transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"
       >
-        <ChevronRight className="size-6" />
+        <ChevronRight className="size-5" />
       </span>
     </Link>
   );
