@@ -1,6 +1,12 @@
 import { Eyebrow, Hero, Lead, RankedList } from "./ReviewParts";
 import { TrendPill } from "@/components/domain/KpiHero";
-import { formatMoney, formatPercent, type DecimalInstance } from "@/lib/money";
+import {
+  EUR,
+  Money,
+  formatMoney,
+  formatPercent,
+  type DecimalInstance,
+} from "@/lib/money";
 import { monthNameDe, monthNameDeShort, type AnnualReview } from "@/lib/statistics";
 import { formatCalendarDate } from "@/lib/utils/formatDate";
 import { CategoryBarChart, type CategoryDatum } from "../components/charts";
@@ -30,13 +36,15 @@ function joinNames(names: readonly string[]): string {
   return NAME_LIST.format(names);
 }
 
-/** Nur die Prozentzahl des Vorjahresvergleichs („+12,3 %"), sonst „neu" oder „—". */
-function changePercent(change: AnnualReview["change"]): string {
-  if (change.kind === "new") return "neu";
-  if (change.kind !== "percent") return "—";
-  const sign = change.percent.isPositive() ? "+" : "";
-  return `${sign}${formatPercent(change.percent)}`;
+const FACTOR = new Intl.NumberFormat("de-DE", { maximumFractionDigits: 1 });
+
+/** „3,2×" */
+function formatFactor(value: DecimalInstance): string {
+  return `${FACTOR.format(value.toDecimalPlaces(1).toNumber())}×`;
 }
+
+/** Diagramm-Standzeit: Wer Balken liest, braucht etwas laenger. */
+const CHART_DURATION = 9000;
 
 export function buildReviewSlides(
   review: AnnualReview,
@@ -92,6 +100,48 @@ export function buildReviewSlides(
     ),
   });
 
+  const factor = review.growthFactor;
+  if (factor?.gt(1)) {
+    const average = review.priorAverage;
+    const aboveAverage =
+      average?.isPositive() && review.net.compareTo(average) > 0
+        ? review.net.toDecimal().div(average.toDecimal()).minus(1).times(100)
+        : null;
+    slides.push({
+      id: "wachstum",
+      label: "Dein Weg",
+      duration: CHART_DURATION,
+      content: (
+        <>
+          <Eyebrow>Dein Weg seit {review.firstYear}</Eyebrow>
+          <Hero className="text-primary">{formatFactor(factor)}</Hero>
+          <Lead>so viel wie in deinem ersten Dividendenjahr {review.firstYear}.</Lead>
+          <div className="mt-8" data-story-keep>
+            <CategoryBarChart
+              data={review.years.map((bucket) => ({
+                key: String(bucket.year),
+                label: String(bucket.year),
+                value: bucket.net.toChartNumber(),
+                money: bucket.net,
+                count: bucket.count,
+                detail: String(bucket.year),
+                highlight: bucket.year === year,
+              }))}
+              ariaLabel={`Nettodividende je Jahr bis ${String(year)}`}
+              categoryHeader="Jahr"
+            />
+          </div>
+          {aboveAverage && average && (
+            <p className="mt-6 text-base text-muted-foreground">
+              {formatPercent(aboveAverage, 0)} über deinem bisherigen Jahresschnitt von{" "}
+              {formatMoney(average)}.
+            </p>
+          )}
+        </>
+      ),
+    });
+  }
+
   slides.push({
     id: "tag",
     label: "Pro Tag",
@@ -114,6 +164,38 @@ export function buildReviewSlides(
     ),
   });
 
+  if (review.net.isPositive()) {
+    const perDay = review.perDay.toDecimal();
+    const rates = [
+      { label: "pro Stunde", value: perDay.div(24) },
+      { label: "pro Woche", value: perDay.times(7) },
+      { label: "pro Monat", value: review.perMonth.toDecimal() },
+    ];
+    slides.push({
+      id: "nebenbei",
+      label: "Ganz nebenbei",
+      content: (
+        <>
+          <Eyebrow>Ganz nebenbei</Eyebrow>
+          <Hero>{formatMoney(Money.fromDecimal(perDay.div(3), EUR))}</Hero>
+          <Lead>
+            verdient dein Depot in jeder Nacht, während du acht Stunden schläfst.
+          </Lead>
+          <dl className="mt-8 grid grid-cols-3 gap-2 sm:gap-3">
+            {rates.map((rate) => (
+              <div key={rate.label} className="rounded-2xl bg-muted p-3 sm:p-4">
+                <dt className="text-xs text-muted-foreground sm:text-sm">{rate.label}</dt>
+                <dd className="mt-1 truncate text-base font-bold tracking-[-0.02em] tabular-amount sm:text-lg">
+                  {formatMoney(Money.fromDecimal(rate.value, EUR))}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </>
+      ),
+    });
+  }
+
   if (review.bestMonth) {
     const best = review.bestMonth;
     const data: CategoryDatum[] = review.months.map((bucket) => ({
@@ -128,6 +210,7 @@ export function buildReviewSlides(
     slides.push({
       id: "monat",
       label: "Rekordmonat",
+      duration: CHART_DURATION,
       content: (
         <>
           <Eyebrow>Dein Rekordmonat</Eyebrow>
@@ -307,12 +390,37 @@ export function buildReviewSlides(
     ),
   });
 
+  const milestone = review.nextMilestone;
+  if (milestone) {
+    const pace =
+      milestone.yearsToGo === null
+        ? null
+        : milestone.yearsToGo <= 1
+          ? "Im Tempo dieses Jahres schaffst du das schon im nächsten."
+          : `Im Tempo dieses Jahres bist du in rund ${String(milestone.yearsToGo)} Jahren da.`;
+    slides.push({
+      id: "ausblick",
+      label: "Nächstes Ziel",
+      content: (
+        <>
+          <Eyebrow>Dein nächstes Ziel</Eyebrow>
+          <Hero className="text-primary">{formatMoney(milestone.target)}</Hero>
+          <Lead>
+            Dividenden seit Beginn. Bis dahin fehlen noch{" "}
+            <span className="font-semibold text-foreground">
+              {formatMoney(milestone.remaining)}
+            </span>
+            .
+          </Lead>
+          {pace && <p className="mt-6 text-base text-muted-foreground">{pace}</p>}
+        </>
+      ),
+    });
+  }
+
   const summary: { label: string; value: string }[] = [
     { label: "Netto", value: formatMoney(review.net) },
-    {
-      label: `ggü. ${String(year - 1)}`,
-      value: changePercent(review.change),
-    },
+    { label: "Ø pro Monat", value: formatMoney(review.perMonth) },
     { label: "Pro Tag", value: formatMoney(review.perDay) },
     {
       label: "Rekordmonat",
