@@ -59,6 +59,9 @@ const SecurityDetailPage = React.lazy(async () => ({
 const StatisticsPage = React.lazy(async () => ({
   default: (await routeChunks.statistics()).StatisticsPage,
 }));
+const AnnualReviewPage = React.lazy(async () => ({
+  default: (await routeChunks.statisticsReview()).AnnualReviewPage,
+}));
 const OverviewTab = React.lazy(async () => ({
   default: (await routeChunks.statisticsOverview()).OverviewTab,
 }));
@@ -188,6 +191,9 @@ export const router = createHashRouter([
           { path: "depots", element: <DepotsTab /> },
         ],
       },
+      // Neben der Statistik-Huelle wie die Asset-Detailseite: Die Story fuellt
+      // den Bildschirm, Reiter und Filter gehoeren nicht dazu.
+      { path: "statistiken/rueckblick/:jahr", element: <AnnualReviewPage /> },
       {
         path: "ziele",
         element: <GoalsPage />,
