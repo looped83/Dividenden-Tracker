@@ -329,7 +329,9 @@ Jahre. Der Rückblick steht am Ende seines Jahres: Spätere Jahre gehen in keine
 („bisher bestes Jahr", Summe seit Beginn, Neuzugänge). Er gilt immer dem ganzen Bestand;
 Unternehmens- und Depotfilter wirken nicht. Bedienung per Tippen, Wischen, Pfeiltasten und Knöpfen. Jede Karte blättert nach
 rund 7 Sekunden (Diagramme 9) von allein weiter, das aktive Segment oben füllt sich dabei;
-Gedrückthalten, der Pause-Knopf oder die Leertaste halten an. Kein Teilen als Bild.
+Gedrückthalten, der Pause-Knopf oder die Leertaste halten die aktuelle Karte an; jeder Wechsel
+lässt die Zeit wieder laufen. Nach der letzten Karte schließt sich die Story, ein Wisch nach unten
+schließt sie jederzeit. Kein Teilen als Bild.
 
 Der Vergleich stellt zwei Zeiträume gegenüber: Jahr gegen Jahr, Monat gegen denselben Monat des
 Vorjahres (aufgeschlüsselt nach Unternehmen) oder die letzten 12 Monate gegen die 12 davor. Ist eines der Jahre das laufende, endet der Vergleich auf **beiden** Seiten am selben

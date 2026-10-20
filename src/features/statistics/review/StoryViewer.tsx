@@ -22,6 +22,8 @@ const MAX_FRAME_STEP = 100;
 
 /** Mindeststrecke eines Wischers in Pixeln; darunter gilt die Geste als Tippen. */
 const SWIPE_THRESHOLD = 48;
+/** Mindeststrecke eines Wischers nach unten, der die Story schliesst. */
+const CLOSE_THRESHOLD = 96;
 
 /**
  * Elemente, auf denen ein Tippen **nicht** weiterblaettert: Bedienelemente und
@@ -38,9 +40,11 @@ const INTERACTIVE = "a, button, summary, input, select, table, [data-story-keep]
  *
  * Jede Karte blaettert nach ihrer Standzeit von allein weiter; das aktive
  * Segment oben fuellt sich dabei. Gedrueckt halten haelt an, der
- * Pause-Knopf (oder die Leertaste) haelt dauerhaft an (WCAG 2.2.2). Wer
- * ein Diagramm antippt, will lesen: Das haelt ebenfalls an. Auf der letzten
- * Karte bleibt die Story stehen.
+ * Pause-Knopf (oder die Leertaste) haelt die Karte an (WCAG 2.2.2). Wer
+ * ein Diagramm antippt, will lesen: Das haelt ebenfalls an. Eine Pause gilt
+ * nur fuer ihre Karte — vor oder zurueck laeuft die Zeit wieder. Nach der
+ * letzten Karte schliesst sich die Story; ein Wisch nach unten schliesst sie
+ * jederzeit.
  *
  * Der Balken wird per `requestAnimationFrame` direkt am Element gesetzt —
  * kein Neuzeichnen von React je Bild.
@@ -60,6 +64,7 @@ export function StoryViewer({
   const swiped = React.useRef(false);
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const fillRef = React.useRef<HTMLSpanElement>(null);
+  // Eine Pause gilt der aktuellen Karte; jeder Wechsel hebt sie auf.
   const [paused, setPaused] = React.useState(false);
   const [holding, setHolding] = React.useState(false);
 
@@ -68,9 +73,13 @@ export function StoryViewer({
   const slide = slides[current];
   const duration = slide.duration ?? DEFAULT_DURATION;
   const running = !paused && !holding;
+  const togglePause = React.useCallback(() => {
+    setPaused((value) => !value);
+  }, []);
 
   const go = React.useCallback(
     (delta: number) => {
+      setPaused(false);
       setIndex((value) => Math.max(0, Math.min(last, value + delta)));
     },
     [last],
@@ -110,18 +119,19 @@ export function StoryViewer({
       if (fill) fill.style.transform = `scaleX(${String(progress)})`;
       if (progress < 1) frame = requestAnimationFrame(tick);
       else if (current < last) go(1);
+      else onClose();
     };
     frame = requestAnimationFrame(tick);
     return () => {
       cancelAnimationFrame(frame);
     };
-  }, [running, current, duration, last, go]);
+  }, [running, current, duration, last, go, onClose]);
 
   React.useEffect(() => {
     function onKey(event: KeyboardEvent) {
       if (event.key === " ") {
         event.preventDefault();
-        setPaused((value) => !value);
+        togglePause();
       } else if (event.key === "Escape") onClose();
       else if (event.key === "ArrowRight") go(1);
       else if (event.key === "ArrowLeft") go(-1);
@@ -130,7 +140,29 @@ export function StoryViewer({
     return () => {
       window.removeEventListener("keydown", onKey);
     };
-  }, [go, onClose]);
+  }, [go, onClose, togglePause]);
+
+  // Wisch nach unten schliesst. Ueber Touch-Ereignisse, weil der Browser
+  // senkrechte Gesten (touch-pan-y) selbst uebernimmt und den Zeiger dann
+  // abbricht. Nur am oberen Rand der Karte — sonst ist es Scrollen.
+  const touchStart = React.useRef<{ x: number; y: number } | null>(null);
+  function onTouchStart(event: React.TouchEvent) {
+    const touch = event.touches.item(0);
+    touchStart.current =
+      event.touches.length === 1 && (scrollRef.current?.scrollTop ?? 0) <= 0
+        ? { x: touch.clientX, y: touch.clientY }
+        : null;
+  }
+  function onTouchEnd(event: React.TouchEvent) {
+    const start = touchStart.current;
+    touchStart.current = null;
+    const touch = event.changedTouches.item(0);
+    if (!start) return;
+    if (isCloseSwipe(touch.clientX - start.x, touch.clientY - start.y)) {
+      swiped.current = true;
+      onClose();
+    }
+  }
 
   function onPointerDown(event: React.PointerEvent) {
     swipeStart.current = { x: event.clientX, y: event.clientY };
@@ -149,6 +181,10 @@ export function StoryViewer({
     if (Math.abs(dx) >= SWIPE_THRESHOLD && Math.abs(dx) > Math.abs(dy)) {
       swiped.current = true;
       go(dx < 0 ? 1 : -1);
+    } else if (event.pointerType === "mouse" && isCloseSwipe(dx, dy)) {
+      // Touch schliesst ueber onTouchEnd; hier nur das Ziehen mit der Maus.
+      swiped.current = true;
+      onClose();
     }
   }
 
@@ -199,9 +235,7 @@ export function StoryViewer({
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => {
-                  setPaused((value) => !value);
-                }}
+                onClick={togglePause}
                 aria-label={paused ? "Automatisch weiterblättern" : "Anhalten"}
                 aria-pressed={paused}
               >
@@ -224,6 +258,8 @@ export function StoryViewer({
           className="relative flex-1 touch-pan-y overflow-y-auto select-none"
           onPointerDown={onPointerDown}
           onPointerUp={onPointerUp}
+          onTouchStart={onTouchStart}
+          onTouchEnd={onTouchEnd}
           onPointerCancel={() => {
             setHolding(false);
           }}
@@ -277,4 +313,8 @@ export function StoryViewer({
       </div>
     </div>
   );
+}
+
+function isCloseSwipe(dx: number, dy: number): boolean {
+  return dy >= CLOSE_THRESHOLD && dy > Math.abs(dx) * 1.5;
 }
