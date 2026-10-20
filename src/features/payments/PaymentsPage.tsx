@@ -422,23 +422,26 @@ export function PaymentsPage() {
           </Select>
         </FilterField>
 
-        <FilterField id="f-month" label="Monat" half>
-          <Select
-            id="f-month"
-            value={filterMonth ? String(filterMonth) : ""}
-            disabled={!filterYear}
-            onChange={(event) => {
-              updateParams({ month: event.target.value });
-            }}
-          >
-            <option value="">Alle Monate</option>
-            {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-              <option key={m} value={m}>
-                {monthNameDe(m)}
-              </option>
-            ))}
-          </Select>
-        </FilterField>
+        {/* Der Monat erst mit einem Jahr: Ausgegraut stand er ohne Erklaerung
+            da und kostete auf dem Telefon eine Zeile. */}
+        {filterYear !== null && (
+          <FilterField id="f-month" label="Monat" half>
+            <Select
+              id="f-month"
+              value={filterMonth ? String(filterMonth) : ""}
+              onChange={(event) => {
+                updateParams({ month: event.target.value });
+              }}
+            >
+              <option value="">Alle Monate</option>
+              {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                <option key={m} value={m}>
+                  {monthNameDe(m)}
+                </option>
+              ))}
+            </Select>
+          </FilterField>
+        )}
 
         <FilterField id="f-security" label="Asset">
           <EntitySelect

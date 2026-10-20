@@ -45,7 +45,7 @@ type HistoryView = "monthly" | "cumulative";
 
 // Die einzelnen Dividenden zuerst und vorausgewaehlt, die Summe danach.
 const VIEW_OPTIONS: readonly SegmentOption<HistoryView>[] = [
-  { value: "monthly", label: "Übersicht" },
+  { value: "monthly", label: "Je Zahlung" },
   { value: "cumulative", label: "Kumuliert" },
 ];
 

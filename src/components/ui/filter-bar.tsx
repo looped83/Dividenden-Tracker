@@ -100,7 +100,9 @@ export function FilterBar({
       className={cn(
         "flex-wrap items-center gap-3 sm:flex",
         // Auswahlfelder als Pillen wie die Jahresauswahl der Uebersicht.
-        "[&_select]:rounded-full [&_select]:pl-4",
+        // Rechts knapper als im Formular: Der Pfeil braucht 28px, und paarweise
+        // Felder (`half`) fassen so auch „Alle Währungen" bei 390px.
+        "[&_select]:rounded-full [&_select]:pl-4 [&_select]:pr-8",
         (disclosure?.open ?? true) ? "flex" : "hidden",
         className,
       )}

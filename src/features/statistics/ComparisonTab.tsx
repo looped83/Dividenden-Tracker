@@ -249,8 +249,10 @@ export function ComparisonTab() {
                   {yearOptions
                     .filter((year) => year !== selection.currentYear)
                     .map((year) => (
+                      // „vs. 2025" (kurz genug fuer 320px): Ohne sichtbare Beschriftung stuenden
+                      // sonst zwei Jahreszahlen ohne Bezug nebeneinander.
                       <option key={year} value={year}>
-                        {year}
+                        vs. {year}
                       </option>
                     ))}
                 </Select>
