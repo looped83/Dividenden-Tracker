@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import {
   Briefcase,
   Pencil,
@@ -42,6 +42,7 @@ import { SkeletonRows } from "@/components/ui/skeleton";
 import { ListGroup, ListRow } from "@/components/ui/list";
 import { cn } from "@/lib/utils/cn";
 import { useDepots } from "@/features/depots/hooks";
+import { useSecuritiesByDepot } from "@/features/payments/hooks";
 import { useArchiveToggle } from "@/components/domain/useArchiveToggle";
 import {
   Table,
@@ -65,6 +66,7 @@ import { latestAsOf } from "@/features/securities/snapshots";
 import {
   DEFAULT_SECURITY_SORT,
   defaultDirectionFor,
+  parseSecuritySort,
   securitySortOptions,
   sortAssetRows,
   type SecuritySort,
@@ -104,11 +106,34 @@ export function SecuritiesPage() {
     [depots],
   );
   const toggleArchive = useArchiveToggle(useArchiveSecurity());
-  const [showArchived, setShowArchived] = React.useState(false);
-  const [sectorFilter, setSectorFilter] = React.useState("");
-  const [currencyFilter, setCurrencyFilter] = React.useState("");
-  const [depotFilter, setDepotFilter] = React.useState("");
-  const [sort, setSort] = React.useState<SecuritySort>(DEFAULT_SECURITY_SORT);
+  // Filter und Sortierung stehen in der Adresse — wie in der Dividendenliste.
+  // Als lokaler Zustand waren sie weg, sobald man ein Asset oeffnete und
+  // zurueckkam.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const showArchived = searchParams.get("status") === "all";
+  const sectorFilter = searchParams.get("sector") ?? "";
+  const currencyFilter = searchParams.get("currency") ?? "";
+  const depotFilter = searchParams.get("depot") ?? "";
+  const sort = parseSecuritySort(searchParams.get("sort"), searchParams.get("direction"));
+  const setParams = React.useCallback(
+    (updates: Record<string, string | null>) => {
+      setSearchParams((prev) => {
+        const params = new URLSearchParams(prev);
+        for (const [key, value] of Object.entries(updates)) {
+          if (value) params.set(key, value);
+          else params.delete(key);
+        }
+        return params;
+      });
+    },
+    [setSearchParams],
+  );
+  const setShowArchived = (value: boolean) => {
+    setParams({ status: value ? "all" : null });
+  };
+  // Wo Dividenden eines Assets gebucht sind — nur geladen, solange nach Depot
+  // gefiltert wird (meist liegt die Historie ohnehin schon im Cache).
+  const { data: bookedByDepot } = useSecuritiesByDepot(depotFilter !== "");
   const [dialog, setDialog] = React.useState<{
     open: boolean;
     security: Security | null;
@@ -183,11 +208,27 @@ export function SecuritiesPage() {
       if (!showArchived && security.archived_at) return false;
       if (sectorFilter && security.sector !== sectorFilter) return false;
       if (currencyFilter && security.currency !== currencyFilter) return false;
-      if (depotFilter && security.default_depot_id !== depotFilter) return false;
+      // Ein Asset gehoert zu einem Depot, wenn dort Dividenden gebucht sind
+      // oder es dort sein Standard-Depot hat — nicht nur im zweiten Fall: Sonst
+      // zeigte „Scalable Capital" kein Asset, obwohl dort alles eingeht.
+      if (
+        depotFilter &&
+        security.default_depot_id !== depotFilter &&
+        !bookedByDepot?.get(depotFilter)?.has(security.id)
+      )
+        return false;
       return true;
     });
     return sortAssetRows(filtered, effectiveSort);
-  }, [rows, showArchived, sectorFilter, currencyFilter, depotFilter, effectiveSort]);
+  }, [
+    rows,
+    showArchived,
+    sectorFilter,
+    currencyFilter,
+    depotFilter,
+    bookedByDepot,
+    effectiveSort,
+  ]);
 
   const activeFilterCount = [
     sectorFilter,
@@ -202,10 +243,7 @@ export function SecuritiesPage() {
     : rows.filter(({ security }) => !security.archived_at).length;
 
   const resetFilters = () => {
-    setSectorFilter("");
-    setCurrencyFilter("");
-    setDepotFilter("");
-    setShowArchived(false);
+    setParams({ sector: null, currency: null, depot: null, status: null });
   };
 
   // Die Zeilenaktionen der Tabelle (bearbeiten, archivieren/reaktivieren,
@@ -266,12 +304,12 @@ export function SecuritiesPage() {
       >
         <div className="space-y-6">
           <FilterBar disclosure={filterDisclosure} className="pt-2">
-            <FilterField id="sec-sector" label="Branche">
+            <FilterField id="sec-sector" label="Branche" half>
               <Select
                 id="sec-sector"
                 value={sectorFilter}
                 onChange={(event) => {
-                  setSectorFilter(event.target.value);
+                  setParams({ sector: event.target.value });
                 }}
               >
                 <option value="">Alle Branchen</option>
@@ -283,12 +321,12 @@ export function SecuritiesPage() {
               </Select>
             </FilterField>
 
-            <FilterField id="sec-currency" label="Währung">
+            <FilterField id="sec-currency" label="Währung" half>
               <Select
                 id="sec-currency"
                 value={currencyFilter}
                 onChange={(event) => {
-                  setCurrencyFilter(event.target.value);
+                  setParams({ currency: event.target.value });
                 }}
               >
                 <option value="">Alle Währungen</option>
@@ -300,13 +338,15 @@ export function SecuritiesPage() {
               </Select>
             </FilterField>
 
-            <FilterField id="sec-depot" label="Depotkonto">
+            <FilterField id="sec-depot" label="Depot">
               <EntitySelect
                 id="sec-depot"
                 options={depotOptions}
                 value={depotFilter}
-                onChange={setDepotFilter}
-                allLabel="Alle Depotkonten"
+                onChange={(value) => {
+                  setParams({ depot: value });
+                }}
+                allLabel="Alle Depots"
               />
             </FilterField>
 
@@ -338,10 +378,10 @@ export function SecuritiesPage() {
                 // Ein frisch gewaehltes Zahlenfeld beginnt absteigend: Die Frage an
                 // „Nach Wert" ist „was ist meine groesste Position", nicht „meine
                 // kleinste".
-                setSort({ field, direction: defaultDirectionFor(field) });
+                setParams({ sort: field, direction: defaultDirectionFor(field) });
               }}
               onDirectionChange={(direction) => {
-                setSort((current) => ({ ...current, direction }));
+                setParams({ sort: effectiveSort.field, direction });
               }}
             />
 
@@ -427,7 +467,7 @@ export function SecuritiesPage() {
                     <>
                       <TableHead className="hidden lg:table-cell">Branche</TableHead>
                       <TableHead>Ausschüttung</TableHead>
-                      <TableHead className="hidden lg:table-cell">Depotkonto</TableHead>
+                      <TableHead className="hidden lg:table-cell">Depot</TableHead>
                     </>
                   )}
                   <TableHead className="w-0">

@@ -127,21 +127,37 @@ export function FilterBar({
  * `min-w-0` ist wesentlich: Ohne das waechst ein `select` auf die Breite seiner
  * laengsten Option (z. B. lange Firmennamen) und sprengt die Zeile. Auf
  * schmalen Viewports steht ein Feld je Zeile — halbe Spalten reichen fuer
- * Werte wie „Alle Unternehmen" nicht aus.
+ * Werte wie „Alle Assets" nicht aus; nur kurze Paare stehen nebeneinander
+ * (`half`).
  */
 export function FilterField({
   id,
   label,
+  half = false,
   className,
   children,
 }: {
   id: string;
   label: string;
+  /**
+   * Auf dem Telefon ab 360px halbe Breite, fuer kurze Werte, die paarweise
+   * zusammengehoeren (Jahr | Monat, Branche | Waehrung) — wie Jahr und
+   * Vergleichsjahr im Vergleich. Spart je Paar eine Zeile der aufgeklappten
+   * Leiste; lange Namen (Asset, Depot) bleiben voll breit. Darunter reicht
+   * die halbe Breite nicht fuer „Alle Währungen".
+   */
+  half?: boolean;
   className?: string;
   children: React.ReactNode;
 }) {
   return (
-    <div className={cn("min-w-0 flex-1 basis-full sm:max-w-72 sm:basis-40", className)}>
+    <div
+      className={cn(
+        "min-w-0 flex-1 sm:max-w-72 sm:basis-40",
+        half ? "basis-full min-[360px]:basis-[calc(50%-0.375rem)]" : "basis-full",
+        className,
+      )}
+    >
       <label htmlFor={id} className="sr-only">
         {label}
       </label>

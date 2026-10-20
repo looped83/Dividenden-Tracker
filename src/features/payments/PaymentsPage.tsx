@@ -404,6 +404,42 @@ export function PaymentsPage() {
           Sortierrichtung als Symbolschalter statt langer Auswahltexte
           („Zahlungsdatum – neueste zuerst“), damit alles in eine Zeile passt. */}
       <FilterBar disclosure={filterDisclosure}>
+        <FilterField id="f-year" label="Jahr" half>
+          <Select
+            id="f-year"
+            value={filterYear ? String(filterYear) : ""}
+            onChange={(event) => {
+              const value = event.target.value;
+              updateParams(value ? { year: value } : { year: null, month: null });
+            }}
+          >
+            <option value="">Alle Jahre</option>
+            {years.map((y) => (
+              <option key={y} value={y}>
+                {y}
+              </option>
+            ))}
+          </Select>
+        </FilterField>
+
+        <FilterField id="f-month" label="Monat" half>
+          <Select
+            id="f-month"
+            value={filterMonth ? String(filterMonth) : ""}
+            disabled={!filterYear}
+            onChange={(event) => {
+              updateParams({ month: event.target.value });
+            }}
+          >
+            <option value="">Alle Monate</option>
+            {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+              <option key={m} value={m}>
+                {monthNameDe(m)}
+              </option>
+            ))}
+          </Select>
+        </FilterField>
+
         <FilterField id="f-security" label="Asset">
           <EntitySelect
             id="f-security"
@@ -426,42 +462,6 @@ export function PaymentsPage() {
             }}
             allLabel="Alle Depots"
           />
-        </FilterField>
-
-        <FilterField id="f-year" label="Jahr">
-          <Select
-            id="f-year"
-            value={filterYear ? String(filterYear) : ""}
-            onChange={(event) => {
-              const value = event.target.value;
-              updateParams(value ? { year: value } : { year: null, month: null });
-            }}
-          >
-            <option value="">Alle Jahre</option>
-            {years.map((y) => (
-              <option key={y} value={y}>
-                {y}
-              </option>
-            ))}
-          </Select>
-        </FilterField>
-
-        <FilterField id="f-month" label="Monat">
-          <Select
-            id="f-month"
-            value={filterMonth ? String(filterMonth) : ""}
-            disabled={!filterYear}
-            onChange={(event) => {
-              updateParams({ month: event.target.value });
-            }}
-          >
-            <option value="">Alle Monate</option>
-            {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-              <option key={m} value={m}>
-                {monthNameDe(m)}
-              </option>
-            ))}
-          </Select>
         </FilterField>
 
         {/* Stornierte sind ein Filter wie jeder andere und stehen deshalb in

@@ -56,7 +56,7 @@ export const PRIMARY_NAV_ITEMS: readonly NavItem[] = [
   // im Depot liegt. Der alte Name benannte einen Sonderfall als Ganzes.
   {
     to: "/depot",
-    label: "Depot",
+    label: "Bestand",
     icon: Briefcase,
     description: "Assets, Bestände und Entwicklung",
   },
@@ -76,7 +76,7 @@ export const PRIMARY_NAV_ITEMS: readonly NavItem[] = [
     to: "/einstellungen",
     label: "Einstellungen",
     icon: Settings,
-    description: "Depotkonten, Import und Datensicherung",
+    description: "Depots, Import und Datensicherung",
   },
 ];
 
@@ -155,7 +155,7 @@ export const SETTINGS_TABS: readonly { to: string; label: string; end?: boolean 
   // „Depotkonten" statt „Depots": Hier stehen die Konten bei den Brokern. Der
   // Bestand selbst liegt im Bereich „Depot" — gleicher Wortstamm, andere Sache;
   // der Zusatz haelt beide auseinander.
-  { to: "/einstellungen/depots", label: "Depotkonten" },
+  { to: "/einstellungen/depots", label: "Depots" },
   { to: "/einstellungen/importe", label: "Import" },
   { to: "/einstellungen/datensicherung", label: "Sicherung" },
 ];

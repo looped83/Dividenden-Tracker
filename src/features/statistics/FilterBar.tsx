@@ -100,7 +100,7 @@ export function FilterBar({
         />
       </FilterField>
 
-      <FilterField id="stats-filter-depot" label="Depotkonto">
+      <FilterField id="stats-filter-depot" label="Depot">
         <EntitySelect
           id="stats-filter-depot"
           options={depotOptions}
@@ -108,7 +108,7 @@ export function FilterBar({
           onChange={(value) => {
             setFilter({ ...filter, depotId: value || null });
           }}
-          allLabel="Alle Depotkonten"
+          allLabel="Alle Depots"
         />
       </FilterField>
 
