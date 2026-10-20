@@ -67,7 +67,14 @@ export function FilterBar({
   const active = !isEmptyFilter(filter);
 
   return (
-    <FilterBarShell disclosure={disclosure}>
+    <FilterBarShell
+      disclosure={disclosure}
+      // Ohne Jahr (Vergleich) folgt direkt die Zeile der Zeitraeume — sie
+      // gehoert optisch zur Leiste und steht im Zeilenabstand der Felder
+      // (0,75rem), nicht im Abschnittsabstand der Seite (1,5rem). Eingeklappt
+      // ist die Leiste `hidden`, dann gilt wieder der Abstand zu den Reitern.
+      className={showYear ? "" : "mb-3!"}
+    >
       {showYear && (
         <FilterField id="stats-filter-year" label="Jahr">
           <Select
