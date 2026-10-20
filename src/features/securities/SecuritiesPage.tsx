@@ -273,14 +273,100 @@ export function SecuritiesPage() {
         <FilterToggle disclosure={filterDisclosure} />
       </DepotHeaderActions>
 
+      {/* Die Felder stehen oben unter den Reitern — wie bei Dividenden und
+          Statistik, direkt unter dem Schalter im Kopf, der sie aufklappt.
+          Zuvor klappten sie erst unter dem Kennzahlkopf auf, weit weg vom
+          Schalter. Abstand nach unten wie dort (1,5rem). */}
+      <FilterBar disclosure={filterDisclosure} className="mb-6!">
+        <FilterField id="sec-sector" label="Branche" half>
+          <Select
+            id="sec-sector"
+            value={sectorFilter}
+            onChange={(event) => {
+              setParams({ sector: event.target.value });
+            }}
+          >
+            <option value="">Alle Branchen</option>
+            {options.sectors.map((sector) => (
+              <option key={sector} value={sector}>
+                {sector}
+              </option>
+            ))}
+          </Select>
+        </FilterField>
+
+        <FilterField id="sec-currency" label="Währung" half>
+          <Select
+            id="sec-currency"
+            value={currencyFilter}
+            onChange={(event) => {
+              setParams({ currency: event.target.value });
+            }}
+          >
+            <option value="">Alle Währungen</option>
+            {options.currencies.map((currency) => (
+              <option key={currency} value={currency}>
+                {currency}
+              </option>
+            ))}
+          </Select>
+        </FilterField>
+
+        <FilterField id="sec-depot" label="Depot">
+          <EntitySelect
+            id="sec-depot"
+            options={depotOptions}
+            value={depotFilter}
+            onChange={(value) => {
+              setParams({ depot: value });
+            }}
+            allLabel="Alle Depots"
+          />
+        </FilterField>
+
+        {/* Archivierte sind ein Filter wie jeder andere — dieselbe Stelle wie
+        „Stornierte" in der Dividendenliste. */}
+        <FilterField id="sec-status" label="Status">
+          <Select
+            id="sec-status"
+            value={showArchived ? "all" : ""}
+            onChange={(event) => {
+              setShowArchived(event.target.value === "all");
+            }}
+          >
+            <option value="">Ohne Archivierte</option>
+            <option value="all">Mit Archivierten</option>
+          </Select>
+        </FilterField>
+
+        {/* Sortierung wie in der Dividendenliste: rechts in der Leiste, vor dem
+        Zuruecksetzen. Mit importiertem Depotstand stehen die Zahlen des
+        Bestands zur Wahl — Wert, Ausschuettung, Rendite, Gewinn. */}
+        <FilterSort
+          id="sec-sort"
+          value={effectiveSort.field}
+          direction={effectiveSort.direction}
+          options={sortOptions}
+          onValueChange={(value) => {
+            const field = value as SecuritySortField;
+            // Ein frisch gewaehltes Zahlenfeld beginnt absteigend: Die Frage an
+            // „Nach Wert" ist „was ist meine groesste Position", nicht „meine
+            // kleinste".
+            setParams({ sort: field, direction: defaultDirectionFor(field) });
+          }}
+          onDirectionChange={(direction) => {
+            setParams({ sort: effectiveSort.field, direction });
+          }}
+        />
+
+        {/* Zuruecksetzen steht wie im Statistikbereich **in** der Leiste. */}
+        {hasActiveFilters && <FilterReset onClick={resetFilters} />}
+      </FilterBar>
+
       <PortfolioSummary snapshots={snapshots} onImport={openPortfolioImport} />
 
-      {/* Filterleiste in derselben Optik wie Dividenden und Statistik. Die
-          Auswahlwerte stammen aus dem Bestand — leere Listen entfallen. */}
       {/* Die Liste ist ein Abschnitt wie auf der Uebersicht: Ueberschrift mit
-          Anzahl, der Filter rechts im Kopf (auf dem Telefon als Schalter, ab
-          `sm` als Felder darunter) — er filtert die Liste, nicht den
-          Kennzahlkopf darueber. */}
+          Anzahl (wenn ein Filter sie verkleinert). */}
       <Section
         title="Assets"
         // Die Anzahl nur, wenn ein Filter sie verkleinert: Ungefiltert nennt
@@ -303,92 +389,6 @@ export function SecuritiesPage() {
         }
       >
         <div className="space-y-6">
-          <FilterBar disclosure={filterDisclosure} className="pt-2">
-            <FilterField id="sec-sector" label="Branche" half>
-              <Select
-                id="sec-sector"
-                value={sectorFilter}
-                onChange={(event) => {
-                  setParams({ sector: event.target.value });
-                }}
-              >
-                <option value="">Alle Branchen</option>
-                {options.sectors.map((sector) => (
-                  <option key={sector} value={sector}>
-                    {sector}
-                  </option>
-                ))}
-              </Select>
-            </FilterField>
-
-            <FilterField id="sec-currency" label="Währung" half>
-              <Select
-                id="sec-currency"
-                value={currencyFilter}
-                onChange={(event) => {
-                  setParams({ currency: event.target.value });
-                }}
-              >
-                <option value="">Alle Währungen</option>
-                {options.currencies.map((currency) => (
-                  <option key={currency} value={currency}>
-                    {currency}
-                  </option>
-                ))}
-              </Select>
-            </FilterField>
-
-            <FilterField id="sec-depot" label="Depot">
-              <EntitySelect
-                id="sec-depot"
-                options={depotOptions}
-                value={depotFilter}
-                onChange={(value) => {
-                  setParams({ depot: value });
-                }}
-                allLabel="Alle Depots"
-              />
-            </FilterField>
-
-            {/* Archivierte sind ein Filter wie jeder andere — dieselbe Stelle wie
-            „Stornierte" in der Dividendenliste. */}
-            <FilterField id="sec-status" label="Status">
-              <Select
-                id="sec-status"
-                value={showArchived ? "all" : ""}
-                onChange={(event) => {
-                  setShowArchived(event.target.value === "all");
-                }}
-              >
-                <option value="">Ohne Archivierte</option>
-                <option value="all">Mit Archivierten</option>
-              </Select>
-            </FilterField>
-
-            {/* Sortierung wie in der Dividendenliste: rechts in der Leiste, vor dem
-            Zuruecksetzen. Mit importiertem Depotstand stehen die Zahlen des
-            Bestands zur Wahl — Wert, Ausschuettung, Rendite, Gewinn. */}
-            <FilterSort
-              id="sec-sort"
-              value={effectiveSort.field}
-              direction={effectiveSort.direction}
-              options={sortOptions}
-              onValueChange={(value) => {
-                const field = value as SecuritySortField;
-                // Ein frisch gewaehltes Zahlenfeld beginnt absteigend: Die Frage an
-                // „Nach Wert" ist „was ist meine groesste Position", nicht „meine
-                // kleinste".
-                setParams({ sort: field, direction: defaultDirectionFor(field) });
-              }}
-              onDirectionChange={(direction) => {
-                setParams({ sort: effectiveSort.field, direction });
-              }}
-            />
-
-            {/* Zuruecksetzen steht wie im Statistikbereich **in** der Leiste. */}
-            {hasActiveFilters && <FilterReset onClick={resetFilters} />}
-          </FilterBar>
-
           {isLoading ? (
             <SkeletonRows rows={6} label="Assets" />
           ) : visible.length === 0 && rows.length > 0 ? (

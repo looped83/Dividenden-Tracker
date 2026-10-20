@@ -236,8 +236,8 @@ describe("ComparisonTab — Auswahl", () => {
     const options = within(screen.getByLabelText("verglichen mit")).getAllByRole(
       "option",
     );
-    expect(options.map((option) => option.textContent)).not.toContain("vs. 2026");
-    expect(options.map((option) => option.textContent)).toContain("vs. 2025");
+    expect(options.map((option) => option.textContent)).not.toContain("2026");
+    expect(options.map((option) => option.textContent)).toContain("2025");
   });
 
   it("sagt, dass der Jahresfilter hier nicht wirkt", () => {

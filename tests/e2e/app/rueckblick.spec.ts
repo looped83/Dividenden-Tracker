@@ -49,9 +49,15 @@ test("Startseite zeigt den Rückblick zum Jahreswechsel und kehrt dorthin zurüc
   await page.getByRole("link", { name: "Jahresrückblick 2025 ansehen" }).click();
 
   const story = page.getByRole("dialog", { name: "Rückblick 2025" });
-  await expect(story).toBeVisible();
-  await page.keyboard.press("Escape");
-  await expect(story).toBeHidden();
+  await expect(story.getByText("Dein Dividendenjahr")).toBeVisible();
+  // Sichtbar heißt nicht, dass der Tastatur-Listener schon hängt (er kommt im
+  // Effekt nach dem Malen) — in WebKit ging ein sofortiges Escape so
+  // gelegentlich verloren. Bis zum Schließen wiederholen; ein zweites Escape
+  // auf der Startseite bewirkt nichts.
+  await expect(async () => {
+    await page.keyboard.press("Escape");
+    await expect(story).toBeHidden({ timeout: 1000 });
+  }).toPass();
   await expect(page).toHaveURL(/#\/$/);
 });
 
@@ -97,8 +103,15 @@ test("Zurück startet die Zeit neu, nach der letzten Karte schließt die Story",
   await page.clock.runFor(7500);
   await expect(story.getByText("Netto erhalten")).toBeVisible();
 
-  await page.clock.runFor(120_000);
-  await expect(story).toBeHidden();
+  // In Schritten statt in einem Sprung: Jeder Kartenwechsel ist ein
+  // React-Update, das erst zwischen zwei Schritten gerendert wird und dann
+  // den Ablauf der nächsten Karte startet. Ein einziger Sprung über zwei
+  // Minuten wechselte so nur eine Karte — je nach Motor (WebKit) blieb die
+  // Story dann offen.
+  await expect(async () => {
+    await page.clock.runFor(8000);
+    await expect(story).toBeHidden({ timeout: 250 });
+  }).toPass({ timeout: 30_000 });
   await expect(page).toHaveURL(/#\/statistiken\?year=2025$/);
 });
 
