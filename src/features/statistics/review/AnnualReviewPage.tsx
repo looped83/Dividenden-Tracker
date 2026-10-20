@@ -60,16 +60,13 @@ export function AnnualReviewPage() {
 
   const slides = React.useMemo(() => {
     if (!review) return [];
-    return buildReviewSlides(
-      review,
-      (id) => entityName(securities, id),
-      years.filter((other) => other !== year),
-    );
-  }, [review, securities, years, year]);
+    return buildReviewSlides(review, (id) => entityName(securities, id));
+  }, [review, securities]);
 
   const close = React.useCallback(() => {
-    void navigate("/statistiken");
-  }, [navigate]);
+    // Zurueck in die Statistik des Jahres, aus der der Rueckblick kam.
+    void navigate(`/statistiken?year=${String(year)}`);
+  }, [navigate, year]);
 
   if (paymentsQuery.isLoading || securitiesQuery.isLoading) {
     return (

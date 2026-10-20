@@ -151,6 +151,11 @@ function ranked(
  * Kennzahlen des Rueckblicks fuer `year`. `payments` sind **alle** aktiven
  * Eingaenge — Vorjahr, Erstzahlungen und kumulierte Summe brauchen die
  * Historie. Gibt null zurueck, wenn das Jahr keine Zahlungen hat.
+ *
+ * Der Rueckblick steht am Ende **seines** Jahres: Spaetere Jahre gehen in
+ * keine Kennzahl ein. „Dein bisher bestes Jahr" meint die Jahre bis
+ * einschliesslich `year` — ein spaeteres, besseres Jahr aendert den Rueckblick
+ * auf 2023 nicht.
  */
 export function annualReview(
   payments: readonly AnalyticsPayment[],
@@ -159,6 +164,7 @@ export function annualReview(
   facets: ReadonlyMap<string, ReviewFacets>,
   labelOf: (securityId: string) => string = (id) => id,
 ): AnnualReview | null {
+  const history = payments.filter((p) => yearOf(p.payDate) <= year);
   const rows = payments.filter((p) => yearOf(p.payDate) === year);
   if (rows.length === 0) return null;
 
@@ -169,21 +175,21 @@ export function annualReview(
   );
   const deductions = gross.subtract(net);
 
-  const years = yearlyBuckets(payments);
+  const years = yearlyBuckets(history);
   const prior = years.find((bucket) => bucket.year === year - 1) ?? null;
   const priorYearNet = prior?.net ?? null;
   const rank = years.filter((bucket) => bucket.net.compareTo(net) > 0).length + 1;
   const cumulativeNet = sumMoney(
-    years.filter((bucket) => bucket.year <= year).map((bucket) => bucket.net),
+    years.map((bucket) => bucket.net),
     EUR,
   );
 
   const isPartial = year === ref.year;
   const days = isPartial ? dayOfYear(ref) : isLeapYear(year) ? 366 : 365;
 
-  // Erste Zahlung je Asset ueber die gesamte Historie.
+  // Erste Zahlung je Asset bis einschliesslich dieses Jahres.
   const firstYearOf = new Map<string, number>();
-  for (const payment of payments) {
+  for (const payment of history) {
     const paymentYear = yearOf(payment.payDate);
     const known = firstYearOf.get(payment.securityId);
     if (known === undefined || paymentYear < known) {
@@ -197,7 +203,7 @@ export function annualReview(
   // Zuwachs nur fuer Assets, die in beiden Jahren gezahlt haben — ein
   // Neuzugang ist kein „gesteigert", er steht unter den Neuen.
   const priorBySecurity = new Map(
-    groupBySecurity(payments.filter((p) => yearOf(p.payDate) === year - 1)).map(
+    groupBySecurity(history.filter((p) => yearOf(p.payDate) === year - 1)).map(
       (bucket) => [bucket.key, bucket.net],
     ),
   );
@@ -253,7 +259,7 @@ export function annualReview(
     distinctSecurities: distinctSecurities(rows),
     activeMonths: activeMonthCount(rows),
     perDay: Money.fromDecimal(net.toDecimal().div(days), EUR),
-    perMonth: averagePerMonth(payments, year, ref),
+    perMonth: averagePerMonth(rows, year, ref),
     change: comparePeriods(net, priorYearNet),
     priorYearNet,
     months: monthlyBuckets(rows, year),

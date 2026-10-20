@@ -1,7 +1,8 @@
 import { expect, test } from "../support/appTest";
 
 /**
- * Jahresrückblick: Einstieg über die Karte der Statistik-Übersicht, Blättern
+ * Jahresrückblick: Einstieg über das Banner der Statistik-Übersicht (nur mit
+ * gewähltem Jahr), Blättern
  * per Knopf und Pfeiltaste, Schließen per Escape zurück in die Statistik.
  */
 
@@ -16,11 +17,13 @@ test.use({
 });
 
 test("Rückblick öffnet als Story und kehrt zur Statistik zurück", async ({ page }) => {
+  // Ohne gewähltes Jahr kein Banner — der Rückblick gehört zu einem Jahr.
   await page.goto("/#/statistiken");
+  await expect(page.getByText("Gesamtsumme")).toBeVisible();
+  await expect(page.getByRole("link", { name: /Jahresrückblick/ })).toHaveCount(0);
 
-  const teaser = page.getByRole("region", { name: "Jahresrückblick" });
-  await expect(teaser).toBeVisible();
-  await teaser.getByRole("link", { name: /Dein Dividendenjahr 2025/ }).click();
+  await page.goto("/#/statistiken?year=2025");
+  await page.getByRole("link", { name: "Jahresrückblick 2025 ansehen" }).click();
 
   const story = page.getByRole("dialog", { name: "Rückblick 2025" });
   await expect(story).toBeVisible();
@@ -34,6 +37,6 @@ test("Rückblick öffnet als Story und kehrt zur Statistik zurück", async ({ pa
   await expect(story.getByText("Passives Einkommen")).toBeVisible();
 
   await page.keyboard.press("Escape");
-  await expect(page).toHaveURL(/#\/statistiken$/);
+  await expect(page).toHaveURL(/#\/statistiken\?year=2025$/);
   await expect(story).toBeHidden();
 });

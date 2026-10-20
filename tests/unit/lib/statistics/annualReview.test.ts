@@ -112,4 +112,17 @@ describe("annualReview", () => {
     expect(review?.isPartial).toBe(true);
     expect(review?.change.kind).toBe("no-comparison");
   });
+
+  it("blendet spaetere Jahre aus: Rang, Summe und Neue gelten bis zum Jahr", () => {
+    const withLater = [
+      ...payments,
+      p("2026-01-10", "999.00", { security: "d" }),
+      p("2026-02-10", "999.00", { security: "c" }),
+    ];
+    const review = annualReview(withLater, 2024, REF, NO_FACETS);
+    expect(review?.rank).toBe(1);
+    expect(review?.yearCount).toBe(1);
+    expect(review?.cumulativeNet.toStringValue()).toBe("150.00");
+    expect(review?.newcomers.map((entry) => entry.securityId)).toEqual(["a", "b"]);
+  });
 });
