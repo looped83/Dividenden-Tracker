@@ -80,3 +80,38 @@ test("Story blättert von allein weiter und lässt sich anhalten", async ({ page
     story.getByRole("button", { name: "Automatisch weiterblättern" }),
   ).toBeVisible();
 });
+
+test("Zurück startet die Zeit neu, nach der letzten Karte schließt die Story", async ({
+  page,
+}) => {
+  await page.clock.install();
+  await page.goto("/#/statistiken?year=2025");
+  await page.getByRole("link", { name: "Jahresrückblick 2025 ansehen" }).click();
+  const story = page.getByRole("dialog", { name: "Rückblick 2025" });
+  await story.getByRole("button", { name: "Nächste Seite" }).click();
+  await expect(story.getByText("Netto erhalten")).toBeVisible();
+
+  // Pause gilt nur der Karte: Zurück lässt die Zeit wieder laufen.
+  await story.getByRole("button", { name: "Anhalten" }).click();
+  await story.getByRole("button", { name: "Vorherige Seite" }).click();
+  await page.clock.runFor(7500);
+  await expect(story.getByText("Netto erhalten")).toBeVisible();
+
+  await page.clock.runFor(120_000);
+  await expect(story).toBeHidden();
+  await expect(page).toHaveURL(/#\/statistiken\?year=2025$/);
+});
+
+test("Wisch nach unten schließt die Story", async ({ page }) => {
+  await page.goto("/#/statistiken?year=2025");
+  await page.getByRole("link", { name: "Jahresrückblick 2025 ansehen" }).click();
+  const story = page.getByRole("dialog", { name: "Rückblick 2025" });
+  const box = await story.getByText("Dein Dividendenjahr").boundingBox();
+  if (!box) throw new Error("Story nicht sichtbar");
+  await page.mouse.move(box.x + 100, box.y);
+  await page.mouse.down();
+  await page.mouse.move(box.x + 100, box.y + 200, { steps: 5 });
+  await page.mouse.up();
+  await expect(story).toBeHidden();
+  await expect(page).toHaveURL(/#\/statistiken\?year=2025$/);
+});
