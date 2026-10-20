@@ -3,59 +3,36 @@ import { ChevronRight } from "lucide-react";
 import { reviewHref } from "@/lib/statistics";
 
 /**
- * Einstieg in den Jahresrueckblick auf der Statistik-Uebersicht: das neueste
- * Jahr als Karte, fruehere Jahre als Pillen darunter. Ein eigener Reiter
- * passte auf dem Telefon nicht mehr neben die vier vorhandenen.
+ * Einstieg in den Jahresrueckblick: ein oranger Sockel unter der Leiste der
+ * Nebenkennzahlen (`KpiHero` › `statsFooter`), ueber ihre ganze Breite.
+ * Erscheint nur, wenn der Filter ein Jahr waehlt — und dann fuer genau dieses.
+ *
+ * Bewusst die einzige vollflaechig orange Flaeche der Seite: Orange heisst in
+ * der App „hier passiert etwas" (UX_AND_DESIGN_SYSTEM.md §1), und der
+ * Rueckblick ist genau das — ein Ereignis, kein weiterer Kennzahlkasten.
+ * Schrift auf dem Akzent haelt in beiden Themes >= 4,5:1.
  */
-export function ReviewTeaser({ years }: { years: readonly number[] }) {
-  const latest = years.at(0);
-  const earlier = years.slice(1);
-  if (latest === undefined) return null;
-
+export function ReviewTeaser({ year }: { year: number }) {
   return (
-    <section
-      aria-label="Jahresrückblick"
-      className="rounded-2xl border border-border bg-card p-4 sm:p-6"
+    <Link
+      to={reviewHref(year)}
+      aria-label={`Jahresrückblick ${String(year)} ansehen`}
+      className="group flex items-center gap-3 rounded-b-2xl bg-primary px-4 py-3 text-primary-foreground outline-none transition-[filter] hover:brightness-105 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none sm:px-5 sm:py-2.5"
     >
-      <Link
-        to={reviewHref(latest)}
-        className="group -m-2 flex items-center gap-4 rounded-xl p-2 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      <span className="min-w-0 flex-1 truncate text-sm">
+        <span className="font-bold">Jahresrückblick {year}</span>
+        <span className="hidden font-medium sm:inline">
+          {" "}
+          · Dein Dividendenjahr als Story
+        </span>
+      </span>
+      <span
+        aria-hidden
+        className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold"
       >
-        <span className="min-w-0 flex-1">
-          <span className="block text-sm font-semibold text-primary">
-            Jahresrückblick
-          </span>
-          <span className="mt-1 block text-xl font-bold tracking-[-0.02em]">
-            Dein Dividendenjahr {latest}
-          </span>
-          <span className="mt-1 block text-[0.9375rem] text-muted-foreground">
-            Summe, Rekordmonat, Top-Zahler und mehr als Story.
-          </span>
-        </span>
-        <span
-          aria-hidden
-          className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"
-        >
-          <ChevronRight className="size-5" />
-        </span>
-      </Link>
-      {earlier.length > 0 && (
-        <nav aria-label="Frühere Rückblicke" className="mt-4 border-t border-border pt-4">
-          <ul className="flex flex-wrap gap-2">
-            {earlier.map((year) => (
-              <li key={year}>
-                <Link
-                  to={reviewHref(year)}
-                  aria-label={`Rückblick ${String(year)}`}
-                  className="inline-flex h-9 items-center rounded-full border border-input px-3.5 text-sm font-medium tabular-amount outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring pointer-coarse:min-h-11"
-                >
-                  {year}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      )}
-    </section>
+        Story ansehen
+        <ChevronRight className="size-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" />
+      </span>
+    </Link>
   );
 }
