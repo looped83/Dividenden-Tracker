@@ -103,15 +103,15 @@ test("Zurück startet die Zeit neu, nach der letzten Karte schließt die Story",
   await page.clock.runFor(7500);
   await expect(story.getByText("Netto erhalten")).toBeVisible();
 
-  // In Schritten statt in einem Sprung: Jeder Kartenwechsel ist ein
-  // React-Update, das erst zwischen zwei Schritten gerendert wird und dann
-  // den Ablauf der nächsten Karte startet. Ein einziger Sprung über zwei
-  // Minuten wechselte so nur eine Karte — je nach Motor (WebKit) blieb die
-  // Story dann offen.
-  await expect(async () => {
-    await page.clock.runFor(8000);
-    await expect(story).toBeHidden({ timeout: 250 });
-  }).toPass({ timeout: 30_000 });
+  // Bis zur letzten Karte blättern und nur deren Standzeit (höchstens 9 s)
+  // ablaufen lassen. Die Uhr über alle Karten laufen zu lassen hieße Tausende
+  // Animationsbilder — in WebKit länger als das Zeitlimit des Tests.
+  const fertig = story.getByRole("button", { name: "Fertig" });
+  while (!(await fertig.isVisible())) {
+    await story.getByRole("button", { name: "Nächste Seite" }).click();
+  }
+  await page.clock.runFor(10_000);
+  await expect(story).toBeHidden();
   await expect(page).toHaveURL(/#\/statistiken\?year=2025$/);
 });
 
