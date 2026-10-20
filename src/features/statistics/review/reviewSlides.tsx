@@ -1,13 +1,7 @@
-import { Link } from "react-router";
 import { Eyebrow, Hero, Lead, RankedList } from "./ReviewParts";
 import { TrendPill } from "@/components/domain/KpiHero";
 import { formatMoney, formatPercent, type DecimalInstance } from "@/lib/money";
-import {
-  monthNameDe,
-  monthNameDeShort,
-  reviewHref,
-  type AnnualReview,
-} from "@/lib/statistics";
+import { monthNameDe, monthNameDeShort, type AnnualReview } from "@/lib/statistics";
 import { formatCalendarDate } from "@/lib/utils/formatDate";
 import { CategoryBarChart, type CategoryDatum } from "../components/charts";
 import {
@@ -47,7 +41,6 @@ function changePercent(change: AnnualReview["change"]): string {
 export function buildReviewSlides(
   review: AnnualReview,
   nameOf: (securityId: string) => string,
-  otherYears: readonly number[],
 ): StorySlide[] {
   const { year } = review;
   const yearLabel = review.isPartial ? `${String(year)} bis heute` : String(year);
@@ -349,24 +342,6 @@ export function buildReviewSlides(
             Größter Zahler:{" "}
             <span className="font-medium text-foreground">{nameOf(top.securityId)}</span>
           </p>
-        )}
-        {otherYears.length > 0 && (
-          <nav aria-label="Andere Jahre" className="mt-8">
-            <p className="text-sm font-medium text-muted-foreground">Andere Jahre</p>
-            <ul className="mt-2 flex flex-wrap gap-2">
-              {otherYears.map((other) => (
-                <li key={other}>
-                  <Link
-                    to={reviewHref(other)}
-                    replace
-                    className="inline-flex h-9 items-center rounded-full border border-input px-3.5 text-sm font-medium tabular-amount outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring pointer-coarse:min-h-11"
-                  >
-                    {other}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
         )}
       </>
     ),
