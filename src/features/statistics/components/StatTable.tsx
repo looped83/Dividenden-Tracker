@@ -304,7 +304,9 @@ export function StatTable<T>({
         value={activeSort.key}
         options={sortableColumns.map((column) => ({
           value: column.key,
-          label: columnName(column),
+          // „Nach Monat" statt „Monat": Ohne sichtbare Beschriftung las sich
+          // das Feld sonst als Monatsfilter (wie „Nach Datum" der Listen).
+          label: `Nach ${columnName(column)}`,
         }))}
         onValueChange={(key) => {
           const column = columnByKey.get(key);

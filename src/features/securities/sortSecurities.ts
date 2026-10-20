@@ -76,6 +76,31 @@ export function securitySortOptions(
 
 export const DEFAULT_SECURITY_SORT: SecuritySort = { field: "name", direction: "asc" };
 
+const SORT_FIELDS = new Set<string>(
+  [...SECURITY_POSITION_SORT_FIELDS, ...SECURITY_SORT_FIELDS].map(
+    (option) => option.value,
+  ),
+);
+
+/**
+ * Sortierung aus der Adresse (`?sort=&direction=`). Unbekannte Werte fallen
+ * still auf die Vorgabe zurueck, eine fehlende Richtung auf die des Feldes.
+ */
+export function parseSecuritySort(
+  field: string | null,
+  direction: string | null,
+): SecuritySort {
+  if (field === null || !SORT_FIELDS.has(field)) return DEFAULT_SECURITY_SORT;
+  const sortField = field as SecuritySortField;
+  return {
+    field: sortField,
+    direction:
+      direction === "asc" || direction === "desc"
+        ? direction
+        : defaultDirectionFor(sortField),
+  };
+}
+
 /**
  * Richtung, die zu einem frisch gewaehlten Feld gehoert: Zahlen zuerst gross
  * („welche Position ist die groesste?"), Text von A nach Z. Wer es anders will,

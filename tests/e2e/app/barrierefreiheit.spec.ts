@@ -28,10 +28,10 @@ const ROUTEN = [
   { pfad: "/#/eingaenge", name: "Dividenden", warten: "Dividenden" },
   { pfad: "/#/eingaenge/datenqualitaet", name: "Datenqualität", warten: "Datenqualität" },
   { pfad: "/#/kalender", name: "Kalender", warten: "Kalender" },
-  { pfad: "/#/depot", name: "Depot", warten: "Depot" },
+  { pfad: "/#/depot", name: "Bestand", warten: "Bestand" },
   // Ohne Depotstand zeigt die Entwicklung ihren Leerzustand — auch der muss
   // barrierefrei sein, und er ist der erste, den jemand hier zu sehen bekommt.
-  { pfad: "/#/depot/entwicklung", name: "Depot Entwicklung", warten: "Depot" },
+  { pfad: "/#/depot/entwicklung", name: "Bestand Entwicklung", warten: "Bestand" },
   { pfad: "/#/statistiken", name: "Statistiken", warten: "Statistik" },
   { pfad: "/#/statistiken/verlauf", name: "Statistik Verlauf", warten: "Statistik" },
   {
@@ -43,7 +43,7 @@ const ROUTEN = [
   { pfad: "/#/ziele", name: "Ziele", warten: "Ziele" },
   { pfad: "/#/ziele/beendet", name: "Ziele beendet", warten: "Ziele" },
   { pfad: "/#/einstellungen", name: "Einstellungen", warten: "Einstellungen" },
-  { pfad: "/#/einstellungen/depots", name: "Depotkonten", warten: "Einstellungen" },
+  { pfad: "/#/einstellungen/depots", name: "Depots", warten: "Einstellungen" },
   { pfad: "/#/einstellungen/importe", name: "Importe", warten: "Einstellungen" },
   {
     pfad: "/#/einstellungen/datensicherung",

@@ -270,13 +270,13 @@ describe("SecurityDetailPage", () => {
      */
     it("fuehrt zurueck zum Depot", () => {
       renderPage();
-      const back = screen.getByRole("link", { name: /Zum Depot/ });
+      const back = screen.getByRole("link", { name: /Zum Bestand/ });
       expect(back).toHaveAttribute("href", "/depot");
     });
 
     it("steht auch bereit, wenn das Asset nicht existiert", () => {
       renderPage("gibt-es-nicht");
-      expect(screen.getByRole("link", { name: /Zum Depot/ })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /Zum Bestand/ })).toBeInTheDocument();
     });
   });
 });
