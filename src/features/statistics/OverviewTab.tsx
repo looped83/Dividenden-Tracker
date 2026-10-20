@@ -1,7 +1,7 @@
 import * as React from "react";
 import { KpiHero } from "@/components/domain/KpiHero";
 import { AmountText } from "@/components/money/AmountText";
-import { overviewStatistics } from "@/lib/statistics";
+import { overviewStatistics, refDateFromDate, reviewYears } from "@/lib/statistics";
 import { useStatisticsContext } from "./context";
 import {
   formatCountNoun,
@@ -11,13 +11,19 @@ import {
   statisticsDrillHref,
 } from "./format";
 import { YearMonthMatrix } from "./YearMonthMatrix";
+import { ReviewTeaser } from "./review/ReviewTeaser";
 import { formatYearSpan } from "@/lib/utils/formatDate";
 
 export function OverviewTab() {
-  const { payments, filter } = useStatisticsContext();
+  const { payments, allPayments, filter } = useStatisticsContext();
 
   const stats = React.useMemo(() => overviewStatistics(payments), [payments]);
   const { bestMonth, bestYear } = stats;
+  // Der Rueckblick gilt dem ganzen Bestand und folgt dem Filter deshalb nicht.
+  const years = React.useMemo(
+    () => reviewYears(allPayments, refDateFromDate()),
+    [allPayments],
+  );
 
   return (
     <div className="space-y-10">
@@ -70,6 +76,8 @@ export function OverviewTab() {
           },
         ]}
       />
+
+      <ReviewTeaser years={years} />
 
       {/* Die Matrix aus Jahren und Monaten — hier trifft sich die fruehere
           Heatmap (Toenung) mit dem frueheren Reiter „Breakdown" (Zahlen). Das
