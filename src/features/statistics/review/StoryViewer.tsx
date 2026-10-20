@@ -1,0 +1,203 @@
+import * as React from "react";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils/cn";
+
+export interface StorySlide {
+  id: string;
+  /** Kurzname fuer die Ansage an Hilfsmittel („Seite 3 von 9: Rekordmonat"). */
+  label: string;
+  content: React.ReactNode;
+}
+
+/** Mindeststrecke eines Wischers in Pixeln; darunter gilt die Geste als Tippen. */
+const SWIPE_THRESHOLD = 48;
+
+/**
+ * Elemente, auf denen ein Tippen **nicht** weiterblaettert: Bedienelemente und
+ * Diagramme (dort oeffnet das Tippen den Tooltip).
+ */
+const INTERACTIVE = "a, button, summary, input, select, table, [data-story-keep]";
+
+/**
+ * Vollbild-Story im Stil eines Jahresrueckblicks: eine Karte nach der anderen,
+ * Fortschritt als Segmente oben.
+ *
+ * Bedienung auf jedem Weg: Tippen (linkes Drittel zurueck, sonst weiter),
+ * Wischen, Pfeiltasten, Escape zum Schliessen und sichtbare Knoepfe unten. Es
+ * gibt **kein** automatisches Weiterblaettern — wer liest, bestimmt das Tempo
+ * (WCAG 2.2.2).
+ */
+export function StoryViewer({
+  title,
+  slides,
+  onClose,
+}: {
+  title: string;
+  slides: readonly StorySlide[];
+  onClose: () => void;
+}) {
+  const [index, setIndex] = React.useState(0);
+  const dialogRef = React.useRef<HTMLDivElement>(null);
+  const swipeStart = React.useRef<{ x: number; y: number } | null>(null);
+  const swiped = React.useRef(false);
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+
+  const last = slides.length - 1;
+  const current = Math.min(index, last);
+  const slide = slides[current];
+
+  const go = React.useCallback(
+    (delta: number) => {
+      setIndex((value) => Math.max(0, Math.min(last, value + delta)));
+    },
+    [last],
+  );
+
+  // Hintergrund steht still, solange die Story offen ist; der Fokus liegt
+  // im Dialog, damit Pfeiltasten und Screenreader dort beginnen.
+  React.useEffect(() => {
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    dialogRef.current?.focus();
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, []);
+
+  // Jede Karte beginnt oben, auch wenn die vorige gescrollt war.
+  React.useEffect(() => {
+    scrollRef.current?.scrollTo({ top: 0 });
+  }, [current]);
+
+  React.useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+      else if (event.key === "ArrowRight") go(1);
+      else if (event.key === "ArrowLeft") go(-1);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [go, onClose]);
+
+  function onPointerDown(event: React.PointerEvent) {
+    swipeStart.current = { x: event.clientX, y: event.clientY };
+    swiped.current = false;
+  }
+
+  function onPointerUp(event: React.PointerEvent) {
+    const start = swipeStart.current;
+    swipeStart.current = null;
+    if (!start) return;
+    const dx = event.clientX - start.x;
+    const dy = event.clientY - start.y;
+    if (Math.abs(dx) >= SWIPE_THRESHOLD && Math.abs(dx) > Math.abs(dy)) {
+      swiped.current = true;
+      go(dx < 0 ? 1 : -1);
+    }
+  }
+
+  function onClick(event: React.MouseEvent<HTMLDivElement>) {
+    if (swiped.current) {
+      swiped.current = false;
+      return;
+    }
+    if ((event.target as Element).closest(INTERACTIVE)) return;
+    const bounds = event.currentTarget.getBoundingClientRect();
+    go(event.clientX - bounds.left < bounds.width / 3 ? -1 : 1);
+  }
+
+  return (
+    // Auf dem Telefon fuellt die Story den Bildschirm; ab `sm` steht sie als
+    // hochformatige Tafel auf gedaempftem Grund — eine Zeile Text ueber die
+    // volle Desktopbreite liest sich nicht wie eine Geschichte.
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background sm:bg-muted sm:p-8">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        tabIndex={-1}
+        className="flex h-full w-full flex-col bg-background text-foreground outline-none sm:h-[min(52rem,100%)] sm:max-w-lg sm:rounded-3xl sm:border sm:border-border sm:bg-card"
+      >
+        <div className="flex flex-col gap-3 px-4 pt-[calc(env(safe-area-inset-top)+0.75rem)] sm:px-8 sm:pt-6">
+          <div className="flex gap-1" aria-hidden>
+            {slides.map((entry, position) => (
+              <span
+                key={entry.id}
+                className={cn(
+                  "h-1 flex-1 rounded-full transition-colors duration-300",
+                  position <= current ? "bg-foreground" : "bg-border",
+                )}
+              />
+            ))}
+          </div>
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-muted-foreground">{title}</p>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="-mr-3"
+              onClick={onClose}
+              aria-label="Rückblick schließen"
+            >
+              <X />
+            </Button>
+          </div>
+        </div>
+
+        <div
+          ref={scrollRef}
+          className="relative flex-1 touch-pan-y overflow-y-auto select-none"
+          onPointerDown={onPointerDown}
+          onPointerUp={onPointerUp}
+          onClick={onClick}
+        >
+          <section
+            key={slide.id}
+            aria-label={slide.label}
+            className="flex min-h-full w-full flex-col justify-center px-4 py-6 animate-in fade-in slide-in-from-bottom-3 duration-500 motion-reduce:animate-none sm:px-8"
+          >
+            {slide.content}
+          </section>
+        </div>
+
+        <p className="sr-only" aria-live="polite">
+          {`Seite ${String(current + 1)} von ${String(slides.length)}: ${slide.label}`}
+        </p>
+
+        <div className="flex items-center justify-between gap-3 px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-2 sm:px-8 sm:pb-6">
+          <Button
+            variant="outline"
+            onClick={() => {
+              go(-1);
+            }}
+            disabled={current === 0}
+            aria-label="Vorherige Seite"
+          >
+            <ChevronLeft />
+            Zurück
+          </Button>
+          <span className="text-sm text-muted-foreground tabular-amount" aria-hidden>
+            {current + 1} / {slides.length}
+          </span>
+          {current < last ? (
+            <Button
+              onClick={() => {
+                go(1);
+              }}
+              aria-label="Nächste Seite"
+            >
+              Weiter
+              <ChevronRight />
+            </Button>
+          ) : (
+            <Button onClick={onClose}>Fertig</Button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

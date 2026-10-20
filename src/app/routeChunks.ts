@@ -21,6 +21,7 @@ export const routeChunks = {
   statisticsComparison: () => import("@/features/statistics/ComparisonTab"),
   statisticsCompanies: () => import("@/features/statistics/CompaniesTab"),
   statisticsDepots: () => import("@/features/statistics/DepotsTab"),
+  statisticsReview: () => import("@/features/statistics/review/AnnualReviewPage"),
   goals: () => import("@/features/goals/GoalsPage"),
   goalsTab: () => import("@/features/goals/GoalsTab"),
   goalDetail: () => import("@/features/goals/GoalDetailPage"),
