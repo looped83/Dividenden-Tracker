@@ -316,14 +316,20 @@ Heatmap. Umschaltbar zwischen Monatssumme, Veränderung zum Vorjahresmonat und a
 Jahressumme (CALCULATION_RULES.md §11.12). Auf dem iPhone steht die Matrix gedreht: Monate als
 Zeilen, Jahre als Spalten, das jüngste Jahr vorn.
 
-Zwischen Kennzahlen und Matrix steht der Einstieg in den **Jahresrückblick**
+Ist im Filter ein Jahr gewählt, hängt unter der Leiste der Nebenkennzahlen ein oranger Sockel
+zum **Jahresrückblick** dieses Jahres
 (`/statistiken/rueckblick/<jahr>`): eine Vollbild-Story mit einer Karte nach der anderen —
-Nettosumme samt Vorjahr und Rang, „pro Tag", Rekordmonat (Diagramm mit Tooltip), Top-Zahler,
-Neuzugänge und größte Steigerung, Länder und Branchen, Steuern und Abzüge, Summe seit Beginn
-und eine Zusammenfassung. Rückblicke gibt es für abgeschlossene Jahre, für das laufende erst
-ab Dezember („bis heute"). Er gilt immer dem ganzen Bestand; der Filter der Statistik wirkt
-nicht. Bedienung per Tippen, Wischen, Pfeiltasten und Knöpfen, ohne automatisches
-Weiterblättern; kein Teilen als Bild.
+Nettosumme samt Vorjahr und Rang, „Dein Weg" (Vielfaches des ersten Jahres, Jahresdiagramm),
+„pro Tag", „Ganz nebenbei" (pro Nacht, Stunde, Woche, Monat), Rekordmonat (Diagramm mit Tooltip), Top-Zahler,
+Neuzugänge und größte Steigerung, Länder und Branchen, Steuern und Abzüge, Summe seit Beginn,
+nächste runde Marke als Ziel und eine Zusammenfassung ohne Bezug auf andere Jahre. Rückblicke gibt es für abgeschlossene Jahre, für das laufende erst
+ab 15. Dezember („bis heute"); vom 15. Dezember bis 10. Januar hängt derselbe Sockel auch auf der
+Startseite unter den Kennzahlen (für das zu Ende gehende Jahr, unabhängig vom gewählten Zeitraum); in der Statistik gibt es ohne gewähltes Jahr keinen Einstieg und keine Auswahl anderer
+Jahre. Der Rückblick steht am Ende seines Jahres: Spätere Jahre gehen in keine Kennzahl ein
+(„bisher bestes Jahr", Summe seit Beginn, Neuzugänge). Er gilt immer dem ganzen Bestand;
+Unternehmens- und Depotfilter wirken nicht. Bedienung per Tippen, Wischen, Pfeiltasten und Knöpfen. Jede Karte blättert nach
+rund 7 Sekunden (Diagramme 9) von allein weiter, das aktive Segment oben füllt sich dabei;
+Gedrückthalten, der Pause-Knopf oder die Leertaste halten an. Kein Teilen als Bild.
 
 Der Vergleich stellt zwei Zeiträume gegenüber: Jahr gegen Jahr, Monat gegen denselben Monat des
 Vorjahres (aufgeschlüsselt nach Unternehmen) oder die letzten 12 Monate gegen die 12 davor. Ist eines der Jahre das laufende, endet der Vergleich auf **beiden** Seiten am selben

@@ -11,6 +11,7 @@ import { computeGoalProgress, type GoalProgress } from "@/lib/goals";
 import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
 import { cn } from "@/lib/utils/cn";
 import { useGoals } from "@/features/goals/hooks";
+import { ReviewTeaser } from "@/features/statistics/review/ReviewTeaser";
 import { useCalendarEvents } from "@/features/calendar/hooks";
 import { announcedForForecast } from "@/lib/calendar/summary";
 import {
@@ -27,6 +28,7 @@ import {
   currentMonthComparison,
   distinctSecurities,
   firstPayDate,
+  homeReviewYear,
   isoFromRef,
   monthNameDe,
   selectedPeriodAggregate,
@@ -204,6 +206,14 @@ export function DashboardHero({ payments, selection, today }: DashboardHeroProps
     [annual, data.isCurrentYear, payments, today, calendarEvents],
   );
 
+  // Zum Jahreswechsel (15. Dezember bis 10. Januar) haengt der Rueckblick
+  // des zu Ende gehenden Jahres unter den Kennzahlen, unabhaengig vom
+  // gewaehlten Zeitraum. Danach findet man ihn in der Statistik.
+  const reviewYear = React.useMemo(
+    () => homeReviewYear(payments, today),
+    [payments, today],
+  );
+
   const label = describeSelection(selection);
   const active = selected?.series === series ? selected.index : null;
   const setActive = (index: number | null) => {
@@ -324,7 +334,14 @@ export function DashboardHero({ payments, selection, today }: DashboardHeroProps
         )}
       </div>
 
-      <KpiStats className="mt-5" stats={buildStats(data, monthly, today)} />
+      {reviewYear === null ? (
+        <KpiStats className="mt-5" stats={buildStats(data, monthly, today)} />
+      ) : (
+        <div className="mt-5">
+          <KpiStats className="rounded-b-none" stats={buildStats(data, monthly, today)} />
+          <ReviewTeaser year={reviewYear} />
+        </div>
+      )}
     </section>
   );
 }

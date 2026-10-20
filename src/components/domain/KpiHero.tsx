@@ -61,6 +61,7 @@ export function KpiHero({
   drillLabel,
   footer,
   stats,
+  statsFooter,
   className,
 }: {
   label: ReactNode;
@@ -76,6 +77,11 @@ export function KpiHero({
    */
   footer?: ReactNode;
   stats?: readonly KpiStat[];
+  /**
+   * Element, das unten an der Leiste der Nebenkennzahlen haengt und ihre
+   * Breite teilt (etwa der Einstieg in den Jahresrueckblick).
+   */
+  statsFooter?: ReactNode;
   className?: string;
 }) {
   const valueClass =
@@ -107,7 +113,17 @@ export function KpiHero({
           )}
           {footer !== undefined && <div className="relative z-10 pt-2">{footer}</div>}
         </div>
-        {hasStats && <KpiStats stats={stats} />}
+        {hasStats &&
+          (statsFooter !== undefined ? (
+            // Leiste und Fusszeile bilden eine Flaeche: oben rund, unten
+            // rund, dazwischen eine gerade Kante.
+            <div>
+              <KpiStats stats={stats} className="rounded-b-none" />
+              {statsFooter}
+            </div>
+          ) : (
+            <KpiStats stats={stats} />
+          ))}
       </div>
     </section>
   );

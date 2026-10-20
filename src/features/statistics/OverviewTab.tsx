@@ -1,7 +1,8 @@
 import * as React from "react";
 import { KpiHero } from "@/components/domain/KpiHero";
 import { AmountText } from "@/components/money/AmountText";
-import { overviewStatistics, refDateFromDate, reviewYears } from "@/lib/statistics";
+import { overviewStatistics, reviewYears } from "@/lib/statistics";
+import { useToday } from "@/lib/hooks/useToday";
 import { useStatisticsContext } from "./context";
 import {
   formatCountNoun,
@@ -16,14 +17,17 @@ import { formatYearSpan } from "@/lib/utils/formatDate";
 
 export function OverviewTab() {
   const { payments, allPayments, filter } = useStatisticsContext();
+  const today = useToday();
 
   const stats = React.useMemo(() => overviewStatistics(payments), [payments]);
   const { bestMonth, bestYear } = stats;
-  // Der Rueckblick gilt dem ganzen Bestand und folgt dem Filter deshalb nicht.
-  const years = React.useMemo(
-    () => reviewYears(allPayments, refDateFromDate()),
-    [allPayments],
-  );
+  // Der Rueckblick gehoert zu **einem** Jahr: Er erscheint nur, wenn der
+  // Filter eines waehlt, und dann fuer genau dieses. Er gilt dem ganzen
+  // Bestand — Unternehmens- und Depotfilter wirken in ihm nicht.
+  const reviewYear = React.useMemo(() => {
+    if (filter.year === null) return null;
+    return reviewYears(allPayments, today).includes(filter.year) ? filter.year : null;
+  }, [allPayments, filter.year, today]);
 
   return (
     <div className="space-y-10">
@@ -45,6 +49,7 @@ export function OverviewTab() {
         ]
           .filter(Boolean)
           .join(" · ")}
+        statsFooter={reviewYear !== null ? <ReviewTeaser year={reviewYear} /> : undefined}
         stats={[
           {
             label: "Ø Monat",
@@ -76,8 +81,6 @@ export function OverviewTab() {
           },
         ]}
       />
-
-      <ReviewTeaser years={years} />
 
       {/* Die Matrix aus Jahren und Monaten — hier trifft sich die fruehere
           Heatmap (Toenung) mit dem frueheren Reiter „Breakdown" (Zahlen). Das
