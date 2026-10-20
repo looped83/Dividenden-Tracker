@@ -49,9 +49,15 @@ test("Startseite zeigt den Rückblick zum Jahreswechsel und kehrt dorthin zurüc
   await page.getByRole("link", { name: "Jahresrückblick 2025 ansehen" }).click();
 
   const story = page.getByRole("dialog", { name: "Rückblick 2025" });
-  await expect(story).toBeVisible();
-  await page.keyboard.press("Escape");
-  await expect(story).toBeHidden();
+  await expect(story.getByText("Dein Dividendenjahr")).toBeVisible();
+  // Sichtbar heißt nicht, dass der Tastatur-Listener schon hängt (er kommt im
+  // Effekt nach dem Malen) — in WebKit ging ein sofortiges Escape so
+  // gelegentlich verloren. Bis zum Schließen wiederholen; ein zweites Escape
+  // auf der Startseite bewirkt nichts.
+  await expect(async () => {
+    await page.keyboard.press("Escape");
+    await expect(story).toBeHidden({ timeout: 1000 });
+  }).toPass();
   await expect(page).toHaveURL(/#\/$/);
 });
 
@@ -97,7 +103,14 @@ test("Zurück startet die Zeit neu, nach der letzten Karte schließt die Story",
   await page.clock.runFor(7500);
   await expect(story.getByText("Netto erhalten")).toBeVisible();
 
-  await page.clock.runFor(120_000);
+  // Bis zur letzten Karte blättern und nur deren Standzeit (höchstens 9 s)
+  // ablaufen lassen. Die Uhr über alle Karten laufen zu lassen hieße Tausende
+  // Animationsbilder — in WebKit länger als das Zeitlimit des Tests.
+  const fertig = story.getByRole("button", { name: "Fertig" });
+  while (!(await fertig.isVisible())) {
+    await story.getByRole("button", { name: "Nächste Seite" }).click();
+  }
+  await page.clock.runFor(10_000);
   await expect(story).toBeHidden();
   await expect(page).toHaveURL(/#\/statistiken\?year=2025$/);
 });

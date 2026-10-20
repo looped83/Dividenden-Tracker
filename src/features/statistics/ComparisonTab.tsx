@@ -158,7 +158,7 @@ export function ComparisonTab() {
           Zeitraumvergleich
         </h2>
         {/* Die Wahl der Zeitraeume als Zeile aus Pillen wie die Filterleiste:
-            Sie liest sich als Satz („Jahr gegen Jahr · 2026 · gegen 2025"),
+            Sie liest sich als Satz („Jahr gegen Jahr · 2026 vs. 2025"),
             die Beschriftungen bleiben fuer Hilfsmittel. Auf dem Telefon stehen
             Jahr und Vergleichsjahr nebeneinander — sie gehoeren zusammen —,
             Vergleichsart und Monat in voller Breite. */}
@@ -203,60 +203,66 @@ export function ComparisonTab() {
 
           {selection.mode !== "rollierend" && (
             <>
-              <label className="min-w-0 flex-1 basis-[calc(50%-0.375rem)] sm:max-w-72 sm:basis-40">
-                <span className="sr-only">Jahr</span>
-                <Select
-                  value={String(selection.currentYear)}
-                  onChange={(event) => {
-                    const currentYear = Number.parseInt(event.target.value, 10);
-                    setSelection({
-                      ...selection,
-                      currentYear,
-                      // Beide Seiten auf dasselbe Jahr zu stellen ergaebe
-                      // einen Vergleich mit sich selbst.
-                      referenceYear:
-                        selection.referenceYear === currentYear
-                          ? currentYear - 1
-                          : selection.referenceYear,
-                      // Im laufenden Jahr gibt es den gewaehlten Monat
-                      // moeglicherweise noch nicht.
-                      month: Math.min(
-                        selection.month,
-                        comparisonMonthOptions(currentYear, today).length,
-                      ),
-                    });
-                  }}
-                >
-                  {yearOptions.map((year) => (
-                    <option key={year} value={year}>
-                      {year}
-                    </option>
-                  ))}
-                </Select>
-              </label>
-
-              <label className="min-w-0 flex-1 basis-[calc(50%-0.375rem)] sm:max-w-72 sm:basis-40">
-                <span className="sr-only">verglichen mit</span>
-                <Select
-                  value={String(selection.referenceYear)}
-                  onChange={(event) => {
-                    setSelection({
-                      ...selection,
-                      referenceYear: Number.parseInt(event.target.value, 10),
-                    });
-                  }}
-                >
-                  {yearOptions
-                    .filter((year) => year !== selection.currentYear)
-                    .map((year) => (
-                      // „vs. 2025" (kurz genug fuer 320px): Ohne sichtbare Beschriftung stuenden
-                      // sonst zwei Jahreszahlen ohne Bezug nebeneinander.
+              {/* Jahr „vs." Vergleichsjahr als ein Paar: Das „vs." steht als Text
+                zwischen den Feldern, nicht in der Auswahl — so liest sich die
+                Zeile als Satz, und die Felder zeigen nur Jahreszahlen. */}
+              <div className="flex min-w-0 flex-1 basis-full items-center gap-2 sm:max-w-[38rem] sm:basis-80">
+                <label className="min-w-0 flex-1">
+                  <span className="sr-only">Jahr</span>
+                  <Select
+                    value={String(selection.currentYear)}
+                    onChange={(event) => {
+                      const currentYear = Number.parseInt(event.target.value, 10);
+                      setSelection({
+                        ...selection,
+                        currentYear,
+                        // Beide Seiten auf dasselbe Jahr zu stellen ergaebe
+                        // einen Vergleich mit sich selbst.
+                        referenceYear:
+                          selection.referenceYear === currentYear
+                            ? currentYear - 1
+                            : selection.referenceYear,
+                        // Im laufenden Jahr gibt es den gewaehlten Monat
+                        // moeglicherweise noch nicht.
+                        month: Math.min(
+                          selection.month,
+                          comparisonMonthOptions(currentYear, today).length,
+                        ),
+                      });
+                    }}
+                  >
+                    {yearOptions.map((year) => (
                       <option key={year} value={year}>
-                        vs. {year}
+                        {year}
                       </option>
                     ))}
-                </Select>
-              </label>
+                  </Select>
+                </label>
+
+                <span aria-hidden className="shrink-0 text-sm text-muted-foreground">
+                  vs.
+                </span>
+                <label className="min-w-0 flex-1">
+                  <span className="sr-only">verglichen mit</span>
+                  <Select
+                    value={String(selection.referenceYear)}
+                    onChange={(event) => {
+                      setSelection({
+                        ...selection,
+                        referenceYear: Number.parseInt(event.target.value, 10),
+                      });
+                    }}
+                  >
+                    {yearOptions
+                      .filter((year) => year !== selection.currentYear)
+                      .map((year) => (
+                        <option key={year} value={year}>
+                          {year}
+                        </option>
+                      ))}
+                  </Select>
+                </label>
+              </div>
             </>
           )}
         </FilterBar>
