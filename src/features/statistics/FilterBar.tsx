@@ -24,6 +24,8 @@ interface FilterBarProps {
    * selbst; dort waere dieser Regler wirkungslos und damit irrefuehrend.
    */
   showYear?: boolean;
+  /** Abstand zum Folgenden, wenn darunter eine weitere Zeile Felder steht. */
+  className?: string;
 }
 
 function toOptions(map: Map<string, EntityInfo>): EntityOption[] {
@@ -61,20 +63,14 @@ export function FilterBar({
   securities,
   depots,
   showYear = true,
+  className = "",
 }: FilterBarProps) {
   const securityOptions = React.useMemo(() => toOptions(securities), [securities]);
   const depotOptions = React.useMemo(() => toOptions(depots), [depots]);
   const active = !isEmptyFilter(filter);
 
   return (
-    <FilterBarShell
-      disclosure={disclosure}
-      // Ohne Jahr (Vergleich) folgt direkt die Zeile der Zeitraeume — sie
-      // gehoert optisch zur Leiste und steht im Zeilenabstand der Felder
-      // (0,75rem), nicht im Abschnittsabstand der Seite (1,5rem). Eingeklappt
-      // ist die Leiste `hidden`, dann gilt wieder der Abstand zu den Reitern.
-      className={showYear ? "" : "mb-3!"}
-    >
+    <FilterBarShell disclosure={disclosure} className={className}>
       {showYear && (
         <FilterField id="stats-filter-year" label="Jahr">
           <Select
