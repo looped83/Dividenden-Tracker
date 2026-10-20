@@ -271,7 +271,7 @@ export function StoryViewer({
           <section
             key={slide.id}
             aria-label={slide.label}
-            className="flex min-h-full w-full flex-col justify-center px-4 py-6 animate-in fade-in slide-in-from-bottom-3 duration-500 motion-reduce:animate-none sm:px-8"
+            className="flex min-h-full w-full flex-col justify-center px-4 pt-6 pb-[calc(env(safe-area-inset-bottom)+2rem)] sm:pb-10 animate-in fade-in slide-in-from-bottom-3 duration-500 motion-reduce:animate-none sm:px-8"
           >
             {slide.content}
           </section>
@@ -281,9 +281,13 @@ export function StoryViewer({
           {`Seite ${String(current + 1)} von ${String(slides.length)}: ${slide.label}`}
         </p>
 
-        <div className="flex items-center justify-between gap-3 px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-2 sm:px-8 sm:pb-6">
+        {/* Ohne sichtbare Fusszeile: Geblaettert wird per Tippen, Wischen und
+            Pfeiltasten. Fuer Screenreader und Tastatur bleiben die Knoepfe da
+            und erscheinen, sobald sie den Fokus haben. */}
+        <div className="flex justify-between px-4 sm:px-8">
           <Button
             variant="outline"
+            className="sr-only focus-visible:not-sr-only focus-visible:mb-4"
             onClick={() => {
               go(-1);
             }}
@@ -293,22 +297,17 @@ export function StoryViewer({
             <ChevronLeft />
             Zurück
           </Button>
-          <span className="text-sm text-muted-foreground tabular-amount" aria-hidden>
-            {current + 1} / {slides.length}
-          </span>
-          {current < last ? (
-            <Button
-              onClick={() => {
-                go(1);
-              }}
-              aria-label="Nächste Seite"
-            >
-              Weiter
-              <ChevronRight />
-            </Button>
-          ) : (
-            <Button onClick={onClose}>Fertig</Button>
-          )}
+          <Button
+            className="sr-only focus-visible:not-sr-only focus-visible:mb-4"
+            onClick={() => {
+              if (current < last) go(1);
+              else onClose();
+            }}
+            aria-label={current < last ? "Nächste Seite" : "Rückblick beenden"}
+          >
+            {current < last ? "Weiter" : "Fertig"}
+            <ChevronRight />
+          </Button>
         </div>
       </div>
     </div>
