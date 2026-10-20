@@ -101,8 +101,9 @@ function storeUnit(unit: TrendUnit): void {
 const CHART_TOGGLE_RESERVE = 28;
 
 const KIND_OPTIONS: readonly SegmentOption<HeroChartKind>[] = [
-  { value: "cumulative", label: "Kumuliert" },
+  // Einzelwert links, Summe rechts — wie in allen Verlaufsumschaltern.
   { value: "monthly", label: "Monatlich" },
+  { value: "cumulative", label: "Kumuliert" },
 ];
 
 interface DashboardHeroProps {
