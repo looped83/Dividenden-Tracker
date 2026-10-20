@@ -327,7 +327,7 @@ ab 15. Dezember („bis heute"); vom 15. Dezember bis 10. Januar hängt derselbe
 Startseite unter den Kennzahlen (für das zu Ende gehende Jahr, unabhängig vom gewählten Zeitraum); in der Statistik gibt es ohne gewähltes Jahr keinen Einstieg und keine Auswahl anderer
 Jahre. Der Rückblick steht am Ende seines Jahres: Spätere Jahre gehen in keine Kennzahl ein
 („bisher bestes Jahr", Summe seit Beginn, Neuzugänge). Er gilt immer dem ganzen Bestand;
-Unternehmens- und Depotfilter wirken nicht. Bedienung per Tippen, Wischen, Pfeiltasten und Knöpfen. Jede Karte blättert nach
+Unternehmens- und Depotfilter wirken nicht. Bedienung per Tippen, Wischen und Pfeiltasten, ohne sichtbare Fußleiste (Knöpfe nur für Screenreader und Tastatur bei Fokus). Jede Karte blättert nach
 rund 7 Sekunden (Diagramme 9) von allein weiter, das aktive Segment oben füllt sich dabei;
 Gedrückthalten, der Pause-Knopf oder die Leertaste halten die aktuelle Karte an; jeder Wechsel
 lässt die Zeit wieder laufen. Nach der letzten Karte schließt sich die Story, ein Wisch nach unten
