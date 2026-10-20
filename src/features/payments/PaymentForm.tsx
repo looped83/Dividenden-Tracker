@@ -324,7 +324,7 @@ export function PaymentForm({
           <div className="space-y-1.5">
             <Label htmlFor="payment-depot">Depot</Label>
             <Select id="payment-depot" {...register("depotId")}>
-              <option value="">Bitte wählen</option>
+              <option value="">Depot wählen …</option>
               {depotOptions.map((depot) => (
                 <option key={depot.id} value={depot.id}>
                   {depot.name} ({depot.base_currency})

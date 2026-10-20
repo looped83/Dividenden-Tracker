@@ -3,6 +3,7 @@ import { Money, MoneyDecimal, EUR } from "@/lib/money";
 import {
   DEFAULT_SECURITY_SORT,
   defaultDirectionFor,
+  parseSecuritySort,
   securitySortOptions,
   sortAssetRows,
   type SecuritySort,
@@ -164,5 +165,30 @@ describe("Sortierauswahl", () => {
   it("beginnt bei Zahlenfeldern absteigend, bei Textfeldern aufsteigend", () => {
     expect(defaultDirectionFor("value")).toBe("desc");
     expect(defaultDirectionFor("name")).toBe("asc");
+  });
+});
+
+describe("parseSecuritySort", () => {
+  it("liest Feld und Richtung aus der Adresse", () => {
+    expect(parseSecuritySort("ticker", "desc")).toEqual({
+      field: "ticker",
+      direction: "desc",
+    });
+  });
+
+  it("nimmt ohne Richtung die des Feldes", () => {
+    expect(parseSecuritySort("value", null)).toEqual({
+      field: "value",
+      direction: "desc",
+    });
+    expect(parseSecuritySort("name", "quer")).toEqual({
+      field: "name",
+      direction: "asc",
+    });
+  });
+
+  it("faellt bei unbekanntem Feld auf die Vorgabe zurueck", () => {
+    expect(parseSecuritySort("unsinn", "desc")).toEqual(DEFAULT_SECURITY_SORT);
+    expect(parseSecuritySort(null, null)).toEqual(DEFAULT_SECURITY_SORT);
   });
 });

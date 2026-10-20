@@ -135,19 +135,23 @@ export function DevelopmentTab() {
           `DevelopmentView`), und ein wirkungsloses Bedienelement ist schlimmer
           als keines. Er steht im Seitenkopf wie die Jahresauswahl der
           Uebersicht; „Alle Assets" setzt ihn zurueck. */}
-      <DepotHeaderActions>
-        <EntitySelect
-          id="depot-development-asset"
-          aria-label="Asset"
-          className="w-auto max-w-[12rem] truncate rounded-full pl-4 font-semibold sm:max-w-xs"
-          options={assetOptions}
-          value={filter.securityId ?? ""}
-          onChange={(value) => {
-            setFilter({ ...EMPTY_STATISTICS_FILTER, securityId: value || null });
-          }}
-          allLabel="Alle Assets"
-        />
-      </DepotHeaderActions>
+      {/* Ohne Depotstand zeigt die Seite nur den Leerzustand — ein Regler
+          dort bewirkte nichts. */}
+      {data.portfolio.latest !== null && (
+        <DepotHeaderActions>
+          <EntitySelect
+            id="depot-development-asset"
+            aria-label="Asset"
+            className="w-auto max-w-[12rem] truncate rounded-full pl-4 font-semibold sm:max-w-xs"
+            options={assetOptions}
+            value={filter.securityId ?? ""}
+            onChange={(value) => {
+              setFilter({ ...EMPTY_STATISTICS_FILTER, securityId: value || null });
+            }}
+            allLabel="Alle Assets"
+          />
+        </DepotHeaderActions>
+      )}
 
       <DevelopmentView
         allPayments={data.payments}

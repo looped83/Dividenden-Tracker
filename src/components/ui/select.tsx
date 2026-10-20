@@ -11,7 +11,8 @@ export function Select({
     <div className="relative">
       <select
         className={cn(
-          "flex h-11 w-full appearance-none rounded-md border border-input bg-background",
+          // `truncate`: Lange Namen enden mit „…" statt mitten im Buchstaben.
+          "flex h-11 w-full appearance-none truncate rounded-md border border-input bg-background",
           // 16 px auf schmalen Geraeten — sonst zoomt iOS Safari beim Fokussieren.
           "px-3 py-2 pr-9 text-base outline-none sm:text-sm",
           "focus-visible:ring-2 focus-visible:ring-ring",

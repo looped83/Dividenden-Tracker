@@ -191,20 +191,23 @@ describe("PaymentsPage", () => {
     expect(screen.queryByRole("link", { name: /Allianz SE/ })).not.toBeInTheDocument();
   });
 
-  it("blendet stornierte Eingaenge aus, bis man sie anfordert", async () => {
-    const user = userEvent.setup();
-    renderList([
+  it("blendet stornierte Eingaenge aus und zeigt sie nur ueber die Adresse", () => {
+    const zeilen = [
       zahlung({ id: "a", security_id: "s1" }),
       zahlung({ id: "b", security_id: "s2", archived_at: "2026-04-01T00:00:00Z" }),
-    ]);
+    ];
+    const { unmount } = renderList(zeilen);
 
     expect(screen.queryByRole("link", { name: /Allianz SE/ })).not.toBeInTheDocument();
+    // Kein Statusfeld mehr in der Leiste (seit 1.39.0).
+    expect(screen.queryByLabelText("Status")).not.toBeInTheDocument();
+    unmount();
 
-    // Der Status ist ein Filter der Leiste, kein Kontrollkaestchen am Seitenende.
-    await user.selectOptions(screen.getByLabelText("Status"), "all");
-
+    // Der Weg aus der Datenqualitaet: nur die Stornierten.
+    renderList(zeilen, "/eingaenge?status=cancelled");
     expect(screen.getByRole("link", { name: /Allianz SE/ })).toBeInTheDocument();
-    expect(screen.getByText("Storniert")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Apple Inc\./ })).not.toBeInTheDocument();
+    expect(screen.getByText(/1 stornierte Dividende\b/)).toBeInTheDocument();
   });
 
   it("laedt weitere Eingaenge nach, statt zu blaettern", async () => {
@@ -291,22 +294,21 @@ describe("PaymentsPage", () => {
     expect(screen.getByText("Noch keine Dividende erfasst")).toBeInTheDocument();
   });
 
-  it("bietet Jahre nur stornierter Eingaenge erst mit den Stornierten an", async () => {
-    const user = userEvent.setup();
-    renderList([
+  it("bietet Jahre nur stornierter Eingaenge erst mit den Stornierten an", () => {
+    const zeilen = [
       zahlung({ id: "a", pay_date: "2026-03-10" }),
       zahlung({ id: "b", pay_date: "2024-03-10", archived_at: "2026-04-01T00:00:00Z" }),
-    ]);
-
+    ];
     const jahre = () =>
       Array.from(
         screen.getByLabelText<HTMLSelectElement>("Jahr").options,
         (option) => option.value,
       );
+    const { unmount } = renderList(zeilen);
     expect(jahre()).toEqual(["", "2026"]);
+    unmount();
 
-    await user.selectOptions(screen.getByLabelText("Status"), "all");
-
+    renderList(zeilen, "/eingaenge?status=all");
     expect(jahre()).toEqual(["", "2026", "2024"]);
   });
 

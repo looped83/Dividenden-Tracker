@@ -169,16 +169,13 @@ export default function RestoreSection() {
                   setMode(event.target.value as RestoreMode);
                 }}
               >
-                <option value="merge">
-                  Ergänzen — fehlende Datensätze hinzufügen, vorhandene behalten
-                </option>
-                <option value="replace">
-                  Ersetzen — bestehenden Bestand archivieren und die Sicherung einspielen
-                </option>
+                {/* Kurz: Was die Wahl bewirkt, sagt der Hinweis darunter. */}
+                <option value="merge">Ergänzen</option>
+                <option value="replace">Ersetzen</option>
               </Select>
               <p className="text-sm text-muted-foreground">
                 {mode === "merge"
-                  ? "Der bestehende Bestand bleibt unverändert."
+                  ? "Fehlende Datensätze kommen hinzu, vorhandene bleiben unverändert."
                   : "Alle vorhandenen Dividenden werden storniert und durch die Sicherung ersetzt."}
               </p>
             </div>

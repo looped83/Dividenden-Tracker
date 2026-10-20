@@ -252,7 +252,7 @@ export function CompaniesTab() {
           title: "Verteilung",
           titleAction: <BreakdownSwitch />,
           beforeSort: (
-            <StatSearch value={query} onChange={setQuery} placeholder="Suchen …" />
+            <StatSearch value={query} onChange={setQuery} placeholder="Asset suchen …" />
           ),
         })}
         initialSort={{ key: "net", direction: "desc" }}
@@ -344,7 +344,7 @@ export function CompaniesTab() {
           title="Statistik je Asset"
           actionClassName="w-64 -my-3"
           action={
-            <StatSearch value={query} onChange={setQuery} placeholder="Assets suchen …" />
+            <StatSearch value={query} onChange={setQuery} placeholder="Asset suchen …" />
           }
         >
           {assetList}

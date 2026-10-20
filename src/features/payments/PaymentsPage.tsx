@@ -403,7 +403,48 @@ export function PaymentsPage() {
       {/* Filterleiste in der Optik des Statistikbereichs (geteiltes Primitive).
           Sortierrichtung als Symbolschalter statt langer Auswahltexte
           („Zahlungsdatum – neueste zuerst“), damit alles in eine Zeile passt. */}
-      <FilterBar disclosure={filterDisclosure}>
+      {/* Ab `lg` in einer Zeile: Die Felder schrumpfen (mit „…"), statt die
+          Sortierung allein in eine zweite Zeile zu schieben. */}
+      <FilterBar disclosure={filterDisclosure} className="lg:flex-nowrap">
+        <FilterField id="f-year" label="Jahr" half>
+          <Select
+            id="f-year"
+            value={filterYear ? String(filterYear) : ""}
+            onChange={(event) => {
+              const value = event.target.value;
+              updateParams(value ? { year: value } : { year: null, month: null });
+            }}
+          >
+            <option value="">Alle Jahre</option>
+            {years.map((y) => (
+              <option key={y} value={y}>
+                {y}
+              </option>
+            ))}
+          </Select>
+        </FilterField>
+
+        {/* Der Monat erst mit einem Jahr: Ausgegraut stand er ohne Erklaerung
+            da und kostete auf dem Telefon eine Zeile. */}
+        {filterYear !== null && (
+          <FilterField id="f-month" label="Monat" half>
+            <Select
+              id="f-month"
+              value={filterMonth ? String(filterMonth) : ""}
+              onChange={(event) => {
+                updateParams({ month: event.target.value });
+              }}
+            >
+              <option value="">Alle Monate</option>
+              {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                <option key={m} value={m}>
+                  {monthNameDe(m)}
+                </option>
+              ))}
+            </Select>
+          </FilterField>
+        )}
+
         <FilterField id="f-security" label="Asset">
           <EntitySelect
             id="f-security"
@@ -428,59 +469,6 @@ export function PaymentsPage() {
           />
         </FilterField>
 
-        <FilterField id="f-year" label="Jahr">
-          <Select
-            id="f-year"
-            value={filterYear ? String(filterYear) : ""}
-            onChange={(event) => {
-              const value = event.target.value;
-              updateParams(value ? { year: value } : { year: null, month: null });
-            }}
-          >
-            <option value="">Alle Jahre</option>
-            {years.map((y) => (
-              <option key={y} value={y}>
-                {y}
-              </option>
-            ))}
-          </Select>
-        </FilterField>
-
-        <FilterField id="f-month" label="Monat">
-          <Select
-            id="f-month"
-            value={filterMonth ? String(filterMonth) : ""}
-            disabled={!filterYear}
-            onChange={(event) => {
-              updateParams({ month: event.target.value });
-            }}
-          >
-            <option value="">Alle Monate</option>
-            {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-              <option key={m} value={m}>
-                {monthNameDe(m)}
-              </option>
-            ))}
-          </Select>
-        </FilterField>
-
-        {/* Stornierte sind ein Filter wie jeder andere und stehen deshalb in
-            der Leiste — nicht mehr als Kontrollkaestchen unter 25 Eingaengen
-            und dem Blaettern am Seitenende. */}
-        <FilterField id="f-status" label="Status">
-          <Select
-            id="f-status"
-            value={status === "active" ? "" : status}
-            onChange={(event) => {
-              updateParams({ status: event.target.value || null });
-            }}
-          >
-            <option value="">Ohne Stornierte</option>
-            <option value="all">Mit Stornierten</option>
-            <option value="cancelled">Nur Stornierte</option>
-          </Select>
-        </FilterField>
-
         {/* Die Optionen benennen die Sortierung selbst („Nach Datum"), da die
             Beschriftung nur noch fuer Screenreader existiert. */}
         <FilterSort
@@ -503,7 +491,16 @@ export function PaymentsPage() {
 
       {!isLoading && rows.length > 0 && (
         <p className="text-sm text-muted-foreground" aria-live="polite">
-          {formatCountNoun(rows.length, "Dividende", "Dividenden")}
+          {/* Stornierte haben kein Feld in der Leiste mehr; erreichbar sind sie
+              ueber die Datenqualitaet (`?status=cancelled`). Die Zeile sagt,
+              was gezeigt wird; „Zuruecksetzen" fuehrt zur normalen Liste. */}
+          {status === "cancelled"
+            ? formatCountNoun(
+                rows.length,
+                "stornierte Dividende",
+                "stornierte Dividenden",
+              )
+            : formatCountNoun(rows.length, "Dividende", "Dividenden")}
           {total && (
             <>
               {" · "}

@@ -204,12 +204,12 @@ describe("StatTable auf dem Telefon", () => {
     expect(screen.queryByRole("button", { name: /sortiert/ })).not.toBeInTheDocument();
     await user.selectOptions(
       screen.getByRole("combobox", { name: "Sortierung" }),
-      "Name",
+      "Nach Name",
     );
     expect(listNames()).toEqual(["Alpha", "Beta", "Gamma"]);
 
     // … Zahlen groesste zuerst (hier die Vorgabe des Aufrufers).
-    await user.selectOptions(screen.getByRole("combobox"), "Betrag");
+    await user.selectOptions(screen.getByRole("combobox"), "Nach Betrag");
     expect(listNames()).toEqual(["Alpha", "Gamma", "Beta"]);
   });
 

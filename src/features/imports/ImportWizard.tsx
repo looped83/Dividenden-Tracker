@@ -430,8 +430,11 @@ export function ImportWizard({ onFinished }: { onFinished: () => void }) {
 
           {data.sheets.length > 1 && (
             <div className="space-y-1">
-              <label className="text-sm font-medium">Tabellenblatt</label>
+              <label htmlFor="import-sheet" className="text-sm font-medium">
+                Tabellenblatt
+              </label>
               <Select
+                id="import-sheet"
                 value={data.selectedSheet}
                 onChange={(e) => void loadSheet(data, e.target.value)}
               >
@@ -449,9 +452,15 @@ export function ImportWizard({ onFinished }: { onFinished: () => void }) {
           <div className="space-y-2">
             <p className="text-sm font-medium">Spaltenzuordnung</p>
             {REQUIRED_FIELDS.map((field) => (
-              <div key={field} className="flex items-center gap-3">
-                <span className="w-48 text-sm">{FIELD_LABELS[field]} *</span>
+              <div
+                key={field}
+                className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3"
+              >
+                <label htmlFor={`import-map-${field}`} className="text-sm sm:w-48">
+                  {FIELD_LABELS[field]} *
+                </label>
                 <Select
+                  id={`import-map-${field}`}
                   value={data.mapping[field] ?? -1}
                   onChange={(e) => {
                     const idx = Number.parseInt(e.target.value, 10);
@@ -461,7 +470,7 @@ export function ImportWizard({ onFinished }: { onFinished: () => void }) {
                     });
                   }}
                 >
-                  <option value={-1}>— nicht zugeordnet —</option>
+                  <option value={-1}>Spalte wählen …</option>
                   {data.header.map((h, i) => (
                     <option key={i} value={i}>
                       {h || `Spalte ${String(i + 1)}`}
@@ -473,8 +482,11 @@ export function ImportWizard({ onFinished }: { onFinished: () => void }) {
           </div>
 
           <div className="space-y-1">
-            <label className="text-sm font-medium">Datumsformat</label>
+            <label htmlFor="import-date-format" className="text-sm font-medium">
+              Datumsformat
+            </label>
             <Select
+              id="import-date-format"
               value={data.dateFormat}
               onChange={(e) => {
                 setData({ ...data, dateFormat: e.target.value as DateFormat });
@@ -874,9 +886,11 @@ function CompanyRow({
               });
           }}
         >
-          <option value="new">Neu (archiviert) anlegen</option>
+          <option value="new">Als archiviertes Asset anlegen</option>
           {group.match.securityId && (
-            <option value={group.match.securityId}>Bestehendem zuordnen</option>
+            <option value={group.match.securityId}>
+              Zuordnen: {group.match.securityName ?? "bestehendes Asset"}
+            </option>
           )}
           {group.match.suggestions.map((s) => (
             <option key={s.securityId} value={s.securityId}>

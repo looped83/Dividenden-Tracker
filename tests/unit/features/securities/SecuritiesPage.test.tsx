@@ -57,7 +57,17 @@ vi.mock("@/features/securities/hooks", async (importOriginal) => {
 
 vi.mock("@/features/depots/hooks", () => ({
   useDepots: () => ({
-    data: [{ id: "dep-1", name: "Hauptdepot", base_currency: "EUR", archived_at: null }],
+    data: [
+      { id: "dep-1", name: "Hauptdepot", base_currency: "EUR", archived_at: null },
+      { id: "dep-2", name: "Zweitdepot", base_currency: "EUR", archived_at: null },
+    ],
+  }),
+}));
+
+// Beta SE hat kein Standard-Depot, aber Dividenden im Zweitdepot.
+vi.mock("@/features/payments/hooks", () => ({
+  useSecuritiesByDepot: (enabled: boolean) => ({
+    data: enabled ? new Map([["dep-2", new Set(["sec-b"])]]) : undefined,
   }),
 }));
 
@@ -94,13 +104,13 @@ function snapshot(partial: Partial<SecuritySnapshot> = {}): SecuritySnapshot {
   };
 }
 
-function renderPage(snapshots: SecuritySnapshot[] = []) {
+function renderPage(snapshots: SecuritySnapshot[] = [], url = "/depot") {
   staende.current = snapshots;
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0 } },
   });
   return render(
-    <MemoryRouter initialEntries={["/depot"]}>
+    <MemoryRouter initialEntries={[url]}>
       <QueryClientProvider client={client}>
         <ToastProvider>
           <SecuritiesPage />
@@ -148,7 +158,7 @@ describe("SecuritiesPage", () => {
     // Stattdessen traegt die Branche die Zeile mit — sie sagt ohne Depotstand
     // als Einzige etwas ueber die Streuung.
     expect(screen.getByRole("columnheader", { name: "Branche" })).toBeInTheDocument();
-    expect(screen.getByRole("columnheader", { name: "Depotkonto" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Depot" })).toBeInTheDocument();
   });
 
   it("führt vom Namen auf die Detailseite und behält die Zeilenaktionen", () => {
@@ -217,5 +227,23 @@ describe("SecuritiesPage", () => {
 
     renderPage([snapshot()]);
     expect(screen.getByRole("option", { name: "Nach Wert" })).toBeInTheDocument();
+  });
+
+  it("filtert nach Depot über Standard-Depot und gebuchte Dividenden, aus der Adresse", () => {
+    const { unmount } = renderPage([], "/depot?depot=dep-2");
+    expect(screen.getByRole("combobox", { name: "Depot" })).toHaveValue("dep-2");
+    expect(screen.getByRole("link", { name: "Beta SE" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Alpha AG" })).not.toBeInTheDocument();
+    unmount();
+
+    renderPage([], "/depot?depot=dep-1");
+    expect(screen.getByRole("link", { name: "Alpha AG" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Beta SE" })).not.toBeInTheDocument();
+  });
+
+  it("liest Sortierung und Status aus der Adresse", () => {
+    renderPage([], "/depot?sort=ticker&direction=desc&status=all");
+    expect(screen.getByRole("combobox", { name: "Sortierung" })).toHaveValue("ticker");
+    expect(screen.getByRole("combobox", { name: "Status" })).toHaveValue("all");
   });
 });

@@ -100,7 +100,9 @@ export function FilterBar({
       className={cn(
         "flex-wrap items-center gap-3 sm:flex",
         // Auswahlfelder als Pillen wie die Jahresauswahl der Uebersicht.
-        "[&_select]:rounded-full [&_select]:pl-4",
+        // Rechts knapper als im Formular: Der Pfeil braucht 28px, und paarweise
+        // Felder (`half`) fassen so auch „Alle Währungen" bei 390px.
+        "[&_select]:rounded-full [&_select]:pl-4 [&_select]:pr-8",
         (disclosure?.open ?? true) ? "flex" : "hidden",
         className,
       )}
@@ -127,21 +129,37 @@ export function FilterBar({
  * `min-w-0` ist wesentlich: Ohne das waechst ein `select` auf die Breite seiner
  * laengsten Option (z. B. lange Firmennamen) und sprengt die Zeile. Auf
  * schmalen Viewports steht ein Feld je Zeile — halbe Spalten reichen fuer
- * Werte wie „Alle Unternehmen" nicht aus.
+ * Werte wie „Alle Assets" nicht aus; nur kurze Paare stehen nebeneinander
+ * (`half`).
  */
 export function FilterField({
   id,
   label,
+  half = false,
   className,
   children,
 }: {
   id: string;
   label: string;
+  /**
+   * Auf dem Telefon ab 360px halbe Breite, fuer kurze Werte, die paarweise
+   * zusammengehoeren (Jahr | Monat, Branche | Waehrung) — wie Jahr und
+   * Vergleichsjahr im Vergleich. Spart je Paar eine Zeile der aufgeklappten
+   * Leiste; lange Namen (Asset, Depot) bleiben voll breit. Darunter reicht
+   * die halbe Breite nicht fuer „Alle Währungen".
+   */
+  half?: boolean;
   className?: string;
   children: React.ReactNode;
 }) {
   return (
-    <div className={cn("min-w-0 flex-1 basis-full sm:max-w-72 sm:basis-40", className)}>
+    <div
+      className={cn(
+        "min-w-0 flex-1 sm:max-w-72 sm:basis-40",
+        half ? "basis-full min-[360px]:basis-[calc(50%-0.375rem)]" : "basis-full",
+        className,
+      )}
+    >
       <label htmlFor={id} className="sr-only">
         {label}
       </label>
@@ -253,6 +271,9 @@ export function FilterSort({
  * fuenf Feldern). Dort stand sie sonst allein links unter einer vollen Zeile;
  * an der rechten Kante wirkt sie gesetzt statt uebriggeblieben. Auf dem Telefon
  * ist sie so breit wie die Felder darueber.
+ *
+ * Ab `sm` nur das Symbol (Name fuer Hilfsmittel und als Tooltip): Der Text
+ * kostete rund 140px und schob die Dividendenleiste in eine zweite Zeile.
  */
 export function FilterReset({ onClick }: { onClick: () => void }) {
   return (
@@ -260,9 +281,11 @@ export function FilterReset({ onClick }: { onClick: () => void }) {
       type="button"
       variant="outline"
       onClick={onClick}
-      className="w-full sm:ml-auto sm:w-auto"
+      title="Filter zurücksetzen"
+      className="w-full sm:ml-auto sm:w-11 sm:shrink-0 sm:px-0"
     >
-      <X /> Filter zurücksetzen
+      <X aria-hidden />
+      <span className="sm:sr-only">Filter zurücksetzen</span>
     </Button>
   );
 }
