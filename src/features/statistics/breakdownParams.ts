@@ -18,7 +18,7 @@ const VIEWS: readonly BreakdownView[] = ["summe", "veraenderung", "kumuliert"];
  */
 export const BREAKDOWN_VIEW_LABELS: Readonly<Record<BreakdownView, string>> = {
   summe: "Monatssumme",
-  veraenderung: "Δ Vorjahr",
+  veraenderung: "Zum Vorjahr",
   kumuliert: "Kumuliert",
 };
 

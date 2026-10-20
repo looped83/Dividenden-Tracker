@@ -199,9 +199,9 @@ export function SecurityFormDialog({
               <Input id="security-sector" {...register("sector")} />
             </div>
             <div className="col-span-3 space-y-1.5 sm:col-span-2">
-              <Label htmlFor="security-default-depot">Depotkonto</Label>
+              <Label htmlFor="security-default-depot">Standard-Depot</Label>
               <Select id="security-default-depot" {...register("defaultDepotId")}>
-                <option value="">Kein Depotkonto</option>
+                <option value="">Kein Standard-Depot</option>
                 {activeDepots.map((depot) => (
                   <option key={depot.id} value={depot.id}>
                     {depot.name}

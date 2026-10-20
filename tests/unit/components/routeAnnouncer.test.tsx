@@ -25,9 +25,9 @@ describe("areaNameFor", () => {
     expect(areaNameFor("/")).toBe("Übersicht");
     expect(areaNameFor("/eingaenge")).toBe("Dividenden");
     expect(areaNameFor("/statistiken/verlauf")).toBe("Statistiken, Verlauf");
-    expect(areaNameFor("/einstellungen/depots")).toBe("Einstellungen, Depotkonten");
-    expect(areaNameFor("/depot")).toBe("Depot");
-    expect(areaNameFor("/depot/entwicklung")).toBe("Depot, Entwicklung");
+    expect(areaNameFor("/einstellungen/depots")).toBe("Einstellungen, Depots");
+    expect(areaNameFor("/depot")).toBe("Bestand");
+    expect(areaNameFor("/depot/entwicklung")).toBe("Bestand, Entwicklung");
   });
 
   it("verwechselt die Uebersicht nicht mit jedem Pfad", () => {

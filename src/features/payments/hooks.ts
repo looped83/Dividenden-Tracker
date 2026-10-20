@@ -86,6 +86,35 @@ export function useAllPayments() {
   });
 }
 
+/** Je Depot die Assets, fuer die dort aktive (nicht stornierte) Dividenden gebucht sind. */
+function securitiesByDepot(payments: PaymentListRow[]): Map<string, Set<string>> {
+  const result = new Map<string, Set<string>>();
+  for (const payment of payments) {
+    if (payment.archived_at || !payment.depot_id) continue;
+    let set = result.get(payment.depot_id);
+    if (!set) {
+      set = new Set();
+      result.set(payment.depot_id, set);
+    }
+    set.add(payment.security_id);
+  }
+  return result;
+}
+
+/**
+ * Wo welches Asset gebucht ist (Depotfilter des Bestands). Derselbe
+ * Cache-Eintrag wie die Historie; `enabled` haelt den Abruf aus, solange
+ * niemand nach Depot filtert.
+ */
+export function useSecuritiesByDepot(enabled: boolean) {
+  return useQuery({
+    queryKey: PAYMENT_HISTORY_KEY,
+    queryFn: fetchAllPayments,
+    select: securitiesByDepot,
+    enabled,
+  });
+}
+
 export function usePayment(id: string | undefined) {
   return useQuery({
     queryKey: [...PAYMENTS_KEY, "detail", id],

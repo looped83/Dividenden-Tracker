@@ -32,7 +32,10 @@ export function DepotPage() {
   const [actions, setActions] = React.useState<HTMLDivElement | null>(null);
   return (
     <div className="space-y-6">
-      <PageHeader title="Depot" actions={<div ref={setActions} className="contents" />} />
+      <PageHeader
+        title="Bestand"
+        actions={<div ref={setActions} className="contents" />}
+      />
 
       <TabNav label="Depotbereiche" tabs={DEPOT_TABS} />
 

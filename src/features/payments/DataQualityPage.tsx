@@ -206,6 +206,9 @@ export function DataQualityPage() {
           <OverviewItem
             label="Stornierte"
             value={isLoading ? null : overview.cancelled}
+            // Die einzige Stelle, an der Stornierte aufgelistet werden: Die
+            // Dividendenliste hat dafuer kein Filterfeld mehr.
+            to="/eingaenge?status=cancelled"
           />
           <OverviewItem
             label="Importe mit Änderung"
@@ -496,14 +499,34 @@ function AllClear({ title, description }: { title: string; description?: string 
 }
 
 // `null` solange geladen wird: Eine Null stuende sonst kurz als Befund da.
-function OverviewItem({ label, value }: { label: string; value: number | null }) {
+function OverviewItem({
+  label,
+  value,
+  to,
+}: {
+  label: string;
+  value: number | null;
+  /** Fuehrt zur Liste dahinter — nur, wenn es etwas zu zeigen gibt. */
+  to?: string;
+}) {
+  const text = value === null ? "–" : formatCountNumber(value);
   return (
     // Erst die Beschriftung, dann der Wert — wie die Kennzahlen im Kopf der
     // Übersicht.
     <div className="flex flex-col">
       <dt className="text-[0.8125rem] text-muted-foreground">{label}</dt>
       <dd className="text-[1.0625rem] font-semibold tabular-nums">
-        {value === null ? "–" : formatCountNumber(value)}
+        {to && value ? (
+          <Link
+            to={to}
+            aria-label={`${text} ${label} anzeigen`}
+            className="rounded-sm underline underline-offset-4 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {text}
+          </Link>
+        ) : (
+          text
+        )}
       </dd>
     </div>
   );
