@@ -36,6 +36,10 @@ export function StatisticsPage() {
   // grundsaetzlich alle Jahre gegenueber (§11.12) und sagt das, solange ein
   // Jahr gewaehlt ist. Unternehmen und Depotkonto wirken ueberall.
   const isComparison = useMatch("/statistiken/vergleich") !== null;
+  // Aufteilung: Auf dem Telefon beginnt die Liste mit Suche und Sortierung.
+  const isCompanies = useMatch("/statistiken/unternehmen") !== null;
+  const isDepots = useMatch("/statistiken/depots") !== null;
+  const isBreakdown = isCompanies || isDepots;
   const filterDisclosure = useFilterDisclosure(activeFilterCount(filter, !isComparison));
 
   const years = React.useMemo(() => availableYears(data.payments), [data.payments]);
@@ -124,6 +128,12 @@ export function StatisticsPage() {
         securities={data.securities}
         depots={data.depots}
         showYear={!isComparison}
+        // Folgt eine weitere Zeile Felder (Zeitraeume im Vergleich, Suche und
+        // Sortierung der Aufteilung auf dem Telefon), steht sie im
+        // Zeilenabstand der Leiste (0,75rem), nicht im Abschnittsabstand.
+        // Eingeklappt ist die Leiste `hidden`, dann gilt wieder der Abstand
+        // zu den Reitern.
+        className={isComparison ? "mb-3!" : isBreakdown ? "max-md:mb-3!" : ""}
       />
 
       {/* Eigener Ladezustand: Beim Reiterwechsel bleiben Kopfzeile, Reiter und
