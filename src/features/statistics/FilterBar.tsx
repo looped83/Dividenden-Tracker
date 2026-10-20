@@ -70,10 +70,7 @@ export function FilterBar({
   const active = !isEmptyFilter(filter);
 
   return (
-    <FilterBarShell
-      disclosure={disclosure}
-      className={className}
-    >
+    <FilterBarShell disclosure={disclosure} className={className}>
       {showYear && (
         <FilterField id="stats-filter-year" label="Jahr">
           <Select

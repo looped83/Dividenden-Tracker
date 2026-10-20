@@ -142,7 +142,9 @@ describe("YearMonthMatrix ab md", () => {
     const table = screen.getByRole("table");
     expect(within(table).getByRole("rowheader", { name: /2025/ })).toBeInTheDocument();
     expect(within(table).getByRole("rowheader", { name: /2024/ })).toBeInTheDocument();
-    expect(within(table).queryByRole("rowheader", { name: /2026/ })).not.toBeInTheDocument();
+    expect(
+      within(table).queryByRole("rowheader", { name: /2026/ }),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText(/Jahresfilter/)).not.toBeInTheDocument();
   });
 
