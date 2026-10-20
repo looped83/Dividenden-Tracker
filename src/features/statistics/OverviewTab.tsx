@@ -1,18 +1,11 @@
 import * as React from "react";
 import { KpiHero } from "@/components/domain/KpiHero";
 import { AmountText } from "@/components/money/AmountText";
-import {
-  annualReview,
-  overviewStatistics,
-  refDateFromDate,
-  reviewYears,
-  type ReviewFacets,
-} from "@/lib/statistics";
+import { overviewStatistics, refDateFromDate, reviewYears } from "@/lib/statistics";
 import { useStatisticsContext } from "./context";
 import {
   formatCountNoun,
   formatCountNumber,
-  entityName,
   formatMonthYear,
   formatPayments,
   statisticsDrillHref,
@@ -21,26 +14,20 @@ import { YearMonthMatrix } from "./YearMonthMatrix";
 import { ReviewTeaser } from "./review/ReviewTeaser";
 import { formatYearSpan } from "@/lib/utils/formatDate";
 
-const NO_FACETS = new Map<string, ReviewFacets>();
-
 export function OverviewTab() {
-  const { payments, allPayments, securities, filter } = useStatisticsContext();
+  const { payments, allPayments, filter } = useStatisticsContext();
 
   const stats = React.useMemo(() => overviewStatistics(payments), [payments]);
   const { bestMonth, bestYear } = stats;
   // Der Rueckblick gehoert zu **einem** Jahr: Er erscheint nur, wenn der
   // Filter eines waehlt, und dann fuer genau dieses. Er gilt dem ganzen
   // Bestand — Unternehmens- und Depotfilter wirken in ihm nicht.
-  // Das Banner zeigt auf dem Desktop drei Kennzahlen als Vorschau; Branche
-  // und Land braucht es dafuer nicht.
-  const review = React.useMemo(() => {
+  const reviewYear = React.useMemo(() => {
     if (filter.year === null) return null;
-    const ref = refDateFromDate();
-    if (!reviewYears(allPayments, ref).includes(filter.year)) return null;
-    return annualReview(allPayments, filter.year, ref, NO_FACETS, (id) =>
-      entityName(securities, id),
-    );
-  }, [allPayments, securities, filter.year]);
+    return reviewYears(allPayments, refDateFromDate()).includes(filter.year)
+      ? filter.year
+      : null;
+  }, [allPayments, filter.year]);
 
   return (
     <div className="space-y-10">
@@ -62,6 +49,7 @@ export function OverviewTab() {
         ]
           .filter(Boolean)
           .join(" · ")}
+        statsFooter={reviewYear !== null ? <ReviewTeaser year={reviewYear} /> : undefined}
         stats={[
           {
             label: "Ø Monat",
@@ -93,17 +81,6 @@ export function OverviewTab() {
           },
         ]}
       />
-
-      {review && (
-        <ReviewTeaser
-          review={review}
-          topPayer={
-            review.topPayers[0]
-              ? entityName(securities, review.topPayers[0].securityId)
-              : null
-          }
-        />
-      )}
 
       {/* Die Matrix aus Jahren und Monaten — hier trifft sich die fruehere
           Heatmap (Toenung) mit dem frueheren Reiter „Breakdown" (Zahlen). Das

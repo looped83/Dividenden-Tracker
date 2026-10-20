@@ -316,13 +316,13 @@ Heatmap. Umschaltbar zwischen Monatssumme, Veränderung zum Vorjahresmonat und a
 Jahressumme (CALCULATION_RULES.md §11.12). Auf dem iPhone steht die Matrix gedreht: Monate als
 Zeilen, Jahre als Spalten, das jüngste Jahr vorn.
 
-Ist im Filter ein Jahr gewählt, steht zwischen Kennzahlen und Matrix das Banner zum
-**Jahresrückblick** dieses Jahres
+Ist im Filter ein Jahr gewählt, hängt unter der Leiste der Nebenkennzahlen ein oranger Sockel
+zum **Jahresrückblick** dieses Jahres
 (`/statistiken/rueckblick/<jahr>`): eine Vollbild-Story mit einer Karte nach der anderen —
 Nettosumme samt Vorjahr und Rang, „pro Tag", Rekordmonat (Diagramm mit Tooltip), Top-Zahler,
 Neuzugänge und größte Steigerung, Länder und Branchen, Steuern und Abzüge, Summe seit Beginn
 und eine Zusammenfassung. Rückblicke gibt es für abgeschlossene Jahre, für das laufende erst
-ab Dezember („bis heute"); ohne gewähltes Jahr gibt es kein Banner und keine Auswahl anderer
+ab Dezember („bis heute"); ohne gewähltes Jahr gibt es keinen Einstieg und keine Auswahl anderer
 Jahre. Der Rückblick steht am Ende seines Jahres: Spätere Jahre gehen in keine Kennzahl ein
 („bisher bestes Jahr", Summe seit Beginn, Neuzugänge). Er gilt immer dem ganzen Bestand;
 Unternehmens- und Depotfilter wirken nicht. Bedienung per Tippen, Wischen, Pfeiltasten und Knöpfen, ohne automatisches
