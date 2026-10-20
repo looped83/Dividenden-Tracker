@@ -271,6 +271,9 @@ export function FilterSort({
  * fuenf Feldern). Dort stand sie sonst allein links unter einer vollen Zeile;
  * an der rechten Kante wirkt sie gesetzt statt uebriggeblieben. Auf dem Telefon
  * ist sie so breit wie die Felder darueber.
+ *
+ * Ab `sm` nur das Symbol (Name fuer Hilfsmittel und als Tooltip): Der Text
+ * kostete rund 140px und schob die Dividendenleiste in eine zweite Zeile.
  */
 export function FilterReset({ onClick }: { onClick: () => void }) {
   return (
@@ -278,9 +281,11 @@ export function FilterReset({ onClick }: { onClick: () => void }) {
       type="button"
       variant="outline"
       onClick={onClick}
-      className="w-full sm:ml-auto sm:w-auto"
+      title="Filter zurücksetzen"
+      className="w-full sm:ml-auto sm:w-11 sm:shrink-0 sm:px-0"
     >
-      <X /> Filter zurücksetzen
+      <X aria-hidden />
+      <span className="sm:sr-only">Filter zurücksetzen</span>
     </Button>
   );
 }

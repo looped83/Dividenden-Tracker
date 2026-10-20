@@ -403,7 +403,9 @@ export function PaymentsPage() {
       {/* Filterleiste in der Optik des Statistikbereichs (geteiltes Primitive).
           Sortierrichtung als Symbolschalter statt langer Auswahltexte
           („Zahlungsdatum – neueste zuerst“), damit alles in eine Zeile passt. */}
-      <FilterBar disclosure={filterDisclosure}>
+      {/* Ab `lg` in einer Zeile: Die Felder schrumpfen (mit „…"), statt die
+          Sortierung allein in eine zweite Zeile zu schieben. */}
+      <FilterBar disclosure={filterDisclosure} className="lg:flex-nowrap">
         <FilterField id="f-year" label="Jahr" half>
           <Select
             id="f-year"
@@ -467,23 +469,6 @@ export function PaymentsPage() {
           />
         </FilterField>
 
-        {/* Stornierte sind ein Filter wie jeder andere und stehen deshalb in
-            der Leiste — nicht mehr als Kontrollkaestchen unter 25 Eingaengen
-            und dem Blaettern am Seitenende. */}
-        <FilterField id="f-status" label="Status">
-          <Select
-            id="f-status"
-            value={status === "active" ? "" : status}
-            onChange={(event) => {
-              updateParams({ status: event.target.value || null });
-            }}
-          >
-            <option value="">Ohne Stornierte</option>
-            <option value="all">Mit Stornierten</option>
-            <option value="cancelled">Nur Stornierte</option>
-          </Select>
-        </FilterField>
-
         {/* Die Optionen benennen die Sortierung selbst („Nach Datum"), da die
             Beschriftung nur noch fuer Screenreader existiert. */}
         <FilterSort
@@ -506,7 +491,16 @@ export function PaymentsPage() {
 
       {!isLoading && rows.length > 0 && (
         <p className="text-sm text-muted-foreground" aria-live="polite">
-          {formatCountNoun(rows.length, "Dividende", "Dividenden")}
+          {/* Stornierte haben kein Feld in der Leiste mehr; erreichbar sind sie
+              ueber die Datenqualitaet (`?status=cancelled`). Die Zeile sagt,
+              was gezeigt wird; „Zuruecksetzen" fuehrt zur normalen Liste. */}
+          {status === "cancelled"
+            ? formatCountNoun(
+                rows.length,
+                "stornierte Dividende",
+                "stornierte Dividenden",
+              )
+            : formatCountNoun(rows.length, "Dividende", "Dividenden")}
           {total && (
             <>
               {" · "}
