@@ -1,6 +1,5 @@
 import * as React from "react";
 import { Link, useSearchParams } from "react-router";
-import { Info } from "lucide-react";
 import { Section } from "@/components/ui/section";
 import { Select } from "@/components/ui/select";
 import { AmountText } from "@/components/money/AmountText";
@@ -46,9 +45,10 @@ import {
  * stellt dar und benennt, was die Zahlen einschraenkt: das laufende Jahr und
  * den laufenden Monat.
  *
- * Der Jahresfilter der Statistikleiste bleibt hier wirkungslos — er reduzierte
- * die Matrix auf eine einzige Zeile. Die Kennzahlen darueber folgen ihm; alle
- * uebrigen Filter wirken auch hier.
+ * Der Jahresfilter der Statistikleiste wirkt hier als Obergrenze: Die Tabelle
+ * zeigt alle Jahre bis einschliesslich des gewaehlten — als einzige Zeile
+ * verloere sie den Vergleich, mit spaeteren Jahren widerspraeche sie dem
+ * Filter. Alle uebrigen Filter wirken unveraendert.
  */
 export function YearMonthMatrix() {
   const { allPayments, filter } = useStatisticsContext();
@@ -58,10 +58,13 @@ export function YearMonthMatrix() {
   const view = parseBreakdownView(searchParams);
 
   const yearlessFilter = React.useMemo(() => ({ ...filter, year: null }), [filter]);
-  const payments = React.useMemo(
-    () => filterPayments(allPayments, yearlessFilter),
-    [allPayments, yearlessFilter],
-  );
+  const payments = React.useMemo(() => {
+    const filtered = filterPayments(allPayments, yearlessFilter);
+    if (filter.year === null) return filtered;
+    // Zeilen folgen dem Zahltag (`breakdownMatrix`), die Grenze deshalb auch.
+    const until = `${String(filter.year + 1)}-01-01`;
+    return filtered.filter((payment) => payment.payDate < until);
+  }, [allPayments, yearlessFilter, filter.year]);
   const matrix = React.useMemo(() => breakdownMatrix(payments, today), [payments, today]);
 
   const setView = (next: BreakdownView) => {
@@ -98,23 +101,11 @@ export function YearMonthMatrix() {
         </Select>
       }
     >
-      <div className="space-y-4">
-        {filter.year !== null && (
-          <p className="flex items-start gap-2 rounded-md bg-muted/50 p-3 text-sm text-muted-foreground">
-            <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
-            <span>
-              Der Jahresfilter ({filter.year}) wirkt in dieser Tabelle nicht — sie stellt
-              alle Jahre gegenüber. Alle übrigen Filter gelten weiterhin.
-            </span>
-          </p>
-        )}
-
-        {isWide ? (
-          <BreakdownMatrixTable matrix={matrix} view={view} filter={filter} />
-        ) : (
-          <TransposedMatrixTable matrix={matrix} view={view} filter={filter} />
-        )}
-      </div>
+      {isWide ? (
+        <BreakdownMatrixTable matrix={matrix} view={view} filter={filter} />
+      ) : (
+        <TransposedMatrixTable matrix={matrix} view={view} filter={filter} />
+      )}
     </Section>
   );
 }

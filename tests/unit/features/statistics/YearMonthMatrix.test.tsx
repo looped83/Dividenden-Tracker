@@ -137,13 +137,13 @@ describe("YearMonthMatrix ab md", () => {
     expect(screen.getAllByText(/400,00\s?€/).length).toBeGreaterThan(0);
   });
 
-  it("ignoriert den Jahresfilter und sagt das ausdrücklich", () => {
+  it("zeigt mit Jahresfilter die Jahre bis einschließlich des gewählten", () => {
     renderMatrix(PAYMENTS, { ...EMPTY_STATISTICS_FILTER, year: 2025 });
     const table = screen.getByRole("table");
+    expect(within(table).getByRole("rowheader", { name: /2025/ })).toBeInTheDocument();
     expect(within(table).getByRole("rowheader", { name: /2024/ })).toBeInTheDocument();
-    expect(
-      screen.getByText(/Jahresfilter \(2025\) wirkt in dieser Tabelle nicht/),
-    ).toBeInTheDocument();
+    expect(within(table).queryByRole("rowheader", { name: /2026/ })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Jahresfilter/)).not.toBeInTheDocument();
   });
 
   it("zeigt ohne Daten keine leere Tabelle", () => {

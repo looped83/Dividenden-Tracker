@@ -285,8 +285,8 @@ eigene Query oder Berechnung ein:
   Depots) weiter. Der Kontext
   ist bewusst frei von Supabase-Abhängigkeiten (`context.ts`), damit Unterbereiche isoliert
   testbar bleiben. Neben den gefilterten Zahlungen liegt der **ungefilterte** Bestand im Kontext:
-  Vergleich und Matrix brauchen ihn, weil der Jahresfilter dort nicht greifen darf
-  (CALCULATION_RULES.md §11.10 und §11.12).
+  Vergleich und Matrix brauchen ihn, weil der Jahresfilter dort nicht als Einzeljahr greifen darf
+  (im Vergleich gar nicht, in der Matrix nur als Obergrenze; CALCULATION_RULES.md §11.10 und §11.12).
 - **URL-Filter.** Jahr, Unternehmen, Depot, Datenquelle und Zahlungsart liegen in der URL
   (`?year=&security=&depot=&source=&type=`), sind kombinierbar, bleiben nach Reload erhalten und
   funktionieren mit Browser-Zurück/-Vorwärts. Parsing/Serialisierung sind als reine, isoliert
