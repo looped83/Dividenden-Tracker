@@ -18,6 +18,7 @@ import type {
   ComparisonResult,
   MonthBucket,
   MonthValue,
+  YearBucket,
 } from "./types";
 
 /**
@@ -101,10 +102,43 @@ export interface AnnualReview {
   /** Summe aller Jahre bis einschliesslich dieses Jahres. */
   cumulativeNet: Money;
   firstYear: number;
+  /** Alle Jahre bis einschliesslich dieses, aufsteigend. */
+  years: YearBucket[];
+  /** Vielfaches des ersten Jahres (2 = doppelt so viel); null ohne Vorjahre. */
+  growthFactor: DecimalInstance | null;
+  /** Durchschnitt der Jahre vor diesem; null ohne Vorjahre. */
+  priorAverage: Money | null;
+  /** Naechste runde Marke der Summe seit Beginn. */
+  nextMilestone: ReviewMilestone | null;
+}
+
+export interface ReviewMilestone {
+  target: Money;
+  remaining: Money;
+  /** Jahre bis zur Marke im Tempo dieses Jahres (aufgerundet); null bei Netto ≤ 0. */
+  yearsToGo: number | null;
 }
 
 const ZERO = Money.zero(EUR);
 const TOP_PAYERS = 5;
+/** Runde Marken der Summe seit Beginn, in Euro. */
+const MILESTONES = [
+  1_000, 2_500, 5_000, 10_000, 25_000, 50_000, 100_000, 250_000, 500_000, 1_000_000,
+];
+
+function nextMilestone(cumulative: Money, yearNet: Money): ReviewMilestone | null {
+  const amount = MILESTONES.find((value) => cumulative.toDecimal().lt(value));
+  if (amount === undefined) return null;
+  const target = Money.fromString(String(amount), EUR);
+  const remaining = target.subtract(cumulative);
+  return {
+    target,
+    remaining,
+    yearsToGo: yearNet.isPositive()
+      ? remaining.toDecimal().div(yearNet.toDecimal()).ceil().toNumber()
+      : null,
+  };
+}
 
 function isLeapYear(year: number): boolean {
   return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
@@ -117,21 +151,49 @@ function dayOfYear(ref: RefDate): number {
   return Math.round((current - start) / 86_400_000) + 1;
 }
 
+/** Ab diesem Dezembertag gibt es den Rueckblick auf das laufende Jahr. */
+const REVIEW_OPENS_DAY = 15;
+/** Bis zu diesem Januartag steht der Rueckblick des Vorjahres auf der Startseite. */
+const HOME_TEASER_UNTIL_DAY = 10;
+
+function currentYearOpen(ref: RefDate): boolean {
+  return ref.month === 12 && ref.day >= REVIEW_OPENS_DAY;
+}
+
 /**
  * Jahre, fuer die es einen Rueckblick gibt, neueste zuerst: alle
- * abgeschlossenen Jahre mit Zahlungen, das laufende erst ab Dezember — vorher
- * waere es ein Rueckblick auf ein halbes Jahr.
+ * abgeschlossenen Jahre mit Zahlungen, das laufende erst ab 15. Dezember —
+ * vorher waere es ein Rueckblick auf ein halbes Jahr.
  */
 export function reviewYears(
   payments: readonly AnalyticsPayment[],
   ref: RefDate,
 ): number[] {
   const years = new Set<number>();
+  const openNow = currentYearOpen(ref);
   for (const payment of payments) {
     const year = yearOf(payment.payDate);
-    if (year < ref.year || (year === ref.year && ref.month === 12)) years.add(year);
+    if (year < ref.year || (year === ref.year && openNow)) years.add(year);
   }
   return [...years].sort((a, b) => b - a);
+}
+
+/**
+ * Das Jahr, dessen Rueckblick die Startseite gerade anbietet: vom 15. Dezember
+ * bis 10. Januar das zu Ende gehende Jahr, sonst keines. Ohne Zahlungen in
+ * diesem Jahr gibt es nichts zu erzaehlen.
+ */
+export function homeReviewYear(
+  payments: readonly AnalyticsPayment[],
+  ref: RefDate,
+): number | null {
+  const year = currentYearOpen(ref)
+    ? ref.year
+    : ref.month === 1 && ref.day <= HOME_TEASER_UNTIL_DAY
+      ? ref.year - 1
+      : null;
+  if (year === null) return null;
+  return payments.some((p) => yearOf(p.payDate) === year) ? year : null;
 }
 
 function ranked(
@@ -246,6 +308,25 @@ export function annualReview(
     }))
     .sort((a, b) => b.net.compareTo(a.net) || a.key.localeCompare(b.key, "de"));
 
+  const priorYears = years.filter((bucket) => bucket.year < year);
+  const first = years.at(0);
+  const growthFactor =
+    priorYears.length > 0 && first?.net.isPositive()
+      ? net.toDecimal().div(first.net.toDecimal())
+      : null;
+  const priorAverage =
+    priorYears.length > 0
+      ? Money.fromDecimal(
+          sumMoney(
+            priorYears.map((bucket) => bucket.net),
+            EUR,
+          )
+            .toDecimal()
+            .div(priorYears.length),
+          EUR,
+        )
+      : null;
+
   return {
     year,
     isPartial,
@@ -274,6 +355,10 @@ export function annualReview(
     yearCount: years.length,
     cumulativeNet,
     firstYear: years[0]?.year ?? year,
+    years,
+    growthFactor,
+    priorAverage,
+    nextMilestone: nextMilestone(cumulativeNet, net),
   };
 }
 

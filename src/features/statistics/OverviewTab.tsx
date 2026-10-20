@@ -1,7 +1,8 @@
 import * as React from "react";
 import { KpiHero } from "@/components/domain/KpiHero";
 import { AmountText } from "@/components/money/AmountText";
-import { overviewStatistics, refDateFromDate, reviewYears } from "@/lib/statistics";
+import { overviewStatistics, reviewYears } from "@/lib/statistics";
+import { useToday } from "@/lib/hooks/useToday";
 import { useStatisticsContext } from "./context";
 import {
   formatCountNoun,
@@ -16,6 +17,7 @@ import { formatYearSpan } from "@/lib/utils/formatDate";
 
 export function OverviewTab() {
   const { payments, allPayments, filter } = useStatisticsContext();
+  const today = useToday();
 
   const stats = React.useMemo(() => overviewStatistics(payments), [payments]);
   const { bestMonth, bestYear } = stats;
@@ -24,10 +26,8 @@ export function OverviewTab() {
   // Bestand — Unternehmens- und Depotfilter wirken in ihm nicht.
   const reviewYear = React.useMemo(() => {
     if (filter.year === null) return null;
-    return reviewYears(allPayments, refDateFromDate()).includes(filter.year)
-      ? filter.year
-      : null;
-  }, [allPayments, filter.year]);
+    return reviewYears(allPayments, today).includes(filter.year) ? filter.year : null;
+  }, [allPayments, filter.year, today]);
 
   return (
     <div className="space-y-10">

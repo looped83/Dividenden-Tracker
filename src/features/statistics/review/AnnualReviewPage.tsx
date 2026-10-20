@@ -1,17 +1,13 @@
 import * as React from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import { Link, useLocation, useNavigate, useParams } from "react-router";
 import { CalendarRange } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { buildEntityMap } from "@/features/dashboard/format";
 import { useEffectivePayments } from "@/features/dashboard/hooks";
-import {
-  annualReview,
-  refDateFromDate,
-  reviewYears,
-  type ReviewFacets,
-} from "@/lib/statistics";
+import { annualReview, reviewYears, type ReviewFacets } from "@/lib/statistics";
+import { useToday } from "@/lib/hooks/useToday";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { entityName } from "../format";
 import { buildReviewSlides } from "./reviewSlides";
@@ -35,10 +31,11 @@ function ReviewFrame({ children }: { children: React.ReactNode }) {
 export function AnnualReviewPage() {
   const { jahr } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { payments, paymentsQuery, securitiesQuery } = useEffectivePayments();
 
   const year = Number.parseInt(jahr ?? "", 10);
-  const ref = React.useMemo(() => refDateFromDate(), []);
+  const ref = useToday();
   const years = React.useMemo(() => reviewYears(payments, ref), [payments, ref]);
 
   const securities = React.useMemo(
@@ -64,9 +61,11 @@ export function AnnualReviewPage() {
   }, [review, securities]);
 
   const close = React.useCallback(() => {
-    // Zurueck in die Statistik des Jahres, aus der der Rueckblick kam.
-    void navigate(`/statistiken?year=${String(year)}`);
-  }, [navigate, year]);
+    // Zurueck dorthin, woher der Rueckblick kam (Statistik oder Startseite);
+    // ohne Vorgeschichte (direkt geoeffnet) in die Statistik des Jahres.
+    if (location.key === "default") void navigate(`/statistiken?year=${String(year)}`);
+    else void navigate(-1);
+  }, [navigate, location.key, year]);
 
   if (paymentsQuery.isLoading || securitiesQuery.isLoading) {
     return (

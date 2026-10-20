@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { EUR, Money } from "@/lib/money";
 import {
   annualReview,
+  homeReviewYear,
   reviewYears,
   type AnalyticsPayment,
   type ReviewFacets,
@@ -33,12 +34,31 @@ const REF: RefDate = { year: 2026, month: 10, day: 20 };
 const NO_FACETS = new Map<string, ReviewFacets>();
 
 describe("reviewYears", () => {
-  it("zeigt abgeschlossene Jahre, das laufende erst ab Dezember", () => {
+  it("zeigt abgeschlossene Jahre, das laufende erst ab 15. Dezember", () => {
     const payments = [p("2024-03-01", "1"), p("2025-03-01", "1"), p("2026-03-01", "1")];
     expect(reviewYears(payments, REF)).toEqual([2025, 2024]);
-    expect(reviewYears(payments, { year: 2026, month: 12, day: 1 })).toEqual([
+    expect(reviewYears(payments, { year: 2026, month: 12, day: 14 })).toEqual([
+      2025, 2024,
+    ]);
+    expect(reviewYears(payments, { year: 2026, month: 12, day: 15 })).toEqual([
       2026, 2025, 2024,
     ]);
+  });
+});
+
+describe("homeReviewYear", () => {
+  const payments = [p("2025-03-01", "1"), p("2026-03-01", "1")];
+
+  it("bietet den Rueckblick vom 15. Dezember bis 10. Januar an", () => {
+    expect(homeReviewYear(payments, { year: 2026, month: 12, day: 14 })).toBeNull();
+    expect(homeReviewYear(payments, { year: 2026, month: 12, day: 15 })).toBe(2026);
+    expect(homeReviewYear(payments, { year: 2027, month: 1, day: 10 })).toBe(2026);
+    expect(homeReviewYear(payments, { year: 2027, month: 1, day: 11 })).toBeNull();
+    expect(homeReviewYear(payments, REF)).toBeNull();
+  });
+
+  it("schweigt, wenn das Jahr keine Zahlungen hat", () => {
+    expect(homeReviewYear(payments, { year: 2028, month: 1, day: 5 })).toBeNull();
   });
 });
 
@@ -111,6 +131,16 @@ describe("annualReview", () => {
     expect(review?.perDay.toStringValue()).toBe("1.00");
     expect(review?.isPartial).toBe(true);
     expect(review?.change.kind).toBe("no-comparison");
+  });
+
+  it("misst den Weg seit dem ersten Jahr und die naechste Marke", () => {
+    const review = annualReview(payments, 2025, REF, NO_FACETS);
+    expect(review?.growthFactor?.toFixed(2)).toBe("1.67");
+    expect(review?.priorAverage?.toStringValue()).toBe("150.00");
+    expect(review?.nextMilestone?.target.toStringValue()).toBe("1000.00");
+    expect(review?.nextMilestone?.remaining.toStringValue()).toBe("600.00");
+    expect(review?.nextMilestone?.yearsToGo).toBe(3);
+    expect(annualReview(payments, 2024, REF, NO_FACETS)?.growthFactor).toBeNull();
   });
 
   it("blendet spaetere Jahre aus: Rang, Summe und Neue gelten bis zum Jahr", () => {

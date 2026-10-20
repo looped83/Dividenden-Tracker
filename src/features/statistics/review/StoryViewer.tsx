@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pause, Play, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
 
@@ -8,7 +8,17 @@ export interface StorySlide {
   /** Kurzname fuer die Ansage an Hilfsmittel („Seite 3 von 9: Rekordmonat"). */
   label: string;
   content: React.ReactNode;
+  /** Standzeit in Millisekunden, bevor die Story von allein weiterblaettert. */
+  duration?: number;
 }
+
+/** Standzeit einer Karte ohne eigene Angabe. */
+const DEFAULT_DURATION = 7000;
+/**
+ * Laengster Zeitschritt, den ein Bild zaehlt: Nach einem Tab-Wechsel oder
+ * einer Ruckelpause springt der Balken nicht um Sekunden vor.
+ */
+const MAX_FRAME_STEP = 100;
 
 /** Mindeststrecke eines Wischers in Pixeln; darunter gilt die Geste als Tippen. */
 const SWIPE_THRESHOLD = 48;
@@ -24,9 +34,16 @@ const INTERACTIVE = "a, button, summary, input, select, table, [data-story-keep]
  * Fortschritt als Segmente oben.
  *
  * Bedienung auf jedem Weg: Tippen (linkes Drittel zurueck, sonst weiter),
- * Wischen, Pfeiltasten, Escape zum Schliessen und sichtbare Knoepfe unten. Es
- * gibt **kein** automatisches Weiterblaettern — wer liest, bestimmt das Tempo
- * (WCAG 2.2.2).
+ * Wischen, Pfeiltasten, Escape zum Schliessen und sichtbare Knoepfe unten.
+ *
+ * Jede Karte blaettert nach ihrer Standzeit von allein weiter; das aktive
+ * Segment oben fuellt sich dabei. Gedrueckt halten haelt an, der
+ * Pause-Knopf (oder die Leertaste) haelt dauerhaft an (WCAG 2.2.2). Wer
+ * ein Diagramm antippt, will lesen: Das haelt ebenfalls an. Auf der letzten
+ * Karte bleibt die Story stehen.
+ *
+ * Der Balken wird per `requestAnimationFrame` direkt am Element gesetzt —
+ * kein Neuzeichnen von React je Bild.
  */
 export function StoryViewer({
   title,
@@ -42,10 +59,15 @@ export function StoryViewer({
   const swipeStart = React.useRef<{ x: number; y: number } | null>(null);
   const swiped = React.useRef(false);
   const scrollRef = React.useRef<HTMLDivElement>(null);
+  const fillRef = React.useRef<HTMLSpanElement>(null);
+  const [paused, setPaused] = React.useState(false);
+  const [holding, setHolding] = React.useState(false);
 
   const last = slides.length - 1;
   const current = Math.min(index, last);
   const slide = slides[current];
+  const duration = slide.duration ?? DEFAULT_DURATION;
+  const running = !paused && !holding;
 
   const go = React.useCallback(
     (delta: number) => {
@@ -70,9 +92,37 @@ export function StoryViewer({
     scrollRef.current?.scrollTo({ top: 0 });
   }, [current]);
 
+  // Ablauf der Standzeit. `elapsed` lebt im Effekt: Ein Seitenwechsel
+  // beginnt bei null, eine Pause friert den Stand ein.
+  const elapsedRef = React.useRef(0);
+  React.useEffect(() => {
+    elapsedRef.current = 0;
+  }, [current]);
+  React.useEffect(() => {
+    const fill = fillRef.current;
+    if (!running) return;
+    let frame = 0;
+    let previous = performance.now();
+    const tick = (now: number) => {
+      elapsedRef.current += Math.min(now - previous, MAX_FRAME_STEP);
+      previous = now;
+      const progress = Math.min(1, elapsedRef.current / duration);
+      if (fill) fill.style.transform = `scaleX(${String(progress)})`;
+      if (progress < 1) frame = requestAnimationFrame(tick);
+      else if (current < last) go(1);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => {
+      cancelAnimationFrame(frame);
+    };
+  }, [running, current, duration, last, go]);
+
   React.useEffect(() => {
     function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
+      if (event.key === " ") {
+        event.preventDefault();
+        setPaused((value) => !value);
+      } else if (event.key === "Escape") onClose();
       else if (event.key === "ArrowRight") go(1);
       else if (event.key === "ArrowLeft") go(-1);
     }
@@ -85,9 +135,12 @@ export function StoryViewer({
   function onPointerDown(event: React.PointerEvent) {
     swipeStart.current = { x: event.clientX, y: event.clientY };
     swiped.current = false;
+    if ((event.target as Element).closest("[data-story-keep]")) setPaused(true);
+    setHolding(true);
   }
 
   function onPointerUp(event: React.PointerEvent) {
+    setHolding(false);
     const start = swipeStart.current;
     swipeStart.current = null;
     if (!start) return;
@@ -127,24 +180,42 @@ export function StoryViewer({
             {slides.map((entry, position) => (
               <span
                 key={entry.id}
-                className={cn(
-                  "h-1 flex-1 rounded-full transition-colors duration-300",
-                  position <= current ? "bg-foreground" : "bg-border",
-                )}
-              />
+                className="h-1 flex-1 overflow-hidden rounded-full bg-border"
+              >
+                <span
+                  ref={position === current ? fillRef : undefined}
+                  className={cn(
+                    "block h-full origin-left bg-foreground",
+                    position > current && "scale-x-0",
+                  )}
+                  style={position === current ? { transform: "scaleX(0)" } : undefined}
+                />
+              </span>
             ))}
           </div>
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium text-muted-foreground">{title}</p>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="-mr-3"
-              onClick={onClose}
-              aria-label="Rückblick schließen"
-            >
-              <X />
-            </Button>
+            <div className="-mr-3 flex items-center">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  setPaused((value) => !value);
+                }}
+                aria-label={paused ? "Automatisch weiterblättern" : "Anhalten"}
+                aria-pressed={paused}
+              >
+                {paused ? <Play /> : <Pause />}
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onClose}
+                aria-label="Rückblick schließen"
+              >
+                <X />
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -153,6 +224,12 @@ export function StoryViewer({
           className="relative flex-1 touch-pan-y overflow-y-auto select-none"
           onPointerDown={onPointerDown}
           onPointerUp={onPointerUp}
+          onPointerCancel={() => {
+            setHolding(false);
+          }}
+          onPointerLeave={() => {
+            setHolding(false);
+          }}
           onClick={onClick}
         >
           <section
