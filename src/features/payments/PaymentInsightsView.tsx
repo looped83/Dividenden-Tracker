@@ -1,6 +1,6 @@
 import * as React from "react";
 import { KpiStats, type KpiStat } from "@/components/domain/KpiHero";
-import { Section } from "@/components/ui/section";
+import { Section, SectionLink } from "@/components/ui/section";
 import { SegmentedControl, type SegmentOption } from "@/components/ui/segmented";
 import { TrendTriangle } from "@/components/ui/trend-triangle";
 import { AmountText } from "@/components/money/AmountText";
@@ -193,8 +193,13 @@ export function PaymentInsightsView({
         )}
 
         {/* Dieselbe Kennzahlleiste wie oben statt einer Zeilenliste: Summen
-            sind Kennzahlen, und die Leiste fuehrt per Tipp in die Liste. */}
-        <Section title="Einordnung">
+            sind Kennzahlen, und die Leiste fuehrt per Tipp in die Liste. Die
+            Summen gelten dem ganzen Asset, daher rechts daneben der Weg zu
+            seiner Detailseite — sichtbarer als der verlinkte Name im Kopf. */}
+        <Section
+          title="Einordnung"
+          action={<SectionLink to={`/depot/${securityId}`}>Zum Asset</SectionLink>}
+        >
           <KpiStats stats={summary} />
         </Section>
       </div>
