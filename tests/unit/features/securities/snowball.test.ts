@@ -167,6 +167,8 @@ describe("projectSnowball", () => {
     });
     expect(result.targetYear).not.toBeNull();
     expect(result.targetYearEarliest).not.toBeNull();
+    expect(result.growthHighPercent.toString()).toBe("7");
+    expect(result.growthLowPercent.toString()).toBe("3");
     const base = result.targetYear ?? 0;
     expect(result.targetYearEarliest ?? 0).toBeLessThanOrEqual(base);
     expect(result.targetYearLatest ?? Infinity).toBeGreaterThanOrEqual(base);
@@ -199,6 +201,16 @@ describe("projectSnowball", () => {
     });
     expect(result.growthPercent.toString()).toBe("4.5");
   });
+
+  it("laesst das vorsichtige Wachstum nie unter 0 % fallen", () => {
+    const result = projectSnowball({
+      depot: DEPOT,
+      settings: settings({ growthPercent: 1 }),
+      netRatio: null,
+      startYear: 2026,
+    });
+    expect(result.growthLowPercent.toString()).toBe("0");
+  });
 });
 
 describe("parseSnowballSettings", () => {
@@ -207,12 +219,10 @@ describe("parseSnowballSettings", () => {
       parseSnowballSettings({
         monthlySavings: 250,
         targetMonthly: "viel",
-        birthYear: 1983,
       }),
     ).toEqual({
       ...DEFAULT_SNOWBALL_SETTINGS,
       monthlySavings: 250,
-      birthYear: 1983,
     });
   });
 

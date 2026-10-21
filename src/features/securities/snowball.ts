@@ -25,7 +25,7 @@ import { latestAsOf, snapshotsAt } from "./snapshots";
 const SNOWBALL_YEARS = 30;
 
 /** Abstand der Szenarien zum angenommenen Wachstum, in Prozentpunkten. */
-export const SCENARIO_SPREAD = 2;
+const SCENARIO_SPREAD = 2;
 
 /** Gespeicherte Annahmen (profiles.forecast_settings). */
 export interface SnowballSettings {
@@ -40,7 +40,6 @@ export interface SnowballSettings {
   targetMonthly: number;
   /** Inflation p. a. in Prozent; 0 = Nennwerte. */
   inflationPercent: number;
-  birthYear: number | null;
 }
 
 export const DEFAULT_SNOWBALL_SETTINGS: SnowballSettings = {
@@ -50,7 +49,6 @@ export const DEFAULT_SNOWBALL_SETTINGS: SnowballSettings = {
   yieldPercent: null,
   targetMonthly: 1000,
   inflationPercent: 2,
-  birthYear: null,
 };
 
 /** Grenzen der Vorbelegung aus dem Depot: kein Ausreisser bestimmt 30 Jahre. */
@@ -144,6 +142,9 @@ export interface SnowballResult {
   milestones: SnowballMilestone[];
   /** Annahmen, mit denen gerechnet wurde (Prozent). */
   growthPercent: DecimalInstance;
+  /** Wachstum der Szenarien optimistisch und vorsichtig (Prozent). */
+  growthHighPercent: DecimalInstance;
+  growthLowPercent: DecimalInstance;
   yieldPercent: DecimalInstance;
 }
 
@@ -236,11 +237,11 @@ export function projectSnowball({
   const real = (series: DecimalInstance[]) =>
     series.map((value, year) => value.dividedBy(inflation.pow(year)));
 
+  const growthLow = MoneyDecimal.max(growth.minus(SCENARIO_SPREAD), 0);
+  const growthHigh = growth.plus(SCENARIO_SPREAD);
   const base = real(simulate({ ...common, growth }));
-  const low = real(
-    simulate({ ...common, growth: MoneyDecimal.max(growth.minus(SCENARIO_SPREAD), 0) }),
-  );
-  const high = real(simulate({ ...common, growth: growth.plus(SCENARIO_SPREAD) }));
+  const low = real(simulate({ ...common, growth: growthLow }));
+  const high = real(simulate({ ...common, growth: growthHigh }));
 
   const points = base.map((value, index) => ({
     year: startYear + index,
@@ -279,6 +280,8 @@ export function projectSnowball({
       : null,
     milestones,
     growthPercent: growth,
+    growthHighPercent: growthHigh,
+    growthLowPercent: growthLow,
     yieldPercent: yieldRate,
   };
 }

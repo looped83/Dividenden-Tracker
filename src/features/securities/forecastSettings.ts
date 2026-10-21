@@ -31,13 +31,6 @@ const settingsSchema = z.object({
     .max(1_000_000)
     .catch(DEFAULT_SNOWBALL_SETTINGS.targetMonthly),
   inflationPercent: percent.catch(DEFAULT_SNOWBALL_SETTINGS.inflationPercent),
-  birthYear: z
-    .number()
-    .int()
-    .min(1900)
-    .max(2100)
-    .nullable()
-    .catch(DEFAULT_SNOWBALL_SETTINGS.birthYear),
 });
 
 export function parseSnowballSettings(raw: unknown): SnowballSettings {
