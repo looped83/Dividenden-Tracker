@@ -1,5 +1,12 @@
 import * as React from "react";
-import { Outlet, ScrollRestoration, type ScrollRestorationProps } from "react-router";
+import {
+  NavigationType,
+  Outlet,
+  ScrollRestoration,
+  useLocation,
+  useNavigationType,
+  type ScrollRestorationProps,
+} from "react-router";
 import { Sidebar, CompactSidebar } from "@/components/layout/Sidebar";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -13,6 +20,25 @@ const scrollKey: NonNullable<ScrollRestorationProps["getKey"]> = (location, matc
   matches.some((match) => Object.keys(match.params).length > 0)
     ? location.key
     : location.pathname;
+
+/**
+ * Wer einen Bereich neu aufruft (Menue, Link, Reiter), beginnt oben — auch
+ * wenn er ihn vorher weiter unten verlassen hatte. Der Pfad als Schluessel von
+ * `ScrollRestoration` stellte sonst die alte Position wieder her. Nur der Weg
+ * zurueck oder vor (POP) nimmt sie wieder ein. Laeuft nach
+ * `ScrollRestoration`, weil Geschwister-Effekte der Reihe nach laufen.
+ */
+function ScrollToTopOnNavigate() {
+  const { pathname } = useLocation();
+  const navigationType = useNavigationType();
+  const previous = React.useRef(pathname);
+  React.useLayoutEffect(() => {
+    if (previous.current !== pathname && navigationType !== NavigationType.Pop)
+      window.scrollTo(0, 0);
+    previous.current = pathname;
+  }, [pathname, navigationType]);
+  return null;
+}
 
 /**
  * Responsive App-Shell (IMPLEMENTATION_PLAN.md Phase 1):
@@ -38,11 +64,13 @@ export function AppShell() {
           Eintrags in der Chronik): Filter, Sortierung und Seitenzahl stehen
           in der Adresse: Jeder Filterklick waere sonst ein neuer Ort und
           risse die Liste nach oben. So zaehlt nur der Wechsel des Bereichs —
-          und der Weg zurueck landet wieder dort, wo man aufgehoert hat.
+          und der Weg zurueck landet wieder dort, wo man aufgehoert hat;
+          ein neuer Aufruf des Bereichs beginnt oben (ScrollToTopOnNavigate).
           Detailseiten (Routen mit `:id`) dagegen nach dem Chronikeintrag:
           Mit dem Pfad als Schluessel oeffnete ein schon einmal besuchtes
           Asset dort, wo man es zuletzt verlassen hatte, statt oben. */}
       <ScrollRestoration getKey={scrollKey} />
+      <ScrollToTopOnNavigate />
       <ErrorBoundary>
         <PaymentComposerProvider>
           <div className="flex min-h-dvh flex-col bg-background text-foreground md:flex-row">
