@@ -12,7 +12,13 @@
  * des Umschalters: Eine Branche kann ein Zehntel des Werts stellen und ein
  * Viertel der Dividende.
  */
-import { Money, MoneyDecimal, toCurrencyCode, type DecimalInstance } from "@/lib/money";
+import {
+  Money,
+  MoneyDecimal,
+  toCurrencyCode,
+  type CurrencyCode,
+  type DecimalInstance,
+} from "@/lib/money";
 import type { DividendFrequency, SecurityAssetType } from "@/lib/supabase/database.types";
 import type { SecuritySnapshot } from "@/lib/supabase/repositories/securitySnapshots";
 import { latestAsOf, snapshotsAt } from "./snapshots";
@@ -38,8 +44,6 @@ export interface AnalysisSlice {
   /** Anteil an der Gesamtsumme in Prozentpunkten. */
   share: DecimalInstance;
   positions: number;
-  /** Laender einer Region; sonst leer. */
-  children: AnalysisSlice[];
 }
 
 export interface PortfolioAnalysis {
@@ -53,7 +57,7 @@ export interface PortfolioAnalysis {
   currencies: AnalysisSlice[];
   frequencies: AnalysisSlice[];
   sectors: AnalysisSlice[];
-  regions: AnalysisSlice[];
+  countries: AnalysisSlice[];
 }
 
 export type AnalysisResult =
@@ -88,45 +92,6 @@ export const FREQUENCY_LABELS: Readonly<Record<DividendFrequency, string>> = {
   irregular: "unregelmäßig",
 };
 
-/**
- * Region je Land. Bewusst grob: Die Frage lautet „wie abhaengig bin ich von
- * einem Wirtschaftsraum?", nicht eine geografische Feinkarte. Die Laender
- * stehen aufklappbar darunter. Ein nicht aufgefuehrter Code landet in „Übrige
- * Welt" statt zu verschwinden.
- */
-const REGIONS: readonly { key: string; label: string; countries: string }[] = [
-  { key: "na", label: "Nordamerika", countries: "US CA BM PR" },
-  {
-    key: "eu",
-    label: "Europa",
-    countries:
-      "AT BE BG CH CY CZ DE DK EE ES FI FO FR GB GG GI GR HR HU IE IM IS IT JE LI LT LU LV MC MT NL NO PL PT RO SE SI SK TR",
-  },
-  {
-    key: "ap",
-    label: "Asien-Pazifik",
-    countries: "AU CN HK ID IN JP KR MO MY NZ PH SG TH TW VN",
-  },
-  { key: "la", label: "Lateinamerika", countries: "AR BR BS CL CO KY MX PA PE UY VG" },
-  {
-    key: "mea",
-    label: "Naher Osten & Afrika",
-    countries: "AE EG IL KW MA NG QA SA ZA",
-  },
-];
-const REST_OF_WORLD = { key: "rest", label: "Übrige Welt" };
-
-const REGION_OF_COUNTRY = new Map(
-  REGIONS.flatMap((region) =>
-    region.countries.split(" ").map((code) => [code, region] as const),
-  ),
-);
-
-const REGION_LABELS = new Map<string, string>([
-  ...REGIONS.map((region) => [region.key, region.label] as const),
-  [REST_OF_WORLD.key, REST_OF_WORLD.label],
-]);
-
 let countryNames: Intl.DisplayNames | null | undefined;
 
 /** „US" → „Vereinigte Staaten"; der Code selbst, wo der Browser ihn nicht kennt. */
@@ -157,6 +122,13 @@ function capitalized(label: string): string {
 interface Entry {
   row: SecuritySnapshot;
   amount: Money | null;
+}
+
+function sumEntries(entries: readonly Entry[], currency: CurrencyCode): Money {
+  return entries.reduce(
+    (sum, entry) => (entry.amount ? sum.add(entry.amount) : sum),
+    Money.zero(currency),
+  );
 }
 
 /**
@@ -192,7 +164,6 @@ function group(
       amount,
       share: amount.toDecimal().dividedBy(total.toDecimal()).times(HUNDRED),
       positions: list.length,
-      children: [],
     });
   }
   return sortSlices(slices);
@@ -229,14 +200,13 @@ export function collapseSlices(
     ),
     share: rest.reduce((sum, slice) => sum.plus(slice.share), new MoneyDecimal(0)),
     positions: rest.reduce((sum, slice) => sum + slice.positions, 0),
-    children: [],
   };
   return [...keep, other, ...(unknown ? [unknown] : [])];
 }
 
 /**
- * Schluesselt den juengsten Depotstand nach Gattung, Waehrung, Rhythmus,
- * Branche und Region (mit Laendern) auf.
+ * Schluesselt den juengsten Depotstand nach Asset-Typ, Waehrung, Rhythmus,
+ * Branche und Land auf.
  *
  * @param facets Branche, Land und Waehrung je Unternehmen aus den Stammdaten.
  */
@@ -257,29 +227,21 @@ export function analyzePortfolio(
     const raw = measure === "wert" ? row.market_value : row.annual_dividend_total;
     return { row, amount: raw === null ? null : Money.fromString(raw, currency) };
   });
-  const total = entries.reduce(
-    (sum, entry) => (entry.amount ? sum.add(entry.amount) : sum),
-    Money.zero(currency),
-  );
+  const total = sumEntries(entries, currency);
   if (total.isZero()) return { kind: "empty" };
 
   const facetOf = (row: SecuritySnapshot) => facets.get(row.security_id);
-  const regionOf = (row: SecuritySnapshot): string => {
-    const country = normalizedCountry(facetOf(row)?.country);
-    if (country === UNKNOWN_KEY) return UNKNOWN_KEY;
-    return REGION_OF_COUNTRY.get(country)?.key ?? REST_OF_WORLD.key;
-  };
-
-  const regions = group(entries, total, regionOf, (key) => REGION_LABELS.get(key) ?? key);
-  for (const region of regions) {
-    if (region.key === UNKNOWN_KEY) continue;
-    region.children = group(
-      entries.filter((entry) => regionOf(entry.row) === region.key),
-      total,
-      (row) => normalizedCountry(facetOf(row)?.country),
-      countryLabel,
-    );
-  }
+  /**
+   * Rhythmus nur fuer Positionen, die tatsaechlich ausschuetten: „keine
+   * Ausschuettung" und eine fehlende Angabe sind kein Rhythmus. Die Anteile
+   * beziehen sich deshalb auf die Summe dieser Positionen, damit der Ring
+   * aufgeht.
+   */
+  const payers = entries.filter(
+    (entry) =>
+      entry.row.dividend_frequency !== null && entry.row.dividend_frequency !== "none",
+  );
+  const payersTotal = sumEntries(payers, currency);
 
   return {
     kind: "ok",
@@ -300,19 +262,26 @@ export function analyzePortfolio(
         (row) => facetOf(row)?.currency?.trim().toUpperCase() ?? UNKNOWN_KEY,
         (key) => key,
       ),
-      frequencies: group(
-        entries,
-        total,
-        (row) => row.dividend_frequency ?? UNKNOWN_KEY,
-        (key) => capitalized(FREQUENCY_LABELS[key as DividendFrequency]),
-      ),
+      frequencies: payersTotal.isZero()
+        ? []
+        : group(
+            payers,
+            payersTotal,
+            (row) => row.dividend_frequency ?? UNKNOWN_KEY,
+            (key) => capitalized(FREQUENCY_LABELS[key as DividendFrequency]),
+          ),
       sectors: group(
         entries,
         total,
         (row) => facetOf(row)?.sector?.trim() ?? UNKNOWN_KEY,
         (key) => key,
       ),
-      regions,
+      countries: group(
+        entries,
+        total,
+        (row) => normalizedCountry(facetOf(row)?.country),
+        countryLabel,
+      ),
     },
   };
 }

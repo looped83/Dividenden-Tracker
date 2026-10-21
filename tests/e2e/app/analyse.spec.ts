@@ -12,17 +12,16 @@ test("schlüsselt den Depotstand auf und schaltet die Bezugsgröße um", async (
   await seedPortfolio(konto.userId);
   await page.goto("/#/depot/analyse");
 
-  for (const titel of ["Gattung", "Währung", "Rhythmus", "Branche", "Region"]) {
+  for (const titel of ["Asset-Typ", "Währung", "Rhythmus", "Branche", "Land"]) {
     await expect(page.getByRole("heading", { name: titel })).toBeVisible();
   }
-  const region = page.getByRole("list", { name: /Anteile nach Region/ });
-  // Sieben europaeische Positionen mit 20.900 € von 57.300 € Depotwert: 36,5 %.
-  await expect(region.getByText("Europa")).toBeVisible();
-  await expect(region.getByText("36,5 %")).toBeVisible();
-
-  // Die Laender stehen aufklappbar unter ihrer Region.
-  await region.getByText("Europa").click();
-  await expect(region.getByText("Deutschland")).toBeVisible();
+  // Die Laender stehen direkt da: Allianz, Münchener Rück und BASF mit
+  // 11.100 € von 57.300 € Depotwert.
+  const land = page.getByRole("list", { name: /Anteile nach Land/ });
+  await expect(land.getByText("Deutschland")).toBeVisible();
+  await expect(land.getByText("19,4 %")).toBeVisible();
+  // Der Rhythmus kennt nur ausschuettende Positionen.
+  await expect(page.getByText("Keine Ausschüttung")).toHaveCount(0);
 
   await page.getByRole("radio", { name: "Dividende" }).click();
   await expect(page).toHaveURL(/nach=dividende/);

@@ -233,14 +233,14 @@ Gegenüberstellung je Asset. Er lag bis zur
 Umbenennung des Bereichs unter `/#/statistiken/entwicklung`; der alte Pfad leitet dauerhaft
 hierher um.
 
-**`/#/depot/analyse`** — die Aufschlüsselung des jüngsten Stands nach Gattung,
+**`/#/depot/analyse`** — die Aufschlüsselung des jüngsten Stands nach Asset-Typ,
 Ausschüttungswährung und Rhythmus (Ringe, höchstens fünf Stücke, Rest „Sonstige") sowie
-nach Branche und Region mit aufklappbaren Ländern (Rangbalken). Ein Umschalter im
+nach Branche und Land (Rangbalken). Der Rhythmus zeigt nur ausschüttende Positionen;
+seine Anteile beziehen sich auf deren Summe. Ein Umschalter im
 Seitenkopf wählt die Bezugsgröße für alle Abschnitte: Marktwert oder erwartete
 Jahresdividende (`?nach=dividende`). Positionen ohne Betrag zählen nicht mit und werden
 genannt; fehlende Stammdaten stehen als „ohne Angabe" am Ende. Eine Aufteilung nach Depot
-gibt es hier nicht, weil der Export keine Depots kennt — der Bereich verweist auf
-Statistik › Aufteilung.
+gibt es hier nicht, weil der Export keine Depots kennt.
 
 Die Differenz wird als **Zuwachs** gerechnet — erwartet minus erhalten —, nicht als
 Abweichung. „Erwartet p. a." ist kein Ziel, das verfehlt werden könnte, sondern die

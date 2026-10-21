@@ -251,7 +251,7 @@ Die Unterbereiche **Entwicklung** und **Analyse** setzen auf den Depotständen a
 allein auf den erhaltenen Zahlungen (docs/PORTFOLIO_IMPORT.md). Er beantwortet eine Frage:
 *Wächst mein passives Einkommen?* Dafür stellt er die erwartete Jahresdividende dem
 gegenüber, was tatsächlich hereinkam — je Stichtag als Verlauf, je gehaltenem Asset als
-Tabelle. Die Aufteilung des Depots (Gattung, Währung, Rhythmus, Branche, Region) steht seit
+Tabelle. Die Aufteilung des Depots (Asset-Typ, Währung, Rhythmus, Branche, Land) steht seit
 1.41.0 im eigenen Unterbereich **Analyse**. Die Tabelle führt nur, was im
 jüngsten Stand liegt: Ein verkauftes Papier hat auf die Frage nach der Ertragskraft des
 heutigen Depots keine Antwort mehr; was es beigetragen hat, steht in der Historie.

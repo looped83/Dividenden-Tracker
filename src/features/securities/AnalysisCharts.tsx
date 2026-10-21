@@ -1,4 +1,3 @@
-import { ChevronDown } from "lucide-react";
 import { formatMoney, formatPercent } from "@/lib/money";
 import { DonutChart } from "@/features/statistics/components/charts";
 import { formatCountNoun } from "@/lib/utils/formatNumber";
@@ -13,7 +12,7 @@ function NoData() {
 }
 
 /**
- * Ring fuer Aufteilungen mit **wenigen festen** Kategorien (Gattung, Waehrung,
+ * Ring fuer Aufteilungen mit **wenigen festen** Kategorien (Asset-Typ, Waehrung,
  * Rhythmus): hoechstens fuenf Stuecke, der Rest wird „Sonstige" — mehr
  * Abstufungen einer Farbe kann niemand auseinanderhalten.
  */
@@ -41,25 +40,11 @@ export function AllocationRing({
   );
 }
 
-function BarRow({
-  slice,
-  expandable = false,
-}: {
-  slice: AnalysisSlice;
-  expandable?: boolean;
-}) {
+function BarRow({ slice }: { slice: AnalysisSlice }) {
   return (
     <>
       <div className="flex items-baseline justify-between gap-2">
-        <span className="flex min-w-0 items-center gap-1 font-medium">
-          <span className="truncate">{slice.label}</span>
-          {expandable && (
-            <ChevronDown
-              aria-hidden
-              className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
-            />
-          )}
-        </span>
+        <span className="min-w-0 truncate font-medium">{slice.label}</span>
         <span className="shrink-0 font-semibold tabular-nums">
           {formatPercent(slice.share, 1)}
         </span>
@@ -84,11 +69,8 @@ function BarRow({
 
 /**
  * Rangbalken fuer Aufteilungen mit **vielen offenen** Kategorien (Branche,
- * Region): dieselbe Form wie die Rangbalken der Uebersicht und Statistik —
+ * Land): dieselbe Form wie die Rangbalken der Uebersicht und Statistik —
  * Zeilen mit Haarlinie, schmaler Balken in Vordergrundfarbe.
- *
- * Traegt eine Zeile Unterteilungen (Laender einer Region), klappt sie als
- * natives `<details>` auf: tastaturbedienbar, ohne eigenen Zustand.
  */
 export function AllocationBars({
   slices,
@@ -103,22 +85,7 @@ export function AllocationBars({
     <ul className="divide-y divide-border" aria-label={ariaLabel}>
       {slices.map((slice) => (
         <li key={slice.key || "unknown"} className="py-3">
-          {slice.children.length > 0 ? (
-            <details className="group">
-              <summary className="cursor-pointer list-none rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
-                <BarRow slice={slice} expandable />
-              </summary>
-              <ul className="mt-3 space-y-3 border-l border-border pl-4">
-                {slice.children.map((child) => (
-                  <li key={child.key} className="text-sm">
-                    <BarRow slice={child} />
-                  </li>
-                ))}
-              </ul>
-            </details>
-          ) : (
-            <BarRow slice={slice} />
-          )}
+          <BarRow slice={slice} />
         </li>
       ))}
     </ul>
