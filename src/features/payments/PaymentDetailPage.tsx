@@ -36,7 +36,10 @@ import {
   derivePaymentInsights,
   percentChange,
 } from "@/features/payments/paymentInsights";
-import { PaymentInsightsView } from "@/features/payments/PaymentInsightsView";
+import {
+  PaymentInsightsView,
+  PaymentKpiHero,
+} from "@/features/payments/PaymentInsightsView";
 
 /**
  * Dezimalwert ohne bedeutungslose Nullen, mit mindestens `minDigits`
@@ -305,30 +308,28 @@ export function PaymentDetailPage() {
             </span>
           </>
         }
-        figure={
-          <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <AmountText amount={Money.fromString(payment.net_amount, currency)} />
-            {/* Der Vorjahresvergleich der Liste, hier ausgeschrieben. */}
-            {/* Eigene Laufweite: Die grosse Zahl ist enger gesetzt. Nur bei
-                monatlichen Zahlern — sonst steht der Vorjahresvergleich schon
-                in der ersten Kachel. */}
-            {yearAgo && insights?.monthly && (
-              <span className="tracking-normal">
-                <TrendPill
-                  tone={
-                    yearAgo.direction === "up"
-                      ? "positive"
-                      : yearAgo.direction === "down"
-                        ? "negative"
-                        : "neutral"
-                  }
-                  title={`gegenüber ${formatCalendarDate(yearAgo.previousDate)}`}
-                >
-                  {percentChange(yearAgo.difference, yearAgo.previousAmount)} zum Vorjahr
-                </TrendPill>
-              </span>
-            )}
-          </span>
+      />
+
+      <PaymentKpiHero
+        insights={insights}
+        value={<AmountText amount={Money.fromString(payment.net_amount, currency)} />}
+        // Der Vorjahresvergleich der Liste, hier ausgeschrieben. Nur bei
+        // monatlichen Zahlern — sonst steht er schon in der ersten Kachel.
+        trend={
+          yearAgo && insights?.monthly ? (
+            <TrendPill
+              tone={
+                yearAgo.direction === "up"
+                  ? "positive"
+                  : yearAgo.direction === "down"
+                    ? "negative"
+                    : "neutral"
+              }
+              title={`gegenüber ${formatCalendarDate(yearAgo.previousDate)}`}
+            >
+              {percentChange(yearAgo.difference, yearAgo.previousAmount)} zum Vorjahr
+            </TrendPill>
+          ) : undefined
         }
       />
 

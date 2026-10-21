@@ -64,7 +64,8 @@ export function KpiHero({
   statsFooter,
   className,
 }: {
-  label: ReactNode;
+  /** Entfaellt, wo der Seitenkopf schon sagt, was die Zahl ist (Dividende). */
+  label?: ReactNode;
   value: ReactNode;
   /** Vergleich neben der Hauptzahl ({@link TrendPill}). */
   trend?: ReactNode;
@@ -93,7 +94,9 @@ export function KpiHero({
     <section className={cn("@container", className)}>
       <div className={cn("flex flex-col gap-5", hasStats && sideBySide)}>
         <div className="relative space-y-2">
-          <p className="text-[0.9375rem] font-medium text-muted-foreground">{label}</p>
+          {label !== undefined && (
+            <p className="text-[0.9375rem] font-medium text-muted-foreground">{label}</p>
+          )}
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-2">
             {to !== undefined ? (
               <Link
