@@ -1,5 +1,5 @@
 import * as React from "react";
-import { KpiStats, type KpiStat } from "@/components/domain/KpiHero";
+import { KpiHero, KpiStats, type KpiStat } from "@/components/domain/KpiHero";
 import { Section, SectionLink } from "@/components/ui/section";
 import { SegmentedControl, type SegmentOption } from "@/components/ui/segmented";
 import { TrendTriangle } from "@/components/ui/trend-triangle";
@@ -41,6 +41,65 @@ export function DeltaText({ delta }: { delta: Delta }) {
   );
 }
 
+/**
+ * Kopf einer Dividende: Betrag links, Vergleichsleiste rechts — dasselbe
+ * {@link KpiHero} wie auf der Asset-Detailseite und den Uebersichten (seit
+ * 1.43.0). Zuvor zog sich die Leiste auf dem Desktop unter dem Betrag ueber
+ * die ganze Breite.
+ */
+export function PaymentKpiHero({
+  insights,
+  value,
+  trend,
+}: {
+  insights: PaymentInsights | null;
+  value: React.ReactNode;
+  trend?: React.ReactNode;
+}) {
+  const stats: KpiStat[] = [];
+  if (insights) {
+    const { previous, yearAgo, trailingAverage } = insights;
+    // Erste Kachel je nach Rhythmus (Ausschuettungsplan des Assets): monatlich
+    // die vorherige Dividende, sonst dieselbe Dividende ein Jahr zuvor.
+    if (insights.monthly) {
+      if (previous) {
+        stats.push({
+          label: "Vorherige",
+          value: <AmountText amount={previous.reference} />,
+          caption: <DeltaText delta={previous} />,
+        });
+      }
+    } else if (yearAgo) {
+      stats.push({
+        label: "Vorjahr",
+        value: <AmountText amount={yearAgo.previousAmount} />,
+        caption: <DeltaText delta={delta(yearAgo.difference, yearAgo.previousAmount)} />,
+      });
+    }
+    if (trailingAverage) {
+      stats.push({
+        label: "Ø 12 Monate",
+        value: <AmountText amount={trailingAverage.reference} />,
+        caption: <DeltaText delta={trailingAverage} />,
+      });
+    }
+    if (insights.count > 1) {
+      stats.push({
+        label: "Rang",
+        value: `${formatCountNumber(insights.rank)}. von ${formatCountNumber(insights.count)}`,
+        caption:
+          insights.rank === 1
+            ? "Höchste bisher"
+            : insights.rank === insights.count
+              ? "Niedrigste bisher"
+              : "nach Betrag",
+      });
+    }
+  }
+
+  return <KpiHero value={value} trend={trend} stats={stats} />;
+}
+
 type HistoryView = "monthly" | "cumulative";
 
 // Die einzelnen Dividenden zuerst und vorausgewaehlt, die Summe danach.
@@ -70,45 +129,7 @@ export function PaymentInsightsView({
   securityId: string;
   securityName: string;
 }) {
-  const { previous, yearAgo, trailingAverage, history } = insights;
-
-  const stats: KpiStat[] = [];
-  // Erste Kachel je nach Rhythmus (Ausschuettungsplan des Assets): monatlich
-  // die vorherige Dividende, sonst dieselbe Dividende ein Jahr zuvor.
-  if (insights.monthly) {
-    if (previous) {
-      stats.push({
-        label: "Vorherige",
-        value: <AmountText amount={previous.reference} />,
-        caption: <DeltaText delta={previous} />,
-      });
-    }
-  } else if (yearAgo) {
-    stats.push({
-      label: "Vorjahr",
-      value: <AmountText amount={yearAgo.previousAmount} />,
-      caption: <DeltaText delta={delta(yearAgo.difference, yearAgo.previousAmount)} />,
-    });
-  }
-  if (trailingAverage) {
-    stats.push({
-      label: "Ø 12 Monate",
-      value: <AmountText amount={trailingAverage.reference} />,
-      caption: <DeltaText delta={trailingAverage} />,
-    });
-  }
-  if (insights.count > 1) {
-    stats.push({
-      label: "Rang",
-      value: `${formatCountNumber(insights.rank)}. von ${formatCountNumber(insights.count)}`,
-      caption:
-        insights.rank === 1
-          ? "Höchste bisher"
-          : insights.rank === insights.count
-            ? "Niedrigste bisher"
-            : "nach Betrag",
-    });
-  }
+  const { history } = insights;
 
   const [view, setView] = React.useState<HistoryView>("monthly");
   const { historyTotals } = insights;
@@ -160,8 +181,6 @@ export function PaymentInsightsView({
 
   return (
     <>
-      {stats.length > 0 && <KpiStats stats={stats} />}
-
       <div className="grid grid-cols-1 gap-10 pt-4 lg:grid-cols-2 lg:gap-x-16">
         {chartData.length > 1 && (
           <Section

@@ -32,8 +32,8 @@ export function DetailBackLink({
  * unter dem Titel oder als Schaltflaeche neben der Ueberschrift.
  *
  * Aufbau: Rueckweg links und Symbolaktionen rechts in einer Zeile, darunter
- * Titel samt Zustand, eine Zeile Zusatzangaben und — wo es eine gibt — die
- * Kennzahl des Datensatzes in Kennzahlgroesse. Die Aktionen stehen oben: Unter
+ * Titel samt Zustand und eine Zeile Zusatzangaben. Die Kennzahl des Datensatzes
+ * steht darunter als `KpiHero` (seit 1.43.0). Die Aktionen stehen oben: Unter
  * dem Titel rutschten sie auf dem Telefon in eine eigene Zeile, und der Titel
  * musste sich den Platz mit ihnen teilen.
  */
@@ -44,7 +44,6 @@ export function DetailHeader({
   title,
   badge,
   subtitle,
-  figure,
 }: {
   back: React.ReactNode;
   /** Symbolschaltflaechen (`size="icon"`, mit `aria-label`). */
@@ -55,8 +54,6 @@ export function DetailHeader({
   /** Zustand neben dem Titel — nur der Sonderfall (storniert, archiviert). */
   badge?: React.ReactNode;
   subtitle?: React.ReactNode;
-  /** Die Kernaussage des Datensatzes, etwa der Betrag einer Zahlung. */
-  figure?: React.ReactNode;
 }) {
   return (
     <div className="space-y-3">
@@ -76,11 +73,6 @@ export function DetailHeader({
           {subtitle !== undefined && (
             <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
               {subtitle}
-            </div>
-          )}
-          {figure !== undefined && (
-            <div className="mt-3 text-[2.5rem] font-bold leading-[1.05] tracking-[-0.035em] tabular-amount">
-              {figure}
             </div>
           )}
         </div>
