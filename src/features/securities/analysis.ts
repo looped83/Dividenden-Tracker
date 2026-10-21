@@ -67,7 +67,7 @@ export const UNKNOWN_KEY = "";
 export const OTHER_KEY = "__other";
 
 /** Hoechstens so viele Ringstuecke; der Rest wird „Sonstige". */
-export const RING_SLICES = 5;
+const RING_SLICES = 5;
 
 const HUNDRED = new MoneyDecimal(100);
 
