@@ -7,6 +7,9 @@ import {
   type BarShapeProps,
   Line,
   LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
@@ -38,7 +41,12 @@ import {
   CHART_X_AXIS_PROPS,
   CHART_Y_AXIS_PROPS,
 } from "@/components/charts/chartTheme";
-import { formatMoney, type Money } from "@/lib/money";
+import {
+  formatMoney,
+  formatPercent,
+  type DecimalInstance,
+  type Money,
+} from "@/lib/money";
 import { formatPayments } from "../format";
 import { formatCountNumber } from "@/lib/utils/formatNumber";
 
@@ -369,5 +377,138 @@ function ComparisonTooltip({
         {referenceLabel}: {formatMoney(row.referenceMoney)}
       </p>
     </ChartTooltipBox>
+  );
+}
+
+// ============================================================================
+// Anteile am Ganzen (Ring)
+// ============================================================================
+
+/** Ein Stueck des Rings; Anteile sind vorab gerechnet. */
+export interface DonutSlice {
+  key: string;
+  label: string;
+  money: Money;
+  /** Anteil in Prozentpunkten. */
+  share: DecimalInstance;
+  /** Positionen hinter dem Stueck (Tooltip). */
+  count: number;
+  /** Grau statt Orange: „Sonstige", „ohne Angabe". */
+  neutral?: boolean;
+  /** Heller grau: „ohne Angabe". */
+  faint?: boolean;
+}
+
+/**
+ * Abstufungen der Akzentfarbe, groesster Anteil zuerst.
+ *
+ * **Eine Farbe statt einer bunten Palette:** Die App ist sonst einfarbig
+ * (Vordergrund, Orange als Akzent, Grau fuer die Referenz). Die Stufen sind das
+ * Orange mit abnehmender Deckkraft: Es scheint der jeweilige Grund durch, hell
+ * wie dunkel bleibt der Ton derselbe (eine Mischung im OKLCH-Raum mit dem
+ * Kachelgrund kippte ins Rosa).
+ */
+const DONUT_TONES = [100, 72, 50, 32] as const;
+
+function donutColor(slice: DonutSlice, index: number): string {
+  if (slice.faint) return "color-mix(in srgb, var(--series-prior) 45%, transparent)";
+  if (slice.neutral) return "var(--series-prior)";
+  const tone = DONUT_TONES[Math.min(index, DONUT_TONES.length - 1)];
+  return `color-mix(in srgb, var(--primary) ${String(tone)}%, transparent)`;
+}
+
+interface DonutDatum {
+  key: string;
+  value: number;
+  /** Recharts liest die Farbe eines Stuecks aus `fill` seines Datensatzes. */
+  fill: string;
+  slice: DonutSlice;
+}
+
+function DonutTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: { payload: DonutDatum }[];
+}) {
+  if (!active || !payload || payload.length === 0) return null;
+  const { slice } = payload[0].payload;
+  return (
+    <ChartTooltipBox>
+      <p className="font-medium">{slice.label}</p>
+      <p>
+        {formatMoney(slice.money)} · {formatPercent(slice.share, 1)}
+      </p>
+      <p className="text-muted-foreground">
+        {formatCountNumber(slice.count)} {slice.count === 1 ? "Position" : "Positionen"}
+      </p>
+    </ChartTooltipBox>
+  );
+}
+
+/**
+ * Ring „Anteil am Ganzen" mit Legende daneben (Bestand › Analyse).
+ *
+ * Die Legende traegt Name und Anteil als Text — Farbe allein unterscheidet
+ * nichts (WCAG 1.4.1) —, der Ring ist fuer Hilfsmittel ein Bild mit
+ * Beschreibung. Steht hier bei den uebrigen Diagrammen, damit Recharts in
+ * **einem** nachgeladenen Teil bleibt.
+ */
+export function DonutChart({
+  slices,
+  ariaLabel,
+}: {
+  slices: readonly DonutSlice[];
+  ariaLabel: string;
+}) {
+  const data: DonutDatum[] = slices.map((slice, index) => ({
+    key: slice.key,
+    value: slice.money.toChartNumber(),
+    fill: donutColor(slice, index),
+    slice,
+  }));
+
+  return (
+    <div className="flex items-center gap-5 md:gap-4 lg:gap-5">
+      <div
+        className="size-32 shrink-0 md:size-28 lg:size-32"
+        role="img"
+        aria-label={ariaLabel}
+      >
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={data}
+              dataKey="value"
+              nameKey="key"
+              innerRadius="64%"
+              outerRadius="100%"
+              startAngle={90}
+              endAngle={-270}
+              stroke="var(--card)"
+              strokeWidth={2}
+              {...CHART_SERIES_PROPS}
+            />
+            <Tooltip content={<DonutTooltip />} />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+      <ul className="min-w-0 flex-1 space-y-2 text-sm">
+        {data.map(({ key, slice, fill }) => (
+          <li key={key} className="flex items-center gap-2">
+            <span
+              aria-hidden
+              className="size-2.5 shrink-0 rounded-full"
+              style={{ backgroundColor: fill }}
+            />
+            <span className="min-w-0 flex-1 leading-tight">{slice.label}</span>
+            <span className="ml-1 shrink-0 font-semibold tabular-nums">
+              {formatPercent(slice.share, 1)}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

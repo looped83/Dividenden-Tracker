@@ -53,6 +53,9 @@ const SecuritiesPage = React.lazy(async () => ({
 const DevelopmentTab = React.lazy(async () => ({
   default: (await routeChunks.depotDevelopment()).DevelopmentTab,
 }));
+const AnalysisTab = React.lazy(async () => ({
+  default: (await routeChunks.depotAnalysis()).AnalysisTab,
+}));
 const SecurityDetailPage = React.lazy(async () => ({
   default: (await import("@/features/securities/SecurityDetailPage")).SecurityDetailPage,
 }));
@@ -172,12 +175,13 @@ export const router = createHashRouter([
         children: [
           { index: true, element: <SecuritiesPage /> },
           { path: "entwicklung", element: <DevelopmentTab /> },
+          { path: "analyse", element: <AnalysisTab /> },
         ],
       },
       // Die Detailseite steht **neben** der Reiterhuelle, nicht in ihr: Sie
       // zeigt eine einzelne Position, und Reiter darueber gehoerten zu einer
       // Ebene, die sie verlassen hat. Der statische Reiterpfad rankt vor dem
-      // dynamischen Segment; ein Asset mit der Kennung „entwicklung" gibt es
+      // dynamischen Segment; ein Asset mit der Kennung „entwicklung" oder „analyse" gibt es
       // nicht (UUIDs).
       { path: "depot/:id", element: <SecurityDetailPage /> },
       {

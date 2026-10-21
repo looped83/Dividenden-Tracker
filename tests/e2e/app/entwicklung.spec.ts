@@ -65,9 +65,11 @@ test("setzt zwei Depotstände zu einem Verlauf zusammen", async ({ page }) => {
     }),
   ).toBeVisible();
 
-  // Die Aufteilung nennt fehlende Angaben, statt sie zu verschweigen: Der ETF
-  // hat beim Import kein „mixed" als Branche bekommen.
-  await expect(page.getByText("Aufteilung nach Branche")).toBeVisible();
+  // Die Aufteilung (seit 1.41.0 unter Analyse) nennt fehlende Angaben, statt
+  // sie zu verschweigen: Der ETF hat beim Import kein „mixed" als Branche
+  // bekommen.
+  await page.getByRole("link", { name: "Analyse" }).click();
+  await expect(page.getByRole("heading", { name: "Branche" })).toBeVisible();
   await expect(page.getByText("ohne Angabe").first()).toBeVisible();
 });
 
@@ -90,9 +92,6 @@ test("zeigt bei gewähltem Asset dessen Erwartung, nicht die des Depots", async 
   // Summe eines einzelnen Papiers.
   await expect(page.getByText("40,00 €").first()).toBeVisible();
   await expect(page.getByText("50,00 €")).toHaveCount(0);
-
-  // Die Aufteilung entfaellt: eine Branche, ein Land, jeweils 100 %.
-  await expect(page.getByText("Aufteilung nach Branche")).toHaveCount(0);
 
   // Ein Depotkontofilter in der Adresse bleibt wirkungslos, statt nur die erhaltene
   // Haelfte des Vergleichs zu treffen.

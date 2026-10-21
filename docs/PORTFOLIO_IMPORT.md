@@ -229,10 +229,18 @@ zwangsläufig zu hoch aussehen.
 **`/#/depot/entwicklung`** — der Unterbereich, der aus den Ständen eine Zeitreihe
 macht: der Kennzahlkopf (erwartet p. a. als Hauptzahl, der Zuwachs als Marke daneben,
 darunter erhalten in den zwölf Monaten bis zum Stichtag und Rendite auf den Einstand), der Verlauf beider Größen über die Stichtage, die
-Gegenüberstellung je Asset und die Aufteilung nach Branche und Land — jede Aufteilung nur, wenn
-der Stand für sie Angaben trägt; „ohne Angabe 100 %" ist keine Aussage. Er lag bis zur
+Gegenüberstellung je Asset. Er lag bis zur
 Umbenennung des Bereichs unter `/#/statistiken/entwicklung`; der alte Pfad leitet dauerhaft
 hierher um.
+
+**`/#/depot/analyse`** — die Aufschlüsselung des jüngsten Stands nach Gattung,
+Ausschüttungswährung und Rhythmus (Ringe, höchstens fünf Stücke, Rest „Sonstige") sowie
+nach Branche und Region mit aufklappbaren Ländern (Rangbalken). Ein Umschalter im
+Seitenkopf wählt die Bezugsgröße für alle Abschnitte: Marktwert oder erwartete
+Jahresdividende (`?nach=dividende`). Positionen ohne Betrag zählen nicht mit und werden
+genannt; fehlende Stammdaten stehen als „ohne Angabe" am Ende. Eine Aufteilung nach Depot
+gibt es hier nicht, weil der Export keine Depots kennt — der Bereich verweist auf
+Statistik › Aufteilung.
 
 Die Differenz wird als **Zuwachs** gerechnet — erwartet minus erhalten —, nicht als
 Abweichung. „Erwartet p. a." ist kein Ziel, das verfehlt werden könnte, sondern die

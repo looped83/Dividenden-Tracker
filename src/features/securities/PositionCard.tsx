@@ -7,16 +7,7 @@ import { AmountText } from "@/components/money/AmountText";
 import { Money, formatPercent, toCurrencyCode } from "@/lib/money";
 import { formatCalendarDate } from "@/lib/utils/formatDate";
 import { ratioToPercent, type SnapshotStatus } from "@/features/securities/snapshots";
-import type { DividendFrequency } from "@/lib/supabase/database.types";
-
-const FREQUENCY_LABELS: Readonly<Record<DividendFrequency, string>> = {
-  none: "keine Ausschüttung",
-  monthly: "monatlich",
-  quarterly: "vierteljährlich",
-  biannually: "halbjährlich",
-  annually: "jährlich",
-  irregular: "unregelmäßig",
-};
+import { FREQUENCY_LABELS } from "@/features/securities/analysis";
 
 /**
  * Der Depotstand eines Unternehmens (docs/PORTFOLIO_IMPORT.md).
