@@ -10,14 +10,7 @@ import { AmountText } from "@/components/money/AmountText";
 import { EntitySelect, type EntityOption } from "@/components/domain/EntitySelect";
 import { MD_BREAKPOINT_QUERY, useMediaQuery } from "@/lib/hooks/useMediaQuery";
 import { DepotHeaderActions } from "./DepotHeaderActions";
-import {
-  EUR,
-  Money,
-  MoneyDecimal,
-  formatMoney,
-  formatPercent,
-  type DecimalInstance,
-} from "@/lib/money";
+import { Money, MoneyDecimal, formatPercent, type DecimalInstance } from "@/lib/money";
 import {
   aggregateInRange,
   filterPayments,
@@ -31,11 +24,7 @@ import { compareGerman } from "@/lib/utils/compareText";
 import type { EntityInfo } from "@/features/dashboard/format";
 import { useStatisticsData, useStatisticsFilter } from "@/features/statistics/hooks";
 import { EMPTY_STATISTICS_FILTER } from "@/features/statistics/filterParams";
-import {
-  entityArchived,
-  entityName,
-  formatCountNumber,
-} from "@/features/statistics/format";
+import { entityArchived, entityName } from "@/features/statistics/format";
 import {
   ComparisonLineChart,
   type ComparisonPoint,
@@ -45,11 +34,7 @@ import {
   StatTable,
   type StatColumn,
 } from "@/features/statistics/components/StatTable";
-import type {
-  AllocationBucket,
-  PortfolioPoint,
-  PortfolioSeries,
-} from "@/features/securities/snapshots";
+import type { PortfolioPoint, PortfolioSeries } from "@/features/securities/snapshots";
 
 /** Eine Zeile der Gegenueberstellung je Asset. */
 interface AssetRow {
@@ -547,113 +532,6 @@ export function DevelopmentView({
           />
         </div>
       </Section>
-
-      {/* Bei einem einzelnen Asset saehe die Aufteilung immer gleich aus:
-          eine Branche, ein Land, jeweils 100 %. Eine Aussage, die aus der
-          Auswahl folgt statt aus den Daten, ist keine. */}
-      {filter.securityId === null &&
-        // Traegt der Depotstand weder Branche noch Land, bestuende jede Karte
-        // aus einem einzigen Balken „ohne Angabe" zu 100 % — zwei Karten ohne
-        // Aussage. Dann steht dort ein Satz.
-        (hasKnownKey(portfolio.bySector) || hasKnownKey(portfolio.byCountry) ? (
-          <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-            {/* Jede Aufteilung fuer sich nur, wenn sie etwas sagt: Nennt der
-                Stand Laender, aber keine Branchen, stand sonst „ohne Angabe
-                100 %" als eigene Karte neben der des Landes. */}
-            {hasKnownKey(portfolio.bySector) && (
-              <AllocationCard
-                title="Aufteilung nach Branche"
-                buckets={portfolio.bySector}
-                total={latest.marketValue}
-              />
-            )}
-            {hasKnownKey(portfolio.byCountry) && (
-              <AllocationCard
-                title="Aufteilung nach Land"
-                buckets={portfolio.byCountry}
-                total={latest.marketValue}
-              />
-            )}
-          </div>
-        ) : (
-          <p className="px-1 text-sm text-muted-foreground">
-            Der Depotstand nennt weder Branche noch Land — eine Aufteilung danach
-            entfällt.
-          </p>
-        ))}
     </div>
-  );
-}
-
-/** Gibt es mindestens eine Angabe ausser „ohne Angabe" (leerer Schluessel)? */
-function hasKnownKey(buckets: readonly AllocationBucket[]): boolean {
-  return buckets.some((bucket) => bucket.key !== "");
-}
-
-/**
- * Anteile am Depot mit ihrem Beitrag zur erwarteten Jahresdividende.
- *
- * Zwei Zahlen je Zeile, weil sie auseinanderfallen koennen und genau das
- * interessant ist: Eine Branche kann ein Fuenftel des Depotwerts stellen und ein
- * Drittel der erwarteten Ausschuettung — oder umgekehrt.
- */
-function AllocationCard({
-  title,
-  buckets,
-  total,
-}: {
-  title: string;
-  buckets: readonly AllocationBucket[];
-  total: Money | null;
-}) {
-  const totalValue = total ?? Money.zero(EUR);
-
-  return (
-    <Section title={title}>
-      <div>
-        {buckets.length === 0 ? (
-          <p className="py-6 text-sm text-muted-foreground">
-            Keine Angaben im aktuellen Depotstand.
-          </p>
-        ) : (
-          // Dieselbe Form wie die Rangbalken der Uebersicht und Statistik:
-          // Zeilen mit Haarlinie, schmaler Balken in Vordergrundfarbe.
-          <ul className="divide-y divide-border">
-            {buckets.map((bucket) => {
-              const share = totalValue.isZero()
-                ? null
-                : bucket.marketValue
-                    .toDecimal()
-                    .dividedBy(totalValue.toDecimal())
-                    .times(HUNDRED);
-              return (
-                <li key={bucket.key || "unknown"} className="py-3">
-                  <div className="flex items-baseline justify-between gap-2">
-                    <span className="min-w-0 truncate font-medium">{bucket.label}</span>
-                    <span className="shrink-0 font-semibold tabular-nums">
-                      {share ? formatPercent(share, 1) : "—"}
-                    </span>
-                  </div>
-                  <div className="mt-2 h-[3px] rounded-full bg-border" aria-hidden>
-                    <div
-                      className="h-full rounded-full bg-foreground"
-                      style={{
-                        width: `${String(share ? Math.max(1, share.toNumber()) : 0)}%`,
-                      }}
-                    />
-                  </div>
-                  <p className="mt-1.5 text-[0.8125rem] text-muted-foreground">
-                    {formatMoney(bucket.marketValue)} ·{" "}
-                    {formatMoney(bucket.annualDividend)} erwartet ·{" "}
-                    {formatCountNumber(bucket.positions)}{" "}
-                    {bucket.positions === 1 ? "Position" : "Positionen"}
-                  </p>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
-    </Section>
   );
 }

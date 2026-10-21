@@ -108,7 +108,8 @@ export const BOTTOM_NAV_MORE_ITEMS: readonly NavItem[] = [
  *
  * **Assets** fuehrt die Stammdaten aller gehaltenen und ehemaligen Papiere,
  * **Entwicklung** stellt der erwarteten Jahresausschuettung des heutigen
- * Bestands gegenueber, was tatsaechlich hereinkam. Die Entwicklung stand
+ * Bestands gegenueber, was tatsaechlich hereinkam, **Analyse** schluesselt den
+ * juengsten Depotstand nach Gattung, Waehrung, Rhythmus, Branche und Region auf. Die Entwicklung stand
  * frueher in der Statistik; sie ist als einziger Unterbereich dort auf den
  * Depotstaenden aufgebaut statt auf den erfassten Zahlungen
  * (docs/PORTFOLIO_IMPORT.md) und gehoert damit hierher. Ihr alter Pfad leitet
@@ -117,6 +118,7 @@ export const BOTTOM_NAV_MORE_ITEMS: readonly NavItem[] = [
 export const DEPOT_TABS: readonly { to: string; label: string; end?: boolean }[] = [
   { to: "/depot", label: "Assets", end: true },
   { to: "/depot/entwicklung", label: "Entwicklung" },
+  { to: "/depot/analyse", label: "Analyse" },
 ];
 
 /**
