@@ -878,6 +878,37 @@ für die nächsten bis zu 30 Tage (CALCULATION_RULES.md §9.7).
 
 ---
 
+## ADR-006: Prognose und Dividenden-Schneeball im Bestand
+
+**Status:** Accepted  
+**Scope:** Produkt, Berechnung, Datenmodell
+
+### Decision
+
+Ab 1.44.0 zeigt Bestand › Prognose die geschätzte Nettodividende der nächsten zwölf Monate
+(angekündigt und geschätzt getrennt) und eine Hochrechnung, ab wann Dividenden ein Monatsziel
+tragen (CALCULATION_RULES.md §14). Gespeichert werden nur die Annahmen, als `jsonb` am Profil
+(Migration 0034), nie ein Ergebnis.
+
+### Why
+
+Die App beantwortete bisher nur „was kam an". Für eine langfristige Dividendenstrategie fehlte
+der Blick nach vorn. Die Daten dafür lagen schon vor (Depotstand, Kalender, Zahlungen).
+
+### Trade-offs
+
+- Netto über die eigene Quote statt über Steuerregeln: einfach und realistisch, aber eine
+  Änderung des Freistellungsauftrags wirkt erst mit den nächsten Zahlungen.
+- Annahmen am Profil statt in einer eigenen Tabelle: keine weiteren Policies; sie sind nicht Teil
+  der Datensicherung (wie Theme und Erinnerung) und schnell neu gesetzt.
+- Recharts-Teil wächst um Fläche und Bezugslinie (Budget 115 kB, nun 114,1 kB).
+
+### Revisit When
+
+- Mehrere Währungen im Depotstand, oder der Diagrammteil sprengt das Budget.
+
+---
+
 # Superseded Decisions
 
 Move replaced decisions here instead of deleting them.
