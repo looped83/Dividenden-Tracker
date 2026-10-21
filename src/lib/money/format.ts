@@ -48,6 +48,27 @@ export function formatMoney(money: Money, locale = "de-DE"): string {
 }
 
 /**
+ * Betrag auf volle Einheiten gerundet (R-1, kaufmaennisch), ohne
+ * Nachkommastellen — fuer Hochrechnungen ueber Jahre, bei denen Cent eine
+ * Genauigkeit vortaeuschten, die es nicht gibt (Bestand › Prognose).
+ */
+export function formatMoneyWhole(money: Money, locale = "de-DE"): string {
+  const formatter = numberFormat(
+    `money-whole|${locale}|${money.currency}`,
+    () =>
+      new Intl.NumberFormat(locale, {
+        style: "currency",
+        currency: money.currency,
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      }),
+  );
+  return formatter.format(
+    roundHalfUp(money.toDecimal(), 0).toFixed(0) as unknown as number,
+  );
+}
+
+/**
  * Betrag ohne Waehrungszeichen: „1.234,56". Fuer dichte Tabellen, in denen
  * die Waehrung einmal fuer alle Zellen genannt wird — wie an den
  * Diagrammachsen (UX_AND_DESIGN_SYSTEM.md §3). Sonst immer `formatMoney`.

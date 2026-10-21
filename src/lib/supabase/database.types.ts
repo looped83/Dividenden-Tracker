@@ -60,6 +60,7 @@ export interface Database {
           theme: "light" | "dark" | "system";
           backup_reminder_days: number;
           last_backup_at: string | null;
+          forecast_settings: Json | null;
           created_at: string;
           updated_at: string;
         };
@@ -70,6 +71,7 @@ export interface Database {
           theme: "light" | "dark" | "system";
           backup_reminder_days: number;
           last_backup_at: string | null;
+          forecast_settings: Json | null;
         }>;
         Relationships: [];
       };

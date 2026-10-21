@@ -1,14 +1,17 @@
 import { Link, useNavigate } from "react-router";
 import {
+  Area,
   Bar,
   BarChart,
   CartesianGrid,
+  ComposedChart,
   Rectangle,
   type BarShapeProps,
   Line,
   LineChart,
   Pie,
   PieChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -43,6 +46,7 @@ import {
 } from "@/components/charts/chartTheme";
 import {
   formatMoney,
+  formatMoneyWhole,
   formatPercent,
   type DecimalInstance,
   type Money,
@@ -509,6 +513,299 @@ export function DonutChart({
           </li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+// ============================================================================
+// Prognose der naechsten zwoelf Monate (Bestand › Prognose)
+// ============================================================================
+
+/** Ein Monat der Prognose; Betraege vorab gerechnet (features/securities/forecast.ts). */
+export interface ForecastBarDatum {
+  key: string;
+  /** Achse: „Nov". */
+  label: string;
+  /** Tooltip und Tabelle: „November 2026". */
+  detail: string;
+  announced: number;
+  estimated: number;
+  announcedMoney: Money;
+  estimatedMoney: Money;
+  totalMoney: Money;
+  /** Groesste Zahler des Monats fuer den Tooltip. */
+  top: readonly { name: string; money: Money; announced: boolean }[];
+}
+
+/** Geschaetzt in der Akzentfarbe, aber heller: dieselbe Reihe, weniger sicher. */
+const FORECAST_ESTIMATED_FILL = "color-mix(in srgb, var(--primary) 38%, transparent)";
+
+function ForecastTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: { payload: ForecastBarDatum }[];
+}) {
+  if (!active || !payload || payload.length === 0) return null;
+  const row = payload[0].payload;
+  return (
+    <ChartTooltipBox>
+      <p className="font-medium">{row.detail}</p>
+      <p>{formatMoney(row.totalMoney)}</p>
+      {row.top.length > 0 && (
+        <ul className="mt-1 space-y-0.5 text-muted-foreground">
+          {row.top.map((item) => (
+            <li key={item.name} className="flex justify-between gap-4">
+              <span className="truncate">
+                {item.name}
+                {item.announced && " ✓"}
+              </span>
+              <span className="tabular-nums">{formatMoney(item.money)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </ChartTooltipBox>
+  );
+}
+
+/**
+ * Erwartete Nettodividende je Monat, gestapelt: unten angekuendigt (volle
+ * Akzentfarbe), darueber geschaetzt (heller). Tooltip statt Klick-Sprung —
+ * eine Prognose hat keine Zahlungen, zu denen man springen koennte.
+ */
+export function ForecastBarChart({
+  data,
+  ariaLabel,
+}: {
+  data: readonly ForecastBarDatum[];
+  ariaLabel: string;
+}) {
+  if (data.every((row) => row.announced === 0 && row.estimated === 0)) {
+    return <ChartEmpty>Für die nächsten zwölf Monate ist nichts zu erwarten.</ChartEmpty>;
+  }
+
+  return (
+    <div className="space-y-4">
+      <ChartCanvas ariaLabel={ariaLabel}>
+        <BarChart data={[...data]} margin={CHART_MARGIN}>
+          <CartesianGrid {...CHART_GRID_PROPS} />
+          <XAxis dataKey="label" {...CHART_X_AXIS_PROPS} />
+          <YAxis {...CHART_Y_AXIS_PROPS} />
+          <Tooltip content={<ForecastTooltip />} cursor={CHART_BAR_CURSOR} />
+          <Bar
+            dataKey="announced"
+            name="Angekündigt"
+            stackId="forecast"
+            fill="var(--primary)"
+            maxBarSize={CHART_MAX_BAR_SIZE}
+            {...CHART_SERIES_PROPS}
+            // Oben rund nur, wenn nichts Geschaetztes daraufliegt.
+            shape={(props: BarShapeProps) => (
+              <Rectangle
+                {...props}
+                radius={
+                  (props.payload as ForecastBarDatum).estimated === 0
+                    ? CHART_BAR_RADIUS
+                    : 0
+                }
+              />
+            )}
+          />
+          <Bar
+            dataKey="estimated"
+            name="Geschätzt"
+            stackId="forecast"
+            fill={FORECAST_ESTIMATED_FILL}
+            radius={CHART_BAR_RADIUS}
+            maxBarSize={CHART_MAX_BAR_SIZE}
+            {...CHART_SERIES_PROPS}
+          />
+        </BarChart>
+      </ChartCanvas>
+
+      <ChartLegend
+        items={[
+          { label: "Angekündigt", color: "var(--primary)" },
+          { label: "Geschätzt", color: FORECAST_ESTIMATED_FILL },
+        ]}
+      />
+
+      <ChartDataTable>
+        <Table>
+          <caption className="sr-only">{ariaLabel}</caption>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Monat</TableHead>
+              <TableHead className="text-right">Angekündigt</TableHead>
+              <TableHead className="text-right">Geschätzt</TableHead>
+              <TableHead className="text-right">Gesamt</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data.map((row) => (
+              <TableRow key={row.key}>
+                <ChartRowHeader>{row.detail}</ChartRowHeader>
+                <TableCell className="text-right tabular-nums">
+                  {formatMoney(row.announcedMoney)}
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {formatMoney(row.estimatedMoney)}
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {formatMoney(row.totalMoney)}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </ChartDataTable>
+    </div>
+  );
+}
+
+// ============================================================================
+// Dividenden-Schneeball (Bestand › Prognose)
+// ============================================================================
+
+/** Ein Jahr der Hochrechnung; Werte vorab gerechnet (features/securities/snowball.ts). */
+export interface SnowballDatum {
+  year: number;
+  label: string;
+  /** Alter in diesem Jahr, falls ein Geburtsjahr hinterlegt ist. */
+  age: number | null;
+  base: number;
+  /** Spanne vorsichtig–optimistisch (Recharts zeichnet ein Band aus `[von, bis]`). */
+  band: [number, number];
+  baseMoney: Money;
+  lowMoney: Money;
+  highMoney: Money;
+}
+
+const SNOWBALL_BAND_FILL = "color-mix(in srgb, var(--primary) 16%, transparent)";
+
+function SnowballTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: { payload?: SnowballDatum }[];
+}) {
+  const row = payload?.[0]?.payload;
+  if (!active || !row) return null;
+  return (
+    <ChartTooltipBox>
+      <p className="font-medium">
+        {row.year}
+        {row.age !== null && ` · mit ${String(row.age)}`}
+      </p>
+      <p>{formatMoneyWhole(row.baseMoney)} im Monat</p>
+      <p className="text-muted-foreground">
+        Spanne {formatMoneyWhole(row.lowMoney)} – {formatMoneyWhole(row.highMoney)}
+      </p>
+    </ChartTooltipBox>
+  );
+}
+
+/**
+ * Monatliche Nettodividende ueber die Jahre: Basis als Linie in der
+ * Akzentfarbe, die Spanne der Szenarien als helles Band dahinter, das Ziel als
+ * gestrichelte Linie. Das Band zeigt die Unsicherheit, ohne dass drei Linien
+ * um Aufmerksamkeit konkurrieren.
+ */
+export function SnowballChart({
+  data,
+  target,
+  ariaLabel,
+}: {
+  data: readonly SnowballDatum[];
+  /** Ziel pro Monat (Diagrammwert); `null` ohne Ziel. */
+  target: number | null;
+  ariaLabel: string;
+}) {
+  return (
+    <div className="space-y-4">
+      <ChartCanvas ariaLabel={ariaLabel}>
+        <ComposedChart data={[...data]} margin={{ ...CHART_MARGIN, right: 16 }}>
+          <CartesianGrid {...CHART_GRID_PROPS} />
+          {/* Jedes fuenfte Jahr: 31 Jahre passen sonst auf keine Achse. */}
+          <XAxis dataKey="label" {...CHART_X_AXIS_PROPS} interval={4} />
+          <YAxis {...CHART_Y_AXIS_PROPS} />
+          <Tooltip content={<SnowballTooltip />} cursor={CHART_LINE_CURSOR} />
+          <Area
+            type="monotone"
+            dataKey="band"
+            name="Spanne"
+            stroke="none"
+            fill={SNOWBALL_BAND_FILL}
+            activeDot={false}
+            {...CHART_SERIES_PROPS}
+          />
+          {target !== null && (
+            <ReferenceLine
+              y={target}
+              stroke="var(--series-prior)"
+              strokeDasharray="4 4"
+              strokeWidth={1.5}
+              ifOverflow="extendDomain"
+            />
+          )}
+          <Line
+            type="monotone"
+            dataKey="base"
+            name="Basis"
+            stroke="var(--primary)"
+            strokeWidth={2.25}
+            dot={false}
+            activeDot={{ r: 5 }}
+            {...CHART_SERIES_PROPS}
+          />
+        </ComposedChart>
+      </ChartCanvas>
+
+      <ChartLegend
+        items={[
+          { label: "Basis", color: "var(--primary)" },
+          { label: "Spanne der Szenarien", color: SNOWBALL_BAND_FILL },
+          ...(target !== null
+            ? [{ label: "Ziel", color: "var(--series-prior)", dashed: true }]
+            : []),
+        ]}
+      />
+
+      <ChartDataTable>
+        <Table>
+          <caption className="sr-only">{ariaLabel}</caption>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Jahr</TableHead>
+              <TableHead className="text-right">Vorsichtig</TableHead>
+              <TableHead className="text-right">Basis</TableHead>
+              <TableHead className="text-right">Optimistisch</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data.map((row) => (
+              <TableRow key={row.year}>
+                <ChartRowHeader>
+                  {row.year}
+                  {row.age !== null && ` (${String(row.age)})`}
+                </ChartRowHeader>
+                <TableCell className="text-right tabular-nums">
+                  {formatMoneyWhole(row.lowMoney)}
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {formatMoneyWhole(row.baseMoney)}
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {formatMoneyWhole(row.highMoney)}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </ChartDataTable>
     </div>
   );
 }
