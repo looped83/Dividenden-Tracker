@@ -1,7 +1,15 @@
+import { ChevronDown } from "lucide-react";
+import { Link } from "react-router";
 import { formatMoney, formatPercent } from "@/lib/money";
 import { DonutChart } from "@/features/statistics/components/charts";
 import { formatCountNoun } from "@/lib/utils/formatNumber";
-import { collapseSlices, OTHER_KEY, UNKNOWN_KEY, type AnalysisSlice } from "./analysis";
+import {
+  collapseSlices,
+  OTHER_KEY,
+  UNKNOWN_KEY,
+  type AnalysisHolding,
+  type AnalysisSlice,
+} from "./analysis";
 
 function hasKnown(slices: readonly AnalysisSlice[]): boolean {
   return slices.some((slice) => slice.key !== UNKNOWN_KEY);
@@ -40,11 +48,25 @@ export function AllocationRing({
   );
 }
 
-function BarRow({ slice }: { slice: AnalysisSlice }) {
+function BarRow({
+  slice,
+  expandable = false,
+}: {
+  slice: AnalysisSlice;
+  expandable?: boolean;
+}) {
   return (
     <>
       <div className="flex items-baseline justify-between gap-2">
-        <span className="min-w-0 truncate font-medium">{slice.label}</span>
+        <span className="flex min-w-0 items-center gap-1 font-medium">
+          <span className="truncate">{slice.label}</span>
+          {expandable && (
+            <ChevronDown
+              aria-hidden
+              className="size-4 shrink-0 self-center text-muted-foreground transition-transform group-open:rotate-180"
+            />
+          )}
+        </span>
         <span className="shrink-0 font-semibold tabular-nums">
           {formatPercent(slice.share, 1)}
         </span>
@@ -67,10 +89,40 @@ function BarRow({ slice }: { slice: AnalysisSlice }) {
   );
 }
 
+/** Die Positionen hinter einem Anteil: Name fuehrt zur Detailseite des Assets. */
+function HoldingList({ holdings }: { holdings: readonly AnalysisHolding[] }) {
+  return (
+    <ul className="mt-3 space-y-2 border-l border-border pl-4 text-sm">
+      {holdings.map((holding) => (
+        <li
+          key={holding.securityId}
+          className="flex items-baseline justify-between gap-3"
+        >
+          <Link
+            to={`/depot/${holding.securityId}`}
+            className="min-w-0 truncate rounded-sm outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {holding.name}
+          </Link>
+          <span className="shrink-0 tabular-nums text-muted-foreground">
+            {formatMoney(holding.amount)} ·{" "}
+            <span className="font-medium text-foreground">
+              {formatPercent(holding.share, 1)}
+            </span>
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 /**
  * Rangbalken fuer Aufteilungen mit **vielen offenen** Kategorien (Branche,
  * Land): dieselbe Form wie die Rangbalken der Uebersicht und Statistik —
  * Zeilen mit Haarlinie, schmaler Balken in Vordergrundfarbe.
+ *
+ * Ein Klick auf die Zeile klappt die Positionen dahinter auf — als natives
+ * `<details>`: tastaturbedienbar, ohne eigenen Zustand.
  */
 export function AllocationBars({
   slices,
@@ -85,7 +137,12 @@ export function AllocationBars({
     <ul className="divide-y divide-border" aria-label={ariaLabel}>
       {slices.map((slice) => (
         <li key={slice.key || "unknown"} className="py-3">
-          <BarRow slice={slice} />
+          <details className="group">
+            <summary className="cursor-pointer list-none rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+              <BarRow slice={slice} expandable />
+            </summary>
+            <HoldingList holdings={slice.holdings} />
+          </details>
         </li>
       ))}
     </ul>

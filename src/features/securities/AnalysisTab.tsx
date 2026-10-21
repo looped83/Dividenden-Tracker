@@ -56,6 +56,7 @@ export function AnalysisTab() {
     const map = new Map<string, AnalysisFacets>();
     for (const security of securities) {
       map.set(security.id, {
+        name: security.name,
         sector: security.sector,
         country: security.country,
         currency: security.currency,

@@ -28,6 +28,7 @@ export type AnalysisMeasure = "wert" | "dividende";
 
 /** Stammdaten, die der Depotstand selbst nicht traegt. */
 export interface AnalysisFacets {
+  name: string;
   sector: string | null;
   /** ISO-3166-Code (`US`). */
   country: string | null;
@@ -44,6 +45,17 @@ export interface AnalysisSlice {
   /** Anteil an der Gesamtsumme in Prozentpunkten. */
   share: DecimalInstance;
   positions: number;
+  /** Die Positionen dahinter, groesster Betrag zuerst (zum Aufklappen). */
+  holdings: AnalysisHolding[];
+}
+
+/** Eine Position innerhalb eines Anteils. */
+export interface AnalysisHolding {
+  securityId: string;
+  name: string;
+  amount: Money;
+  /** Anteil an der Gesamtsumme in Prozentpunkten. */
+  share: DecimalInstance;
 }
 
 export interface PortfolioAnalysis {
@@ -95,7 +107,18 @@ export const FREQUENCY_LABELS: Readonly<Record<DividendFrequency, string>> = {
 let countryNames: Intl.DisplayNames | null | undefined;
 
 /** „US" → „Vereinigte Staaten"; der Code selbst, wo der Browser ihn nicht kennt. */
+/**
+ * Codes, die Laenderfeld und ISIN-Praefix teilen, aber kein Land sind. „XS"
+ * traegt jedes international ueber Euroclear/Clearstream begebene Papier
+ * (Anleihen, ETCs/ETPs); beim Import landet das ISIN-Praefix dann als Land.
+ */
+const NON_COUNTRY_LABELS: Readonly<Record<string, string>> = {
+  XS: "International (XS)",
+};
+
 function countryLabel(code: string): string {
+  const special = NON_COUNTRY_LABELS[code];
+  if (special) return special;
   if (countryNames === undefined) {
     try {
       countryNames = new Intl.DisplayNames(["de"], { type: "region" });
@@ -124,6 +147,10 @@ interface Entry {
   amount: Money | null;
 }
 
+function isPositive(value: string | null): boolean {
+  return value !== null && new MoneyDecimal(value).greaterThan(0);
+}
+
 function sumEntries(entries: readonly Entry[], currency: CurrencyCode): Money {
   return entries.reduce(
     (sum, entry) => (entry.amount ? sum.add(entry.amount) : sum),
@@ -142,7 +169,10 @@ function group(
   total: Money,
   keyOf: (row: SecuritySnapshot) => string,
   labelOf: (key: string) => string,
+  nameOf: (securityId: string) => string,
 ): AnalysisSlice[] {
+  const shareOf = (amount: Money) =>
+    amount.toDecimal().dividedBy(total.toDecimal()).times(HUNDRED);
   const buckets = new Map<string, Entry[]>();
   for (const entry of entries) {
     const key = keyOf(entry.row);
@@ -158,12 +188,24 @@ function group(
       Money.zero(total.currency),
     );
     if (amount.isZero()) continue;
+    const holdings: AnalysisHolding[] = [];
+    for (const entry of list) {
+      if (!entry.amount || entry.amount.isZero()) continue;
+      holdings.push({
+        securityId: entry.row.security_id,
+        name: nameOf(entry.row.security_id),
+        amount: entry.amount,
+        share: shareOf(entry.amount),
+      });
+    }
+    holdings.sort((a, b) => b.amount.compareTo(a.amount));
     slices.push({
       key,
       label: key === UNKNOWN_KEY ? "ohne Angabe" : labelOf(key),
       amount,
-      share: amount.toDecimal().dividedBy(total.toDecimal()).times(HUNDRED),
+      share: shareOf(amount),
       positions: list.length,
+      holdings,
     });
   }
   return sortSlices(slices);
@@ -200,6 +242,7 @@ export function collapseSlices(
     ),
     share: rest.reduce((sum, slice) => sum.plus(slice.share), new MoneyDecimal(0)),
     positions: rest.reduce((sum, slice) => sum + slice.positions, 0),
+    holdings: rest.flatMap((slice) => slice.holdings),
   };
   return [...keep, other, ...(unknown ? [unknown] : [])];
 }
@@ -231,15 +274,19 @@ export function analyzePortfolio(
   if (total.isZero()) return { kind: "empty" };
 
   const facetOf = (row: SecuritySnapshot) => facets.get(row.security_id);
+  const nameOf = (securityId: string) => facets.get(securityId)?.name ?? "Unbekannt";
   /**
    * Rhythmus nur fuer Positionen, die tatsaechlich ausschuetten: „keine
-   * Ausschuettung" und eine fehlende Angabe sind kein Rhythmus. Die Anteile
+   * Ausschuettung", eine fehlende Angabe und eine erwartete Dividende von 0 €
+   * (eine ausgesetzte Zahlung) sind kein Rhythmus. Die Anteile
    * beziehen sich deshalb auf die Summe dieser Positionen, damit der Ring
    * aufgeht.
    */
   const payers = entries.filter(
     (entry) =>
-      entry.row.dividend_frequency !== null && entry.row.dividend_frequency !== "none",
+      entry.row.dividend_frequency !== null &&
+      entry.row.dividend_frequency !== "none" &&
+      isPositive(entry.row.annual_dividend_total),
   );
   const payersTotal = sumEntries(payers, currency);
 
@@ -255,12 +302,14 @@ export function analyzePortfolio(
         total,
         (row) => row.asset_type ?? UNKNOWN_KEY,
         (key) => ASSET_TYPE_LABELS[key as SecurityAssetType],
+        nameOf,
       ),
       currencies: group(
         entries,
         total,
         (row) => facetOf(row)?.currency?.trim().toUpperCase() ?? UNKNOWN_KEY,
         (key) => key,
+        nameOf,
       ),
       frequencies: payersTotal.isZero()
         ? []
@@ -269,18 +318,21 @@ export function analyzePortfolio(
             payersTotal,
             (row) => row.dividend_frequency ?? UNKNOWN_KEY,
             (key) => capitalized(FREQUENCY_LABELS[key as DividendFrequency]),
+            nameOf,
           ),
       sectors: group(
         entries,
         total,
         (row) => facetOf(row)?.sector?.trim() ?? UNKNOWN_KEY,
         (key) => key,
+        nameOf,
       ),
       countries: group(
         entries,
         total,
         (row) => normalizedCountry(facetOf(row)?.country),
         countryLabel,
+        nameOf,
       ),
     },
   };

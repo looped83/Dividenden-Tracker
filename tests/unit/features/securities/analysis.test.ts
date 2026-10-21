@@ -42,11 +42,11 @@ function snapshot(partial: Partial<SecuritySnapshot> = {}): SecuritySnapshot {
 }
 
 const FACETS = new Map<string, AnalysisFacets>([
-  ["sec-a", { sector: "Health Care", country: "US", currency: "USD" }],
-  ["sec-b", { sector: "Real Estate", country: "DE", currency: "EUR" }],
-  ["sec-c", { sector: "Health Care", country: "FR", currency: "EUR" }],
+  ["sec-a", { name: "Alpha", sector: "Health Care", country: "US", currency: "USD" }],
+  ["sec-b", { name: "Beta", sector: "Real Estate", country: "DE", currency: "EUR" }],
+  ["sec-c", { name: "Gamma", sector: "Health Care", country: "FR", currency: "EUR" }],
   // Ein ETF: Beim Import wurde „mixed" verworfen, es bleibt nichts.
-  ["sec-etf", { sector: null, country: null, currency: null }],
+  ["sec-etf", { name: "Welt-ETF", sector: null, country: null, currency: null }],
 ]);
 
 function analyze(rows: SecuritySnapshot[], measure: "wert" | "dividende" = "wert") {
@@ -142,7 +142,8 @@ describe("analyzePortfolio", () => {
   });
 
   it("zeigt im Rhythmus nur ausschüttende Positionen, Anteile unter ihnen", () => {
-    // „keine Ausschuettung" und eine fehlende Angabe sind kein Rhythmus.
+    // „keine Ausschuettung", eine fehlende Angabe und 0 € erwartet (ausgesetzt)
+    // sind kein Rhythmus.
     const analysis = analyze([
       snapshot({ security_id: "sec-a", market_value: "300.00" }),
       snapshot({
@@ -184,13 +185,37 @@ describe("analyzePortfolio", () => {
   });
 });
 
+describe("Positionen je Anteil", () => {
+  it("nennt die Positionen eines Anteils, größte zuerst, mit Anteil am Ganzen", () => {
+    const analysis = analyze([
+      snapshot({ security_id: "sec-a", market_value: "300.00" }),
+      snapshot({ security_id: "sec-c", market_value: "500.00" }),
+      snapshot({ security_id: "sec-b", market_value: "200.00" }),
+    ]);
+    const health = analysis.sectors[0];
+    expect(health.holdings.map((h) => h.name)).toEqual(["Gamma", "Alpha"]);
+    expect(formatPercent(health.holdings[1].share, 1)).toBe("30,0\u00A0%");
+  });
+
+  it("nennt den ISIN-Präfix XS nicht als Land, sondern als International", () => {
+    FACETS.set("sec-xs", {
+      name: "Gold ETP",
+      sector: null,
+      country: "XS",
+      currency: "USD",
+    });
+    const analysis = analyze([snapshot({ security_id: "sec-xs" })]);
+    expect(labels(analysis.countries)).toEqual(["International (XS)"]);
+  });
+});
+
 describe("collapseSlices", () => {
   it("fasst die kleinsten Kategorien zu „Sonstige“ zusammen, „ohne Angabe“ bleibt", () => {
     const analysis = analyze(
       ["A", "B", "C", "D", "E", "F"]
         .map((sector, index) => {
           const id = `sec-${sector}`;
-          FACETS.set(id, { sector, country: null, currency: null });
+          FACETS.set(id, { name: sector, sector, country: null, currency: null });
           return snapshot({
             security_id: id,
             market_value: `${String(600 - index * 100)}.00`,
