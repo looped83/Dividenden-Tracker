@@ -2,10 +2,10 @@ import * as React from "react";
 import { TrendingUp } from "lucide-react";
 import { KpiHero, KpiHeroSkeleton, TrendPill } from "@/components/domain/KpiHero";
 import { AmountText } from "@/components/money/AmountText";
-import { Checkbox } from "@/components/ui/checkbox";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Section } from "@/components/ui/section";
+import { Select } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   EUR,
@@ -272,18 +272,6 @@ function SnowballSection({
               update({ targetMonthly: value ?? 0 });
             }}
           />
-          <SettingCell label="Reinvestieren" htmlFor="snowball-reinvest">
-            <div className="flex h-9 items-center">
-              <Checkbox
-                id="snowball-reinvest"
-                aria-label="Dividenden reinvestieren"
-                checked={settings.reinvest}
-                onCheckedChange={(checked) => {
-                  update({ reinvest: checked === true });
-                }}
-              />
-            </div>
-          </SettingCell>
           <NumberField
             id="snowball-growth"
             label="CAGR"
@@ -316,6 +304,20 @@ function SnowballSection({
               update({ inflationPercent: value ?? 0 });
             }}
           />
+          <SettingCell label="Reinvestieren" htmlFor="snowball-reinvest">
+            <Select
+              id="snowball-reinvest"
+              aria-label="Dividenden reinvestieren"
+              className="h-9 py-0"
+              value={settings.reinvest ? "yes" : "no"}
+              onChange={(event) => {
+                update({ reinvest: event.target.value === "yes" });
+              }}
+            >
+              <option value="yes">Ja</option>
+              <option value="no">Nein</option>
+            </Select>
+          </SettingCell>
         </SettingsList>
 
         <SnowballChart
@@ -447,8 +449,8 @@ function formatDecimal(value: DecimalInstance | number): string {
  * nichts haengt unter einem Feld.
  */
 /**
- * Annahmen als dichtes Raster: mobil drei Spalten (Euro-Werte oben,
- * Prozentwerte unten), ab md alle sechs in einer Zeile.
+ * Annahmen als dichtes Raster: mobil drei Spalten, ab md alle sechs in
+ * einer Zeile.
  */
 function SettingsList({ children }: { children: React.ReactNode }) {
   return (
