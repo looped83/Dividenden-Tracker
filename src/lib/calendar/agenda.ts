@@ -2,7 +2,7 @@ import type { Money } from "@/lib/money";
 import { monthNameDe } from "@/lib/statistics";
 import { groupByDate } from "./month";
 import { expectedTotalOf, isCounted } from "./summary";
-import type { CalendarEvent } from "./types";
+import type { CalendarEvent, CalendarEventType } from "./types";
 
 /**
  * Gliederung der Listenansicht (Auftrag §10): **je Monat ein Abschnitt**
@@ -49,6 +49,7 @@ function monthLabel(date: string): string {
 export function buildAgenda(
   events: readonly CalendarEvent[],
   today: string,
+  type: CalendarEventType = "payment",
 ): AgendaSection[] {
   const upcoming = events
     .filter((event) => event.date >= today)
@@ -69,7 +70,9 @@ export function buildAgenda(
 
   return [...sections.values()].map((section) => ({
     ...section,
-    expected: expectedTotalOf(section.days.flatMap((day) => day.events).filter(isCounted))
-      .total,
+    expected: expectedTotalOf(
+      section.days.flatMap((day) => day.events).filter(isCounted),
+      type,
+    ).total,
   }));
 }

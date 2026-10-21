@@ -1,14 +1,16 @@
 /**
  * Edge Function `sync-divvydiary-calendar` — holt den persoenlichen
- * DivvyDiary-iCal-Feed und schreibt die angekuendigten Zahltage nach Supabase.
+ * DivvyDiary-iCal-Feed und schreibt die angekuendigten Zahltage — und, falls
+ * eingerichtet, die Ex-Tage — nach Supabase.
  *
  * Laufzeit: Deno (Supabase Edge Runtime). Diese Datei ist die einzige Stelle
  * mit Laufzeitbezug — Abruf, Parsen und Abgleich stehen in `../_shared/*.ts`
  * und werden von den Unit-Tests des Projekts geprueft.
  *
  * Sicherheit (Auftrag §7):
- * - Die Feed-URL steht ausschliesslich im Secret `DIVVYDIARY_ICAL_URL`; sie
- *   verlaesst diese Funktion weder in einer Antwort noch in einem Logeintrag.
+ * - Die Feed-URL steht ausschliesslich im Secret `DIVVYDIARY_ICAL_URL` (den
+ *   Ex-Tag-Feed leitet `exDateFeedUrl` daraus ab); keine der beiden Adressen
+ *   verlaesst diese Funktion in einer Antwort oder einem Logeintrag.
  * - Die Nutzerkennung stammt aus dem geprueften JWT (`auth.getUser`), niemals
  *   aus dem Anfragekoerper.
  * - Geschrieben wird mit service_role, nachdem die Identitaet feststeht; jede
@@ -19,8 +21,8 @@
 // Abhaengigkeiten der Funktion (supabase-js und ical.js, letztere in `_shared`).
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { DISPLAY_TIME_ZONE, calendarDayInZone } from "../_shared/datetime.ts";
-import { FeedError, fetchIcalFeed } from "../_shared/feed.ts";
-import { parseIcalCalendar } from "../_shared/ical.ts";
+import { FeedError, exDateFeedUrl, fetchIcalFeed } from "../_shared/feed.ts";
+import { mergeFeeds, parseIcalCalendar } from "../_shared/ical.ts";
 import { logCodeFor, userMessageFor } from "../_shared/messages.ts";
 import {
   CALENDAR_SOURCE,
@@ -214,8 +216,17 @@ async function handle(request: Request): Promise<Response> {
     //    Ein Ausfall der Quelle darf gespeicherte Termine nie beruehren.
     const feedUrl = Deno.env.get("DIVVYDIARY_ICAL_URL");
     if (!feedUrl) throw new FeedError("not_configured");
-    const icalText = await fetchIcalFeed(feedUrl);
-    const { events, skipped } = parseIcalCalendar(icalText);
+    // Der Ex-Tag-Feed ist derselbe Link mit `dates=ex`. Faellt einer der
+    // beiden aus, endet der Lauf vor jedem Schreibzugriff.
+    const exFeedUrl = exDateFeedUrl(feedUrl);
+    const [payText, exText] = await Promise.all([
+      fetchIcalFeed(feedUrl),
+      exFeedUrl ? fetchIcalFeed(exFeedUrl) : null,
+    ]);
+    const { events, skipped } = mergeFeeds(
+      parseIcalCalendar(payText),
+      exText === null ? null : parseIcalCalendar(exText, "ex_date"),
+    );
 
     const result: SyncResult = await runCalendarSync({
       events,

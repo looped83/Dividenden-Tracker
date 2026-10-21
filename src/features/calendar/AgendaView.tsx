@@ -17,7 +17,7 @@ import {
   spokenDate,
   weekdayShort,
 } from "@/lib/calendar/format";
-import type { CalendarEvent } from "@/lib/calendar/types";
+import type { CalendarEvent, CalendarEventType } from "@/lib/calendar/types";
 
 /**
  * Listenansicht: je Abschnitt eine Liste, je Termin eine Zeile mit Datumsfeld.
@@ -41,14 +41,16 @@ import type { CalendarEvent } from "@/lib/calendar/types";
  */
 export function AgendaView({
   events,
+  type,
   today,
   onSelect,
 }: {
   events: readonly CalendarEvent[];
+  type: CalendarEventType;
   today: string;
   onSelect: (event: CalendarEvent) => void;
 }) {
-  const sections = buildAgenda(events, today);
+  const sections = buildAgenda(events, today, type);
 
   return (
     <div className="space-y-10">
@@ -131,15 +133,9 @@ export function EventTile({
           }
           meta={
             <>
-              {/* Nur der Ex-Tag traegt ein Etikett: „Zahltag" stand an praktisch
-                  jedem Termin dieses Kalenders und sagte damit nichts. Der
-                  Ex-Tag ist die Ausnahme und bleibt deshalb gekennzeichnet;
-                  vorgelesen wird die Art weiterhin in beiden Faellen. */}
-              {event.eventType === "ex_date" && (
-                <Badge variant={cancelled ? "neutral" : "primary"}>
-                  {eventTypeLabel(event)}
-                </Badge>
-              )}
+              {/* Ohne Etikett der Ereignisart: Zahltage und Ex-Tage stehen in
+                  getrennten Kalendern, die Art steht im Umschalter darueber.
+                  Vorgelesen wird sie weiterhin. */}
               {cancelled && <Badge variant="negative">Abgesagt</Badge>}
               {meta && <span>{meta}</span>}
             </>

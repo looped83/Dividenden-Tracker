@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   FeedError,
+  exDateFeedUrl,
   fetchIcalFeed,
   isPlausibleFeedUrl,
 } from "../../../supabase/functions/_shared/feed.ts";
@@ -186,5 +187,19 @@ describe("Fehler der eigenen Datenbank sind von Feed-Ausfaellen zu unterscheiden
 
   it("kommt auch ohne Datenbankmeldung mit einem Code aus", () => {
     expect(logCodeFor(new StoreError("insert"))).toBe("store:insert");
+  });
+});
+
+describe("exDateFeedUrl", () => {
+  it("tauscht nur den Parameter dates=pay gegen dates=ex", () => {
+    expect(exDateFeedUrl("https://example.com/cal/abc.ics?dates=pay&lang=de")).toBe(
+      "https://example.com/cal/abc.ics?dates=ex&lang=de",
+    );
+  });
+
+  it("leitet ohne dates=pay nichts ab", () => {
+    expect(exDateFeedUrl("https://example.com/cal/abc.ics")).toBeNull();
+    expect(exDateFeedUrl("https://example.com/cal/abc.ics?dates=all")).toBeNull();
+    expect(exDateFeedUrl("kein link")).toBeNull();
   });
 });

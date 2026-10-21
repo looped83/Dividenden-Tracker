@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useSearchParams } from "react-router";
 import { CalendarDays, RefreshCw, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,10 +13,10 @@ import { isoFromRef, refDateFromDate } from "@/lib/statistics";
 import { useToday } from "@/lib/hooks/useToday";
 import { shiftMonth } from "@/lib/calendar/month";
 import { buildCalendarSummary } from "@/lib/calendar/summary";
-import { lastSyncLabel } from "@/lib/calendar/format";
+import { EVENT_KIND_TEXT, lastSyncLabel } from "@/lib/calendar/format";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { cn } from "@/lib/utils/cn";
-import type { CalendarEvent } from "@/lib/calendar/types";
+import type { CalendarEvent, CalendarEventType } from "@/lib/calendar/types";
 import { useAutoCalendarSync, useCalendarSyncStatus, useSyncCalendar } from "./hooks";
 import { useResolvedCalendarEvents } from "./resolvedEvents";
 import { useCalendarViewMode, type CalendarViewMode } from "./viewMode";
@@ -32,6 +33,16 @@ import { EventDetailDialog } from "./EventDetailDialog";
 const VIEW_OPTIONS: readonly SegmentOption<CalendarViewMode>[] = [
   { value: "agenda", label: "Liste" },
   { value: "month", label: "Monat" },
+];
+
+/**
+ * Zahltage und Ex-Tage sind zwei Kalender mit derselben Bedienung. Die Wahl
+ * steht in der Adresse (`?art=ex`), damit Zurueck und Neuladen sie behalten;
+ * ohne Angabe gelten die Zahltage.
+ */
+const TYPE_OPTIONS: readonly SegmentOption<CalendarEventType>[] = [
+  { value: "payment", label: "Dividenden" },
+  { value: "ex_date", label: "Ex-Tage" },
 ];
 
 const SYNC_FAILED_HINT =
@@ -67,6 +78,20 @@ export function CalendarPage() {
   const { notify } = useToast();
   const today = isoFromRef(useToday());
   const [viewMode, setViewMode] = useCalendarViewMode();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const type: CalendarEventType =
+    searchParams.get("art") === "ex" ? "ex_date" : "payment";
+  const setType = (next: CalendarEventType) => {
+    setSearchParams(
+      (prev) => {
+        const params = new URLSearchParams(prev);
+        if (next === "ex_date") params.set("art", "ex");
+        else params.delete("art");
+        return params;
+      },
+      { replace: true },
+    );
+  };
   const [visibleMonth, setVisibleMonth] = React.useState(() => {
     const ref = refDateFromDate();
     return { year: ref.year, month: ref.month };
@@ -82,13 +107,18 @@ export function CalendarPage() {
     setSelected(event);
   }, []);
 
-  const { eventsQuery, events } = useResolvedCalendarEvents();
+  const { eventsQuery, events: allEvents } = useResolvedCalendarEvents();
+  const events = React.useMemo(
+    () => allEvents.filter((event) => event.eventType === type),
+    [allEvents, type],
+  );
+  const text = EVENT_KIND_TEXT[type];
   const statusQuery = useCalendarSyncStatus();
   const syncMutation = useSyncCalendar();
 
   const summary = React.useMemo(
-    () => buildCalendarSummary(events, today),
-    [events, today],
+    () => buildCalendarSummary(events, today, type),
+    [events, today, type],
   );
   const status = statusQuery.data ?? null;
   const isSyncing = syncMutation.isPending;
@@ -134,21 +164,23 @@ export function CalendarPage() {
   // er **nicht** zeigt (erhaltene Zahlungen), steht dort, wo die Frage
   // entsteht — im Detaildialog eines Termins.
   //
-  // „Kalender" wie in der Navigation. Rechts im Kopf die Wahl der Darstellung
-  // — dort, wo auf der Übersicht die Jahresauswahl steht; sie gilt für die
-  // ganze Seite. Das Aktualisieren gehört zur Angabe, wann zuletzt
-  // abgeglichen wurde, und steht deshalb in deren Zeile am Seitenende.
+  // „Kalender" wie in der Navigation. Rechts im Kopf die Wahl des Kalenders
+  // (Dividenden oder Ex-Tage) — dort, wo auf der Übersicht die Jahresauswahl
+  // steht; sie gilt für die ganze Seite samt Kennzahlen. Die Darstellung
+  // (Liste/Monat) betrifft nur die Termine und steht deshalb über ihnen. Das
+  // Aktualisieren gehört zur Angabe, wann zuletzt abgeglichen wurde, und steht
+  // in deren Zeile am Seitenende.
   const heading = (
     <PageHeader
       title="Kalender"
       actions={
-        events.length > 0 && !eventsQuery.isError ? (
+        allEvents.length > 0 && !eventsQuery.isError ? (
           <SegmentedControl
             variant="pill"
-            label="Darstellung"
-            options={VIEW_OPTIONS}
-            value={viewMode}
-            onChange={setViewMode}
+            label="Kalender"
+            options={TYPE_OPTIONS}
+            value={type}
+            onChange={setType}
           />
         ) : undefined
       }
@@ -173,7 +205,7 @@ export function CalendarPage() {
             <Button onClick={() => void eventsQuery.refetch()}>Erneut versuchen</Button>
           }
         />
-      ) : neverSynced && events.length === 0 ? (
+      ) : neverSynced && allEvents.length === 0 ? (
         <EmptyState
           icon={CalendarDays}
           title="Der Dividendenkalender wurde noch nicht synchronisiert."
@@ -204,11 +236,26 @@ export function CalendarPage() {
 
           {/* Die Kennzahlen stehen wie in jedem anderen Bereich direkt unter
               der Kopfzeile — nicht hinter Statuszeile und Hinweis. */}
-          {events.length > 0 && <CalendarSummaryTiles summary={summary} today={today} />}
+          {events.length > 0 && (
+            <CalendarSummaryTiles summary={summary} type={type} today={today} />
+          )}
 
           {/* Ohne einen einzigen Termin gibt es nichts zu blaettern und nichts
               umzuschalten; die Bedienleiste bliebe eine leere Geste. */}
           <div className="space-y-4">
+            {/* Auf dem Telefon rechts, unter dem Umschalter im Kopf — dort
+                liegt der Daumen; am Desktop beginnt die Zeile links. */}
+            {events.length > 0 && (
+              <div className="flex justify-end sm:justify-start">
+                <SegmentedControl
+                  variant="pill"
+                  label="Darstellung"
+                  options={VIEW_OPTIONS}
+                  value={viewMode}
+                  onChange={setViewMode}
+                />
+              </div>
+            )}
             {events.length > 0 && viewMode === "month" && (
               <CalendarToolbar
                 year={visibleMonth.year}
@@ -228,20 +275,22 @@ export function CalendarPage() {
             {events.length === 0 ? (
               <EmptyState
                 icon={CalendarDays}
-                title="Keine bevorstehenden Zahltage gefunden."
-                description="Neue angekündigte Dividendenzahlungen erscheinen automatisch hier."
+                title={`Keine bevorstehenden ${text.many} gefunden.`}
+                description={`Neu angekündigte ${text.many} erscheinen automatisch hier.`}
               />
             ) : viewMode === "month" ? (
               <MonthView
                 year={visibleMonth.year}
                 month={visibleMonth.month}
                 events={events}
+                type={type}
                 today={today}
                 onSelect={selectEvent}
               />
             ) : (
               <AgendaViewWithEmptyState
                 events={events}
+                type={type}
                 today={today}
                 onSelect={selectEvent}
               />
@@ -259,7 +308,7 @@ export function CalendarPage() {
           today={today}
           isSyncing={isSyncing}
           onSync={
-            neverSynced && events.length === 0
+            neverSynced && allEvents.length === 0
               ? undefined
               : () => {
                   runSync({ announce: true });
@@ -285,10 +334,12 @@ export function CalendarPage() {
  */
 function AgendaViewWithEmptyState({
   events,
+  type,
   today,
   onSelect,
 }: {
   events: readonly CalendarEvent[];
+  type: CalendarEventType;
   today: string;
   onSelect: (event: CalendarEvent) => void;
 }) {
@@ -297,12 +348,12 @@ function AgendaViewWithEmptyState({
     return (
       <EmptyState
         icon={CalendarDays}
-        title="Keine bevorstehenden Zahltage gefunden."
+        title={`Keine bevorstehenden ${EVENT_KIND_TEXT[type].many} gefunden.`}
         description="Frühere Termine findest du in der Monatsansicht."
       />
     );
   }
-  return <AgendaView events={events} today={today} onSelect={onSelect} />;
+  return <AgendaView events={events} type={type} today={today} onSelect={onSelect} />;
 }
 
 function SyncStatusLine({

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   IcalParseError,
+  mergeFeeds,
   parseIcalCalendar,
 } from "../../../supabase/functions/_shared/ical.ts";
 
@@ -294,5 +295,27 @@ describe("parseIcalCalendar — fehlerhafte Eingaben", () => {
 
     expect(events).toHaveLength(0);
     expect(skipped).toBe(0);
+  });
+});
+
+describe("Ex-Tag-Feed", () => {
+  it("nimmt ohne Schlagwort die Art des Feeds an", () => {
+    expect(parseIcalCalendar(feed(GANZTAGS)).events[0]?.eventType).toBe("payment");
+    expect(parseIcalCalendar(feed(GANZTAGS), "ex_date").events[0]?.eventType).toBe(
+      "ex_date",
+    );
+  });
+
+  it("führt beide Feeds zusammen und trennt gleiche UIDs", () => {
+    const pay = parseIcalCalendar(feed(GANZTAGS));
+    const ex = parseIcalCalendar(feed(GANZTAGS), "ex_date");
+
+    const merged = mergeFeeds(pay, ex);
+
+    expect(merged.events.map((event) => [event.externalUid, event.eventType])).toEqual([
+      ["pay-apple-2026-08-13", "payment"],
+      ["pay-apple-2026-08-13#ex", "ex_date"],
+    ]);
+    expect(mergeFeeds(pay, null)).toBe(pay);
   });
 });

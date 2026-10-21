@@ -66,6 +66,9 @@ supabase secrets set DIVVYDIARY_ICAL_URL="YOUR_PRIVATE_ICAL_URL"
 ```
 
 Der Wert hat die Form `https://api.divvydiary.com/dividends/upcoming/ical?dates=pay&token=…`.
+Den Ex-Tag-Feed leitet die Funktion daraus ab (`dates=ex` statt `dates=pay`, `exDateFeedUrl`
+in `_shared/feed.ts`); ein zweites Secret ist nicht nötig. Beide Feeds laufen in einem Abgleich,
+der Kalender zeigt sie getrennt (Umschalter „Dividenden | Ex-Tage").
 Er darf **niemals**
 
 - im Repository stehen (auch nicht in Beispielen, Fixtures oder Tests),

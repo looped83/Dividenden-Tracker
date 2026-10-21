@@ -7,8 +7,8 @@ import {
   WEEKDAYS_DE,
   WEEKDAYS_DE_SHORT,
 } from "@/lib/calendar/month";
-import { dayCellLabel, longDate } from "@/lib/calendar/format";
-import type { CalendarEvent } from "@/lib/calendar/types";
+import { dayCellLabel, EVENT_KIND_TEXT, longDate } from "@/lib/calendar/format";
+import type { CalendarEvent, CalendarEventType } from "@/lib/calendar/types";
 import { ListGroup } from "@/components/ui/list";
 import { EventTile } from "./AgendaView";
 
@@ -44,12 +44,14 @@ export function MonthView({
   year,
   month,
   events,
+  type,
   today,
   onSelect,
 }: {
   year: number;
   month: number;
   events: readonly CalendarEvent[];
+  type: CalendarEventType;
   today: string;
   onSelect: (event: CalendarEvent) => void;
 }) {
@@ -79,12 +81,13 @@ export function MonthView({
   }
 
   const selectedEvents = selected ? (byDate.get(selected) ?? []) : [];
+  const text = EVENT_KIND_TEXT[type];
 
   return (
     <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_20rem] xl:gap-6">
       <table className="w-full table-fixed border-separate border-spacing-1">
         <caption className="sr-only">
-          Dividendenkalender {monthNameDe(month)} {year}
+          {text.many} {monthNameDe(month)} {year}
         </caption>
         <thead>
           <tr>
@@ -114,7 +117,12 @@ export function MonthView({
                     )}
                   >
                     <DayButton
-                      label={dayCellLabel(day.date, dayEvents.length, day.date === today)}
+                      label={dayCellLabel(
+                        day.date,
+                        dayEvents.length,
+                        day.date === today,
+                        type,
+                      )}
                       day={day.dayOfMonth}
                       today={day.date === today}
                       dim={!day.inMonth}
@@ -142,7 +150,7 @@ export function MonthView({
       >
         {selected === null ? (
           <p className="text-sm text-muted-foreground">
-            In diesem Monat ist kein Zahltag angekündigt.
+            In diesem Monat ist kein {text.one} angekündigt.
           </p>
         ) : (
           <>
@@ -151,7 +159,7 @@ export function MonthView({
             </h3>
             {selectedEvents.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                Keine angekündigten Zahltage an diesem Tag.
+                Keine angekündigten {text.many} an diesem Tag.
               </p>
             ) : (
               <ListGroup>

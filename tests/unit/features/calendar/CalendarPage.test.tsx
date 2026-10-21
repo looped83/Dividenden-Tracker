@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router";
 import { ToastProvider } from "@/components/ui/toast";
 import { EUR, Money } from "@/lib/money";
 import type { CalendarEvent, CalendarSyncStatusRow } from "@/lib/calendar/types";
@@ -110,7 +111,9 @@ function renderPage(ansicht: "month" | "agenda" = "month") {
   window.localStorage.setItem("dividend-tracker:calendar-view", ansicht);
   return render(
     <ToastProvider>
-      <CalendarPage />
+      <MemoryRouter>
+        <CalendarPage />
+      </MemoryRouter>
     </ToastProvider>,
   );
 }
@@ -184,7 +187,9 @@ describe("Voreinstellung der Ansicht", () => {
     zustand.events = [event({ id: "1", date: "2026-08-13", title: "Apple Inc." })];
     render(
       <ToastProvider>
-        <CalendarPage />
+        <MemoryRouter>
+          <CalendarPage />
+        </MemoryRouter>
       </ToastProvider>,
     );
 
@@ -311,6 +316,34 @@ describe("Monatsansicht", () => {
 
     expect(screen.getByRole("columnheader", { name: "Montag" })).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "Sonntag" })).toBeInTheDocument();
+  });
+});
+
+describe("Ex-Tage", () => {
+  beforeEach(() => {
+    zustand.events = [
+      event({ id: "1", date: "2026-08-13", title: "Zahltag AG" }),
+      event({ id: "2", date: "2026-08-07", title: "Ex AG", eventType: "ex_date" }),
+    ];
+  });
+
+  it("zeigt je Kalender nur die eigene Ereignisart", async () => {
+    const user = userEvent.setup();
+    renderPage("agenda");
+
+    expect(screen.getByRole("radio", { name: "Dividenden" })).toBeChecked();
+    expect(screen.getByRole("button", { name: /Zahltag AG/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Ex AG/ })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("radio", { name: "Ex-Tage" }));
+
+    expect(
+      screen.getByRole("button", { name: /Ex AG, Ex-Tag am 7\. August 2026/ }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Zahltag AG/ })).not.toBeInTheDocument();
+    expect(screen.getByText("Nächster Ex-Tag")).toBeInTheDocument();
+    // Liste/Monat bleibt unabhaengig von der Wahl des Kalenders.
+    expect(screen.getByRole("radio", { name: "Liste" })).toBeChecked();
   });
 });
 
@@ -539,7 +572,9 @@ describe("Aktualisierung", () => {
 
     rerender(
       <ToastProvider>
-        <CalendarPage />
+        <MemoryRouter>
+          <CalendarPage />
+        </MemoryRouter>
       </ToastProvider>,
     );
     expect(zustand.mutate).toHaveBeenCalledTimes(1);
