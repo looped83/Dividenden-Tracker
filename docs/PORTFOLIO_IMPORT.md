@@ -236,8 +236,10 @@ hierher um.
 **`/#/depot/analyse`** — die Aufschlüsselung des jüngsten Stands nach Asset-Typ,
 Ausschüttungswährung und Rhythmus (Ringe, höchstens fünf Stücke, Rest „Sonstige") sowie
 nach Branche und Land (Rangbalken). Der Rhythmus zeigt nur ausschüttende Positionen;
-seine Anteile beziehen sich auf deren Summe. Ein Umschalter im
-Seitenkopf wählt die Bezugsgröße für alle Abschnitte: Marktwert oder erwartete
+seine Anteile beziehen sich auf deren Summe. Gepflegte Ausschüttungsmonate gehen dem
+Rhythmus des Exports vor (vier Monate = vierteljährlich usw.), hier wie auf der
+Detailseite: DivvyDiary nennt ein junges Papier mit erst einer Zahlung „jährlich". Ein
+Umschalter im Seitenkopf wählt die Bezugsgröße für alle Abschnitte: Marktwert oder erwartete
 Jahresdividende (`?nach=dividende`). Positionen ohne Betrag zählen nicht mit und werden
 genannt; fehlende Stammdaten stehen als „ohne Angabe" am Ende. Eine Aufteilung nach Depot
 gibt es hier nicht, weil der Export keine Depots kennt.
