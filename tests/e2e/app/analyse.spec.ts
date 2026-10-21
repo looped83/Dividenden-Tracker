@@ -20,6 +20,10 @@ test("schlüsselt den Depotstand auf und schaltet die Bezugsgröße um", async (
   const land = page.getByRole("list", { name: /Anteile nach Land/ });
   await expect(land.getByText("Deutschland")).toBeVisible();
   await expect(land.getByText("19,4 %")).toBeVisible();
+  // Ein Klick auf das Land zeigt die Positionen dahinter.
+  await land.getByText("Deutschland").click();
+  await expect(land.getByRole("link", { name: "Allianz" })).toBeVisible();
+
   // Der Rhythmus kennt nur ausschuettende Positionen.
   await expect(page.getByText("Keine Ausschüttung")).toHaveCount(0);
 
