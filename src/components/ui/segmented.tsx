@@ -24,6 +24,9 @@ export interface SegmentOption<T extends string> {
  * `variant="pill"` ist die kompakte Fassung fuer Abschnittskoepfe
  * (Diagrammsicht, Assets/Depots): 32px hoch, die Tippflaeche reicht per
  * Pseudo-Element auf 44px. Die gewoehnliche Fassung ist so hoch wie ein Feld.
+ *
+ * Beschriftungen brechen nie um (seit 1.42.4): „Je Zahlung“ stand auf schmalen
+ * Bildschirmen sonst zweizeilig in der Pille.
  */
 export function SegmentedControl<T extends string>({
   label,
@@ -62,7 +65,7 @@ export function SegmentedControl<T extends string>({
               onChange(option);
             }}
             className={cn(
-              "inline-flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 outline-none",
+              "inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3 outline-none",
               "focus-visible:ring-2 focus-visible:ring-ring",
               variant === "pill"
                 ? "relative h-8 text-[0.8125rem] font-semibold after:absolute after:inset-x-0 after:-inset-y-1.5"
