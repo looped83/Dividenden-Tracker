@@ -25,7 +25,7 @@ import { latestAsOf, snapshotsAt } from "./snapshots";
 const SNOWBALL_YEARS = 30;
 
 /** Abstand der Szenarien zum angenommenen Wachstum, in Prozentpunkten. */
-const SCENARIO_SPREAD = 2;
+export const SCENARIO_SPREAD = 2;
 
 /** Gespeicherte Annahmen (profiles.forecast_settings). */
 export interface SnowballSettings {

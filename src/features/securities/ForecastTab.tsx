@@ -43,6 +43,7 @@ import {
 import { useSecurities, useSecuritySnapshots } from "./hooks";
 import {
   DEFAULT_SNOWBALL_SETTINGS,
+  SCENARIO_SPREAD,
   depotAssumptions,
   projectSnowball,
   type DepotAssumptions,
@@ -395,6 +396,11 @@ function ageSuffix(year: number | null, birthYear: number | null): string {
   return ` · mit ${String(year - birthYear)}`;
 }
 
+/**
+ * Kopf des Schneeballs im selben `KpiHero` wie der Seitenkopf: das Zieljahr
+ * als Hauptzahl, rechts (auf dem Telefon darunter) der heutige Monatswert und
+ * die Zieljahre der beiden Szenarien.
+ */
 function SnowballHeadline({
   result,
   settings,
@@ -407,27 +413,40 @@ function SnowballHeadline({
     Money.fromDecimal(new MoneyDecimal(settings.targetMonthly), EUR),
   );
   const { targetYear, targetYearEarliest, targetYearLatest } = result;
+  const first = result.points[0];
   const last = result.points[result.points.length - 1].year;
-  const spread =
-    targetYearEarliest !== null && targetYearEarliest !== targetYearLatest
-      ? `Spanne ${String(targetYearEarliest)} – ${targetYearLatest === null ? `nach ${String(last)}` : String(targetYearLatest)}`
-      : null;
+  const yearText = (year: number | null) =>
+    year === null ? `nach ${String(last)}` : String(year);
 
   return (
-    <div className="rounded-lg bg-muted px-4 py-4 sm:px-5">
-      <p className="text-sm text-muted-foreground">Ziel {target} im Monat</p>
-      <p className="mt-1 text-[2rem] font-bold leading-none tracking-[-0.02em] tabular-nums">
-        {targetYear === null ? `nach ${String(last)}` : String(targetYear)}
-      </p>
-      <p className="mt-2 text-sm text-muted-foreground">
-        {targetYear === null
+    <KpiHero
+      label={`Ziel ${target} im Monat`}
+      value={yearText(targetYear)}
+      caption={
+        targetYear === null
           ? "Mit diesen Annahmen nicht innerhalb von 30 Jahren erreicht."
-          : targetYear === result.points[0].year
+          : targetYear === first.year
             ? "Schon erreicht."
-            : `in ${formatCountNoun(targetYear - result.points[0].year, "Jahr", "Jahren")}${ageSuffix(targetYear, settings.birthYear)}`}
-        {spread && ` · ${spread}`}
-      </p>
-    </div>
+            : `in ${formatCountNoun(targetYear - first.year, "Jahr", "Jahren")}${ageSuffix(targetYear, settings.birthYear)}`
+      }
+      stats={[
+        {
+          label: "Heute",
+          value: formatMoneyWhole(Money.fromDecimal(first.base, EUR)),
+          caption: "netto im Monat",
+        },
+        {
+          label: "Optimistisch",
+          value: yearText(targetYearEarliest),
+          caption: `Wachstum +${String(SCENARIO_SPREAD)}`,
+        },
+        {
+          label: "Vorsichtig",
+          value: yearText(targetYearLatest),
+          caption: `Wachstum −${String(SCENARIO_SPREAD)}`,
+        },
+      ]}
+    />
   );
 }
 
