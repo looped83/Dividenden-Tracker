@@ -57,7 +57,12 @@ export function CalendarSummaryTiles({
         {
           label: `${month} gesamt`,
           value: <TotalValue total={summary.thisMonth} />,
-          caption: captionFor(summary.thisMonth),
+          // Ohne Beträge ist der Wert schon die Anzahl — „3 · 3 Termine"
+          // wiederholte ihn nur (wie bei der Hauptzahl).
+          caption:
+            summary.thisMonth.total || summary.thisMonth.mixedCurrencies
+              ? captionFor(summary.thisMonth)
+              : "angekündigte Termine",
         },
       ]}
     />
