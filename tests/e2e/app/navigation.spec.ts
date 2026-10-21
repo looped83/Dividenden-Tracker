@@ -44,6 +44,24 @@ test("ein Wechsel des Bereichs beginnt oben, der Weg zurueck an Ort und Stelle",
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(unten);
 });
 
+test("ein erneuter Aufruf des Bereichs beginnt oben, nicht an der alten Stelle", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 700 });
+  await page.goto("/#/eingaenge");
+  await expect(page.getByRole("heading", { name: "Dividenden", level: 1 })).toBeVisible();
+  await page.evaluate(() => {
+    window.scrollTo(0, document.body.scrollHeight);
+  });
+  expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(100);
+
+  const menu = page.getByRole("navigation", { name: "Hauptnavigation" });
+  await menu.getByRole("link", { name: "Übersicht" }).click();
+  await menu.getByRole("link", { name: "Dividenden" }).click();
+  await expect(page.getByRole("heading", { name: "Dividenden", level: 1 })).toBeVisible();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+});
+
 test("weitere laden haengt an, der Weg zurueck endet an derselben Stelle", async ({
   page,
 }) => {
