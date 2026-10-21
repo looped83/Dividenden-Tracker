@@ -24,15 +24,24 @@ const TIME = new Intl.DateTimeFormat("de-DE", {
  */
 export const EVENT_KIND_TEXT: Record<
   CalendarEventType,
-  { one: string; many: string; spokenOne: string; spokenMany: string }
+  {
+    /** Name des Kalenders — im Umschalter und als Ueberschrift der Termine. */
+    heading: string;
+    one: string;
+    many: string;
+    spokenOne: string;
+    spokenMany: string;
+  }
 > = {
   payment: {
+    heading: "Dividenden",
     one: "Zahltag",
     many: "Zahltage",
     spokenOne: "angekündigter Zahltag",
     spokenMany: "angekündigte Zahltage",
   },
   ex_date: {
+    heading: "Ex-Tage",
     one: "Ex-Tag",
     many: "Ex-Tage",
     spokenOne: "angekündigter Ex-Tag",

@@ -113,7 +113,8 @@ test("Monatsraster stellt mehrere Termine eines Tages dar und blättert", async 
   // Vom laufenden Monat in den März 2099 blättern wäre absurd viele Klicks;
   // stattdessen prüft der Test die Navigation an sich und danach den Monat der
   // Termine über die „Heute"-Rückkehr.
-  const ueberschrift = page.getByRole("heading", { level: 2 }).first();
+  // Die Monatsueberschrift („Oktober 2026"), nicht die des Kalenders darueber.
+  const ueberschrift = page.getByRole("heading", { level: 2, name: /\d{4}$/ }).first();
   const start = await ueberschrift.textContent();
   await page.getByRole("button", { name: "Nächster Monat" }).click();
   await expect(ueberschrift).not.toHaveText(start ?? "");

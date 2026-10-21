@@ -77,8 +77,13 @@ const EVENT_TYPE_WORDS: readonly (readonly [RegExp, CalendarEventType])[] = [
  */
 const TRAILING_PARENTHESES = /\s*\(([^()]{1,400})\)\s*$/;
 
-/** Ein bis zwei Woerter am Zeilenende — Kandidaten fuer die Ereignisart. */
-const TRAILING_WORDS = /\s+([\p{L}][\p{L}\- ]{0,24})$/u;
+/**
+ * Das letzte bzw. die letzten zwei Woerter der Zeile — Kandidaten fuer die
+ * Ereignisart. Ausdruecklich je Wortzahl: Ein Muster „bis zu 25 Zeichen am
+ * Ende" griffe ohne Betrag davor auch Teile des Namens („Co Inc Ex-Tag") und
+ * erkennte das Schlagwort dann nicht — der Ex-Tag-Feed nennt keine Betraege.
+ */
+const LAST_WORDS = [/\s+(\S+)$/u, /\s+(\S+\s+\S+)$/u] as const;
 
 /** Betrag und Waehrung am Zeilenende, in beiden Reihenfolgen. */
 const AMOUNT_THEN_CURRENCY =
@@ -226,14 +231,15 @@ export function parseSummary(summary: string | null): ParsedSummary {
     rest = rest.slice(0, parentheses.index);
   }
 
-  // Bis zu zwei Schlagwoerter abtragen: „Ex-Tag" ist eines, „Pay Date" zwei.
-  for (let attempt = 0; attempt < 2 && eventType === null; attempt += 1) {
-    const words = TRAILING_WORDS.exec(rest);
-    if (!words) break;
-    const type = readEventType(words[1]);
-    if (type === null) break;
-    eventType = type;
-    rest = rest.slice(0, words.index);
+  // Ein oder zwei Woerter als Schlagwort: „Ex-Tag" ist eines, „Pay Date" zwei.
+  for (const pattern of LAST_WORDS) {
+    const words = pattern.exec(rest);
+    const type = words ? readEventType(words[1]) : null;
+    if (words && type !== null) {
+      eventType = type;
+      rest = rest.slice(0, words.index);
+      break;
+    }
   }
 
   const money = readTrailingMoney(rest);

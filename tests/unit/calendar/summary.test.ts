@@ -87,6 +87,21 @@ describe("parseSummary", () => {
     expect(parsed.company).toBe("Allianz SE");
   });
 
+  it("erkennt den Ex-Tag auch ohne Betrag davor (Ex-Tag-Feed)", () => {
+    const parsed = parseSummary("American Water Works Co Inc Ex-Tag (Trade Republic)");
+
+    expect(parsed).toEqual({
+      company: "American Water Works Co Inc",
+      amount: null,
+      currency: null,
+      eventType: "ex_date",
+      portfolio: "Trade Republic",
+    });
+    expect(parseSummary("Lowe's Companies Inc Pay Date").company).toBe(
+      "Lowe's Companies Inc",
+    );
+  });
+
   it("kommt ohne Depotangabe aus", () => {
     const parsed = parseSummary("Apple Inc. 0,26 $ Zahltag");
 
