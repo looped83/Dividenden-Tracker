@@ -1,4 +1,4 @@
-import type { ReactNode, RefObject } from "react";
+import { useRef, type ReactNode, type RefObject } from "react";
 import { ExternalLink } from "lucide-react";
 import {
   Dialog,
@@ -34,6 +34,7 @@ export function EventDetailDialog({
   returnFocusTo: RefObject<HTMLElement | null>;
   onClose: () => void;
 }) {
+  const contentRef = useRef<HTMLDivElement>(null);
   return (
     <Dialog
       open={event !== null}
@@ -42,7 +43,17 @@ export function EventDetailDialog({
       }}
     >
       <DialogContent
+        ref={contentRef}
         className="max-w-md"
+        // Sonst setzt Radix den Fokus auf das erste Bedienelement — bei einem
+        // Termin ohne Link (alle Ex-Tage) ist das das Schliessen-Kreuz, das
+        // dann markiert erscheint. Der Dialog selbst nimmt den Fokus; Titel
+        // und Beschreibung werden vorgelesen, Tab fuehrt zu den Knoepfen
+        // (wie GoalFormDialog).
+        onOpenAutoFocus={(nativeEvent) => {
+          nativeEvent.preventDefault();
+          contentRef.current?.focus();
+        }}
         // Der Dialog wird nicht von einem `DialogTrigger` geoeffnet, sondern
         // von einem Termin im Raster oder in der Liste. Ohne Trigger gibt Radix
         // den Fokus an den Seitenkoerper zurueck — wer den Dialog per Tastatur
