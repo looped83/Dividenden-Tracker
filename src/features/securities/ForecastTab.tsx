@@ -254,7 +254,8 @@ function SnowballSection({
         <SettingsList>
           <NumberField
             id="snowball-savings"
-            label="Sparrate pro Monat"
+            label="Sparrate"
+            fullLabel="Sparrate pro Monat"
             suffix="€"
             value={settings.monthlySavings}
             onCommit={(value) => {
@@ -263,16 +264,30 @@ function SnowballSection({
           />
           <NumberField
             id="snowball-target"
-            label="Ziel pro Monat"
+            label="Ziel"
+            fullLabel="Ziel pro Monat"
             suffix="€"
             value={settings.targetMonthly}
             onCommit={(value) => {
               update({ targetMonthly: value ?? 0 });
             }}
           />
+          <SettingCell label="Reinvestieren" htmlFor="snowball-reinvest">
+            <div className="flex h-9 items-center">
+              <Checkbox
+                id="snowball-reinvest"
+                aria-label="Dividenden reinvestieren"
+                checked={settings.reinvest}
+                onCheckedChange={(checked) => {
+                  update({ reinvest: checked === true });
+                }}
+              />
+            </div>
+          </SettingCell>
           <NumberField
             id="snowball-growth"
-            label="Dividenden-CAGR"
+            label="CAGR"
+            fullLabel="Dividenden-CAGR"
             suffix="%"
             value={settings.growthPercent}
             placeholder={formatDecimal(depot.growthPercent)}
@@ -282,7 +297,8 @@ function SnowballSection({
           />
           <NumberField
             id="snowball-yield"
-            label="Rendite neuer Käufe"
+            label="Rendite"
+            fullLabel="Rendite neuer Käufe"
             suffix="%"
             value={settings.yieldPercent}
             placeholder={formatDecimal(depot.yieldPercent)}
@@ -293,21 +309,13 @@ function SnowballSection({
           <NumberField
             id="snowball-inflation"
             label="Inflation"
+            fullLabel="Inflation pro Jahr"
             suffix="%"
             value={settings.inflationPercent}
             onCommit={(value) => {
               update({ inflationPercent: value ?? 0 });
             }}
           />
-          <SettingRow label="Dividenden reinvestieren" htmlFor="snowball-reinvest">
-            <Checkbox
-              id="snowball-reinvest"
-              checked={settings.reinvest}
-              onCheckedChange={(checked) => {
-                update({ reinvest: checked === true });
-              }}
-            />
-          </SettingRow>
         </SettingsList>
 
         <SnowballChart
@@ -438,19 +446,23 @@ function formatDecimal(value: DecimalInstance | number): string {
  * rechts. Auf dem Telefon eine Spalte, ab `md` zwei — jede Zeile gleich hoch,
  * nichts haengt unter einem Feld.
  */
+/**
+ * Annahmen als dichtes Raster: mobil drei Spalten (Euro-Werte oben,
+ * Prozentwerte unten), ab md alle sechs in einer Zeile.
+ */
 function SettingsList({ children }: { children: React.ReactNode }) {
   return (
     <div
       role="group"
       aria-label="Annahmen"
-      className="grid grid-cols-1 gap-x-8 rounded-2xl bg-muted px-4 py-1 md:grid-cols-2 md:px-5"
+      className="grid grid-cols-3 gap-x-3 gap-y-3 rounded-2xl bg-muted p-3 md:grid-cols-6 md:px-5 md:py-4"
     >
       {children}
     </div>
   );
 }
 
-function SettingRow({
+function SettingCell({
   label,
   htmlFor,
   children,
@@ -460,8 +472,11 @@ function SettingRow({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-14 items-center justify-between gap-4 border-b border-border/60 py-2 last:border-b-0 md:[&:nth-last-child(2):nth-child(odd)]:border-b-0">
-      <label htmlFor={htmlFor} className="min-w-0 text-[0.9375rem]">
+    <div className="min-w-0">
+      <label
+        htmlFor={htmlFor}
+        className="mb-1 block truncate text-xs text-muted-foreground"
+      >
         {label}
       </label>
       {children}
@@ -478,13 +493,16 @@ function SettingRow({
 function NumberField({
   id,
   label,
+  fullLabel,
   value,
   onCommit,
   suffix,
   placeholder,
 }: {
   id: string;
+  /** Kurz und sichtbar; `fullLabel` ist der Name fuer Screenreader. */
   label: string;
+  fullLabel: string;
   value: number | null;
   onCommit: (value: number | null) => void;
   suffix: string;
@@ -510,16 +528,17 @@ function NumberField({
   };
 
   return (
-    <SettingRow label={label} htmlFor={id}>
-      <div className="relative w-32 shrink-0">
+    <SettingCell label={label} htmlFor={id}>
+      <div className="relative">
         <Input
           id={id}
+          aria-label={fullLabel}
           type="text"
           inputMode="decimal"
           autoComplete="off"
           value={draft}
           placeholder={placeholder}
-          className="h-10 bg-background pr-8 text-right tabular-nums"
+          className="h-9 bg-background pr-7 text-right tabular-nums"
           onChange={(event) => {
             setDraft(event.target.value);
           }}
@@ -530,11 +549,11 @@ function NumberField({
         />
         <span
           aria-hidden
-          className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground"
+          className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center text-sm text-muted-foreground"
         >
           {suffix}
         </span>
       </div>
-    </SettingRow>
+    </SettingCell>
   );
 }
