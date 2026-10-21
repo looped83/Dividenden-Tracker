@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { KpiHeroSkeleton } from "@/components/domain/KpiHero";
 import { SegmentedControl, type SegmentOption } from "@/components/ui/segmented";
 import { formatCountNoun } from "@/lib/utils/formatNumber";
+import { normalizePayoutMonths } from "@/lib/statistics/effectiveMonth";
 import { DepotHeaderActions } from "./DepotHeaderActions";
 import { PortfolioSummary } from "./PortfolioSummary";
 import { PortfolioImportButton, PortfolioImportDialog } from "./PortfolioImportDialog";
@@ -60,6 +61,7 @@ export function AnalysisTab() {
         sector: security.sector,
         country: security.country,
         currency: security.currency,
+        payoutMonths: normalizePayoutMonths(security.payout_months),
       });
     }
     return map;
