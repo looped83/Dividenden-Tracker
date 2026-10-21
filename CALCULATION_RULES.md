@@ -676,10 +676,8 @@ gespeichert sind nur die Annahmen des Schneeballs (`profiles.forecast_settings`,
   zwölf Monate (effektiver Monat §10), Rhythmus des Exports ab `next_pay_date`, sonst
   gleichmäßig über zwölf Monate. „Keine Ausschüttung" und Positionen ohne oder mit 0 €
   Jahresdividende tragen nichts bei.
-- **Angekündigt:** Zahltage des Kalenders im Fenster, nicht abgesagt, mit Betrag in EUR, als
-  Nettobetrag unverändert (§9.7). Passt der Name auf ein Asset, ersetzt die Ankündigung dessen
-  Schätzung im selben Monat, sonst im Vormonat oder Folgemonat (verrutschte Zahlung). Termine
-  ohne passendes Asset kommen hinzu.
+- **Kein Kalenderabgleich:** Der Dividendenkalender reicht nur ein, zwei Monate voraus und
+  fließt deshalb nicht ein; die Reihe ist durchgehend geschätzt.
 - **Vergleich im Kopf:** erhaltene Nettosumme der zwölf Monate bis heute.
 
 ### 14.2 Schneeball (`projectSnowball`)
@@ -693,7 +691,7 @@ gespeichert sind nur die Annahmen des Schneeballs (`profiles.forecast_settings`,
   Jahresdividende um die Rendite neuer Käufe. **Jahresende:** Jahresdividende × (1 + Wachstum).
 - **Inflation:** Werte des Jahres *n* geteilt durch (1 + Inflation)^n (heutige Kaufkraft).
 - **Szenarien:** vorsichtig und optimistisch mit 2 Prozentpunkten weniger (nie unter 0 %) bzw.
-  mehr Wachstum; im Diagramm als Band.
+  mehr Wachstum; im Diagramm als Band, im Kopf mit der jeweils gerechneten CAGR beschriftet.
 - **Ziel und Meilensteine:** erstes Jahr, in dem die monatliche Nettodividende das Ziel erreicht
   (Horizont 30 Jahre). Kursgewinne fließen nicht ein. Gerechnet wird mit Decimal, angezeigt in
   vollen Euro.

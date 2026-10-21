@@ -3,7 +3,6 @@ import { TrendingUp } from "lucide-react";
 import { KpiHero, KpiHeroSkeleton, TrendPill } from "@/components/domain/KpiHero";
 import { AmountText } from "@/components/money/AmountText";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Disclosure } from "@/components/ui/disclosure";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Section } from "@/components/ui/section";
@@ -18,15 +17,13 @@ import {
 } from "@/lib/money";
 import { normalizePayoutMonths } from "@/lib/statistics/effectiveMonth";
 import { monthNameDe, monthNameDeShort } from "@/lib/statistics/dates";
-import { formatCalendarDate } from "@/lib/utils/formatDate";
 import { formatCountNoun } from "@/lib/utils/formatNumber";
 import { useToday } from "@/lib/hooks/useToday";
 import { useEffectivePayments } from "@/features/dashboard/hooks";
-import { useResolvedCalendarEvents } from "@/features/calendar/resolvedEvents";
 import {
-  ForecastBarChart,
+  CategoryBarChart,
   SnowballChart,
-  type ForecastBarDatum,
+  type CategoryDatum,
   type SnowballDatum,
 } from "@/features/statistics/components/charts";
 import { PortfolioImportButton, PortfolioImportDialog } from "./PortfolioImportDialog";
@@ -43,7 +40,6 @@ import {
 import { useSecurities, useSecuritySnapshots } from "./hooks";
 import {
   DEFAULT_SNOWBALL_SETTINGS,
-  SCENARIO_SPREAD,
   depotAssumptions,
   projectSnowball,
   type DepotAssumptions,
@@ -58,7 +54,7 @@ const HUNDRED = new MoneyDecimal(100);
  * Monaten — und ab wann tragen mich Dividenden?
  *
  * Alle Zahlen hier sind **Schaetzungen** und als solche beschriftet. Sie
- * entstehen beim Anzeigen aus Depotstand, Kalender und erfassten Zahlungen
+ * entstehen beim Anzeigen aus Depotstand und erfassten Zahlungen
  * (dieselben Abfragen und derselbe Cache wie die uebrigen Bereiche) und werden
  * nie gespeichert — gespeichert sind nur die Annahmen des Schneeballs
  * (CALCULATION_RULES.md §14, PRODUCT_SPEC.md Grundsatz 8).
@@ -68,42 +64,26 @@ export function ForecastTab() {
   const { data: securities = [], isLoading: securitiesLoading } = useSecurities();
   const { data: snapshots = [], isLoading: snapshotsLoading } = useSecuritySnapshots();
   const { payments, paymentsQuery } = useEffectivePayments();
-  const { events } = useResolvedCalendarEvents();
   const settingsQuery = useForecastSettings();
   const [importOpen, setImportOpen] = React.useState(false);
   const openImport = React.useCallback(() => {
     setImportOpen(true);
   }, []);
 
-  const { facets, securityIdByName } = React.useMemo(() => {
-    const facetMap = new Map<string, ForecastFacets>();
-    const idByName = new Map<string, string>();
-    // Aktive vor archivierten: Bei gleichem Namen gehoert ein angekuendigter
-    // Termin zum gehaltenen Papier.
-    const ordered = [...securities].sort(
-      (a, b) => (a.archived_at === null ? 0 : 1) - (b.archived_at === null ? 0 : 1),
-    );
-    for (const security of ordered) {
-      facetMap.set(security.id, {
+  const facets = React.useMemo(() => {
+    const map = new Map<string, ForecastFacets>();
+    for (const security of securities) {
+      map.set(security.id, {
         name: security.name,
         payoutMonths: normalizePayoutMonths(security.payout_months),
       });
-      if (!idByName.has(security.name)) idByName.set(security.name, security.id);
     }
-    return { facets: facetMap, securityIdByName: idByName };
+    return map;
   }, [securities]);
 
   const result = React.useMemo(
-    () =>
-      forecastTwelveMonths({
-        snapshots,
-        facets,
-        payments,
-        events,
-        securityIdByName,
-        today,
-      }),
-    [snapshots, facets, payments, events, securityIdByName, today],
+    () => forecastTwelveMonths({ snapshots, facets, payments, today }),
+    [snapshots, facets, payments, today],
   );
   const depot = React.useMemo(() => depotAssumptions(snapshots), [snapshots]);
 
@@ -150,13 +130,14 @@ export function ForecastTab() {
     <div className="space-y-10 lg:space-y-12">
       <ForecastSummary forecast={forecast} />
 
-      <Section
-        title="Nächste 12 Monate"
-        description={<ForecastBasis forecast={forecast} />}
-      >
-        <ForecastBarChart
+      <Section title="Nächste 12 Monate">
+        <CategoryBarChart
           data={toBarData(forecast)}
           ariaLabel="Erwartete Nettodividende je Monat der nächsten zwölf Monate"
+          categoryHeader="Monat"
+          color="primary"
+          showCount={false}
+          emptyMessage="Für die nächsten zwölf Monate ist nichts zu erwarten."
         />
       </Section>
 
@@ -176,6 +157,9 @@ function ForecastSummary({ forecast }: { forecast: TwelveMonthForecast }) {
   const first = forecast.months[0];
   const last = forecast.months[forecast.months.length - 1];
   const average = Money.fromDecimal(forecast.total.toDecimal().dividedBy(12), EUR);
+  const strongest = forecast.months.reduce((best, month) =>
+    month.total.compareTo(best.total) > 0 ? month : best,
+  );
   const received = forecast.receivedLast12;
   const change = received.isZero()
     ? null
@@ -209,46 +193,28 @@ function ForecastSummary({ forecast }: { forecast: TwelveMonthForecast }) {
           caption: "letzte 12 Monate",
         },
         {
-          label: "Angekündigt",
-          value: <AmountText amount={forecast.announced} />,
-          caption: "laut Kalender",
+          label: "Stärkster Monat",
+          value: `${monthNameDe(strongest.month)} ${String(strongest.year)}`,
+          caption: formatMoneyWhole(strongest.total),
         },
       ]}
     />
   );
 }
 
-function ForecastBasis({ forecast }: { forecast: TwelveMonthForecast }) {
-  const ratio = forecast.netRatio;
-  return (
-    <>
-      Depotstand vom {formatCalendarDate(forecast.asOf)},{" "}
-      {ratio === null
-        ? "brutto (noch keine Zahlungen der letzten zwölf Monate)"
-        : `netto mit deiner Quote von ${formatPercent(ratio.times(HUNDRED), 0)}`}
-      {forecast.withoutAmount > 0 &&
-        ` · ${formatCountNoun(forecast.withoutAmount, "Position", "Positionen")} ohne Jahresdividende`}
-    </>
-  );
-}
-
 const TOOLTIP_PAYERS = 3;
 
-function toBarData(forecast: TwelveMonthForecast): ForecastBarDatum[] {
+function toBarData(forecast: TwelveMonthForecast): CategoryDatum[] {
   return forecast.months.map((month) => ({
     key: `${String(month.year)}-${String(month.month)}`,
     label: monthNameDeShort(month.month),
     detail: `${monthNameDe(month.month)} ${String(month.year)}`,
-    announced: month.announced.toChartNumber(),
-    estimated: month.estimated.toChartNumber(),
-    announcedMoney: month.announced,
-    estimatedMoney: month.estimated,
-    totalMoney: month.total,
-    top: month.contributions.slice(0, TOOLTIP_PAYERS).map((item) => ({
-      name: item.name,
-      money: item.amount,
-      announced: item.announced,
-    })),
+    value: month.total.toChartNumber(),
+    money: month.total,
+    count: month.contributions.length,
+    breakdown: month.contributions
+      .slice(0, TOOLTIP_PAYERS)
+      .map((item) => ({ name: item.name, money: item.amount })),
   }));
 }
 
@@ -277,18 +243,15 @@ function SnowballSection({
     () => projectSnowball({ depot, settings, netRatio, startYear }),
     [depot, settings, netRatio, startYear],
   );
-  const chartData = React.useMemo(
-    () => toSnowballData(result, settings.birthYear),
-    [result, settings.birthYear],
-  );
+  const chartData = React.useMemo(() => toSnowballData(result), [result]);
   const real = settings.inflationPercent > 0;
 
   return (
-    <Section title="Schneeball" description="Ab wann tragen dich deine Dividenden?">
+    <Section title="Schneeball">
       <div className="space-y-6">
         <SnowballHeadline result={result} settings={settings} />
 
-        <div className="grid grid-cols-2 gap-3 sm:max-w-md">
+        <SettingsList>
           <NumberField
             id="snowball-savings"
             label="Sparrate pro Monat"
@@ -307,66 +270,45 @@ function SnowballSection({
               update({ targetMonthly: value ?? 0 });
             }}
           />
-        </div>
-
-        <Disclosure
-          summary={<AssumptionSummary result={result} settings={settings} />}
-          contentClassName="space-y-4"
-        >
-          <div className="grid grid-cols-2 gap-3 sm:max-w-md">
-            <NumberField
-              id="snowball-growth"
-              label="Dividendenwachstum p. a."
-              suffix="%"
-              value={settings.growthPercent}
-              placeholder={formatDecimal(depot.growthPercent)}
-              hint="leer = aus deinem Depot"
-              onCommit={(value) => {
-                update({ growthPercent: value });
-              }}
-            />
-            <NumberField
-              id="snowball-yield"
-              label="Rendite neuer Käufe"
-              suffix="%"
-              value={settings.yieldPercent}
-              placeholder={formatDecimal(depot.yieldPercent)}
-              hint="leer = aus deinem Depot"
-              onCommit={(value) => {
-                update({ yieldPercent: value });
-              }}
-            />
-            <NumberField
-              id="snowball-inflation"
-              label="Inflation p. a."
-              suffix="%"
-              value={settings.inflationPercent}
-              hint="0 = Nennwerte"
-              onCommit={(value) => {
-                update({ inflationPercent: value ?? 0 });
-              }}
-            />
-            <NumberField
-              id="snowball-birth-year"
-              label="Geburtsjahr"
-              value={settings.birthYear}
-              integer
-              hint="für dein Alter, optional"
-              onCommit={(value) => {
-                update({ birthYear: value });
-              }}
-            />
-          </div>
-          <label className="flex min-h-11 items-center gap-3 text-sm">
+          <NumberField
+            id="snowball-growth"
+            label="Dividenden-CAGR"
+            suffix="%"
+            value={settings.growthPercent}
+            placeholder={formatDecimal(depot.growthPercent)}
+            onCommit={(value) => {
+              update({ growthPercent: value });
+            }}
+          />
+          <NumberField
+            id="snowball-yield"
+            label="Rendite neuer Käufe"
+            suffix="%"
+            value={settings.yieldPercent}
+            placeholder={formatDecimal(depot.yieldPercent)}
+            onCommit={(value) => {
+              update({ yieldPercent: value });
+            }}
+          />
+          <NumberField
+            id="snowball-inflation"
+            label="Inflation"
+            suffix="%"
+            value={settings.inflationPercent}
+            onCommit={(value) => {
+              update({ inflationPercent: value ?? 0 });
+            }}
+          />
+          <SettingRow label="Dividenden reinvestieren" htmlFor="snowball-reinvest">
             <Checkbox
+              id="snowball-reinvest"
               checked={settings.reinvest}
               onCheckedChange={(checked) => {
                 update({ reinvest: checked === true });
               }}
             />
-            Dividenden reinvestieren
-          </label>
-        </Disclosure>
+          </SettingRow>
+        </SettingsList>
 
         <SnowballChart
           data={chartData}
@@ -374,26 +316,10 @@ function SnowballSection({
           ariaLabel={`Hochgerechnete Nettodividende pro Monat bis ${String(startYear + chartData.length - 1)}${real ? " in heutiger Kaufkraft" : ""}`}
         />
 
-        <Milestones
-          result={result}
-          birthYear={settings.birthYear}
-          startYear={startYear}
-        />
-
-        <p className="text-[0.8125rem] text-muted-foreground">
-          Hochrechnung aus deinen Annahmen, keine Garantie. Kursgewinne fließen nicht ein,
-          nur Dividenden und Sparrate.
-          {real && " Beträge in heutiger Kaufkraft."} Die Spanne rechnet mit 2
-          Prozentpunkten weniger und mehr Dividendenwachstum.
-        </p>
+        <Milestones result={result} startYear={startYear} />
       </div>
     </Section>
   );
-}
-
-function ageSuffix(year: number | null, birthYear: number | null): string {
-  if (year === null || birthYear === null) return "";
-  return ` · mit ${String(year - birthYear)}`;
 }
 
 /**
@@ -427,7 +353,7 @@ function SnowballHeadline({
           ? "Mit diesen Annahmen nicht innerhalb von 30 Jahren erreicht."
           : targetYear === first.year
             ? "Schon erreicht."
-            : `in ${formatCountNoun(targetYear - first.year, "Jahr", "Jahren")}${ageSuffix(targetYear, settings.birthYear)}`
+            : `in ${formatCountNoun(targetYear - first.year, "Jahr", "Jahren")}`
       }
       stats={[
         {
@@ -438,43 +364,23 @@ function SnowballHeadline({
         {
           label: "Optimistisch",
           value: yearText(targetYearEarliest),
-          caption: `Wachstum +${String(SCENARIO_SPREAD)}`,
+          caption: `${formatPercent(result.growthHighPercent)} CAGR`,
         },
         {
           label: "Vorsichtig",
           value: yearText(targetYearLatest),
-          caption: `Wachstum −${String(SCENARIO_SPREAD)}`,
+          caption: `${formatPercent(result.growthLowPercent)} CAGR`,
         },
       ]}
     />
   );
 }
 
-function AssumptionSummary({
-  result,
-  settings,
-}: {
-  result: SnowballResult;
-  settings: SnowballSettings;
-}) {
-  const parts = [
-    `${formatPercent(result.growthPercent, 1)} Wachstum`,
-    `${formatPercent(result.yieldPercent, 1)} Rendite`,
-    settings.reinvest ? "reinvestiert" : "nicht reinvestiert",
-    settings.inflationPercent > 0
-      ? `${formatPercent(new MoneyDecimal(settings.inflationPercent), 1)} Inflation`
-      : "ohne Inflation",
-  ];
-  return <span>Annahmen: {parts.join(" · ")}</span>;
-}
-
 function Milestones({
   result,
-  birthYear,
   startYear,
 }: {
   result: SnowballResult;
-  birthYear: number | null;
   startYear: number;
 }) {
   if (result.milestones.length === 0) return null;
@@ -497,7 +403,7 @@ function Milestones({
               ? "nicht absehbar"
               : milestone.year <= startYear
                 ? "erreicht"
-                : `${String(milestone.year)}${ageSuffix(milestone.year, birthYear)}`}
+                : String(milestone.year)}
           </span>
         </li>
       ))}
@@ -505,14 +411,10 @@ function Milestones({
   );
 }
 
-function toSnowballData(
-  result: SnowballResult,
-  birthYear: number | null,
-): SnowballDatum[] {
+function toSnowballData(result: SnowballResult): SnowballDatum[] {
   return result.points.map((point) => ({
     year: point.year,
     label: String(point.year),
-    age: birthYear === null ? null : point.year - birthYear,
     base: point.base.toNumber(),
     band: [point.low.toNumber(), point.high.toNumber()],
     baseMoney: Money.fromDecimal(point.base, EUR),
@@ -532,9 +434,46 @@ function formatDecimal(value: DecimalInstance | number): string {
 }
 
 /**
+ * Einstellungen als Liste auf gedaempfter Flaeche: Beschriftung links, Feld
+ * rechts. Auf dem Telefon eine Spalte, ab `md` zwei — jede Zeile gleich hoch,
+ * nichts haengt unter einem Feld.
+ */
+function SettingsList({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      role="group"
+      aria-label="Annahmen"
+      className="grid grid-cols-1 gap-x-8 rounded-2xl bg-muted px-4 py-1 md:grid-cols-2 md:px-5"
+    >
+      {children}
+    </div>
+  );
+}
+
+function SettingRow({
+  label,
+  htmlFor,
+  children,
+}: {
+  label: string;
+  htmlFor: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex min-h-14 items-center justify-between gap-4 border-b border-border/60 py-2 last:border-b-0 md:[&:nth-last-child(2):nth-child(odd)]:border-b-0">
+      <label htmlFor={htmlFor} className="min-w-0 text-[0.9375rem]">
+        {label}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+/**
  * Zahlenfeld, das erst beim Verlassen (oder Enter) speichert: Jeder
  * Tastendruck wuerde sonst eine Profilzeile schreiben und den Schneeball neu
- * rechnen, waehrend noch getippt wird.
+ * rechnen, waehrend noch getippt wird. Ein leeres Feld mit Platzhalter steht
+ * fuer den Wert aus dem Depot.
  */
 function NumberField({
   id,
@@ -543,19 +482,15 @@ function NumberField({
   onCommit,
   suffix,
   placeholder,
-  hint,
-  integer = false,
 }: {
   id: string;
   label: string;
   value: number | null;
   onCommit: (value: number | null) => void;
-  suffix?: string;
+  suffix: string;
   placeholder?: string;
-  hint?: string;
-  integer?: boolean;
 }) {
-  const shown = value === null ? "" : integer ? String(value) : formatDecimal(value);
+  const shown = value === null ? "" : formatDecimal(value);
   const [draft, setDraft] = React.useState(shown);
   // Gespeicherter Wert hat sich geaendert (anderes Geraet, verworfene Eingabe):
   // Entwurf nachziehen — waehrend des Renderns, nicht in einem Effekt.
@@ -567,32 +502,24 @@ function NumberField({
 
   const commit = () => {
     const parsed = parseGermanNumber(draft);
-    if (
-      parsed === undefined ||
-      (integer && parsed !== null && !Number.isInteger(parsed))
-    ) {
+    if (parsed === undefined) {
       setDraft(shown);
       return;
     }
     if (parsed !== value) onCommit(parsed);
   };
 
-  const hintId = hint ? `${id}-hint` : undefined;
   return (
-    <div className="min-w-0 space-y-1.5">
-      <label htmlFor={id} className="block text-[0.8125rem] text-muted-foreground">
-        {label}
-      </label>
-      <div className="relative">
+    <SettingRow label={label} htmlFor={id}>
+      <div className="relative w-32 shrink-0">
         <Input
           id={id}
           type="text"
-          inputMode={integer ? "numeric" : "decimal"}
+          inputMode="decimal"
           autoComplete="off"
           value={draft}
           placeholder={placeholder}
-          aria-describedby={hintId}
-          className={suffix ? "pr-8 tabular-nums" : "tabular-nums"}
+          className="h-10 bg-background pr-8 text-right tabular-nums"
           onChange={(event) => {
             setDraft(event.target.value);
           }}
@@ -601,20 +528,13 @@ function NumberField({
             if (event.key === "Enter") event.currentTarget.blur();
           }}
         />
-        {suffix && (
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground"
-          >
-            {suffix}
-          </span>
-        )}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground"
+        >
+          {suffix}
+        </span>
       </div>
-      {hint && (
-        <p id={hintId} className="text-xs text-muted-foreground">
-          {hint}
-        </p>
-      )}
-    </div>
+    </SettingRow>
   );
 }

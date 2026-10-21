@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { EUR, Money, formatPercent } from "@/lib/money";
-import type { CalendarEvent } from "@/lib/calendar/types";
 import type { AnalyticsPayment } from "@/lib/statistics/types";
 import type { SecuritySnapshot } from "@/lib/supabase/repositories/securitySnapshots";
 import {
@@ -68,37 +67,9 @@ function payment(
   };
 }
 
-function event(companyName: string, date: string, amount: string): CalendarEvent {
-  counter += 1;
-  return {
-    id: `ev-${String(counter)}`,
-    externalUid: `uid-${String(counter)}`,
-    eventType: "payment",
-    eventState: "active",
-    title: companyName,
-    companyName,
-    matchedCompanyName: null,
-    expectedAmount: Money.fromString(amount, EUR),
-    sourcePortfolio: null,
-    description: null,
-    location: null,
-    externalUrl: null,
-    categories: [],
-    date,
-    endDate: null,
-    startsAt: null,
-    endsAt: null,
-    isAllDay: true,
-  };
-}
-
 const FACETS = new Map<string, ForecastFacets>([
   ["sec-a", { name: "Alpha", payoutMonths: [1, 4, 7, 10] }],
   ["sec-b", { name: "Beta", payoutMonths: [] }],
-]);
-const IDS = new Map([
-  ["Alpha", "sec-a"],
-  ["Beta", "sec-b"],
 ]);
 
 function run(
@@ -108,8 +79,6 @@ function run(
     snapshots: [snapshot()],
     facets: FACETS,
     payments: [],
-    events: [],
-    securityIdByName: IDS,
     today: TODAY,
     ...input,
   });
@@ -213,43 +182,7 @@ describe("forecastTwelveMonths", () => {
     expect(monthTotal(forecast, 2027, 1)).toBe("22.50");
     expect(monthTotal(forecast, 2026, 11)).toBe("0.00");
     expect(forecast.total.toStringValue()).toBe("90.00");
-    expect(forecast.estimated.toStringValue()).toBe("90.00");
     expect(forecast.receivedLast12.toStringValue()).toBe("22.50");
-  });
-
-  it("ersetzt die Schaetzung durch eine Ankuendigung im selben Monat", () => {
-    const forecast = run({ events: [event("Alpha", "2027-01-15", "31.00")] });
-    expect(monthTotal(forecast, 2027, 1)).toBe("31.00");
-    expect(forecast.announced.toStringValue()).toBe("31.00");
-    // Ohne Zahlungen gilt brutto: drei weitere Quartale zu 30 €.
-    expect(forecast.total.toStringValue()).toBe("121.00");
-  });
-
-  it("ersetzt die Schaetzung des Nachbarmonats, wenn die Zahlung verrutscht", () => {
-    const forecast = run({ events: [event("Alpha", "2027-02-02", "30.00")] });
-    expect(monthTotal(forecast, 2027, 1)).toBe("0.00");
-    expect(monthTotal(forecast, 2027, 2)).toBe("30.00");
-    expect(forecast.total.toStringValue()).toBe("120.00");
-  });
-
-  it("nimmt Ankuendigungen ohne passendes Asset zusaetzlich auf", () => {
-    const forecast = run({ events: [event("Gamma", "2026-12-10", "12.00")] });
-    expect(monthTotal(forecast, 2026, 12)).toBe("12.00");
-    expect(forecast.months[1].contributions[0]).toMatchObject({
-      securityId: null,
-      name: "Gamma",
-      announced: true,
-    });
-  });
-
-  it("ignoriert abgesagte Termine und solche ausserhalb des Fensters", () => {
-    const cancelled = {
-      ...event("Alpha", "2027-01-15", "99.00"),
-      eventState: "cancelled" as const,
-    };
-    const forecast = run({ events: [cancelled, event("Alpha", "2026-10-30", "99.00")] });
-    expect(forecast.announced.toStringValue()).toBe("0.00");
-    expect(monthTotal(forecast, 2027, 1)).toBe("30.00");
   });
 
   it("zaehlt Positionen ohne Jahresdividende und laesst Nicht-Zahler aus", () => {
@@ -278,8 +211,6 @@ describe("forecastTwelveMonths", () => {
     const base = {
       facets: FACETS,
       payments: [],
-      events: [],
-      securityIdByName: IDS,
       today: TODAY,
     };
     expect(forecastTwelveMonths({ ...base, snapshots: [] }).kind).toBe("empty");
