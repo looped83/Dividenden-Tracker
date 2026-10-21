@@ -75,6 +75,34 @@ export interface ParsedCalendar {
   skipped: number;
 }
 
+/**
+ * Fuehrt Zahltag- und Ex-Tag-Feed zu **einem** Abgleich zusammen. Ein Abgleich
+ * statt zweier, damit ein entfallener Termin genau dann als entfallen gilt,
+ * wenn ihn keiner der beiden Feeds mehr liefert.
+ *
+ * Die UID ist je Nutzer und Quelle eindeutig (Migration 0027). Verwendet die
+ * Quelle fuer Ex-Tag und Zahltag derselben Dividende dieselbe UID, bekommt der
+ * Ex-Tag ein Suffix — sonst ueberschriebe der eine Termin den anderen.
+ */
+export function mergeFeeds(
+  pay: ParsedCalendar,
+  ex: ParsedCalendar | null,
+): ParsedCalendar {
+  if (!ex) return pay;
+  const payUids = new Set(pay.events.map((event) => event.externalUid));
+  return {
+    events: [
+      ...pay.events,
+      ...ex.events.map((event) =>
+        payUids.has(event.externalUid)
+          ? { ...event, externalUid: `${event.externalUid.slice(0, 509)}#ex` }
+          : event,
+      ),
+    ],
+    skipped: pay.skipped + ex.skipped,
+  };
+}
+
 /** Der Inhalt ist kein verwertbarer iCalendar-Datenstrom. */
 export class IcalParseError extends Error {
   constructor(message = "Der Kalenderinhalt konnte nicht gelesen werden.") {
@@ -234,20 +262,24 @@ function readRawData(vevent: IcalComponent): Record<string, string | string[]> {
 /**
  * Ereignistyp. Maszgeblich ist das Schlagwort der SUMMARY („Zahltag", „Ex-Tag"),
  * das `parseSummary` bereits herausgeloest hat. Fehlt es, entscheiden die
- * CATEGORIES; ohne jeden Hinweis bleibt es beim Zahltag — dem einzigen Typ, den
- * der aktuell verwendete Feed (`dates=pay`) enthaelt.
+ * CATEGORIES; ohne jeden Hinweis gilt die Art des Feeds (`fallback`): Der
+ * Zahltag-Feed (`dates=pay`) liefert Zahltage, der Ex-Tag-Feed Ex-Tage.
  */
 function readEventType(
   fromSummary: CalendarEventType | null,
   categories: string[] | null,
+  fallback: CalendarEventType,
 ): CalendarEventType {
   if (fromSummary !== null) return fromSummary;
   const haystack = (categories ?? []).join(" ").toLowerCase();
   if (/\bex[- ]?(date|tag|dividende)\b/.test(haystack)) return "ex_date";
-  return "payment";
+  return fallback;
 }
 
-function parseEvent(vevent: IcalComponent): ParsedCalendarEvent | null {
+function parseEvent(
+  vevent: IcalComponent,
+  fallbackType: CalendarEventType,
+): ParsedCalendarEvent | null {
   const externalUid = trimmedOrNull(vevent.getFirstPropertyValue("uid"), 512);
   if (!externalUid) return null;
 
@@ -278,7 +310,7 @@ function parseEvent(vevent: IcalComponent): ParsedCalendarEvent | null {
 
   return {
     externalUid,
-    eventType: readEventType(summary.eventType, categories),
+    eventType: readEventType(summary.eventType, categories, fallbackType),
     eventState: status?.toUpperCase() === "CANCELLED" ? "cancelled" : "active",
     title,
     companyName: summary.company,
@@ -310,8 +342,14 @@ function parseEvent(vevent: IcalComponent): ParsedCalendarEvent | null {
  * Lauf nicht — sie werden gezaehlt und uebersprungen. Nur ein Inhalt, der
  * insgesamt kein iCalendar ist, fuehrt zum Abbruch: dann ist der Feed kaputt,
  * und ein Abgleich haette keine Grundlage.
+ *
+ * `fallbackType` ist die Ereignisart des Feeds, falls ein Termin selbst keine
+ * nennt (siehe `readEventType`).
  */
-export function parseIcalCalendar(text: string): ParsedCalendar {
+export function parseIcalCalendar(
+  text: string,
+  fallbackType: CalendarEventType = "payment",
+): ParsedCalendar {
   let root: IcalComponent;
   try {
     // `ICAL.parse` ist untypisiert (jCal-Array); die Struktur wird hier einmal
@@ -342,7 +380,7 @@ export function parseIcalCalendar(text: string): ParsedCalendar {
   let skipped = 0;
 
   for (const vevent of root.getAllSubcomponents("vevent")) {
-    const event = parseEvent(vevent);
+    const event = parseEvent(vevent, fallbackType);
     if (!event) {
       skipped += 1;
       continue;

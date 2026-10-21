@@ -5,6 +5,8 @@ import type {
   Database,
 } from "@/lib/supabase/database.types";
 
+export type { CalendarEventType };
+
 /**
  * Zeile, wie die App sie laedt — nur die Spalten, die {@link mapCalendarEvent}
  * liest. Beim Erweitern hier **und** in `CALENDAR_EVENT_COLUMNS`

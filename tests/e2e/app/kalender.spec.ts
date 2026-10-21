@@ -54,6 +54,14 @@ test.use({
         portfolio: "Trade Republic",
       },
       { date: "2099-04-02", title: "Coca-Cola Co." },
+      {
+        date: "2099-03-02",
+        title: "Apple Inc. 51,37 € Ex-Tag (Trade Republic)",
+        company: "Apple Inc.",
+        amount: "51.37",
+        portfolio: "Trade Republic",
+        type: "ex_date",
+      },
     ],
   },
 });
@@ -161,4 +169,20 @@ test("keine waagerechte Bildlaufleiste auf schmalen Geräten", async ({ page }) 
     );
     expect(ueberlauf, `${ansicht} bei 320px`).toBeLessThanOrEqual(0);
   }
+});
+
+test("Ex-Tage stehen in einem eigenen Kalender mit derselben Bedienung", async ({
+  page,
+}) => {
+  await page.goto("/#/kalender");
+  await expect(page.getByRole("radio", { name: "Dividenden" })).toBeChecked();
+  await expect(page.getByRole("button", { name: /Apple Inc\., Ex-Tag/ })).toHaveCount(0);
+
+  await page.getByRole("radio", { name: "Ex-Tage" }).click();
+  await expect(page).toHaveURL(/art=ex/);
+  await expect(
+    page.getByRole("button", { name: /Apple Inc\., Ex-Tag am 2\. März 2099/ }),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: /Zahltag am/ })).toHaveCount(0);
+  await pruefeAxe(page, "Kalender – Ex-Tage");
 });

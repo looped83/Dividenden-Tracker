@@ -62,6 +62,24 @@ export function isPlausibleFeedUrl(value: string | undefined | null): value is s
   }
 }
 
+/**
+ * Adresse des Ex-Tag-Feeds, abgeleitet aus der des Zahltag-Feeds: DivvyDiary
+ * unterscheidet beide allein am Parameter `dates` (`pay` bzw. `ex`). Ohne
+ * diesen Parameter gibt es nichts abzuleiten — dann bleibt es bei den
+ * Zahltagen, statt einen geratenen Feed abzurufen.
+ */
+export function exDateFeedUrl(payFeedUrl: string): string | null {
+  let url: URL;
+  try {
+    url = new URL(payFeedUrl);
+  } catch {
+    return null;
+  }
+  if (url.searchParams.get("dates") !== "pay") return null;
+  url.searchParams.set("dates", "ex");
+  return url.toString();
+}
+
 function isAcceptableContentType(header: string | null): boolean {
   // Fehlt die Angabe, entscheidet der Inhalt selbst (Pruefung unten).
   if (!header) return true;

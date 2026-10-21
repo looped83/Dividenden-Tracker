@@ -3,7 +3,8 @@ import { AmountText } from "@/components/money/AmountText";
 import { monthNameDe } from "@/lib/statistics";
 import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
 import { formatDayMonth } from "@/lib/utils/formatDate";
-import { relativeDayLabel } from "@/lib/calendar/format";
+import { EVENT_KIND_TEXT, relativeDayLabel } from "@/lib/calendar/format";
+import type { CalendarEventType } from "@/lib/calendar/types";
 import type { CalendarSummary as Summary, ExpectedTotal } from "@/lib/calendar/summary";
 
 /**
@@ -21,9 +22,11 @@ import type { CalendarSummary as Summary, ExpectedTotal } from "@/lib/calendar/s
  */
 export function CalendarSummaryTiles({
   summary,
+  type,
   today,
 }: {
   summary: Summary;
+  type: CalendarEventType;
   today: string;
 }) {
   const month = monthNameDe(Number.parseInt(today.slice(5, 7), 10));
@@ -42,7 +45,7 @@ export function CalendarSummaryTiles({
       }
       stats={[
         {
-          label: "Nächster Zahltag",
+          label: `Nächster ${EVENT_KIND_TEXT[type].one}`,
           value: next ? formatDayMonth(next.date) : "–",
           caption: next
             ? // Die Anzahl nur, wenn an diesem Tag mehr als ein Termin liegt.

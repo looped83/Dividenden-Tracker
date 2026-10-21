@@ -1,7 +1,7 @@
 import { EUR, Money, sumMoney, type CurrencyCode } from "@/lib/money";
 import type { AnnouncedPayment } from "@/lib/statistics";
 import { addDays } from "./month";
-import type { CalendarEvent } from "./types";
+import type { CalendarEvent, CalendarEventType } from "./types";
 
 /**
  * Kennzahlen des Dividendenkalenders (Kachelzeile über der Liste).
@@ -34,9 +34,9 @@ export interface NextPayday {
  */
 export interface ExpectedTotal {
   total: Money | null;
-  /** Zahltage des Zeitraums, die einen Betrag mitbringen. */
+  /** Termine des Zeitraums, die einen Betrag mitbringen. */
   withAmount: number;
-  /** Zahltage des Zeitraums insgesamt (ohne Ex-Tage). */
+  /** Termine des Zeitraums insgesamt (nur die gezaehlte Ereignisart). */
   count: number;
   mixedCurrencies: boolean;
 }
@@ -70,17 +70,20 @@ export function isCounted(event: CalendarEvent): boolean {
  * ausschliesslich ueber `lib/money` (Decimal) — nie mit `+` auf rohen Zahlen
  * (CALCULATION_RULES.md §8).
  *
- * Gezaehlt werden nur Zahltage: Zu einer Dividende gehoeren Ex-Tag **und**
- * Zahltag. Nennt der Feed den Betrag an beiden, stuende dieselbe Dividende
- * sonst zweimal in der Summe (wie in {@link announcedForForecast}).
+ * Gezaehlt wird nur **eine** Ereignisart (`type`): Zu einer Dividende gehoeren
+ * Ex-Tag **und** Zahltag. Nennt der Feed den Betrag an beiden, stuende dieselbe
+ * Dividende sonst zweimal in der Summe (wie in {@link announcedForForecast}).
  */
-export function expectedTotalOf(events: readonly CalendarEvent[]): ExpectedTotal {
+export function expectedTotalOf(
+  events: readonly CalendarEvent[],
+  type: CalendarEventType = "payment",
+): ExpectedTotal {
   const amounts: Money[] = [];
   let currency: CurrencyCode | null = null;
   let mixedCurrencies = false;
-  const paydays = events.filter((event) => event.eventType === "payment");
+  const ofType = events.filter((event) => event.eventType === type);
 
-  for (const event of paydays) {
+  for (const event of ofType) {
     const amount = event.expectedAmount;
     if (!amount) continue;
     if (currency === null) currency = amount.currency;
@@ -91,14 +94,16 @@ export function expectedTotalOf(events: readonly CalendarEvent[]): ExpectedTotal
   const total =
     currency !== null && !mixedCurrencies ? sumMoney(amounts, currency) : null;
 
-  return { total, withAmount: amounts.length, count: paydays.length, mixedCurrencies };
+  return { total, withAmount: amounts.length, count: ofType.length, mixedCurrencies };
 }
 
+/** Kennzahlen einer Ereignisart; Termine anderer Art bleiben aussen vor. */
 export function buildCalendarSummary(
   events: readonly CalendarEvent[],
   today: string,
+  type: CalendarEventType = "payment",
 ): CalendarSummary {
-  const counted = events.filter(isCounted);
+  const counted = events.filter((event) => event.eventType === type && isCounted(event));
   const upcoming = counted
     .filter((event) => event.date >= today)
     .slice()
@@ -121,8 +126,12 @@ export function buildCalendarSummary(
     next,
     thisMonth: expectedTotalOf(
       counted.filter((event) => event.date.startsWith(monthPrefix)),
+      type,
     ),
-    next30Days: expectedTotalOf(upcoming.filter((event) => event.date <= horizon)),
+    next30Days: expectedTotalOf(
+      upcoming.filter((event) => event.date <= horizon),
+      type,
+    ),
     upcoming: upcoming.length,
   };
 }

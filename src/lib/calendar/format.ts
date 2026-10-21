@@ -2,7 +2,7 @@ import { monthNameDe, monthNameDeShort } from "@/lib/statistics";
 import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
 import { formatCalendarDate } from "@/lib/utils/formatDate";
 import { WEEKDAYS_DE, WEEKDAYS_DE_SHORT, weekdayIndex } from "./month";
-import type { CalendarEvent } from "./types";
+import type { CalendarEvent, CalendarEventType } from "./types";
 
 /**
  * Beschriftungen des Dividendenkalenders.
@@ -18,9 +18,31 @@ const TIME = new Intl.DateTimeFormat("de-DE", {
   timeZone: "Europe/Berlin",
 });
 
+/**
+ * Benennung je Ereignisart: Zahltag- und Ex-Tag-Kalender teilen sich jede
+ * Ansicht und unterscheiden sich nur in diesen Woertern.
+ */
+export const EVENT_KIND_TEXT: Record<
+  CalendarEventType,
+  { one: string; many: string; spokenOne: string; spokenMany: string }
+> = {
+  payment: {
+    one: "Zahltag",
+    many: "Zahltage",
+    spokenOne: "angekündigter Zahltag",
+    spokenMany: "angekündigte Zahltage",
+  },
+  ex_date: {
+    one: "Ex-Tag",
+    many: "Ex-Tage",
+    spokenOne: "angekündigter Ex-Tag",
+    spokenMany: "angekündigte Ex-Tage",
+  },
+};
+
 /** „Zahltag" / „Ex-Tag" — die Ereignisart in Worten. */
 export function eventTypeLabel(event: CalendarEvent): string {
-  return event.eventType === "ex_date" ? "Ex-Tag" : "Zahltag";
+  return EVENT_KIND_TEXT[event.eventType].one;
 }
 
 /**
@@ -93,19 +115,22 @@ export function eventTime(event: CalendarEvent): string | null {
   return `${TIME.format(new Date(event.startsAt))} Uhr`;
 }
 
-/** „2 angekündigte Zahltage" / „1 angekündigter Zahltag". */
-function eventCountLabel(count: number): string {
-  return formatCountNoun(count, "angekündigter Zahltag", "angekündigte Zahltage");
-}
-
 /**
  * Bezeichnung einer Tageszelle fuer Sprachausgaben:
  * „13. August 2026, 2 angekündigte Zahltage" bzw. „…, keine Termine".
  */
-export function dayCellLabel(iso: string, count: number, isToday: boolean): string {
+export function dayCellLabel(
+  iso: string,
+  count: number,
+  isToday: boolean,
+  type: CalendarEventType = "payment",
+): string {
   const parts = [spokenDate(iso)];
   if (isToday) parts.push("heute");
-  parts.push(count === 0 ? "keine Termine" : eventCountLabel(count));
+  const { spokenOne, spokenMany } = EVENT_KIND_TEXT[type];
+  parts.push(
+    count === 0 ? "keine Termine" : formatCountNoun(count, spokenOne, spokenMany),
+  );
   return parts.join(", ");
 }
 

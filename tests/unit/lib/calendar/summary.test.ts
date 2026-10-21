@@ -151,6 +151,22 @@ describe("expectedTotalOf", () => {
     expect(total.count).toBe(1);
   });
 
+  it("summiert im Ex-Tag-Kalender die Ex-Tage", () => {
+    const total = expectedTotalOf(
+      [
+        event("ex", "2026-08-03", "A", {
+          eventType: "ex_date",
+          expectedAmount: betrag("7.00"),
+        }),
+        event("zahl", "2026-08-20", "A", { expectedAmount: betrag("10.00") }),
+      ],
+      "ex_date",
+    );
+
+    expect(total.total?.toStringValue()).toBe("7.00");
+    expect(total.count).toBe(1);
+  });
+
   it("zaehlt Termine ohne Betrag mit, ohne sie als Null zu verrechnen", () => {
     const total = expectedTotalOf([
       event("1", "2026-08-13", "A", { expectedAmount: betrag("10.00") }),
