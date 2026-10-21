@@ -140,6 +140,9 @@ export function EventTile({
               {meta && <span>{meta}</span>}
             </>
           }
+          // Ohne Betrag (der Ex-Tag-Feed nennt keinen) bleibt die Stelle
+          // leer, aber so hoch wie ein Betrag: Sonst waeren Zeilen ohne Betrag
+          // 4px niedriger, und die Linien sprangen beim Wechsel der Kalender.
           trailing={
             event.expectedAmount ? (
               <span
@@ -148,7 +151,11 @@ export function EventTile({
               >
                 <AmountText amount={event.expectedAmount} />
               </span>
-            ) : undefined
+            ) : (
+              <span aria-hidden className="invisible">
+                0
+              </span>
+            )
           }
         />
       </button>

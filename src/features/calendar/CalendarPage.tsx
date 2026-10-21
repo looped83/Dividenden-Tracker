@@ -127,7 +127,7 @@ export function CalendarPage() {
     (options: { announce: boolean }) => {
       syncMutation.mutate(undefined, {
         onSuccess: () => {
-          if (options.announce) notify("Dividendenkalender aktualisiert.");
+          if (options.announce) notify("Kalender aktualisiert.");
         },
       });
     },
