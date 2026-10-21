@@ -34,6 +34,8 @@ export interface AnalysisFacets {
   country: string | null;
   /** Ausschuettungswaehrung des Papiers — nicht die Depotwaehrung des Exports. */
   currency: string | null;
+  /** Gepflegte Ausschuettungsmonate (1–12); leer, wenn nicht gepflegt. */
+  payoutMonths: readonly number[];
 }
 
 /** Ein Anteil am Ganzen. */
@@ -103,6 +105,30 @@ export const FREQUENCY_LABELS: Readonly<Record<DividendFrequency, string>> = {
   annually: "jährlich",
   irregular: "unregelmäßig",
 };
+
+const FREQUENCY_BY_MONTH_COUNT: Readonly<Record<number, DividendFrequency>> = {
+  1: "annually",
+  2: "biannually",
+  4: "quarterly",
+  12: "monthly",
+};
+
+/**
+ * Rhythmus einer Position: Gepflegte Ausschuettungsmonate gehen dem Export vor.
+ * DivvyDiary leitet den Rhythmus aus der bisherigen Historie ab und nennt bei
+ * einem jungen Papier mit erst einer Zahlung „jaehrlich", obwohl es
+ * vierteljaehrlich ausschuettet. Die Monate pflegt der Nutzer selbst, sie sind
+ * die bessere Quelle. „Keine Ausschuettung" laut Export bleibt stehen — dann
+ * zahlt das Papier derzeit nicht, egal was die Stammdaten sagen. Eine Anzahl
+ * Monate ohne festen Rhythmus (z. B. drei) laesst den Export stehen.
+ */
+export function effectiveFrequency(
+  exported: DividendFrequency | null,
+  payoutMonths: readonly number[],
+): DividendFrequency | null {
+  if (exported === "none") return exported;
+  return FREQUENCY_BY_MONTH_COUNT[payoutMonths.length] ?? exported;
+}
 
 let countryNames: Intl.DisplayNames | null | undefined;
 
@@ -275,6 +301,8 @@ export function analyzePortfolio(
 
   const facetOf = (row: SecuritySnapshot) => facets.get(row.security_id);
   const nameOf = (securityId: string) => facets.get(securityId)?.name ?? "Unbekannt";
+  const frequencyOf = (row: SecuritySnapshot) =>
+    effectiveFrequency(row.dividend_frequency, facetOf(row)?.payoutMonths ?? []);
   /**
    * Rhythmus nur fuer Positionen, die tatsaechlich ausschuetten: „keine
    * Ausschuettung", eine fehlende Angabe und eine erwartete Dividende von 0 €
@@ -282,12 +310,14 @@ export function analyzePortfolio(
    * beziehen sich deshalb auf die Summe dieser Positionen, damit der Ring
    * aufgeht.
    */
-  const payers = entries.filter(
-    (entry) =>
-      entry.row.dividend_frequency !== null &&
-      entry.row.dividend_frequency !== "none" &&
-      isPositive(entry.row.annual_dividend_total),
-  );
+  const payers = entries.filter((entry) => {
+    const frequency = frequencyOf(entry.row);
+    return (
+      frequency !== null &&
+      frequency !== "none" &&
+      isPositive(entry.row.annual_dividend_total)
+    );
+  });
   const payersTotal = sumEntries(payers, currency);
 
   return {
@@ -316,7 +346,7 @@ export function analyzePortfolio(
         : group(
             payers,
             payersTotal,
-            (row) => row.dividend_frequency ?? UNKNOWN_KEY,
+            (row) => frequencyOf(row) ?? UNKNOWN_KEY,
             (key) => capitalized(FREQUENCY_LABELS[key as DividendFrequency]),
             nameOf,
           ),

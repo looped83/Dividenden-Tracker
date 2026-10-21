@@ -3,6 +3,7 @@ import { formatMoney, formatPercent } from "@/lib/money";
 import {
   analyzePortfolio,
   collapseSlices,
+  effectiveFrequency,
   type AnalysisFacets,
   type PortfolioAnalysis,
 } from "@/features/securities/analysis";
@@ -42,11 +43,41 @@ function snapshot(partial: Partial<SecuritySnapshot> = {}): SecuritySnapshot {
 }
 
 const FACETS = new Map<string, AnalysisFacets>([
-  ["sec-a", { name: "Alpha", sector: "Health Care", country: "US", currency: "USD" }],
-  ["sec-b", { name: "Beta", sector: "Real Estate", country: "DE", currency: "EUR" }],
-  ["sec-c", { name: "Gamma", sector: "Health Care", country: "FR", currency: "EUR" }],
+  [
+    "sec-a",
+    {
+      name: "Alpha",
+      sector: "Health Care",
+      country: "US",
+      currency: "USD",
+      payoutMonths: [],
+    },
+  ],
+  [
+    "sec-b",
+    {
+      name: "Beta",
+      sector: "Real Estate",
+      country: "DE",
+      currency: "EUR",
+      payoutMonths: [],
+    },
+  ],
+  [
+    "sec-c",
+    {
+      name: "Gamma",
+      sector: "Health Care",
+      country: "FR",
+      currency: "EUR",
+      payoutMonths: [],
+    },
+  ],
   // Ein ETF: Beim Import wurde „mixed" verworfen, es bleibt nichts.
-  ["sec-etf", { name: "Welt-ETF", sector: null, country: null, currency: null }],
+  [
+    "sec-etf",
+    { name: "Welt-ETF", sector: null, country: null, currency: null, payoutMonths: [] },
+  ],
 ]);
 
 function analyze(rows: SecuritySnapshot[], measure: "wert" | "dividende" = "wert") {
@@ -203,9 +234,36 @@ describe("Positionen je Anteil", () => {
       sector: null,
       country: "XS",
       currency: "USD",
+      payoutMonths: [],
     });
     const analysis = analyze([snapshot({ security_id: "sec-xs" })]);
     expect(labels(analysis.countries)).toEqual(["International (XS)"]);
+  });
+});
+
+describe("effectiveFrequency", () => {
+  it("lässt gepflegte Monate vor dem Rhythmus des Exports gelten", () => {
+    // DivvyDiary nennt ein junges Papier mit erst einer Zahlung „jährlich".
+    expect(effectiveFrequency("annually", [3, 6, 9, 12])).toBe("quarterly");
+    expect(effectiveFrequency(null, [6, 12])).toBe("biannually");
+    expect(effectiveFrequency("quarterly", [])).toBe("quarterly");
+    // Ohne festen Rhythmus bleibt der Export, „keine Ausschüttung" ebenso.
+    expect(effectiveFrequency("irregular", [1, 5, 9])).toBe("irregular");
+    expect(effectiveFrequency("none", [3, 6, 9, 12])).toBe("none");
+  });
+
+  it("zählt im Rhythmus-Ring nach den gepflegten Monaten", () => {
+    FACETS.set("sec-q", {
+      name: "Quartals-ETF",
+      sector: null,
+      country: null,
+      currency: "USD",
+      payoutMonths: [3, 6, 9, 12],
+    });
+    const analysis = analyze([
+      snapshot({ security_id: "sec-q", dividend_frequency: "annually" }),
+    ]);
+    expect(labels(analysis.frequencies)).toEqual(["Vierteljährlich"]);
   });
 });
 
@@ -215,7 +273,13 @@ describe("collapseSlices", () => {
       ["A", "B", "C", "D", "E", "F"]
         .map((sector, index) => {
           const id = `sec-${sector}`;
-          FACETS.set(id, { name: sector, sector, country: null, currency: null });
+          FACETS.set(id, {
+            name: sector,
+            sector,
+            country: null,
+            currency: null,
+            payoutMonths: [],
+          });
           return snapshot({
             security_id: id,
             market_value: `${String(600 - index * 100)}.00`,

@@ -463,7 +463,7 @@ export function SecurityDetailPage() {
       {/* Die Position steht ausserhalb der Bedingung oben: Ein frisch gekauftes
           Papier hat einen Bestand, aber noch keinen Eingang. */}
       <div className="grid grid-cols-1 gap-10 pt-4 lg:grid-cols-2 lg:gap-x-16">
-        <PositionCard status={snapshotStatus} />
+        <PositionCard status={snapshotStatus} payoutMonths={payoutMonths} />
 
         <div className="space-y-10">
           <Section title="Ausschüttungsplan">

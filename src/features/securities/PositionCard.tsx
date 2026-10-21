@@ -7,7 +7,7 @@ import { AmountText } from "@/components/money/AmountText";
 import { Money, formatPercent, toCurrencyCode } from "@/lib/money";
 import { formatCalendarDate } from "@/lib/utils/formatDate";
 import { ratioToPercent, type SnapshotStatus } from "@/features/securities/snapshots";
-import { FREQUENCY_LABELS } from "@/features/securities/analysis";
+import { effectiveFrequency, FREQUENCY_LABELS } from "@/features/securities/analysis";
 
 /**
  * Der Depotstand eines Unternehmens (docs/PORTFOLIO_IMPORT.md).
@@ -30,9 +30,18 @@ import { FREQUENCY_LABELS } from "@/features/securities/analysis";
  * Grundsatz 8); es sind Marktdaten und **erwartete** Ausschuettungen einer
  * fremden Quelle.
  */
-export function PositionCard({ status }: { status: SnapshotStatus }) {
+export function PositionCard({
+  status,
+  payoutMonths,
+}: {
+  status: SnapshotStatus;
+  /** Gepflegte Ausschuettungsmonate; sie gehen dem Rhythmus des Exports vor. */
+  payoutMonths: readonly number[];
+}) {
   const { snapshot, current } = status;
   if (snapshot === null) return null;
+
+  const frequency = effectiveFrequency(snapshot.dividend_frequency, payoutMonths);
 
   const currency = toCurrencyCode(snapshot.currency);
   const money = (value: string | null) =>
@@ -94,10 +103,7 @@ export function PositionCard({ status }: { status: SnapshotStatus }) {
             {orDash(dividendPerShare && <AmountText amount={dividendPerShare} />)}
           </DetailRow>
           <DetailRow label="Rhythmus">
-            {orDash(
-              snapshot.dividend_frequency &&
-                FREQUENCY_LABELS[snapshot.dividend_frequency],
-            )}
+            {orDash(frequency && FREQUENCY_LABELS[frequency])}
           </DetailRow>
           <DetailRow label="Wachstum">
             {orDash(
