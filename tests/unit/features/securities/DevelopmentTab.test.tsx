@@ -76,8 +76,6 @@ const SERIES: PortfolioSeries = {
   ]),
   heldSecurityIds: new Set(["sec-a", "sec-b"]),
   yieldOnBuyinBySecurity: new Map(),
-  bySector: [],
-  byCountry: [],
 };
 
 function renderTab(
@@ -229,28 +227,6 @@ describe("DevelopmentView", () => {
   it("verwirft den Jahresfilter, weil die Zeitachse die Stichtage sind", () => {
     renderTab(SERIES, [payment("2026-07-15", "42.00")], { year: 2024 });
     expect(screen.getAllByText(/^42,00/).length).toBeGreaterThan(0);
-  });
-
-  it("blendet die Aufteilung aus, wenn ein Asset gewählt ist", () => {
-    // Eine Branche, ein Land, jeweils 100 % — eine Aussage, die aus der Auswahl
-    // folgt statt aus den Daten.
-    const mitAufteilung: PortfolioSeries = {
-      ...SERIES,
-      bySector: [
-        {
-          key: "Health Care",
-          label: "Health Care",
-          marketValue: money("1500.00"),
-          annualDividend: money("50.00"),
-          positions: 1,
-        },
-      ],
-    };
-    renderTab(mitAufteilung);
-    expect(screen.getByText("Aufteilung nach Branche")).toBeInTheDocument();
-
-    renderTab(mitAufteilung, undefined, { securityId: "sec-a" });
-    expect(screen.getAllByText("Aufteilung nach Branche")).toHaveLength(1);
   });
 
   it("zeigt statt einer Kurve einen Hinweis, solange es nur einen Stand gibt", () => {

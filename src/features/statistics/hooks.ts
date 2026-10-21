@@ -8,7 +8,6 @@ import {
   buildPortfolioSeries,
   EMPTY_PORTFOLIO_SERIES,
   type PortfolioSeries,
-  type SecurityFacets,
 } from "@/features/securities/snapshots";
 import { useDepots } from "@/features/depots/hooks";
 import {
@@ -55,16 +54,6 @@ export function useStatisticsData(
     [depotsQuery.data],
   );
 
-  // Branche und Land stehen in `securities`, nicht im Depotstand — die Serie
-  // braucht beides, um die Aufteilung zu bilden.
-  const facets = React.useMemo(() => {
-    const map = new Map<string, SecurityFacets>();
-    for (const security of securitiesQuery.data ?? []) {
-      map.set(security.id, { sector: security.sector, country: security.country });
-    }
-    return map;
-  }, [securitiesQuery.data]);
-
   /**
    * Die Serie folgt dem **Unternehmensfilter**, damit sie zu den ebenfalls
    * gefilterten Zahlungen passt. Ohne das stuende bei ausgewaehltem Unternehmen
@@ -85,8 +74,8 @@ export function useStatisticsData(
       filter.securityId === null
         ? snapshots
         : snapshots.filter((row) => row.security_id === filter.securityId);
-    return buildPortfolioSeries(relevant, facets);
-  }, [snapshotsQuery.data, facets, filter.securityId]);
+    return buildPortfolioSeries(relevant);
+  }, [snapshotsQuery.data, filter.securityId]);
 
   return {
     payments,

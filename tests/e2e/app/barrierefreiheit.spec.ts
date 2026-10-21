@@ -32,6 +32,7 @@ const ROUTEN = [
   // Ohne Depotstand zeigt die Entwicklung ihren Leerzustand — auch der muss
   // barrierefrei sein, und er ist der erste, den jemand hier zu sehen bekommt.
   { pfad: "/#/depot/entwicklung", name: "Bestand Entwicklung", warten: "Bestand" },
+  { pfad: "/#/depot/analyse", name: "Bestand Analyse", warten: "Bestand" },
   { pfad: "/#/statistiken", name: "Statistiken", warten: "Statistik" },
   { pfad: "/#/statistiken/verlauf", name: "Statistik Verlauf", warten: "Statistik" },
   {

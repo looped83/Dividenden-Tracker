@@ -247,11 +247,12 @@ auch aus der Entwicklung heraus.
 
 #### Unterbereich Entwicklung
 
-Der Unterbereich **Entwicklung** ist der einzige, der auf den Depotständen aufsetzt statt
+Die Unterbereiche **Entwicklung** und **Analyse** setzen auf den Depotständen auf statt
 allein auf den erhaltenen Zahlungen (docs/PORTFOLIO_IMPORT.md). Er beantwortet eine Frage:
 *Wächst mein passives Einkommen?* Dafür stellt er die erwartete Jahresdividende dem
 gegenüber, was tatsächlich hereinkam — je Stichtag als Verlauf, je gehaltenem Asset als
-Tabelle, dazu die Aufteilung des Depots nach Branche und Land. Die Tabelle führt nur, was im
+Tabelle. Die Aufteilung des Depots (Gattung, Währung, Rhythmus, Branche, Region) steht seit
+1.41.0 im eigenen Unterbereich **Analyse**. Die Tabelle führt nur, was im
 jüngsten Stand liegt: Ein verkauftes Papier hat auf die Frage nach der Ertragskraft des
 heutigen Depots keine Antwort mehr; was es beigetragen hat, steht in der Historie.
 
