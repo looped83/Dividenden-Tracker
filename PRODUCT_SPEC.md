@@ -77,7 +77,7 @@ Diese 15 Grundsätze sind Abnahmekriterien für jede Phase (siehe IMPLEMENTATION
 5. Keine Importzeile darf ohne Rückmeldung verworfen werden → Importbilanz muss aufgehen (IMPORT_SPEC.md §8).
 6. Jede Statistik muss auf konkrete Einzelzahlungen zurückführbar sein → Drill-down ist Pflicht für jede Kennzahl.
 7. Jede relevante Änderung muss nachvollziehbar protokolliert werden → Audit Log (SECURITY_MODEL.md §8).
-8. Tatsächliche Eingänge dürfen nicht mit Schätzungen oder Prognosen vermischt werden → es existieren keine Prognosedaten im System.
+8. Tatsächliche Eingänge dürfen nicht mit Schätzungen oder Prognosen vermischt werden → es existieren keine Prognosedaten im System. Die Prognose im Bestand (CALCULATION_RULES.md §14) rechnet beim Anzeigen und speichert nur ihre Annahmen.
 9. Geldbeträge dürfen nicht unkontrolliert mit JavaScript-Gleitkommazahlen berechnet werden → Decimal.js im Client, `numeric` in Postgres (CALCULATION_RULES.md).
 10. Imports müssen vor dem Speichern vollständig geprüft werden → kein Schreibzugriff vor expliziter Bestätigung.
 11. Jeder Import muss vollständig rückgängig gemacht werden können → Import-Rollback (IMPORT_SPEC.md §10).

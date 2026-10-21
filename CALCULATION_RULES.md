@@ -655,3 +655,45 @@ aktualisiert jede Zahlungs-/Import-Mutation (Anlegen, Bearbeiten, Datum-/
 Betragsänderung, Storno, Reaktivierung, Löschung, Import-Commit/-Rollback) über
 die Invalidierung von `["payments"]` automatisch alle betroffenen Ziele,
 Dashboard und Statistik. Es bleibt kein veralteter Zielstand zurück.
+
+---
+
+## 14. Prognose und Dividenden-Schneeball (Bestand › Prognose, seit 1.44.0)
+
+Beide Anzeigen sind **Schätzungen**. Sie werden beim Anzeigen gerechnet und nie gespeichert;
+gespeichert sind nur die Annahmen des Schneeballs (`profiles.forecast_settings`, Migration
+0034). Sie fließen weder in Statistik noch in Ziele (PRODUCT_SPEC.md Grundsatz 8).
+
+### 14.1 Nächste 12 Monate (`forecastTwelveMonths`)
+
+- **Fenster:** die zwölf vollen Monate nach dem laufenden (am 21.10.2026: Nov 2026 – Okt 2027).
+- **Netto-Quote** (`netRatio`): Summe netto ÷ Summe brutto der Zahlungen der zwölf Monate bis
+  heute (tatsächliches Eingangsdatum, nur EUR), höchstens 1. Ohne Zahlungen wird brutto
+  gerechnet und so beschriftet.
+- **Geschätzt:** je gehaltener Position des jüngsten Depotstands die erwartete Jahresdividende
+  (brutto) × Netto-Quote ÷ Anzahl Zahlmonate, in jedem Zahlmonat. Zahlmonate in dieser
+  Rangfolge (`payoutMonthsOf`): gepflegte Ausschüttungsmonate, Monate der Zahlungen der letzten
+  zwölf Monate (effektiver Monat §10), Rhythmus des Exports ab `next_pay_date`, sonst
+  gleichmäßig über zwölf Monate. „Keine Ausschüttung" und Positionen ohne oder mit 0 €
+  Jahresdividende tragen nichts bei.
+- **Angekündigt:** Zahltage des Kalenders im Fenster, nicht abgesagt, mit Betrag in EUR, als
+  Nettobetrag unverändert (§9.7). Passt der Name auf ein Asset, ersetzt die Ankündigung dessen
+  Schätzung im selben Monat, sonst im Vormonat oder Folgemonat (verrutschte Zahlung). Termine
+  ohne passendes Asset kommen hinzu.
+- **Vergleich im Kopf:** erhaltene Nettosumme der zwölf Monate bis heute.
+
+### 14.2 Schneeball (`projectSnowball`)
+
+- **Start:** Jahresdividende (brutto) des jüngsten Stands. **Vorbelegung** (`depotAssumptions`):
+  Wachstum = mit der Jahresdividende gewichtete `dividend_cagr`, begrenzt auf 0–8 % (ohne
+  Angabe 5 %); Rendite neuer Käufe = Jahresdividende ÷ Depotwert, begrenzt auf 0,5–10 % (ohne
+  Angabe 3 %).
+- **Monatsschritt:** Nettodividende = Jahresdividende × Netto-Quote ÷ 12; investiert wird die
+  Sparrate, bei Reinvestition zuzüglich dieser Nettodividende; jeder investierte Euro erhöht die
+  Jahresdividende um die Rendite neuer Käufe. **Jahresende:** Jahresdividende × (1 + Wachstum).
+- **Inflation:** Werte des Jahres *n* geteilt durch (1 + Inflation)^n (heutige Kaufkraft).
+- **Szenarien:** vorsichtig und optimistisch mit 2 Prozentpunkten weniger (nie unter 0 %) bzw.
+  mehr Wachstum; im Diagramm als Band.
+- **Ziel und Meilensteine:** erstes Jahr, in dem die monatliche Nettodividende das Ziel erreicht
+  (Horizont 30 Jahre). Kursgewinne fließen nicht ein. Gerechnet wird mit Decimal, angezeigt in
+  vollen Euro.

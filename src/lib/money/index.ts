@@ -10,6 +10,7 @@ export { Money, sumMoney, CurrencyMismatchError } from "./money";
 export {
   formatAmount,
   formatMoney,
+  formatMoneyWhole,
   formatPercent,
   currencySymbol,
   NOT_AVAILABLE,
