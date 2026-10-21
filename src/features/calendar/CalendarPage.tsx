@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { SectionButton } from "@/components/ui/section";
+import { Section, SectionButton } from "@/components/ui/section";
 import { SegmentedControl, type SegmentOption } from "@/components/ui/segmented";
 import { useToast } from "@/components/ui/toast";
 import { isoFromRef, refDateFromDate } from "@/lib/statistics";
@@ -41,8 +41,8 @@ const VIEW_OPTIONS: readonly SegmentOption<CalendarViewMode>[] = [
  * ohne Angabe gelten die Zahltage.
  */
 const TYPE_OPTIONS: readonly SegmentOption<CalendarEventType>[] = [
-  { value: "payment", label: "Dividenden" },
-  { value: "ex_date", label: "Ex-Tage" },
+  { value: "payment", label: EVENT_KIND_TEXT.payment.heading },
+  { value: "ex_date", label: EVENT_KIND_TEXT.ex_date.heading },
 ];
 
 const SYNC_FAILED_HINT =
@@ -241,12 +241,14 @@ export function CalendarPage() {
           )}
 
           {/* Ohne einen einzigen Termin gibt es nichts zu blaettern und nichts
-              umzuschalten; die Bedienleiste bliebe eine leere Geste. */}
-          <div className="space-y-4">
-            {/* Auf dem Telefon rechts, unter dem Umschalter im Kopf — dort
-                liegt der Daumen; am Desktop beginnt die Zeile links. */}
-            {events.length > 0 && (
-              <div className="flex justify-end sm:justify-start">
+              umzuschalten; die Bedienleiste bliebe eine leere Geste. Links
+              steht, welcher Kalender gerade zu sehen ist, rechts die
+              Darstellung — dieselbe Kopfzeile wie jeder Abschnitt
+              (`Section`). */}
+          <Section
+            title={text.heading}
+            action={
+              events.length > 0 ? (
                 <SegmentedControl
                   variant="pill"
                   label="Darstellung"
@@ -254,48 +256,51 @@ export function CalendarPage() {
                   value={viewMode}
                   onChange={setViewMode}
                 />
-              </div>
-            )}
-            {events.length > 0 && viewMode === "month" && (
-              <CalendarToolbar
-                year={visibleMonth.year}
-                month={visibleMonth.month}
-                onShiftMonth={(delta) => {
-                  setVisibleMonth((current) =>
-                    shiftMonth(current.year, current.month, delta),
-                  );
-                }}
-                onToday={() => {
-                  const ref = refDateFromDate();
-                  setVisibleMonth({ year: ref.year, month: ref.month });
-                }}
-              />
-            )}
+              ) : undefined
+            }
+          >
+            <div className="space-y-4 pt-2">
+              {events.length > 0 && viewMode === "month" && (
+                <CalendarToolbar
+                  year={visibleMonth.year}
+                  month={visibleMonth.month}
+                  onShiftMonth={(delta) => {
+                    setVisibleMonth((current) =>
+                      shiftMonth(current.year, current.month, delta),
+                    );
+                  }}
+                  onToday={() => {
+                    const ref = refDateFromDate();
+                    setVisibleMonth({ year: ref.year, month: ref.month });
+                  }}
+                />
+              )}
 
-            {events.length === 0 ? (
-              <EmptyState
-                icon={CalendarDays}
-                title={`Keine bevorstehenden ${text.many} gefunden.`}
-                description={`Neu angekündigte ${text.many} erscheinen automatisch hier.`}
-              />
-            ) : viewMode === "month" ? (
-              <MonthView
-                year={visibleMonth.year}
-                month={visibleMonth.month}
-                events={events}
-                type={type}
-                today={today}
-                onSelect={selectEvent}
-              />
-            ) : (
-              <AgendaViewWithEmptyState
-                events={events}
-                type={type}
-                today={today}
-                onSelect={selectEvent}
-              />
-            )}
-          </div>
+              {events.length === 0 ? (
+                <EmptyState
+                  icon={CalendarDays}
+                  title={`Keine bevorstehenden ${text.many} gefunden.`}
+                  description={`Neu angekündigte ${text.many} erscheinen automatisch hier.`}
+                />
+              ) : viewMode === "month" ? (
+                <MonthView
+                  year={visibleMonth.year}
+                  month={visibleMonth.month}
+                  events={events}
+                  type={type}
+                  today={today}
+                  onSelect={selectEvent}
+                />
+              ) : (
+                <AgendaViewWithEmptyState
+                  events={events}
+                  type={type}
+                  today={today}
+                  onSelect={selectEvent}
+                />
+              )}
+            </div>
+          </Section>
         </div>
       )}
 
