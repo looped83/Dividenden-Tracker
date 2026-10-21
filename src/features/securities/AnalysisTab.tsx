@@ -35,12 +35,11 @@ const MEASURE_OPTIONS: readonly SegmentOption<AnalysisMeasure>[] = [
  * Abschnitte zugleich und steht in der Adresse (`?nach=dividende`), damit
  * Zurueck und Direktlinks ihn behalten.
  *
- * **Ring oder Balken folgt einer Regel:** wenige feste Kategorien (Gattung,
- * Waehrung, Rhythmus) als Ring, viele offene (Branche, Region) als Rangbalken.
+ * **Ring oder Balken folgt einer Regel:** wenige feste Kategorien (Asset-Typ,
+ * Waehrung, Rhythmus) als Ring, viele offene (Branche, Land) als Rangbalken.
  *
  * Eine Aufteilung nach Depot gibt es hier nicht: Der Portfolio-Export fasst
- * alle Depots zusammen (docs/PORTFOLIO_IMPORT.md §3). Die erhaltenen
- * Dividenden je Depot stehen in der Statistik; der Bereich verweist dorthin.
+ * alle Depots zusammen (docs/PORTFOLIO_IMPORT.md §3).
  */
 export function AnalysisTab() {
   const { data: securities = [], isLoading } = useSecurities();
@@ -90,7 +89,7 @@ export function AnalysisTab() {
         <EmptyState
           icon={PieChartIcon}
           title="Noch kein Depotstand importiert"
-          description="Die Analyse schlüsselt deinen Bestand nach Gattung, Währung, Ausschüttungsrhythmus, Branche und Region auf. Dafür braucht sie einen Depotstand aus dem DivvyDiary-Portfolio-Export."
+          description="Die Analyse schlüsselt deinen Bestand nach Asset-Typ, Währung, Ausschüttungsrhythmus, Branche und Land auf. Dafür braucht sie einen Depotstand aus dem DivvyDiary-Portfolio-Export."
           action={<PortfolioImportButton onClick={openImport} />}
         />
         {importDialog}
@@ -136,17 +135,6 @@ export function AnalysisTab() {
         />
       )}
 
-      <p className="px-1 text-[0.8125rem] text-muted-foreground">
-        Der Depotstand fasst alle Depots zusammen. Erhaltene Dividenden je Depot zeigt{" "}
-        <Link
-          to="/statistiken/depots"
-          className="rounded-sm font-medium text-primary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          Statistik › Aufteilung
-        </Link>
-        .
-      </p>
-
       {importDialog}
     </div>
   );
@@ -169,10 +157,10 @@ function AnalysisSections({
       )}
 
       <div className="grid grid-cols-1 gap-x-8 gap-y-10 md:grid-cols-3">
-        <Section title="Gattung">
+        <Section title="Asset-Typ">
           <AllocationRing
             slices={analysis.assetTypes}
-            ariaLabel={`Anteile nach Gattung ${basis}`}
+            ariaLabel={`Anteile nach Asset-Typ ${basis}`}
           />
         </Section>
         <Section title="Währung">
@@ -197,12 +185,12 @@ function AnalysisSections({
           />
           <MissingFacetHint slices={analysis.sectors} noun="Branche" />
         </Section>
-        <Section title="Region">
+        <Section title="Land">
           <AllocationBars
-            slices={analysis.regions}
-            ariaLabel={`Anteile nach Region ${basis}`}
+            slices={analysis.countries}
+            ariaLabel={`Anteile nach Land ${basis}`}
           />
-          <MissingFacetHint slices={analysis.regions} noun="Land" />
+          <MissingFacetHint slices={analysis.countries} noun="Land" />
         </Section>
       </div>
     </div>

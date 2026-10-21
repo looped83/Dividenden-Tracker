@@ -127,15 +127,42 @@ describe("analyzePortfolio", () => {
     expect(labels(analysis.frequencies)).toEqual(["Vierteljährlich"]);
   });
 
-  it("fasst Länder zu Regionen zusammen, mit Ländern darunter", () => {
+  it("teilt nach Ländern auf, mit deutschem Namen", () => {
     const analysis = analyze([
-      snapshot({ security_id: "sec-a", market_value: "400.00" }),
-      snapshot({ security_id: "sec-b", market_value: "400.00" }),
+      snapshot({ security_id: "sec-a", market_value: "500.00" }),
+      snapshot({ security_id: "sec-b", market_value: "300.00" }),
       snapshot({ security_id: "sec-c", market_value: "200.00" }),
     ]);
-    expect(labels(analysis.regions)).toEqual(["Europa", "Nordamerika"]);
-    expect(labels(analysis.regions[0].children)).toEqual(["Deutschland", "Frankreich"]);
-    expect(formatPercent(analysis.regions[0].children[1].share, 1)).toBe("20,0 %");
+    expect(labels(analysis.countries)).toEqual([
+      "Vereinigte Staaten",
+      "Deutschland",
+      "Frankreich",
+    ]);
+    expect(formatPercent(analysis.countries[2].share, 1)).toBe("20,0\u00A0%");
+  });
+
+  it("zeigt im Rhythmus nur ausschüttende Positionen, Anteile unter ihnen", () => {
+    // „keine Ausschuettung" und eine fehlende Angabe sind kein Rhythmus.
+    const analysis = analyze([
+      snapshot({ security_id: "sec-a", market_value: "300.00" }),
+      snapshot({
+        security_id: "sec-b",
+        market_value: "100.00",
+        dividend_frequency: "monthly",
+      }),
+      snapshot({
+        security_id: "sec-c",
+        market_value: "400.00",
+        dividend_frequency: null,
+      }),
+      snapshot({
+        security_id: "sec-etf",
+        market_value: "600.00",
+        dividend_frequency: "none",
+      }),
+    ]);
+    expect(labels(analysis.frequencies)).toEqual(["Vierteljährlich", "Monatlich"]);
+    expect(formatPercent(analysis.frequencies[0].share, 1)).toBe("75,0\u00A0%");
   });
 
   it("teilt nach Ausschüttungswährung der Stammdaten auf, nicht nach Depotwährung", () => {

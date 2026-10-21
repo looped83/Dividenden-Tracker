@@ -470,9 +470,9 @@ export function DonutChart({
   }));
 
   return (
-    <div className="flex items-center gap-5 md:gap-4 lg:gap-5">
+    <div className="flex items-center gap-5 md:gap-4 2xl:gap-5">
       <div
-        className="size-32 shrink-0 md:size-28 lg:size-32"
+        className="size-32 shrink-0 md:size-24 2xl:size-32"
         role="img"
         aria-label={ariaLabel}
       >
@@ -503,7 +503,7 @@ export function DonutChart({
               style={{ backgroundColor: fill }}
             />
             <span className="min-w-0 flex-1 leading-tight">{slice.label}</span>
-            <span className="ml-1 shrink-0 font-semibold tabular-nums">
+            <span className="ml-2 shrink-0 font-semibold tabular-nums">
               {formatPercent(slice.share, 1)}
             </span>
           </li>
