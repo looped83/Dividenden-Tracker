@@ -558,6 +558,9 @@ describe("Detailansicht", () => {
     // Ohne Angabe im Feed keine erfundene Zeile.
     expect(within(dialog).queryByText("Uhrzeit")).not.toBeInTheDocument();
     expect(within(dialog).queryByText("Ort")).not.toBeInTheDocument();
+    // Den Fokus nimmt der Dialog selbst, nicht das Schliessen-Kreuz: Ohne
+    // Link ist es das einzige Bedienelement und stuende sonst markiert da.
+    expect(dialog).toHaveFocus();
 
     await user.keyboard("{Escape}");
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
