@@ -886,14 +886,14 @@ für die nächsten bis zu 30 Tage (CALCULATION_RULES.md §9.7).
 ### Decision
 
 Ab 1.44.0 zeigt Bestand › Prognose die geschätzte Nettodividende der nächsten zwölf Monate
-(angekündigt und geschätzt getrennt) und eine Hochrechnung, ab wann Dividenden ein Monatsziel
+(seit 1.45.0 ohne Abgleich mit dem Kalender, der nur ein, zwei Monate vorausreicht) und eine Hochrechnung, ab wann Dividenden ein Monatsziel
 tragen (CALCULATION_RULES.md §14). Gespeichert werden nur die Annahmen, als `jsonb` am Profil
 (Migration 0034), nie ein Ergebnis.
 
 ### Why
 
 Die App beantwortete bisher nur „was kam an". Für eine langfristige Dividendenstrategie fehlte
-der Blick nach vorn. Die Daten dafür lagen schon vor (Depotstand, Kalender, Zahlungen).
+der Blick nach vorn. Die Daten dafür lagen schon vor (Depotstand, Zahlungen).
 
 ### Trade-offs
 
