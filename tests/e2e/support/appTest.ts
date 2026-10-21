@@ -51,6 +51,8 @@ export interface SeedOptions {
     amount?: string;
     currency?: string;
     portfolio?: string;
+    /** Ereignisart; ohne Angabe ein Zahltag. */
+    type?: "payment" | "ex_date";
   }[];
 }
 
@@ -121,8 +123,8 @@ async function seedCalendarEvents(
       await client.query(
         `insert into dividend_calendar_events
            (user_id, external_uid, title, company_name, expected_amount,
-            expected_currency, source_portfolio, description, event_date)
-         values ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+            expected_currency, source_portfolio, description, event_date, event_type)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
         [
           userId,
           `e2e-${String(index)}-${event.date}`,
@@ -135,6 +137,7 @@ async function seedCalendarEvents(
           event.portfolio ?? null,
           event.description ?? null,
           event.date,
+          event.type ?? "payment",
         ],
       );
     }
