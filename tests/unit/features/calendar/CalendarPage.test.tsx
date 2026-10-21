@@ -423,9 +423,10 @@ describe("Kennzahlkopf", () => {
     expect(screen.getByText("August gesamt")).toBeInTheDocument();
     // Ohne Beträge zaehlt die Hauptzahl die Termine; der im Dezember liegt
     // ausserhalb des Fensters.
-    expect(
-      screen.getByText("angekündigte Termine").previousElementSibling,
-    ).toHaveTextContent("2");
+    // Die Hauptzahl steht zuerst; darunter der Monat mit derselben Zeile.
+    const [hauptzahl, monat] = screen.getAllByText("angekündigte Termine");
+    expect(hauptzahl.previousElementSibling).toHaveTextContent("2");
+    expect(monat.previousElementSibling).toHaveTextContent("2");
   });
 
   it("bleibt ohne Termine weg", () => {
