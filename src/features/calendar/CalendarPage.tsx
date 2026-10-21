@@ -243,14 +243,18 @@ export function CalendarPage() {
           {/* Ohne einen einzigen Termin gibt es nichts zu blaettern und nichts
               umzuschalten; die Bedienleiste bliebe eine leere Geste. */}
           <div className="space-y-4">
+            {/* Auf dem Telefon rechts, unter dem Umschalter im Kopf — dort
+                liegt der Daumen; am Desktop beginnt die Zeile links. */}
             {events.length > 0 && (
-              <SegmentedControl
-                variant="pill"
-                label="Darstellung"
-                options={VIEW_OPTIONS}
-                value={viewMode}
-                onChange={setViewMode}
-              />
+              <div className="flex justify-end sm:justify-start">
+                <SegmentedControl
+                  variant="pill"
+                  label="Darstellung"
+                  options={VIEW_OPTIONS}
+                  value={viewMode}
+                  onChange={setViewMode}
+                />
+              </div>
             )}
             {events.length > 0 && viewMode === "month" && (
               <CalendarToolbar
