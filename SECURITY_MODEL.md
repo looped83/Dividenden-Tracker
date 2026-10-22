@@ -76,6 +76,11 @@ create policy upd on <t> for update using (user_id = auth.uid())
    verlassen), damit die Regel auch in `security definer`-Kontexten und für
    `service_role` gilt. Neue Tabellen mit einem Fremdschlüssel auf nutzereigene
    Stammdaten brauchen denselben Trigger.
+7. **Trigger-Funktionen** (Migration 0035): Jede hat einen festen `search_path`. Supabase
+   gibt anon und authenticated automatisch EXECUTE auf neue Funktionen in `public`, womit
+   sie unter `/rest/v1/rpc/…` erreichbar wären. `security definer`-Trigger-Funktionen
+   bekommen deshalb `revoke execute … from public, anon, authenticated`. Die Trigger
+   feuern trotzdem, weil Postgres EXECUTE nur beim Anlegen des Triggers prüft.
 
 ## 4. Migration-Sicherheitscheckliste
 

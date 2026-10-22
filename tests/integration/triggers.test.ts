@@ -442,3 +442,43 @@ describe("guard_base_currency_change (DECISIONS.md D-002)", () => {
     ).rejects.toThrow(/Basiswaehrung kann nicht geaendert werden/);
   });
 });
+
+describe("Härtung der Trigger-Funktionen (0035)", () => {
+  const pinned = [
+    "set_updated_at",
+    "enforce_user_id",
+    "protect_payment_immutables",
+    "guard_base_currency_change",
+    "guard_import_status",
+    "enforce_own_security",
+    "enforce_own_depot",
+    "audit_row_change",
+    "handle_new_user",
+  ];
+
+  it("setzt bei allen Trigger-Funktionen einen festen search_path", async () => {
+    const result = await asSuperuser((client) =>
+      client.query<{ proname: string }>(
+        `select p.proname from pg_proc p
+           join pg_namespace n on n.oid = p.pronamespace
+          where n.nspname = 'public' and p.proname = any($1)
+            and not exists (
+              select 1 from unnest(coalesce(p.proconfig, '{}')) c where c like 'search_path=%'
+            )`,
+        [pinned],
+      ),
+    );
+    expect(result.rows).toEqual([]);
+  });
+
+  it("entzieht anon und authenticated EXECUTE auf die security-definer-Funktionen", async () => {
+    const result = await asSuperuser((client) =>
+      client.query<{ role: string; fn: string; allowed: boolean }>(
+        `select r.role, f.fn, has_function_privilege(r.role, ('public.' || f.fn || '()')::regprocedure, 'execute') as allowed
+           from unnest(array['anon', 'authenticated']) as r(role)
+           cross join unnest(array['audit_row_change', 'handle_new_user']) as f(fn)`,
+      ),
+    );
+    expect(result.rows.filter((row) => row.allowed)).toEqual([]);
+  });
+});
