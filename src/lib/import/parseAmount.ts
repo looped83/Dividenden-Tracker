@@ -45,7 +45,7 @@ export function parseAmount(
   }
   if (typeof raw === "boolean") return fail("Ein Wahrheitswert ist kein Betrag");
 
-  // exceljs liefert Zahlenzellen direkt als number — das ist der sicherste Fall,
+  // Der Excel-Leser liefert Zahlenzellen direkt als number — das ist der sicherste Fall,
   // aber ueber toFixed/Decimal, nie ueber Float-Arithmetik weiterverwenden.
   if (typeof raw === "number") {
     if (!Number.isFinite(raw))

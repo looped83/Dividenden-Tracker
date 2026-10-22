@@ -18,6 +18,10 @@ import { expect, test } from "../support/appTest";
 const BEISPIELDATEI = fileURLToPath(
   new URL("../fixtures/dividenden-beispiel.csv", import.meta.url),
 );
+/** Dieselben drei Zeilen als echte Excel-Datei (mit LibreOffice gespeichert). */
+const BEISPIEL_XLSX = fileURLToPath(
+  new URL("../fixtures/dividenden-beispiel.xlsx", import.meta.url),
+);
 
 test("importiert eine CSV-Datei und rollt sie wieder zurück", async ({ page, konto }) => {
   await page.goto("/#/einstellungen/importe");
@@ -72,6 +76,42 @@ test("importiert eine CSV-Datei und rollt sie wieder zurück", async ({ page, ko
     return result.rows[0];
   });
   expect(danach?.anzahl).toBe("0");
+});
+
+test("importiert eine Excel-Datei mit echten Datums- und Zahlenzellen", async ({
+  page,
+  konto,
+}) => {
+  await page.goto("/#/einstellungen/importe");
+  await page.getByRole("button", { name: "Neuer Import" }).click();
+
+  await page.setInputFiles('input[type="file"]', BEISPIEL_XLSX);
+
+  await expect(page.getByRole("button", { name: "Weiter zur Zuordnung" })).toBeVisible();
+  await page.getByRole("checkbox").check();
+  await page.getByRole("button", { name: "Weiter zur Zuordnung" }).click();
+  await page.getByRole("button", { name: "Weiter zur Vorschau" }).click();
+
+  const importieren = page.getByRole("button", {
+    name: /Dividenden endgültig importieren/,
+  });
+  await expect(importieren).toBeEnabled();
+  await importieren.click();
+  await expect(page.getByText(/Import abgeschlossen/)).toBeVisible({ timeout: 15_000 });
+
+  const gespeichert = await asUser(konto.userId, async (client) => {
+    const result = await client.query<{ anzahl: string; summe: string; tage: string }>(
+      `select count(*)::text as anzahl, coalesce(sum(net_amount), 0)::text as summe,
+              string_agg(pay_date::text, ',' order by pay_date) as tage
+         from dividend_payments
+        where source = 'excel_import' and archived_at is null`,
+    );
+    return result.rows[0];
+  });
+  expect(gespeichert?.anzahl).toBe("3");
+  expect(gespeichert?.summe).toBe("51.25");
+  // Datumszellen kommen ohne Zeitzonenverschiebung an.
+  expect(gespeichert?.tage).toBe("2026-01-15,2026-04-14,2026-07-15");
 });
 
 /**

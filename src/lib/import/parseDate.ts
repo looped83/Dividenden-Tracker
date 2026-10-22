@@ -4,7 +4,7 @@ import { excelSerialToIso, ExcelDateError } from "./excelDate";
  * Datumsnormalisierung fuer den Import (IMPORT_SPEC.md §5, §11).
  *
  * Unterstuetzt:
- *   * echte Date-Objekte (exceljs liefert Datumszellen bereits als Date),
+ *   * echte Date-Objekte (der Excel-Leser liefert Datumszellen bereits als Date),
  *   * Excel-Serienzahlen (1900/1904),
  *   * Textformate `DD.MM.YYYY`, `DD.MM.YY`, `YYYY-MM-DD`, `DD/MM/YYYY`, `MM/DD/YYYY`.
  *
@@ -79,7 +79,7 @@ export function parseDateValue(
   }
   if (typeof raw === "boolean") return fail("Ein Wahrheitswert ist kein Datum");
 
-  // exceljs liefert Datumszellen als echtes Date-Objekt (UTC-Mitternacht).
+  // Der Excel-Leser liefert Datumszellen als echtes Date-Objekt (UTC-Mitternacht).
   if (raw instanceof Date) {
     if (Number.isNaN(raw.getTime())) return fail("Ungueltiges Datum");
     const iso = toIso(raw.getUTCFullYear(), raw.getUTCMonth() + 1, raw.getUTCDate());

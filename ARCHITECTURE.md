@@ -22,7 +22,7 @@ Truth**. Es gibt kein eigenes Backend; die Geschäftslogik verteilt sich auf:
 │  ├─ Server-State: TanStack Query  ──────────────┐                                 │
 │  ├─ Finanzlogik: Decimal.js (kein Float)        │                                 │
 │  ├─ Import (Hauptthread, kein Worker):          │                                 │
-│  │    eigener CSV-Parser · exceljs (XLSX/XLS)   │                                 │
+│  │    eigener CSV- und XLSX-Leser (fflate)      │                                 │
 │  │    Normalisierung · Validierung · Fingerprints                                 │
 │  └─ Service Worker (eigener, ~100 Zeilen):      │                                 │
 │       nur App-Huellen-Cache, niemals Daten      │                                 │
@@ -71,7 +71,7 @@ manuelle Review (persönliches Projekt, Nachvollziehbarkeit vor Bequemlichkeit).
 | Formulare | `react-hook-form` | 7.83.0 | |
 | Validierung | `zod` | 4.4.3 | + `@hookform/resolvers` 5.5.7 (Zod-4-kompatibel) — K-3 |
 | CSV | eigener Parser | — | `src/lib/import/parseCsv.ts`; Papa Parse waere fuer den Umfang eine Abhaengigkeit zu viel |
-| Excel | `exceljs` | 4.4.0 | Dynamisch nachgeladen (~930 kB, eigener Chunk); loest SheetJS ab — K-4 |
+| Excel | eigener Leser/Schreiber + `fflate` | 0.8.3 | `src/lib/xlsx/`; nachgeladen, ersetzt exceljs (~250 kB gzip) — K-4, DECISIONS.md ADR-007 |
 | Dezimalarithmetik | `decimal.js` | 10.6.0 | Konfiguration in CALCULATION_RULES.md §2 |
 | Diagramme | `recharts` | 3.10.1 | React-19-kompatibel; nachgeladen (~103 kB gzip) |
 | Unit-Tests | `vitest` | 4.1.10 | + `@testing-library/react` 16.3.2 |
@@ -107,10 +107,11 @@ manuelle Review (persönliches Projekt, Nachvollziehbarkeit vor Bequemlichkeit).
   hat (`tests/e2e/app/navigation.spec.ts`).
 - **K-3 Zod 4 + @hookform/resolvers ≥ 5:** Resolver-Version 5.x ist die erste mit stabiler
   Zod-4-Unterstützung; ältere Anleitungen (Zod 3) sind nicht 1:1 übertragbar.
-- **K-4 `exceljs` statt SheetJS:** Das npm-Paket `xlsx` ist bei 0.18.5 eingefroren und enthält
+- **K-4 Excel ohne SheetJS:** Das npm-Paket `xlsx` ist bei 0.18.5 eingefroren und enthält
   bekannte Schwachstellen; die gepflegten Fassungen liegen nur unter `cdn.sheetjs.com`, das aus
   der Implementierungsumgebung nicht erreichbar war (DECISIONS.md D-015/D-026). Verwendet wird
-  deshalb `exceljs` aus npm, dynamisch nachgeladen. XLS-Altformat wird best effort unterstützt.
+  zunächst `exceljs` aus npm; seit 1.46.0 ersetzt durch einen eigenen schlanken Leser und
+  Schreiber auf `fflate` (DECISIONS.md ADR-007). Das XLS-Altformat wird nicht gelesen.
 - **K-5 Tailwind 4 + shadcn/ui:** shadcn-CLI ≥ 4 generiert Tailwind-4-kompatible Komponenten
   (CSS-Variablen, `@theme`). Keine `tailwind.config.js`-Altlasten.
 - **K-6 Recharts 3:** Nur SVG-Rendering, funktioniert ohne Canvas-Abhängigkeiten in WebKit;
@@ -305,7 +306,7 @@ Details fachlich in IMPORT_SPEC.md; architektonisch:
 1. Datei bleibt im Browser; sie wird **nie** an einen Server hochgeladen (Datenschutz,
    Größe). Nur die geprüften, normalisierten Zeilen gehen an Postgres.
 2. `src/lib/import/*` übernimmt: Hashing (Web Crypto SHA-256), Parsing (eigener CSV-Parser bzw.
-   `exceljs`), Normalisierung, Zod-Validierung, Fingerprints. Ergebnis ist eine strukturierte
+   `lib/xlsx/readXlsx`), Normalisierung, Zod-Validierung, Fingerprints. Ergebnis ist eine strukturierte
    Datenstruktur mit vollständiger Zeilenbilanz.
 
    **Abweichung von der Planung:** Dies läuft im Hauptthread, nicht in einem Web Worker. Für die
@@ -440,7 +441,7 @@ filtern — Begründung, Abwägung und Auslöser in DECISIONS.md ADR-001.
 |---|---|
 | Clientseitige Statistik weicht von SQL-View ab | Eine Codequelle für Drill-down + Kennzahl; Abgleichtests View ↔ lib/statistics |
 | Vollständige Tabelle wird still bei 1.000 Zeilen gekappt | Jede solche Abfrage über `lib/supabase/fetchAllPages`; Sicherung/Export prüfen zusätzlich gegen `count` (ADR-002) |
-| SheetJS-Version veraltet (npm-Falle) | `exceljs` statt `xlsx`; gepinnte Version, `npm audit` in CI (K-4) |
+| SheetJS-Version veraltet (npm-Falle) | Eigener XLSX-Leser auf `fflate` statt `xlsx`; gepinnte Version, `npm audit` in CI (K-4, ADR-007) |
 | Große Importe blockieren UI | Größen-/Formatprüfung vor dem Einlesen (25 MB, `lib/import/fileLimits.ts`); Web Worker als Option bei Bedarf |
 | RLS-Lücke durch neue Tabelle | Migration-Checkliste: keine Tabelle ohne RLS + Policies + Tests (SECURITY_MODEL.md §4) |
 | iOS-PWA-Eigenheiten (Speicherräumung, Datei-Import) | Nur-Cache-Prinzip; Dateiimport über `<input type=file>` (Dateien-App), kein reines Drag-and-drop |

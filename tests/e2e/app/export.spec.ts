@@ -55,23 +55,20 @@ test("XLSX enthält dieselben Angaben als echte Zellen", async ({ page, konto })
     /^dividenden-export-\d{4}-\d{2}-\d{2}\.xlsx$/,
   );
 
-  const ExcelJS = (await import("exceljs")).default;
-  const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.readFile(pfad);
-  const sheet = workbook.worksheets[0];
-  if (!sheet) throw new Error("Die Arbeitsmappe hat kein Blatt.");
-
-  const kopf = sheet.getRow(1).values as unknown[];
-  const spalte = (name: string) => kopf.indexOf(name);
-  expect(spalte("Asset")).toBeGreaterThan(0);
+  // Ohne Excel-Bibliothek: Das Blatt ist XML in einem ZIP. Zellen und
+  // Rundlauf prueft der Unit-Test des Lesers (tests/unit/lib/xlsx).
+  const { readFileSync } = await import("node:fs");
+  const { strFromU8, unzipSync } = await import("fflate");
+  const dateien = unzipSync(readFileSync(pfad));
+  const blatt = dateien["xl/worksheets/sheet1.xml"];
+  if (!blatt) throw new Error("Die Arbeitsmappe hat kein Blatt.");
+  const xml = strFromU8(blatt);
 
   // Kopfzeile plus zwei Eingänge.
-  expect(sheet.rowCount).toBe(3);
-
-  const zeile = sheet.getRow(2);
-  expect(zeile.getCell(spalte("Asset")).value).toBe(konto.securityName);
-  expect(zeile.getCell(spalte("Depot")).value).toBe(konto.depotName);
+  expect(xml.match(/<row /g)).toHaveLength(3);
+  expect(xml).toContain('<t xml:space="preserve">Asset</t>');
+  expect(xml).toContain(konto.securityName);
+  expect(xml).toContain(konto.depotName);
   // Zahl, nicht Text: Nur so lässt sich in Excel damit rechnen.
-  expect(zeile.getCell(spalte("Nettobetrag")).value).toBe(20.5);
-  expect(zeile.getCell(spalte("Zahlungsdatum")).value).toBeInstanceOf(Date);
+  expect(xml).toContain("<v>20.5</v>");
 });

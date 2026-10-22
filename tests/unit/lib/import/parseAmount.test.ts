@@ -19,7 +19,7 @@ describe("parseAmount", () => {
     expect(value("6.90", "en")).toBe("6.90");
   });
 
-  it("nimmt Zahlen (exceljs) verlustfrei entgegen", () => {
+  it("nimmt Zahlen aus Excel verlustfrei entgegen", () => {
     expect(value(4.76)).toBe("4.76");
     expect(value(7.84)).toBe("7.84");
   });

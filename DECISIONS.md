@@ -222,7 +222,7 @@ gäbe Sicherheit vor, die er nicht liefert (der Browser-Speicher bleibt lesbar).
 
 *Beleg:* SECURITY_MODEL.md §1.
 
-## D-015 / D-026: `xlsx` (SheetJS) nicht aus npm — abgelöst durch exceljs
+## D-015 / D-026: `xlsx` (SheetJS) nicht aus npm — abgelöst durch exceljs, später durch ADR-007
 
 **Status:** Superseded · **Scope:** Tooling
 
@@ -916,4 +916,43 @@ Move replaced decisions here instead of deleting them.
 Reference the decision that replaced them.
 
 - **D-015 / D-026** (SheetJS aus der Herstellerregistry) — abgelöst durch
-  `exceljs` aus npm, siehe Eintrag oben.
+  `exceljs` aus npm, das seinerseits durch den eigenen Leser und Schreiber
+  (ADR-007) ersetzt ist.
+
+## ADR-007: Eigener schlanker Excel-Leser und -Schreiber statt exceljs
+
+**Status:** Accepted  
+**Scope:** Tooling, Performance
+
+### Decision
+
+Import und Excel-Export lesen und schreiben .xlsx mit zwei eigenen Modulen
+(`src/lib/xlsx/readXlsx.ts`, `src/lib/xlsx/writeXlsx.ts`). Entpackt und gepackt wird mit
+`fflate`, das XML liest der `DOMParser` des Browsers. `exceljs` entfällt.
+
+### Why
+
+`exceljs` war mit rund 250 kB (gzip) der mit Abstand größte Teil der App, wird kaum noch
+gepflegt und brauchte eigene Sicherheits-Overrides für seine Abhängigkeiten. Die App nutzt
+davon einen kleinen Ausschnitt: Blätter, Sichtbarkeit, Datumssystem, verbundene Zellen und
+berechnete Werte beim Lesen; ein Blatt mit Kopfzeile, Zahlenformaten, Breiten und fixierter
+Kopfzeile beim Schreiben.
+
+### Trade-offs
+
+- Eigener Code für ein Dateiformat statt einer Bibliothek. Der Ausschnitt ist klein und durch
+  Rundlauf-Tests (schreiben → lesen) sowie Tests mit von Hand gebauten Mappen abgedeckt.
+- Fertige Bibliotheken (`read-excel-file`, `write-excel-file`) wären ähnlich klein, melden aber
+  weder Sichtbarkeit noch verbundene Zellen, die der Import prüft.
+
+### Guardrails
+
+- Texte schreibt der Export als Inline-Strings: Excel wertet sie nie als Formel aus.
+- Formelzellen liest der Import nur über ihr gespeichertes Ergebnis.
+- Das alte Binärformat .xls bleibt wie bisher nicht lesbar und wird mit einer klaren Meldung
+  abgelehnt.
+
+### Revisit When
+
+- Der Import soll weitere Formate (.xls, .ods) oder Formatierungen auswerten.
+
