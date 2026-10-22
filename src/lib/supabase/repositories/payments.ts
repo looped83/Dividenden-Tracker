@@ -190,8 +190,8 @@ export async function unarchivePayment(id: string): Promise<DividendPayment> {
  * Endgueltiges Loeschen (§13, DECISIONS.md D-6-1): die RLS-Policy
  * `dividend_payments_delete_own` (0020) laesst dies fuer eigene Zeilen zu —
  * aktiv **oder** storniert; ein Versuch auf eine fremde Zeile betrifft 0 Zeilen
- * statt eines Fehlers (kein Leak). Die Loeschung wird ueber den AFTER-DELETE-
- * Trigger atomar im Audit Log protokolliert (0013).
+ * statt eines Fehlers (kein Leak). Ein Audit Log fuehrt die App seit ADR-008
+ * nicht mehr.
  */
 export async function deletePayment(id: string): Promise<void> {
   const { error, count } = await supabase

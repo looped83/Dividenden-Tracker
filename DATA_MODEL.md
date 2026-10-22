@@ -33,7 +33,7 @@ Grundsätze:
   löschbar, solange keine Zahlungen/Aliase mehr darauf verweisen).
 - Jede fachliche Tabelle trägt `user_id uuid not null references auth.users(id)`.
 - `created_at`/`updated_at` werden durch Trigger gepflegt, nie vom Client gesetzt.
-- Alle Änderungen an fachlichen Tabellen erzeugen per Trigger Einträge in `audit_log`.
+- `audit_log` wird seit Migration 0037 nicht mehr befüllt (ADR-008); die Tabelle bleibt leer bestehen.
 
 ---
 
@@ -315,7 +315,7 @@ Zahlungen duerfen Ziele direkt und dauerhaft geloescht werden (DELETE-Policy
 `goals_delete_own`); das Loeschen entfernt nur die Zieldefinition, keine
 Zahlungsdaten.
 
-### 3.8 `audit_log` — insert-only
+### 3.8 `audit_log` — insert-only, seit 0037 ohne Trigger (ADR-008)
 
 ```sql
 create table audit_log (

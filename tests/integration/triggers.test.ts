@@ -3,13 +3,6 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { asSuperuser, asUser, closePool, createTestUser, firstRow } from "./support/db";
 import { seedDepot, seedPayment, seedSecurity } from "./support/seed";
 
-interface AuditLogRow {
-  action: string;
-  old_values: Record<string, unknown> | null;
-  new_values: Record<string, unknown> | null;
-  origin: string;
-}
-
 let userId: string;
 
 beforeAll(async () => {
@@ -240,176 +233,45 @@ describe("protect_payment_immutables", () => {
   });
 });
 
-describe("Audit Log (SECURITY_MODEL.md §8)", () => {
-  it("protokolliert INSERT mit bereinigten Werten", async () => {
+describe("Audit Log abgeschaltet (DECISIONS.md ADR-008)", () => {
+  it("schreibt bei Anlage, Änderung, Archivierung und Löschung keine Einträge", async () => {
     const depotId = await asUser(userId, (client) => seedDepot(client, "Depot Audit 1"));
-
-    const entries = await asUser(userId, (client) =>
-      client.query<AuditLogRow>(
-        `select action, old_values, new_values, origin from audit_log
-         where entity_type = 'depot' and entity_id = $1`,
-        [depotId],
-      ),
-    );
-
-    expect(entries.rows).toHaveLength(1);
-    const entry = firstRow(entries);
-    expect(entry.action).toBe("insert");
-    expect(entry.old_values).toBeNull();
-    expect(entry.new_values?.name).toBe("Depot Audit 1");
-    // Technische Felder duerfen nicht protokolliert werden.
-    expect(entry.new_values?.id).toBeUndefined();
-    expect(entry.new_values?.user_id).toBeUndefined();
-    expect(entry.new_values?.created_at).toBeUndefined();
-    expect(entry.origin).toBe("ui");
-  });
-
-  it("protokolliert UPDATE nur mit den geaenderten Feldern", async () => {
-    const depotId = await asUser(userId, (client) => seedDepot(client, "Depot Audit 2"));
-    await asUser(userId, (client) =>
-      client.query("update depots set note = $1 where id = $2", ["Erste Notiz", depotId]),
-    );
-
-    const entries = await asUser(userId, (client) =>
-      client.query<AuditLogRow>(
-        `select action, old_values, new_values from audit_log
-         where entity_type = 'depot' and entity_id = $1 and action = 'update'
-         order by created_at desc limit 1`,
-        [depotId],
-      ),
-    );
-
-    expect(entries.rows).toHaveLength(1);
-    const entry = firstRow(entries);
-    expect(entry.old_values).toEqual({ note: null });
-    expect(entry.new_values).toEqual({ note: "Erste Notiz" });
-  });
-
-  it("erzeugt keinen Eintrag, wenn sich fachlich nichts aendert", async () => {
-    const depotId = await asUser(userId, (client) => seedDepot(client, "Depot Audit 3"));
-
-    const countBefore = await asUser(userId, (client) =>
-      client.query<{ count: string }>(
-        "select count(*) from audit_log where entity_type = 'depot' and entity_id = $1",
-        [depotId],
-      ),
-    );
-
-    // Setzt exakt denselben Namen erneut - keine fachliche Aenderung.
-    await asUser(userId, (client) =>
-      client.query("update depots set name = 'Depot Audit 3' where id = $1", [depotId]),
-    );
-
-    const countAfter = await asUser(userId, (client) =>
-      client.query<{ count: string }>(
-        "select count(*) from audit_log where entity_type = 'depot' and entity_id = $1",
-        [depotId],
-      ),
-    );
-
-    expect(firstRow(countAfter).count).toBe(firstRow(countBefore).count);
-  });
-
-  it("markiert Archivierung/Reaktivierung als eigene Aktion", async () => {
-    const depotId = await asUser(userId, (client) => seedDepot(client, "Depot Audit 4"));
     const securityId = await asUser(userId, (client) =>
-      seedSecurity(client, { name: "Audit AG 4" }),
+      seedSecurity(client, { name: "Audit AG 1" }),
     );
     const payment = await asUser(userId, (client) =>
       seedPayment(client, { securityId, depotId }),
     );
 
-    await asUser(userId, (client) =>
-      client.query("update dividend_payments set archived_at = now() where id = $1", [
-        payment.id,
-      ]),
-    );
-    await asUser(userId, (client) =>
-      client.query("update dividend_payments set archived_at = null where id = $1", [
-        payment.id,
-      ]),
-    );
-
-    const entries = await asUser(userId, (client) =>
-      client.query<{ action: string }>(
-        `select action from audit_log
-         where entity_type = 'dividend_payment' and entity_id = $1
-         order by created_at asc`,
+    await asUser(userId, async (client) => {
+      await client.query("update depots set note = 'Notiz' where id = $1", [depotId]);
+      await client.query(
+        "update dividend_payments set archived_at = now() where id = $1",
         [payment.id],
+      );
+      await client.query("delete from dividend_payments where id = $1", [payment.id]);
+    });
+
+    const entries = await asSuperuser((client) =>
+      client.query<{ count: string }>(
+        "select count(*)::text as count from audit_log where entity_id = any($1::uuid[])",
+        [[depotId, securityId, payment.id]],
       ),
     );
-
-    expect(entries.rows.map((r) => r.action)).toEqual(["insert", "archive", "unarchive"]);
+    expect(firstRow(entries).count).toBe("0");
   });
 
-  it("protokolliert das endgueltige Loeschen einer archivierten Zahlung", async () => {
-    const depotId = await asUser(userId, (client) => seedDepot(client, "Depot Audit 6"));
-    const securityId = await asUser(userId, (client) =>
-      seedSecurity(client, { name: "Audit AG 6" }),
-    );
-    const payment = await asUser(userId, (client) =>
-      seedPayment(client, { securityId, depotId, netAmount: "85.00" }),
-    );
-
-    await asUser(userId, (client) =>
-      client.query("update dividend_payments set archived_at = now() where id = $1", [
-        payment.id,
-      ]),
-    );
-    await asUser(userId, (client) =>
-      client.query("delete from dividend_payments where id = $1", [payment.id]),
-    );
-
-    const entries = await asUser(userId, (client) =>
-      client.query<AuditLogRow>(
-        `select action, old_values, new_values from audit_log
-         where entity_type = 'dividend_payment' and entity_id = $1
-         order by created_at asc`,
-        [payment.id],
-      ),
-    );
-
-    expect(entries.rows.map((r) => r.action)).toEqual(["insert", "archive", "delete"]);
-
-    const deleteEntries = await asUser(userId, (client) =>
-      client.query<AuditLogRow>(
-        `select action, old_values, new_values from audit_log
-         where entity_type = 'dividend_payment' and entity_id = $1 and action = 'delete'`,
-        [payment.id],
-      ),
-    );
-    const deleteEntry = firstRow(deleteEntries);
-    expect(deleteEntry.new_values).toBeNull();
-    // to_jsonb() auf einer numeric-Spalte liefert eine JSON-Zahl (Postgres-
-    // Verhalten auf Ebene von jsonb, unabhaengig von PostgREST/supabase-js).
-    expect(deleteEntry.old_values?.net_amount).toBe(85);
-    // Technische Felder duerfen auch beim Loeschen nicht protokolliert werden.
-    expect(deleteEntry.old_values?.id).toBeUndefined();
-    expect(deleteEntry.old_values?.user_id).toBeUndefined();
-  });
-
-  it("audit_log ist insert-only: kein UPDATE/DELETE ueber die API", async () => {
-    const depotId = await asUser(userId, (client) => seedDepot(client, "Depot Audit 5"));
-    const entry = await asUser(userId, (client) =>
-      client.query<{ id: number }>(
-        "select id from audit_log where entity_type = 'depot' and entity_id = $1",
-        [depotId],
-      ),
-    );
-    const entryId = firstRow(entry).id;
-
+  it("audit_log ist für Clients schreibgeschützt", async () => {
     // Kein UPDATE/DELETE-Grant fuer authenticated (Least Privilege) -> die
     // Datenbank verweigert den Zugriff bereits vor jeder RLS-Auswertung.
     await expect(
       asUser(userId, (client) =>
-        client.query("update audit_log set origin = 'restore' where id = $1", [entryId]),
+        client.query("update audit_log set origin = 'restore' where id = 1"),
       ),
     ).rejects.toThrow(/permission denied/);
 
     await expect(
-      asUser(userId, (client) =>
-        client.query("delete from audit_log where id = $1", [entryId]),
-      ),
+      asUser(userId, (client) => client.query("delete from audit_log where id = 1")),
     ).rejects.toThrow(/permission denied/);
   });
 });

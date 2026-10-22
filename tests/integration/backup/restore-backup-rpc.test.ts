@@ -425,43 +425,6 @@ describe("restore_backup — Ergebnis und Nebenwirkungen", () => {
     });
     expect(value).toBeNull();
   });
-
-  it("protokolliert die Wiederherstellung mit der Herkunft „restore“", async () => {
-    const user = await createTestUser("restore-audit@example.test");
-    const { depotId, securityId } = await asUser(user, async (client) => {
-      const depot = await seedDepot(client, "Protokoll");
-      const security = await seedSecurity(client, { name: "Protokoll AG" });
-      return { depotId: depot, securityId: security };
-    });
-
-    await restore(
-      user,
-      backupPayload(user, {
-        securities: [{ id: securityId, name: "Protokoll AG" }],
-        depots: [{ id: depotId, name: "Protokoll", base_currency: "EUR" }],
-        dividend_payments: [
-          {
-            id: "66666666-6666-4666-8666-666666666666",
-            security_id: securityId,
-            depot_id: depotId,
-            pay_date: "2025-08-15",
-            gross_amount: "40.00",
-            net_amount: "40.00",
-          },
-        ],
-      }),
-      "merge",
-    );
-
-    const count = await asUser(user, async (client) => {
-      const result = await client.query<{ count: string }>(
-        `select count(*)::text as count from audit_log
-          where entity_type = 'dividend_payment' and origin = 'restore'`,
-      );
-      return Number(firstRow(result).count);
-    });
-    expect(count).toBeGreaterThan(0);
-  });
 });
 
 describe("restore_backup — Zahlungen mit Importherkunft", () => {
