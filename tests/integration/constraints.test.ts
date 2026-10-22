@@ -128,7 +128,7 @@ describe("CHECK-Constraints (TEST_STRATEGY.md §5)", () => {
     expect(row.id).toBeDefined();
   });
 
-  it("erzwingt import_fields_consistency: Import-Herkunft ohne Import-Metadaten wird abgelehnt", async () => {
+  it("erzwingt import_fields_consistency: Import-Herkunft ohne import_id wird abgelehnt", async () => {
     await expect(
       asUser(userId, async (client) => {
         const depotId = await seedDepot(client, "Depot Import 1");
@@ -215,46 +215,6 @@ describe("Unique Constraints", () => {
     ).rejects.toThrow(/securities_user_name_key/);
   });
 
-  it("lehnt doppelte (import_id, source_row_number) ab", async () => {
-    const importId = await asUser(userId, async (client) => {
-      const result = await client.query<{ id: string }>(
-        `insert into imports (file_name, file_hash, file_size_bytes, file_type)
-         values ('a.csv', repeat('a', 64), 100, 'csv') returning id`,
-      );
-      const row = result.rows[0];
-      if (!row) throw new Error("kein Import angelegt");
-      return row.id;
-    });
-
-    await asUser(userId, async (client) => {
-      const depotId = await seedDepot(client, "Depot Dup Row 1");
-      const securityId = await seedSecurity(client, { name: "Dup Row AG 1" });
-      return seedPayment(client, {
-        securityId,
-        depotId,
-        source: "csv_import",
-        importId,
-        sourceRowNumber: 1,
-        rowFingerprint: "fp-1",
-      });
-    });
-
-    await expect(
-      asUser(userId, async (client) => {
-        const depotId = await seedDepot(client, "Depot Dup Row 2");
-        const securityId = await seedSecurity(client, { name: "Dup Row AG 2" });
-        return seedPayment(client, {
-          securityId,
-          depotId,
-          source: "csv_import",
-          importId,
-          sourceRowNumber: 1,
-          rowFingerprint: "fp-2",
-        });
-      }),
-    ).rejects.toThrow(/dp_import_row_key/);
-  });
-
   it("erlaubt kein zweites Jahresziel fuer dasselbe Jahr (Phase 7)", async () => {
     await asUser(userId, (client) =>
       client.query(
@@ -307,8 +267,6 @@ describe("Endgültiges Löschen (Phase 6, D-6-1, 0020)", () => {
         depotId,
         source: "csv_import",
         importId,
-        sourceRowNumber: 1,
-        rowFingerprint: "a".repeat(64),
       });
       await client.query(
         `insert into import_rows

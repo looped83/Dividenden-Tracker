@@ -120,6 +120,9 @@ analyzing → pending_confirmation → committed → rolled_back
 Imports (Status `committed`) → deutliche Warnung „Diese Datei wurde am … bereits importiert";
 Fortfahren möglich (z. B. nach Rollback), aber nie stillschweigend.
 
+> Stufe 2 und 3 waren nie gegen die Datenbank verdrahtet; die Spalten `row_fingerprint` und
+> `business_fingerprint` sind seit Migration 0038 entfernt (ADR-009). Wirksam ist Stufe 1.
+
 **Stufe 2 — Exakter Zeilen-Fingerprint:** SHA-256 über die normalisierten, gemappten Zellwerte
 (Feldreihenfolge fest, Trennzeichen ``). Treffer gegen `dividend_payments.row_fingerprint`
 (aktive Zeilen) → Klassifikation „exaktes Duplikat", Standard: übersprungen; Nutzer kann

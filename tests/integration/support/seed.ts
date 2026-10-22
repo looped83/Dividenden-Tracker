@@ -23,10 +23,6 @@ export interface DividendPaymentRow {
   payment_type: string;
   source: string;
   import_id: string | null;
-  source_file_name: string | null;
-  source_row_number: number | null;
-  row_fingerprint: string | null;
-  business_fingerprint: string;
   note: string | null;
   created_at: string;
   updated_at: string;
@@ -68,8 +64,6 @@ interface SeedPaymentOverrides {
   source?: "manual" | "csv_import" | "excel_import" | "restore";
   paymentType?: string;
   importId?: string | null;
-  sourceRowNumber?: number | null;
-  rowFingerprint?: string | null;
 }
 
 /** Legt einen Dividendeneingang an und liefert die vollstaendige Zeile. */
@@ -89,8 +83,8 @@ export async function seedPayment(
     `insert into dividend_payments
        (security_id, depot_id, pay_date, gross_amount, net_amount,
         withholding_tax, original_currency, source, payment_type,
-        import_id, source_row_number, row_fingerprint)
-     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        import_id)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
      returning *`,
     [
       overrides.securityId,
@@ -103,8 +97,6 @@ export async function seedPayment(
       source,
       paymentType,
       overrides.importId ?? null,
-      overrides.sourceRowNumber ?? null,
-      overrides.rowFingerprint ?? null,
     ],
   );
   return firstRow(result);

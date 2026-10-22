@@ -295,6 +295,8 @@ const dividendPaymentBackupSchema = z.object({
     "other",
   ]),
   source: z.enum(["manual", "csv_import", "excel_import", "restore"]),
+  // Nur in Sicherungen vor v2.0.0 (Migration 0038, ADR-009): Die Felder gibt es
+  // in der Datenbank nicht mehr; die Wiederherstellung uebergeht sie.
   source_file_name: z.string().optional(),
   source_row_number: z.number().int().optional(),
   row_fingerprint: z.string().optional(),

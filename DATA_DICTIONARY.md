@@ -59,10 +59,6 @@ IMPORT_SPEC.md.
 |---|---|---|---|
 | `source` | T | enum | `manual` · `csv_import` · `excel_import` · `restore`; vom System anhand des Erfassungswegs gesetzt, danach unveränderlich |
 | `import_id` | T | uuid → imports | Pflicht bei Import-Herkunft, sonst null; unveränderlich |
-| `source_file_name` | T | text | Ursprünglicher Dateiname (Import/Restore) |
-| `source_row_number` | T | int | Datenzeilennummer in der Quelldatei (1-basiert, nach Kopfzeile) |
-| `row_fingerprint` | T | text | SHA-256 des exakten normalisierten Zeileninhalts (Stufe-2-Duplikate) |
-| `business_fingerprint` | T/A | text | SHA-256 fachlicher Schlüsselfelder; serverseitig per Trigger berechnet (CALCULATION_RULES.md §5) |
 
 ### Dokumentation
 

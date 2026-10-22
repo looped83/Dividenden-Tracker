@@ -51,7 +51,7 @@ import {
  * nachziehen — `validateBackupVersion` entscheidet daran, ob eine aeltere
  * Sicherung noch eingespielt werden darf.
  */
-const SCHEMA_VERSION = "0031";
+const SCHEMA_VERSION = "0038";
 
 /**
  * Version der Anwendung, zur Bauzeit aus `package.json` eingesetzt
@@ -405,10 +405,6 @@ async function fetchDividendPayments(): Promise<DividendPaymentBackup[]> {
         amount_per_share: ensureDecimalString(p.amount_per_share, 8),
         payment_type: p.payment_type,
         source: p.source,
-        source_file_name: p.source_file_name,
-        source_row_number: p.source_row_number,
-        row_fingerprint: p.row_fingerprint,
-        business_fingerprint: p.business_fingerprint,
         note: p.note,
         created_at: ts(p.created_at),
         updated_at: ts(p.updated_at),

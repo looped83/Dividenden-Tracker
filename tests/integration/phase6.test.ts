@@ -53,8 +53,6 @@ describe("Einzellöschung importierter Eingänge (§13.4)", () => {
         depotId,
         source: "csv_import",
         importId,
-        sourceRowNumber: 1,
-        rowFingerprint: "fp-1",
         payDate: "2025-03-10",
       }),
     );
@@ -64,8 +62,6 @@ describe("Einzellöschung importierter Eingänge (§13.4)", () => {
         depotId,
         source: "csv_import",
         importId,
-        sourceRowNumber: 2,
-        rowFingerprint: "fp-2",
         payDate: "2025-06-10",
       }),
     );

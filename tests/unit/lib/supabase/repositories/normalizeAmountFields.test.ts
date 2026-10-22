@@ -26,13 +26,9 @@ const baseRow: DividendPayment = {
   amount_per_share: null,
   source: "manual",
   import_id: null,
-  source_file_name: null,
-  source_row_number: null,
-  row_fingerprint: null,
   note: null,
   archived_at: null,
   archive_reason: null,
-  business_fingerprint: "fingerprint",
   created_at: "2026-03-15T00:00:00Z",
   updated_at: "2026-03-15T00:00:00Z",
 };
