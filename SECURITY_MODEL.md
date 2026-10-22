@@ -1,6 +1,6 @@
 # SECURITY_MODEL.md — Dividend Tracker
 
-Stand: 2026-07-19 · Status: Verbindliches Sicherheitsmodell (Planungsphase)
+Stand: 2026-10-22 · Status: Verbindliches Sicherheitsmodell (in Betrieb, ab App-Version 2.0.0)
 
 ---
 
@@ -16,9 +16,9 @@ Zahlungsdaten (Integrität), langfristige Verfügbarkeit (Backups).
 | Session-Diebstahl (XSS) | mittel | CSP ohne `unsafe-inline`-Skripte, keine Fremdskripte, Framework-Escaping, keine `dangerouslySetInnerHTML` |
 | CSV-Formula-Injection (Export öffnet in Excel/Numbers) | mittel | Escaping beim Export (§9) |
 | Bösartige/beschädigte Importdateien | mittel | Größen-/Typ-/Magic-Byte-Prüfung, Worker-Isolation, Timeouts (IMPORT_SPEC.md §2, §9) |
-| Stiller Datenverlust durch Fehlbedienung | hoch | Kein Hard Delete, Audit Log, Import-Rollback, Backups |
+| Stiller Datenverlust durch Fehlbedienung | hoch | Löschen nur nach Bestätigung, Import-Rollback, Backups (kein Audit Log mehr, §8) |
 | Secrets-Leck über Repo/Client | hoch | Nur Publishable Key im Client; Service-Role nie im Frontend/Repo (§5) |
-| Abhängigkeits-Schwachstellen (z. B. veraltetes `xlsx`) | mittel | Gepinnte Versionen, SheetJS 0.20.x aus Herstellerregistry, `npm audit` in CI |
+| Abhängigkeits-Schwachstellen | mittel | Exakt gepinnte Versionen, wenige Abhängigkeiten; Excel über eigenen Leser/Schreiber auf `fflate` statt einer Bibliothek (DECISIONS.md ADR-007) |
 
 Nicht im Modell: Angriffe auf Supabase selbst (Vertrauensgrenze verwalteter Dienst),
 physischer Gerätezugriff (OS-Verantwortung; kein zusätzlicher App-Pin in v1 — DECISIONS.md
@@ -58,11 +58,10 @@ create policy upd on <t> for update using (user_id = (select auth.uid()))
 3. Abweichungen:
    - `profiles`: `id = auth.uid()` statt `user_id`; kein INSERT/DELETE über API (Anlage per Trigger).
    - `imports`: zusätzlich `delete using (user_id = auth.uid() and status in ('analyzing','pending_confirmation','discarded'))`.
-   - `dividend_payments`: zusätzlich `delete using (user_id = auth.uid() and archived_at is not null)`
-     — engste Ausnahme vom Hard-Delete-Verbot, nur für bereits archivierte eigene Zeilen, audit-
-     protokolliert (`action = 'delete'`, siehe D-034).
-   - `audit_log`: nur `select using (user_id = auth.uid())`; INSERT ausschließlich über
-     `security definer`-Triggerfunktion; kein UPDATE/DELETE für niemanden (insert-only).
+   - `dividend_payments`: zusätzlich `delete using (user_id = auth.uid())` — eigene Eingänge
+     lassen sich löschen, aktiv oder storniert (Migration 0020, siehe „Phase 6 – Ergänzungen").
+   - `audit_log`: nur `select using (user_id = auth.uid())`; kein INSERT/UPDATE/DELETE über die
+     API. Seit Migration 0037 schreibt kein Trigger mehr hinein (§8).
 4. `anon`-Rolle hat keinerlei Zugriff auf `public`-Tabellen (Policies gelten für
    `authenticated`); Grants werden explizit minimal gesetzt (Least Privilege): `revoke all …
    from anon, authenticated` gefolgt von gezielten `grant select/insert/update`.
@@ -94,7 +93,6 @@ Jede Migration wird nur gemerged, wenn:
 - [ ] `user_id`-Spalte not null + FK + Trigger `enforce_user_id`
 - [ ] Fremdschlüssel auf nutzereigene Stammdaten zusätzlich durch einen
       Eigentums-Trigger abgesichert (§3, Punkt 6)
-- [ ] Audit-Trigger angebunden (fachliche Tabellen)
 - [ ] RLS-Tests für die neue Tabelle ergänzt (§10)
 
 ## 5. Secrets und Konfiguration
@@ -106,9 +104,12 @@ Jede Migration wird nur gemerged, wenn:
 | DB-Passwort, Access-Tokens | Passwortmanager / CI-Secrets | niemals |
 
 - `.env*` in `.gitignore`; `.env.example` ohne Werte im Repo.
-- CI-Check (z. B. gitleaks) gegen versehentliche Key-Commits.
-- Es existiert kein Server-Code, der den Service-Role-Key benötigt; sollte später eine Edge
-  Function nötig werden, erhält sie den Key als Supabase-Secret, nie über das Repo.
+- Das Repository ist öffentlich. Es enthält keine Zugangsdaten und keine echten Depotdaten;
+  Fixtures und Screenshots sind synthetisch. Ein automatischer Secret-Scan läuft nicht in der
+  CI; die gesamte Historie wurde am 2026-10-22 von Hand geprüft.
+- Einziger Server-Code ist die Edge Function `sync-divvydiary-calendar`. Sie erhält den
+  Service-Role-Key von Supabase zur Laufzeit, nie über das Repository (Abschnitt
+  „Dividendenkalender").
 
 ## 6. Input-Validierung
 
@@ -189,13 +190,14 @@ Herkunft (`ui`/`import`/`rollback`/`restore`/`migration`) — siehe DATA_MODEL.m
 
 **Nicht protokolliert werden** (Ausschlussliste):
 
-- technische Felder: `updated_at`, `created_at`, Fingerprints (nur Änderungs-Flag, nicht Wert)
+- technische Felder: `updated_at`, `created_at`
 - unveränderte Felder (nur Diff)
 - Auth-Daten: Passwörter/Hashes, Tokens, Session-IDs (liegen ohnehin nie in `public`)
 - vollständige Importdatei-Inhalte (nur Metadaten/Bericht in `imports`)
 
-Das Audit Log ist insert-only (keine UPDATE/DELETE-Pfade, auch nicht für den Eigentümer) und
-Teil des Backups.
+Das Audit Log war insert-only (keine UPDATE/DELETE-Pfade, auch nicht für den Eigentümer).
+Neue Datensicherungen enthalten es nicht mehr; ältere Dateien mit `audit_log` lassen sich weiter
+einlesen.
 
 ## 9. Export-/Import-Härtung
 
@@ -219,7 +221,7 @@ Mit **zwei Testnutzern A und B** gegen lokale Supabase-Instanz (Details TEST_STR
 6. Anfragen ohne Session (`anon`) → kein Zugriff auf irgendeine Tabelle/View/RPC.
 7. Direkte PostgREST-Aufrufe (ohne App) mit manipulierten Filtern/Headern → RLS hält.
 8. RPCs mit fremden IDs (`rollback_import`, `archive_payment`, `restore_backup`) → kein Effekt.
-9. `audit_log`: INSERT/UPDATE/DELETE über API → abgelehnt; SELECT nur eigene Einträge.
+9. `audit_log` (ohne Trigger, §8): INSERT/UPDATE/DELETE über API → abgelehnt; SELECT nur eigene Einträge.
 10. Views (`v_stats_*`) liefern nur eigene Daten (security_invoker-Test).
 
 ## 11. Fehlerprotokollierung
@@ -236,7 +238,9 @@ Mit **zwei Testnutzern A und B** gegen lokale Supabase-Instanz (Details TEST_STR
 ### RLS neuer Objekte
 
 - `security_aliases`, `import_rows`: RLS aktiv, `revoke all from anon`,
-  Policies `using/with check (user_id = auth.uid())`, `enforce_user_id`-Trigger.
+  Policies `using/with check (user_id = (select auth.uid()))` (seit Migration 0036),
+  `enforce_user_id`-Trigger. `import_rows` ist seit Migration 0037 leer; ein neuer Import
+  befüllt die Tabelle wieder.
 - `commit_import`/`rollback_import` laufen als **security invoker** — RLS bleibt
   aktiv, jede eingefügte Zeile durchläuft dieselben Trigger/Checks wie eine
   manuelle Eingabe. Beide sperren den Importdatensatz per `for update` und
@@ -282,9 +286,9 @@ Mit **zwei Testnutzern A und B** gegen lokale Supabase-Instanz (Details TEST_STR
 Nutzer kann ausschließlich eigene Eingänge löschen (aktiv oder storniert);
 fremde IDs betreffen 0 Zeilen (kein Fehler-Leak). Die Absicherung ist
 vollständig serverseitig (RLS) — clientseitige Filter sind keine
-Sicherheitsmaßnahme. Die Löschung wird über den security-definer-Audit-Trigger
-atomar protokolliert; UI-Bestätigung ersetzt den früheren „erst stornieren"-
-Zwang als Schutz vor versehentlicher Löschung.
+Sicherheitsmaßnahme. Die UI-Bestätigung ersetzt den früheren „erst stornieren"-
+Zwang als Schutz vor versehentlicher Löschung; protokolliert wird die Löschung
+seit Migration 0037 nicht mehr (§8).
 
 **`duplicate_dismissals` (0020).** RLS: select/insert/delete nur eigene Zeilen,
 kein UPDATE, kein anon-Zugriff (`revoke all`, dann minimale Grants). Der
@@ -316,9 +320,7 @@ Dividendeneingängen des Nutzers berechnet (dieselbe RLS-geschützte Datenbasis 
 Dashboard/Statistik); fremde Zahlungen sind serverseitig unsichtbar. Es wird
 keine neue SECURITY-DEFINER-Funktion eingeführt — damit entfällt jede
 Umgehungsfläche über unsichere Funktionen. Clientseitige Filter sind nirgends
-Sicherheitsmaßnahme. Anlegen, Ändern und Löschen eines Ziels werden über den
-generischen Audit-Trigger (`entity_type = 'goal'`, Aktion insert/update/delete)
-protokolliert.
+Sicherheitsmaßnahme.
 
 ## Dividendenkalender (Migration 0027, Edge Function)
 
