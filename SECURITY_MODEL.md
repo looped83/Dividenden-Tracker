@@ -46,10 +46,12 @@ Verbindliche Regeln:
    `securities`, `dividend_payments`, `imports`, `goals`):
 
 ```sql
-create policy sel on <t> for select using (user_id = auth.uid());
-create policy ins on <t> for insert with check (user_id = auth.uid());
-create policy upd on <t> for update using (user_id = auth.uid())
-                                   with check (user_id = auth.uid());
+create policy sel on <t> for select using (user_id = (select auth.uid()));
+create policy ins on <t> for insert with check (user_id = (select auth.uid()));
+create policy upd on <t> for update using (user_id = (select auth.uid()))
+                                   with check (user_id = (select auth.uid()));
+-- `(select auth.uid())` statt `auth.uid()`: einmal je Abfrage ausgewertet statt
+-- je Zeile (Supabase-Advisor auth_rls_initplan, Migration 0036).
 -- DELETE: bewusst KEINE Policy auf fachlichen Tabellen (kein Hard Delete).
 ```
 
