@@ -254,22 +254,3 @@ describe("goals – RLS und Nutzerisolation", () => {
     ).rejects.toThrow();
   });
 });
-
-describe("goals – Audit", () => {
-  it("protokolliert Anlegen, Ändern und Löschen im Audit Log", async () => {
-    const goal = await asUser(userA, (c) => insertGoal(c, { year: 2080 }));
-    await asUser(userA, (c) =>
-      c.query("update goals set target_amount = '20000.00' where id = $1", [goal.id]),
-    );
-    await asUser(userA, (c) => c.query("delete from goals where id = $1", [goal.id]));
-
-    const actions = await asUser(userA, async (c) => {
-      const result = await c.query<{ action: string }>(
-        "select action from audit_log where entity_type = 'goal' and entity_id = $1 order by id",
-        [goal.id],
-      );
-      return result.rows.map((r) => r.action);
-    });
-    expect(actions).toEqual(["insert", "update", "delete"]);
-  });
-});

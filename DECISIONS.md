@@ -956,3 +956,39 @@ Kopfzeile beim Schreiben.
 
 - Der Import soll weitere Formate (.xls, .ods) oder Formatierungen auswerten.
 
+## ADR-008: Kein Audit Log, keine Import-Rohzeilen, schlanke Indizes
+
+**Status:** Accepted  
+**Scope:** Datenbank, Betrieb
+
+### Decision
+
+Migration 0037 entfernt die sieben Audit-Trigger und leert `audit_log` und `import_rows`.
+Indizes, die nur der CSV-Import oder das Löschen eines Importentwurfs nutzt, entfallen
+(Fingerprints, Import-Bezüge, `imports.file_hash`, `dp_user_depot_idx`).
+
+### Why
+
+Die App ist ein Einzelnutzer-Werkzeug. Die Änderungshistorie und der Herkunftsnachweis je
+Importzeile werden nicht gebraucht; wichtig sind die Zahlen und ihre Konsistenz. Das Audit Log
+machte rund ein Drittel der eigenen Daten aus, und jeder Schreibzugriff zahlte für den
+zusätzlichen Insert. Importiert wurde einmalig zum Start.
+
+### Trade-offs
+
+- Wer was wann geändert hat, ist nicht mehr nachvollziehbar.
+- Ein künftiger Import prüft Duplikate per sequenziellem Scan statt per Index. Bei einigen
+  tausend Zeilen bleibt das im Millisekundenbereich.
+- Der Supabase-Advisor meldet die Fremdschlüssel auf `imports` wieder als ohne Index (INFO).
+
+### Guardrails
+
+- Eindeutigkeitsregeln (`dp_import_row_key`, `import_rows_import_id_source_row_number_key`,
+  Namens- und ISIN-Schlüssel) bleiben.
+- `audit_log`, seine Policy und `audit_row_change()` bleiben bestehen; ältere
+  Datensicherungen mit `audit_log` bleiben lesbar.
+
+### Revisit When
+
+- Mehrere Personen bearbeiten dieselben Daten, oder eine Historie wird fachlich gebraucht.
+  Dann reichen die Trigger aus 0003/0013 erneut anzulegen.

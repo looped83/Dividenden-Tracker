@@ -142,9 +142,8 @@ dieselben Rohdaten sein (String-Vergleich der Decimal-Ergebnisse).
   weiterhin für aktive oder fremde Zeilen
 - Trigger: `updated_at`, `enforce_user_id`, `protect_payment_immutables` (Änderung von
   `source`/`import_id`/`created_at` scheitert), `recompute_business_fingerprint`
-- Audit Log: INSERT/UPDATE/Archive/Delete erzeugen korrekte Diffs (`action = 'delete'` bei
-  endgültigem Löschen protokolliert die gelöschte Zeile); Ausschlussliste greift; insert-only
-  erzwungen
+- Audit Log (ADR-008): Änderungen erzeugen keine Einträge mehr; für Clients bleibt die Tabelle
+  schreibgeschützt
 
 ## 6. Sicherheitstests (RLS, CI-blockierend)
 

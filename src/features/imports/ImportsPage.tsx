@@ -75,7 +75,7 @@ export function ImportsPage() {
     if (
       !window.confirm(
         `Diesen Import vollständig zurückrollen? ${rows} importierte Dividenden werden archiviert. ` +
-          "Der Vorgang ist auditiert und der Importdatensatz bleibt als Historie erhalten.",
+          "Der Importdatensatz bleibt als Historie erhalten.",
       )
     ) {
       return;

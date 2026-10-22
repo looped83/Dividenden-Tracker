@@ -176,7 +176,12 @@ gelöscht (nur die eigenen, erkennbar am Präfix `dividend-tracker-shell-`).
 
 ## 8. Audit Log
 
-Auditiert werden Änderungen an: Dividendeneingängen, Unternehmen, Depots, Portfolios, Zielen,
+**Seit Migration 0037 abgeschaltet (DECISIONS.md ADR-008).** Die Trigger sind entfernt, die
+Tabelle ist leer und bleibt für Clients lesbar (nur eigene Zeilen) und schreibgeschützt. Der
+folgende Abschnitt beschreibt das frühere Verhalten, falls das Protokoll wieder eingeschaltet
+wird.
+
+Auditiert wurden Änderungen an: Dividendeneingängen, Unternehmen, Depots, Portfolios, Zielen,
 Imports (Commit/Rollback), Wiederherstellungen, Profil (fachliche Felder).
 
 Jeder Eintrag: Nutzer, Entität, Entitäts-ID, Aktion, vorherige Werte, neue Werte, Zeitpunkt,

@@ -197,30 +197,6 @@ describe("5) DELETE auf dividend_payments ist fuer eigene Zeilen (aktiv ODER sto
     );
     expect(stillExists.rowCount).toBe(0);
   });
-
-  it("protokolliert die Loeschung atomar im Audit Log (action = 'delete')", async () => {
-    const depotId = await asUser(userA, (client) =>
-      seedDepot(client, "Depot Delete Audit"),
-    );
-    const securityId = await asUser(userA, (client) =>
-      seedSecurity(client, { name: "Delete Audit AG" }),
-    );
-    const payment = await asUser(userA, (client) =>
-      seedPayment(client, { securityId, depotId }),
-    );
-
-    await asUser(userA, (client) =>
-      client.query("delete from dividend_payments where id = $1", [payment.id]),
-    );
-
-    const audit = await asUser(userA, (client) =>
-      client.query(
-        "select action from audit_log where entity_type = 'dividend_payment' and entity_id = $1 and action = 'delete'",
-        [payment.id],
-      ),
-    );
-    expect(audit.rowCount).toBe(1);
-  });
 });
 
 describe("6) Zugriff ohne Anmeldung (anon)", () => {
@@ -301,6 +277,14 @@ describe("8) RPC mit fremder ID", () => {
 
 describe("9) audit_log: nur eigene Eintraege lesbar, kein Schreibzugriff", () => {
   it("A sieht nur eigene Audit-Eintraege, B keinen davon", async () => {
+    // Seit ADR-008 schreibt kein Trigger mehr; der Eintrag kommt direkt.
+    await asSuperuser((client) =>
+      client.query(
+        `insert into audit_log (user_id, entity_type, entity_id, action, new_values, origin)
+         values ($1, 'depot', $2, 'insert', '{}'::jsonb, 'ui')`,
+        [userA, depotA],
+      ),
+    );
     const auditA = await asUser(userA, (client) =>
       client.query(
         "select entity_id from audit_log where entity_type = 'depot' and entity_id = $1",
