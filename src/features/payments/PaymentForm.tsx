@@ -17,11 +17,8 @@ import {
   usePayment,
   useUpdatePayment,
 } from "@/features/payments/hooks";
-import {
-  paymentFormSchema,
-  todayIso,
-  type PaymentFormValues,
-} from "@/features/payments/schemas";
+import { paymentFormSchema, type PaymentFormValues } from "@/features/payments/schemas";
+import { todayIso } from "@/lib/statistics/dates";
 import {
   PaymentConflictError,
   type DividendPaymentInsert,

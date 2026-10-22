@@ -25,13 +25,23 @@ const base = process.env.GITHUB_PAGES === "true" ? "/Dividenden-Tracker/" : "/";
 /**
  * Bricht den Production-Build ab, wenn Pflicht-Env-Variablen fehlen.
  * Begruendung siehe `src/lib/config/requiredEnv.ts`.
+ *
+ * Als Plugin statt im Konfigurationsaufruf: Werkzeuge, die die Konfiguration
+ * nur lesen (Knip), liefen sonst ohne gesetzte Variablen in den Abbruch.
  */
-function assertRequiredEnv(mode: string): void {
-  const missing = findMissingEnv(loadEnv(mode, process.cwd(), ""));
-
-  if (missing.length > 0) {
-    throw new Error(missingEnvMessage(missing));
-  }
+function requiredEnv(): Plugin {
+  return {
+    name: "dividend-tracker:required-env",
+    apply: "build",
+    configResolved(config) {
+      const missing = findMissingEnv(
+        loadEnv(config.mode, config.envDir || process.cwd(), ""),
+      );
+      if (missing.length > 0) {
+        throw new Error(missingEnvMessage(missing));
+      }
+    },
+  };
 }
 
 /**
@@ -59,58 +69,52 @@ function serviceWorkerBuild(): Plugin {
   };
 }
 
-export default defineConfig(({ command, mode }) => {
-  if (command === "build") {
-    assertRequiredEnv(mode);
-  }
-
-  return {
-    base,
-    define: {
-      __APP_VERSION__: JSON.stringify(appVersion),
+export default defineConfig({
+  base,
+  define: {
+    __APP_VERSION__: JSON.stringify(appVersion),
+  },
+  plugins: [requiredEnv(), react(), tailwindcss(), serviceWorkerBuild()],
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
     },
-    plugins: [react(), tailwindcss(), serviceWorkerBuild()],
-    resolve: {
-      alias: {
-        "@": path.resolve(__dirname, "./src"),
-      },
+  },
+  test: {
+    globals: true,
+    setupFiles: ["./tests/setup.ts"],
+    css: false,
+    // Platzhalter-Zugangsdaten: `supabase/client.ts` wirft ohne diese Werte
+    // beim Import auf Modulebene. Ohne sie liesse sich kein Modul testen,
+    // das den Client (auch nur transitiv) importiert — Tests mussten die
+    // Produktionslogik stattdessen kopieren, was echte Fehler verdeckte.
+    // Es wird keine Verbindung aufgebaut; Netzwerkzugriffe sind gemockt.
+    env: {
+      VITE_SUPABASE_URL: "https://test.supabase.co",
+      VITE_SUPABASE_ANON_KEY: "test-anon-key",
     },
-    test: {
-      globals: true,
-      setupFiles: ["./tests/setup.ts"],
-      css: false,
-      // Platzhalter-Zugangsdaten: `supabase/client.ts` wirft ohne diese Werte
-      // beim Import auf Modulebene. Ohne sie liesse sich kein Modul testen,
-      // das den Client (auch nur transitiv) importiert — Tests mussten die
-      // Produktionslogik stattdessen kopieren, was echte Fehler verdeckte.
-      // Es wird keine Verbindung aufgebaut; Netzwerkzugriffe sind gemockt.
-      env: {
-        VITE_SUPABASE_URL: "https://test.supabase.co",
-        VITE_SUPABASE_ANON_KEY: "test-anon-key",
-      },
-      // Zwei Umgebungen: Reine Logik (`.test.ts`) laeuft in Node, nur
-      // Komponenten (`.test.tsx`) brauchen den nachgebauten Browser. Zuvor lief
-      // alles in jsdom — dessen Aufbau je Datei kostete bei den Logiktests
-      // rund zwei Drittel ihrer Laufzeit (30 s statt 9,5 s). Eine Logikdatei,
-      // die doch `window` braucht, sagt es selbst per `@vitest-environment`.
-      projects: [
-        {
-          extends: true,
-          test: {
-            name: "logik",
-            environment: "node",
-            include: ["tests/unit/**/*.test.ts"],
-          },
+    // Zwei Umgebungen: Reine Logik (`.test.ts`) laeuft in Node, nur
+    // Komponenten (`.test.tsx`) brauchen den nachgebauten Browser. Zuvor lief
+    // alles in jsdom — dessen Aufbau je Datei kostete bei den Logiktests
+    // rund zwei Drittel ihrer Laufzeit (30 s statt 9,5 s). Eine Logikdatei,
+    // die doch `window` braucht, sagt es selbst per `@vitest-environment`.
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: "logik",
+          environment: "node",
+          include: ["tests/unit/**/*.test.ts"],
         },
-        {
-          extends: true,
-          test: {
-            name: "oberflaeche",
-            environment: "jsdom",
-            include: ["tests/unit/**/*.test.tsx"],
-          },
+      },
+      {
+        extends: true,
+        test: {
+          name: "oberflaeche",
+          environment: "jsdom",
+          include: ["tests/unit/**/*.test.tsx"],
         },
-      ],
-    },
-  };
+      },
+    ],
+  },
 });

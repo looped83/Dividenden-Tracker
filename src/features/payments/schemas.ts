@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { todayIso } from "@/lib/statistics/dates";
 import {
   MoneyDecimal,
   type DecimalInstance,
@@ -46,8 +47,9 @@ export function checkPositiveMoney(normalized: string): DecimalCheckResult {
  * Nimmt deutsch formatierte Eingaben entgegen (Komma als Dezimaltrennzeichen,
  * z. B. "12,34") und normalisiert sie auf das kanonische Punkt-Format
  * (CALCULATION_RULES.md R-1), bevor der Wert weiterverarbeitet wird.
+ * `example` steht in der Meldung fuer eine ungueltige Zahl.
  */
-function positiveMoneyString(label: string) {
+export function positiveMoneyString(label: string, example = "12,34") {
   return z
     .string()
     .trim()
@@ -63,20 +65,12 @@ function positiveMoneyString(label: string) {
               ? `${label}: höchstens zwei Nachkommastellen`
               : result.reason === "out_of_range"
                 ? `${label} liegt außerhalb des zulässigen Bereichs`
-                : `${label}: ungültige Zahl (z. B. 12,34)`;
+                : `${label}: ungültige Zahl (z. B. ${example})`;
         ctx.addIssue({ code: "custom", message });
         return z.NEVER;
       }
       return normalized;
     });
-}
-
-/** Lokales heutiges Datum als ISO-String (YYYY-MM-DD), ohne Zeitzonenverschiebung. */
-export function todayIso(reference: Date = new Date()): string {
-  const year = String(reference.getFullYear()).padStart(4, "0");
-  const month = String(reference.getMonth() + 1).padStart(2, "0");
-  const day = String(reference.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
 }
 
 const MIN_PAY_DATE = "1970-01-01";

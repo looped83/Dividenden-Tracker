@@ -109,6 +109,26 @@ export async function fetchIcalFeed(
     controller.abort();
   }, timeoutMs);
 
+  // Die Zeitgrenze gilt fuer den ganzen Abruf, nicht nur bis zu den
+  // Kopfzeilen: Ein Server, der den Inhalt nur tropfenweise liefert, hielte
+  // den Lauf sonst bis zum Limit der Function fest.
+  try {
+    return await readFeed(doFetch, url, controller.signal);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function readFeed(
+  doFetch: typeof fetch,
+  url: string,
+  signal: AbortSignal,
+): Promise<string> {
+  const failed = (error: unknown): FeedError =>
+    signal.aborted || isAbortLike(error)
+      ? new FeedError("timeout")
+      : new FeedError("network");
+
   let response: Response;
   try {
     response = await doFetch(url, {
@@ -116,14 +136,10 @@ export async function fetchIcalFeed(
       method: "GET",
       headers: { accept: "text/calendar, text/plain;q=0.9, */*;q=0.1" },
       redirect: "follow",
-      signal: controller.signal,
+      signal,
     });
   } catch (error) {
-    throw controller.signal.aborted || isAbortLike(error)
-      ? new FeedError("timeout")
-      : new FeedError("network");
-  } finally {
-    clearTimeout(timer);
+    throw failed(error);
   }
 
   if (!response.ok) {
@@ -141,8 +157,8 @@ export async function fetchIcalFeed(
   let text: string;
   try {
     text = await response.text();
-  } catch {
-    throw new FeedError("network");
+  } catch (error) {
+    throw failed(error);
   }
 
   if (text.length > MAX_FEED_BYTES) throw new FeedError("too_large");

@@ -27,6 +27,7 @@
 import { supabase } from "@/lib/supabase/client";
 import { fetchAllPages } from "@/lib/supabase/fetchAllPages";
 import { downloadBlob } from "@/lib/utils/downloadBlob";
+import type { XlsxSheetSpec } from "@/lib/xlsx/writeXlsx";
 import { MoneyDecimal } from "@/lib/money/decimalConfig";
 import { describePaymentType } from "@/lib/payments/paymentType";
 import type { PaymentType } from "@/lib/supabase/database.types";
@@ -470,59 +471,53 @@ function numberFormat(kind: ColumnKind, euroOnly: boolean): string | null {
   return null;
 }
 
+const MONEY_DISPLAY = new Intl.NumberFormat("de-DE", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+/** Laenge des Textes, den Excel in der Zelle zeigt — fuer die Spaltenbreite. */
+function displayLength(value: Date | number | string | null, kind: ColumnKind): number {
+  if (value === null) return 0;
+  if (value instanceof Date) return "dd.mm.yyyy".length;
+  if (typeof value !== "number") return value.length;
+  // Betraege mit Tausenderpunkten, zwei Nachkommastellen und „ €".
+  return kind === "money" ? MONEY_DISPLAY.format(value).length + 2 : String(value).length;
+}
+
 /**
- * Baut die Arbeitsmappe. Getrennt vom Blob, damit ein Test sie unmittelbar
- * pruefen kann, statt eine Datei wieder auseinandernehmen zu muessen.
+ * Baut die Arbeitsmappe als Beschreibung. Getrennt von den Bytes, damit ein
+ * Test Werte, Formate und Breiten unmittelbar pruefen kann, statt eine Datei
+ * wieder auseinandernehmen zu muessen.
  */
-export async function buildXlsxWorkbook(
+export function buildXlsxSheet(
   payments: readonly ExportPayment[],
   columns: readonly ExportColumn[],
-) {
-  // Dynamischer Import: exceljs ist ~950 kB und wird nur beim XLSX-Export
-  // gebraucht. Ein statischer Import zog die Bibliothek in den Haupt-Chunk und
-  // machte die dynamischen Imports in den Workbook-Parsern wirkungslos
-  // (Rolldown-Warnung INEFFECTIVE_DYNAMIC_IMPORT).
-  const { default: ExcelJS } = await import("exceljs");
-  const workbook = new ExcelJS.Workbook();
-  const worksheet = workbook.addWorksheet("Dividenden");
+): XlsxSheetSpec {
   const euroOnly = allEuro(payments);
+  const rows = payments.map((payment) =>
+    columns.map((column) =>
+      xlsxCellValue(exportCellValue(payment, column.field), column.kind),
+    ),
+  );
 
-  const headerRow = worksheet.addRow(columns.map((column) => column.label));
-  headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
-  headerRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF4472C4" } };
-  headerRow.alignment = { horizontal: "center", vertical: "middle" };
-
-  for (const payment of payments) {
-    const row = worksheet.addRow(
-      columns.map((column) =>
-        xlsxCellValue(exportCellValue(payment, column.field), column.kind),
-      ),
-    );
-    columns.forEach((column, index) => {
-      const cell = row.getCell(index + 1);
-      const format = numberFormat(column.kind, euroOnly);
-      if (format) cell.numFmt = format;
-      cell.alignment = {
-        horizontal: column.kind === "text" ? "left" : "right",
+  return {
+    name: "Dividenden",
+    rows,
+    columns: columns.map((column, index) => {
+      // Spaltenbreite an den laengsten Inhalt anpassen, hoechstens 50 Zeichen.
+      const longest = rows.reduce(
+        (max, row) => Math.max(max, displayLength(row[index] ?? null, column.kind)),
+        column.label.length,
+      );
+      return {
+        header: column.label,
+        numFmt: numberFormat(column.kind, euroOnly) ?? undefined,
+        align: column.kind === "text" ? "left" : "right",
+        width: Math.min(longest + 2, 50),
       };
-    });
-  }
-
-  // Spaltenbreiten an den laengsten Inhalt anpassen.
-  worksheet.columns.forEach((column) => {
-    let longest = 0;
-    column.eachCell?.({ includeEmpty: true }, (cell) => {
-      // `cell.value` kann ein Objekt sein (Formel, Rich Text); `text` liefert
-      // dafuer die dargestellte Zeichenkette.
-      const length = cell.text.length;
-      if (length > longest) longest = length;
-    });
-    column.width = Math.min(longest + 2, 50);
-  });
-
-  // Kopfzeile beim Blaettern sichtbar halten.
-  worksheet.views = [{ state: "frozen", ySplit: 1 }];
-  return workbook;
+    }),
+  };
 }
 
 // ============================================================================
@@ -567,8 +562,9 @@ export async function executeExport(
 
     let blob: Blob;
     if (options.format === "xlsx") {
-      const workbook = await buildXlsxWorkbook(payments, columns);
-      blob = new Blob([await workbook.xlsx.writeBuffer()], { type: mimeType });
+      // Dynamischer Import: Der Schreiber wird nur beim Excel-Export gebraucht.
+      const { writeXlsx } = await import("@/lib/xlsx/writeXlsx");
+      blob = new Blob([writeXlsx(buildXlsxSheet(payments, columns))], { type: mimeType });
     } else {
       blob = new Blob([buildCsvDocument(payments, columns)], { type: mimeType });
     }

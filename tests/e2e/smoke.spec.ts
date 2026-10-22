@@ -38,6 +38,22 @@ test.describe("Rauchtest", () => {
     await expect(page.getByLabel("E-Mail-Adresse")).toBeVisible();
   });
 
+  test("ein fehlender Teil nach einem Deploy laedt die Seite neu", async ({ page }) => {
+    // Wie nach einem Deploy: Der Teil der alten Fassung ist weg. Nur die erste
+    // Anfrage scheitert; nach dem Neuladen kommt er an.
+    let failed = false;
+    await page.route(/\/assets\/RegisterPage-[^/]+\.js$/, async (route) => {
+      if (failed) return route.continue();
+      failed = true;
+      return route.fulfill({ status: 404, body: "" });
+    });
+
+    await page.goto("/#/registrieren");
+
+    await expect(page.getByLabel("E-Mail-Adresse")).toBeVisible();
+    expect(failed).toBe(true);
+  });
+
   test("das Startpaket bleibt schlank", async ({ page }) => {
     const bytes = new Map<string, number>();
     page.on("response", async (response) => {

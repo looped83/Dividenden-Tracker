@@ -215,10 +215,9 @@ Abweichungen von der Planung oben.
 
 ### Bibliotheken (Abweichung ggü. §1)
 
-- Excel: **exceljs** (nicht SheetJS). `cdn.sheetjs.com` ist in der
-  Implementierungsumgebung nicht erreichbar und das npm-Paket `xlsx@0.18.5` ist
-  mit bekannten CVEs eingefroren (DECISIONS.md D-015/D-026). exceljs wird per
-  dynamischem Import als eigener Chunk geladen. Damit erledigt sich die offene
+- Excel: eigener schlanker Leser `src/lib/xlsx/readXlsx.ts` auf `fflate`
+  (nicht SheetJS, seit 1.46.0 auch nicht mehr exceljs; DECISIONS.md
+  D-015/D-026, ADR-007). Er wird per dynamischem Import nachgeladen. Damit erledigt sich die offene
   Frage O-1 (SheetJS-Version).
 - CSV: eigener, abhängigkeitsfreier Parser (`src/lib/import/parseCsv.ts`) mit
   UTF-8/BOM-Erkennung, Mehrzeilen-Delimiter-Heuristik (`;` `,` Tab) und

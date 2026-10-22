@@ -9,7 +9,7 @@ import {
 } from "react-router";
 import { Sidebar, CompactSidebar } from "@/components/layout/Sidebar";
 import { BottomNav } from "@/components/layout/BottomNav";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { AreaErrorBoundary, ErrorBoundary } from "@/components/ErrorBoundary";
 import { RouteAnnouncer } from "@/components/layout/RouteAnnouncer";
 import { PageSkeleton } from "@/components/layout/PageSkeleton";
 import { PaymentComposerProvider } from "@/features/payments/PaymentComposer";
@@ -46,6 +46,23 @@ function ScrollToTopOnNavigate() {
  * - iPad (md..lg): kompakte Icon-Sidebar
  * - iPhone (< md): Bottom Navigation, Sidebar ausgeblendet
  */
+/**
+ * Inhalt des Bereichs mit eigener Fehlergrenze. Liest den Pfad selbst, damit
+ * nicht die ganze Huelle bei jedem Wechsel neu zeichnet.
+ */
+function AreaContent() {
+  const { pathname } = useLocation();
+  return (
+    <AreaErrorBoundary resetKey={pathname}>
+      <React.Suspense fallback={<PageSkeleton />}>
+        <RequireAuth>
+          <Outlet />
+        </RequireAuth>
+      </React.Suspense>
+    </AreaErrorBoundary>
+  );
+}
+
 export function AppShell() {
   return (
     <>
@@ -91,11 +108,7 @@ export function AppShell() {
                   der Rahmen der App steht dabei bereits. Dasselbe gilt fuer die
                   Anmeldepruefung: Erst sie gibt den Inhalt frei, die
                   Navigation zeigt keine Daten und steht vorher. */}
-                <React.Suspense fallback={<PageSkeleton />}>
-                  <RequireAuth>
-                    <Outlet />
-                  </RequireAuth>
-                </React.Suspense>
+                <AreaContent />
               </div>
             </main>
             <BottomNav />

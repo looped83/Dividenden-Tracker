@@ -1,6 +1,5 @@
 import { z } from "zod";
-import { normalizeGermanDecimalInput } from "@/lib/money";
-import { checkPositiveMoney } from "@/features/payments/schemas";
+import { positiveMoneyString } from "@/features/payments/schemas";
 
 /**
  * Technische Jahresgrenzen (Auftrag §21). Bewusst grosszuegig: historische,
@@ -11,31 +10,6 @@ import { checkPositiveMoney } from "@/features/payments/schemas";
 export const MIN_GOAL_YEAR = 1990;
 export function maxGoalYear(reference: Date = new Date()): number {
   return reference.getFullYear() + 10;
-}
-
-/** Zentrale, decimal-sichere Betragspruefung (wiederverwendet die Zahlungslogik). */
-function positiveMoneyString(label: string) {
-  return z
-    .string()
-    .trim()
-    .min(1, `${label} ist erforderlich`)
-    .transform((value, ctx) => {
-      const normalized = normalizeGermanDecimalInput(value);
-      const result = checkPositiveMoney(normalized);
-      if (!result.ok) {
-        const message =
-          result.reason === "not_positive"
-            ? `${label} muss größer als 0 sein`
-            : result.reason === "too_many_decimals"
-              ? `${label}: höchstens zwei Nachkommastellen`
-              : result.reason === "out_of_range"
-                ? `${label} liegt außerhalb des zulässigen Bereichs`
-                : `${label}: ungültige Zahl (z. B. 1.000,00)`;
-        ctx.addIssue({ code: "custom", message });
-        return z.NEVER;
-      }
-      return normalized;
-    });
 }
 
 /**
@@ -89,7 +63,7 @@ export function makeGoalFormSchema(reference: Date = new Date()) {
         }
         return parsed;
       }),
-      targetAmount: positiveMoneyString("Zielbetrag"),
+      targetAmount: positiveMoneyString("Zielbetrag", "1.000,00"),
       title: z.string().trim().max(200, "Titel: höchstens 200 Zeichen").optional(),
       note: z.string().trim().max(2000, "Notiz: höchstens 2000 Zeichen").optional(),
     })

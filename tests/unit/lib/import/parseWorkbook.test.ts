@@ -7,33 +7,28 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
  */
 const load = vi.hoisted(() => vi.fn());
 
-vi.mock("exceljs", () => {
-  const sheet = {
-    name: "Dividenden",
-    state: "visible",
-    rowCount: 2,
-    columnCount: 2,
-    getRows: () => [
-      { values: [undefined, "Datum", "Betrag"] },
-      { values: [undefined, new Date("2026-07-29T00:00:00Z"), 12.5] },
-    ],
-  };
-  class Workbook {
-    xlsx = { load };
-    worksheets = [sheet];
-    getWorksheet(name: string) {
-      return name === sheet.name ? sheet : undefined;
-    }
-  }
-  return { default: { Workbook } };
-});
+vi.mock("@/lib/xlsx/readXlsx", () => ({ readXlsx: load }));
 
 const { analyzeWorkbook, parseFirstWorksheet, readSheet } =
   await import("@/lib/import/parseWorkbook");
 
 beforeEach(() => {
   load.mockReset();
-  load.mockResolvedValue(undefined);
+  load.mockReturnValue({
+    date1904: false,
+    sheets: [
+      {
+        name: "Dividenden",
+        state: "visible",
+        columnCount: 3,
+        hasMergedCells: false,
+        rows: [
+          ["Datum", "Betrag", null],
+          [new Date("2026-07-29T00:00:00Z"), 12.5, null],
+        ],
+      },
+    ],
+  });
 });
 
 describe("parseWorkbook", () => {
@@ -52,6 +47,22 @@ describe("parseWorkbook", () => {
     await analyzeWorkbook(new ArrayBuffer(8));
 
     expect(load).toHaveBeenCalledTimes(2);
+  });
+
+  it("meldet Blaetter mit Zeilen- und Spaltenzahl", async () => {
+    await expect(analyzeWorkbook(new ArrayBuffer(8))).resolves.toEqual({
+      date1904: false,
+      sheets: [
+        {
+          name: "Dividenden",
+          state: "visible",
+          hidden: false,
+          rowCount: 2,
+          columnCount: 3,
+          hasMergedCells: false,
+        },
+      ],
+    });
   });
 
   it("liefert das erste Blatt als Kopfzeile und Datenzeilen, Datum als Kalendertag", async () => {

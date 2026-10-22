@@ -33,12 +33,6 @@ const badgeVariantByTone = {
   negative: "negative",
 } as const;
 
-function formatTimestamp(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return iso;
-  return formatTimestampDate(date);
-}
-
 export function GoalDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -219,11 +213,11 @@ export function GoalDetailPage() {
         <dl className="grid grid-cols-2 gap-3 border-t border-border pt-4 text-xs text-muted-foreground sm:gap-4">
           <div>
             <dt>Erstellt</dt>
-            <dd>{formatTimestamp(goal.createdAt)}</dd>
+            <dd>{formatTimestampDate(goal.createdAt)}</dd>
           </div>
           <div>
             <dt>Zuletzt geändert</dt>
-            <dd>{formatTimestamp(goal.updatedAt)}</dd>
+            <dd>{formatTimestampDate(goal.updatedAt)}</dd>
           </div>
         </dl>
       </div>

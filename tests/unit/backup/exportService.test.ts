@@ -12,7 +12,7 @@
 import { describe, it, expect } from "vitest";
 import {
   buildCsvDocument,
-  buildXlsxWorkbook,
+  buildXlsxSheet,
   columnsFor,
   escapeCsvField,
   exportCellValue,
@@ -188,67 +188,79 @@ describe("Export — CSV", () => {
   });
 });
 
-/** Das einzige Blatt der Mappe. */
-function blatt(workbook: Awaited<ReturnType<typeof buildXlsxWorkbook>>) {
-  return workbook.worksheets[0];
+/** Zellwert wie in Excel adressiert: Zeile 1 ist die Kopfzeile, Spalten ab 1. */
+function zelle(sheet: ReturnType<typeof buildXlsxSheet>, row: number, column: number) {
+  return row === 1
+    ? sheet.columns[column - 1]?.header
+    : sheet.rows[row - 2]?.[column - 1];
 }
 
 describe("Export — Excel", () => {
-  it("fuellt Asset, Ticker und Depot — genau das fehlte", async () => {
+  it("fuellt Asset, Ticker und Depot — genau das fehlte", () => {
     const payments = [zahlung()];
-    const workbook = await buildXlsxWorkbook(payments, columnsFor(payments));
-    const sheet = blatt(workbook);
+    const sheet = buildXlsxSheet(payments, columnsFor(payments));
 
-    expect(sheet.getRow(1).getCell(2).value).toBe("Asset");
-    expect(sheet.getRow(2).getCell(2).value).toBe("Alpha AG");
-    expect(sheet.getRow(2).getCell(3).value).toBe("ALP");
-    expect(sheet.getRow(2).getCell(4).value).toBe("Hauptdepot");
+    expect(zelle(sheet, 1, 2)).toBe("Asset");
+    expect(zelle(sheet, 2, 2)).toBe("Alpha AG");
+    expect(zelle(sheet, 2, 3)).toBe("ALP");
+    expect(zelle(sheet, 2, 4)).toBe("Hauptdepot");
   });
 
-  it("schreibt Betraege als Zahl und das Datum als Datum", async () => {
+  it("schreibt Betraege als Zahl und das Datum als Datum", () => {
     const payments = [zahlung({ fees: "1.25", quantity: "10.5" })];
     const columns = columnsFor(payments);
-    const workbook = await buildXlsxWorkbook(payments, columns);
-    const row = blatt(workbook).getRow(2);
+    const sheet = buildXlsxSheet(payments, columns);
     const index = (label: string) =>
       columns.findIndex((column) => column.label === label) + 1;
 
-    expect(row.getCell(index("Nettobetrag")).value).toBe(120);
+    expect(zelle(sheet, 2, index("Nettobetrag"))).toBe(120);
     // Gebuehren und Menge fielen frueher durch die Namenspruefung und standen
     // als Text in der Datei.
-    expect(row.getCell(index("Gebühren")).value).toBe(1.25);
-    expect(row.getCell(index("Menge")).value).toBe(10.5);
+    expect(zelle(sheet, 2, index("Gebühren"))).toBe(1.25);
+    expect(zelle(sheet, 2, index("Menge"))).toBe(10.5);
 
-    const datum = row.getCell(index("Zahlungsdatum")).value;
+    const datum = zelle(sheet, 2, index("Zahlungsdatum"));
     expect(datum).toBeInstanceOf(Date);
     expect((datum as Date).toISOString()).toBe("2026-03-15T00:00:00.000Z");
+    expect(sheet.columns[index("Zahlungsdatum") - 1]?.numFmt).toBe("dd.mm.yyyy");
   });
 
-  it("haengt das Eurozeichen nur an, wenn alles in Euro steht", async () => {
+  it("haengt das Eurozeichen nur an, wenn alles in Euro steht", () => {
     const euro = [zahlung()];
     const gemischt = [zahlung(), zahlung({ original_currency: "USD" })];
 
-    const mitEuro = await buildXlsxWorkbook(euro, columnsFor(euro));
-    expect(blatt(mitEuro).getRow(2).getCell(6).numFmt).toBe('#,##0.00 "€"');
+    expect(buildXlsxSheet(euro, columnsFor(euro)).columns[5]?.numFmt).toBe(
+      '#,##0.00 "€"',
+    );
 
-    const ohne = await buildXlsxWorkbook(gemischt, columnsFor(gemischt));
     const spalten = columnsFor(gemischt);
-    const netto = spalten.findIndex((column) => column.label === "Nettobetrag") + 1;
-    expect(blatt(ohne).getRow(2).getCell(netto).numFmt).toBe("#,##0.00");
+    const netto = spalten.findIndex((column) => column.label === "Nettobetrag");
+    expect(buildXlsxSheet(gemischt, spalten).columns[netto]?.numFmt).toBe("#,##0.00");
   });
 
-  it("uebernimmt einen unlesbaren Betrag als Text, statt still 0 zu schreiben", async () => {
+  it("uebernimmt einen unlesbaren Betrag als Text, statt still 0 zu schreiben", () => {
     const payments = [zahlung({ net_amount: "12,34 EUR" })];
     const columns = columnsFor(payments);
-    const workbook = await buildXlsxWorkbook(payments, columns);
+    const sheet = buildXlsxSheet(payments, columns);
     const netto = columns.findIndex((column) => column.label === "Nettobetrag") + 1;
-    expect(blatt(workbook).getRow(2).getCell(netto).value).toBe("12,34 EUR");
+    expect(zelle(sheet, 2, netto)).toBe("12,34 EUR");
   });
 
-  it("schreibt eine Zeile je Eingang plus Kopfzeile", async () => {
+  it("schreibt eine Zeile je Eingang", () => {
     const payments = [zahlung(), zahlung(), zahlung()];
-    const workbook = await buildXlsxWorkbook(payments, columnsFor(payments));
-    expect(blatt(workbook).rowCount).toBe(4);
+    expect(buildXlsxSheet(payments, columnsFor(payments)).rows).toHaveLength(3);
+  });
+
+  it("richtet die Spaltenbreite am laengsten Inhalt aus, hoechstens 50 Zeichen", () => {
+    const payments = [zahlung({ security: { name: "A".repeat(80), ticker: "ALP" } })];
+    const columns = columnsFor(payments);
+    const sheet = buildXlsxSheet(payments, columns);
+    const index = (label: string) =>
+      columns.findIndex((column) => column.label === label);
+
+    expect(sheet.columns[index("Asset")]?.width).toBe(50);
+    // Das Datum zeigt Excel zehnstellig; die Kopfzeile ist laenger.
+    expect(sheet.columns[index("Zahlungsdatum")]?.width).toBe("Zahlungsdatum".length + 2);
   });
 });
 

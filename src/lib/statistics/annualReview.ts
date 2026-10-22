@@ -12,7 +12,7 @@ import {
   shareOfTotal,
   yearlyBuckets,
 } from "./analytics";
-import { yearOf, type RefDate } from "./dates";
+import { dayOfYear, daysInYear, yearOf, type RefDate } from "./dates";
 import type {
   AnalyticsPayment,
   ComparisonResult,
@@ -140,17 +140,6 @@ function nextMilestone(cumulative: Money, yearNet: Money): ReviewMilestone | nul
   };
 }
 
-function isLeapYear(year: number): boolean {
-  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
-}
-
-/** Tag des Jahres (1-basiert) fuer ein Referenzdatum. */
-function dayOfYear(ref: RefDate): number {
-  const start = Date.UTC(ref.year, 0, 1);
-  const current = Date.UTC(ref.year, ref.month - 1, ref.day);
-  return Math.round((current - start) / 86_400_000) + 1;
-}
-
 /** Ab diesem Dezembertag gibt es den Rueckblick auf das laufende Jahr. */
 const REVIEW_OPENS_DAY = 15;
 /** Bis zu diesem Januartag steht der Rueckblick des Vorjahres auf der Startseite. */
@@ -247,7 +236,7 @@ export function annualReview(
   );
 
   const isPartial = year === ref.year;
-  const days = isPartial ? dayOfYear(ref) : isLeapYear(year) ? 366 : 365;
+  const days = isPartial ? dayOfYear(ref) : daysInYear(year);
 
   // Erste Zahlung je Asset bis einschliesslich dieses Jahres.
   const firstYearOf = new Map<string, number>();

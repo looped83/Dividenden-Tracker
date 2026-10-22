@@ -3,8 +3,8 @@
 // Laeuft nach `npm run build` in der CI und schlaegt fehl, sobald ein Teil
 // merklich waechst. Gemessen wird, was die Ladezeit bestimmt:
 // - der Start: alles, was `index.html` sofort laedt (Skripte, Vorladen, CSS),
-// - jedes nachgeladene Stueck einzeln; Diagramme und Excel-Export haben
-//   eigene, groessere Grenzen, weil sie bewusst erst bei Bedarf kommen.
+// - jedes nachgeladene Stueck einzeln; Diagramme haben eine
+//   eigene, groessere Grenze, weil sie bewusst erst bei Bedarf kommen.
 //
 // Die Grenzen liegen rund 10 % ueber dem Stand bei ihrer Einfuehrung. Waechst
 // ein Teil gewollt, hebt man hier die Grenze an und schreibt den Grund in den
@@ -19,8 +19,6 @@ const BUDGETS = {
   initial: 220 * KB,
   // Stand 1.18.0: 104,9 kB
   charts: 115 * KB,
-  // Stand 1.18.0: 249,6 kB
-  exceljs: 275 * KB,
   // Groesstes uebriges Stueck, Stand 1.18.0: 17,8 kB
   otherChunk: 25 * KB,
 };
@@ -41,11 +39,7 @@ results.push({ name: "Start (index.html)", size: initial, budget: BUDGETS.initia
 
 for (const file of readdirSync(assets)) {
   if (!file.endsWith(".js") || initialFiles.has(file)) continue;
-  const group = file.startsWith("charts-")
-    ? "charts"
-    : file.startsWith("exceljs")
-      ? "exceljs"
-      : "otherChunk";
+  const group = file.startsWith("charts-") ? "charts" : "otherChunk";
   results.push({ name: file, size: gzipSize(file), budget: BUDGETS[group] });
 }
 

@@ -1,4 +1,10 @@
-import { isoDate, lastDayOfMonth, type RefDate } from "@/lib/statistics";
+import {
+  dayOfYear,
+  daysInYear,
+  isoDate,
+  lastDayOfMonth,
+  type RefDate,
+} from "@/lib/statistics";
 import type { Goal, GoalPeriod, TimeStatus, TimeProgress } from "./types";
 import { MoneyDecimal, type DecimalInstance } from "@/lib/money";
 
@@ -24,24 +30,6 @@ export function goalPeriod(goal: Pick<Goal, "goalType" | "year" | "month">): Goa
     return monthlyPeriod(goal.year, goal.month);
   }
   return annualPeriod(goal.year);
-}
-
-/** Anzahl Kalendertage eines Jahres (365 oder 366). */
-function daysInYear(year: number): number {
-  return isLeapYear(year) ? 366 : 365;
-}
-
-function isLeapYear(year: number): boolean {
-  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
-}
-
-/** Ordinaltag (1-basiert) eines Kalendertages im Jahr, Schaltjahr beruecksichtigt. */
-function dayOfYear(ref: RefDate): number {
-  let total = ref.day;
-  for (let month = 1; month < ref.month; month += 1) {
-    total += lastDayOfMonth(ref.year, month);
-  }
-  return total;
 }
 
 /** Reiner Kalendervergleich ref vs. Zeitraum; keine Zeitzonen-, keine Uhrzeitlogik. */

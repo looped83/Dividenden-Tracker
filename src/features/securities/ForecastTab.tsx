@@ -33,6 +33,8 @@ import {
   type TwelveMonthForecast,
 } from "./forecast";
 import {
+  AMOUNT_MAX,
+  PERCENT_MAX,
   parseGermanNumber,
   useForecastSettings,
   useSaveForecastSettings,
@@ -231,10 +233,10 @@ function SnowballSection({
   settings: SnowballSettings;
   startYear: number;
 }) {
-  const save = useSaveForecastSettings();
+  const { mutate: save } = useSaveForecastSettings();
   const update = React.useCallback(
     (patch: Partial<SnowballSettings>) => {
-      save.mutate({ ...settings, ...patch });
+      save({ ...settings, ...patch });
     },
     [save, settings],
   );
@@ -254,6 +256,7 @@ function SnowballSection({
         <SettingsList>
           <NumberField
             id="snowball-savings"
+            max={AMOUNT_MAX}
             label="Sparrate"
             fullLabel="Sparrate pro Monat"
             suffix="€"
@@ -264,6 +267,7 @@ function SnowballSection({
           />
           <NumberField
             id="snowball-target"
+            max={AMOUNT_MAX}
             label="Ziel"
             fullLabel="Ziel pro Monat"
             suffix="€"
@@ -274,6 +278,7 @@ function SnowballSection({
           />
           <NumberField
             id="snowball-growth"
+            max={PERCENT_MAX}
             label="CAGR"
             fullLabel="Dividenden-CAGR"
             suffix="%"
@@ -285,6 +290,7 @@ function SnowballSection({
           />
           <NumberField
             id="snowball-yield"
+            max={PERCENT_MAX}
             label="Rendite"
             fullLabel="Rendite neuer Käufe"
             suffix="%"
@@ -296,6 +302,7 @@ function SnowballSection({
           />
           <NumberField
             id="snowball-inflation"
+            max={PERCENT_MAX}
             label="Inflation"
             fullLabel="Inflation pro Jahr"
             suffix="%"
@@ -490,13 +497,15 @@ function SettingCell({
  * Zahlenfeld, das erst beim Verlassen (oder Enter) speichert: Jeder
  * Tastendruck wuerde sonst eine Profilzeile schreiben und den Schneeball neu
  * rechnen, waehrend noch getippt wird. Ein leeres Feld mit Platzhalter steht
- * fuer den Wert aus dem Depot.
+ * fuer den Wert aus dem Depot. Werte ueber `max` gelten wie Unsinn als
+ * ungueltig und stellen den gespeicherten Wert wieder her.
  */
 function NumberField({
   id,
   label,
   fullLabel,
   value,
+  max,
   onCommit,
   suffix,
   placeholder,
@@ -506,6 +515,7 @@ function NumberField({
   label: string;
   fullLabel: string;
   value: number | null;
+  max: number;
   onCommit: (value: number | null) => void;
   suffix: string;
   placeholder?: string;
@@ -522,7 +532,7 @@ function NumberField({
 
   const commit = () => {
     const parsed = parseGermanNumber(draft);
-    if (parsed === undefined) {
+    if (parsed === undefined || (parsed !== null && parsed > max)) {
       setDraft(shown);
       return;
     }
