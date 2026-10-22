@@ -117,6 +117,26 @@ describe("fetchIcalFeed", () => {
     ).rejects.toMatchObject({ code: "timeout" });
   });
 
+  it("bricht auch ab, wenn der Inhalt nicht fertig wird", async () => {
+    // Kopfzeilen kommen sofort, der Inhalt nie — bis zum Abbruch.
+    const fetchImpl = vi.fn((_input: RequestInfo | URL, init?: RequestInit) => {
+      const body = new ReadableStream<Uint8Array>({
+        start(controller) {
+          init?.signal?.addEventListener("abort", () => {
+            controller.error(new DOMException("Aborted", "AbortError"));
+          });
+        },
+      });
+      return Promise.resolve(
+        new Response(body, { status: 200, headers: { "content-type": "text/calendar" } }),
+      );
+    });
+
+    await expect(
+      fetchIcalFeed(FEED_URL, { fetchImpl, timeoutMs: 5 }),
+    ).rejects.toMatchObject({ code: "timeout" });
+  });
+
   it("meldet einen Verbindungsfehler", async () => {
     const fetchImpl = vi.fn(() => Promise.reject(new TypeError("Failed to fetch")));
 

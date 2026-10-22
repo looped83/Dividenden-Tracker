@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  checkPositiveMoney,
-  paymentFormSchema,
-  todayIso,
-} from "@/features/payments/schemas";
+import { checkPositiveMoney, paymentFormSchema } from "@/features/payments/schemas";
+import { todayIso } from "@/lib/statistics/dates";
 
 const base = {
   securityId: "00000000-0000-0000-0000-000000000001",

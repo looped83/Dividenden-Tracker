@@ -233,10 +233,10 @@ function SnowballSection({
   settings: SnowballSettings;
   startYear: number;
 }) {
-  const save = useSaveForecastSettings();
+  const { mutate: save } = useSaveForecastSettings();
   const update = React.useCallback(
     (patch: Partial<SnowballSettings>) => {
-      save.mutate({ ...settings, ...patch });
+      save({ ...settings, ...patch });
     },
     [save, settings],
   );

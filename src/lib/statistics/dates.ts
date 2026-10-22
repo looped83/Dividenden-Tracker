@@ -40,6 +40,27 @@ export function isoFromRef(ref: RefDate): string {
   return isoDate(ref.year, ref.month, ref.day);
 }
 
+/** Der heutige lokale Kalendertag als „YYYY-MM-DD", ohne Zeitzonenverschiebung. */
+export function todayIso(reference: Date = new Date()): string {
+  return isoFromRef(refDateFromDate(reference));
+}
+
+function isLeapYear(year: number): boolean {
+  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+}
+
+/** Anzahl Kalendertage eines Jahres (365 oder 366). */
+export function daysInYear(year: number): number {
+  return isLeapYear(year) ? 366 : 365;
+}
+
+/** Ordinaltag (1-basiert) eines Kalendertages im Jahr, Schaltjahr beruecksichtigt. */
+export function dayOfYear(ref: RefDate): number {
+  const start = Date.UTC(ref.year, 0, 1);
+  const current = Date.UTC(ref.year, ref.month - 1, ref.day);
+  return Math.round((current - start) / 86_400_000) + 1;
+}
+
 /** Letzter Kalendertag eines Monats (month 1-basiert); beruecksichtigt Schaltjahre. */
 export function lastDayOfMonth(year: number, month: number): number {
   // Date.UTC(year, month, 0) liefert den letzten Tag des 1-basierten `month`.

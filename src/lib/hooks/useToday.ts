@@ -1,10 +1,5 @@
 import * as React from "react";
-import { isoFromRef, refDateFromDate, type RefDate } from "@/lib/statistics/dates";
-
-/** Der heutige lokale Kalendertag als „YYYY-MM-DD" — ein vergleichbarer Schnappschuss. */
-function todayIso(): string {
-  return isoFromRef(refDateFromDate());
-}
+import { todayIso, type RefDate } from "@/lib/statistics/dates";
 
 /**
  * Meldet, wann sich der Kalendertag geaendert haben koennte: wenn die App
