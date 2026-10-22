@@ -992,3 +992,35 @@ zusätzlichen Insert. Importiert wurde einmalig zum Start.
 
 - Mehrere Personen bearbeiten dieselben Daten, oder eine Historie wird fachlich gebraucht.
   Dann reichen die Trigger aus 0003/0013 erneut anzulegen.
+
+## ADR-009: Import-Herkunftsspalten in `dividend_payments` entfernt
+
+**Status:** Accepted  
+**Scope:** Datenbank, Import, Datensicherung
+
+### Decision
+
+Migration 0038 entfernt `source_file_name`, `source_row_number`, `row_fingerprint` und
+`business_fingerprint` aus `dividend_payments`, dazu den Fingerprint-Trigger und
+`dp_import_row_key`. `import_id` und `source` bleiben; `import_fields_consistency` verlangt
+nur noch die `import_id`. `commit_import`, `restore_backup` und `protect_payment_immutables`
+schreiben bzw. prüfen die Spalten nicht mehr. Die Datensicherung exportiert sie nicht mehr;
+ältere Dateien mit diesen Feldern lassen sich weiter einspielen.
+
+### Why
+
+Die App las keine der Spalten. Die Duplikatprüfung gegen Fingerprints (IMPORT_SPEC Stufe 2/3)
+war nie verdrahtet, der Herkunftsnachweis je Zeile wird nach ADR-008 nicht gebraucht. Die
+Spalten belegten rund 250 kB und kosteten bei jedem Schreibzugriff eine SHA-256-Berechnung.
+
+### Trade-offs
+
+- Der Schutz, dieselbe Quellzeile eines Imports zweimal zu speichern, liegt nur noch bei
+  `import_rows (import_id, source_row_number)` und der Transaktion von `commit_import`.
+- Neue Sicherungen enthalten die Felder nicht. Eine App-Fassung vor 2.0.0 könnte solche
+  Sicherungen nicht einspielen; deshalb Major-Version.
+
+### Revisit When
+
+- Eine echte Dublettenerkennung gegen bestehende Zahlungen wird gebaut.
+

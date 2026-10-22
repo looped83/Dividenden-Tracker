@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { asSuperuser, asUser, closePool, createTestUser, firstRow } from "./support/db";
 import { seedDepot, seedPayment, seedSecurity } from "./support/seed";
@@ -82,84 +81,6 @@ describe("enforce_user_id", () => {
         ]),
       ),
     ).rejects.toThrow(/user_id ist unveraenderlich/);
-  });
-});
-
-describe("recompute_business_fingerprint (CALCULATION_RULES.md §5)", () => {
-  it("berechnet exakt den dokumentierten SHA-256-Fingerprint", async () => {
-    const depotId = await asUser(userId, (client) =>
-      seedDepot(client, "Depot Fingerprint 1"),
-    );
-    const securityId = await asUser(userId, (client) =>
-      seedSecurity(client, { name: "Fingerprint AG", isin: "DE0007100000" }),
-    );
-
-    const payment = await asUser(userId, (client) =>
-      seedPayment(client, {
-        securityId,
-        depotId,
-        payDate: "2025-03-10",
-        grossAmount: "50.00",
-        netAmount: "42.50",
-        originalCurrency: "EUR",
-      }),
-    );
-
-    const US = "\x1f";
-    const expectedPayload = [
-      userId,
-      "2025-03-10",
-      "DE0007100000",
-      "42.50",
-      "EUR",
-      depotId,
-    ].join(US);
-    const expectedFingerprint = createHash("sha256")
-      .update(expectedPayload, "utf8")
-      .digest("hex");
-
-    expect(payment.business_fingerprint).toBe(expectedFingerprint);
-  });
-
-  it("nutzt Ticker, wenn keine ISIN vorhanden ist, sonst den normalisierten Namen", async () => {
-    const depotId = await asUser(userId, (client) =>
-      seedDepot(client, "Depot Fingerprint 2"),
-    );
-    const securityWithTicker = await asUser(userId, (client) =>
-      seedSecurity(client, { name: "Ticker AG", ticker: "TICK" }),
-    );
-    const securityNameOnly = await asUser(userId, (client) =>
-      seedSecurity(client, { name: "  Nur   Name AG  " }),
-    );
-
-    const paymentWithTicker = await asUser(userId, (client) =>
-      seedPayment(client, {
-        securityId: securityWithTicker,
-        depotId,
-        payDate: "2025-04-01",
-      }),
-    );
-    const paymentWithName = await asUser(userId, (client) =>
-      seedPayment(client, {
-        securityId: securityNameOnly,
-        depotId,
-        payDate: "2025-04-01",
-      }),
-    );
-
-    const US = "\x1f";
-    const expectedTicker = createHash("sha256")
-      .update([userId, "2025-04-01", "TICK", "85.00", "EUR", depotId].join(US), "utf8")
-      .digest("hex");
-    const expectedName = createHash("sha256")
-      .update(
-        [userId, "2025-04-01", "nur name ag", "85.00", "EUR", depotId].join(US),
-        "utf8",
-      )
-      .digest("hex");
-
-    expect(paymentWithTicker.business_fingerprint).toBe(expectedTicker);
-    expect(paymentWithName.business_fingerprint).toBe(expectedName);
   });
 });
 

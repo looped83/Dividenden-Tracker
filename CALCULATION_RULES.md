@@ -71,6 +71,9 @@ net_amount = gross_amount
 
 ## 5. Fingerprint-Berechnung (normativ)
 
+> Seit Migration 0038 (ADR-009) speichert die Datenbank keine Fingerprints mehr. Der
+> Zeilen-Fingerprint wird nur noch im Import-Assistenten berechnet.
+
 `business_fingerprint = sha256(join(US,
   user_id,
   pay_date (ISO),

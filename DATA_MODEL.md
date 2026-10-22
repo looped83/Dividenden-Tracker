@@ -163,6 +163,12 @@ diesem Feld steht (D-006, D-035).
 
 ### 3.5 `dividend_payments` — Kerntabelle
 
+> **Seit Migration 0038 (ADR-009) entfallen** `source_file_name`, `source_row_number`,
+> `row_fingerprint`, `business_fingerprint`, der Trigger `recompute_business_fingerprint`,
+> `dp_import_row_key` und die zugehörigen Indizes. `import_fields_consistency` lautet
+> `(source in (csv_import, excel_import)) = (import_id is not null)`. Die DDL unten zeigt den
+> ursprünglichen Stand.
+
 ```sql
 create table dividend_payments (
   id                   uuid primary key default gen_random_uuid(),

@@ -485,12 +485,8 @@ describe("restore_backup — Zahlungen mit Importherkunft", () => {
           gross_amount: "70.00",
           net_amount: "70.00",
           source: "excel_import",
-          // **Alle drei** Importfelder. `import_fields_consistency` (0016)
-          // verlangt: Importquelle genau dann, wenn import_id,
-          // source_row_number und row_fingerprint gesetzt sind. Zuvor setzte
-          // dieser Test nur import_id — die rechte Seite der Aequivalenz war
-          // damit falsch, die Bedingung erfuellt, und dass die RPC `source`
-          // ueberschrieb, fiel nicht auf.
+          // Felder aus Sicherungen vor 0038: Die Spalten gibt es nicht mehr,
+          // die Wiederherstellung muss sie stillschweigend uebergehen.
           source_row_number: 42,
           row_fingerprint: "f".repeat(64),
           source_file_name: "Historie.xlsx",
@@ -505,18 +501,13 @@ describe("restore_backup — Zahlungen mit Importherkunft", () => {
       const rows = await client.query<{
         import_id: string | null;
         source: string;
-        source_row_number: number | null;
-      }>(
-        "select import_id, source, source_row_number from dividend_payments where id = $1",
-        [paymentId],
-      );
+      }>("select import_id, source from dividend_payments where id = $1", [paymentId]);
       return rows.rows[0] ?? null;
     });
     // Die Herkunft muss die Wiederherstellung ueberstehen — sonst waere nach
     // einem Restore nicht mehr nachvollziehbar, woher eine Zahlung stammt.
     expect(stored?.import_id).toBe(importId);
     expect(stored?.source).toBe("excel_import");
-    expect(stored?.source_row_number).toBe(42);
   });
 
   it("weist eine Zahlung ab, deren Importvorgang in der Sicherung fehlt", async () => {

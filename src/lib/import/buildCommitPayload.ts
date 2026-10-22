@@ -33,7 +33,6 @@ export interface CommitPayload {
     currency: string;
     security_ref: SecurityRef;
     depot_ref: DepotRef;
-    row_fingerprint: string | null;
     raw: NormalizedRow["raw"];
     normalized: {
       investment: string;
@@ -145,7 +144,6 @@ export function buildCommitPayload(input: BuildPayloadInput): CommitPayload {
         currency: row.currency,
         security_ref: securityRef,
         depot_ref: depotRef,
-        row_fingerprint: row.rowFingerprint,
         raw: row.raw,
         normalized: {
           investment: row.investmentName,

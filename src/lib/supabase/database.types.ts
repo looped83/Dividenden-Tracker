@@ -273,10 +273,6 @@ export interface Database {
           payment_type: PaymentType;
           source: PaymentSource;
           import_id: string | null;
-          source_file_name: string | null;
-          source_row_number: number | null;
-          row_fingerprint: string | null;
-          business_fingerprint: string;
           note: string | null;
           created_at: string;
           updated_at: string;
@@ -305,15 +301,12 @@ export interface Database {
           payment_type?: PaymentType;
           source: PaymentSource;
           import_id?: string | null;
-          source_file_name?: string | null;
-          source_row_number?: number | null;
-          row_fingerprint?: string | null;
           note?: string | null;
           archived_at?: string | null;
           archive_reason?: string | null;
         };
         // Unveraenderliche Felder (id, user_id, source, import_id,
-        // source_row_number, row_fingerprint, created_at) fehlen bewusst im
+        // created_at) fehlen bewusst im
         // Update-Typ (DATA_MODEL.md §4 protect_payment_immutables).
         Update: Partial<{
           security_id: string;

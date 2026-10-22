@@ -380,10 +380,10 @@ describe("Eigentum der referenzierten Stammdaten (0030)", () => {
     expect(payment.id).toBeTruthy();
   });
 
-  it("prueft das Eigentum vor der Fingerprint-Berechnung", async () => {
-    // Die Reihenfolge der BEFORE-Trigger ist alphabetisch; `trg_02x_…` muss
-    // zwischen `trg_02_enforce_user_id` und `trg_03_recompute_fingerprint`
-    // liegen. Sonst gewaenne wieder die alte, nichtssagende Meldung.
+  it("prueft das Eigentum direkt nach dem Setzen der user_id", async () => {
+    // Die Reihenfolge der BEFORE-Trigger ist alphabetisch; `trg_02x_…` und
+    // `trg_02y_…` muessen nach `trg_02_enforce_user_id` und vor
+    // `trg_04_updated_at` liegen.
     const result = await asSuperuser((client) =>
       client.query<{ tgname: string }>(
         `select tgname from pg_trigger
@@ -396,7 +396,7 @@ describe("Eigentum der referenzierten Stammdaten (0030)", () => {
       names.indexOf("trg_02x_enforce_own_security"),
     );
     expect(names.indexOf("trg_02y_enforce_own_depot")).toBeLessThan(
-      names.indexOf("trg_03_recompute_fingerprint"),
+      names.indexOf("trg_04_updated_at"),
     );
   });
 });
