@@ -25,3 +25,22 @@ test("schätzt die nächsten zwölf Monate und speichert die Annahmen", async ({
   await page.reload();
   await expect(page.getByLabel("Sparrate pro Monat")).toHaveValue("500");
 });
+
+test("verwirft Annahmen über der Obergrenze, statt still anders zu rechnen", async ({
+  page,
+  konto,
+}) => {
+  await seedPortfolio(konto.userId);
+  await page.goto("/#/depot/prognose");
+
+  // 35 % liegt ueber der Grenze von 30 %: Das Feld stellt den vorigen Wert
+  // wieder her, statt 35 zu zeigen und mit 2 % zu rechnen.
+  const inflation = page.getByLabel("Inflation pro Jahr");
+  await expect(inflation).toHaveValue("2");
+  await inflation.fill("35");
+  await inflation.press("Enter");
+  await expect(inflation).toHaveValue("2");
+
+  await page.reload();
+  await expect(page.getByLabel("Inflation pro Jahr")).toHaveValue("2");
+});

@@ -9,7 +9,16 @@ import { DEFAULT_SNOWBALL_SETTINGS, type SnowballSettings } from "./snowball";
 
 const FORECAST_SETTINGS_KEY = ["forecast-settings"] as const;
 
-const percent = z.number().min(0).max(30);
+/**
+ * Obergrenzen der Annahmen. Die Eingabefelder pruefen gegen dieselben Werte:
+ * Was das Schema hier verwirft, faellt beim Lesen auf die Vorbelegung zurueck
+ * — das Feld zeigte sonst die Eingabe, waehrend mit etwas anderem gerechnet
+ * wird.
+ */
+export const PERCENT_MAX = 30;
+export const AMOUNT_MAX = 1_000_000;
+
+const percent = z.number().min(0).max(PERCENT_MAX);
 
 /**
  * Form der gespeicherten Annahmen. Jedes Feld fuer sich: Ein ungueltiger oder
@@ -20,7 +29,7 @@ const settingsSchema = z.object({
   monthlySavings: z
     .number()
     .min(0)
-    .max(1_000_000)
+    .max(AMOUNT_MAX)
     .catch(DEFAULT_SNOWBALL_SETTINGS.monthlySavings),
   reinvest: z.boolean().catch(DEFAULT_SNOWBALL_SETTINGS.reinvest),
   growthPercent: percent.nullable().catch(DEFAULT_SNOWBALL_SETTINGS.growthPercent),
@@ -28,7 +37,7 @@ const settingsSchema = z.object({
   targetMonthly: z
     .number()
     .min(0)
-    .max(1_000_000)
+    .max(AMOUNT_MAX)
     .catch(DEFAULT_SNOWBALL_SETTINGS.targetMonthly),
   inflationPercent: percent.catch(DEFAULT_SNOWBALL_SETTINGS.inflationPercent),
 });

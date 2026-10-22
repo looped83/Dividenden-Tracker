@@ -41,7 +41,9 @@ export class ErrorBoundary extends React.Component<Props, State> {
           <Button
             onClick={() => {
               this.setState({ hasError: false, error: null });
-              window.location.href = "/";
+              // Mit Basis-Pfad: Auf GitHub Pages liegt die App unter
+              // `/Dividenden-Tracker/`, ein fester Pfad "/" fuehrte ins Leere.
+              window.location.assign(import.meta.env.BASE_URL);
             }}
           >
             Seite neu laden

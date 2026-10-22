@@ -26,6 +26,23 @@ if (import.meta.env.PROD && "serviceWorker" in navigator) {
   });
 }
 
+// Nach einem Deploy fehlen die nachgeladenen Teile der alten Fassung auf dem
+// Server. Eine App, die tagelang im Speicher bleibt (iPhone), lief beim
+// naechsten Bereichswechsel sonst in die Fehlerseite. Neu laden holt die
+// aktuelle Fassung — hoechstens einmal je Minute, damit ein Teil, der auch
+// danach fehlt (offline, Serverfehler), nicht in eine Schleife fuehrt.
+window.addEventListener("vite:preloadError", () => {
+  const KEY = "dividend-tracker:chunk-reload";
+  try {
+    const last = Number.parseInt(sessionStorage.getItem(KEY) ?? "0", 10);
+    if (!navigator.onLine || Date.now() - last < 60_000) return;
+    sessionStorage.setItem(KEY, String(Date.now()));
+  } catch {
+    return;
+  }
+  window.location.reload();
+});
+
 createRoot(rootElement).render(
   <StrictMode>
     <ThemeProvider>
