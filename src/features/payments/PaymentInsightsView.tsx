@@ -1,6 +1,5 @@
 import * as React from "react";
 import { KpiHero, KpiStats, type KpiStat } from "@/components/domain/KpiHero";
-import { Badge } from "@/components/ui/badge";
 import { ListGroup } from "@/components/ui/list";
 import { Section, SectionLink } from "@/components/ui/section";
 import { SegmentedControl, type SegmentOption } from "@/components/ui/segmented";
@@ -261,11 +260,6 @@ export function PaymentInsightsView({
                       payment.payDate !== payment.actualPayDate
                         ? `tatsächlich ${formatDayMonth(payment.actualPayDate)}`
                         : undefined
-                    }
-                    badge={
-                      payment.id === paymentId ? (
-                        <Badge className="mr-2 shrink-0">Diese</Badge>
-                      ) : undefined
                     }
                     amount={payment.netAmount}
                   />
