@@ -2,12 +2,10 @@ import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Landmark, Pencil, Plus, RotateCcw, Archive as ArchiveIcon } from "lucide-react";
-import { emptyToNull } from "@/lib/utils/emptyToNull";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Section, SectionButton } from "@/components/ui/section";
@@ -52,19 +50,18 @@ function DepotFormDialog({
     resolver: zodResolver(depotFormSchema),
     values: {
       name: depot?.name ?? "",
-      broker: depot?.broker ?? "",
       baseCurrency: depot?.base_currency ?? "EUR",
-      note: depot?.note ?? "",
     },
   });
 
   const onSubmit = handleSubmit(async (values) => {
     setSubmitError(null);
+    // Name und Broker sind bei jedem Depot dasselbe; abgefragt wird nur der
+    // Broker. `name` bleibt das Feld, an dem Filter, Import und Anzeige haengen.
     const input = {
       name: values.name,
-      broker: emptyToNull(values.broker),
+      broker: values.name,
       base_currency: values.baseCurrency,
-      note: emptyToNull(values.note),
     };
     try {
       if (depot) {
@@ -88,17 +85,13 @@ function DepotFormDialog({
           <DialogTitle>{depot ? "Depot bearbeiten" : "Neues Depot"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={(event) => void onSubmit(event)} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="depot-name">Name</Label>
-            <Input id="depot-name" {...register("name")} />
-            {errors.name && (
-              <p className="text-sm text-negative">{errors.name.message}</p>
-            )}
-          </div>
           <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="depot-broker">Broker</Label>
-              <Input id="depot-broker" {...register("broker")} />
+              <Input id="depot-broker" {...register("name")} />
+              {errors.name && (
+                <p className="text-sm text-negative">{errors.name.message}</p>
+              )}
             </div>
             {/* Die Basiswaehrung ist keine Wahl, sondern eine Folge: Alle
                 Betraege werden in Basiswaehrung gespeichert und ausgewertet
@@ -112,18 +105,10 @@ function DepotFormDialog({
               <Input
                 id="depot-currency"
                 readOnly
-                aria-describedby="depot-currency-hint"
                 className="bg-muted/50"
                 {...register("baseCurrency")}
               />
-              <p id="depot-currency-hint" className="text-sm text-muted-foreground">
-                Entspricht der Währung deines Kontos.
-              </p>
             </div>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="depot-note">Notiz</Label>
-            <Textarea id="depot-note" {...register("note")} />
           </div>
           {submitError && (
             <p role="alert" className="text-sm text-negative">
@@ -262,7 +247,7 @@ export function DepotsPage() {
                   <ManagedRow
                     name={depot.name}
                     archived={Boolean(depot.archived_at)}
-                    meta={[depot.broker, depot.base_currency].filter(Boolean).join(" · ")}
+                    meta={depot.base_currency}
                     actions={depotActions(depot)}
                   />
                 </li>
