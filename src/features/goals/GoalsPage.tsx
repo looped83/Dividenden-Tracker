@@ -1,95 +1,95 @@
 import * as React from "react";
-import { Outlet, useNavigate } from "react-router";
+import { Link } from "react-router";
 import { Plus, Target } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Section } from "@/components/ui/section";
+import { ListGroup, ListItemBody, ListRow, ListTile } from "@/components/ui/list";
+import { KpiHero, KpiHeroSkeleton, type KpiStat } from "@/components/domain/KpiHero";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { TabNav } from "@/components/layout/TabNav";
+import { GoalBarChart, type GoalBarDatum } from "@/features/statistics/components/charts";
+import { useCalendarEvents } from "@/features/calendar/hooks";
+import { useForecastSettings } from "@/features/securities/forecastSettings";
+import { announcedForForecast } from "@/lib/calendar/summary";
 import { useToday } from "@/lib/hooks/useToday";
-import { computeGoalProgress, sortGoalProgress } from "@/lib/goals";
+import {
+  annualGoalHistory,
+  annualHitRate,
+  computeGoalProgress,
+  suggestAnnualGoal,
+  trailingMonthlyAverage,
+  type Goal,
+  type GoalProgress,
+  type GoalSuggestion,
+} from "@/lib/goals";
+import {
+  EUR,
+  Money,
+  MoneyDecimal,
+  formatMoney,
+  formatMoneyWhole,
+  formatPercent,
+} from "@/lib/money";
+import {
+  isoFromRef,
+  monthNameDe,
+  monthNameDeShort,
+  monthlyBuckets,
+  yearEndForecast,
+  type AnalyticsPayment,
+  type RefDate,
+} from "@/lib/statistics";
+import { cn } from "@/lib/utils/cn";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
-import { useGoalProgressPayments, useGoals } from "./hooks";
+import { useGoalProgressPayments, useGoals, type GoalWithMeta } from "./hooks";
 import { GoalFormDialog } from "./GoalFormDialog";
-import type { GoalsContext } from "./context";
+import { achievementText, goalDisplayTitle, statusLabel, statusTone } from "./format";
 
-function GoalsSkeleton() {
-  return (
-    <div
-      className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2 xl:grid-cols-3"
-      aria-busy="true"
-    >
-      <span className="sr-only">Ziele werden geladen …</span>
-      {Array.from({ length: 3 }).map((_, index) => (
-        // Dieselben Zeilen wie die Zielkarte: Kopf, Betragszeile, Balken —
-        // sonst springt die Seite, sobald die Ziele da sind.
-        <div key={index} className="flex flex-col gap-3 rounded-2xl bg-muted p-4 sm:p-5">
-          <div className="flex items-center gap-3">
-            <Skeleton className="size-9 shrink-0 rounded-xl bg-background" />
-            <Skeleton className="h-5 w-40 bg-background" />
-          </div>
-          <div className="space-y-2">
-            <Skeleton className="h-7 w-48 bg-background" />
-            <Skeleton className="h-1 w-full bg-background" />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
+const badgeVariantByTone = {
+  positive: "positive",
+  neutral: "primary",
+  negative: "negative",
+} as const;
 
+/**
+ * Die Zielseite (seit 2.4.0): **Wie gut treffe ich meine Ziele, und wohin
+ * geht es?** — statt dreier Reiter mit Zielkarten, die man einmal einrichtete
+ * und danach nie wieder öffnete.
+ *
+ * Oben der Weg zum Langfristziel des Schneeballs (gepflegt in Bestand ›
+ * Prognose, hier nur der Ist-Stand), darunter die Zielbilanz über die Jahre,
+ * das laufende Jahr Monat für Monat und die Liste aller Ziele. Ob das
+ * laufende Jahr auf Kurs ist, beantwortet weiterhin die Übersicht; die
+ * Prognose hier ist dieselbe (CALCULATION_RULES.md §9.7).
+ */
 export function GoalsPage() {
-  const navigate = useNavigate();
   const today = useToday();
   const goalsQuery = useGoals();
   const { payments, isLoading: paymentsLoading } = useGoalProgressPayments();
-  // Hier wird nur angelegt; Bearbeiten und Loeschen stehen auf der
-  // Detailseite, die jede Zielkarte oeffnet.
-  const [formOpen, setFormOpen] = React.useState(false);
+  const settings = useForecastSettings().data;
+  const calendarEvents = useCalendarEvents().data;
+  const [form, setForm] = React.useState<{
+    open: boolean;
+    preset?: GoalSuggestion | undefined;
+  }>({ open: false });
 
   const goals = React.useMemo(() => goalsQuery.data ?? [], [goalsQuery.data]);
 
-  const progressList = React.useMemo(
-    () => goals.map((goal) => computeGoalProgress(goal, payments, today)),
-    [goals, payments, today],
+  const forecast = React.useMemo(
+    () =>
+      yearEndForecast(
+        payments,
+        today,
+        announcedForForecast(calendarEvents ?? [], isoFromRef(today)),
+      ),
+    [payments, today, calendarEvents],
   );
 
-  const byStatus = React.useMemo(
-    () => ({
-      // Jede Gruppe in ihrer eigenen Ordnung: laufend nach Rahmen (Jahresziel
-      // vor Monatszielen), bevorstehend das naechste zuerst, beendet das
-      // zuletzt beendete zuerst.
-      current: sortGoalProgress(
-        progressList.filter((p) => p.time.status === "current"),
-        "current",
-      ),
-      upcoming: sortGoalProgress(
-        progressList.filter((p) => p.time.status === "upcoming"),
-        "upcoming",
-      ),
-      ended: sortGoalProgress(
-        progressList.filter((p) => p.time.status === "ended"),
-        "ended",
-      ),
-    }),
-    [progressList],
-  );
-
-  const openCreate = () => {
-    setFormOpen(true);
+  const openCreate = (preset?: GoalSuggestion) => {
+    setForm({ open: true, preset });
   };
-
-  const context: GoalsContext = React.useMemo(() => ({ byStatus }), [byStatus]);
-
-  // Die Zahl in der Beschriftung erspart den Klick in einen leeren Reiter.
-  const tabs = [
-    { to: "/ziele", label: `Aktiv (${String(byStatus.current.length)})`, end: true },
-    {
-      to: "/ziele/bevorstehend",
-      label: `Bevorstehend (${String(byStatus.upcoming.length)})`,
-    },
-    { to: "/ziele/beendet", label: `Beendet (${String(byStatus.ended.length)})` },
-  ];
 
   const heading = (
     <PageHeader
@@ -97,57 +97,435 @@ export function GoalsPage() {
       actions={
         // Umriss wie die Jahresauswahl der Uebersicht; gefuellt bleibt allein
         // das Erfassen in der Navigation.
-        <Button variant="outline" onClick={openCreate}>
+        <Button
+          variant="outline"
+          onClick={() => {
+            openCreate();
+          }}
+        >
           <Plus aria-hidden /> Ziel anlegen
         </Button>
       }
     />
   );
 
+  let content: React.ReactNode;
+  if (goalsQuery.isLoading || paymentsLoading) {
+    content = (
+      <div className="space-y-10" aria-busy="true">
+        <span className="sr-only">Ziele werden geladen …</span>
+        <KpiHeroSkeleton />
+        <Skeleton className="h-72 rounded-lg" />
+      </div>
+    );
+  } else if (goalsQuery.isError) {
+    content = (
+      <EmptyState
+        icon={Target}
+        title="Ziele konnten nicht geladen werden"
+        description={getErrorMessage(
+          goalsQuery.error,
+          "Beim Laden der Ziele ist ein Fehler aufgetreten.",
+        )}
+        action={
+          <Button onClick={() => void goalsQuery.refetch()}>Erneut versuchen</Button>
+        }
+      />
+    );
+  } else if (goals.length === 0) {
+    content = (
+      <EmptyState
+        icon={Target}
+        title="Noch keine Ziele angelegt"
+        description="Lege ein Jahres- oder Monatsziel fest, um deine tatsächlich erhaltenen Dividendeneinnahmen damit zu vergleichen."
+        action={
+          <Button
+            onClick={() => {
+              openCreate();
+            }}
+          >
+            <Plus aria-hidden /> Erstes Ziel anlegen
+          </Button>
+        }
+      />
+    );
+  } else {
+    content = (
+      <GoalsOverview
+        goals={goals}
+        payments={payments}
+        today={today}
+        forecast={forecast}
+        targetMonthly={settings?.targetMonthly ?? null}
+        onSuggest={openCreate}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
       {heading}
-
-      {goalsQuery.isLoading || paymentsLoading ? (
-        <GoalsSkeleton />
-      ) : goalsQuery.isError ? (
-        <EmptyState
-          icon={Target}
-          title="Ziele konnten nicht geladen werden"
-          description={getErrorMessage(
-            goalsQuery.error,
-            "Beim Laden der Ziele ist ein Fehler aufgetreten.",
-          )}
-          action={
-            <Button onClick={() => void goalsQuery.refetch()}>Erneut versuchen</Button>
-          }
-        />
-      ) : goals.length === 0 ? (
-        <EmptyState
-          icon={Target}
-          title="Noch keine Ziele angelegt"
-          description="Lege ein Jahres- oder Monatsziel fest, um deine tatsächlich erhaltenen Dividendeneinnahmen damit zu vergleichen."
-          action={
-            <Button onClick={openCreate}>
-              <Plus aria-hidden /> Erstes Ziel anlegen
-            </Button>
-          }
-        />
-      ) : (
-        <div className="space-y-6">
-          <TabNav label="Zielgruppen" tabs={tabs} />
-          <Outlet context={context} />
-        </div>
-      )}
-
+      {content}
       <GoalFormDialog
-        open={formOpen}
-        onOpenChange={setFormOpen}
-        goal={null}
-        onSaved={(goalId) => {
-          void navigate(`/ziele/${goalId}`);
+        open={form.open}
+        onOpenChange={(open) => {
+          setForm((current) => ({ ...current, open }));
         }}
+        goal={null}
+        preset={
+          form.preset && {
+            year: form.preset.year,
+            targetAmount: form.preset.amount,
+          }
+        }
       />
     </div>
   );
+}
+
+type Forecast = ReturnType<typeof yearEndForecast>;
+
+function GoalsOverview({
+  goals,
+  payments,
+  today,
+  forecast,
+  targetMonthly,
+  onSuggest,
+}: {
+  goals: readonly GoalWithMeta[];
+  payments: readonly AnalyticsPayment[];
+  today: RefDate;
+  forecast: Forecast;
+  targetMonthly: number | null;
+  onSuggest: (suggestion: GoalSuggestion) => void;
+}) {
+  const data = React.useMemo(() => {
+    const history = annualGoalHistory(goals, payments, today);
+    const progress = goals.map((goal) => computeGoalProgress(goal, payments, today));
+    return {
+      history,
+      hitRate: annualHitRate(history),
+      average: trailingMonthlyAverage(payments, today),
+      suggestion: suggestAnnualGoal(goals, payments, today, forecast.forecast),
+      list: sortForList(progress),
+      years: toYearData(history, forecast, today),
+      months: toMonthData(goals, payments, forecast, today),
+    };
+  }, [goals, payments, today, forecast]);
+
+  const current = data.history.find((p) => p.goal.year === today.year) ?? null;
+  const next = data.history.find((p) => p.goal.year === today.year + 1) ?? null;
+  const monthlyGoalsThisYear = goals.some(
+    (goal) => goal.goalType === "monthly" && goal.year === today.year,
+  );
+  const restOfYear = forecast.forecast.subtract(forecast.received);
+
+  return (
+    <div className="space-y-10 lg:space-y-12">
+      <GoalsHero
+        average={data.average}
+        targetMonthly={targetMonthly}
+        current={current}
+        next={next}
+        hitRate={data.hitRate}
+        year={today.year}
+      />
+
+      {data.suggestion && (
+        <SuggestionBox
+          suggestion={data.suggestion}
+          onAccept={() => {
+            if (data.suggestion) onSuggest(data.suggestion);
+          }}
+        />
+      )}
+
+      {data.history.length > 0 && (
+        <Section title="Zielbilanz">
+          <GoalBarChart
+            data={data.years}
+            ariaLabel="Jahresziele und erhaltene Nettodividende je Jahr"
+            categoryHeader="Jahr"
+          />
+        </Section>
+      )}
+
+      {(current !== null || monthlyGoalsThisYear) && (
+        <Section
+          title={`${String(today.year)} Monat für Monat`}
+          description={
+            current?.status === "active"
+              ? `Noch ${formatMoneyWhole(current.remaining)} bis zum Ziel · erwartet ${formatMoneyWhole(restOfYear)}`
+              : undefined
+          }
+        >
+          <GoalBarChart
+            data={data.months}
+            ariaLabel={`Monatsziele und erhaltene Nettodividende ${String(today.year)} je Monat`}
+            categoryHeader="Monat"
+          />
+        </Section>
+      )}
+
+      <Section title="Alle Ziele">
+        <ListGroup>
+          {data.list.map((progress) => (
+            <li key={progress.goal.id}>
+              <GoalRow progress={progress} />
+            </li>
+          ))}
+        </ListGroup>
+      </Section>
+    </div>
+  );
+}
+
+const HUNDRED = new MoneyDecimal(100);
+
+/**
+ * Kopf: der Ø der letzten zwölf Monate gegen das Langfristziel des
+ * Schneeballs. Die Hauptzahl führt in die Prognose, wo das Ziel gepflegt und
+ * sein Zieljahr gerechnet wird — hier steht nur, wo du heute stehst.
+ */
+function GoalsHero({
+  average,
+  targetMonthly,
+  current,
+  next,
+  hitRate,
+  year,
+}: {
+  average: Money;
+  targetMonthly: number | null;
+  current: GoalProgress | null;
+  next: GoalProgress | null;
+  hitRate: { hit: number; total: number };
+  year: number;
+}) {
+  const target =
+    targetMonthly !== null && targetMonthly > 0
+      ? Money.fromDecimal(new MoneyDecimal(targetMonthly), EUR)
+      : null;
+  const share = target
+    ? average.toDecimal().div(target.toDecimal()).times(HUNDRED)
+    : null;
+
+  const stats: KpiStat[] = [
+    current
+      ? {
+          label: `Ziel ${String(year)}`,
+          value: formatPercent(current.percent, 0),
+          caption: `von ${formatMoneyWhole(current.target)}`,
+          to: `/ziele/${current.goal.id}`,
+          drillLabel: `Jahresziel ${String(year)} öffnen`,
+        }
+      : { label: `Ziel ${String(year)}`, value: "–", caption: "nicht festgelegt" },
+  ];
+  if (hitRate.total > 0) {
+    stats.push({
+      label: "Erreicht",
+      value: `${String(hitRate.hit)} von ${String(hitRate.total)}`,
+      caption: "Jahresziele",
+    });
+  }
+  stats.push(
+    next
+      ? {
+          label: `Ziel ${String(year + 1)}`,
+          value: formatMoneyWhole(next.target),
+          caption: current
+            ? `${next.target.compareTo(current.target) >= 0 ? "+" : "−"}${formatPercent(
+                next.target
+                  .toDecimal()
+                  .div(current.target.toDecimal())
+                  .minus(1)
+                  .abs()
+                  .times(HUNDRED),
+                0,
+              )}`
+            : undefined,
+          to: `/ziele/${next.goal.id}`,
+          drillLabel: `Jahresziel ${String(year + 1)} öffnen`,
+        }
+      : { label: `Ziel ${String(year + 1)}`, value: "–", caption: "offen" },
+  );
+
+  return (
+    <KpiHero
+      label="Ø im Monat · letzte 12 Monate"
+      value={formatMoneyWhole(average)}
+      caption={
+        target && share
+          ? `${formatPercent(share, 0)} vom Langfristziel ${formatMoneyWhole(target)}`
+          : undefined
+      }
+      to="/depot/prognose"
+      drillLabel="Langfristziel in der Prognose öffnen"
+      footer={share ? <LongTermBar percent={share.toNumber()} /> : undefined}
+      stats={stats}
+    />
+  );
+}
+
+function LongTermBar({ percent }: { percent: number }) {
+  const width = Math.min(100, Math.max(0, percent));
+  return (
+    <span
+      role="progressbar"
+      aria-label="Fortschritt zum Langfristziel"
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={Math.round(width)}
+      className="flex h-1 w-full overflow-hidden rounded-full bg-border"
+    >
+      <span
+        className="h-full rounded-full bg-primary"
+        style={{ width: `${String(width)}%` }}
+      />
+    </span>
+  );
+}
+
+function SuggestionBox({
+  suggestion,
+  onAccept,
+}: {
+  suggestion: GoalSuggestion;
+  onAccept: () => void;
+}) {
+  const basis = suggestion.growth
+    ? `Prognose ${String(suggestion.year - 1)} ${formatMoneyWhole(suggestion.forecast)} plus ${formatPercent(
+        suggestion.growth.growth.times(HUNDRED),
+        0,
+      )} Ø Wachstum ${String(suggestion.growth.from)}–${String(suggestion.growth.to)}`
+    : `Prognose ${String(suggestion.year)}`;
+  return (
+    <div className="flex flex-col gap-3 rounded-2xl bg-muted p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+      <div className="min-w-0">
+        <p className="font-semibold">
+          Vorschlag für {suggestion.year}: {formatMoneyWhole(suggestion.amount)}
+        </p>
+        <p className="mt-0.5 text-[0.8125rem] text-muted-foreground">{basis}</p>
+      </div>
+      <Button className="shrink-0" onClick={onAccept}>
+        Übernehmen
+      </Button>
+    </div>
+  );
+}
+
+function GoalRow({ progress }: { progress: GoalProgress }) {
+  const { goal, status } = progress;
+  const isMonthly = goal.goalType === "monthly" && goal.month !== null;
+  const upcoming = status === "upcoming";
+  return (
+    <ListRow asChild>
+      <Link to={`/ziele/${goal.id}`}>
+        <ListItemBody
+          leading={
+            <ListTile
+              primary={isMonthly ? monthNameDeShort(goal.month ?? 1) : String(goal.year)}
+              secondary={isMonthly ? String(goal.year) : undefined}
+            />
+          }
+          title={goalDisplayTitle(goal)}
+          meta={
+            <>
+              <Badge
+                variant={badgeVariantByTone[statusTone(status)]}
+                className={cn(statusTone(status) === "neutral" && "bg-muted")}
+              >
+                {statusLabel(status)}
+              </Badge>
+              <span className="tabular-amount">
+                {upcoming
+                  ? `Ziel ${formatMoney(progress.target)}`
+                  : `${formatMoney(progress.actual)} von ${formatMoney(progress.target)}`}
+              </span>
+            </>
+          }
+          trailing={upcoming ? undefined : achievementText(progress.percent)}
+        />
+      </Link>
+    </ListRow>
+  );
+}
+
+/** Neueste Jahre zuerst, im Jahr das Jahresziel vor seinen Monatszielen. */
+function sortForList(items: GoalProgress[]): GoalProgress[] {
+  const rank = (goal: Goal) => (goal.goalType === "annual" ? 13 : (goal.month ?? 0));
+  return items.toSorted(
+    (a, b) => b.goal.year - a.goal.year || rank(b.goal) - rank(a.goal),
+  );
+}
+
+function resultNote(progress: GoalProgress): string | undefined {
+  switch (progress.status) {
+    case "exceeded":
+      return `Übertroffen um ${formatMoney(progress.overshoot)}`;
+    case "missed":
+      return `Verfehlt um ${formatMoney(progress.remaining)}`;
+    case "active":
+      return `Noch ${formatMoney(progress.remaining)} bis zum Ziel`;
+    case "reached":
+      return "Genau erreicht";
+    default:
+      return undefined;
+  }
+}
+
+function toYearData(
+  history: readonly GoalProgress[],
+  forecast: Forecast,
+  today: RefDate,
+): GoalBarDatum[] {
+  return history.map((progress) => {
+    const year = progress.goal.year;
+    const rest =
+      year === today.year ? forecast.forecast.subtract(forecast.received) : null;
+    const restMoney = rest?.isPositive() ? rest : null;
+    return {
+      key: String(year),
+      label: String(year),
+      detail: String(year),
+      actual: progress.actual.toChartNumber(),
+      rest: restMoney ? restMoney.toChartNumber() : 0,
+      target: progress.target.toChartNumber(),
+      actualMoney: progress.actual,
+      restMoney,
+      targetMoney: progress.target,
+      note: resultNote(progress),
+    };
+  });
+}
+
+function toMonthData(
+  goals: readonly Goal[],
+  payments: readonly AnalyticsPayment[],
+  forecast: Forecast,
+  today: RefDate,
+): GoalBarDatum[] {
+  const buckets = monthlyBuckets(payments, today.year);
+  return buckets.map((bucket, index) => {
+    const goal = goals.find(
+      (g) =>
+        g.goalType === "monthly" && g.year === today.year && g.month === bucket.month,
+    );
+    const rest = bucket.month >= today.month ? forecast.restByMonth[index] : null;
+    const restMoney = rest?.isPositive() ? rest : null;
+    const progress = goal ? computeGoalProgress(goal, payments, today) : null;
+    return {
+      key: String(bucket.month),
+      label: monthNameDeShort(bucket.month),
+      detail: `${monthNameDe(bucket.month)} ${String(today.year)}`,
+      actual: bucket.net.toChartNumber(),
+      rest: restMoney ? restMoney.toChartNumber() : 0,
+      target: goal ? goal.targetAmount.toChartNumber() : null,
+      actualMoney: bucket.net,
+      restMoney,
+      targetMoney: goal ? goal.targetAmount : null,
+      note: progress ? resultNote(progress) : undefined,
+    };
+  });
 }

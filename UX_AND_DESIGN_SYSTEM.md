@@ -154,7 +154,7 @@ anders gebaut wirkt als die nächste:
   zum Weitergehen, `SectionButton` zum Anlegen oder Aufklappen („Neues Depot",
   „Anzeigen"); eine gefüllte Schaltfläche je Abschnitt war lauter als die Überschrift.
 - **Gedämpfte Flächen statt Rahmen** für Kennzahlen und gleichartige Kacheln:
-  Zielkarten, Kacheln unter „Mehr", Kennzahlen der Position und der Datenqualität. Karten
+  Zielvorschlag, Kacheln unter „Mehr", Kennzahlen der Position und der Datenqualität. Karten
   mit Rahmen bleiben für Formulare in Dialogen, den Import-Assistenten und die
   Dubletten-Paare.
 - **Listen und Tabellen ohne Rahmen** (`ListGroup`, `Table`, `StatTable`, Ladegerüste):
@@ -453,24 +453,29 @@ nur über Farbe (Text-Badges), tastaturbedienbare Auswahl.
 
 ## Phase 7 — Ziele
 
-**Zielseite (`/ziele`).** Überschrift, primäre Aktion „Ziel anlegen", darunter
-Reiter für aktive, bevorstehende und beendete Ziele als Zielkarten (Grid,
-1/2/3 Spalten je Breite). Detailansicht `/ziele/:id` mit Drill-down zu den
-Dividenden des Zeitraums.
+**Zielseite (`/ziele`, seit 2.4.0).** Die Seite beantwortet, was keine andere
+stellt: *Wie gut treffe ich meine Ziele, und wohin geht es?* Bis 2.3 bestand sie
+aus drei Reitern (Aktiv, Bevorstehend, Beendet) mit Zielkarten — reine
+Verwaltung, die man einmal einrichtete und danach nicht mehr öffnete; ob das
+laufende Jahr auf Kurs ist, beantwortet ohnehin die Übersicht.
 
-**Reihenfolge je Reiter.** Jeder Reiter beantwortet eine andere Frage und hat
-deshalb seine eigene Ordnung: *Aktiv* das Jahresziel als Rahmen zuerst, darunter
-die Monatsziele; *Bevorstehend* das nächste Ziel zuerst; *Beendet* das zuletzt
-beendete zuerst. Der Zielstatus (erreicht/verfehlt) sortiert nirgends — sonst
-liefen die Zeiträume durcheinander.
+Aufbau von oben: `KpiHero` mit dem Ø der letzten zwölf Monate gegen das
+Langfristziel des Schneeballs (gepflegt in Bestand › Prognose, hier nur der
+Ist-Stand; die Hauptzahl führt dorthin), rechts Stand des laufenden
+Jahresziels, erreichte Jahresziele und das Ziel des nächsten Jahres. Darunter
+ab Oktober bzw. bei fehlendem Jahresziel ein **Zielvorschlag** (Prognose, fürs
+nächste Jahr plus Ø Wachstum der letzten drei Jahre, auf 100 € gerundet), der
+den Anlegedialog vorbelegt. Dann die **Zielbilanz** und **das laufende Jahr
+Monat für Monat** im selben Diagramm (`GoalBarChart`): Erhalten als Balken in
+der Akzentfarbe, das noch Erwartete gestreift darauf (dieselbe Prognose wie
+der Zielbalken der Übersicht, §9.7), das Ziel als Querstrich in Balkenbreite.
+Tooltip statt Klick. Zuletzt **alle Ziele** als Liste (`ListGroup`), neuestes
+Jahr zuerst, im Jahr das Jahresziel vor seinen Monatszielen; jede Zeile führt
+zur Detailseite `/ziele/:id`, wo Bearbeiten, Löschen und der Drill-down zu den
+Dividenden des Zeitraums stehen. Die alten Reiteradressen leiten auf `/ziele`.
 
-**Zielkarte.** `GoalCard` ist **eine** Komponente für die Zielseite; eine zweite,
-kürzere Fassung für das Dashboard gab es, und dieselbe Sache sah an zwei Stellen
-unterschiedlich aus. Die Übersicht zeigt Ziele seit dem Kennzahlkopf nicht mehr
-als Karte, sondern dort, wo die Summe steht: das Jahresziel als Balken unter der
-Hauptzahl (mit derselben `GoalProgressBar`), das Monatsziel im Feld des Monats. Die ganze Karte führt zur Detailseite;
-„Bearbeiten" und „Löschen" stehen dort im Kopf (`DetailHeader`) — wie bei
-Dividenden und Assets.
+Die Übersicht zeigt Ziele dort, wo die Summe steht: das Jahresziel als Balken
+unter der Hauptzahl, das Monatsziel im Feld des Monats.
 
 **Zeichen und Zielart.** Jahres- und Monatsziel tragen dieselbe dunkle
 36-px-Symbolkachel (`GoalMark`, `CalendarRange`). Bis 1.10 trug das Monatsziel ein
@@ -479,24 +484,12 @@ eigenes Symbol auf grauer Kachel; die Zielart steht aber schon im Titel
 deaktiviert. Die Detailseite nennt Zielart und Zeitraum zusätzlich nur bei eigenem
 Titel; sonst steht darunter allein der Zeitfortschritt bzw. „Beginnt am …".
 
-**Aufbau der Zielkarte.** Die Karte beantwortet auf einen Blick nur zwei
-Fragen: Wie hoch ist das Ziel, und wo stehe ich? Oben Symbolkachel und Titel;
-die Statusmarke steht in der oberen rechten Ecke und wird vom Titel umflossen,
-statt als eigene Spalte dauerhaft Breite zu belegen. Darunter eine Zeile
-„2.487,35 € von 3.600,00 €" (Stand hervorgehoben, Ziel gedämpft) mit dem
-Prozentwert rechts, darunter der Balken. Zeitfortschritt, Restbetrag und die
-Beträge als eigene Felder standen früher zusätzlich in der Karte; sie war fast
-doppelt so hoch, und die zwei entscheidenden Zahlen gingen darin unter. Beides
-steht auf der Detailseite. Bevorstehende Ziele zeigen den Zielbetrag und
-„Beginnt am …" statt der Betragszeile. Eine Zeile, die Zielart und Zeitraum
-wiederholt, gibt es nicht — das steht schon im Titel.
-
 **Fortschrittsanzeige.** `GoalProgressBar` ist ein zugängliches
 `role="progressbar"` mit `aria-valuemin/max/now` und aussagekräftigem
 `aria-valuetext` (Betrag + Prozent, bei Überschreitung inkl. übertroffenem
 Betrag). Der Balken ist visuell auf 100 % begrenzt; der reale Prozentwert steht
-zusätzlich als Text (auf der Detailseite unter dem Balken, auf der Zielkarte in
-der Betragszeile daneben); ein „Ziel 100 %" am Balkenende entfällt, es sagte
+zusätzlich als Text (auf der Detailseite unter dem Balken, in der Zielliste
+rechts); ein „Ziel 100 %" am Balkenende entfällt, es sagte
 immer dasselbe. Information nie nur über Farbe (Status-Badge mit Text).
 Fortschrittsanimation nur dezent und `motion-reduce`-fest. Bevorstehende Ziele
 zeigen „Beginnt am …" statt Fortschritt (keine negative Bewertung, keine

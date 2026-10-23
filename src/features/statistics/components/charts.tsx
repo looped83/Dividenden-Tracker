@@ -672,3 +672,190 @@ export function SnowballChart({
     </div>
   );
 }
+
+// ============================================================================
+// Ziel gegen Ist (Ziele)
+// ============================================================================
+
+/** Ein Zeitraum der Zielseite; Werte vorab gerechnet (lib/goals). */
+export interface GoalBarDatum {
+  key: string;
+  label: string;
+  /** Überschrift in Tooltip und Datentabelle, z. B. „Oktober 2026". */
+  detail: string;
+  actual: number;
+  /** Noch erwarteter Rest im laufenden Zeitraum (gestreift auf dem Balken). */
+  rest: number;
+  target: number | null;
+  actualMoney: Money;
+  restMoney: Money | null;
+  targetMoney: Money | null;
+  /** Ergebnis in Worten, z. B. „Übertroffen um 251,00 €". */
+  note?: string | undefined;
+}
+
+const GOAL_REST_PATTERN = "goal-rest";
+/** Wie weit die Zielmarke seitlich über den Balken ragt. */
+const GOAL_TICK_OVERHANG = 3;
+
+function GoalTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: { payload?: GoalBarDatum }[];
+}) {
+  const row = payload?.[0]?.payload;
+  if (!active || !row) return null;
+  return (
+    <ChartTooltipBox>
+      <p className="font-medium">{row.detail}</p>
+      {row.targetMoney && <p>Ziel {formatMoney(row.targetMoney)}</p>}
+      <p>Erhalten {formatMoney(row.actualMoney)}</p>
+      {row.restMoney && (
+        <p className="text-muted-foreground">Erwartet {formatMoney(row.restMoney)}</p>
+      )}
+      {row.note && <p className="text-muted-foreground">{row.note}</p>}
+    </ChartTooltipBox>
+  );
+}
+
+/** Das Ziel als Querstrich in Balkenbreite, etwas überstehend. */
+function GoalTick({ x, y, width, payload }: BarShapeProps) {
+  if ((payload as GoalBarDatum).target === null) return <g />;
+  const left = x - GOAL_TICK_OVERHANG;
+  const right = x + width + GOAL_TICK_OVERHANG;
+  return (
+    <line
+      x1={left}
+      x2={right}
+      y1={y}
+      y2={y}
+      stroke="var(--foreground)"
+      strokeWidth={2.5}
+      strokeLinecap="round"
+    />
+  );
+}
+
+/**
+ * Erhalten gegen Ziel je Zeitraum: Balken in der Akzentfarbe, im laufenden
+ * Zeitraum gestreift fortgesetzt um das noch Erwartete (wie die Prognose am
+ * Zielbalken der Übersicht), das Ziel als Querstrich. Ob ein Jahr sein Ziel
+ * traf, sieht man so am Balkenende — ohne zweite Balkenreihe, die die Breite
+ * halbiert. Tooltip statt Klick (Navigation nur über die Liste darunter).
+ */
+export function GoalBarChart({
+  data,
+  ariaLabel,
+  categoryHeader,
+}: {
+  data: readonly GoalBarDatum[];
+  ariaLabel: string;
+  categoryHeader: string;
+}) {
+  const hasRest = data.some((row) => row.rest > 0);
+  return (
+    <div className="space-y-4">
+      <ChartCanvas ariaLabel={ariaLabel}>
+        <ComposedChart data={[...data]} margin={CHART_MARGIN}>
+          <defs>
+            <pattern
+              id={GOAL_REST_PATTERN}
+              width="5"
+              height="5"
+              patternUnits="userSpaceOnUse"
+              patternTransform="rotate(45)"
+            >
+              <rect width="2.5" height="5" fill="var(--series-prior)" />
+            </pattern>
+          </defs>
+          <CartesianGrid {...CHART_GRID_PROPS} />
+          <XAxis dataKey="label" {...CHART_X_AXIS_PROPS} />
+          <YAxis {...CHART_Y_AXIS_PROPS} />
+          <Tooltip content={<GoalTooltip />} cursor={CHART_BAR_CURSOR} />
+          <Bar
+            dataKey="actual"
+            name="Erhalten"
+            stackId="goal"
+            fill="var(--primary)"
+            maxBarSize={CHART_MAX_BAR_SIZE}
+            {...CHART_SERIES_PROPS}
+            // Gerundet ist nur das obere Ende des Stapels.
+            shape={(props: BarShapeProps) => (
+              <Rectangle
+                {...props}
+                radius={(props.payload as GoalBarDatum).rest > 0 ? 0 : CHART_BAR_RADIUS}
+              />
+            )}
+          />
+          {hasRest && (
+            <Bar
+              dataKey="rest"
+              name="Erwartet"
+              stackId="goal"
+              fill={`url(#${GOAL_REST_PATTERN})`}
+              radius={CHART_BAR_RADIUS}
+              maxBarSize={CHART_MAX_BAR_SIZE}
+              {...CHART_SERIES_PROPS}
+            />
+          )}
+          {/* Auf einer eigenen, verborgenen Achse: So steht die Marke mittig
+              über dem Balken statt als zweiter Balken daneben. */}
+          <XAxis xAxisId="target" dataKey="label" hide />
+          <Bar
+            dataKey="target"
+            name="Ziel"
+            xAxisId="target"
+            maxBarSize={CHART_MAX_BAR_SIZE}
+            {...CHART_SERIES_PROPS}
+            shape={GoalTick}
+            activeBar={false}
+          />
+        </ComposedChart>
+      </ChartCanvas>
+
+      <ChartLegend
+        items={[
+          { label: "Erhalten", color: "var(--primary)" },
+          ...(hasRest
+            ? [{ label: "Erwartet", color: "var(--series-prior)", dashed: true }]
+            : []),
+          { label: "Ziel", color: "var(--foreground)" },
+        ]}
+      />
+
+      <ChartDataTable>
+        <Table>
+          <caption className="sr-only">{ariaLabel}</caption>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{categoryHeader}</TableHead>
+              <TableHead className="text-right">Ziel</TableHead>
+              <TableHead className="text-right">Erhalten</TableHead>
+              {hasRest && <TableHead className="text-right">Erwartet</TableHead>}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data.map((row) => (
+              <TableRow key={row.key}>
+                <ChartRowHeader>{row.detail}</ChartRowHeader>
+                <TableCell className="text-right tabular-nums">
+                  {row.targetMoney ? formatMoney(row.targetMoney) : "–"}
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {formatMoney(row.actualMoney)}
+                </TableCell>
+                {hasRest && (
+                  <TableCell className="text-right tabular-nums">
+                    {row.restMoney ? formatMoney(row.restMoney) : "–"}
+                  </TableCell>
+                )}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </ChartDataTable>
+    </div>
+  );
+}
