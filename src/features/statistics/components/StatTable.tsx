@@ -1,13 +1,12 @@
 import * as React from "react";
 import { ArrowDown, ArrowUp, ArrowUpDown, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { FilterSort } from "@/components/ui/filter-bar";
+import { LoadMore } from "@/components/ui/load-more";
 import { ListGroup, ListRow } from "@/components/ui/list";
 import { Section } from "@/components/ui/section";
 import { MD_BREAKPOINT_QUERY, useMediaQuery } from "@/lib/hooks/useMediaQuery";
 import { cn } from "@/lib/utils/cn";
-import { formatCountNumber } from "@/lib/utils/formatNumber";
 
 export type SortDirection = "asc" | "desc";
 
@@ -78,6 +77,7 @@ interface StatTableProps<T> {
    * **ueber** der Ueberschrift — so bleibt der Umschalter an seiner Stelle.
    */
   titleAction?: React.ReactNode;
+  /** Zeilen je Schritt: so viele zu Beginn, so viele kommen beim Scrollen dazu. */
   pageSize?: number;
   caption: string;
   emptyMessage?: string;
@@ -219,7 +219,7 @@ export function StatTable<T>({
   const controlled = externalQuery !== undefined;
   const query = externalQuery ?? ownQuery;
 
-  // Neue Suche -> zurueck auf Seite 1. Waehrend des Renderns abgeglichen
+  // Neue Suche -> wieder nur der erste Schritt. Waehrend des Renderns abgeglichen
   // (React-Muster "Zustand bei Prop-Aenderung anpassen") statt in einem Effect.
   const [lastQuery, setLastQuery] = React.useState(query);
   if (query !== lastQuery) {
@@ -263,10 +263,10 @@ export function StatTable<T>({
     return [...filtered].sort((a, b) => compare(a, b) * factor);
   }, [filtered, sortKey, sortDirection, columnByKey]);
 
-  const pageCount = Math.max(1, Math.ceil(sorted.length / pageSize));
-  const currentPage = Math.min(page, pageCount);
-  const start = (currentPage - 1) * pageSize;
-  const pageRows = sorted.slice(start, start + pageSize);
+  // Kein Blaettern mehr (seit 2.3.0): Die Tabelle waechst beim Scrollen um
+  // je `pageSize` Zeilen. Alle Zeilen stehen in einer Tabelle, die Sortierung
+  // gilt ueber alle, und niemand muss zurueckblaettern.
+  const pageRows = sorted.slice(0, page * pageSize);
 
   const toggleSort = (key: string) => {
     setPage(1);
@@ -466,41 +466,16 @@ export function StatTable<T>({
         </>
       )}
 
-      {sorted.length > pageSize && (
-        <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
-          <span aria-live="polite">
-            {formatCountNumber(start + 1)}–
-            {formatCountNumber(Math.min(start + pageSize, sorted.length))} von{" "}
-            {formatCountNumber(sorted.length)}
-          </span>
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={currentPage <= 1}
-              onClick={() => {
-                setPage((value) => Math.max(1, value - 1));
-              }}
-            >
-              Zurück
-            </Button>
-            <span aria-hidden>
-              Seite {formatCountNumber(currentPage)} / {formatCountNumber(pageCount)}
-            </span>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={currentPage >= pageCount}
-              onClick={() => {
-                setPage((value) => Math.min(pageCount, value + 1));
-              }}
-            >
-              Weiter
-            </Button>
-          </div>
-        </div>
+      {sorted.length > pageRows.length && (
+        <LoadMore
+          shown={pageRows.length}
+          total={sorted.length}
+          onLoad={() => {
+            setPage((value) => value + 1);
+          }}
+        >
+          Weitere anzeigen
+        </LoadMore>
       )}
     </div>
   );

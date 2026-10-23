@@ -98,7 +98,7 @@ describe("StatTable", () => {
     expect(bodyNames()).toEqual(["Beta"]);
   });
 
-  it("paginiert lange Listen", async () => {
+  it("hängt bei langen Listen weitere Zeilen an", async () => {
     const user = userEvent.setup();
     const many: Row[] = Array.from({ length: 5 }, (_, i) => ({
       id: String(i),
@@ -115,8 +115,12 @@ describe("StatTable", () => {
       />,
     );
     expect(bodyNames()).toEqual(["Row 0", "Row 1"]);
-    await user.click(screen.getByRole("button", { name: "Weiter" }));
-    expect(bodyNames()).toEqual(["Row 2", "Row 3"]);
+    expect(screen.getByText("2 von 5 angezeigt")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Weitere anzeigen" }));
+    expect(bodyNames()).toEqual(["Row 0", "Row 1", "Row 2", "Row 3"]);
+    await user.click(screen.getByRole("button", { name: "Weitere anzeigen" }));
+    expect(bodyNames()).toHaveLength(5);
+    expect(screen.queryByRole("button", { name: "Weitere anzeigen" })).toBeNull();
   });
 
   it("löst onRowClick per Tastatur aus (Drill-down)", async () => {
