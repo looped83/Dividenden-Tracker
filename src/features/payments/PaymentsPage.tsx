@@ -69,7 +69,7 @@ import {
 } from "@/features/payments/yearOverYear";
 import { YearOverYearIndicator } from "@/features/payments/YearOverYearIndicator";
 import { PaymentListItem } from "@/features/payments/PaymentListItem";
-import { groupByMonth, monthTotals, totalOrNull } from "@/features/payments/monthGroups";
+import { groupByMonth, monthTotals } from "@/features/payments/monthGroups";
 import { usePaymentComposer } from "@/features/payments/PaymentComposer";
 
 type Row = {
@@ -298,7 +298,6 @@ export function PaymentsPage() {
 
   // Anzahl und Summe der Auswahl — die Frage hinter fast jedem Filter („wie
   // viel kam von …?"). Ueber verschiedene Waehrungen wird nicht addiert.
-  const total = React.useMemo(() => totalOrNull(rows.map(amountOf)), [rows]);
 
   // Nach Datum sortiert gruppiert die Liste nach Monat, mit der Monatssumme im
   // Kopf — ueber alle Eingaenge des Monats, nicht nur die bereits geladenen.
@@ -490,35 +489,23 @@ export function PaymentsPage() {
       </FilterBar>
 
       {!isLoading && rows.length > 0 && (
-        // Schlanke graue Leiste in der Flaeche der Kennzahlenboxen (seit
-        // 2.2.0): Anzahl links, Summe rechts. Als lose Textzeile ging die
-        // Summe aller Dividenden zwischen Filter und Liste unter.
+        // Anzahl und Summe stehen seit 2.2.0 nicht mehr sichtbar ueber der
+        // Liste — die Monate tragen ihre Summen selbst. Die Trefferzahl wird
+        // nach jedem Filtern weiter vorgelesen. Sichtbar bleibt sie nur bei
+        // den Stornierten: Sie haben kein Feld in der Leiste, erreichbar sind
+        // sie ueber die Datenqualitaet (`?status=cancelled`); die Zeile sagt,
+        // was gezeigt wird.
         <p
-          className="flex min-h-10 items-center justify-between gap-3 rounded-xl bg-muted px-3 py-2 text-[0.9375rem] text-muted-foreground"
+          className={status === "cancelled" ? "text-sm text-muted-foreground" : "sr-only"}
           aria-live="polite"
         >
-          {/* Stornierte haben kein Feld in der Leiste mehr; erreichbar sind sie
-              ueber die Datenqualitaet (`?status=cancelled`). Die Zeile sagt,
-              was gezeigt wird; „Zuruecksetzen" fuehrt zur normalen Liste. */}
-          <span className="min-w-0">
-            {status === "cancelled"
-              ? formatCountNoun(
-                  rows.length,
-                  "stornierte Dividende",
-                  "stornierte Dividenden",
-                )
-              : formatCountNoun(rows.length, "Dividende", "Dividenden")}
-          </span>
-          {total && (
-            <>
-              {/* Vorgelesen wie zuvor: „2 Dividenden · 50,50 €". */}
-              <span className="sr-only"> · </span>
-              <AmountText
-                amount={total}
-                className="shrink-0 font-semibold text-foreground tabular-amount"
-              />
-            </>
-          )}
+          {status === "cancelled"
+            ? formatCountNoun(
+                rows.length,
+                "stornierte Dividende",
+                "stornierte Dividenden",
+              )
+            : formatCountNoun(rows.length, "Dividende", "Dividenden")}
         </p>
       )}
 

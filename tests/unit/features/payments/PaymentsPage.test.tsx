@@ -169,14 +169,14 @@ describe("PaymentsPage", () => {
     expect(screen.queryByRole("heading", { name: /Mai 2026/ })).not.toBeInTheDocument();
   });
 
-  it("nennt Anzahl und Summe der Auswahl", () => {
+  it("liest die Anzahl der Auswahl nur vor, ohne Zeile ueber der Liste", () => {
     renderList([
       zahlung({ id: "a", net_amount: "20.00" }),
       zahlung({ id: "b", net_amount: "30.50" }),
     ]);
-    expect(screen.getByText(/^2 Dividenden/).closest("p")).toHaveTextContent(
-      "2 Dividenden · 50,50 €",
-    );
+    const anzahl = screen.getByText("2 Dividenden");
+    expect(anzahl).toHaveClass("sr-only");
+    expect(anzahl).toHaveAttribute("aria-live", "polite");
   });
 
   it("filtert nach Asset und nennt die Trefferzahl", async () => {
