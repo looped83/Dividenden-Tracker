@@ -62,7 +62,7 @@ test("ein erneuter Aufruf des Bereichs beginnt oben, nicht an der alten Stelle",
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
 });
 
-test("weitere laden haengt an, der Weg zurueck endet an derselben Stelle", async ({
+test("beim Scrollen kommen weitere an, der Weg zurueck endet an derselben Stelle", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1280, height: 700 });
@@ -71,14 +71,13 @@ test("weitere laden haengt an, der Weg zurueck endet an derselben Stelle", async
   await page.goto("/#/eingaenge?sort=amount");
   await expect(page.getByText("25 von 40 angezeigt")).toBeVisible();
 
-  // Angehaengt statt umgeblaettert: Die Position bleibt, wo sie war — man
-  // liest einfach weiter.
+  // Angehaengt statt umgeblaettert, und zwar von selbst, sobald das Ende in
+  // Sicht kommt: Die Position bleibt, wo sie war — man liest einfach weiter.
   await page.evaluate(() => {
     window.scrollTo(0, document.body.scrollHeight);
   });
   const vorher = await page.evaluate(() => window.scrollY);
-  await page.getByRole("button", { name: "15 weitere laden" }).click();
-  await expect(page.getByRole("button", { name: /weitere laden/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Weitere anzeigen" })).toHaveCount(0);
   expect(await page.evaluate(() => window.scrollY)).toBe(vorher);
 
   await page.evaluate(() => {
@@ -94,7 +93,7 @@ test("weitere laden haengt an, der Weg zurueck endet an derselben Stelle", async
   // Die geladene Menge steht in der Adresse: Zurueck zeigt wieder alle 40
   // Eingaenge an derselben Stelle, nicht die ersten 25.
   await page.goBack();
-  await expect(page.getByRole("button", { name: /weitere laden/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Weitere anzeigen" })).toHaveCount(0);
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(unten);
 });
 
@@ -105,7 +104,7 @@ test("auf dem Telefon fuehrt die Zeile zur Detailseite und diese samt Liste zuru
   await page.goto("/#/eingaenge?sort=amount&page=2");
   // Zwei „Seiten" geladen: alle 40 Eingaenge, nichts mehr nachzuladen.
   await expect(page.getByRole("link", { name: /Muster AG/ })).toHaveCount(40);
-  await expect(page.getByRole("button", { name: /weitere laden/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Weitere anzeigen" })).toHaveCount(0);
 
   // Eine Tippflaeche je Zeile, keine Aktionen darauf.
   await expect(page.getByRole("button", { name: /stornieren/i })).toHaveCount(0);

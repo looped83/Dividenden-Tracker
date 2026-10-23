@@ -230,11 +230,11 @@ describe("PaymentsPage", () => {
 
     expect(screen.getByText("25 von 30 angezeigt")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "5 weitere laden" }));
+    await user.click(screen.getByRole("button", { name: "Weitere anzeigen" }));
 
     expect(screen.getAllByRole("link", { name: /Apple Inc\./ })).toHaveLength(30);
     expect(
-      screen.queryByRole("button", { name: /weitere laden/ }),
+      screen.queryByRole("button", { name: /Weitere anzeigen/ }),
     ).not.toBeInTheDocument();
     // Angehaengt, nicht umgeblaettert: Die Position bleibt, wo sie ist.
     expect(scrollTo).not.toHaveBeenCalled();
@@ -297,14 +297,14 @@ describe("PaymentsPage", () => {
 
       expect(screen.getAllByRole("heading", { level: 2 })).toHaveLength(12);
       expect(
-        screen.queryByRole("button", { name: /weitere laden/ }),
+        screen.queryByRole("button", { name: /Weitere anzeigen/ }),
       ).not.toBeInTheDocument();
 
-      await user.click(screen.getByRole("button", { name: "Ältere Monate laden" }));
+      await user.click(screen.getByRole("button", { name: "Ältere Monate anzeigen" }));
 
       expect(screen.getAllByRole("heading", { level: 2 })).toHaveLength(14);
       expect(
-        screen.queryByRole("button", { name: "Ältere Monate laden" }),
+        screen.queryByRole("button", { name: "Ältere Monate anzeigen" }),
       ).not.toBeInTheDocument();
     });
 

@@ -31,6 +31,7 @@ import {
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
+import { LoadMore } from "@/components/ui/load-more";
 import { ListGroup, ListSection } from "@/components/ui/list";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import {
@@ -42,7 +43,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { AmountText } from "@/components/money/AmountText";
-import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
+import { formatCountNoun } from "@/lib/utils/formatNumber";
 import { MD_BREAKPOINT_QUERY, useMediaQuery } from "@/lib/hooks/useMediaQuery";
 import { useToast } from "@/components/ui/toast";
 import { useToday } from "@/lib/hooks/useToday";
@@ -149,8 +150,8 @@ export function PaymentsPage() {
     [setParams],
   );
 
-  // „Mehr laden" haengt die naechsten Eingaenge an, statt die Seite zu
-  // wechseln: Man bleibt im Lesefluss, und eine Monatsgruppe reisst nicht an
+  // Beim Scrollen kommen die naechsten Eingaenge dazu ({@link LoadMore}),
+  // statt die Seite zu wechseln: Man bleibt im Lesefluss, und eine Monatsgruppe reisst nicht an
   // einer Seitengrenze ab. Wie viel geladen ist, steht in der Adresse — der
   // Weg zurueck von einem Eingang findet dieselbe Liste samt Position wieder.
   // Ersetzt statt angehaengt: „Zurück" im Browser soll die vorige Seite
@@ -357,27 +358,6 @@ export function PaymentsPage() {
       : [{ key: "", year: 0, month: 0, rows: visibleRows }];
   const isOpen = (key: string) => !allMonths || openMonths.has(key);
   const remainingMonths = allMonths ? allMonths.length - groups.length : 0;
-
-  // Weitere Monate laden, sobald der Knopf am Ende in Sicht kommt. Der
-  // Beobachter wird je Schritt neu angelegt: Bleibt der Knopf nach dem Laden
-  // sichtbar (kurze, eingeklappte Liste), meldet er sich so erneut.
-  const loadMoreMonthsRef = React.useRef<HTMLButtonElement>(null);
-  React.useEffect(() => {
-    const node = loadMoreMonthsRef.current;
-    if (!node || typeof IntersectionObserver === "undefined") return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
-          setParams({ page: String(page + 1) }, { replace: true });
-        }
-      },
-      { rootMargin: "400px" },
-    );
-    observer.observe(node);
-    return () => {
-      observer.disconnect();
-    };
-  }, [page, remainingMonths, setParams]);
 
   // --- Einzelaktionen: Storno / Reaktivieren / Löschen. ---
   const archivePayment = useArchivePayment();
@@ -821,36 +801,15 @@ export function PaymentsPage() {
       )}
 
       {!isLoading && remainingMonths > 0 && (
-        <div className="text-center">
-          <Button
-            ref={loadMoreMonthsRef}
-            type="button"
-            variant="outline"
-            className="w-full sm:w-auto"
-            onClick={() => {
-              setParams({ page: String(page + 1) }, { replace: true });
-            }}
-          >
-            Ältere Monate laden
-          </Button>
-        </div>
+        <LoadMore shown={groups.length} onLoad={loadMore}>
+          Ältere Monate anzeigen
+        </LoadMore>
       )}
 
       {!isLoading && !allMonths && remaining > 0 && (
-        <div className="space-y-2 text-center">
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full sm:w-auto"
-            onClick={loadMore}
-          >
-            {formatCountNumber(Math.min(PAGE_SIZE, remaining))} weitere laden
-          </Button>
-          <p className="text-xs text-muted-foreground" aria-live="polite">
-            {formatCountNumber(visibleRows.length)} von {formatCountNumber(rows.length)}{" "}
-            angezeigt
-          </p>
-        </div>
+        <LoadMore shown={visibleRows.length} total={rows.length} onLoad={loadMore}>
+          Weitere anzeigen
+        </LoadMore>
       )}
 
       <StornoDialog
