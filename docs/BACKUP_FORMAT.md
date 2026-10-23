@@ -83,21 +83,10 @@ User settings and preferences (optional).
 }
 ```
 
-### Portfolios
+### Portfolios (bis v2.7)
 
-Investment portfolios (optional collection).
-
-```json
-{
-  "id": "550e8400-e29b-41d4-a716-446655440001",
-  "user_id": "550e8400-e29b-41d4-a716-446655440000",
-  "name": "Mein Portfolio",
-  "note": "Langfristiges Sparziel",
-  "created_at": "2026-01-01T00:00:00Z",
-  "updated_at": "2026-07-27T12:00:00Z",
-  "archived_at": null
-}
-```
+Ältere Dateien enthalten `portfolios` und `depots[].portfolio_id`. Beides wird beim
+Einlesen verworfen; neue Sicherungen enthalten es nicht mehr (ADR-010).
 
 ### Depots
 
@@ -110,7 +99,6 @@ Brokerage accounts/depots (required for restoration).
   "name": "Comdirect",
   "broker": "Comdirect Bank",
   "base_currency": "EUR",
-  "portfolio_id": "550e8400-e29b-41d4-a716-446655440001",
   "note": "Hauptdepot",
   "created_at": "2026-01-01T00:00:00Z",
   "updated_at": "2026-07-27T12:00:00Z",
@@ -378,7 +366,6 @@ The `integrity` section contains checksums and record counts for validation:
     "gross_sum": "19500.00"
   },
   "checksums": {
-    "portfolios": "a3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "depots": "b3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "securities": "c3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "dividend_payments": "d3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -548,7 +535,6 @@ Example: `dividenden-backup-2026-07-27.json`
       }
     ],
     "dividend_payments": [],
-    "portfolios": [],
     "goals": [],
     "imports": [],
     "security_aliases": [],

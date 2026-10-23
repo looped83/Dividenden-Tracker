@@ -24,7 +24,6 @@ IMPORT_SPEC.md.
 | `user_id` | T | uuid | Eigentümer; immer `auth.uid()`, durch RLS + Trigger erzwungen |
 | `security_id` | P | uuid → securities | Wertpapier/Unternehmen. Bei Import ggf. automatisch angelegt (dann `data_quality='incomplete'`) |
 | `depot_id` | P | uuid → depots | Depot des Zahlungseingangs |
-| (Portfolio) | A | — | Ergibt sich über `depot.portfolio_id`; nicht am Eingang gespeichert (DECISIONS.md D-006) |
 
 ### Zahlung
 
@@ -100,19 +99,13 @@ IMPORT_SPEC.md.
 | `name` | P | text ≤ 100 | Eindeutig je Nutzer |
 | `broker` | O | text ≤ 100 | |
 | `base_currency` | P (Default EUR) | char(3) | Kontowährung des Depots (informativ; Beträge werden stets in Profil-Basiswährung geführt) |
-| `portfolio_id` | O | uuid → portfolios | Optionale Gruppierung |
 | `note` | O | text ≤ 2000 | |
 | `created_at`, `updated_at`, `archived_at` | T | | |
 | Abgeleitet | A | — | Zahlungen je Depot, Jahres-/Monatssummen, Anteil am Dividendeneinkommen |
 
-## 4. Portfolio (`portfolios`)
+## 4. Portfolio — entfernt
 
-| Feld | Kl. | Typ | Bedeutung |
-|---|---|---|---|
-| `id`, `user_id` | T | uuid | |
-| `name` | P | text ≤ 100 | Eindeutig je Nutzer |
-| `note` | O | text ≤ 2000 | |
-| `created_at`, `updated_at`, `archived_at` | T | | |
+Seit Migration 0039 gibt es keine Portfolios mehr (DECISIONS.md ADR-010).
 
 ## 5. Import (`imports`)
 

@@ -32,7 +32,6 @@ SECURITY_MODEL.md §9. Beträge im JSON als Strings (Skalenerhalt, CALCULATION_R
   "base_currency": "EUR",
   "data": {
     "profile":          { ... },
-    "portfolios":       [ ... ],
     "depots":           [ ... ],
     "securities":       [ ... ],
     "dividend_payments":[ ... ],      // inkl. archivierter Zeilen, Fingerprints, Herkunft

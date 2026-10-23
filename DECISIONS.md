@@ -130,7 +130,7 @@ erfasst; negative Steuerfelder gibt es nicht. Die Herkunft gehört in die Notiz.
 
 ## D-006: Portfolio nur über das Depot, keine Zweitzuordnung
 
-**Status:** Accepted · **Scope:** Data
+**Status:** Superseded durch ADR-010 (Portfolios entfernt); der Teil zu `default_depot_id` gilt weiter · **Scope:** Data
 
 Ein Dividendeneingang speichert kein Portfolio; es ergibt sich über
 `depot.portfolio_id`. Ebenso ist `securities.default_depot_id` nur eine
@@ -1024,3 +1024,31 @@ Spalten belegten rund 250 kB und kosteten bei jedem Schreibzugriff eine SHA-256-
 
 - Eine echte Dublettenerkennung gegen bestehende Zahlungen wird gebaut.
 
+## ADR-010: Portfolio-Ebene entfernt
+
+**Status:** Accepted  
+**Scope:** Datenbank, Einstellungen, Datensicherung
+
+### Decision
+
+Migration 0039 löscht `depots.portfolio_id` und die Tabelle `portfolios`; `restore_backup`
+übergeht Portfolios. Einstellungen › Depots zeigt nur noch Depots, der Depot-Dialog hat kein
+Portfolio-Feld mehr. Neue Sicherungen enthalten keine Portfolios; ältere Dateien mit
+`portfolios` und `portfolio_id` lassen sich weiter einspielen, beides wird verworfen.
+
+### Why
+
+Es gibt genau ein Portfolio mit mehreren Depots. Keine Auswertung, kein Filter und kein
+Import las die Zuordnung; sie war eine zusätzliche Angabe ohne Nutzen.
+
+### Trade-offs
+
+- Der Name des einzigen Portfolios geht verloren.
+- Reihenfolge beim Ausrollen: erst die App (v2.8.0), dann 0039. Die ältere App fragt
+  `portfolios` ab und scheiterte bei umgekehrter Reihenfolge.
+- Ältere App-Fassungen können neue Sicherungen weiter einspielen (`portfolios` fehlt,
+  Vorgabe `[]`); daher Minor- statt Major-Version.
+
+### Revisit When
+
+- Mehrere getrennte Portfolios (etwa für eine zweite Person) gebraucht werden.

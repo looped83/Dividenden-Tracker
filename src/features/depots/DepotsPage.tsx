@@ -4,11 +4,9 @@ import { useForm } from "react-hook-form";
 import { Landmark, Pencil, Plus, RotateCcw, Archive as ArchiveIcon } from "lucide-react";
 import { emptyToNull } from "@/lib/utils/emptyToNull";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
-import { formatCountNoun } from "@/lib/utils/formatNumber";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -25,106 +23,20 @@ import {
 } from "@/components/ui/dialog";
 import {
   useArchiveDepot,
-  useArchivePortfolio,
   useCreateDepot,
-  useCreatePortfolio,
   useDepots,
-  usePortfolios,
   useUpdateDepot,
-  useUpdatePortfolio,
 } from "@/features/depots/hooks";
-import {
-  depotFormSchema,
-  portfolioFormSchema,
-  type DepotFormValues,
-  type PortfolioFormValues,
-} from "@/features/depots/schemas";
+import { depotFormSchema, type DepotFormValues } from "@/features/depots/schemas";
 import { useArchiveToggle } from "@/components/domain/useArchiveToggle";
 import type { Depot } from "@/lib/supabase/repositories/depots";
-import type { Portfolio } from "@/lib/supabase/repositories/portfolios";
-
-function PortfolioFormDialog({
-  portfolio,
-  open,
-  onOpenChange,
-}: {
-  portfolio: Portfolio | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}) {
-  const createPortfolio = useCreatePortfolio();
-  const updatePortfolio = useUpdatePortfolio();
-  const [submitError, setSubmitError] = React.useState<string | null>(null);
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors, isSubmitting },
-  } = useForm<PortfolioFormValues>({
-    resolver: zodResolver(portfolioFormSchema),
-    values: { name: portfolio?.name ?? "", note: portfolio?.note ?? "" },
-  });
-
-  const onSubmit = handleSubmit(async (values) => {
-    setSubmitError(null);
-    const input = { name: values.name, note: emptyToNull(values.note) };
-    try {
-      if (portfolio) {
-        await updatePortfolio.mutateAsync({ id: portfolio.id, input });
-      } else {
-        await createPortfolio.mutateAsync(input);
-      }
-      reset();
-      onOpenChange(false);
-    } catch (error) {
-      setSubmitError(getErrorMessage(error, "Speichern fehlgeschlagen."));
-    }
-  });
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>
-            {portfolio ? "Portfolio bearbeiten" : "Neues Portfolio"}
-          </DialogTitle>
-        </DialogHeader>
-        <form onSubmit={(event) => void onSubmit(event)} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="portfolio-name">Name</Label>
-            <Input id="portfolio-name" {...register("name")} />
-            {errors.name && (
-              <p className="text-sm text-negative">{errors.name.message}</p>
-            )}
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="portfolio-note">Notiz</Label>
-            <Textarea id="portfolio-note" {...register("note")} />
-          </div>
-          {submitError && (
-            <p role="alert" className="text-sm text-negative">
-              {submitError}
-            </p>
-          )}
-          <DialogFooter>
-            <Button type="submit" disabled={isSubmitting}>
-              {portfolio ? "Speichern" : "Anlegen"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 function DepotFormDialog({
   depot,
-  portfolios,
   open,
   onOpenChange,
 }: {
   depot: Depot | null;
-  portfolios: Portfolio[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
@@ -140,7 +52,6 @@ function DepotFormDialog({
     resolver: zodResolver(depotFormSchema),
     values: {
       name: depot?.name ?? "",
-      portfolioId: depot?.portfolio_id ?? "",
       broker: depot?.broker ?? "",
       baseCurrency: depot?.base_currency ?? "EUR",
       note: depot?.note ?? "",
@@ -151,7 +62,6 @@ function DepotFormDialog({
     setSubmitError(null);
     const input = {
       name: values.name,
-      portfolio_id: emptyToNull(values.portfolioId),
       broker: emptyToNull(values.broker),
       base_currency: values.baseCurrency,
       note: emptyToNull(values.note),
@@ -184,17 +94,6 @@ function DepotFormDialog({
             {errors.name && (
               <p className="text-sm text-negative">{errors.name.message}</p>
             )}
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="depot-portfolio">Portfolio (optional)</Label>
-            <Select id="depot-portfolio" {...register("portfolioId")}>
-              <option value="">Kein Portfolio</option>
-              {portfolios.map((portfolio) => (
-                <option key={portfolio.id} value={portfolio.id}>
-                  {portfolio.name}
-                </option>
-              ))}
-            </Select>
           </div>
           <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
@@ -245,8 +144,7 @@ function DepotFormDialog({
 /**
  * Eine Zeile der Verwaltungslisten: Name (und nur der
  * Sonderfall „Archiviert" als Etikett), darunter die Angaben, rechts die
- * Aktionen. Anders als Eingaenge und Assets haben Depots und Portfolios keine
- * Detailseite — die Aktionen bleiben deshalb an der Zeile.
+ * Aktionen. Anders als Eingaenge und Assets haben Depots keine Detailseite — die Aktionen bleiben deshalb an der Zeile.
  */
 function ManagedRow({
   name,
@@ -278,10 +176,8 @@ function ManagedRow({
 }
 
 export function DepotsPage() {
-  const { data: portfolios = [] } = usePortfolios();
   const { data: depots = [], isLoading } = useDepots();
   const toggleDepot = useArchiveToggle(useArchiveDepot());
-  const togglePortfolio = useArchiveToggle(useArchivePortfolio());
 
   const [showArchived, setShowArchived] = React.useState(false);
   const [depotDialog, setDepotDialog] = React.useState<{
@@ -291,43 +187,7 @@ export function DepotsPage() {
     open: false,
     depot: null,
   });
-  const [portfolioDialog, setPortfolioDialog] = React.useState<{
-    open: boolean;
-    portfolio: Portfolio | null;
-  }>({ open: false, portfolio: null });
-
   const visibleDepots = depots.filter((depot) => showArchived || !depot.archived_at);
-  const visiblePortfolios = portfolios.filter((p) => showArchived || !p.archived_at);
-  const portfolioNameById = new Map(portfolios.map((p) => [p.id, p.name]));
-
-  const portfolioActions = (portfolio: Portfolio) => (
-    <>
-      <Button
-        variant="ghost"
-        size="icon"
-        aria-label={`Portfolio ${portfolio.name} bearbeiten`}
-        onClick={() => {
-          setPortfolioDialog({ open: true, portfolio });
-        }}
-      >
-        <Pencil />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon"
-        aria-label={
-          portfolio.archived_at
-            ? `Portfolio ${portfolio.name} reaktivieren`
-            : `Portfolio ${portfolio.name} archivieren`
-        }
-        onClick={() => {
-          togglePortfolio(portfolio, `Portfolio „${portfolio.name}"`);
-        }}
-      >
-        {portfolio.archived_at ? <RotateCcw /> : <ArchiveIcon />}
-      </Button>
-    </>
-  );
 
   const depotActions = (depot: Depot) => (
     <>
@@ -359,56 +219,11 @@ export function DepotsPage() {
   );
 
   return (
-    // Ab `lg` stehen Portfolios und Depots nebeneinander: Beide Listen sind
-    // kurz, untereinander blieb rechts die halbe Flaeche leer. Deshalb ueberall
-    // Listen statt Tabellen — sechs Spalten passten nicht in eine halbe Breite.
+    // Dasselbe Raster wie die uebrigen Einstellungen: Ab `lg` nimmt die kurze
+    // Depotliste die linke Spalte ein statt die volle Breite.
     <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-2 lg:gap-x-16">
       {/* Die Aktion gehoert in den Kopf des Abschnitts, nicht in seinen
           Inhalt: Sie betrifft den ganzen Abschnitt, nicht eine Zeile darin. */}
-      <Section
-        title="Portfolios"
-        action={
-          <SectionButton
-            icon={Plus}
-            onClick={() => {
-              setPortfolioDialog({ open: true, portfolio: null });
-            }}
-          >
-            Neues Portfolio
-          </SectionButton>
-        }
-      >
-        <div className="space-y-3">
-          {/* Dieselbe Darstellung wie die Depots: Zeilen mit Status
-              und Aktionen. Zuvor standen Portfolios als Etiketten mit winzigen
-              Symbolknoepfen da — eine zweite Sprache auf einer Seite, deren
-              Bedienelemente ausserdem unter der Mindestgroesse fuer Beruehrung
-              lagen. */}
-          {visiblePortfolios.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Noch keine Portfolios angelegt.
-            </p>
-          ) : (
-            <ListGroup aria-label="Portfolios">
-              {visiblePortfolios.map((portfolio) => (
-                <li key={portfolio.id}>
-                  <ManagedRow
-                    name={portfolio.name}
-                    archived={Boolean(portfolio.archived_at)}
-                    meta={formatCountNoun(
-                      depots.filter((d) => d.portfolio_id === portfolio.id).length,
-                      "Depot",
-                      "Depots",
-                    )}
-                    actions={portfolioActions(portfolio)}
-                  />
-                </li>
-              ))}
-            </ListGroup>
-          )}
-        </div>
-      </Section>
-
       <Section
         title="Depots"
         action={
@@ -447,15 +262,7 @@ export function DepotsPage() {
                   <ManagedRow
                     name={depot.name}
                     archived={Boolean(depot.archived_at)}
-                    meta={[
-                      depot.portfolio_id
-                        ? portfolioNameById.get(depot.portfolio_id)
-                        : undefined,
-                      depot.broker,
-                      depot.base_currency,
-                    ]
-                      .filter(Boolean)
-                      .join(" · ")}
+                    meta={[depot.broker, depot.base_currency].filter(Boolean).join(" · ")}
                     actions={depotActions(depot)}
                   />
                 </li>
@@ -465,7 +272,7 @@ export function DepotsPage() {
 
           {/* Der Archivfilter steht **unter** der Liste: Er beantwortet die
               Frage „fehlt hier etwas?", die erst beim Lesen der Liste
-              aufkommt — und er gilt zugleich fuer die Portfolios. */}
+              aufkommt. */}
           <label className="flex min-h-11 items-center gap-2 text-sm text-muted-foreground">
             <Checkbox
               checked={showArchived}
@@ -480,17 +287,9 @@ export function DepotsPage() {
 
       <DepotFormDialog
         depot={depotDialog.depot}
-        portfolios={portfolios.filter((p) => !p.archived_at)}
         open={depotDialog.open}
         onOpenChange={(open) => {
           setDepotDialog((current) => ({ ...current, open }));
-        }}
-      />
-      <PortfolioFormDialog
-        portfolio={portfolioDialog.portfolio}
-        open={portfolioDialog.open}
-        onOpenChange={(open) => {
-          setPortfolioDialog((current) => ({ ...current, open }));
         }}
       />
     </div>

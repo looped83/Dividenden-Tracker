@@ -134,7 +134,6 @@ export function validateBeforeRestore(backup: BackupRoot): {
 /** Laedt nach dem Einspielen alle Ansichten neu. */
 function invalidateBackupAffectedCaches(): void {
   const keysToInvalidate = [
-    ["portfolios"],
     ["depots"],
     ["securities"],
     ["dividend_payments"],

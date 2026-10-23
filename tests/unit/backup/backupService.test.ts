@@ -227,7 +227,6 @@ beforeEach(() => {
       updated_at: PG_UPDATED,
     },
   ];
-  tables["portfolios"] = [];
   tables["depots"] = [
     {
       id: DEPOT_ID,
@@ -235,7 +234,6 @@ beforeEach(() => {
       name: "Testdepot",
       broker: null,
       base_currency: "EUR",
-      portfolio_id: null,
       note: null,
       created_at: PG_CREATED,
       updated_at: PG_UPDATED,
@@ -382,7 +380,7 @@ describe("createBackup — Integritaetsblock", () => {
     expect(counts?.["dividend_payment"]).toBe(1441);
     expect(counts?.["security"]).toBe(1);
     expect(counts?.["depot"]).toBe(1);
-    expect(counts?.["portfolio"]).toBe(0);
+    expect(counts).not.toHaveProperty("portfolio");
     expect(counts?.["goal"]).toBe(0);
     expect(counts?.["import"]).toBe(2);
     expect(counts?.["security_alias"]).toBe(1);
@@ -476,17 +474,6 @@ describe("createBackup — leere Felder", () => {
         updated_at: PG_UPDATED,
       },
     ];
-    tables["portfolios"] = [
-      {
-        id: uuid("00000006", 1),
-        user_id: USER_ID,
-        name: "Leer",
-        note: null,
-        created_at: PG_CREATED,
-        updated_at: PG_UPDATED,
-        archived_at: null,
-      },
-    ];
     tables["depots"] = [
       {
         id: DEPOT_ID,
@@ -494,7 +481,6 @@ describe("createBackup — leere Felder", () => {
         name: "Leer",
         broker: null,
         base_currency: "EUR",
-        portfolio_id: null,
         note: null,
         created_at: PG_CREATED,
         updated_at: PG_UPDATED,

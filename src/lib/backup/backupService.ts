@@ -31,7 +31,6 @@ import {
   type DividendPaymentBackup,
   type SecurityBackup,
   type DepotBackup,
-  type PortfolioBackup,
   type GoalBackup,
   type ImportBackup,
   type ProfileBackup,
@@ -62,7 +61,6 @@ const APP_VERSION = __APP_VERSION__;
 
 /** Tabellenzeilen, wie sie aus der Datenbank kommen (vor der Abbildung aufs Format). */
 type Tables = Database["public"]["Tables"];
-type PortfolioRow = Tables["portfolios"]["Row"];
 type DepotRow = Tables["depots"]["Row"];
 type SecurityRow = Tables["securities"]["Row"];
 type DividendPaymentRow = Tables["dividend_payments"]["Row"];
@@ -264,33 +262,6 @@ async function fetchProfile(): Promise<ProfileBackup | null> {
 }
 
 /**
- * Laedt alle Portfolios.
- */
-async function fetchPortfolios(): Promise<PortfolioBackup[]> {
-  const data = await fetchAllPages<PortfolioRow>((from, to) =>
-    supabase
-      .from("portfolios")
-      .select("*")
-      .order("created_at", { ascending: true })
-      .order("id", { ascending: true })
-      .range(from, to),
-  );
-
-  return data.map(
-    (p) =>
-      removeNulls({
-        id: p.id,
-        user_id: p.user_id,
-        name: p.name,
-        note: p.note,
-        created_at: ts(p.created_at),
-        updated_at: ts(p.updated_at),
-        archived_at: ts(p.archived_at),
-      }) as PortfolioBackup,
-  );
-}
-
-/**
  * Laedt alle Depots.
  */
 async function fetchDepots(): Promise<DepotBackup[]> {
@@ -311,7 +282,6 @@ async function fetchDepots(): Promise<DepotBackup[]> {
         name: d.name,
         broker: d.broker,
         base_currency: d.base_currency,
-        portfolio_id: d.portfolio_id,
         note: d.note,
         created_at: ts(d.created_at),
         updated_at: ts(d.updated_at),
@@ -652,7 +622,6 @@ async function computeChecksum(data: unknown[]): Promise<string> {
  */
 async function computeIntegrity(data: BackupData): Promise<IntegrityInfo> {
   const record_counts = {
-    portfolio: data.portfolios.length,
     depot: data.depots.length,
     security: data.securities.length,
     dividend_payment: data.dividend_payments.length,
@@ -678,9 +647,6 @@ async function computeIntegrity(data: BackupData): Promise<IntegrityInfo> {
   // Compute checksums
   const checksums: Record<string, string> = {};
 
-  if (data.portfolios.length > 0) {
-    checksums["portfolios"] = await computeChecksum(data.portfolios);
-  }
   if (data.depots.length > 0) {
     checksums["depots"] = await computeChecksum(data.depots);
   }
@@ -746,7 +712,6 @@ export async function createBackup(
     // Fetch all data
     onProgress?.({ stage: "fetching_data" });
     const [
-      portfolios,
       depots,
       securities,
       dividendPayments,
@@ -756,7 +721,6 @@ export async function createBackup(
       snapshotRuns,
       securitySnapshots,
     ] = await Promise.all([
-      fetchPortfolios(),
       fetchDepots(),
       fetchSecurities(),
       fetchDividendPayments(),
@@ -771,7 +735,6 @@ export async function createBackup(
     onProgress?.({ stage: "serializing" });
     const data: BackupData = {
       profile,
-      portfolios,
       depots,
       securities,
       dividend_payments: dividendPayments,

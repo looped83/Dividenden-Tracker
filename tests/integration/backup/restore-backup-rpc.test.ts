@@ -49,7 +49,7 @@ function backupPayload(
     base_currency: "EUR",
     data: {
       profile: { id: userId, base_currency: "EUR" },
-      portfolios: data.portfolios ?? [],
+      ...(data.portfolios ? { portfolios: data.portfolios } : {}),
       depots: data.depots ?? [],
       securities: data.securities ?? [],
       dividend_payments: data.dividend_payments ?? [],
@@ -108,6 +108,32 @@ describe("restore_backup — Vorbedingungen", () => {
         ]),
       ),
     ).rejects.toThrow(/unsupported_format_version|restore_failed/);
+  });
+
+  it("uebergeht Portfolios aelterer Sicherungen (0039)", async () => {
+    const depotId = "44444444-4444-4444-8444-444444444444";
+    const portfolioId = "55555555-5555-4555-8555-555555555555";
+    const payload = backupPayload(userA, {
+      portfolios: [{ id: portfolioId, name: "Altes Portfolio" }],
+      depots: [
+        {
+          id: depotId,
+          name: "Mit Portfolio",
+          base_currency: "EUR",
+          portfolio_id: portfolioId,
+        },
+      ],
+    });
+
+    const result = await asUser(userA, (client) =>
+      client.query<{ restore_backup: { records_restored: Record<string, number> } }>(
+        "select restore_backup($1::jsonb, $2)",
+        [JSON.stringify(payload), "merge"],
+      ),
+    );
+    const restored = firstRow(result).restore_backup.records_restored;
+    expect(restored.depots).toBe(1);
+    expect(restored).not.toHaveProperty("portfolios");
   });
 
   it("laeuft mit gueltiger, leerer Nutzlast durch", async () => {

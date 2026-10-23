@@ -148,7 +148,7 @@ manuelle Review (persönliches Projekt, Nachvollziehbarkeit vor Bequemlichkeit).
 │   │   ├── dashboard/
 │   │   ├── payments/         # Dividendeneingänge: Liste, Formular, Detail, Historie
 │   │   ├── securities/       # Depot: Assets (Wertpapiere), Bestände, Entwicklung
-│   │   ├── depots/           # Depotkonten und Portfolios (Einstellungen)
+│   │   ├── depots/           # Depots (Einstellungen)
 │   │   ├── statistics/
 │   │   ├── imports/          # Assistent, Historie, Rollback
 │   │   ├── goals/

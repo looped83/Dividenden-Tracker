@@ -75,35 +75,10 @@ export interface Database {
         }>;
         Relationships: [];
       };
-      portfolios: {
-        Row: {
-          id: string;
-          user_id: string;
-          name: string;
-          note: string | null;
-          created_at: string;
-          updated_at: string;
-          archived_at: string | null;
-        };
-        Insert: {
-          id?: string;
-          user_id?: string;
-          name: string;
-          note?: string | null;
-          archived_at?: string | null;
-        };
-        Update: Partial<{
-          name: string;
-          note: string | null;
-          archived_at: string | null;
-        }>;
-        Relationships: [];
-      };
       depots: {
         Row: {
           id: string;
           user_id: string;
-          portfolio_id: string | null;
           name: string;
           broker: string | null;
           base_currency: string;
@@ -116,7 +91,6 @@ export interface Database {
         Insert: {
           id?: string;
           user_id?: string;
-          portfolio_id?: string | null;
           name: string;
           broker?: string | null;
           base_currency?: string;
@@ -125,21 +99,13 @@ export interface Database {
           archived_at?: string | null;
         };
         Update: Partial<{
-          portfolio_id: string | null;
           name: string;
           broker: string | null;
           base_currency: string;
           note: string | null;
           archived_at: string | null;
         }>;
-        Relationships: [
-          {
-            foreignKeyName: "depots_portfolio_id_fkey";
-            columns: ["portfolio_id"];
-            referencedRelation: "portfolios";
-            referencedColumns: ["id"];
-          },
-        ];
+        Relationships: [];
       };
       securities: {
         Row: {

@@ -247,8 +247,6 @@ const RECORD_LABELS: Record<string, string> = {
   dividend_payments: "Dividenden",
   goal: "Ziele",
   goals: "Ziele",
-  portfolio: "Portfolios",
-  portfolios: "Portfolios",
 };
 
 /**
