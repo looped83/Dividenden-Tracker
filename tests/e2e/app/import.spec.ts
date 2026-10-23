@@ -60,13 +60,14 @@ test("importiert eine CSV-Datei und rollt sie wieder zurück", async ({ page, ko
   expect(gespeichert?.anzahl).toBe("3");
   expect(gespeichert?.summe).toBe("51.25");
 
-  // Rollback macht den Import vollständig rückgängig; die Rückfrage läuft
-  // über `window.confirm` und würde sonst automatisch abgelehnt.
-  page.once("dialog", (dialog) => {
-    void dialog.accept();
-  });
+  // Rollback macht den Import vollständig rückgängig, nach einer Rückfrage im
+  // Dialog der App.
   await page.getByRole("button", { name: "Rollback" }).click();
-  await expect(page.getByText("Zurückgerollt")).toBeVisible({ timeout: 15_000 });
+  await page.getByRole("dialog").getByRole("button", { name: "Zurückrollen" }).click();
+  // Das Etikett der Liste, nicht die Bestätigung „… zurückgerollt.“
+  await expect(page.getByText("Zurückgerollt", { exact: true })).toBeVisible({
+    timeout: 15_000,
+  });
 
   const danach = await asUser(konto.userId, async (client) => {
     const result = await client.query<{ anzahl: string }>(

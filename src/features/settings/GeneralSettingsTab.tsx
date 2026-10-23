@@ -35,7 +35,9 @@ export function GeneralSettingsTab() {
   };
 
   return (
-    <div className="space-y-10">
+    // Ab `lg` zweispaltig wie die übrigen Reiter der Einstellungen: Die drei
+    // Abschnitte sind kurz, untereinander blieb rechts die halbe Fläche leer.
+    <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-2 lg:gap-x-16">
       <Section title="Profil" description={`Angemeldet als ${session?.user.email ?? ""}`}>
         <div className="space-y-3 pt-2">
           {error && <p className="text-sm text-negative">{error}</p>}

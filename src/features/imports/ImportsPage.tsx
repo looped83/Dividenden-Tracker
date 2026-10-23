@@ -3,14 +3,23 @@ import { Plus, RotateCcw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Section, SectionButton } from "@/components/ui/section";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ListGroup, ListItemBody, ListRow } from "@/components/ui/list";
 import { SkeletonRows } from "@/components/ui/skeleton";
+import { useToast } from "@/components/ui/toast";
+import { useErrorState } from "@/lib/hooks/useErrorState";
 import { Money } from "@/lib/money/money";
 import { EUR } from "@/lib/money/currency";
 import { formatMoney } from "@/lib/money/format";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
-import { formatCountNumber } from "@/lib/utils/formatNumber";
+import { formatCountNoun } from "@/lib/utils/formatNumber";
 import { ImportWizard } from "@/features/imports/ImportWizard";
 import { SnapshotRunsCard } from "@/features/securities/SnapshotRunsCard";
 import {
@@ -52,31 +61,9 @@ function checksumTotal(imp: Import): string | null {
 export function ImportsPage() {
   const [wizardOpen, setWizardOpen] = React.useState(false);
   const { data: imports = [], isLoading } = useImports();
-  const rollback = useRollbackImport();
   const discard = useDiscardImport();
   const [actionError, setActionError] = React.useState("");
-
-  async function handleRollback(imp: Import) {
-    const checksums = imp.checksums as { row_count?: number } | null;
-    const rows =
-      checksums?.row_count === undefined
-        ? "alle"
-        : formatCountNumber(checksums.row_count);
-    if (
-      !window.confirm(
-        `Diesen Import vollständig zurückrollen? ${rows} importierte Dividenden werden archiviert. ` +
-          "Der Importdatensatz bleibt als Historie erhalten.",
-      )
-    ) {
-      return;
-    }
-    setActionError("");
-    try {
-      await rollback.mutateAsync(imp.id);
-    } catch (err) {
-      setActionError(getErrorMessage(err, "Rollback fehlgeschlagen."));
-    }
-  }
+  const [rollbackTarget, setRollbackTarget] = React.useState<Import | null>(null);
 
   async function handleDiscard(imp: Import) {
     setActionError("");
@@ -93,8 +80,9 @@ export function ImportsPage() {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => void handleRollback(imp)}
-          disabled={rollback.isPending}
+          onClick={() => {
+            setRollbackTarget(imp);
+          }}
         >
           <RotateCcw /> Rollback
         </Button>
@@ -141,7 +129,7 @@ export function ImportsPage() {
     // deshalb überall als Liste — fünf Spalten passten in keine halbe Breite.
     <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-2 lg:gap-x-16">
       <Section
-        title="Import"
+        title="Dividenden-Import"
         action={
           <SectionButton
             icon={Plus}
@@ -200,6 +188,87 @@ export function ImportsPage() {
       </Section>
 
       <SnapshotRunsCard className="lg:order-first" />
+
+      <RollbackImportDialog
+        imp={rollbackTarget}
+        onOpenChange={(open) => {
+          if (!open) setRollbackTarget(null);
+        }}
+      />
     </div>
+  );
+}
+
+/**
+ * Rueckfrage vor dem Rollback — im selben Dialog wie das Loeschen eines
+ * Depotstands (`SnapshotRunsCard`). Zuvor fragte `window.confirm`, auf dem
+ * iPhone ein grauer Systemdialog, der nicht zur App passte.
+ */
+function RollbackImportDialog({
+  imp,
+  onOpenChange,
+}: {
+  /** Der zurueckzurollende Import; `null` schliesst den Dialog. */
+  imp: Import | null;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const rollback = useRollbackImport();
+  const { notify } = useToast();
+  const { error, showError, clearError } = useErrorState();
+  const rowCount = (imp?.checksums as { row_count?: number } | null)?.row_count;
+
+  const handleRollback = async () => {
+    if (!imp) return;
+    clearError();
+    try {
+      await rollback.mutateAsync(imp.id);
+      onOpenChange(false);
+      notify(`Import ${imp.file_name} zurückgerollt.`);
+    } catch (cause) {
+      showError(cause, "Rollback fehlgeschlagen.");
+    }
+  };
+
+  return (
+    <Dialog
+      open={imp !== null}
+      onOpenChange={(open) => {
+        if (!open) clearError();
+        onOpenChange(open);
+      }}
+    >
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Import zurückrollen</DialogTitle>
+        </DialogHeader>
+        {imp && (
+          <p className="text-sm text-muted-foreground [overflow-wrap:anywhere]">
+            {rowCount === undefined
+              ? "Alle importierten Dividenden"
+              : formatCountNoun(
+                  rowCount,
+                  "importierte Dividende",
+                  "importierte Dividenden",
+                )}{" "}
+            aus {imp.file_name} {rowCount === 1 ? "wird" : "werden"} archiviert. Der
+            Import bleibt als Historie in der Liste.
+          </p>
+        )}
+        {error && (
+          <p role="alert" className="text-sm text-negative">
+            {error}
+          </p>
+        )}
+        <DialogFooter>
+          <Button
+            variant="destructive"
+            disabled={rollback.isPending}
+            onClick={() => void handleRollback()}
+          >
+            {rollback.isPending ? "Wird zurückgerollt …" : "Zurückrollen"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
