@@ -1,6 +1,14 @@
 import * as React from "react";
 import { Link, useSearchParams } from "react-router";
-import { Ban, Pencil, RotateCcw, ShieldCheck, Trash2, Wallet } from "lucide-react";
+import {
+  Ban,
+  ChevronDown,
+  Pencil,
+  RotateCcw,
+  ShieldCheck,
+  Trash2,
+  Wallet,
+} from "lucide-react";
 import {
   effectivePayDate,
   monthNameDe,
@@ -37,6 +45,8 @@ import { AmountText } from "@/components/money/AmountText";
 import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
 import { MD_BREAKPOINT_QUERY, useMediaQuery } from "@/lib/hooks/useMediaQuery";
 import { useToast } from "@/components/ui/toast";
+import { useToday } from "@/lib/hooks/useToday";
+import { cn } from "@/lib/utils/cn";
 import { Money, toCurrencyCode } from "@/lib/money";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { useDepots } from "@/features/depots/hooks";
@@ -78,6 +88,8 @@ type Row = {
 } & SortableRow;
 
 const PAGE_SIZE = 25;
+/** Eingeklappte Monate, die je Schritt dazukommen. */
+const MONTHS_PER_STEP = 12;
 
 // Auf Modulebene, damit die Referenzen stabil bleiben (Abhaengigkeiten der
 // Memos unten).
@@ -132,7 +144,7 @@ export function PaymentsPage() {
   // Jede Filter- oder Sortieränderung zeigt wieder die ersten Eingänge.
   const updateParams = React.useCallback(
     (updates: Record<string, string | null>) => {
-      setParams({ ...updates, page: null });
+      setParams({ ...updates, page: null, offen: null });
     },
     [setParams],
   );
@@ -306,6 +318,66 @@ export function PaymentsPage() {
     () => (groupedByMonth ? monthTotals(rows, effectiveDateOf, amountOf) : null),
     [groupedByMonth, rows],
   );
+
+  // Ohne Filter, neueste zuerst, klappen die Monate ein (seit 2.2.0): Offen
+  // ist nur der aktuelle Monat — oder, solange er noch leer ist, der juengste
+  // mit Zahlungen. Statt 25 Zahlungen kommen je Schritt zwoelf Monatskoepfe
+  // dazu, beim Scrollen von selbst; so bleibt die Seite auch mit Zahlungen
+  // ueber viele Jahre kurz. Mit Filter oder anderer Sortierung bleibt alles
+  // offen, die Auswahl ist dann ohnehin klein oder nicht nach Zeit geordnet.
+  // Welche Monate offen sind, steht in der Adresse (`offen`) — wie die
+  // geladene Menge findet der Weg zurueck von einem Eingang sie wieder.
+  const collapsible = groupedByMonth && sort.direction === "desc" && !hasActiveFilters;
+  const allMonths = React.useMemo(
+    () => (collapsible ? groupByMonth(rows, effectiveDateOf) : null),
+    [collapsible, rows],
+  );
+  const today = useToday();
+  const currentMonth = `${String(today.year)}-${String(today.month).padStart(2, "0")}`;
+  const openParam = searchParams.get("offen");
+  const defaultOpen = (
+    allMonths?.find((group) => group.key <= currentMonth) ?? allMonths?.[0]
+  )?.key;
+  const openMonths = new Set<string>(
+    openParam !== null ? openParam.split(",") : defaultOpen ? [defaultOpen] : [],
+  );
+  const toggleMonth = (key: string) => {
+    const next = new Set(openMonths);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
+    // „-": alle zu — ein leerer Wert fiele aus der Adresse und oeffnete
+    // wieder den aktuellen Monat.
+    setParams({ offen: next.size > 0 ? [...next].join(",") : "-" }, { replace: true });
+  };
+
+  const groups = allMonths
+    ? allMonths.slice(0, page * MONTHS_PER_STEP)
+    : groupedByMonth
+      ? groupByMonth(visibleRows, effectiveDateOf)
+      : [{ key: "", year: 0, month: 0, rows: visibleRows }];
+  const isOpen = (key: string) => !allMonths || openMonths.has(key);
+  const remainingMonths = allMonths ? allMonths.length - groups.length : 0;
+
+  // Weitere Monate laden, sobald der Knopf am Ende in Sicht kommt. Der
+  // Beobachter wird je Schritt neu angelegt: Bleibt der Knopf nach dem Laden
+  // sichtbar (kurze, eingeklappte Liste), meldet er sich so erneut.
+  const loadMoreMonthsRef = React.useRef<HTMLButtonElement>(null);
+  React.useEffect(() => {
+    const node = loadMoreMonthsRef.current;
+    if (!node || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setParams({ page: String(page + 1) }, { replace: true });
+        }
+      },
+      { rootMargin: "400px" },
+    );
+    observer.observe(node);
+    return () => {
+      observer.disconnect();
+    };
+  }, [page, remainingMonths, setParams]);
 
   // --- Einzelaktionen: Storno / Reaktivieren / Löschen. ---
   const archivePayment = useArchivePayment();
@@ -554,61 +626,163 @@ export function PaymentsPage() {
                 </TableRow>
               </TableHeader>
               {/* Keine Linie unter der letzten Zeile eines Monats — wie in den
-                  Listen trennt der Abstand zur naechsten Ueberschrift. */}
-              <TableBody className="[&_tr:has(+tr[data-month])]:border-0">
+                  Listen trennt der Abstand zur naechsten Ueberschrift.
+                  Eingeklappte Monatskoepfe behalten ihre Linie. */}
+              <TableBody className="[&_tr:not([data-month]):has(+tr[data-month])]:border-0">
                 {/* Nach Datum sortiert gruppiert auch die Tabelle nach Monat —
                     mit derselben Monatsueberschrift und -summe wie die Liste
                     auf dem Telefon. */}
-                {(groupedByMonth
-                  ? groupByMonth(visibleRows, effectiveDateOf)
-                  : [{ key: "", year: 0, month: 0, rows: visibleRows }]
-                ).map((group) => {
+                {groups.map((group, index) => {
                   const monthTotal = totalsByMonth?.get(group.key);
+                  const open = isOpen(group.key);
+                  // Nach einem offenen Monat Abstand wie zwischen Abschnitten.
+                  const afterOpen = index > 0 && isOpen(groups[index - 1].key);
                   return (
                     <React.Fragment key={group.key}>
-                      {groupedByMonth && (
+                      {allMonths ? (
+                        // Die ganze Zeile klappt; die Schaltflaeche darin
+                        // traegt Fokus und Zustand fuer Tastatur und
+                        // Sprachausgabe, ihr Klick steigt zur Zeile auf.
                         <TableRow
                           data-month
-                          className="group/month border-0 hover:bg-transparent"
+                          className="cursor-pointer hover:bg-transparent"
+                          onClick={() => {
+                            toggleMonth(group.key);
+                          }}
                         >
                           <th
                             scope="colgroup"
                             colSpan={3}
-                            className="pb-2 pt-10 text-left text-[1.1875rem] font-bold leading-tight tracking-[-0.015em] group-first/month:pt-2"
+                            className={cn(
+                              "py-3 text-left text-[1.0625rem] font-semibold",
+                              afterOpen && "pt-8",
+                            )}
                           >
-                            {monthNameDe(group.month)} {group.year}
+                            <button
+                              type="button"
+                              aria-expanded={open}
+                              className="rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            >
+                              {monthNameDe(group.month)} {group.year}
+                            </button>
                           </th>
-                          <td className="px-3 pb-2 pt-10 text-right text-[0.9375rem] font-medium text-muted-foreground tabular-amount group-first/month:pt-2">
+                          <td
+                            className={cn(
+                              "px-3 py-3 text-right text-[0.9375rem] font-medium text-muted-foreground tabular-amount",
+                              afterOpen && "pt-8",
+                            )}
+                          >
                             {monthTotal && <AmountText amount={monthTotal} />}
                           </td>
-                          <td aria-hidden />
+                          <td className={cn("px-3 py-3", afterOpen && "pt-8")}>
+                            <ChevronDown
+                              aria-hidden
+                              className={cn(
+                                "ml-auto size-4 text-muted-foreground transition-transform motion-reduce:transition-none",
+                                open && "rotate-180",
+                              )}
+                            />
+                          </td>
                         </TableRow>
+                      ) : (
+                        groupedByMonth && (
+                          <TableRow
+                            data-month
+                            className="group/month border-0 hover:bg-transparent"
+                          >
+                            <th
+                              scope="colgroup"
+                              colSpan={3}
+                              className="pb-2 pt-10 text-left text-[1.1875rem] font-bold leading-tight tracking-[-0.015em] group-first/month:pt-2"
+                            >
+                              {monthNameDe(group.month)} {group.year}
+                            </th>
+                            <td className="px-3 pb-2 pt-10 text-right text-[0.9375rem] font-medium text-muted-foreground tabular-amount group-first/month:pt-2">
+                              {monthTotal && <AmountText amount={monthTotal} />}
+                            </td>
+                            <td aria-hidden />
+                          </TableRow>
+                        )
                       )}
-                      {group.rows.map((row) => (
-                        <PaymentRow
-                          key={row.id}
-                          row={row}
-                          comparison={yearOverYear.get(row.id)}
-                          listUrl={listUrl}
-                          onStorno={() => {
-                            setStornoError(null);
-                            setStornoTarget(row);
-                          }}
-                          onReactivate={() => void reactivate(row.payment.id)}
-                          onDelete={() => {
-                            setDeleteError(null);
-                            setDeleteTarget(row);
-                          }}
-                        />
-                      ))}
+                      {open &&
+                        group.rows.map((row) => (
+                          <PaymentRow
+                            key={row.id}
+                            row={row}
+                            comparison={yearOverYear.get(row.id)}
+                            listUrl={listUrl}
+                            onStorno={() => {
+                              setStornoError(null);
+                              setStornoTarget(row);
+                            }}
+                            onReactivate={() => void reactivate(row.payment.id)}
+                            onDelete={() => {
+                              setDeleteError(null);
+                              setDeleteTarget(row);
+                            }}
+                          />
+                        ))}
                     </React.Fragment>
                   );
                 })}
               </TableBody>
             </Table>
+          ) : allMonths ? (
+            <div className="[&>section+section]:border-t [&>section+section]:border-border">
+              {groups.map((group) => {
+                const monthTotal = totalsByMonth?.get(group.key);
+                const open = isOpen(group.key);
+                const listId = `monat-${group.key}`;
+                return (
+                  <section key={group.key} className={cn(open && "pb-4")}>
+                    <h2>
+                      <button
+                        type="button"
+                        aria-expanded={open}
+                        aria-controls={open ? listId : undefined}
+                        onClick={() => {
+                          toggleMonth(group.key);
+                        }}
+                        className="-mx-3 flex min-h-12 w-[calc(100%+1.5rem)] items-center gap-3 rounded-xl px-3 text-left outline-none transition-colors hover:bg-accent/60 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring motion-reduce:transition-none"
+                      >
+                        <span className="min-w-0 flex-1 truncate text-[1.0625rem] font-semibold">
+                          {formatMonthYear(group.year, group.month)}
+                        </span>
+                        {monthTotal && (
+                          <AmountText
+                            amount={monthTotal}
+                            className="shrink-0 text-[0.9375rem] font-medium text-muted-foreground tabular-amount"
+                          />
+                        )}
+                        <ChevronDown
+                          aria-hidden
+                          className={cn(
+                            "size-4 shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none",
+                            open && "rotate-180",
+                          )}
+                        />
+                      </button>
+                    </h2>
+                    {open && (
+                      <ListGroup id={listId}>
+                        {group.rows.map((row) => (
+                          <PaymentItem
+                            key={row.id}
+                            row={row}
+                            comparison={yearOverYear.get(row.id)}
+                            listUrl={listUrl}
+                            dayOnly
+                          />
+                        ))}
+                      </ListGroup>
+                    )}
+                  </section>
+                );
+              })}
+            </div>
           ) : groupedByMonth ? (
             <div className="space-y-10">
-              {groupByMonth(visibleRows, effectiveDateOf).map((group) => {
+              {groups.map((group) => {
                 const monthTotal = totalsByMonth?.get(group.key);
                 return (
                   <ListSection
@@ -646,7 +820,23 @@ export function PaymentsPage() {
         </>
       )}
 
-      {!isLoading && remaining > 0 && (
+      {!isLoading && remainingMonths > 0 && (
+        <div className="text-center">
+          <Button
+            ref={loadMoreMonthsRef}
+            type="button"
+            variant="outline"
+            className="w-full sm:w-auto"
+            onClick={() => {
+              setParams({ page: String(page + 1) }, { replace: true });
+            }}
+          >
+            Ältere Monate laden
+          </Button>
+        </div>
+      )}
+
+      {!isLoading && !allMonths && remaining > 0 && (
         <div className="space-y-2 text-center">
           <Button
             type="button"
