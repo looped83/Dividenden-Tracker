@@ -191,87 +191,89 @@ export function PaymentInsightsView({
 
   return (
     <>
+      {/* Links Verlauf und Einordnung uebereinander, rechts die Liste: Sie ist
+          hoeher als die Kennzahlleiste und ragte unter ihr weit heraus. */}
       <div className="grid grid-cols-1 gap-10 pt-4 lg:grid-cols-2 lg:gap-x-16">
-        {chartData.length > 1 && (
-          <Section
-            title="Verlauf"
-            action={
-              <SegmentedControl
-                variant="pill"
-                label="Verlauf als"
-                options={VIEW_OPTIONS}
-                value={view}
-                onChange={setView}
-              />
-            }
-          >
-            <div>
-              <CategoryBarChart
-                data={chartData}
-                ariaLabel={
-                  view === "cumulative"
-                    ? `Kumulierte Dividenden von ${securityName}`
-                    : `Dividenden von ${securityName}`
-                }
-                categoryHeader="Datum"
-                showCount={false}
-                tableOrder="desc"
-              />
-            </div>
-          </Section>
-        )}
+        <div className="space-y-10">
+          {chartData.length > 1 && (
+            <Section
+              title="Verlauf"
+              action={
+                <SegmentedControl
+                  variant="pill"
+                  label="Verlauf als"
+                  options={VIEW_OPTIONS}
+                  value={view}
+                  onChange={setView}
+                />
+              }
+            >
+              <div>
+                <CategoryBarChart
+                  data={chartData}
+                  ariaLabel={
+                    view === "cumulative"
+                      ? `Kumulierte Dividenden von ${securityName}`
+                      : `Dividenden von ${securityName}`
+                  }
+                  categoryHeader="Datum"
+                  showCount={false}
+                  tableOrder="desc"
+                />
+              </div>
+            </Section>
+          )}
 
-        {/* Dieselbe Kennzahlleiste wie oben statt einer Zeilenliste: Summen
+          {/* Dieselbe Kennzahlleiste wie oben statt einer Zeilenliste: Summen
             sind Kennzahlen, und die Leiste fuehrt per Tipp in die Liste. Die
             Summen gelten dem ganzen Asset, daher rechts daneben der Weg zu
             seiner Detailseite — sichtbarer als der verlinkte Name im Kopf. */}
-        <div className="space-y-10">
           <Section
             title="Einordnung"
             action={<SectionLink to={`/depot/${securityId}`}>Zum Asset</SectionLink>}
           >
             <KpiStats stats={summary} />
           </Section>
+        </div>
 
-          {/* Dieselbe Liste wie „Letzte Dividenden" auf der Assetseite, aber
+        {/* Dieselbe Liste wie auf der Assetseite, aber
               um diese Dividende herum: Von hier springt man zur vorherigen
               oder naechsten, ohne Umweg ueber die ganze Liste. */}
-          {nearby.length > 1 && (
-            <Section
-              title="Weitere Dividenden"
-              action={
-                <SectionLink to={`/eingaenge?security=${securityId}`}>
-                  Alle {formatCountNumber(insights.count)}
-                </SectionLink>
-              }
-            >
-              <div>
-                <ListGroup>
-                  {nearby.map((payment) => (
-                    <PaymentListItem
-                      key={payment.id}
-                      to={`/eingaenge/${payment.id}`}
-                      title={depots.find((d) => d.id === payment.depotId)?.name ?? "—"}
-                      date={payment.payDate}
-                      showYear
-                      note={
-                        payment.payDate !== payment.actualPayDate
-                          ? `tatsächlich ${formatDayMonth(payment.actualPayDate)}`
-                          : undefined
-                      }
-                      badge={
-                        payment.id === paymentId ? (
-                          <Badge className="mr-2 shrink-0">Diese</Badge>
-                        ) : undefined
-                      }
-                      amount={payment.netAmount}
-                    />
-                  ))}
-                </ListGroup>
-              </div>
-            </Section>
-          )}
-        </div>
+        {nearby.length > 1 && (
+          <Section
+            title="Letzte Dividenden"
+            action={
+              <SectionLink to={`/eingaenge?security=${securityId}`}>
+                Alle {formatCountNumber(insights.count)}
+              </SectionLink>
+            }
+          >
+            <div>
+              <ListGroup>
+                {nearby.map((payment) => (
+                  <PaymentListItem
+                    key={payment.id}
+                    to={`/eingaenge/${payment.id}`}
+                    title={depots.find((d) => d.id === payment.depotId)?.name ?? "—"}
+                    date={payment.payDate}
+                    showYear
+                    note={
+                      payment.payDate !== payment.actualPayDate
+                        ? `tatsächlich ${formatDayMonth(payment.actualPayDate)}`
+                        : undefined
+                    }
+                    badge={
+                      payment.id === paymentId ? (
+                        <Badge className="mr-2 shrink-0">Diese</Badge>
+                      ) : undefined
+                    }
+                    amount={payment.netAmount}
+                  />
+                ))}
+              </ListGroup>
+            </div>
+          </Section>
+        )}
       </div>
     </>
   );
