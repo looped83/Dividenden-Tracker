@@ -249,6 +249,8 @@ export interface ComparisonPoint {
   referenceMoney: Money;
 }
 
+const LINE_X_PADDING = { left: 28, right: 28 } as const;
+
 interface ComparisonLineChartProps {
   points: ComparisonPoint[];
   /** Beschriftung der aktuellen Reihe, z. B. „2026". */
@@ -293,7 +295,12 @@ export function ComparisonLineChart({
       <ChartCanvas ariaLabel={ariaLabel}>
         <LineChart data={points} margin={CHART_MARGIN}>
           <CartesianGrid {...CHART_GRID_PROPS} />
-          <XAxis dataKey="label" {...CHART_X_AXIS_PROPS} />
+          {/* Abstand an beiden Enden: Bei Linien sitzen der erste und der
+              letzte Punkt genau auf dem Rand, ihre Beschriftung ragte halb
+              darueber hinaus. Recharts verwirft solche Beschriftungen — und
+              mit der ersten jeden Takt, der sie enthaelt —, sodass nur die
+              letzte uebrig blieb. 28px fassen ein halbes „22.10.26". */}
+          <XAxis dataKey="label" {...CHART_X_AXIS_PROPS} padding={LINE_X_PADDING} />
           <YAxis {...CHART_Y_AXIS_PROPS} />
           <Tooltip
             content={

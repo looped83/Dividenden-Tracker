@@ -28,6 +28,13 @@ export interface StatColumn<T> {
   /** Nur fuer die Tabellenzelle (z. B. `hidden xl:table-cell`), nicht fuer die Liste. */
   className?: string;
   /**
+   * Feste Spaltenbreite (Tailwind-Klasse, z. B. `w-32`). Traegt eine Spalte
+   * sie, rechnet die Tabelle mit festem Layout: Die Breiten haengen dann nicht
+   * mehr an den Zeilen der Seite, und beim Blaettern springt nichts. Spalten
+   * ohne Angabe teilen sich den Rest — meist nur der Name.
+   */
+  width?: string;
+  /**
    * Nebenkennzahl, die in der Liste des Telefons entfaellt — meist dieselben,
    * die auch in schmalen Tabellen zuruecktreten. Sieben beschriftete Werte je
    * Zeile machten aus vier Jahren zwei Bildschirme.
@@ -334,7 +341,12 @@ export function StatTable<T>({
         // Bildlaufkasten — sonst schiebt eine breite Tabelle die ganze Seite
         // nach rechts (siehe ui/table.tsx).
         <div className="relative w-full overflow-x-auto">
-          <table className="w-full caption-bottom text-sm">
+          <table
+            className={cn(
+              "w-full caption-bottom text-sm",
+              columns.some((column) => column.width) && "table-fixed",
+            )}
+          >
             <caption className="sr-only">{caption}</caption>
             <thead>
               <tr className="border-b border-border">
@@ -355,6 +367,7 @@ export function StatTable<T>({
                       className={cn(
                         "h-11 px-3 align-middle text-[0.8125rem] font-medium text-muted-foreground first:pl-0 last:pr-0",
                         column.align === "right" ? "text-right" : "text-left",
+                        column.width,
                         column.className,
                       )}
                     >

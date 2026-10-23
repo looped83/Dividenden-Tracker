@@ -287,6 +287,9 @@ export function DevelopmentView({
     });
   }, [latest, portfolio, payments, securities]);
 
+  // Feste Breiten fuer die Zahlenspalten: Sonst richtete sich jede Seite der
+  // Tabelle nach ihren eigenen Betraegen, und die Spalten sprangen beim
+  // Blaettern. Der Name nimmt den Rest und kuerzt, wo er nicht passt.
   const columns = React.useMemo<StatColumn<AssetRow>[]>(
     () => [
       {
@@ -297,7 +300,8 @@ export function DevelopmentView({
         render: (row) => (
           <Link
             to={`/depot/${row.securityId}`}
-            className="truncate rounded-sm font-medium outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+            title={row.name}
+            className="block w-fit max-w-full truncate rounded-sm font-medium outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
           >
             {row.name}
           </Link>
@@ -305,6 +309,7 @@ export function DevelopmentView({
       },
       {
         key: "expected",
+        width: "w-36",
         header: "Erwartet p. a.",
         headerLabel: "Erwartete Jahresdividende laut Depotstand",
         align: "right",
@@ -319,6 +324,7 @@ export function DevelopmentView({
       },
       {
         key: "received",
+        width: "w-32",
         header: "Erhalten",
         headerLabel: "Erhalten in den letzten zwölf Monaten",
         align: "right",
@@ -327,6 +333,7 @@ export function DevelopmentView({
       },
       {
         key: "growth",
+        width: "w-32",
         header: "Zuwachs",
         headerLabel: "Erwartet abzüglich erhalten",
         align: "right",
@@ -341,6 +348,7 @@ export function DevelopmentView({
       },
       {
         key: "yieldOnBuyin",
+        width: "w-32",
         listHidden: true,
         header: "Auf Einstand",
         headerLabel: "Rendite auf den Einstand",
