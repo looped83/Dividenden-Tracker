@@ -62,7 +62,7 @@ test("importiert eine CSV-Datei und rollt sie wieder zurück", async ({ page, ko
 
   // Rollback macht den Import vollständig rückgängig, nach einer Rückfrage im
   // Dialog der App.
-  await page.getByRole("button", { name: "Rollback" }).click();
+  await page.getByRole("button", { name: /zurückrollen/ }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Zurückrollen" }).click();
   // Das Etikett der Liste, nicht die Bestätigung „… zurückgerollt.“
   await expect(page.getByText("Zurückgerollt", { exact: true })).toBeVisible({

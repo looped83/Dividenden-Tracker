@@ -1,7 +1,6 @@
 import * as React from "react";
 import { Plus, RotateCcw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Section, SectionButton } from "@/components/ui/section";
 import {
   Dialog,
@@ -11,7 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
-import { ListGroup, ListItemBody, ListRow } from "@/components/ui/list";
+import { ListGroup, ListRow } from "@/components/ui/list";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toast";
 import { useErrorState } from "@/lib/hooks/useErrorState";
@@ -31,15 +30,12 @@ import type { Import } from "@/lib/supabase/repositories/imports";
 import type { ImportStatus } from "@/lib/supabase/database.types";
 import { formatTimestampDate } from "@/lib/utils/formatDate";
 
-const STATUS_LABELS: Record<
-  ImportStatus,
-  { label: string; variant: "positive" | "warning" | "negative" | "neutral" }
-> = {
-  analyzing: { label: "In Analyse", variant: "neutral" },
-  pending_confirmation: { label: "Wartet auf Bestätigung", variant: "warning" },
-  committed: { label: "Abgeschlossen", variant: "positive" },
-  rolled_back: { label: "Zurückgerollt", variant: "neutral" },
-  discarded: { label: "Verworfen", variant: "neutral" },
+const STATUS_LABELS: Record<ImportStatus, string> = {
+  analyzing: "In Analyse",
+  pending_confirmation: "Wartet auf Bestätigung",
+  committed: "Abgeschlossen",
+  rolled_back: "Zurückgerollt",
+  discarded: "Verworfen",
 };
 
 /**
@@ -74,35 +70,37 @@ export function ImportsPage() {
     }
   }
 
-  const actionsFor = (imp: Import) => (
-    <>
-      {imp.status === "committed" && (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            setRollbackTarget(imp);
-          }}
-        >
-          <RotateCcw /> Rollback
-        </Button>
-      )}
-      {/* Entwuerfe bleiben nach einem gescheiterten Import
-          zurueck; sie tragen keine Zahlungen und lassen sich
-          ohne Rueckfrage entfernen. */}
-      {DRAFT_STATUSES.has(imp.status) && (
-        <Button
-          variant="outline"
-          size="sm"
-          aria-label={`Entwurf ${imp.file_name} löschen`}
-          onClick={() => void handleDiscard(imp)}
-          disabled={discard.isPending}
-        >
-          <Trash2 /> Löschen
-        </Button>
-      )}
-    </>
-  );
+  // Symbolknoepfe wie bei den Depotstaenden daneben; der Name sagt dem
+  // Screenreader, was passiert.
+  const actionFor = (imp: Import) =>
+    imp.status === "committed" ? (
+      <Button
+        variant="ghost"
+        size="icon"
+        className="-my-2 shrink-0"
+        aria-label={`Import ${imp.file_name} zurückrollen`}
+        title="Zurückrollen"
+        onClick={() => {
+          setRollbackTarget(imp);
+        }}
+      >
+        <RotateCcw />
+      </Button>
+    ) : DRAFT_STATUSES.has(imp.status) ? (
+      // Entwuerfe bleiben nach einem gescheiterten Import zurueck; sie tragen
+      // keine Zahlungen und lassen sich ohne Rueckfrage entfernen.
+      <Button
+        variant="ghost"
+        size="icon"
+        className="-my-2 shrink-0"
+        aria-label={`Entwurf ${imp.file_name} löschen`}
+        title="Löschen"
+        onClick={() => void handleDiscard(imp)}
+        disabled={discard.isPending}
+      >
+        <Trash2 />
+      </Button>
+    ) : null;
 
   if (wizardOpen) {
     return (
@@ -157,31 +155,28 @@ export function ImportsPage() {
             />
           ) : (
             <ListGroup aria-label="Importe">
-              {imports.map((imp) => (
-                <li key={imp.id}>
-                  <ListRow className="items-start">
-                    <ListItemBody
-                      title={imp.file_name}
-                      meta={
-                        <>
-                          <Badge variant={STATUS_LABELS[imp.status].variant}>
-                            {STATUS_LABELS[imp.status].label}
-                          </Badge>
-                          <span>
-                            {formatTimestampDate(imp.committed_at ?? imp.created_at)}
-                          </span>
-                        </>
-                      }
-                      trailing={checksumTotal(imp) ?? undefined}
-                    />
-                  </ListRow>
-                  {(imp.status === "committed" || DRAFT_STATUSES.has(imp.status)) && (
-                    <div className="-mt-1 flex justify-end px-3 pb-3">
-                      {actionsFor(imp)}
-                    </div>
-                  )}
-                </li>
-              ))}
+              {imports.map((imp) => {
+                const total = checksumTotal(imp);
+                return (
+                  <li key={imp.id}>
+                    {/* Aufbau wie die Depotstände: Name, darunter die Angaben,
+                        rechts die Aktion. */}
+                    <ListRow className="pr-1">
+                      <span className="min-w-0 flex-1">
+                        <span className="font-medium [overflow-wrap:anywhere]">
+                          {imp.file_name}
+                        </span>
+                        <span className="block text-sm text-muted-foreground">
+                          <span>{STATUS_LABELS[imp.status]}</span>
+                          {` · ${formatTimestampDate(imp.committed_at ?? imp.created_at)}`}
+                          {total && ` · ${total}`}
+                        </span>
+                      </span>
+                      {actionFor(imp)}
+                    </ListRow>
+                  </li>
+                );
+              })}
             </ListGroup>
           )}
         </div>
