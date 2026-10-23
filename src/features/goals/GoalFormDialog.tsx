@@ -246,10 +246,17 @@ export function GoalFormDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="goal-title">Titel (optional)</Label>
+            {/* „Bezeichnung" statt „Titel" und ohne Ausfüllen: Safari las das
+                Feld als Berufsbezeichnung und bot über der Tastatur die
+                eigene Jobbezeichnung an. `autoComplete="off"` allein übergeht
+                iOS (siehe ui/combobox.tsx). */}
+            <Label htmlFor="goal-label">Bezeichnung (optional)</Label>
             <Input
-              id="goal-title"
+              id="goal-label"
               placeholder="z. B. Dividendenziel 2027"
+              autoComplete="off"
+              data-1p-ignore
+              data-lpignore="true"
               {...register("title")}
             />
             {errors.title && (
