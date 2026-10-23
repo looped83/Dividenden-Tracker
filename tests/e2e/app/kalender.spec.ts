@@ -78,6 +78,12 @@ test("Liste ist die Standardansicht und zeigt Kacheln je Termin", async ({ page 
   // liegen alle in 2099 bzw. in dieser Woche.
   await expect(page.getByRole("heading", { name: "März 2099", level: 2 })).toBeVisible();
   await expect(page.getByRole("heading", { name: "April 2099", level: 2 })).toBeVisible();
+  // Offen ist nur der aktuelle Monat; die anderen klappen wie in der
+  // Dividendenliste per Kopf auf.
+  const maerz = page.getByRole("button", { name: /^März 2099/ });
+  await expect(maerz).toHaveAttribute("aria-expanded", "false");
+  await maerz.click();
+  await expect(maerz).toHaveAttribute("aria-expanded", "true");
   // Jede Kachel traegt ihr Datum selbst — im Datumsfeld, daneben der
   // Wochentag; vollstaendig nennt es die zugaengliche Bezeichnung.
   const apple = page.getByRole("button", {
@@ -127,6 +133,7 @@ test("Monatsraster stellt mehrere Termine eines Tages dar und blättert", async 
 test("Detailansicht öffnet per Tastatur und schließt mit Escape", async ({ page }) => {
   await page.goto("/#/kalender");
   await page.getByRole("radio", { name: "Liste", exact: true }).click();
+  await page.getByRole("button", { name: /^März 2099/ }).click();
 
   const eintrag = page.getByRole("button", { name: /Apple Inc\./ });
   await eintrag.focus();
@@ -147,6 +154,7 @@ test("Detailansicht öffnet per Tastatur und schließt mit Escape", async ({ pag
 test("Fokus kehrt nach dem Schließen an den Eintrag zurück", async ({ page }) => {
   await page.goto("/#/kalender");
   await page.getByRole("radio", { name: "Liste", exact: true }).click();
+  await page.getByRole("button", { name: /^März 2099/ }).click();
 
   const eintrag = page.getByRole("button", { name: /Apple Inc\./ });
   await eintrag.focus();

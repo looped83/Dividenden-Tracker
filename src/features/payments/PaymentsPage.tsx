@@ -33,6 +33,8 @@ import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LoadMore } from "@/components/ui/load-more";
 import { ListGroup, ListSection } from "@/components/ui/list";
+import { CollapsibleMonth, MonthSections } from "@/components/ui/month-section";
+import { useOpenMonths } from "@/lib/hooks/useOpenMonths";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import {
   Table,
@@ -335,28 +337,16 @@ export function PaymentsPage() {
   );
   const today = useToday();
   const currentMonth = `${String(today.year)}-${String(today.month).padStart(2, "0")}`;
-  const openParam = searchParams.get("offen");
-  const defaultOpen = (
-    allMonths?.find((group) => group.key <= currentMonth) ?? allMonths?.[0]
-  )?.key;
-  const openMonths = new Set<string>(
-    openParam !== null ? openParam.split(",") : defaultOpen ? [defaultOpen] : [],
+  const { isOpen, toggle: toggleMonth } = useOpenMonths(
+    allMonths ? allMonths.map((group) => group.key) : null,
+    currentMonth,
   );
-  const toggleMonth = (key: string) => {
-    const next = new Set(openMonths);
-    if (next.has(key)) next.delete(key);
-    else next.add(key);
-    // „-": alle zu — ein leerer Wert fiele aus der Adresse und oeffnete
-    // wieder den aktuellen Monat.
-    setParams({ offen: next.size > 0 ? [...next].join(",") : "-" }, { replace: true });
-  };
 
   const groups = allMonths
     ? allMonths.slice(0, page * MONTHS_PER_STEP)
     : groupedByMonth
       ? groupByMonth(visibleRows, effectiveDateOf)
       : [{ key: "", year: 0, month: 0, rows: visibleRows }];
-  const isOpen = (key: string) => !allMonths || openMonths.has(key);
   const remainingMonths = allMonths ? allMonths.length - groups.length : 0;
 
   // --- Einzelaktionen: Storno / Reaktivieren / Löschen. ---
@@ -708,58 +698,35 @@ export function PaymentsPage() {
               </TableBody>
             </Table>
           ) : allMonths ? (
-            <div className="[&>section+section]:border-t [&>section+section]:border-border">
+            <MonthSections>
               {groups.map((group) => {
                 const monthTotal = totalsByMonth?.get(group.key);
-                const open = isOpen(group.key);
-                const listId = `monat-${group.key}`;
                 return (
-                  <section key={group.key} className={cn(open && "pb-4")}>
-                    <h2>
-                      <button
-                        type="button"
-                        aria-expanded={open}
-                        aria-controls={open ? listId : undefined}
-                        onClick={() => {
-                          toggleMonth(group.key);
-                        }}
-                        className="-mx-3 flex min-h-12 w-[calc(100%+1.5rem)] items-center gap-3 rounded-xl px-3 text-left outline-none transition-colors hover:bg-accent/60 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring motion-reduce:transition-none"
-                      >
-                        <span className="min-w-0 flex-1 truncate text-[1.0625rem] font-semibold">
-                          {formatMonthYear(group.year, group.month)}
-                        </span>
-                        {monthTotal && (
-                          <AmountText
-                            amount={monthTotal}
-                            className="shrink-0 text-[0.9375rem] font-medium text-muted-foreground tabular-amount"
-                          />
-                        )}
-                        <ChevronDown
-                          aria-hidden
-                          className={cn(
-                            "size-4 shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none",
-                            open && "rotate-180",
-                          )}
+                  <CollapsibleMonth
+                    key={group.key}
+                    id={`monat-${group.key}`}
+                    title={formatMonthYear(group.year, group.month)}
+                    aside={monthTotal ? <AmountText amount={monthTotal} /> : undefined}
+                    open={isOpen(group.key)}
+                    onToggle={() => {
+                      toggleMonth(group.key);
+                    }}
+                  >
+                    <ListGroup>
+                      {group.rows.map((row) => (
+                        <PaymentItem
+                          key={row.id}
+                          row={row}
+                          comparison={yearOverYear.get(row.id)}
+                          listUrl={listUrl}
+                          dayOnly
                         />
-                      </button>
-                    </h2>
-                    {open && (
-                      <ListGroup id={listId}>
-                        {group.rows.map((row) => (
-                          <PaymentItem
-                            key={row.id}
-                            row={row}
-                            comparison={yearOverYear.get(row.id)}
-                            listUrl={listUrl}
-                            dayOnly
-                          />
-                        ))}
-                      </ListGroup>
-                    )}
-                  </section>
+                      ))}
+                    </ListGroup>
+                  </CollapsibleMonth>
                 );
               })}
-            </div>
+            </MonthSections>
           ) : groupedByMonth ? (
             <div className="space-y-10">
               {groups.map((group) => {
