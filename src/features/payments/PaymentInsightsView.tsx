@@ -5,7 +5,7 @@ import { SegmentedControl, type SegmentOption } from "@/components/ui/segmented"
 import { TrendTriangle } from "@/components/ui/trend-triangle";
 import { AmountText } from "@/components/money/AmountText";
 import { formatPercent } from "@/lib/money";
-import { monthNameDeShort, monthOf, yearOf } from "@/lib/statistics";
+import { monthNameDe, monthNameDeShort, monthOf, yearOf } from "@/lib/statistics";
 import { cn } from "@/lib/utils/cn";
 import { formatCalendarDate } from "@/lib/utils/formatDate";
 import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
@@ -117,6 +117,11 @@ const VIEW_OPTIONS: readonly SegmentOption<HistoryView>[] = [
  * Akzentfarbe; die Balken fuehren bewusst nirgendwohin, der Tooltip zeigt
  * Datum und Betrag. Der Umschalter zeigt dieselben Dividenden kumuliert —
  * insgesamt erhalten bis zur jeweiligen Zahlung (seit 1.27.0).
+ *
+ * Ein Balken je Monat (seit 2.1.0): Mehrere Dividenden eines Monats stehen
+ * summiert in einem Balken, der Tooltip nennt dann Monat und Anzahl. Kopf
+ * (Vorherige, Ø 12 Monate, Rang) bleibt bewusst je Zahlung — er ordnet die
+ * geoeffnete Dividende ein, nicht ihren Monat.
  */
 export function PaymentInsightsView({
   insights,
@@ -132,27 +137,27 @@ export function PaymentInsightsView({
   const { history } = insights;
 
   const [view, setView] = React.useState<HistoryView>("monthly");
-  const { historyTotals } = insights;
 
   const chartData = React.useMemo<CategoryDatum[]>(
     () =>
-      history.map((entry, index) => {
-        // Kumuliert: insgesamt erhalten bis einschliesslich dieser Dividende.
-        const money =
-          view === "cumulative"
-            ? (historyTotals[index] ?? entry.netAmount)
-            : entry.netAmount;
+      history.map((entry) => {
+        // Kumuliert: insgesamt erhalten bis einschliesslich dieses Monats.
+        const money = view === "cumulative" ? entry.total : entry.net;
+        const count = entry.payments.length;
         return {
-          key: entry.id,
-          label: monthNameDeShort(monthOf(entry.payDate)),
-          detail: formatCalendarDate(entry.actualPayDate),
+          key: entry.month,
+          label: monthNameDeShort(monthOf(entry.month)),
+          detail:
+            count === 1
+              ? formatCalendarDate(entry.payments[0].actualPayDate)
+              : `${monthNameDe(monthOf(entry.month))} ${String(yearOf(entry.month))} · ${formatCountNoun(count, "Dividende", "Dividenden")}`,
           value: money.toChartNumber(),
           money,
-          count: 1,
-          highlight: entry.id === paymentId,
+          count,
+          highlight: entry.payments.some((payment) => payment.id === paymentId),
         };
       }),
-    [history, historyTotals, paymentId, view],
+    [history, paymentId, view],
   );
 
   const summary: KpiStat[] = [
