@@ -5,8 +5,26 @@ import {
   type YearOverYearComparison,
 } from "@/features/payments/yearOverYear";
 
-/** Wie viele Dividenden der Verlauf der Detailseite zeigt. */
+/** Wie viele Monate mit Dividenden der Verlauf der Detailseite zeigt. */
 const HISTORY_SIZE = 12;
+
+/** Wie viele Dividenden die Liste unter der Einordnung zeigt — wie die Assetseite. */
+const NEARBY_SIZE = 5;
+
+/**
+ * Ein Balken des Verlaufs: alle Dividenden eines Monats zusammen. Zwei
+ * Zahlungen im selben Monat (verschobener Zahltag, Sonderdividende) standen
+ * zuvor als zwei Balken mit derselben Achsenbeschriftung nebeneinander.
+ */
+export interface HistoryMonth {
+  /** Erster Tag des Monats, "YYYY-MM-01". */
+  month: string;
+  /** Die Dividenden des Monats, chronologisch. */
+  payments: AnalyticsPayment[];
+  net: Money;
+  /** Bis einschliesslich dieses Monats insgesamt erhalten (kumulierte Sicht). */
+  total: Money;
+}
 
 /** Vergleich mit einem Bezugsbetrag; `percent` fehlt, wenn der Bezug null ist. */
 export interface Delta {
@@ -34,14 +52,14 @@ export interface PaymentInsights {
   /** Fortlaufende Nummer der Dividende (1 = erste). */
   ordinal: number;
   count: number;
-  /** Bis zu {@link HISTORY_SIZE} Dividenden um diese herum, chronologisch. */
-  history: AnalyticsPayment[];
-  year: { year: number; net: Money; count: number };
+  /** Bis zu {@link HISTORY_SIZE} Monate um diese Dividende herum, chronologisch. */
+  history: HistoryMonth[];
   /**
-   * Bis einschliesslich der jeweiligen Dividende insgesamt erhalten — je
-   * Eintrag von {@link history}, fuer die kumulierte Sicht des Verlaufs.
+   * Bis zu {@link NEARBY_SIZE} Dividenden um diese herum, juengste zuerst —
+   * bei einer aelteren Dividende sagen ihre Nachbarn mehr als die juengsten.
    */
-  historyTotals: Money[];
+  nearby: AnalyticsPayment[];
+  year: { year: number; net: Money; count: number };
   total: Money;
   firstDate: string;
   /**
@@ -146,20 +164,39 @@ export function derivePaymentInsights(
       })),
     ).get(current.id) ?? null;
 
-  // Das Fenster endet moeglichst bei dieser Dividende; bei einer fruehen
-  // fuellen spaetere es auf, damit es nicht halb leer bleibt.
+  // Ein Balken je Monat. Das Fenster endet moeglichst beim Monat dieser
+  // Dividende; bei einer fruehen fuellen spaetere es auf, damit es nicht halb
+  // leer bleibt.
+  const byMonth: { month: string; payments: AnalyticsPayment[] }[] = [];
+  for (const payment of sorted) {
+    const month = `${payment.payDate.slice(0, 7)}-01`;
+    const last = byMonth.at(-1);
+    if (last?.month === month) last.payments.push(payment);
+    else byMonth.push({ month, payments: [payment] });
+  }
+  const currentMonth = byMonth.findIndex((bucket) => bucket.payments.includes(current));
   const start = Math.max(
     0,
-    Math.min(index - HISTORY_SIZE + 1, sorted.length - HISTORY_SIZE),
+    Math.min(currentMonth - HISTORY_SIZE + 1, byMonth.length - HISTORY_SIZE),
   );
-  const history = sorted.slice(start, start + HISTORY_SIZE);
   let running = sumMoney(
-    sorted.slice(0, start).map((payment) => payment.netAmount),
+    byMonth.slice(0, start).flatMap((bucket) => bucket.payments.map((p) => p.netAmount)),
     currency,
   );
-  const historyTotals = history.map(
-    (payment) => (running = running.add(payment.netAmount)),
+  const history = byMonth.slice(start, start + HISTORY_SIZE).map((bucket) => {
+    const net = sumMoney(
+      bucket.payments.map((payment) => payment.netAmount),
+      currency,
+    );
+    running = running.add(net);
+    return { ...bucket, net, total: running };
+  });
+
+  const nearbyStart = Math.max(
+    0,
+    Math.min(index - Math.floor(NEARBY_SIZE / 2), sorted.length - NEARBY_SIZE),
   );
+  const nearby = sorted.slice(nearbyStart, nearbyStart + NEARBY_SIZE).reverse();
 
   const year = yearOf(current.payDate);
   const inYear = sorted.filter((payment) => yearOf(payment.payDate) === year);
@@ -186,6 +223,7 @@ export function derivePaymentInsights(
     ordinal: index + 1,
     count: sorted.length,
     history,
+    nearby,
     year: {
       year,
       net: sumMoney(
@@ -194,7 +232,6 @@ export function derivePaymentInsights(
       ),
       count: inYear.length,
     },
-    historyTotals,
     total: sumMoney(
       sorted.map((payment) => payment.netAmount),
       currency,

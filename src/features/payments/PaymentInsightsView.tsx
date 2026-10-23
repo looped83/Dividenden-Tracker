@@ -1,18 +1,22 @@
 import * as React from "react";
 import { KpiHero, KpiStats, type KpiStat } from "@/components/domain/KpiHero";
+import { Badge } from "@/components/ui/badge";
+import { ListGroup } from "@/components/ui/list";
 import { Section, SectionLink } from "@/components/ui/section";
 import { SegmentedControl, type SegmentOption } from "@/components/ui/segmented";
 import { TrendTriangle } from "@/components/ui/trend-triangle";
 import { AmountText } from "@/components/money/AmountText";
 import { formatPercent } from "@/lib/money";
-import { monthNameDeShort, monthOf, yearOf } from "@/lib/statistics";
+import { monthNameDe, monthNameDeShort, monthOf, yearOf } from "@/lib/statistics";
 import { cn } from "@/lib/utils/cn";
-import { formatCalendarDate } from "@/lib/utils/formatDate";
+import { formatCalendarDate, formatDayMonth } from "@/lib/utils/formatDate";
 import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
 import {
   CategoryBarChart,
   type CategoryDatum,
 } from "@/features/statistics/components/charts";
+import { useDepots } from "@/features/depots/hooks";
+import { PaymentListItem } from "@/features/payments/PaymentListItem";
 import {
   deltaOf as delta,
   type Delta,
@@ -117,6 +121,11 @@ const VIEW_OPTIONS: readonly SegmentOption<HistoryView>[] = [
  * Akzentfarbe; die Balken fuehren bewusst nirgendwohin, der Tooltip zeigt
  * Datum und Betrag. Der Umschalter zeigt dieselben Dividenden kumuliert —
  * insgesamt erhalten bis zur jeweiligen Zahlung (seit 1.27.0).
+ *
+ * Ein Balken je Monat (seit 2.1.0): Mehrere Dividenden eines Monats stehen
+ * summiert in einem Balken, der Tooltip nennt dann Monat und Anzahl. Kopf
+ * (Vorherige, Ø 12 Monate, Rang) bleibt bewusst je Zahlung — er ordnet die
+ * geoeffnete Dividende ein, nicht ihren Monat.
  */
 export function PaymentInsightsView({
   insights,
@@ -129,30 +138,31 @@ export function PaymentInsightsView({
   securityId: string;
   securityName: string;
 }) {
-  const { history } = insights;
+  const { history, nearby } = insights;
+  const { data: depots = [] } = useDepots();
 
   const [view, setView] = React.useState<HistoryView>("monthly");
-  const { historyTotals } = insights;
 
   const chartData = React.useMemo<CategoryDatum[]>(
     () =>
-      history.map((entry, index) => {
-        // Kumuliert: insgesamt erhalten bis einschliesslich dieser Dividende.
-        const money =
-          view === "cumulative"
-            ? (historyTotals[index] ?? entry.netAmount)
-            : entry.netAmount;
+      history.map((entry) => {
+        // Kumuliert: insgesamt erhalten bis einschliesslich dieses Monats.
+        const money = view === "cumulative" ? entry.total : entry.net;
+        const count = entry.payments.length;
         return {
-          key: entry.id,
-          label: monthNameDeShort(monthOf(entry.payDate)),
-          detail: formatCalendarDate(entry.actualPayDate),
+          key: entry.month,
+          label: monthNameDeShort(monthOf(entry.month)),
+          detail:
+            count === 1
+              ? formatCalendarDate(entry.payments[0].actualPayDate)
+              : `${monthNameDe(monthOf(entry.month))} ${String(yearOf(entry.month))} · ${formatCountNoun(count, "Dividende", "Dividenden")}`,
           value: money.toChartNumber(),
           money,
-          count: 1,
-          highlight: entry.id === paymentId,
+          count,
+          highlight: entry.payments.some((payment) => payment.id === paymentId),
         };
       }),
-    [history, historyTotals, paymentId, view],
+    [history, paymentId, view],
   );
 
   const summary: KpiStat[] = [
@@ -181,46 +191,89 @@ export function PaymentInsightsView({
 
   return (
     <>
+      {/* Links Verlauf und Einordnung uebereinander, rechts die Liste: Sie ist
+          hoeher als die Kennzahlleiste und ragte unter ihr weit heraus. */}
       <div className="grid grid-cols-1 gap-10 pt-4 lg:grid-cols-2 lg:gap-x-16">
-        {chartData.length > 1 && (
-          <Section
-            title="Verlauf"
-            action={
-              <SegmentedControl
-                variant="pill"
-                label="Verlauf als"
-                options={VIEW_OPTIONS}
-                value={view}
-                onChange={setView}
-              />
-            }
-          >
-            <div>
-              <CategoryBarChart
-                data={chartData}
-                ariaLabel={
-                  view === "cumulative"
-                    ? `Kumulierte Dividenden von ${securityName}`
-                    : `Dividenden von ${securityName}`
-                }
-                categoryHeader="Datum"
-                showCount={false}
-                tableOrder="desc"
-              />
-            </div>
-          </Section>
-        )}
+        <div className="space-y-10">
+          {chartData.length > 1 && (
+            <Section
+              title="Verlauf"
+              action={
+                <SegmentedControl
+                  variant="pill"
+                  label="Verlauf als"
+                  options={VIEW_OPTIONS}
+                  value={view}
+                  onChange={setView}
+                />
+              }
+            >
+              <div>
+                <CategoryBarChart
+                  data={chartData}
+                  ariaLabel={
+                    view === "cumulative"
+                      ? `Kumulierte Dividenden von ${securityName}`
+                      : `Dividenden von ${securityName}`
+                  }
+                  categoryHeader="Datum"
+                  showCount={false}
+                  tableOrder="desc"
+                />
+              </div>
+            </Section>
+          )}
 
-        {/* Dieselbe Kennzahlleiste wie oben statt einer Zeilenliste: Summen
+          {/* Dieselbe Kennzahlleiste wie oben statt einer Zeilenliste: Summen
             sind Kennzahlen, und die Leiste fuehrt per Tipp in die Liste. Die
             Summen gelten dem ganzen Asset, daher rechts daneben der Weg zu
             seiner Detailseite — sichtbarer als der verlinkte Name im Kopf. */}
-        <Section
-          title="Einordnung"
-          action={<SectionLink to={`/depot/${securityId}`}>Zum Asset</SectionLink>}
-        >
-          <KpiStats stats={summary} />
-        </Section>
+          <Section
+            title="Einordnung"
+            action={<SectionLink to={`/depot/${securityId}`}>Zum Asset</SectionLink>}
+          >
+            <KpiStats stats={summary} />
+          </Section>
+        </div>
+
+        {/* Dieselbe Liste wie auf der Assetseite, aber
+              um diese Dividende herum: Von hier springt man zur vorherigen
+              oder naechsten, ohne Umweg ueber die ganze Liste. */}
+        {nearby.length > 1 && (
+          <Section
+            title="Letzte Dividenden"
+            action={
+              <SectionLink to={`/eingaenge?security=${securityId}`}>
+                Alle {formatCountNumber(insights.count)}
+              </SectionLink>
+            }
+          >
+            <div>
+              <ListGroup>
+                {nearby.map((payment) => (
+                  <PaymentListItem
+                    key={payment.id}
+                    to={`/eingaenge/${payment.id}`}
+                    title={depots.find((d) => d.id === payment.depotId)?.name ?? "—"}
+                    date={payment.payDate}
+                    showYear
+                    note={
+                      payment.payDate !== payment.actualPayDate
+                        ? `tatsächlich ${formatDayMonth(payment.actualPayDate)}`
+                        : undefined
+                    }
+                    badge={
+                      payment.id === paymentId ? (
+                        <Badge className="mr-2 shrink-0">Diese</Badge>
+                      ) : undefined
+                    }
+                    amount={payment.netAmount}
+                  />
+                ))}
+              </ListGroup>
+            </div>
+          </Section>
+        )}
       </div>
     </>
   );

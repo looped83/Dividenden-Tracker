@@ -52,19 +52,47 @@ describe("derivePaymentInsights", () => {
     expect(result?.total.toStringValue()).toBe("1476.00");
     expect(result?.firstDate).toBe("2024-11-15");
     // Kumuliert ab der ersten Dividende: p0..p11 vor dem Fenster (50..61 = 666 €)
-    expect(result?.historyTotals[0]?.toStringValue()).toBe("728.00");
-    expect(result?.historyTotals.at(-1)?.toStringValue()).toBe("1476.00");
+    expect(result?.history[0]?.total.toStringValue()).toBe("728.00");
+    expect(result?.history.at(-1)?.total.toStringValue()).toBe("1476.00");
   });
 
   it("füllt den Verlauf einer frühen Dividende mit späteren auf", () => {
     const early = derivePaymentInsights("p2", monthly, []);
-    expect(early?.history.map((entry) => entry.id)).toEqual(
+    expect(early?.history.map((entry) => entry.payments[0]?.id)).toEqual(
       monthly.slice(0, 12).map((entry) => entry.id),
     );
 
     const latest = derivePaymentInsights("p23", monthly, []);
-    expect(latest?.history.at(-1)?.id).toBe("p23");
+    expect(latest?.history.at(-1)?.payments[0]?.id).toBe("p23");
     expect(latest?.history).toHaveLength(12);
+  });
+
+  it("fasst mehrere Dividenden eines Monats zu einem Balken zusammen", () => {
+    const own = [
+      ...monthly,
+      payment("extra", "2026-10-02", "30.00"),
+      payment("nov", "2026-11-15", "20.00"),
+    ];
+    const result = derivePaymentInsights("p23", own, []);
+    const october = result?.history.find((entry) => entry.month === "2026-10-01");
+
+    expect(october?.payments.map((entry) => entry.id)).toEqual(["extra", "p23"]);
+    expect(october?.net.toStringValue()).toBe("103.00");
+    // Zwoelf Monate, nicht zwoelf Zahlungen; das Fenster endet im Oktober.
+    expect(result?.history).toHaveLength(12);
+    expect(result?.history.at(-1)?.month).toBe("2026-10-01");
+    expect(result?.history.at(-1)?.total.toStringValue()).toBe("1506.00");
+    // Kopf bleibt je Zahlung: vorherige ist die Zahlung am 2. Oktober.
+    expect(result?.previous?.id).toBe("extra");
+    expect(result?.count).toBe(26);
+  });
+
+  it("listet fünf Dividenden um diese herum, jüngste zuerst", () => {
+    const ids = (id: string) =>
+      derivePaymentInsights(id, monthly, [])?.nearby.map((entry) => entry.id);
+    expect(ids("p10")).toEqual(["p12", "p11", "p10", "p9", "p8"]);
+    expect(ids("p23")).toEqual(["p23", "p22", "p21", "p20", "p19"]);
+    expect(ids("p0")).toEqual(["p4", "p3", "p2", "p1", "p0"]);
   });
 
   it("erwartet die nächste Dividende nur nach der jüngsten und nach Plan", () => {
