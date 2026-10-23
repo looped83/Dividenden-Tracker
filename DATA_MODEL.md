@@ -12,7 +12,7 @@ Pflichtfeld-Klassifikation: DATA_DICTIONARY.md. Typ- und Rundungsregeln: CALCULA
 
 ```
 auth.users 1──1 profiles
-auth.users 1──n portfolios 1──n depots
+auth.users 1──n depots
 auth.users 1──n securities
 auth.users 1──n imports
 auth.users 1──n goals
@@ -93,20 +93,10 @@ create table profiles (
 Angelegt per Trigger auf `auth.users` (on insert). `base_currency` ist nur änderbar, solange
 keine Zahlungen existieren (Trigger-Prüfung; DECISIONS.md D-002).
 
-### 3.2 `portfolios` — optionale Depot-Gruppierung
+### 3.2 `portfolios` — entfernt
 
-```sql
-create table portfolios (
-  id          uuid primary key default gen_random_uuid(),
-  user_id     uuid not null references auth.users(id),
-  name        text not null check (length(trim(name)) between 1 and 100),
-  note        text check (length(note) <= 2000),
-  created_at  timestamptz not null default now(),
-  updated_at  timestamptz not null default now(),
-  archived_at timestamptz,
-  unique (user_id, name)
-);
-```
+Bis Migration 0039 gab es eine optionale Gruppe ueber den Depots. Sie ist entfallen
+(DECISIONS.md ADR-010).
 
 ### 3.3 `depots`
 
@@ -114,7 +104,6 @@ create table portfolios (
 create table depots (
   id            uuid primary key default gen_random_uuid(),
   user_id       uuid not null references auth.users(id),
-  portfolio_id  uuid references portfolios(id),
   name          text not null check (length(trim(name)) between 1 and 100),
   broker        text check (length(broker) <= 100),
   base_currency char(3) not null default 'EUR' check (base_currency ~ '^[A-Z]{3}$'),

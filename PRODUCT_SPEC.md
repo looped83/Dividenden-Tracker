@@ -94,7 +94,6 @@ Diese 15 Grundsätze sind Abnahmekriterien für jede Phase (siehe IMPLEMENTATION
 | **Erwartete Dividende** | angekündigter Termin im Kalender, noch nicht erhalten; zählt in Summen nur mit dem Zahltag, nie mit dem Ex-Tag |
 | **Asset** | ein Wertpapier (Aktie, ETF, Fonds) |
 | **Depot** | ein Konto bei einer Bank oder einem Broker; jede Dividende gehört zu genau einem |
-| **Portfolio** | eine eigene Gruppierung mehrerer Depots, unabhängig von der Bank |
 | **Stornieren** | eine Dividende ausblenden, ohne sie zu löschen; sie bleibt im Verlauf und lässt sich reaktivieren |
 
 Feldnamen wie „Zahlungsdatum" und „Zahlungsart" bleiben, ebenso die Adresse `/eingaenge`.
@@ -281,7 +280,6 @@ Historie.
 ### 5.4 Depotkonten
 
 - Mehrere Depots: Name, Broker, Basiswährung, persönliche Notiz
-- Optionale Gruppierung von Depots zu einem Portfolio (siehe DECISIONS.md, D-006)
 - Zahlungen je Depot, Jahres- und Monatsstatistiken
 - Prozentualer Anteil am Dividendeneinkommen, Depotvergleich
 - Keine Depotbestände, keine Livekurse

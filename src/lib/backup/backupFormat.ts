@@ -165,16 +165,9 @@ const uuidString = z.uuid();
 // Entity Schemas
 // ============================================================================
 
-const portfolioBackupSchema = z.object({
-  id: uuidString,
-  user_id: uuidString,
-  name: z.string().max(100),
-  note: z.string().max(2000).optional(),
-  created_at: isoTimestamp,
-  updated_at: isoTimestamp,
-  archived_at: isoTimestamp.optional(),
-});
-export type PortfolioBackup = z.infer<typeof portfolioBackupSchema>;
+// Bis v2.7 gab es Portfolios als Gruppe ueber den Depots (ADR-010). Aeltere
+// Dateien tragen noch `data.portfolios` und `depots[].portfolio_id`; Zod
+// verwirft unbekannte Schluessel, sie lassen sich daher weiter einspielen.
 
 const depotBackupSchema = z.object({
   id: uuidString,
@@ -182,7 +175,6 @@ const depotBackupSchema = z.object({
   name: z.string().max(100),
   broker: z.string().max(100).optional(),
   base_currency: currencyCode,
-  portfolio_id: uuidString.optional(),
   note: z.string().max(2000).optional(),
   created_at: isoTimestamp,
   updated_at: isoTimestamp,
@@ -421,7 +413,6 @@ export type SecurityAliasBackup = z.infer<typeof securityAliasBackupSchema>;
 
 const backupDataSchema = z.object({
   profile: profileBackupSchema.optional(),
-  portfolios: z.array(portfolioBackupSchema).default([]),
   depots: z.array(depotBackupSchema).default([]),
   securities: z.array(securityBackupSchema).default([]),
   dividend_payments: z.array(dividendPaymentBackupSchema).default([]),
@@ -545,7 +536,6 @@ export function validateBackupIntegrity(backup: BackupRoot): {
 
   const expectedCounts = backup.integrity.record_counts;
   const actualCounts = {
-    portfolio: backup.data.portfolios.length,
     depot: backup.data.depots.length,
     security: backup.data.securities.length,
     dividend_payment: backup.data.dividend_payments.length,

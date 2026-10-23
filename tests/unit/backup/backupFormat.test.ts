@@ -36,7 +36,6 @@ describe("Backup Format Validation", () => {
           depots: [],
           securities: [],
           dividend_payments: [],
-          portfolios: [],
           goals: [],
           imports: [],
         },
@@ -55,6 +54,46 @@ describe("Backup Format Validation", () => {
       if (result.success) {
         expect(result.data.format).toBe("dividend-tracker-backup");
         expect(result.data.format_version).toBe(1);
+      }
+    });
+
+    it("liest Sicherungen mit Portfolios (bis v2.7) und verwirft sie", () => {
+      const result = parseBackupSafe({
+        format: "dividend-tracker-backup",
+        format_version: 2,
+        schema_version: "0038",
+        exported_at: "2026-10-23T12:00:00Z",
+        base_currency: "EUR",
+        data: {
+          portfolios: [
+            {
+              id: "550e8400-e29b-41d4-a716-446655440001",
+              user_id: "550e8400-e29b-41d4-a716-446655440000",
+              name: "Dividenden Depot",
+              created_at: "2026-01-01T00:00:00Z",
+              updated_at: "2026-01-01T00:00:00Z",
+            },
+          ],
+          depots: [
+            {
+              id: "550e8400-e29b-41d4-a716-446655440002",
+              user_id: "550e8400-e29b-41d4-a716-446655440000",
+              name: "Trade Republic",
+              base_currency: "EUR",
+              portfolio_id: "550e8400-e29b-41d4-a716-446655440001",
+              created_at: "2026-01-01T00:00:00Z",
+              updated_at: "2026-01-01T00:00:00Z",
+            },
+          ],
+        },
+        integrity: { record_counts: { portfolio: 1, depot: 1 } },
+      });
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.data).not.toHaveProperty("portfolios");
+        expect(result.data.data.depots[0]).not.toHaveProperty("portfolio_id");
+        expect(validateBackupIntegrity(result.data).valid).toBe(true);
       }
     });
 
@@ -145,7 +184,6 @@ describe("Backup Format Validation", () => {
           },
         ],
         dividend_payments: [],
-        portfolios: [],
         goals: [],
         imports: [],
         security_aliases: [],
@@ -225,7 +263,6 @@ describe("Backup Format Validation", () => {
           },
         ],
         dividend_payments: [],
-        portfolios: [],
         goals: [],
         imports: [],
         security_aliases: [],
@@ -238,7 +275,6 @@ describe("Backup Format Validation", () => {
           security: 1,
           dividend_payment: 0,
           goal: 0,
-          portfolio: 0,
           import: 0,
         },
       },
@@ -259,7 +295,6 @@ describe("Backup Format Validation", () => {
             security: 1,
             dividend_payment: 0,
             goal: 0,
-            portfolio: 0,
             import: 0,
           },
         },
@@ -308,7 +343,6 @@ describe("Backup Format Validation", () => {
           ],
           depots: [],
           securities: [],
-          portfolios: [],
           goals: [],
           imports: [],
         },
@@ -317,7 +351,6 @@ describe("Backup Format Validation", () => {
             dividend_payment: 1,
             depot: 0,
             security: 0,
-            portfolio: 0,
             goal: 0,
             import: 0,
           },
@@ -359,7 +392,6 @@ describe("Backup Format Validation", () => {
           ],
           depots: [],
           securities: [],
-          portfolios: [],
           goals: [],
           imports: [],
         },
@@ -368,7 +400,6 @@ describe("Backup Format Validation", () => {
             dividend_payment: 1,
             depot: 0,
             security: 0,
-            portfolio: 0,
             goal: 0,
             import: 0,
           },
@@ -399,7 +430,6 @@ describe("Depotstände in der Sicherung (Formatversion 2)", () => {
         depots: [],
         securities: [],
         dividend_payments: [],
-        portfolios: [],
         goals: [],
         imports: [],
         ...data,

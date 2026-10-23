@@ -42,7 +42,7 @@ Verbindliche Regeln:
 
 1. `alter table … enable row level security` auf **jeder** Tabelle im Schema `public` —
    ohne Ausnahme, auch für Views gilt `security_invoker = on`.
-2. Basis-Policy-Muster für fachliche Tabellen (`profiles`, `portfolios`, `depots`,
+2. Basis-Policy-Muster für fachliche Tabellen (`profiles`, `depots`,
    `securities`, `dividend_payments`, `imports`, `goals`):
 
 ```sql
