@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -163,6 +162,8 @@ export function GoalFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         ref={contentRef}
+        // Ohne Unterzeile (2.5.1): Der Titel sagt genug.
+        aria-describedby={undefined}
         onOpenAutoFocus={(event) => {
           // Sonst setzt Radix den Fokus auf das erste Bedienelement — hier das
           // Auswahlfeld „Zielart". Es liegt beim Bearbeiten genau unter dem
@@ -177,10 +178,6 @@ export function GoalFormDialog({
       >
         <DialogHeader>
           <DialogTitle>{isEdit ? "Ziel bearbeiten" : "Neues Ziel anlegen"}</DialogTitle>
-          <DialogDescription>
-            Ein Ziel ist ein von dir gewählter Vergleichswert für deine tatsächlich
-            erhaltenen Dividenden – keine Prognose.
-          </DialogDescription>
         </DialogHeader>
 
         <form
