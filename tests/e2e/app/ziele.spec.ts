@@ -24,7 +24,9 @@ test("legt ein Monatsziel an und oeffnet es zum Bearbeiten mit gefuellten Felder
     .click();
   await page.getByLabel("Zielart").selectOption("monthly");
   await page.getByLabel("Kalendermonat").selectOption(monat);
-  await page.getByLabel("Zielbetrag (€)").fill("500,00");
+  // Der Tausenderpunkt erscheint schon beim Tippen.
+  await page.getByLabel("Zielbetrag (€)").pressSequentially("1500,00");
+  await expect(page.getByLabel("Zielbetrag (€)")).toHaveValue("1.500,00");
   await page.getByRole("button", { name: "Ziel anlegen", exact: true }).click();
   // Erst warten, bis gespeichert ist: Sonst entschied ein Wettlauf zwischen
   // Speichern und dem Seitenwechsel darunter, wo der Test landet.
@@ -46,5 +48,5 @@ test("legt ein Monatsziel an und oeffnet es zum Bearbeiten mit gefuellten Felder
 
   await expect(page.getByLabel("Zielart")).toHaveValue("monthly");
   await expect(page.getByLabel("Kalendermonat")).toHaveValue(monat);
-  await expect(page.getByLabel("Zielbetrag (€)")).toHaveValue("500,00");
+  await expect(page.getByLabel("Zielbetrag (€)")).toHaveValue("1.500,00");
 });

@@ -4,11 +4,12 @@ import { useForm, useWatch } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { PageSkeleton } from "@/components/layout/PageSkeleton";
 import { Input } from "@/components/ui/input";
+import { AmountInput } from "@/components/ui/amount-input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Combobox } from "@/components/ui/combobox";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
-import { currencySymbol, toGermanDecimalString } from "@/lib/money";
+import { currencySymbol, toGermanAmountInput } from "@/lib/money";
 import { useToast } from "@/components/ui/toast";
 import { useDepots } from "@/features/depots/hooks";
 import { useSecurities } from "@/features/securities/hooks";
@@ -97,7 +98,7 @@ export function PaymentForm({
       securityId: existingPayment.security_id,
       depotId: existingPayment.depot_id,
       payDate: existingPayment.pay_date,
-      netAmount: toGermanDecimalString(existingPayment.net_amount),
+      netAmount: toGermanAmountInput(existingPayment.net_amount),
       note: existingPayment.note ?? "",
     });
   }, [existingPayment, reset]);
@@ -370,9 +371,8 @@ export function PaymentForm({
           <div className="space-y-1.5">
             <Label htmlFor="payment-net">Nettobetrag</Label>
             <div className="relative">
-              <Input
+              <AmountInput
                 id="payment-net"
-                inputMode="decimal"
                 className="pr-9"
                 aria-describedby="payment-net-currency"
                 {...register("netAmount")}

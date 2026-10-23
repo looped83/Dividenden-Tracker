@@ -3,7 +3,7 @@ import { TrendingUp } from "lucide-react";
 import { KpiHero, KpiHeroSkeleton, TrendPill } from "@/components/domain/KpiHero";
 import { AmountText } from "@/components/money/AmountText";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Input } from "@/components/ui/input";
+import { AmountInput } from "@/components/ui/amount-input";
 import { Section } from "@/components/ui/section";
 import { Select } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -542,12 +542,9 @@ function NumberField({
   return (
     <SettingCell label={label} htmlFor={id}>
       <div className="relative">
-        <Input
+        <AmountInput
           id={id}
           aria-label={fullLabel}
-          type="text"
-          inputMode="decimal"
-          autoComplete="off"
           value={draft}
           placeholder={placeholder}
           className="h-9 bg-background pr-7 text-right tabular-nums"
