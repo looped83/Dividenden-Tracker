@@ -66,7 +66,9 @@ test("weitere laden haengt an, der Weg zurueck endet an derselben Stelle", async
   page,
 }) => {
   await page.setViewportSize({ width: 1280, height: 700 });
-  await page.goto("/#/eingaenge");
+  // Nach Betrag sortiert: Nach Datum klappen die Monate ein und laden
+  // monatsweise nach (siehe unten).
+  await page.goto("/#/eingaenge?sort=amount");
   await expect(page.getByText("25 von 40 angezeigt")).toBeVisible();
 
   // Angehaengt statt umgeblaettert: Die Position bleibt, wo sie war — man
@@ -100,7 +102,7 @@ test("auf dem Telefon fuehrt die Zeile zur Detailseite und diese samt Liste zuru
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/#/eingaenge?page=2");
+  await page.goto("/#/eingaenge?sort=amount&page=2");
   // Zwei „Seiten" geladen: alle 40 Eingaenge, nichts mehr nachzuladen.
   await expect(page.getByRole("link", { name: /Muster AG/ })).toHaveCount(40);
   await expect(page.getByRole("button", { name: /weitere laden/ })).toHaveCount(0);
@@ -125,7 +127,7 @@ test("auf dem Telefon scrollt erneutes Tippen auf den aktiven Bereich nach oben"
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/#/eingaenge?page=2");
+  await page.goto("/#/eingaenge?sort=amount&page=2");
   await expect(page.getByRole("link", { name: /Muster AG/ })).toHaveCount(40);
 
   await page.evaluate(() => {
@@ -140,4 +142,31 @@ test("auf dem Telefon scrollt erneutes Tippen auf den aktiven Bereich nach oben"
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
   // Kein Seitenwechsel: Die geladene Menge bleibt in der Adresse.
   expect(page.url()).toContain("page=2");
+});
+
+test("eingeklappte Monate: der Weg zurueck findet geoeffnete Monate wieder", async ({
+  page,
+}) => {
+  await page.clock.setFixedTime(new Date("2026-06-20T10:00:00"));
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/#/eingaenge");
+
+  // Offen ist nur der aktuelle Monat.
+  const mai = page.getByRole("button", { name: /Mai 2026/ });
+  await expect(page.getByRole("button", { name: /Juni 2026/ })).toHaveAttribute(
+    "aria-expanded",
+    "true",
+  );
+  await expect(mai).toHaveAttribute("aria-expanded", "false");
+
+  await mai.click();
+  await expect(mai).toHaveAttribute("aria-expanded", "true");
+  await page.locator("#monat-2026-05").getByRole("link").first().click();
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+
+  await page.goBack();
+  await expect(page.getByRole("button", { name: /Mai 2026/ })).toHaveAttribute(
+    "aria-expanded",
+    "true",
+  );
 });

@@ -118,15 +118,19 @@ describe("PaymentsPage", () => {
   });
 
   it("zeigt die Eingaenge mit Asset und Betrag", () => {
-    renderList([
-      zahlung({ id: "a", security_id: "s1", net_amount: "50.00" }),
-      zahlung({
-        id: "b",
-        security_id: "s2",
-        net_amount: "120.00",
-        pay_date: "2026-05-02",
-      }),
-    ]);
+    renderList(
+      [
+        zahlung({ id: "a", security_id: "s1", net_amount: "50.00" }),
+        zahlung({
+          id: "b",
+          security_id: "s2",
+          net_amount: "120.00",
+          pay_date: "2026-05-02",
+        }),
+        // Nach Betrag sortiert, damit kein Monat eingeklappt ist.
+      ],
+      "/eingaenge?sort=amount",
+    );
 
     // Ueber die Rolle, nicht ueber den Text: Die Namen stehen auch in den
     // Auswahllisten der Filterleiste.
@@ -169,12 +173,14 @@ describe("PaymentsPage", () => {
     expect(screen.queryByRole("heading", { name: /Mai 2026/ })).not.toBeInTheDocument();
   });
 
-  it("nennt Anzahl und Summe der Auswahl", () => {
+  it("liest die Anzahl der Auswahl nur vor, ohne Zeile ueber der Liste", () => {
     renderList([
       zahlung({ id: "a", net_amount: "20.00" }),
       zahlung({ id: "b", net_amount: "30.50" }),
     ]);
-    expect(screen.getByText(/^2 Dividenden/)).toHaveTextContent("2 Dividenden · 50,50 €");
+    const anzahl = screen.getByText("2 Dividenden");
+    expect(anzahl).toHaveClass("sr-only");
+    expect(anzahl).toHaveAttribute("aria-live", "polite");
   });
 
   it("filtert nach Asset und nennt die Trefferzahl", async () => {
@@ -218,7 +224,9 @@ describe("PaymentsPage", () => {
         pay_date: `2026-01-${String((index % 28) + 1).padStart(2, "0")}`,
       }),
     );
-    renderList(viele);
+    // Nach Betrag sortiert: Nach Datum klappen die Monate ein und laden
+    // monatsweise nach.
+    renderList(viele, "/eingaenge?sort=amount");
 
     expect(screen.getByText("25 von 30 angezeigt")).toBeInTheDocument();
 
@@ -230,6 +238,90 @@ describe("PaymentsPage", () => {
     ).not.toBeInTheDocument();
     // Angehaengt, nicht umgeblaettert: Die Position bleibt, wo sie ist.
     expect(scrollTo).not.toHaveBeenCalled();
+  });
+
+  describe("eingeklappte Monate", () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date(2026, 9, 23, 12));
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("oeffnet nur den aktuellen Monat, die anderen per Tipp", async () => {
+      const user = userEvent.setup();
+      renderList([
+        zahlung({ id: "a", pay_date: "2026-10-05" }),
+        zahlung({ id: "b", pay_date: "2026-09-10", security_id: "s2" }),
+      ]);
+
+      const oktober = screen.getByRole("button", { name: /Oktober 2026/ });
+      const september = screen.getByRole("button", { name: /September 2026/ });
+      expect(oktober).toHaveAttribute("aria-expanded", "true");
+      expect(september).toHaveAttribute("aria-expanded", "false");
+      expect(screen.queryByRole("link", { name: /Allianz SE/ })).not.toBeInTheDocument();
+
+      await user.click(september);
+
+      expect(september).toHaveAttribute("aria-expanded", "true");
+      expect(screen.getByRole("link", { name: /Allianz SE/ })).toBeInTheDocument();
+    });
+
+    it("oeffnet den juengsten Monat, solange der aktuelle leer ist", () => {
+      renderList([
+        zahlung({ id: "a", pay_date: "2026-09-10" }),
+        zahlung({ id: "b", pay_date: "2026-08-10" }),
+      ]);
+
+      expect(screen.getByRole("button", { name: /September 2026/ })).toHaveAttribute(
+        "aria-expanded",
+        "true",
+      );
+      expect(screen.getByRole("button", { name: /August 2026/ })).toHaveAttribute(
+        "aria-expanded",
+        "false",
+      );
+    });
+
+    it("zeigt zwoelf Monate und laedt aeltere nach", async () => {
+      const user = userEvent.setup();
+      renderList(
+        Array.from({ length: 14 }, (_, index) =>
+          zahlung({
+            id: `p${String(index)}`,
+            pay_date: `${String(2026 - Math.floor(index / 12))}-${String(12 - (index % 12)).padStart(2, "0")}-01`,
+          }),
+        ),
+      );
+
+      expect(screen.getAllByRole("heading", { level: 2 })).toHaveLength(12);
+      expect(
+        screen.queryByRole("button", { name: /weitere laden/ }),
+      ).not.toBeInTheDocument();
+
+      await user.click(screen.getByRole("button", { name: "Ältere Monate laden" }));
+
+      expect(screen.getAllByRole("heading", { level: 2 })).toHaveLength(14);
+      expect(
+        screen.queryByRole("button", { name: "Ältere Monate laden" }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("klappt mit Filter nichts ein", async () => {
+      const user = userEvent.setup();
+      renderList([
+        zahlung({ id: "a", pay_date: "2026-10-05" }),
+        zahlung({ id: "b", pay_date: "2026-09-10" }),
+      ]);
+
+      await user.selectOptions(screen.getByLabelText("Asset"), "s1");
+
+      expect(screen.getAllByRole("link", { name: /Apple Inc\./ })).toHaveLength(2);
+      expect(
+        screen.queryByRole("button", { name: /Oktober 2026/ }),
+      ).not.toBeInTheDocument();
+    });
   });
 
   it("oeffnet die geladene Menge aus der Adresse — der Weg zurueck von einem Eingang endet dort", () => {
