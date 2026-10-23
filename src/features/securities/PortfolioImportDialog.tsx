@@ -367,7 +367,9 @@ export function PortfolioImportDialog({
       >
         <DialogHeader>
           <DialogTitle>Depotstand aus DivvyDiary importieren</DialogTitle>
-          <DialogDescription>
+          {/* Nur fuer Screenreader: Sichtbar war die Zeile doppelt zur
+              Ablageflaeche darunter. */}
+          <DialogDescription className="sr-only">
             Speichert je Position deinen Bestand zum Stichtag. Erfasste Dividenden bleiben
             unberührt.
           </DialogDescription>
