@@ -19,6 +19,7 @@ concurrency:
 jobs:
   quality:
     runs-on: ubuntu-24.04
+    timeout-minutes: 6
     steps:
       - uses: actions/checkout@v7
 
@@ -77,6 +78,7 @@ jobs:
   # Rueckschritt aber schon.
   lighthouse:
     runs-on: ubuntu-24.04
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
 
@@ -113,6 +115,7 @@ jobs:
   # Deploy oder beim naechsten Kalenderabgleich auf.
   edge-functions:
     runs-on: ubuntu-24.04
+    timeout-minutes: 3
     steps:
       - uses: actions/checkout@v7
 
@@ -131,6 +134,7 @@ jobs:
   version:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-24.04
+    timeout-minutes: 2
     steps:
       - uses: actions/checkout@v7
         with:
@@ -143,6 +147,7 @@ jobs:
 
   e2e-smoke:
     runs-on: ubuntu-24.04
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v7
 
@@ -196,6 +201,7 @@ jobs:
   # oeffentlichen Rauchtests trotzdem aussagekraeftig.
   e2e-app:
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     services:
       postgres:
         image: postgres:16
@@ -256,6 +262,7 @@ jobs:
 
   db-integration:
     runs-on: ubuntu-24.04
+    timeout-minutes: 5
     services:
       postgres:
         image: postgres:16
