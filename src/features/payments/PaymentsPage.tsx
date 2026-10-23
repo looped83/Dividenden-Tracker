@@ -490,21 +490,33 @@ export function PaymentsPage() {
       </FilterBar>
 
       {!isLoading && rows.length > 0 && (
-        <p className="text-sm text-muted-foreground" aria-live="polite">
+        // Schlanke graue Leiste in der Flaeche der Kennzahlenboxen (seit
+        // 2.2.0): Anzahl links, Summe rechts. Als lose Textzeile ging die
+        // Summe aller Dividenden zwischen Filter und Liste unter.
+        <p
+          className="flex min-h-10 items-center justify-between gap-3 rounded-xl bg-muted px-3 py-2 text-[0.9375rem] text-muted-foreground"
+          aria-live="polite"
+        >
           {/* Stornierte haben kein Feld in der Leiste mehr; erreichbar sind sie
               ueber die Datenqualitaet (`?status=cancelled`). Die Zeile sagt,
               was gezeigt wird; „Zuruecksetzen" fuehrt zur normalen Liste. */}
-          {status === "cancelled"
-            ? formatCountNoun(
-                rows.length,
-                "stornierte Dividende",
-                "stornierte Dividenden",
-              )
-            : formatCountNoun(rows.length, "Dividende", "Dividenden")}
+          <span className="min-w-0">
+            {status === "cancelled"
+              ? formatCountNoun(
+                  rows.length,
+                  "stornierte Dividende",
+                  "stornierte Dividenden",
+                )
+              : formatCountNoun(rows.length, "Dividende", "Dividenden")}
+          </span>
           {total && (
             <>
-              {" · "}
-              <AmountText amount={total} className="font-medium text-foreground" />
+              {/* Vorgelesen wie zuvor: „2 Dividenden · 50,50 €". */}
+              <span className="sr-only"> · </span>
+              <AmountText
+                amount={total}
+                className="shrink-0 font-semibold text-foreground tabular-amount"
+              />
             </>
           )}
         </p>

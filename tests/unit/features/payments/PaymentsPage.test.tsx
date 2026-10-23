@@ -174,7 +174,9 @@ describe("PaymentsPage", () => {
       zahlung({ id: "a", net_amount: "20.00" }),
       zahlung({ id: "b", net_amount: "30.50" }),
     ]);
-    expect(screen.getByText(/^2 Dividenden/)).toHaveTextContent("2 Dividenden · 50,50 €");
+    expect(screen.getByText(/^2 Dividenden/).closest("p")).toHaveTextContent(
+      "2 Dividenden · 50,50 €",
+    );
   });
 
   it("filtert nach Asset und nennt die Trefferzahl", async () => {
