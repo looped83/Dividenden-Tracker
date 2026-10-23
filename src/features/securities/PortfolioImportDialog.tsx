@@ -366,7 +366,7 @@ export function PortfolioImportDialog({
         }}
       >
         <DialogHeader>
-          <DialogTitle>Depotstand aus DivvyDiary importieren</DialogTitle>
+          <DialogTitle>Bestand aktualisieren</DialogTitle>
           {/* Nur fuer Screenreader: Sichtbar war die Zeile doppelt zur
               Ablageflaeche darunter. */}
           <DialogDescription className="sr-only">
