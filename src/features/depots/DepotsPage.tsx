@@ -52,7 +52,6 @@ function DepotFormDialog({
     resolver: zodResolver(depotFormSchema),
     values: {
       name: depot?.name ?? "",
-      broker: depot?.broker ?? "",
       baseCurrency: depot?.base_currency ?? "EUR",
       note: depot?.note ?? "",
     },
@@ -60,9 +59,11 @@ function DepotFormDialog({
 
   const onSubmit = handleSubmit(async (values) => {
     setSubmitError(null);
+    // Name und Broker sind bei jedem Depot dasselbe; abgefragt wird nur der
+    // Broker. `name` bleibt das Feld, an dem Filter, Import und Anzeige haengen.
     const input = {
       name: values.name,
-      broker: emptyToNull(values.broker),
+      broker: values.name,
       base_currency: values.baseCurrency,
       note: emptyToNull(values.note),
     };
@@ -88,17 +89,13 @@ function DepotFormDialog({
           <DialogTitle>{depot ? "Depot bearbeiten" : "Neues Depot"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={(event) => void onSubmit(event)} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="depot-name">Name</Label>
-            <Input id="depot-name" {...register("name")} />
-            {errors.name && (
-              <p className="text-sm text-negative">{errors.name.message}</p>
-            )}
-          </div>
           <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="depot-broker">Broker</Label>
-              <Input id="depot-broker" {...register("broker")} />
+              <Input id="depot-broker" {...register("name")} />
+              {errors.name && (
+                <p className="text-sm text-negative">{errors.name.message}</p>
+              )}
             </div>
             {/* Die Basiswaehrung ist keine Wahl, sondern eine Folge: Alle
                 Betraege werden in Basiswaehrung gespeichert und ausgewertet
@@ -262,7 +259,7 @@ export function DepotsPage() {
                   <ManagedRow
                     name={depot.name}
                     archived={Boolean(depot.archived_at)}
-                    meta={[depot.broker, depot.base_currency].filter(Boolean).join(" · ")}
+                    meta={depot.base_currency}
                     actions={depotActions(depot)}
                   />
                 </li>

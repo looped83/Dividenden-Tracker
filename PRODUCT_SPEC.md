@@ -279,7 +279,7 @@ Historie.
 
 ### 5.4 Depotkonten
 
-- Mehrere Depots: Name, Broker, Basiswährung, persönliche Notiz
+- Mehrere Depots: Broker (zugleich Name), Basiswährung, persönliche Notiz
 - Zahlungen je Depot, Jahres- und Monatsstatistiken
 - Prozentualer Anteil am Dividendeneinkommen, Depotvergleich
 - Keine Depotbestände, keine Livekurse
