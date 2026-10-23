@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Upload } from "lucide-react";
+import { FileText, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -21,6 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { cn } from "@/lib/utils/cn";
 import { checkImportFile } from "@/lib/import/fileLimits";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
@@ -110,6 +111,8 @@ export function PortfolioImportDialog({
     new Set(FIELD_ORDER),
   );
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const contentRef = React.useRef<HTMLDivElement>(null);
+  const [dragging, setDragging] = React.useState(false);
 
   const reset = () => {
     setState({ step: "select" });
@@ -153,12 +156,8 @@ export function PortfolioImportDialog({
     return grouped;
   }, [matched]);
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
+  const handleFile = async (file: File) => {
     const rejection = checkImportFile(file);
-    if (fileInputRef.current) fileInputRef.current.value = "";
     if (rejection) {
       setState({ step: "error", message: rejection });
       return;
@@ -195,6 +194,10 @@ export function PortfolioImportDialog({
         message: getErrorMessage(error, "Die Datei konnte nicht gelesen werden."),
       });
     }
+  };
+
+  const chooseFile = () => {
+    fileInputRef.current?.click();
   };
 
   const toggleField = (field: SecurityField) => {
@@ -351,27 +354,75 @@ export function PortfolioImportDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent
+        ref={contentRef}
+        className="max-w-3xl"
+        // Kein vorfokussiertes Bedienelement (wie EventDetailDialog): Radix
+        // markierte sonst beim Oeffnen den Dateiknopf mit Fokusrahmen, als sei
+        // schon etwas gewaehlt. Der Dialog selbst nimmt den Fokus.
+        onOpenAutoFocus={(event) => {
+          event.preventDefault();
+          contentRef.current?.focus();
+        }}
+      >
         <DialogHeader>
           <DialogTitle>Depotstand aus DivvyDiary importieren</DialogTitle>
           <DialogDescription>
-            Liest den Portfolio-Export (CSV) und speichert je Position einen Stand zum
-            gewählten Stichtag. Zeilen ohne Bestand werden übersprungen. Es entsteht keine
-            Dividende — erfasste Dividenden bleiben unberührt.
+            Speichert je Position deinen Bestand zum Stichtag. Erfasste Dividenden bleiben
+            unberührt.
           </DialogDescription>
         </DialogHeader>
 
+        {/* Ein Eingabefeld fuer alle Schritte: „Andere Datei" in der Vorschau
+            oeffnet die Auswahl direkt, ohne Umweg ueber den ersten Schritt. */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".csv,text/csv"
+          className="hidden"
+          aria-label="Portfolio-Export (.csv)"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            event.target.value = "";
+            if (file) void handleFile(file);
+          }}
+        />
+
         {state.step === "select" && (
-          <div className="space-y-2">
-            <Label htmlFor="portfolio-file">Portfolio-Export (.csv)</Label>
-            <input
-              id="portfolio-file"
-              ref={fileInputRef}
-              type="file"
-              accept=".csv,text/csv"
-              onChange={(event) => void handleFileChange(event)}
-              className="w-full text-sm"
-            />
+          // Statt des nativen Dateifelds: Dessen Knopf und „Keine Datei
+          // ausgewählt" verschwammen zu einer Zeile, und Safari zeigt es je
+          // nach Geraet anders. Ziehen und Ablegen klappt auf dem Desktop.
+          <div
+            className={cn(
+              "flex flex-col items-center gap-4 rounded-xl border-2 border-dashed px-4 py-8 text-center transition-colors",
+              dragging ? "border-primary bg-primary/5" : "border-border",
+            )}
+            onDragOver={(event) => {
+              event.preventDefault();
+              setDragging(true);
+            }}
+            onDragLeave={() => {
+              setDragging(false);
+            }}
+            onDrop={(event) => {
+              event.preventDefault();
+              setDragging(false);
+              const file = event.dataTransfer.files.item(0);
+              if (file) void handleFile(file);
+            }}
+          >
+            <span className="flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
+              <FileText className="size-6" aria-hidden />
+            </span>
+            <div className="space-y-1">
+              <p className="text-sm font-medium">Portfolio-Export aus DivvyDiary</p>
+              <p className="text-xs text-muted-foreground">
+                Als CSV-Datei. Zeilen ohne Bestand werden übersprungen.
+              </p>
+            </div>
+            <Button onClick={chooseFile}>
+              <Upload /> Datei auswählen
+            </Button>
           </div>
         )}
 
@@ -380,14 +431,29 @@ export function PortfolioImportDialog({
             <p role="alert" className="text-sm text-negative">
               {state.message}
             </p>
-            <Button variant="outline" onClick={reset}>
-              Andere Datei wählen
+            <Button variant="outline" onClick={chooseFile}>
+              <Upload /> Andere Datei wählen
             </Button>
           </div>
         )}
 
         {state.step === "preview" && parsed !== null && (
           <div className="space-y-5">
+            <div className="flex items-center gap-3 rounded-xl bg-muted/50 p-3">
+              <FileText className="size-5 shrink-0 text-muted-foreground" aria-hidden />
+              <p className="min-w-0 flex-1 truncate text-sm font-medium">
+                {parsed.fileName}
+              </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="shrink-0 text-primary"
+                onClick={chooseFile}
+              >
+                Andere Datei
+              </Button>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="portfolio-as-of">Stichtag des Bestands</Label>
               <Input
@@ -622,22 +688,26 @@ export function PortfolioImportDialog({
           </div>
         )}
 
-        <DialogFooter>
-          {state.step === "preview" && (
-            <Button onClick={() => void handleImport()} disabled={importable === 0}>
-              {formatCountNoun(importable, "Position", "Positionen")} übernehmen
-            </Button>
-          )}
-          {state.step === "done" && (
-            <Button
-              onClick={() => {
-                handleClose(false);
-              }}
-            >
-              Schließen
-            </Button>
-          )}
-        </DialogFooter>
+        {/* Nur mit Aktion: Leer liess die klebende Fusszeile auf dem Telefon
+            einen Streifen unter der Dateiauswahl stehen. */}
+        {(state.step === "preview" || state.step === "done") && (
+          <DialogFooter>
+            {state.step === "preview" && (
+              <Button onClick={() => void handleImport()} disabled={importable === 0}>
+                {formatCountNoun(importable, "Position", "Positionen")} übernehmen
+              </Button>
+            )}
+            {state.step === "done" && (
+              <Button
+                onClick={() => {
+                  handleClose(false);
+                }}
+              >
+                Schließen
+              </Button>
+            )}
+          </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   );
