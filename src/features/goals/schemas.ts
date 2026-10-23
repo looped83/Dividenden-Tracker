@@ -64,8 +64,6 @@ export function makeGoalFormSchema(reference: Date = new Date()) {
         return parsed;
       }),
       targetAmount: positiveMoneyString("Zielbetrag", "1.000,00"),
-      title: z.string().trim().max(200, "Titel: höchstens 200 Zeichen").optional(),
-      note: z.string().trim().max(2000, "Notiz: höchstens 2000 Zeichen").optional(),
     })
     .superRefine((data, ctx) => {
       if (data.goalType === "monthly" && data.month === null) {

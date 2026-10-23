@@ -33,7 +33,7 @@ test("legt ein Monatsziel an und oeffnet es zum Bearbeiten mit gefuellten Felder
 
   // Bearbeiten steht auf der Detailseite, die jede Zeile der Liste oeffnet.
   await page
-    .getByRole("link", { name: /^Monatsziel/ })
+    .getByRole("link", { name: /^Dividendenziel [A-Z][a-zä]+ \d{4}/ })
     .first()
     .click();
   await page.getByRole("button", { name: "Bearbeiten", exact: true }).click();

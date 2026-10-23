@@ -12,8 +12,6 @@ const base = {
   year: "2027",
   month: "",
   targetAmount: "1.000,00",
-  title: "",
-  note: "",
 };
 
 describe("goalFormSchema – Zielbetrag", () => {

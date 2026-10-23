@@ -1,6 +1,6 @@
 import { ConfirmDialog, ConfirmSummary } from "@/components/ui/confirm-dialog";
 import type { Goal } from "@/lib/goals";
-import { goalDisplayTitle, goalTypeLabel, money, periodLabel } from "./format";
+import { goalTitle, goalTypeLabel, money, periodLabel } from "./format";
 
 interface DeleteGoalDialogProps {
   open: boolean;
@@ -25,7 +25,7 @@ export function DeleteGoalDialog({ goal, ...props }: DeleteGoalDialogProps) {
         goal && (
           <ConfirmSummary
             items={[
-              { label: "Titel", value: goalDisplayTitle(goal) },
+              { label: "Titel", value: goalTitle(goal) },
               { label: "Zielart", value: goalTypeLabel(goal.goalType) },
               { label: "Zeitraum", value: periodLabel(goal) },
               { label: "Zielbetrag", value: money(goal.targetAmount) },

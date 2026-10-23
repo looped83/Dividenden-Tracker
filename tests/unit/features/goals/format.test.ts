@@ -4,10 +4,9 @@ import { computeGoalProgress, type Goal } from "@/lib/goals";
 import type { AnalyticsPayment, RefDate } from "@/lib/statistics";
 import {
   accessibleProgressLabel,
-  autoGoalTitle,
   cappedBarPercent,
   drillDownHref,
-  goalDisplayTitle,
+  goalTitle,
   periodLabel,
   startsAtLabel,
   timeProgressText,
@@ -54,14 +53,13 @@ function norm(value: string): string {
 
 describe("Zieltitel und Zeitraumbeschriftung", () => {
   it("automatische Titel", () => {
-    expect(autoGoalTitle(goal())).toBe("Dividendenziel 2027");
-    expect(autoGoalTitle(goal({ goalType: "monthly", month: 3 }))).toBe(
-      "Monatsziel März 2027",
+    expect(goalTitle(goal())).toBe("Dividendenziel 2027");
+    expect(goalTitle(goal({ goalType: "monthly", month: 3 }))).toBe(
+      "Dividendenziel März 2027",
     );
   });
-  it("eigener Titel hat Vorrang", () => {
-    expect(goalDisplayTitle(goal({ title: "Mein Ziel" }))).toBe("Mein Ziel");
-    expect(goalDisplayTitle(goal({ title: "  " }))).toBe("Dividendenziel 2027");
+  it("ein gespeicherter Titel aus älteren Fassungen zählt nicht", () => {
+    expect(goalTitle(goal({ title: "Mein Ziel" }))).toBe("Dividendenziel 2027");
   });
   it("Zeitraum- und Beginn-Beschriftung", () => {
     expect(periodLabel(goal({ goalType: "monthly", month: 12 }))).toBe("Dezember 2027");

@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -13,10 +12,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { MONTH_NAMES_DE } from "@/lib/statistics";
 import { toGermanDecimalString, type Money } from "@/lib/money";
-import { emptyToNull } from "@/lib/utils/emptyToNull";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import {
   GoalConflictError,
@@ -53,8 +50,6 @@ function defaultInput(
       year: String(goal.year),
       month: goal.month !== null ? String(goal.month) : "",
       targetAmount: toGermanDecimalString(goal.targetAmount.toStringValue()),
-      title: goal.title ?? "",
-      note: goal.note ?? "",
     };
   }
   return {
@@ -64,8 +59,6 @@ function defaultInput(
     targetAmount: preset
       ? toGermanDecimalString(preset.targetAmount.toStringValue())
       : "",
-    title: "",
-    note: "",
   };
 }
 
@@ -133,8 +126,9 @@ export function GoalFormDialog({
       year: values.year,
       month: values.goalType === "monthly" ? values.month : null,
       target_amount: values.targetAmount,
-      title: emptyToNull(values.title ?? ""),
-      note: emptyToNull(values.note ?? ""),
+      // Titel entstehen beim Anzeigen (goalTitle); Notizen gibt es nicht mehr.
+      title: null,
+      note: null,
     };
     try {
       if (goal) {
@@ -163,6 +157,8 @@ export function GoalFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         ref={contentRef}
+        // Ohne Unterzeile (2.5.1): Der Titel sagt genug.
+        aria-describedby={undefined}
         onOpenAutoFocus={(event) => {
           // Sonst setzt Radix den Fokus auf das erste Bedienelement — hier das
           // Auswahlfeld „Zielart". Es liegt beim Bearbeiten genau unter dem
@@ -177,10 +173,6 @@ export function GoalFormDialog({
       >
         <DialogHeader>
           <DialogTitle>{isEdit ? "Ziel bearbeiten" : "Neues Ziel anlegen"}</DialogTitle>
-          <DialogDescription>
-            Ein Ziel ist ein von dir gewählter Vergleichswert für deine tatsächlich
-            erhaltenen Dividenden – keine Prognose.
-          </DialogDescription>
         </DialogHeader>
 
         <form
@@ -244,30 +236,6 @@ export function GoalFormDialog({
             {errors.targetAmount && (
               <p role="alert" className="text-sm text-negative">
                 {errors.targetAmount.message}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="goal-title">Titel (optional)</Label>
-            <Input
-              id="goal-title"
-              placeholder="z. B. Dividendenziel 2027"
-              {...register("title")}
-            />
-            {errors.title && (
-              <p role="alert" className="text-sm text-negative">
-                {errors.title.message}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="goal-note">Notiz (optional)</Label>
-            <Textarea id="goal-note" rows={2} {...register("note")} />
-            {errors.note && (
-              <p role="alert" className="text-sm text-negative">
-                {errors.note.message}
               </p>
             )}
           </div>

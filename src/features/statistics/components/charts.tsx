@@ -743,7 +743,8 @@ function GoalTick({ x, y, width, payload }: BarShapeProps) {
  * Zeitraum gestreift fortgesetzt um das noch Erwartete (wie die Prognose am
  * Zielbalken der Übersicht), das Ziel als Querstrich. Ob ein Jahr sein Ziel
  * traf, sieht man so am Balkenende — ohne zweite Balkenreihe, die die Breite
- * halbiert. Tooltip statt Klick (Navigation nur über die Liste darunter).
+ * halbiert. Tooltip statt Klick (Navigation nur über die Liste darunter), ohne
+ * Legende: Was Balken, Streifen und Strich sind, nennt der Tooltip.
  */
 export function GoalBarChart({
   data,
@@ -814,16 +815,6 @@ export function GoalBarChart({
           />
         </ComposedChart>
       </ChartCanvas>
-
-      <ChartLegend
-        items={[
-          { label: "Erhalten", color: "var(--primary)" },
-          ...(hasRest
-            ? [{ label: "Erwartet", color: "var(--series-prior)", dashed: true }]
-            : []),
-          { label: "Ziel", color: "var(--foreground)" },
-        ]}
-      />
 
       <ChartDataTable>
         <Table>
