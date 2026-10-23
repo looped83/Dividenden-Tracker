@@ -370,6 +370,42 @@ describe("Listenansicht", () => {
     expect(screen.queryByRole("heading", { name: /^Später/ })).not.toBeInTheDocument();
   });
 
+  it("klappt die Monate ein wie die Dividendenliste: offen ist der aktuelle", async () => {
+    const user = userEvent.setup();
+    renderPage("agenda");
+
+    const august = screen.getByRole("button", { name: "August 2026" });
+    const september = screen.getByRole("button", { name: "September 2026" });
+    expect(august).toHaveAttribute("aria-expanded", "true");
+    expect(september).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("button", { name: /Später AG/ })).not.toBeInTheDocument();
+
+    await user.click(september);
+    expect(september).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("button", { name: /Später AG/ })).toBeInTheDocument();
+
+    await user.click(august);
+    expect(screen.queryByRole("button", { name: /Heute AG/ })).not.toBeInTheDocument();
+
+    // Der andere Kalender beginnt wieder beim aktuellen Monat.
+    await user.click(screen.getByRole("radio", { name: "Ex-Tage" }));
+    await user.click(screen.getByRole("radio", { name: "Dividenden" }));
+    expect(screen.getByRole("button", { name: "August 2026" })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+  });
+
+  it("oeffnet ohne Termine im aktuellen Monat den ersten kommenden", () => {
+    zustand.events = [event({ id: "2", date: "2026-09-15", title: "Später AG" })];
+    renderPage("agenda");
+
+    expect(screen.getByRole("button", { name: "September 2026" })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+  });
+
   it("traegt das Datum an jeder Kachel — als Zahl und als vollstaendige Angabe", () => {
     renderPage("agenda");
 

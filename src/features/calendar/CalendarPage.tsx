@@ -87,6 +87,9 @@ export function CalendarPage() {
         const params = new URLSearchParams(prev);
         if (next === "ex_date") params.set("art", "ex");
         else params.delete("art");
+        // Die offenen Monate gelten fuer einen Kalender; der andere beginnt
+        // wieder beim aktuellen Monat.
+        params.delete("offen");
         return params;
       },
       { replace: true },

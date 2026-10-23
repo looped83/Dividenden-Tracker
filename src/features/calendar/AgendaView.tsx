@@ -1,12 +1,8 @@
 import { AmountText } from "@/components/money/AmountText";
 import { Badge } from "@/components/ui/badge";
-import {
-  ListDateTile,
-  ListGroup,
-  ListItemBody,
-  ListRow,
-  ListSection,
-} from "@/components/ui/list";
+import { ListDateTile, ListGroup, ListItemBody, ListRow } from "@/components/ui/list";
+import { CollapsibleMonth, MonthSections } from "@/components/ui/month-section";
+import { useOpenMonths } from "@/lib/hooks/useOpenMonths";
 import { cn } from "@/lib/utils/cn";
 import { formatMoney } from "@/lib/money";
 import { buildAgenda } from "@/lib/calendar/agenda";
@@ -36,6 +32,9 @@ import type { CalendarEvent, CalendarEventType } from "@/lib/calendar/types";
  * die Monatssumme in der Dividendenliste. Fehlt sie (keine Betraege, mehrere
  * Waehrungen), bleibt die Stelle leer statt eine Null zu behaupten.
  *
+ * Die Monate klappen ein wie dort (seit 2.9.0, `useOpenMonths`): Offen ist der
+ * aktuelle Monat, sonst der erste mit Terminen.
+ *
  * Ueberschriftenhierarchie: Die Seite traegt die h1, jeder Monat eine h2. Das Datum jeder Zeile steht vollstaendig
  * in ihrer zugaenglichen Bezeichnung.
  */
@@ -51,12 +50,17 @@ export function AgendaView({
   onSelect: (event: CalendarEvent) => void;
 }) {
   const sections = buildAgenda(events, today, type);
+  const { isOpen, toggle } = useOpenMonths(
+    sections.map((section) => section.key),
+    today.slice(0, 7),
+  );
 
   return (
-    <div className="space-y-10">
+    <MonthSections>
       {sections.map((section) => (
-        <ListSection
+        <CollapsibleMonth
           key={section.key}
+          id={`monat-${section.key}`}
           title={section.label}
           aside={
             section.expected ? (
@@ -68,6 +72,10 @@ export function AgendaView({
               </>
             ) : undefined
           }
+          open={isOpen(section.key)}
+          onToggle={() => {
+            toggle(section.key);
+          }}
         >
           <ListGroup>
             {section.days
@@ -78,9 +86,9 @@ export function AgendaView({
                 </li>
               ))}
           </ListGroup>
-        </ListSection>
+        </CollapsibleMonth>
       ))}
-    </div>
+    </MonthSections>
   );
 }
 
