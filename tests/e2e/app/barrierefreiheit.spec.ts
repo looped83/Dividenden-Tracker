@@ -42,7 +42,6 @@ const ROUTEN = [
   },
   { pfad: "/#/statistiken/vergleich", name: "Statistik Vergleich", warten: "Statistik" },
   { pfad: "/#/ziele", name: "Ziele", warten: "Ziele" },
-  { pfad: "/#/ziele/beendet", name: "Ziele beendet", warten: "Ziele" },
   { pfad: "/#/einstellungen", name: "Einstellungen", warten: "Einstellungen" },
   { pfad: "/#/einstellungen/depots", name: "Depots", warten: "Einstellungen" },
   { pfad: "/#/einstellungen/importe", name: "Importe", warten: "Einstellungen" },

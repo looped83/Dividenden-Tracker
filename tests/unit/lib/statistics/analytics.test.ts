@@ -398,6 +398,15 @@ describe("yearEndForecast (§9.7)", () => {
     expect(result.announcedUntil).toBe("2026-08-02");
     expect(result.remainingPrior.toStringValue()).toBe("30.00");
     expect(result.forecast.toStringValue()).toBe("230.00");
+    // Der Rest nach Monat: Juli 45 (angekündigt), August 5 + 30.
+    expect(result.restByMonth.map((m) => m.toStringValue())).toEqual([
+      ...Array<string>(6).fill("0.00"),
+      "45.00",
+      "35.00",
+      ...Array<string>(4).fill("0.00"),
+    ]);
+    const rest = result.restByMonth.reduce((sum, m) => sum.add(m));
+    expect(result.received.add(rest).toStringValue()).toBe("230.00");
   });
 
   it("bildet den 29. Februar auf den 28. Februar des Vorjahres ab", () => {

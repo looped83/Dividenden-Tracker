@@ -86,9 +86,6 @@ const DepotsTab = React.lazy(async () => ({
 const GoalsPage = React.lazy(async () => ({
   default: (await routeChunks.goals()).GoalsPage,
 }));
-const GoalsTab = React.lazy(async () => ({
-  default: (await routeChunks.goalsTab()).GoalsTab,
-}));
 const GoalDetailPage = React.lazy(async () => ({
   default: (await routeChunks.goalDetail()).GoalDetailPage,
 }));
@@ -202,17 +199,11 @@ export const router = createHashRouter([
       // Neben der Statistik-Huelle wie die Asset-Detailseite: Die Story fuellt
       // den Bildschirm, Reiter und Filter gehoeren nicht dazu.
       { path: "statistiken/rueckblick/:jahr", element: <AnnualReviewPage /> },
-      {
-        path: "ziele",
-        element: <GoalsPage />,
-        children: [
-          { index: true, element: <GoalsTab status="current" /> },
-          { path: "bevorstehend", element: <GoalsTab status="upcoming" /> },
-          { path: "beendet", element: <GoalsTab status="ended" /> },
-        ],
-      },
-      // Statische Reiterpfade ranken vor dem dynamischen Segment; ein Ziel mit
-      // der Kennung „beendet" gibt es nicht (UUIDs).
+      { path: "ziele", element: <GoalsPage /> },
+      // Die Reiter Bevorstehend und Beendet gingen in der Zielliste auf (2.4.0).
+      // Statische Pfade ranken vor dem dynamischen Segment.
+      { path: "ziele/bevorstehend", element: <Navigate to="/ziele" replace /> },
+      { path: "ziele/beendet", element: <Navigate to="/ziele" replace /> },
       { path: "ziele/:id", element: <GoalDetailPage /> },
       {
         path: "einstellungen",

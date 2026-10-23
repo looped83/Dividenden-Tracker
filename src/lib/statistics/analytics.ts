@@ -405,6 +405,12 @@ export function yearEndForecast(
   announcedUntil: string | null;
   remainingPrior: Money;
   forecast: Money;
+  /**
+   * Der erwartete Rest (`announced` + `remainingPrior`) nach Monat, Index 0 =
+   * Januar — für die Monatsansicht der Zielseite. Summiert genau
+   * `forecast − received`.
+   */
+  restByMonth: Money[];
 } {
   const { current: received } = selectedYearComparison(payments, ref.year, ref);
   const today = isoFromRef(ref);
@@ -427,17 +433,26 @@ export function yearEndForecast(
       }
     : ref;
   const cutoff = priorYearSameDay(until);
-  const remainingPrior = aggregate(
-    payments.filter(
-      (p) => yearOf(p.payDate) === ref.year - 1 && p.actualPayDate > cutoff,
-    ),
-  ).net;
+  const prior = payments.filter(
+    (p) => yearOf(p.payDate) === ref.year - 1 && p.actualPayDate > cutoff,
+  );
+  const restByMonth = Array.from({ length: 12 }, () => ZERO);
+  for (const a of inYear) {
+    const index = monthOf(a.date) - 1;
+    restByMonth[index] = restByMonth[index].add(a.amount);
+  }
+  for (const p of prior) {
+    const index = monthOf(p.payDate) - 1;
+    restByMonth[index] = restByMonth[index].add(p.netAmount);
+  }
+  const remainingPrior = aggregate(prior).net;
   return {
     received,
     announced,
     announcedUntil,
     remainingPrior,
     forecast: received.add(announced).add(remainingPrior),
+    restByMonth,
   };
 }
 

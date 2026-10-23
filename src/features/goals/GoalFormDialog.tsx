@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { MONTH_NAMES_DE } from "@/lib/statistics";
-import { toGermanDecimalString } from "@/lib/money";
+import { toGermanDecimalString, type Money } from "@/lib/money";
 import { emptyToNull } from "@/lib/utils/emptyToNull";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import {
@@ -38,11 +38,15 @@ interface GoalFormDialogProps {
   onOpenChange: (open: boolean) => void;
   /** Vorhandenes Ziel = Bearbeiten; null = Anlegen. */
   goal: GoalWithMeta | null;
-  /** Optionaler Startwert der Zielart beim Anlegen. */
+  /** Vorbelegung beim Anlegen, etwa aus dem Zielvorschlag der Zielseite. */
+  preset?: { year: number; targetAmount: Money } | undefined;
   onSaved?: (goalId: string) => void;
 }
 
-function defaultInput(goal: GoalWithMeta | null): GoalFormInput {
+function defaultInput(
+  goal: GoalWithMeta | null,
+  preset?: GoalFormDialogProps["preset"],
+): GoalFormInput {
   if (goal) {
     return {
       goalType: goal.goalType,
@@ -55,9 +59,11 @@ function defaultInput(goal: GoalWithMeta | null): GoalFormInput {
   }
   return {
     goalType: "annual",
-    year: String(new Date().getFullYear()),
+    year: String(preset?.year ?? new Date().getFullYear()),
     month: "",
-    targetAmount: "",
+    targetAmount: preset
+      ? toGermanDecimalString(preset.targetAmount.toStringValue())
+      : "",
     title: "",
     note: "",
   };
@@ -85,6 +91,7 @@ export function GoalFormDialog({
   open,
   onOpenChange,
   goal,
+  preset,
   onSaved,
 }: GoalFormDialogProps) {
   const isEdit = goal !== null;
@@ -101,16 +108,16 @@ export function GoalFormDialog({
     formState: { errors, isSubmitting },
   } = useForm<GoalFormInput, unknown, GoalFormValues>({
     resolver: zodResolver(goalFormSchema),
-    defaultValues: defaultInput(goal),
+    defaultValues: defaultInput(goal, preset),
   });
 
   // Bei jedem Öffnen (bzw. Zielwechsel) sauber aus dem Ziel vorbelegen.
   React.useEffect(() => {
     if (open) {
-      reset(defaultInput(goal));
+      reset(defaultInput(goal, preset));
       setSubmitError(null);
     }
-  }, [open, goal, reset]);
+  }, [open, goal, preset, reset]);
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const goalType = watch("goalType");

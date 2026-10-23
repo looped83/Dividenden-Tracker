@@ -33,7 +33,7 @@ describe("BottomNav", () => {
     for (const path of [
       "/kalender",
       "/depot/abc",
-      "/ziele/bevorstehend",
+      "/ziele/2b0f3c1e-0000-4000-8000-000000000001",
       "/einstellungen",
     ]) {
       const { unmount } = renderNav(path);

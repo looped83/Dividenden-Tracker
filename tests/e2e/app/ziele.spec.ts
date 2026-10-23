@@ -28,11 +28,10 @@ test("legt ein Monatsziel an und oeffnet es zum Bearbeiten mit gefuellten Felder
   await page.getByRole("button", { name: "Ziel anlegen", exact: true }).click();
   // Erst warten, bis gespeichert ist: Sonst entschied ein Wettlauf zwischen
   // Speichern und dem Seitenwechsel darunter, wo der Test landet.
-  await expect(page).toHaveURL(/#\/ziele\/[0-9a-f-]{36}$/);
+  // Die Zielseite bleibt stehen; das neue Ziel erscheint in der Liste.
+  await expect(page.getByRole("dialog")).toBeHidden();
 
-  // Bearbeiten steht auf der Detailseite, die die Zielkarte oeffnet — die
-  // Liste selbst hat keine Schaltflaechen mehr.
-  await page.goto("/#/ziele");
+  // Bearbeiten steht auf der Detailseite, die jede Zeile der Liste oeffnet.
   await page
     .getByRole("link", { name: /^Monatsziel/ })
     .first()
