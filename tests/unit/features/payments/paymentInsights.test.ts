@@ -87,6 +87,14 @@ describe("derivePaymentInsights", () => {
     expect(result?.count).toBe(26);
   });
 
+  it("listet fünf Dividenden um diese herum, jüngste zuerst", () => {
+    const ids = (id: string) =>
+      derivePaymentInsights(id, monthly, [])?.nearby.map((entry) => entry.id);
+    expect(ids("p10")).toEqual(["p12", "p11", "p10", "p9", "p8"]);
+    expect(ids("p23")).toEqual(["p23", "p22", "p21", "p20", "p19"]);
+    expect(ids("p0")).toEqual(["p4", "p3", "p2", "p1", "p0"]);
+  });
+
   it("erwartet die nächste Dividende nur nach der jüngsten und nach Plan", () => {
     const quarterly = [3, 6, 9, 12];
     expect(derivePaymentInsights("p23", monthly, quarterly)?.nextExpected).toBe(

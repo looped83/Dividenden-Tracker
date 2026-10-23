@@ -1,5 +1,7 @@
 import * as React from "react";
 import { KpiHero, KpiStats, type KpiStat } from "@/components/domain/KpiHero";
+import { Badge } from "@/components/ui/badge";
+import { ListGroup } from "@/components/ui/list";
 import { Section, SectionLink } from "@/components/ui/section";
 import { SegmentedControl, type SegmentOption } from "@/components/ui/segmented";
 import { TrendTriangle } from "@/components/ui/trend-triangle";
@@ -7,12 +9,14 @@ import { AmountText } from "@/components/money/AmountText";
 import { formatPercent } from "@/lib/money";
 import { monthNameDe, monthNameDeShort, monthOf, yearOf } from "@/lib/statistics";
 import { cn } from "@/lib/utils/cn";
-import { formatCalendarDate } from "@/lib/utils/formatDate";
+import { formatCalendarDate, formatDayMonth } from "@/lib/utils/formatDate";
 import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
 import {
   CategoryBarChart,
   type CategoryDatum,
 } from "@/features/statistics/components/charts";
+import { useDepots } from "@/features/depots/hooks";
+import { PaymentListItem } from "@/features/payments/PaymentListItem";
 import {
   deltaOf as delta,
   type Delta,
@@ -134,7 +138,8 @@ export function PaymentInsightsView({
   securityId: string;
   securityName: string;
 }) {
-  const { history } = insights;
+  const { history, nearby } = insights;
+  const { data: depots = [] } = useDepots();
 
   const [view, setView] = React.useState<HistoryView>("monthly");
 
@@ -220,12 +225,53 @@ export function PaymentInsightsView({
             sind Kennzahlen, und die Leiste fuehrt per Tipp in die Liste. Die
             Summen gelten dem ganzen Asset, daher rechts daneben der Weg zu
             seiner Detailseite — sichtbarer als der verlinkte Name im Kopf. */}
-        <Section
-          title="Einordnung"
-          action={<SectionLink to={`/depot/${securityId}`}>Zum Asset</SectionLink>}
-        >
-          <KpiStats stats={summary} />
-        </Section>
+        <div className="space-y-10">
+          <Section
+            title="Einordnung"
+            action={<SectionLink to={`/depot/${securityId}`}>Zum Asset</SectionLink>}
+          >
+            <KpiStats stats={summary} />
+          </Section>
+
+          {/* Dieselbe Liste wie „Letzte Dividenden" auf der Assetseite, aber
+              um diese Dividende herum: Von hier springt man zur vorherigen
+              oder naechsten, ohne Umweg ueber die ganze Liste. */}
+          {nearby.length > 1 && (
+            <Section
+              title="Weitere Dividenden"
+              action={
+                <SectionLink to={`/eingaenge?security=${securityId}`}>
+                  Alle {formatCountNumber(insights.count)}
+                </SectionLink>
+              }
+            >
+              <div>
+                <ListGroup>
+                  {nearby.map((payment) => (
+                    <PaymentListItem
+                      key={payment.id}
+                      to={`/eingaenge/${payment.id}`}
+                      title={depots.find((d) => d.id === payment.depotId)?.name ?? "—"}
+                      date={payment.payDate}
+                      showYear
+                      note={
+                        payment.payDate !== payment.actualPayDate
+                          ? `tatsächlich ${formatDayMonth(payment.actualPayDate)}`
+                          : undefined
+                      }
+                      badge={
+                        payment.id === paymentId ? (
+                          <Badge className="mr-2 shrink-0">Diese</Badge>
+                        ) : undefined
+                      }
+                      amount={payment.netAmount}
+                    />
+                  ))}
+                </ListGroup>
+              </div>
+            </Section>
+          )}
+        </div>
       </div>
     </>
   );

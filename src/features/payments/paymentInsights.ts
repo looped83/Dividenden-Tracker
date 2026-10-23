@@ -8,6 +8,9 @@ import {
 /** Wie viele Monate mit Dividenden der Verlauf der Detailseite zeigt. */
 const HISTORY_SIZE = 12;
 
+/** Wie viele Dividenden die Liste unter der Einordnung zeigt — wie die Assetseite. */
+const NEARBY_SIZE = 5;
+
 /**
  * Ein Balken des Verlaufs: alle Dividenden eines Monats zusammen. Zwei
  * Zahlungen im selben Monat (verschobener Zahltag, Sonderdividende) standen
@@ -51,6 +54,11 @@ export interface PaymentInsights {
   count: number;
   /** Bis zu {@link HISTORY_SIZE} Monate um diese Dividende herum, chronologisch. */
   history: HistoryMonth[];
+  /**
+   * Bis zu {@link NEARBY_SIZE} Dividenden um diese herum, juengste zuerst —
+   * bei einer aelteren Dividende sagen ihre Nachbarn mehr als die juengsten.
+   */
+  nearby: AnalyticsPayment[];
   year: { year: number; net: Money; count: number };
   total: Money;
   firstDate: string;
@@ -184,6 +192,12 @@ export function derivePaymentInsights(
     return { ...bucket, net, total: running };
   });
 
+  const nearbyStart = Math.max(
+    0,
+    Math.min(index - Math.floor(NEARBY_SIZE / 2), sorted.length - NEARBY_SIZE),
+  );
+  const nearby = sorted.slice(nearbyStart, nearbyStart + NEARBY_SIZE).reverse();
+
   const year = yearOf(current.payDate);
   const inYear = sorted.filter((payment) => yearOf(payment.payDate) === year);
 
@@ -209,6 +223,7 @@ export function derivePaymentInsights(
     ordinal: index + 1,
     count: sorted.length,
     history,
+    nearby,
     year: {
       year,
       net: sumMoney(
