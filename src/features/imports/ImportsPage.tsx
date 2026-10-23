@@ -188,7 +188,9 @@ export function ImportsPage() {
                     />
                   </ListRow>
                   {(imp.status === "committed" || DRAFT_STATUSES.has(imp.status)) && (
-                    <div className="-mt-1 flex justify-end px-3 pb-3">{actionsFor(imp)}</div>
+                    <div className="-mt-1 flex justify-end px-3 pb-3">
+                      {actionsFor(imp)}
+                    </div>
                   )}
                 </li>
               ))}
