@@ -28,14 +28,14 @@ import type { SecuritySnapshotRun } from "@/lib/supabase/repositories/securitySn
  *
  * Erscheint erst, wenn es etwas zu verwalten gibt.
  */
-export function SnapshotRunsCard() {
+export function SnapshotRunsCard({ className }: { className?: string }) {
   const { data: runs = [] } = useSnapshotRuns();
   const [target, setTarget] = React.useState<SecuritySnapshotRun | null>(null);
 
   if (runs.length === 0) return null;
 
   return (
-    <Section title="Depotstände">
+    <Section title="Depotstände" className={className}>
       <div>
         <ListGroup aria-label="Depotstände">
           {runs.map((run) => {

@@ -3,17 +3,8 @@ import { Plus, RotateCcw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Section, SectionButton } from "@/components/ui/section";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ListGroup, ListItemBody, ListRow } from "@/components/ui/list";
-import { MD_BREAKPOINT_QUERY, useMediaQuery } from "@/lib/hooks/useMediaQuery";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import { Money } from "@/lib/money/money";
 import { EUR } from "@/lib/money/currency";
@@ -64,7 +55,6 @@ export function ImportsPage() {
   const rollback = useRollbackImport();
   const discard = useDiscardImport();
   const [actionError, setActionError] = React.useState("");
-  const isWide = useMediaQuery(MD_BREAKPOINT_QUERY);
 
   async function handleRollback(imp: Import) {
     const checksums = imp.checksums as { row_count?: number } | null;
@@ -97,7 +87,6 @@ export function ImportsPage() {
     }
   }
 
-  // Dieselben Aktionen in Tabelle und Liste.
   const actionsFor = (imp: Import) => (
     <>
       {imp.status === "committed" && (
@@ -146,7 +135,11 @@ export function ImportsPage() {
   }
 
   return (
-    <div className="space-y-10">
+    // Ab `lg` nebeneinander, Depotstände links: Beide Listen sind kurz,
+    // untereinander blieb rechts die halbe Fläche leer. Auf dem Telefon bleibt
+    // die bisherige Reihenfolge, der Import steht oben. Die Importe stehen
+    // deshalb überall als Liste — fünf Spalten passten in keine halbe Breite.
+    <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-2 lg:gap-x-16">
       <Section
         title="Import"
         action={
@@ -174,41 +167,7 @@ export function ImportsPage() {
               title="Noch keine Importe"
               description="Starte einen Import, um historische Dividenden aus einer CSV- oder Excel-Datei zu übernehmen."
             />
-          ) : isWide ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Datei</TableHead>
-                  <TableHead>Datum</TableHead>
-                  <TableHead className="text-right">Summe</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {imports.map((imp) => (
-                  <TableRow key={imp.id}>
-                    <TableCell className="font-medium">{imp.file_name}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {formatTimestampDate(imp.committed_at ?? imp.created_at)}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {checksumTotal(imp) ?? "—"}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={STATUS_LABELS[imp.status].variant}>
-                        {STATUS_LABELS[imp.status].label}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">{actionsFor(imp)}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
           ) : (
-            // Auf dem Telefon eine Liste statt einer Tabelle: Fünf Spalten
-            // passten nicht in die Breite, die Tabelle ließ sich nur seitlich
-            // verschieben.
             <ListGroup aria-label="Importe">
               {imports.map((imp) => (
                 <li key={imp.id}>
@@ -229,7 +188,7 @@ export function ImportsPage() {
                     />
                   </ListRow>
                   {(imp.status === "committed" || DRAFT_STATUSES.has(imp.status)) && (
-                    <div className="-mt-1 flex justify-end pb-3">{actionsFor(imp)}</div>
+                    <div className="-mt-1 flex justify-end px-3 pb-3">{actionsFor(imp)}</div>
                   )}
                 </li>
               ))}
@@ -238,7 +197,7 @@ export function ImportsPage() {
         </div>
       </Section>
 
-      <SnapshotRunsCard />
+      <SnapshotRunsCard className="lg:order-first" />
     </div>
   );
 }
