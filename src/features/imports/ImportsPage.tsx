@@ -1,25 +1,24 @@
 import * as React from "react";
 import { Plus, RotateCcw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Section, SectionButton } from "@/components/ui/section";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
-import { ListGroup, ListItemBody, ListRow } from "@/components/ui/list";
-import { MD_BREAKPOINT_QUERY, useMediaQuery } from "@/lib/hooks/useMediaQuery";
+import { ListGroup, ListRow } from "@/components/ui/list";
 import { SkeletonRows } from "@/components/ui/skeleton";
+import { useToast } from "@/components/ui/toast";
+import { useErrorState } from "@/lib/hooks/useErrorState";
 import { Money } from "@/lib/money/money";
 import { EUR } from "@/lib/money/currency";
 import { formatMoney } from "@/lib/money/format";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
-import { formatCountNumber } from "@/lib/utils/formatNumber";
+import { formatCountNoun } from "@/lib/utils/formatNumber";
 import { ImportWizard } from "@/features/imports/ImportWizard";
 import { SnapshotRunsCard } from "@/features/securities/SnapshotRunsCard";
 import {
@@ -31,15 +30,12 @@ import type { Import } from "@/lib/supabase/repositories/imports";
 import type { ImportStatus } from "@/lib/supabase/database.types";
 import { formatTimestampDate } from "@/lib/utils/formatDate";
 
-const STATUS_LABELS: Record<
-  ImportStatus,
-  { label: string; variant: "positive" | "warning" | "negative" | "neutral" }
-> = {
-  analyzing: { label: "In Analyse", variant: "neutral" },
-  pending_confirmation: { label: "Wartet auf Bestätigung", variant: "warning" },
-  committed: { label: "Abgeschlossen", variant: "positive" },
-  rolled_back: { label: "Zurückgerollt", variant: "neutral" },
-  discarded: { label: "Verworfen", variant: "neutral" },
+const STATUS_LABELS: Record<ImportStatus, string> = {
+  analyzing: "In Analyse",
+  pending_confirmation: "Wartet auf Bestätigung",
+  committed: "Abgeschlossen",
+  rolled_back: "Zurückgerollt",
+  discarded: "Verworfen",
 };
 
 /**
@@ -61,32 +57,9 @@ function checksumTotal(imp: Import): string | null {
 export function ImportsPage() {
   const [wizardOpen, setWizardOpen] = React.useState(false);
   const { data: imports = [], isLoading } = useImports();
-  const rollback = useRollbackImport();
   const discard = useDiscardImport();
   const [actionError, setActionError] = React.useState("");
-  const isWide = useMediaQuery(MD_BREAKPOINT_QUERY);
-
-  async function handleRollback(imp: Import) {
-    const checksums = imp.checksums as { row_count?: number } | null;
-    const rows =
-      checksums?.row_count === undefined
-        ? "alle"
-        : formatCountNumber(checksums.row_count);
-    if (
-      !window.confirm(
-        `Diesen Import vollständig zurückrollen? ${rows} importierte Dividenden werden archiviert. ` +
-          "Der Importdatensatz bleibt als Historie erhalten.",
-      )
-    ) {
-      return;
-    }
-    setActionError("");
-    try {
-      await rollback.mutateAsync(imp.id);
-    } catch (err) {
-      setActionError(getErrorMessage(err, "Rollback fehlgeschlagen."));
-    }
-  }
+  const [rollbackTarget, setRollbackTarget] = React.useState<Import | null>(null);
 
   async function handleDiscard(imp: Import) {
     setActionError("");
@@ -97,35 +70,37 @@ export function ImportsPage() {
     }
   }
 
-  // Dieselben Aktionen in Tabelle und Liste.
-  const actionsFor = (imp: Import) => (
-    <>
-      {imp.status === "committed" && (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => void handleRollback(imp)}
-          disabled={rollback.isPending}
-        >
-          <RotateCcw /> Rollback
-        </Button>
-      )}
-      {/* Entwuerfe bleiben nach einem gescheiterten Import
-          zurueck; sie tragen keine Zahlungen und lassen sich
-          ohne Rueckfrage entfernen. */}
-      {DRAFT_STATUSES.has(imp.status) && (
-        <Button
-          variant="outline"
-          size="sm"
-          aria-label={`Entwurf ${imp.file_name} löschen`}
-          onClick={() => void handleDiscard(imp)}
-          disabled={discard.isPending}
-        >
-          <Trash2 /> Löschen
-        </Button>
-      )}
-    </>
-  );
+  // Symbolknoepfe wie bei den Depotstaenden daneben; der Name sagt dem
+  // Screenreader, was passiert.
+  const actionFor = (imp: Import) =>
+    imp.status === "committed" ? (
+      <Button
+        variant="ghost"
+        size="icon"
+        className="-my-2 shrink-0"
+        aria-label={`Import ${imp.file_name} zurückrollen`}
+        title="Zurückrollen"
+        onClick={() => {
+          setRollbackTarget(imp);
+        }}
+      >
+        <RotateCcw />
+      </Button>
+    ) : DRAFT_STATUSES.has(imp.status) ? (
+      // Entwuerfe bleiben nach einem gescheiterten Import zurueck; sie tragen
+      // keine Zahlungen und lassen sich ohne Rueckfrage entfernen.
+      <Button
+        variant="ghost"
+        size="icon"
+        className="-my-2 shrink-0"
+        aria-label={`Entwurf ${imp.file_name} löschen`}
+        title="Löschen"
+        onClick={() => void handleDiscard(imp)}
+        disabled={discard.isPending}
+      >
+        <Trash2 />
+      </Button>
+    ) : null;
 
   if (wizardOpen) {
     return (
@@ -146,9 +121,13 @@ export function ImportsPage() {
   }
 
   return (
-    <div className="space-y-10">
+    // Ab `lg` nebeneinander, Depotstände links: Beide Listen sind kurz,
+    // untereinander blieb rechts die halbe Fläche leer. Auf dem Telefon bleibt
+    // die bisherige Reihenfolge, der Import steht oben. Die Importe stehen
+    // deshalb überall als Liste — fünf Spalten passten in keine halbe Breite.
+    <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-2 lg:gap-x-16">
       <Section
-        title="Import"
+        title="Dividenden-Import"
         action={
           <SectionButton
             icon={Plus}
@@ -174,71 +153,117 @@ export function ImportsPage() {
               title="Noch keine Importe"
               description="Starte einen Import, um historische Dividenden aus einer CSV- oder Excel-Datei zu übernehmen."
             />
-          ) : isWide ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Datei</TableHead>
-                  <TableHead>Datum</TableHead>
-                  <TableHead className="text-right">Summe</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {imports.map((imp) => (
-                  <TableRow key={imp.id}>
-                    <TableCell className="font-medium">{imp.file_name}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {formatTimestampDate(imp.committed_at ?? imp.created_at)}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {checksumTotal(imp) ?? "—"}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={STATUS_LABELS[imp.status].variant}>
-                        {STATUS_LABELS[imp.status].label}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">{actionsFor(imp)}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
           ) : (
-            // Auf dem Telefon eine Liste statt einer Tabelle: Fünf Spalten
-            // passten nicht in die Breite, die Tabelle ließ sich nur seitlich
-            // verschieben.
             <ListGroup aria-label="Importe">
-              {imports.map((imp) => (
-                <li key={imp.id}>
-                  <ListRow className="items-start">
-                    <ListItemBody
-                      title={imp.file_name}
-                      meta={
-                        <>
-                          <Badge variant={STATUS_LABELS[imp.status].variant}>
-                            {STATUS_LABELS[imp.status].label}
-                          </Badge>
-                          <span>
-                            {formatTimestampDate(imp.committed_at ?? imp.created_at)}
-                          </span>
-                        </>
-                      }
-                      trailing={checksumTotal(imp) ?? undefined}
-                    />
-                  </ListRow>
-                  {(imp.status === "committed" || DRAFT_STATUSES.has(imp.status)) && (
-                    <div className="-mt-1 flex justify-end pb-3">{actionsFor(imp)}</div>
-                  )}
-                </li>
-              ))}
+              {imports.map((imp) => {
+                const total = checksumTotal(imp);
+                return (
+                  <li key={imp.id}>
+                    {/* Aufbau wie die Depotstände: Name, darunter die Angaben,
+                        rechts die Aktion. */}
+                    <ListRow className="pr-1">
+                      <span className="min-w-0 flex-1">
+                        <span className="font-medium [overflow-wrap:anywhere]">
+                          {imp.file_name}
+                        </span>
+                        <span className="block text-sm text-muted-foreground">
+                          <span>{STATUS_LABELS[imp.status]}</span>
+                          {` · ${formatTimestampDate(imp.committed_at ?? imp.created_at)}`}
+                          {total && ` · ${total}`}
+                        </span>
+                      </span>
+                      {actionFor(imp)}
+                    </ListRow>
+                  </li>
+                );
+              })}
             </ListGroup>
           )}
         </div>
       </Section>
 
-      <SnapshotRunsCard />
+      <SnapshotRunsCard className="lg:order-first" />
+
+      <RollbackImportDialog
+        imp={rollbackTarget}
+        onOpenChange={(open) => {
+          if (!open) setRollbackTarget(null);
+        }}
+      />
     </div>
+  );
+}
+
+/**
+ * Rueckfrage vor dem Rollback — im selben Dialog wie das Loeschen eines
+ * Depotstands (`SnapshotRunsCard`). Zuvor fragte `window.confirm`, auf dem
+ * iPhone ein grauer Systemdialog, der nicht zur App passte.
+ */
+function RollbackImportDialog({
+  imp,
+  onOpenChange,
+}: {
+  /** Der zurueckzurollende Import; `null` schliesst den Dialog. */
+  imp: Import | null;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const rollback = useRollbackImport();
+  const { notify } = useToast();
+  const { error, showError, clearError } = useErrorState();
+  const rowCount = (imp?.checksums as { row_count?: number } | null)?.row_count;
+
+  const handleRollback = async () => {
+    if (!imp) return;
+    clearError();
+    try {
+      await rollback.mutateAsync(imp.id);
+      onOpenChange(false);
+      notify(`Import ${imp.file_name} zurückgerollt.`);
+    } catch (cause) {
+      showError(cause, "Rollback fehlgeschlagen.");
+    }
+  };
+
+  return (
+    <Dialog
+      open={imp !== null}
+      onOpenChange={(open) => {
+        if (!open) clearError();
+        onOpenChange(open);
+      }}
+    >
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Import zurückrollen</DialogTitle>
+        </DialogHeader>
+        {imp && (
+          <p className="text-sm text-muted-foreground [overflow-wrap:anywhere]">
+            {rowCount === undefined
+              ? "Alle importierten Dividenden"
+              : formatCountNoun(
+                  rowCount,
+                  "importierte Dividende",
+                  "importierte Dividenden",
+                )}{" "}
+            aus {imp.file_name} {rowCount === 1 ? "wird" : "werden"} archiviert. Der
+            Import bleibt als Historie in der Liste.
+          </p>
+        )}
+        {error && (
+          <p role="alert" className="text-sm text-negative">
+            {error}
+          </p>
+        )}
+        <DialogFooter>
+          <Button
+            variant="destructive"
+            disabled={rollback.isPending}
+            onClick={() => void handleRollback()}
+          >
+            {rollback.isPending ? "Wird zurückgerollt …" : "Zurückrollen"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

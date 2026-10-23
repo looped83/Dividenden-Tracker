@@ -4,8 +4,7 @@ import { useForm } from "react-hook-form";
 import { Landmark, Pencil, Plus, RotateCcw, Archive as ArchiveIcon } from "lucide-react";
 import { emptyToNull } from "@/lib/utils/emptyToNull";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
-import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
-import { MD_BREAKPOINT_QUERY, useMediaQuery } from "@/lib/hooks/useMediaQuery";
+import { formatCountNoun } from "@/lib/utils/formatNumber";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,14 +23,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   useArchiveDepot,
   useArchivePortfolio,
@@ -252,7 +243,7 @@ function DepotFormDialog({
 }
 
 /**
- * Eine Zeile der Verwaltungslisten auf dem Telefon: Name (und nur der
+ * Eine Zeile der Verwaltungslisten: Name (und nur der
  * Sonderfall „Archiviert" als Etikett), darunter die Angaben, rechts die
  * Aktionen. Anders als Eingaenge und Assets haben Depots und Portfolios keine
  * Detailseite — die Aktionen bleiben deshalb an der Zeile.
@@ -308,11 +299,6 @@ export function DepotsPage() {
   const visibleDepots = depots.filter((depot) => showArchived || !depot.archived_at);
   const visiblePortfolios = portfolios.filter((p) => showArchived || !p.archived_at);
   const portfolioNameById = new Map(portfolios.map((p) => [p.id, p.name]));
-
-  // Tabelle ab `md`, darunter eine Liste: Sechs Spalten liefen auf dem Telefon
-  // seitlich aus dem Bild, sichtbar blieben Name und Portfolio. Die Aktionen
-  // sind in beiden Fassungen dieselben.
-  const isWide = useMediaQuery(MD_BREAKPOINT_QUERY);
 
   const portfolioActions = (portfolio: Portfolio) => (
     <>
@@ -373,7 +359,10 @@ export function DepotsPage() {
   );
 
   return (
-    <div className="space-y-10">
+    // Ab `lg` stehen Portfolios und Depots nebeneinander: Beide Listen sind
+    // kurz, untereinander blieb rechts die halbe Flaeche leer. Deshalb ueberall
+    // Listen statt Tabellen — sechs Spalten passten nicht in eine halbe Breite.
+    <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-2 lg:gap-x-16">
       {/* Die Aktion gehoert in den Kopf des Abschnitts, nicht in seinen
           Inhalt: Sie betrifft den ganzen Abschnitt, nicht eine Zeile darin. */}
       <Section
@@ -390,7 +379,7 @@ export function DepotsPage() {
         }
       >
         <div className="space-y-3">
-          {/* Dieselbe Darstellung wie die Depots darunter: Zeilen mit Status
+          {/* Dieselbe Darstellung wie die Depots: Zeilen mit Status
               und Aktionen. Zuvor standen Portfolios als Etiketten mit winzigen
               Symbolknoepfen da — eine zweite Sprache auf einer Seite, deren
               Bedienelemente ausserdem unter der Mindestgroesse fuer Beruehrung
@@ -399,7 +388,7 @@ export function DepotsPage() {
             <p className="text-sm text-muted-foreground">
               Noch keine Portfolios angelegt.
             </p>
-          ) : !isWide ? (
+          ) : (
             <ListGroup aria-label="Portfolios">
               {visiblePortfolios.map((portfolio) => (
                 <li key={portfolio.id}>
@@ -416,41 +405,6 @@ export function DepotsPage() {
                 </li>
               ))}
             </ListGroup>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Depots</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Aktionen</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {visiblePortfolios.map((portfolio) => (
-                  <TableRow key={portfolio.id}>
-                    <TableCell className="font-medium">{portfolio.name}</TableCell>
-                    <TableCell className="text-muted-foreground tabular-nums">
-                      {formatCountNumber(
-                        depots.filter((d) => d.portfolio_id === portfolio.id).length,
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {portfolio.archived_at ? (
-                        <Badge variant="neutral">Archiviert</Badge>
-                      ) : (
-                        <Badge variant="positive">Aktiv</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        {portfolioActions(portfolio)}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
           )}
         </div>
       </Section>
@@ -486,7 +440,7 @@ export function DepotsPage() {
                 </Button>
               }
             />
-          ) : !isWide ? (
+          ) : (
             <ListGroup aria-label="Depots">
               {visibleDepots.map((depot) => (
                 <li key={depot.id}>
@@ -507,50 +461,11 @@ export function DepotsPage() {
                 </li>
               ))}
             </ListGroup>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Portfolio</TableHead>
-                  <TableHead>Broker</TableHead>
-                  <TableHead>Basiswährung</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Aktionen</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {visibleDepots.map((depot) => (
-                  <TableRow key={depot.id}>
-                    <TableCell className="font-medium">{depot.name}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {depot.portfolio_id
-                        ? (portfolioNameById.get(depot.portfolio_id) ?? "—")
-                        : "—"}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {depot.broker ?? "—"}
-                    </TableCell>
-                    <TableCell className="tabular-nums">{depot.base_currency}</TableCell>
-                    <TableCell>
-                      {depot.archived_at ? (
-                        <Badge variant="neutral">Archiviert</Badge>
-                      ) : (
-                        <Badge variant="positive">Aktiv</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">{depotActions(depot)}</div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
           )}
 
           {/* Der Archivfilter steht **unter** der Liste: Er beantwortet die
               Frage „fehlt hier etwas?", die erst beim Lesen der Liste
-              aufkommt — und er gilt zugleich fuer die Portfolios darueber. */}
+              aufkommt — und er gilt zugleich fuer die Portfolios. */}
           <label className="flex min-h-11 items-center gap-2 text-sm text-muted-foreground">
             <Checkbox
               checked={showArchived}
