@@ -9,6 +9,5 @@ export const depotFormSchema = z.object({
     .trim()
     .regex(CURRENCY_PATTERN, "3-stelliger Waehrungscode, z. B. EUR")
     .transform((value) => value.toUpperCase()),
-  note: z.string().trim().max(2000).optional().or(z.literal("")),
 });
 export type DepotFormValues = z.infer<typeof depotFormSchema>;

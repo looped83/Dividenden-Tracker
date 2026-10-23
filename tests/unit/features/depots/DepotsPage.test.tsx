@@ -51,6 +51,7 @@ describe("DepotsPage", () => {
     await user.click(screen.getByRole("button", { name: "Neues Depot" }));
 
     expect(screen.queryByLabelText("Name")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Notiz")).not.toBeInTheDocument();
     await user.type(screen.getByLabelText("Broker"), "Scalable Capital");
     await user.click(screen.getByRole("button", { name: "Anlegen" }));
 

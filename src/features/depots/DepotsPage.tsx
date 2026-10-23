@@ -2,12 +2,10 @@ import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Landmark, Pencil, Plus, RotateCcw, Archive as ArchiveIcon } from "lucide-react";
-import { emptyToNull } from "@/lib/utils/emptyToNull";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Section, SectionButton } from "@/components/ui/section";
@@ -53,7 +51,6 @@ function DepotFormDialog({
     values: {
       name: depot?.name ?? "",
       baseCurrency: depot?.base_currency ?? "EUR",
-      note: depot?.note ?? "",
     },
   });
 
@@ -65,7 +62,6 @@ function DepotFormDialog({
       name: values.name,
       broker: values.name,
       base_currency: values.baseCurrency,
-      note: emptyToNull(values.note),
     };
     try {
       if (depot) {
@@ -109,18 +105,10 @@ function DepotFormDialog({
               <Input
                 id="depot-currency"
                 readOnly
-                aria-describedby="depot-currency-hint"
                 className="bg-muted/50"
                 {...register("baseCurrency")}
               />
-              <p id="depot-currency-hint" className="text-sm text-muted-foreground">
-                Entspricht der Währung deines Kontos.
-              </p>
             </div>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="depot-note">Notiz</Label>
-            <Textarea id="depot-note" {...register("note")} />
           </div>
           {submitError && (
             <p role="alert" className="text-sm text-negative">
