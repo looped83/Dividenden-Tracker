@@ -15,10 +15,8 @@ import { GoalMark } from "./GoalMark";
 import { GoalFormDialog } from "./GoalFormDialog";
 import { DeleteGoalDialog } from "./DeleteGoalDialog";
 import {
-  autoGoalTitle,
   drillDownHref,
-  goalDisplayTitle,
-  goalTypeBadgeLabel,
+  goalTitle,
   money,
   startsAtLabel,
   statusLabel,
@@ -108,16 +106,10 @@ export function GoalDetailPage() {
       ? { label: "Übertroffen um", value: money(progress.overshoot) }
       : { label: "Noch bis zum Ziel", value: money(progress.remaining) };
 
-  const title = goalDisplayTitle(goal);
-  const timing = isUpcoming ? startsAtLabel(goal) : timeProgressText(progress);
-  // Zielart und Zeitraum nur bei eigenem Titel: Der automatische Titel nennt
-  // beides schon („Monatsziel November 2026"), die Zeile wiederholte ihn sonst.
-  // Ein Satz statt zweier Teile: Getrennt blieb der Punkt beim Umbruch allein
-  // am Zeilenende stehen.
-  const subtitle =
-    title === autoGoalTitle(goal)
-      ? timing
-      : `${goalTypeBadgeLabel(goal)}\u00A0· ${timing}`;
+  const title = goalTitle(goal);
+  // Der Titel nennt den Zeitraum schon; darunter steht allein der
+  // Zeitfortschritt bzw. „Beginnt am …".
+  const subtitle = isUpcoming ? startsAtLabel(goal) : timeProgressText(progress);
 
   return (
     <div className="space-y-6">
@@ -202,13 +194,6 @@ export function GoalDetailPage() {
             anzeigen
           </Link>
         </Button>
-
-        {goal.note && (
-          <div>
-            <h2 className="text-xs text-muted-foreground">Notiz</h2>
-            <p className="mt-1 whitespace-pre-wrap text-sm">{goal.note}</p>
-          </div>
-        )}
 
         <dl className="grid grid-cols-2 gap-3 border-t border-border pt-4 text-xs text-muted-foreground sm:gap-4">
           <div>

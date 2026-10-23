@@ -8,22 +8,17 @@ import { monthNameDe } from "@/lib/statistics";
 import type { Goal, GoalProgress, GoalStatus } from "@/lib/goals";
 
 /**
- * Automatisch verstaendliche Zielbezeichnung (Auftrag §15/§16), z. B.
- * „Dividendenziel 2027" oder „Monatsziel März 2027". Ein eigener Titel wird
- * bevorzugt; der Zeitraum erscheint dann ergaenzend (siehe {@link periodLabel}).
+ * Titel eines Ziels, immer automatisch (seit 2.5.1): „Dividendenziel 2027"
+ * oder „Dividendenziel März 2027". Eigene Titel und Notizen gibt es nicht
+ * mehr — sie wiederholten nur Zeitraum und Zielart; ein gespeicherter Titel
+ * aus älteren Fassungen wird nicht mehr gezeigt.
  */
-export function autoGoalTitle(goal: Pick<Goal, "goalType" | "year" | "month">): string {
+export function goalTitle(goal: Pick<Goal, "goalType" | "year" | "month">): string {
   const year = String(goal.year);
   if (goal.goalType === "monthly" && goal.month !== null) {
-    return `Monatsziel ${monthNameDe(goal.month)} ${year}`;
+    return `Dividendenziel ${monthNameDe(goal.month)} ${year}`;
   }
   return `Dividendenziel ${year}`;
-}
-
-/** Primaerer Anzeigename: eigener Titel, sonst automatische Bezeichnung. */
-export function goalDisplayTitle(goal: Goal): string {
-  const title = goal.title?.trim();
-  return title && title.length > 0 ? title : autoGoalTitle(goal);
 }
 
 /** Zeitraumbeschriftung, z. B. „Jahr 2027" oder „März 2027". */
@@ -38,21 +33,6 @@ export function periodLabel(goal: Pick<Goal, "goalType" | "year" | "month">): st
 /** Kurzbezeichnung der Zielart. */
 export function goalTypeLabel(goalType: Goal["goalType"]): string {
   return goalType === "monthly" ? "Monatsziel" : "Jahresziel";
-}
-
-/**
- * Zielart samt Zeitraum in einem Zug, z. B. „Jahresziel 2026" oder
- * „Monatsziel März 2026" — die Beschriftung der Zielart-Marke. Beides zusammen,
- * weil die Art ohne ihren Zeitraum die halbe Auskunft ist.
- */
-export function goalTypeBadgeLabel(
-  goal: Pick<Goal, "goalType" | "year" | "month">,
-): string {
-  const year = String(goal.year);
-  if (goal.goalType === "monthly" && goal.month !== null) {
-    return `Monatsziel ${monthNameDe(goal.month)} ${year}`;
-  }
-  return `Jahresziel ${year}`;
 }
 
 /**

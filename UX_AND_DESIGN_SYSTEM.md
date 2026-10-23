@@ -477,12 +477,13 @@ Dividenden des Zeitraums stehen. Die alten Reiteradressen leiten auf `/ziele`.
 Die Übersicht zeigt Ziele dort, wo die Summe steht: das Jahresziel als Balken
 unter der Hauptzahl, das Monatsziel im Feld des Monats.
 
-**Zeichen und Zielart.** Jahres- und Monatsziel tragen dieselbe dunkle
-36-px-Symbolkachel (`GoalMark`, `CalendarRange`). Bis 1.10 trug das Monatsziel ein
-eigenes Symbol auf grauer Kachel; die Zielart steht aber schon im Titel
-(„Dividendenziel 2026", „Monatsziel März 2026"), und das graue Zeichen wirkte wie
-deaktiviert. Die Detailseite nennt Zielart und Zeitraum zusätzlich nur bei eigenem
-Titel; sonst steht darunter allein der Zeitfortschritt bzw. „Beginnt am …".
+**Zeichen und Titel.** Jahres- und Monatsziel tragen dieselbe dunkle
+36-px-Symbolkachel (`GoalMark`, `CalendarRange`). Der Titel entsteht seit 2.5.1
+immer automatisch (`goalTitle`): „Dividendenziel 2026" bzw. „Dividendenziel März
+2026". Eigene Titel und Notizen gibt es nicht mehr; sie wiederholten nur Zeitraum
+und Zielart, und das Titelfeld lockte auf dem iPhone die Jobbezeichnung aus dem
+Autofill. Die Detailseite zeigt unter dem Titel allein den Zeitfortschritt bzw.
+„Beginnt am …".
 
 **Fortschrittsanzeige.** `GoalProgressBar` ist ein zugängliches
 `role="progressbar"` mit `aria-valuemin/max/now` und aussagekräftigem

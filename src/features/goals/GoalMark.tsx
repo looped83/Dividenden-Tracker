@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils/cn";
  * Monatsziel gleich.
  *
  * Bis 1.10 trugen Monatsziele ein eigenes Symbol auf grauer Kachel. Die Zielart
- * steht aber schon im Titel („Monatsziel November 2026"); das zweite Zeichen
+ * steht aber schon im Titel („Dividendenziel November 2026"); das zweite Zeichen
  * sagte nichts Neues und ließ das Monatsziel wie deaktiviert wirken. Die
  * Kachel misst 36 px — wie überall, wo ein Ziel steht.
  */

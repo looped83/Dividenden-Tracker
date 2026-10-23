@@ -12,10 +12,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { MONTH_NAMES_DE } from "@/lib/statistics";
 import { toGermanDecimalString, type Money } from "@/lib/money";
-import { emptyToNull } from "@/lib/utils/emptyToNull";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import {
   GoalConflictError,
@@ -52,8 +50,6 @@ function defaultInput(
       year: String(goal.year),
       month: goal.month !== null ? String(goal.month) : "",
       targetAmount: toGermanDecimalString(goal.targetAmount.toStringValue()),
-      title: goal.title ?? "",
-      note: goal.note ?? "",
     };
   }
   return {
@@ -63,8 +59,6 @@ function defaultInput(
     targetAmount: preset
       ? toGermanDecimalString(preset.targetAmount.toStringValue())
       : "",
-    title: "",
-    note: "",
   };
 }
 
@@ -132,8 +126,9 @@ export function GoalFormDialog({
       year: values.year,
       month: values.goalType === "monthly" ? values.month : null,
       target_amount: values.targetAmount,
-      title: emptyToNull(values.title ?? ""),
-      note: emptyToNull(values.note ?? ""),
+      // Titel entstehen beim Anzeigen (goalTitle); Notizen gibt es nicht mehr.
+      title: null,
+      note: null,
     };
     try {
       if (goal) {
@@ -241,37 +236,6 @@ export function GoalFormDialog({
             {errors.targetAmount && (
               <p role="alert" className="text-sm text-negative">
                 {errors.targetAmount.message}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-1.5">
-            {/* „Bezeichnung" statt „Titel" und ohne Ausfüllen: Safari las das
-                Feld als Berufsbezeichnung und bot über der Tastatur die
-                eigene Jobbezeichnung an. `autoComplete="off"` allein übergeht
-                iOS (siehe ui/combobox.tsx). */}
-            <Label htmlFor="goal-label">Bezeichnung (optional)</Label>
-            <Input
-              id="goal-label"
-              placeholder="z. B. Dividendenziel 2027"
-              autoComplete="off"
-              data-1p-ignore
-              data-lpignore="true"
-              {...register("title")}
-            />
-            {errors.title && (
-              <p role="alert" className="text-sm text-negative">
-                {errors.title.message}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="goal-note">Notiz (optional)</Label>
-            <Textarea id="goal-note" rows={2} {...register("note")} />
-            {errors.note && (
-              <p role="alert" className="text-sm text-negative">
-                {errors.note.message}
               </p>
             )}
           </div>

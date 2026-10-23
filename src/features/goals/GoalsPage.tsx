@@ -45,7 +45,7 @@ import { cn } from "@/lib/utils/cn";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { useGoalProgressPayments, useGoals, type GoalWithMeta } from "./hooks";
 import { GoalFormDialog } from "./GoalFormDialog";
-import { achievementText, goalDisplayTitle, statusLabel, statusTone } from "./format";
+import { achievementText, goalTitle, statusLabel, statusTone } from "./format";
 
 const badgeVariantByTone = {
   positive: "positive",
@@ -429,7 +429,7 @@ function GoalRow({ progress }: { progress: GoalProgress }) {
               secondary={isMonthly ? String(goal.year) : undefined}
             />
           }
-          title={goalDisplayTitle(goal)}
+          title={goalTitle(goal)}
           meta={
             <>
               <Badge
