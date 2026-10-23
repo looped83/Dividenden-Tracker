@@ -80,7 +80,15 @@ function DepotFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent
+        // Radix fokussiert sonst das Broker-Feld und markiert dessen Text; der
+        // erste Tastendruck haette den Namen ersetzt. Der Dialog selbst nimmt
+        // den Fokus, Tab fuehrt von oben durch das Formular.
+        onOpenAutoFocus={(event) => {
+          event.preventDefault();
+          (event.currentTarget as HTMLElement | null)?.focus();
+        }}
+      >
         <DialogHeader>
           <DialogTitle>{depot ? "Depot bearbeiten" : "Neues Depot"}</DialogTitle>
         </DialogHeader>
