@@ -147,7 +147,8 @@ jobs:
 
   e2e-smoke:
     runs-on: ubuntu-24.04
-    timeout-minutes: 8
+    # Ohne Cache dauert allein die Browser-Installation rund 7 Minuten.
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v7
 
@@ -168,15 +169,21 @@ jobs:
       # 1:29, `db-integration` 0:50, `e2e-smoke` ueber 7 Minuten, davon fast
       # alles hier).
       #
-      # Der Cache haengt am Lockfile: Er wird verworfen, sobald sich die
-      # Playwright-Version aendert, und kann deshalb nie zu einem veralteten
-      # Browser fuehren.
+      # Der Cache haengt an der Playwright-Version: Er wird verworfen, sobald
+      # sie sich aendert, und kann deshalb nie zu einem veralteten Browser
+      # fuehren. Frueher hing er am ganzen Lockfile — damit verfehlte jeder
+      # Versionsbump der App den Cache, und die Installation dauerte so lange
+      # wie alle Tests zusammen.
+      - name: Playwright-Version
+        id: playwright-version
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
       - name: Playwright-Browser aus dem Cache
         id: playwright-cache
         uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
 
       # Nur beim Cache-Fehlschlag: Browser laden **und** Systempakete setzen.
       - name: Browser installieren
@@ -201,7 +208,8 @@ jobs:
   # oeffentlichen Rauchtests trotzdem aussagekraeftig.
   e2e-app:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    # Tests rund 5 Minuten, ohne Browser-Cache kommen rund 7 dazu.
+    timeout-minutes: 15
     services:
       postgres:
         image: postgres:16
@@ -230,12 +238,16 @@ jobs:
       - name: Install PostgreSQL client (psql)
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
 
+      - name: Playwright-Version
+        id: playwright-version
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
       - name: Playwright-Browser aus dem Cache
         id: playwright-cache
         uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
 
       - name: Browser installieren
         if: steps.playwright-cache.outputs.cache-hit != 'true'
