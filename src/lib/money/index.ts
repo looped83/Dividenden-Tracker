@@ -15,4 +15,8 @@ export {
   currencySymbol,
   NOT_AVAILABLE,
 } from "./format";
-export { normalizeGermanDecimalInput, toGermanDecimalString } from "./germanDecimalInput";
+export {
+  normalizeGermanDecimalInput,
+  toGermanAmountInput,
+  applyAmountInput,
+} from "./germanDecimalInput";

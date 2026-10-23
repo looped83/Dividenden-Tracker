@@ -73,16 +73,12 @@ export function useSaveForecastSettings() {
 }
 
 /**
- * Liest „1.000", „2,5" und „1.234,5". Ein Punkt ohne Komma gilt als
- * Tausendertrenner, wenn danach genau drei Ziffern folgen — so tippt man in
- * Deutschland Betraege. `null` fuer ein leeres Feld, `undefined` fuer Unsinn.
+ * Liest „1.000", „2,5" und „1.234,5" (normalizeGermanDecimalInput). `null` fuer ein leeres Feld, `undefined` fuer Unsinn.
  */
 export function parseGermanNumber(raw: string): number | null | undefined {
   const trimmed = raw.trim();
   if (trimmed === "") return null;
-  const canonical = /^\d{1,3}(\.\d{3})+$/.test(trimmed)
-    ? trimmed.replace(/\./g, "")
-    : normalizeGermanDecimalInput(trimmed);
+  const canonical = normalizeGermanDecimalInput(trimmed);
   if (!/^\d+(\.\d+)?$/.test(canonical)) return undefined;
   return new MoneyDecimal(canonical).toNumber();
 }

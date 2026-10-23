@@ -9,11 +9,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+import { AmountInput } from "@/components/ui/amount-input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { MONTH_NAMES_DE } from "@/lib/statistics";
-import { toGermanDecimalString, type Money } from "@/lib/money";
+import { toGermanAmountInput, type Money } from "@/lib/money";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import {
   GoalConflictError,
@@ -49,16 +49,14 @@ function defaultInput(
       goalType: goal.goalType,
       year: String(goal.year),
       month: goal.month !== null ? String(goal.month) : "",
-      targetAmount: toGermanDecimalString(goal.targetAmount.toStringValue()),
+      targetAmount: toGermanAmountInput(goal.targetAmount.toStringValue()),
     };
   }
   return {
     goalType: "annual",
     year: String(preset?.year ?? new Date().getFullYear()),
     month: "",
-    targetAmount: preset
-      ? toGermanDecimalString(preset.targetAmount.toStringValue())
-      : "",
+    targetAmount: preset ? toGermanAmountInput(preset.targetAmount.toStringValue()) : "",
   };
 }
 
@@ -227,9 +225,8 @@ export function GoalFormDialog({
 
           <div className="space-y-1.5">
             <Label htmlFor="goal-amount">Zielbetrag (€)</Label>
-            <Input
+            <AmountInput
               id="goal-amount"
-              inputMode="decimal"
               placeholder="z. B. 1.000,00"
               {...register("targetAmount")}
             />
