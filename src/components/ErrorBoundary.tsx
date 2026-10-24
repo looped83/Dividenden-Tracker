@@ -62,6 +62,11 @@ interface AreaProps {
   children: React.ReactNode;
   /** Wechselt er (neuer Pfad), wird ein angezeigter Fehler verworfen. */
   resetKey: string;
+  /**
+   * Eigenstaendige Seite ohne App-Huelle (Anmeldung, Registrierung): Der
+   * Hinweis steht dann mittig auf dem ganzen Bildschirm statt im Inhaltsbereich.
+   */
+  fullScreen?: boolean;
 }
 
 /**
@@ -96,7 +101,7 @@ export class AreaErrorBoundary extends React.Component<AreaProps, State> {
   override render() {
     if (!this.state.hasError) return this.props.children;
 
-    return (
+    const notice = (
       <EmptyState
         icon={CircleAlert}
         title="Dieser Bereich konnte nicht angezeigt werden"
@@ -111,6 +116,13 @@ export class AreaErrorBoundary extends React.Component<AreaProps, State> {
           </Button>
         }
       />
+    );
+    if (!this.props.fullScreen) return notice;
+
+    return (
+      <div className="flex min-h-dvh items-center justify-center bg-background px-4 py-12">
+        <div className="w-full max-w-sm">{notice}</div>
+      </div>
     );
   }
 }
