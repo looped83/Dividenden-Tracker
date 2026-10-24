@@ -68,7 +68,14 @@ test.describe("Rauchtest", () => {
       // WebKit fragt eine Adresse, deren Import gescheitert ist, nach dem
       // Neuladen nicht erneut an. Nach einem echten Deploy verlangt die neue
       // Fassung andere Dateinamen; dass sie ankommen, zeigt hier Chromium.
-      if (browserName !== "webkit") {
+      // WebKit zeigt dafuer den eigenen Hinweis statt der englischen
+      // Standardseite von React Router.
+      if (browserName === "webkit") {
+        await expect(
+          page.getByText("Dieser Bereich konnte nicht angezeigt werden"),
+        ).toBeVisible();
+        await expect(page.getByRole("button", { name: "Neu laden" })).toBeVisible();
+      } else {
         await expect(page.getByLabel("E-Mail-Adresse")).toBeVisible();
       }
     });

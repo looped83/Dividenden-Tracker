@@ -6,6 +6,7 @@ import * as React from "react";
 import { createHashRouter, Navigate, useLocation, useParams } from "react-router";
 import { AppShell } from "@/app/AppShell";
 import { NotFoundPage } from "@/app/NotFoundPage";
+import { AreaErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthPageSkeleton } from "@/components/layout/PageSkeleton";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
 import { PaymentComposerRoute } from "@/features/payments/PaymentComposer";
@@ -120,8 +121,17 @@ const ResetPasswordConfirmPage = React.lazy(async () => ({
   default: (await routeChunks.resetPasswordConfirm()).ResetPasswordConfirmPage,
 }));
 
-function standalone(element: React.ReactNode): React.ReactElement {
-  return <React.Suspense fallback={<AuthPageSkeleton />}>{element}</React.Suspense>;
+/**
+ * Seite ohne App-Huelle. Die eigene Fehlergrenze faengt u. a. einen Teil ab,
+ * der nicht nachgeladen werden konnte (kurz kein Netz) — sonst stuende hier
+ * die englische Standardseite von React Router.
+ */
+function standalone(path: string, element: React.ReactNode): React.ReactElement {
+  return (
+    <AreaErrorBoundary resetKey={path} fullScreen>
+      <React.Suspense fallback={<AuthPageSkeleton />}>{element}</React.Suspense>
+    </AreaErrorBoundary>
+  );
 }
 
 /**
@@ -151,10 +161,16 @@ function RedirectToAsset(): React.ReactElement {
 }
 
 export const router = createHashRouter([
-  { path: "/login", element: standalone(<LoginPage />) },
-  { path: "/registrieren", element: standalone(<RegisterPage />) },
-  { path: "/passwort-vergessen", element: standalone(<ResetPasswordRequestPage />) },
-  { path: "/passwort-zuruecksetzen", element: standalone(<ResetPasswordConfirmPage />) },
+  { path: "/login", element: standalone("/login", <LoginPage />) },
+  { path: "/registrieren", element: standalone("/registrieren", <RegisterPage />) },
+  {
+    path: "/passwort-vergessen",
+    element: standalone("/passwort-vergessen", <ResetPasswordRequestPage />),
+  },
+  {
+    path: "/passwort-zuruecksetzen",
+    element: standalone("/passwort-zuruecksetzen", <ResetPasswordConfirmPage />),
+  },
   {
     path: "/",
     // Die Anmeldepruefung sitzt in der Huelle um den Inhalt (AppShell), nicht
