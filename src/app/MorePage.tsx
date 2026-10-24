@@ -27,7 +27,9 @@ export function MorePage() {
       <PageHeader title="Mehr" />
       <ul className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {BOTTOM_NAV_MORE_ITEMS.map((item) => (
-          <li key={item.to}>
+          // Eine ungerade Zahl an Bereichen: Die letzte Kachel nimmt auf dem
+          // Telefon die ganze Zeile, statt allein in der linken Spalte zu stehen.
+          <li key={item.to} className="last:odd:col-span-2 lg:last:odd:col-span-1">
             <NavLink
               to={item.to}
               {...prefetchProps(item.to)}
