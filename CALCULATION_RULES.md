@@ -743,7 +743,9 @@ Datum der Zahlung, mit der der Stand sie erstmals erreicht; danach nie wieder ab
 | Bestes Jahr | Summe des Kalenderjahres | ab 500 €, dieselben Stufen |
 | Bester Monat | Summe des Kalendermonats | ab 100 €, dieselben Stufen |
 | Monate in Folge | lückenlose Kalendermonate mit Zahlung | 3, 6, 12, 24, 36, 48, 60, danach +12 |
-| Verschiedene Zahler | verschiedene Assets mit Zahlung | 5, 10, 15, 20, 25, 30, 40, 50, 75, 100, danach +50 |
+
+Die Zahl verschiedener Zahler ist seit 2.15.0 kein Meilenstein mehr: Mehr Positionen sind kein Ziel
+an sich.
 
 **Nächster Meilenstein** je Art: die erste noch nicht erreichte Schwelle mit dem heutigen Stand
 (bestes Jahr bzw. bester Monat bisher; bei der Serie die laufende Serie — sie läuft weiter, solange

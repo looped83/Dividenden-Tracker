@@ -10,7 +10,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { useGoalProgressPayments } from "@/features/goals/hooks";
 import { trailingMonthlyAverage } from "@/lib/goals";
 import { useToday } from "@/lib/hooks/useToday";
-import { EUR, Money, formatMoneyWhole, formatPercent } from "@/lib/money";
+import { EUR, Money, formatMoney, formatPercent } from "@/lib/money";
 import { coverFixedCosts } from "@/lib/progress";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { FixedCostDialog } from "./FixedCostDialog";
@@ -139,11 +139,11 @@ export function FixedCostDetailPage() {
 
       <KpiHero
         label="Im Monat"
-        value={formatMoneyWhole(cost.amount)}
+        value={formatMoney(cost.amount)}
         caption={
           covered
             ? "bezahlen deine Dividenden schon"
-            : `zu ${percent} gedeckt · noch ${formatMoneyWhole(item.missing)}`
+            : `zu ${percent} gedeckt · noch ${formatMoney(item.missing)}`
         }
         footer={
           <ProgressBar
@@ -154,9 +154,7 @@ export function FixedCostDetailPage() {
         stats={[
           {
             label: "Im Jahr",
-            value: formatMoneyWhole(
-              Money.fromDecimal(cost.amount.toDecimal().times(12), EUR),
-            ),
+            value: formatMoney(Money.fromDecimal(cost.amount.toDecimal().times(12), EUR)),
           },
           {
             label: "Anteil",
@@ -183,7 +181,7 @@ export function FixedCostDetailPage() {
           <ConfirmSummary
             items={[
               { label: "Name", value: cost.name },
-              { label: "Im Monat", value: formatMoneyWhole(cost.amount) },
+              { label: "Im Monat", value: formatMoney(cost.amount) },
             ]}
           />
         }

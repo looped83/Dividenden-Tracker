@@ -376,13 +376,15 @@ vollständig getrennt von den Ist-Daten gespeichert (eigene Tabelle `goals`).
 
 Motivation statt Verwaltung: Der Ø-Monat der letzten zwölf Monate wird eigenen Fixkosten
 gegenübergestellt (günstigste zuerst gedeckt), dazu automatisch erkannte Meilensteine (insgesamt
-erhalten, bestes Jahr, bester Monat, Monate in Folge, verschiedene Zahler) mit Datum und der
+erhalten, bestes Jahr, bester Monat, Monate in Folge) mit Datum und der
 jeweils nächsten Stufe. Gepflegt werden nur die Fixkosten (`profiles.fixed_costs`, nicht Teil der
 Datensicherung — wie die Annahmen des Schneeballs). Rechenregeln: CALCULATION_RULES.md §15.
 Seit 2.14.0 steht die Summe der Fixkosten im Kopf neben dem Ø-Monat; die Liste zeigt die nächste
 Position, Gedecktes und weitere Offene klappen ein. Jede Position hat eine Detailseite
 (`/fortschritt/fixkosten/:id`) mit Bearbeiten und Löschen wie eine Dividende; neu angelegt wird
-über „Neu“. Ab lg links Fixkosten und nächste Meilensteine, rechts das Erreichte.
+über „Neu“. Ab lg links Fixkosten und nächste Meilensteine, rechts das Erreichte. Seit 2.15.0
+Beträge der Fixkosten mit Cent und eine Pflegeseite „Alle Fixkosten“ (`/fortschritt/fixkosten`,
+alphabetisch, je Zeile Stift und Papierkorb), verlinkt unter der Liste.
 
 ### 5.8 Datensicherung
 

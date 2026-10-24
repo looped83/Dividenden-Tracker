@@ -6,7 +6,7 @@ import type { AnalyticsPayment, RefDate } from "@/lib/statistics";
  * Historie überschritten hat, mit dem Tag, an dem es geschah — und je Art die
  * nächste Schwelle. Abgeleitet aus den erhaltenen Dividenden, nie gespeichert.
  */
-export type MilestoneKind = "first" | "total" | "year" | "month" | "streak" | "payers";
+export type MilestoneKind = "first" | "total" | "year" | "month" | "streak";
 
 export interface Milestone {
   kind: MilestoneKind;
@@ -44,7 +44,6 @@ const MONEY_FROM: Record<"total" | "year" | "month", number> = {
   month: 100,
 };
 const STREAK = [3, 6, 12, 24, 36, 48, 60] as const;
-const PAYERS = [5, 10, 15, 20, 25, 30, 40, 50, 75, 100] as const;
 
 /** `index`-te Stufe der Geldleiter ab 1 € — ganzzahlig gerechnet, ohne Rundungsrest. */
 function moneyStep(index: number): number {
@@ -72,9 +71,6 @@ function threshold(kind: Exclude<MilestoneKind, "first">, index: number): number
   if (kind === "streak") {
     // Nach fünf Jahren jedes weitere Jahr.
     return index < STREAK.length ? STREAK[index] : 60 + 12 * (index - STREAK.length + 1);
-  }
-  if (kind === "payers") {
-    return index < PAYERS.length ? PAYERS[index] : 100 + 50 * (index - PAYERS.length + 1);
   }
   return moneyStep(MONEY_OFFSET[kind] + index);
 }
@@ -134,12 +130,10 @@ export function milestoneOverview(
     year: new Ladder("year"),
     month: new Ladder("month"),
     streak: new Ladder("streak"),
-    payers: new Ladder("payers"),
   };
   let total = new MoneyDecimal(0);
   const perYear = new Map<string, DecimalInstance>();
   const perMonth = new Map<string, DecimalInstance>();
-  const payers = new Set<string>();
   let bestYear = new MoneyDecimal(0);
   let bestMonth = new MoneyDecimal(0);
   let lastMonth: number | null = null;
@@ -170,11 +164,6 @@ export function milestoneOverview(
       lastMonth = index;
       ladders.streak.reach(new MoneyDecimal(streak), on, reached);
     }
-
-    if (!payers.has(payment.securityId)) {
-      payers.add(payment.securityId);
-      ladders.payers.reach(new MoneyDecimal(payers.size), on, reached);
-    }
   }
 
   // Die Serie läuft weiter, solange der Vormonat bezahlt hat: Der laufende
@@ -192,7 +181,6 @@ export function milestoneOverview(
       ladders.year.next(bestYear),
       ladders.month.next(bestMonth),
       ladders.streak.next(new MoneyDecimal(running)),
-      ladders.payers.next(new MoneyDecimal(payers.size)),
     ],
   };
 }
