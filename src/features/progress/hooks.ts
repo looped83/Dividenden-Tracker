@@ -78,7 +78,13 @@ export function useSaveFixedCosts() {
   });
 }
 
+/**
+ * Eine leere Liste wird `null` statt `[]`: Ohne Positionen gibt es nichts zu
+ * speichern, und die Testbrücke bindet ein leeres Array als Postgres-Array
+ * (`'{}'`), das die Prüfung `profiles_fixed_costs_shape` als Objekt abweist.
+ */
 function toStored(costs: readonly FixedCost[]) {
+  if (costs.length === 0) return null;
   return costs.map((cost) => ({
     id: cost.id,
     name: cost.name,

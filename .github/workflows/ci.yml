@@ -197,7 +197,11 @@ jobs:
       # 3 Minuten und ein zweiter Anlauf: Ein haengender Spiegel kostet so
       # hoechstens 6 Minuten statt des ganzen Jobs.
       - name: Systembibliotheken sicherstellen
+        # `timeout` beendet nur npx, nicht das apt-get darunter: Es hielt die
+        # dpkg-Sperre, und der zweite Versuch scheiterte sofort daran. Mit
+        # Lock::Timeout wartet er stattdessen, bis die Sperre frei ist.
         run: |
+          echo 'DPkg::Lock::Timeout "150";' | sudo tee /etc/apt/apt.conf.d/99-lock-timeout >/dev/null
           for versuch in 1 2; do
             timeout 180 npx playwright install-deps chromium webkit && exit 0
             echo "::warning::install-deps Versuch $versuch abgebrochen oder fehlgeschlagen"
@@ -262,7 +266,11 @@ jobs:
 
       # Zeitlimit und zweiter Anlauf wie in e2e-smoke.
       - name: Systembibliotheken sicherstellen
+        # `timeout` beendet nur npx, nicht das apt-get darunter: Es hielt die
+        # dpkg-Sperre, und der zweite Versuch scheiterte sofort daran. Mit
+        # Lock::Timeout wartet er stattdessen, bis die Sperre frei ist.
         run: |
+          echo 'DPkg::Lock::Timeout "150";' | sudo tee /etc/apt/apt.conf.d/99-lock-timeout >/dev/null
           for versuch in 1 2; do
             timeout 180 npx playwright install-deps chromium webkit && exit 0
             echo "::warning::install-deps Versuch $versuch abgebrochen oder fehlgeschlagen"
