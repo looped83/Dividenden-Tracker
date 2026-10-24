@@ -308,7 +308,7 @@ export function PaymentsPage() {
     sort,
   ]);
 
-  const visibleRows = rows.slice(0, page * PAGE_SIZE);
+  const visibleRows = React.useMemo(() => rows.slice(0, page * PAGE_SIZE), [rows, page]);
   const remaining = rows.length - visibleRows.length;
 
   // Anzahl und Summe der Auswahl — die Frage hinter fast jedem Filter („wie
@@ -342,11 +342,17 @@ export function PaymentsPage() {
     currentMonth,
   );
 
-  const groups = allMonths
-    ? allMonths.slice(0, page * MONTHS_PER_STEP)
-    : groupedByMonth
-      ? groupByMonth(visibleRows, effectiveDateOf)
-      : [{ key: "", year: 0, month: 0, rows: visibleRows }];
+  // Gemerkt: Das Auf- und Zuklappen eines Monats aendert nur die Adresse,
+  // nicht die Gruppen.
+  const groups = React.useMemo(
+    () =>
+      allMonths
+        ? allMonths.slice(0, page * MONTHS_PER_STEP)
+        : groupedByMonth
+          ? groupByMonth(visibleRows, effectiveDateOf)
+          : [{ key: "", year: 0, month: 0, rows: visibleRows }],
+    [allMonths, groupedByMonth, page, visibleRows],
+  );
   const remainingMonths = allMonths ? allMonths.length - groups.length : 0;
 
   // --- Einzelaktionen: Storno / Reaktivieren / Löschen. ---

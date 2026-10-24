@@ -108,6 +108,22 @@ describe("applyAmountInput", () => {
     expect(applyAmountInput("1500,00", 7, "1500,00").value).toBe("1.500,00");
   });
 
+  it("liest eingefuegte Betraege im englischen Format", () => {
+    expect(applyAmountInput("1,500.25", 8, "1,500.25").value).toBe("1.500,25");
+    expect(applyAmountInput("1,234,567.8", 11, "1,234,567.8").value).toBe("1.234.567,8");
+    expect(applyAmountInput("1,000,000", 9, "1,000,000").value).toBe("1.000.000");
+    expect(applyAmountInput("1.234.567,89", 12, "1.234.567,89").value).toBe(
+      "1.234.567,89",
+    );
+  });
+
+  it("haelt die Marke hinter eingefuegtem Text", () => {
+    // „1,500.25“ vor „|9“ eingefuegt: Die Marke steht hinter der 5.
+    const next = applyAmountInput("1,500.259", 8, "1,500.25");
+    expect(next.value).toBe("1.500,25");
+    expect(next.caret).toBe(8);
+  });
+
   it("verwirft Buchstaben und leert ein leeres Feld", () => {
     expect(applyAmountInput("12a", 3, "a").value).toBe("12");
     expect(applyAmountInput("", 0, null)).toEqual({ value: "", caret: 0 });

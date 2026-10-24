@@ -15,7 +15,7 @@ The Dividend Tracker backup format is a self-contained JSON file that captures a
 {
   "format": "dividend-tracker-backup",
   "format_version": 2,
-  "schema_version": "0031",
+  "schema_version": "0038",
   "app_version": "0.1.0",
   "exported_at": "2026-07-27T12:00:00Z",
   "base_currency": "EUR",
@@ -34,7 +34,7 @@ The Dividend Tracker backup format is a self-contained JSON file that captures a
 |-------|------|----------|-------------|
 | `format` | string | Yes | Always `"dividend-tracker-backup"` for identification |
 | `format_version` | number | Yes | Backup format version (currently `2`; `1` is still readable) |
-| `schema_version` | string | Yes | Database schema version at export time (e.g., `"0031"`) |
+| `schema_version` | string | Yes | Database schema version at export time (e.g., `"0038"`) |
 | `app_version` | string | No | Application version that created the backup |
 | `exported_at` | string | Yes | ISO-8601 timestamp with Z suffix (UTC) |
 | `base_currency` | string | Yes | 3-letter ISO 4217 currency code (e.g., `"EUR"`, `"USD"`) |
@@ -49,7 +49,6 @@ The `data` section contains the complete user dataset:
 ```json
 {
   "profile": { ... },
-  "portfolios": [ ... ],
   "depots": [ ... ],
   "securities": [ ... ],
   "dividend_payments": [ ... ],
@@ -351,7 +350,6 @@ The `integrity` section contains checksums and record counts for validation:
 ```json
 {
   "record_counts": {
-    "portfolio": 1,
     "depot": 2,
     "security": 15,
     "dividend_payment": 145,
@@ -501,7 +499,7 @@ Example: `dividenden-backup-2026-07-27.json`
 {
   "format": "dividend-tracker-backup",
   "format_version": 2,
-  "schema_version": "0031",
+  "schema_version": "0038",
   "exported_at": "2026-07-27T12:00:00Z",
   "base_currency": "EUR",
   "data": {
@@ -547,7 +545,6 @@ Example: `dividenden-backup-2026-07-27.json`
       "security": 1,
       "dividend_payment": 0,
       "goal": 0,
-      "portfolio": 0,
       "import": 0
     }
   }

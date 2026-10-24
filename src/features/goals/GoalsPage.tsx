@@ -87,8 +87,15 @@ export function GoalsPage() {
     [payments, today, calendarEvents],
   );
 
-  const openCreate = (preset?: GoalSuggestion) => {
-    setForm({ open: true, preset });
+  // Stabil je Vorschlag: Der Dialog setzt sich bei einer neuen Vorbelegung
+  // zurueck — ein neues Objekt bei jedem Rendern verwarf sonst die Eingabe.
+  const preset = React.useMemo(
+    () => form.preset && { year: form.preset.year, targetAmount: form.preset.amount },
+    [form.preset],
+  );
+
+  const openCreate = (suggestion?: GoalSuggestion) => {
+    setForm({ open: true, preset: suggestion });
   };
 
   const heading = (
@@ -172,12 +179,7 @@ export function GoalsPage() {
           setForm((current) => ({ ...current, open }));
         }}
         goal={null}
-        preset={
-          form.preset && {
-            year: form.preset.year,
-            targetAmount: form.preset.amount,
-          }
-        }
+        preset={preset}
       />
     </div>
   );
@@ -521,8 +523,11 @@ function toMonthData(
       (g) =>
         g.goalType === "monthly" && g.year === today.year && g.month === bucket.month,
     );
-    const rest = bucket.month >= today.month ? forecast.restByMonth[index] : null;
-    const restMoney = rest?.isPositive() ? rest : null;
+    // Ohne Monatsgrenze: Ein Eingang, der auf einen vergangenen Monat gebucht
+    // ist, aber noch aussteht, gehoert dorthin — so ergeben die Balken genau
+    // die Jahresprognose.
+    const rest = forecast.restByMonth[index];
+    const restMoney = rest.isPositive() ? rest : null;
     const progress = goal ? computeGoalProgress(goal, payments, today) : null;
     return {
       key: String(bucket.month),

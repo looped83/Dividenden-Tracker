@@ -35,6 +35,29 @@ export function toGermanAmountInput(canonical: string): string {
     : `${groupThousands(canonical.slice(0, dot))},${canonical.slice(dot + 1)}`;
 }
 
+/**
+ * Eingefuegter Text in der Form des Felds: Stehen Komma und Punkt darin
+ * („1.234,56“ oder englisch „1,234.56“), trennt das hintere Zeichen die
+ * Nachkommastellen, das andere die Tausender. Mehrere gleiche Trenner
+ * („1,000,000“, „1.000.000“) sind Tausender; ein einzelner Punkt ohne
+ * Dreiergruppen („12.50“) ist ein Dezimalpunkt.
+ */
+function pastedAmount(text: string): string {
+  const comma = text.lastIndexOf(",");
+  const dot = text.lastIndexOf(".");
+  if (comma >= 0 && dot >= 0) {
+    const decimal = comma > dot ? comma : dot;
+    const head = text.slice(0, decimal).replace(/[.,]/g, "");
+    return `${head},${text.slice(decimal + 1)}`;
+  }
+  const separator = comma >= 0 ? "," : ".";
+  const count = text.split(separator).length - 1;
+  if (count > 1 || GROUPED_INTEGER.test(text.trim())) {
+    return text.replaceAll(separator, "");
+  }
+  return separator === "." ? text.replace(".", ",") : text;
+}
+
 export interface AmountInputState {
   value: string;
   caret: number;
@@ -47,8 +70,8 @@ export interface AmountInputState {
  *
  * `inserted` ist der gerade eingefuegte Text (`null` beim Loeschen). Ein
  * einzeln getippter Punkt wird zum Komma — manche Zahlentastaturen bieten nur
- * den Punkt an, und Tausenderpunkte tippt hier niemand mehr. Eingefuegter
- * Text wie „12.50“ (Punkt ohne Dreiergruppen) gilt als Dezimalzahl.
+ * den Punkt an, und Tausenderpunkte tippt hier niemand mehr. Eingefuegten
+ * Text liest {@link pastedAmount}, deutsch wie englisch formatiert.
  */
 export function applyAmountInput(
   raw: string,
@@ -70,14 +93,10 @@ export function applyAmountInput(
       } else {
         text = `${before},${after}`;
       }
-    } else if (
-      start >= 0 &&
-      inserted.includes(".") &&
-      !inserted.includes(",") &&
-      !GROUPED_INTEGER.test(inserted.trim())
-    ) {
-      const lastDot = start + inserted.lastIndexOf(".");
-      text = `${text.slice(0, lastDot)},${text.slice(lastDot + 1)}`;
+    } else if (start >= 0 && inserted.length > 1) {
+      const pasted = pastedAmount(inserted);
+      text = before + pasted + after;
+      position = start + pasted.length;
     }
   }
 

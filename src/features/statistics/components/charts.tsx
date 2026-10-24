@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { Link, useNavigate } from "react-router";
 import {
   Area,
@@ -694,7 +695,6 @@ export interface GoalBarDatum {
   note?: string | undefined;
 }
 
-const GOAL_REST_PATTERN = "goal-rest";
 /** Wie weit die Zielmarke seitlich über den Balken ragt. */
 const GOAL_TICK_OVERHANG = 3;
 
@@ -738,6 +738,16 @@ function GoalTick({ x, y, width, payload }: BarShapeProps) {
   );
 }
 
+/** Erhalten-Balken: gerundet nur, wenn kein Erwartet-Rest darauf liegt. */
+function GoalActualBar(props: BarShapeProps) {
+  return (
+    <Rectangle
+      {...props}
+      radius={(props.payload as GoalBarDatum).rest > 0 ? 0 : CHART_BAR_RADIUS}
+    />
+  );
+}
+
 /**
  * Erhalten gegen Ziel je Zeitraum: Balken in der Akzentfarbe, im laufenden
  * Zeitraum gestreift fortgesetzt um das noch Erwartete (wie die Prognose am
@@ -751,18 +761,20 @@ export function GoalBarChart({
   ariaLabel,
   categoryHeader,
 }: {
-  data: readonly GoalBarDatum[];
+  data: GoalBarDatum[];
   ariaLabel: string;
   categoryHeader: string;
 }) {
+  // Je Diagramm eigen: Die Zielseite zeigt zwei davon.
+  const restPattern = `goal-rest-${useId()}`;
   const hasRest = data.some((row) => row.rest > 0);
   return (
     <div className="space-y-4">
       <ChartCanvas ariaLabel={ariaLabel}>
-        <ComposedChart data={[...data]} margin={CHART_MARGIN}>
+        <ComposedChart data={data} margin={CHART_MARGIN}>
           <defs>
             <pattern
-              id={GOAL_REST_PATTERN}
+              id={restPattern}
               width="5"
               height="5"
               patternUnits="userSpaceOnUse"
@@ -783,19 +795,14 @@ export function GoalBarChart({
             maxBarSize={CHART_MAX_BAR_SIZE}
             {...CHART_SERIES_PROPS}
             // Gerundet ist nur das obere Ende des Stapels.
-            shape={(props: BarShapeProps) => (
-              <Rectangle
-                {...props}
-                radius={(props.payload as GoalBarDatum).rest > 0 ? 0 : CHART_BAR_RADIUS}
-              />
-            )}
+            shape={GoalActualBar}
           />
           {hasRest && (
             <Bar
               dataKey="rest"
               name="Erwartet"
               stackId="goal"
-              fill={`url(#${GOAL_REST_PATTERN})`}
+              fill={`url(#${restPattern})`}
               radius={CHART_BAR_RADIUS}
               maxBarSize={CHART_MAX_BAR_SIZE}
               {...CHART_SERIES_PROPS}
