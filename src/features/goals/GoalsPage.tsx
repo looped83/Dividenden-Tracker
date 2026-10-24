@@ -429,21 +429,30 @@ function GoalRow({ progress }: { progress: GoalProgress }) {
               secondary={isMonthly ? String(goal.year) : undefined}
             />
           }
-          title={goalTitle(goal)}
-          meta={
+          title={
             <>
+              {/* Kurz, weil die Kachel den Zeitraum schon zeigt; so passt das
+                  Abzeichen in die Titelzeile und jede Zeile bleibt zweizeilig
+                  (vorher brach der Betrag mobil je nach Länge mal um, mal nicht). */}
+              <span aria-hidden>Dividendenziel</span>
+              <span className="sr-only">{goalTitle(goal)}</span>
               <Badge
                 variant={badgeVariantByTone[statusTone(status)]}
-                className={cn(statusTone(status) === "neutral" && "bg-muted")}
+                className={cn(
+                  "ml-2 align-[0.125em]",
+                  statusTone(status) === "neutral" && "bg-muted",
+                )}
               >
                 {statusLabel(status)}
               </Badge>
-              <span className="tabular-amount">
-                {upcoming
-                  ? `Ziel ${formatMoney(progress.target)}`
-                  : `${formatMoney(progress.actual)} von ${formatMoney(progress.target)}`}
-              </span>
             </>
+          }
+          meta={
+            <span className="tabular-amount">
+              {upcoming
+                ? `Ziel ${formatMoney(progress.target)}`
+                : `${formatMoney(progress.actual)} von ${formatMoney(progress.target)}`}
+            </span>
           }
           trailing={upcoming ? undefined : achievementText(progress.percent)}
         />
