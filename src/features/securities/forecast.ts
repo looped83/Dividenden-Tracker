@@ -46,6 +46,10 @@ export interface ForecastContribution {
   securityId: string;
   name: string;
   amount: Money;
+  /** Zahlungen im Jahr (Zahl der Ausschuettungsmonate). */
+  payouts: number;
+  /** Marktwert laut Depotstand; `null`, wenn die Quelle keinen nennt. */
+  marketValue: Money | null;
 }
 
 export interface ForecastMonth {
@@ -213,10 +217,18 @@ export function forecastTwelveMonths({
       currency,
     );
     const name = facets.get(row.security_id)?.name ?? "Unbekannt";
+    const marketValue =
+      row.market_value === null ? null : Money.fromString(row.market_value, currency);
     for (const month of months) {
       if (!payout.has(month.month)) continue;
       month.total = month.total.add(amount);
-      month.contributions.push({ securityId: row.security_id, name, amount });
+      month.contributions.push({
+        securityId: row.security_id,
+        name,
+        amount,
+        payouts: payout.size,
+        marketValue,
+      });
     }
   }
 
@@ -232,4 +244,62 @@ export function forecastTwelveMonths({
     kind: "ok",
     forecast: { asOf, months, total, receivedLast12, netRatio: ratio, withoutAmount },
   };
+}
+
+/** Ein Monat unter dem Durchschnitt der Prognose. */
+export interface MonthGap {
+  year: number;
+  month: number;
+  total: Money;
+  /** Abstand zum Ø-Monat. */
+  gap: Money;
+  /** Gehaltene Position, deren Zukauf die Luecke am guenstigsten schliesst. */
+  filler: { securityId: string; name: string; payouts: number; invest: Money } | null;
+}
+
+const INVEST_STEP = new MoneyDecimal(100);
+
+/**
+ * Monatsluecken (CALCULATION_RULES.md §14.3): Monate der Prognose unter ihrem
+ * Ø-Monat, je mit einem Fueller aus dem eigenen Bestand.
+ *
+ * Fueller ist eine Position, die in dem Monat zahlt, aber nicht monatlich —
+ * ein Monatszahler hebt alle Monate gleich und schliesst keine Luecke. Unter
+ * ihnen die mit der hoechsten Ausschuettung je Zahlung im Verhaeltnis zum
+ * Marktwert: Sie braucht den kleinsten Zukauf. Der Zukauf ist
+ * `Luecke × Marktwert ÷ Betrag je Zahlung`, auf volle 100 € aufgerundet.
+ */
+export function monthGaps(forecast: TwelveMonthForecast): {
+  average: Money;
+  gaps: MonthGap[];
+} {
+  const average = Money.fromDecimal(forecast.total.toDecimal().dividedBy(12), EUR);
+  const gaps = forecast.months
+    .filter((month) => month.total.compareTo(average) < 0)
+    .map((month): MonthGap => {
+      const gap = average.subtract(month.total);
+      let filler: MonthGap["filler"] = null;
+      for (const item of month.contributions) {
+        if (item.payouts >= 12 || item.marketValue === null) continue;
+        if (!item.marketValue.isPositive() || !item.amount.isPositive()) continue;
+        const raw = gap
+          .toDecimal()
+          .times(item.marketValue.toDecimal())
+          .dividedBy(item.amount.toDecimal());
+        const invest = Money.fromDecimal(
+          raw.dividedBy(INVEST_STEP).ceil().times(INVEST_STEP),
+          EUR,
+        );
+        if (filler === null || invest.compareTo(filler.invest) < 0) {
+          filler = {
+            securityId: item.securityId,
+            name: item.name,
+            payouts: item.payouts,
+            invest,
+          };
+        }
+      }
+      return { year: month.year, month: month.month, total: month.total, gap, filler };
+    });
+  return { average, gaps };
 }

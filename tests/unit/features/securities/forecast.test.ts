@@ -5,6 +5,7 @@ import type { SecuritySnapshot } from "@/lib/supabase/repositories/securitySnaps
 import {
   forecastTwelveMonths,
   forecastWindow,
+  monthGaps,
   netRatio,
   payoutMonthsOf,
   type ForecastFacets,
@@ -217,5 +218,51 @@ describe("forecastTwelveMonths", () => {
     expect(
       forecastTwelveMonths({ ...base, snapshots: [snapshot({ currency: "USD" })] }).kind,
     ).toBe("mixedCurrency");
+  });
+});
+
+describe("monthGaps", () => {
+  const facets = new Map<string, ForecastFacets>([
+    ...FACETS,
+    ["sec-c", { name: "Gamma", payoutMonths: [3] }],
+    ["sec-d", { name: "Delta", payoutMonths: [3, 9] }],
+  ]);
+  // Alpha 30 € je Quartal, Beta 10 € jeden Monat, Gamma 6 € im März,
+  // Delta je 3 € im März und September: 252 € im Jahr, Ø 21 €.
+  const forecast = run({
+    facets,
+    snapshots: [
+      snapshot(),
+      snapshot({ security_id: "sec-b" }),
+      snapshot({
+        security_id: "sec-c",
+        annual_dividend_total: "6.00",
+        market_value: "600.00",
+      }),
+      snapshot({
+        security_id: "sec-d",
+        annual_dividend_total: "6.00",
+        market_value: "900.00",
+      }),
+    ],
+  });
+  const { average, gaps } = monthGaps(forecast);
+  const gapOf = (year: number, month: number) =>
+    gaps.find((gap) => gap.year === year && gap.month === month);
+
+  it("nennt die Monate unter dem Ø in der Reihenfolge der Prognose", () => {
+    expect(average.toStringValue()).toBe("21.00");
+    expect(gaps.map((gap) => gap.month)).toEqual([11, 12, 2, 3, 5, 6, 8, 9]);
+    expect(gapOf(2027, 3)?.gap.toStringValue()).toBe("2.00");
+  });
+
+  it("wählt den Füller mit dem kleinsten Zukauf, nie einen Monatszahler", () => {
+    // Gamma: 2 € × 600 € ÷ 6 € = 200 €; Delta: 2 € × 900 € ÷ 3 € = 600 €
+    expect(gapOf(2027, 3)?.filler).toMatchObject({ name: "Gamma", payouts: 1 });
+    expect(gapOf(2027, 3)?.filler?.invest.toStringValue()).toBe("200.00");
+    // 8 € × 900 € ÷ 3 € = 2.400 €
+    expect(gapOf(2027, 9)?.filler?.invest.toStringValue()).toBe("2400.00");
+    // Nur Beta zahlt im November — monatlich, also kein Füller.
+    expect(gapOf(2026, 11)?.filler).toBeNull();
   });
 });
