@@ -1,3 +1,4 @@
+import * as React from "react";
 import { AmountText } from "@/components/money/AmountText";
 import { Badge } from "@/components/ui/badge";
 import { ListDateTile, ListGroup, ListItemBody, ListRow } from "@/components/ui/list";
@@ -49,7 +50,11 @@ export function AgendaView({
   today: string;
   onSelect: (event: CalendarEvent) => void;
 }) {
-  const sections = buildAgenda(events, today, type);
+  // Nur bei neuen Terminen neu gegliedert, nicht bei jedem Auf- und Zuklappen.
+  const sections = React.useMemo(
+    () => buildAgenda(events, today, type),
+    [events, today, type],
+  );
   const { isOpen, toggle } = useOpenMonths(
     sections.map((section) => section.key),
     today.slice(0, 7),

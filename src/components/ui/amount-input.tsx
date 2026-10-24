@@ -26,8 +26,9 @@ export function AmountInput({
       inputMode="decimal"
       onChange={(event) => {
         const input = event.currentTarget;
-        const native = event.nativeEvent as InputEvent;
-        const inserted = native.inputType.startsWith("insert")
+        // Nicht jedes `input`-Ereignis ist ein InputEvent (Autofill, Hilfsprogramme).
+        const native = event.nativeEvent as Partial<InputEvent>;
+        const inserted = native.inputType?.startsWith("insert")
           ? (native.data ?? "")
           : null;
         const next = applyAmountInput(

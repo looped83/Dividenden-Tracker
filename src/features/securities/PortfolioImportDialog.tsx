@@ -403,7 +403,11 @@ export function PortfolioImportDialog({
               event.preventDefault();
               setDragging(true);
             }}
-            onDragLeave={() => {
+            onDragLeave={(event) => {
+              // Beim Wechsel auf ein Kindelement nicht loslassen — der Rahmen
+              // flackerte sonst beim Ziehen ueber Symbol und Text.
+              if (event.currentTarget.contains(event.relatedTarget as Node | null))
+                return;
               setDragging(false);
             }}
             onDrop={(event) => {
