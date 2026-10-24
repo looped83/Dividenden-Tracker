@@ -44,12 +44,17 @@ test("trägt Fixkosten ein, bearbeitet und löscht sie", async ({ page }, testIn
   await dialog.getByRole("button", { name: "Speichern" }).click();
   await expect(dialog).toBeHidden();
   await expect(page.getByText("noch 729,95 €")).toBeVisible();
+  // Zurück zum Fortschritt bleibt „Gedeckt" aufgeklappt (seit 2.17.1).
+  await page.getByRole("link", { name: "Zum Fortschritt" }).click();
+  await expect(liste.getByRole("link", { name: /Handy/ })).toBeVisible();
+  await liste.getByRole("link", { name: /Miete/ }).click();
 
   await page.getByRole("button", { name: "Löschen" }).click();
   await dialog.getByRole("button", { name: "Löschen" }).click();
-  await expect(page).toHaveURL(/#\/fortschritt$/);
+  await expect(page).toHaveURL(/#\/fortschritt(\?|$)/);
   await page.reload();
-  await expect(liste.getByRole("listitem")).toHaveCount(0);
+  // „Gedeckt" bleibt nach dem Löschen offen: Handy steht, Miete ist weg.
+  await expect(liste.getByRole("link", { name: /Miete/ })).toHaveCount(0);
   await expect(liste.getByRole("button", { name: /Gedeckt/ })).toContainText(
     "1 · 29,95 €",
   );

@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Link, useSearchParams } from "react-router";
+import { useBackState } from "@/lib/hooks/useBackState";
 import {
   Briefcase,
   Pencil,
@@ -641,10 +642,12 @@ function PercentCell({
  */
 function AssetName({ row }: { row: AssetRow }) {
   const { security } = row;
+  const backState = useBackState();
   return (
     <span className="flex flex-wrap items-center gap-2">
       <Link
         to={`/depot/${security.id}`}
+        state={backState}
         className="rounded-sm font-medium outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
       >
         {security.name}
@@ -693,6 +696,7 @@ function Metric({ value, detail }: { value: React.ReactNode; detail?: string | n
  * was man beim Durchsehen vergleicht.
  */
 function AssetItem({ row }: { row: AssetRow }) {
+  const backState = useBackState();
   const { security, position } = row;
   const payout = payoutLabel(security);
   const gain = position?.gain ?? null;
@@ -706,7 +710,7 @@ function AssetItem({ row }: { row: AssetRow }) {
   return (
     <li>
       <ListRow asChild>
-        <Link to={`/depot/${security.id}`}>
+        <Link to={`/depot/${security.id}`} state={backState}>
           <span className="min-w-0 flex-1 space-y-0.5">
             <span className="flex items-baseline justify-between gap-3">
               {/* Eine Zeile, lange Namen laufen aus (`ListItemBody`). */}

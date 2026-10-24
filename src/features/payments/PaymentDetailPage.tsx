@@ -1,5 +1,6 @@
 import * as React from "react";
-import { Link, useLocation, useNavigate, useParams } from "react-router";
+import { Link, useNavigate, useParams } from "react-router";
+import { useBackFrom, useBackState } from "@/lib/hooks/useBackState";
 import { Ban, Pencil, RotateCcw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageSkeleton } from "@/components/layout/PageSkeleton";
@@ -58,7 +59,8 @@ export function PaymentDetailPage() {
   // Loeschen und nach dem Bearbeiten geht es dorthin — auf dem Telefon laufen
   // alle Aktionen ueber diese Seite, und die Liste soll danach dort stehen,
   // wo man sie verlassen hat. Direkt aufgerufen bleibt es die ganze Liste.
-  const from = (useLocation().state as { from?: string } | null)?.from;
+  const from = useBackFrom();
+  const backState = useBackState();
   const listUrl = from ?? "/eingaenge";
   const edit = usePaymentComposer({ paymentId: id });
   const { data: payment, isLoading, isError } = usePayment(id);
@@ -97,7 +99,7 @@ export function PaymentDetailPage() {
   // ist ein Zurueck unter dem letzten Abschnitt praktisch unauffindbar, und die
   // Ziel- und Unternehmensseiten fuehren ihn ohnehin oben. Eine Anordnung fuer
   // dieselbe Handlung statt dreier.
-  const backLink = <DetailBackLink to={listUrl} label="Zu den Dividenden" />;
+  const backLink = <DetailBackLink to="/eingaenge" label="Zu den Dividenden" />;
 
   if (isLoading) {
     return (
@@ -281,6 +283,7 @@ export function PaymentDetailPage() {
           security ? (
             <Link
               to={`/depot/${security.id}`}
+              state={backState}
               className="rounded-sm outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
             >
               {security.name}

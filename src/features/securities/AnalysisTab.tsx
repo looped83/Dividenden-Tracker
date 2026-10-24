@@ -184,6 +184,7 @@ function AnalysisSections({
         <Section title="Branche">
           <AllocationBars
             slices={analysis.sectors}
+            param="branche"
             ariaLabel={`Anteile nach Branche ${basis}`}
           />
           <MissingFacetHint slices={analysis.sectors} noun="Branche" />
@@ -191,6 +192,7 @@ function AnalysisSections({
         <Section title="Land">
           <AllocationBars
             slices={analysis.countries}
+            param="land"
             ariaLabel={`Anteile nach Land ${basis}`}
           />
           <MissingFacetHint slices={analysis.countries} noun="Land" />

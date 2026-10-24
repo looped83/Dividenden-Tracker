@@ -1,5 +1,7 @@
 import { ChevronDown } from "lucide-react";
 import { Link } from "react-router";
+import { useBackState } from "@/lib/hooks/useBackState";
+import { useOpenKeys } from "@/lib/hooks/useOpenKeys";
 import { formatMoney, formatPercent } from "@/lib/money";
 import { DonutChart } from "@/features/statistics/components/charts";
 import { formatCountNoun } from "@/lib/utils/formatNumber";
@@ -91,6 +93,7 @@ function BarRow({
 
 /** Die Positionen hinter einem Anteil: Name fuehrt zur Detailseite des Assets. */
 function HoldingList({ holdings }: { holdings: readonly AnalysisHolding[] }) {
+  const backState = useBackState();
   return (
     <ul className="mt-3 space-y-2 border-l border-border pl-4 text-sm">
       {holdings.map((holding) => (
@@ -100,6 +103,7 @@ function HoldingList({ holdings }: { holdings: readonly AnalysisHolding[] }) {
         >
           <Link
             to={`/depot/${holding.securityId}`}
+            state={backState}
             className="min-w-0 truncate rounded-sm outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
           >
             {holding.name}
@@ -122,29 +126,44 @@ function HoldingList({ holdings }: { holdings: readonly AnalysisHolding[] }) {
  * Zeilen mit Haarlinie, schmaler Balken in Vordergrundfarbe.
  *
  * Ein Klick auf die Zeile klappt die Positionen dahinter auf — als natives
- * `<details>`: tastaturbedienbar, ohne eigenen Zustand.
+ * `<details>`: tastaturbedienbar. Was offen ist, steht in der Adresse
+ * (`param`, seit 2.17.1): Der Weg zurueck von einem Asset findet es wieder.
  */
 export function AllocationBars({
   slices,
   ariaLabel,
+  param,
 }: {
   slices: readonly AnalysisSlice[];
   ariaLabel: string;
+  /** Suchparameter der offenen Zeilen, je Diagramm ein eigener. */
+  param: string;
 }) {
+  const { isOpen, setOpen } = useOpenKeys(param);
   if (!hasKnown(slices)) return <NoData />;
 
   return (
     <ul className="divide-y divide-border" aria-label={ariaLabel}>
-      {slices.map((slice) => (
-        <li key={slice.key || "unknown"} className="py-3">
-          <details className="group">
-            <summary className="cursor-pointer list-none rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
-              <BarRow slice={slice} expandable />
-            </summary>
-            <HoldingList holdings={slice.holdings} />
-          </details>
-        </li>
-      ))}
+      {slices.map((slice) => {
+        const key = slice.key || "unknown";
+        return (
+          <li key={key} className="py-3">
+            <details
+              className="group"
+              open={isOpen(key)}
+              onToggle={(event) => {
+                const { open } = event.currentTarget;
+                if (open !== isOpen(key)) setOpen(key, open);
+              }}
+            >
+              <summary className="cursor-pointer list-none rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+                <BarRow slice={slice} expandable />
+              </summary>
+              <HoldingList holdings={slice.holdings} />
+            </details>
+          </li>
+        );
+      })}
     </ul>
   );
 }

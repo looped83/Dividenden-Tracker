@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Link, useNavigate } from "react-router";
+import { useBackState } from "@/lib/hooks/useBackState";
 import { BarChart3 } from "lucide-react";
 import { Section } from "@/components/ui/section";
 import { AmountText } from "@/components/money/AmountText";
@@ -116,6 +117,7 @@ export function CompaniesTab() {
     [sorted, securities, filter],
   );
 
+  const backState = useBackState();
   const columns = React.useMemo<StatColumn<SecurityStatistics>[]>(
     () => [
       {
@@ -131,6 +133,7 @@ export function CompaniesTab() {
                 „wie hat sich diese Position entwickelt?" */}
             <Link
               to={`/depot/${row.securityId}`}
+              state={backState}
               className="truncate rounded-sm font-medium outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
             >
               {entityName(securities, row.securityId)}
@@ -223,7 +226,7 @@ export function CompaniesTab() {
         render: (row) => periodCell(row.firstPayDate, row.lastPayDate),
       },
     ],
-    [labelOf, securities, expectedById],
+    [labelOf, securities, expectedById, backState],
   );
 
   if (stats.length === 0) {
