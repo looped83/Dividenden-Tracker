@@ -172,7 +172,6 @@ export function DashboardPage() {
               periodPayments={periodPayments}
               selection={selection}
               securities={securities}
-              depots={depots}
             />
           </div>
           <div className="order-5 empty:hidden">
