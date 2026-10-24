@@ -9,7 +9,7 @@ Stand: 2026-07-19 · Status: Verbindliche technische Architektur (Planungsphase)
 Single-Page-Anwendung (React/Vite) als PWA, mit **Supabase Postgres als einziger Source of
 Truth**. Es gibt kein eigenes Backend; die Geschäftslogik verteilt sich auf:
 
-- **Postgres** (Supabase): Schema, Constraints, RLS, Trigger (Audit Log), transaktionale
+- **Postgres** (Supabase): Schema, Constraints, RLS, Trigger, transaktionale
   RPC-Funktionen für Import-Commit, Import-Rollback und Restore.
 - **Client** (Browser): UI, Parsing/Validierung von Importdateien (Web Worker), Finanz-
   arithmetik mit Decimal.js, Darstellung und Caching (TanStack Query).
@@ -34,7 +34,7 @@ Truth**. Es gibt kein eigenes Backend; die Geschäftslogik verteilt sich auf:
 │  ├─ PostgREST-API (ausschließlich RLS-geschützt)                                  │
 │  └─ Postgres = SOURCE OF TRUTH                                                    │
 │       Schema-Migrationen · CHECK/FK/UNIQUE-Constraints · RLS-Policies             │
-│       Trigger → audit_log · RPCs: commit_import, rollback_import, restore_backup  │
+│       Trigger · RPCs: commit_import, rollback_import, restore_backup              │
 └───────────────────────────────────────────────────────────────────────────────────┘
 ```
 

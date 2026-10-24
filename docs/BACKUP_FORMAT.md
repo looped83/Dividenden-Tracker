@@ -56,8 +56,7 @@ The `data` section contains the complete user dataset:
   "imports": [ ... ],
   "security_aliases": [ ... ],
   "security_snapshot_runs": [ ... ],
-  "security_snapshots": [ ... ],
-  "audit_log": [ ... ]
+  "security_snapshots": [ ... ]
 }
 ```
 

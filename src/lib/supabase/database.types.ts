@@ -29,16 +29,6 @@ export type ImportStatus =
   "analyzing" | "pending_confirmation" | "committed" | "rolled_back" | "discarded";
 export type DataQuality = "ok" | "incomplete" | "needs_review";
 export type GoalType = "annual" | "monthly";
-export type AuditAction =
-  | "insert"
-  | "update"
-  | "archive"
-  | "unarchive"
-  | "delete"
-  | "import_commit"
-  | "import_rollback"
-  | "restore";
-export type AuditOrigin = "ui" | "import" | "rollback" | "restore" | "migration";
 /** Kalenderintegration (Migration 0027). */
 export type CalendarSource = "divvydiary";
 export type CalendarEventType = "payment" | "ex_date";
@@ -522,22 +512,6 @@ export interface Database {
           },
         ];
       };
-      audit_log: {
-        Row: {
-          id: number;
-          user_id: string;
-          entity_type: string;
-          entity_id: string;
-          action: AuditAction;
-          old_values: Json | null;
-          new_values: Json | null;
-          origin: AuditOrigin;
-          created_at: string;
-        };
-        Insert: never; // insert-only per security-definer-Trigger, nicht ueber die API
-        Update: never;
-        Relationships: [];
-      };
       security_aliases: {
         Row: {
           id: string;
@@ -665,8 +639,6 @@ export interface Database {
       import_status: ImportStatus;
       data_quality: DataQuality;
       goal_type: GoalType;
-      audit_action: AuditAction;
-      audit_origin: AuditOrigin;
       calendar_source: CalendarSource;
       calendar_event_type: CalendarEventType;
       calendar_event_state: CalendarEventState;

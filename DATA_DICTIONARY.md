@@ -68,7 +68,6 @@ IMPORT_SPEC.md.
 | `updated_at` | T | timestamptz | Letzter Änderungszeitpunkt (Trigger) |
 | `archived_at` | T | timestamptz | Archivierungs-/Stornozeitpunkt (Soft Delete) |
 | `archive_reason` | O | text | Begründung bei Archivierung/Storno |
-| Änderungsverlauf | A | — | Keine Spalte; ergibt sich aus `audit_log` (entity_id = id) |
 
 ---
 
@@ -153,10 +152,11 @@ Eindeutigkeit: `goals_unique_period (user_id, goal_type, year, coalesce(month,0)
 | `backup_reminder_days` | P (Default 30) | int | Erinnerungsintervall |
 | `last_backup_at` | T | timestamptz | Letztes erfolgreiches Backup |
 
-## 8. Audit-Eintrag (`audit_log`)
+## 8. Audit-Eintrag (`audit_log`) — entfernt
 
-| Feld | Kl. | Typ | Bedeutung |
-|---|---|---|---|
+Ein Änderungsprotokoll gibt es seit Migration 0040 nicht mehr (DECISIONS.md ADR-011).
+
+---|---|---|---|
 | `id` | T | bigint | fortlaufend |
 | `user_id` | T | uuid | Verursacher = Eigentümer |
 | `entity_type`, `entity_id` | T | | Betroffene Entität |

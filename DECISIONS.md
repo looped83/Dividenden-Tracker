@@ -1052,3 +1052,30 @@ Import las die Zuordnung; sie war eine zusätzliche Angabe ohne Nutzen.
 ### Revisit When
 
 - Mehrere getrennte Portfolios (etwa für eine zweite Person) gebraucht werden.
+
+## ADR-011: Änderungsprotokoll vollständig entfernt
+
+**Status:** Accepted  
+**Scope:** Datenbank
+
+### Decision
+
+Migration 0040 löscht `audit_log`, `audit_row_change()` und die Enums `audit_action` und
+`audit_origin`. `commit_import`, `rollback_import` und `restore_backup` setzen
+`app.audit_origin` nicht mehr; sonst sind sie unverändert. Ergänzt ADR-008, das Tabelle und
+Funktion noch stehen ließ.
+
+### Why
+
+Seit 0037 schrieb nichts mehr hinein. Die leeren Reste sollten nur ein Wiedereinschalten per
+Trigger erlauben; das wird nicht gebraucht.
+
+### Trade-offs
+
+- Ein Änderungsprotokoll ließe sich nur mit einer neuen Migration (Tabelle, Funktion,
+  Trigger) zurückholen.
+- Ältere Sicherungen mit `audit_log` bleiben einlesbar (optionales Feld, wird übergangen).
+
+### Revisit When
+
+- Nachvollziehbarkeit einzelner Änderungen doch gebraucht wird.

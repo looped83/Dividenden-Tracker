@@ -16,7 +16,6 @@ auth.users 1──n depots
 auth.users 1──n securities
 auth.users 1──n imports
 auth.users 1──n goals
-auth.users 1──n audit_log (insert-only)
 
 dividend_payments n──1 securities
 dividend_payments n──1 depots
@@ -28,12 +27,12 @@ Grundsätze:
 - **Kein Hard Delete** auf fachlichen Tabellen: Soft Delete über `archived_at`; es existieren
   keine DELETE-Policies (Ausnahmen: `imports` im Status `draft/analyzing`, siehe §3.6, sowie
   `dividend_payments` und `securities` — dort ausschließlich für bereits archivierte eigene
-  Zeilen, mit Audit-Eintrag `action = 'delete'`, siehe D-034/D-5B-6. Ein `securities`-Datensatz
+  Zeilen, siehe D-034/D-5B-6. Ein `securities`-Datensatz
   ist wegen der `NO ACTION`-Fremdschlüssel von `dividend_payments`/`security_aliases` nur
   löschbar, solange keine Zahlungen/Aliase mehr darauf verweisen).
 - Jede fachliche Tabelle trägt `user_id uuid not null references auth.users(id)`.
 - `created_at`/`updated_at` werden durch Trigger gepflegt, nie vom Client gesetzt.
-- `audit_log` wird seit Migration 0037 nicht mehr befüllt (ADR-008); die Tabelle bleibt leer bestehen.
+- Ein Änderungsprotokoll gibt es nicht: `audit_log` wurde mit Migration 0040 entfernt (ADR-008, ADR-011).
 
 ---
 
@@ -62,13 +61,6 @@ create type import_status as enum (
 create type data_quality as enum ('ok', 'incomplete', 'needs_review');
 
 create type goal_type as enum ('annual', 'monthly'); -- Phase 7 (Migration 0021)
-
-create type audit_action as enum (
-  'insert', 'update', 'archive', 'unarchive',
-  'import_commit', 'import_rollback', 'restore'
-);
-
-create type audit_origin as enum ('ui', 'import', 'rollback', 'restore', 'migration');
 ```
 
 ---
@@ -310,30 +302,10 @@ Zahlungen duerfen Ziele direkt und dauerhaft geloescht werden (DELETE-Policy
 `goals_delete_own`); das Loeschen entfernt nur die Zieldefinition, keine
 Zahlungsdaten.
 
-### 3.8 `audit_log` — insert-only, seit 0037 ohne Trigger (ADR-008)
+### 3.8 `audit_log` — entfernt
 
-```sql
-create table audit_log (
-  id          bigint generated always as identity primary key,
-  user_id     uuid not null,
-  entity_type text not null check (entity_type in
-                ('dividend_payment','security','depot','portfolio','goal','import','profile')),
-  entity_id   uuid not null,
-  action      audit_action not null,
-  old_values  jsonb,        -- null bei insert
-  new_values  jsonb,        -- null bei archive
-  origin      audit_origin not null,
-  created_at  timestamptz not null default now()
-);
-
-create index audit_entity_idx on audit_log(user_id, entity_type, entity_id, created_at desc);
-```
-
-- Befüllung ausschließlich durch `SECURITY DEFINER`-Triggerfunktionen (Client kann nicht
-  schreiben; RLS: nur SELECT für den Eigentümer, kein INSERT/UPDATE/DELETE über die API).
-- `old_values`/`new_values` enthalten nur die **geänderten fachlichen Felder** (Diff), keine
-  technischen Felder (`updated_at`, Fingerprints) und keine Fremd-IDs ohne Änderung
-  (SECURITY_MODEL.md §8 definiert die Ausschlussliste).
+Seit Migration 0040 gibt es kein Änderungsprotokoll mehr (ADR-011). 0037 hatte schon die
+Trigger entfernt und die Tabelle geleert (ADR-008).
 
 ---
 
@@ -343,7 +315,6 @@ create index audit_entity_idx on audit_log(user_id, entity_type, entity_id, crea
 |---|---|
 | `set_updated_at()` | `updated_at = now()` bei jedem UPDATE (alle fachlichen Tabellen) |
 | `enforce_user_id()` | erzwingt `user_id = auth.uid()` bei INSERT (Defense in Depth zusätzlich zu RLS) |
-| `audit_row_change()` | schreibt Diff nach `audit_log` (INSERT/UPDATE inkl. Archivierung) |
 | `protect_payment_immutables()` | verbietet UPDATE von `id, user_id, source, import_id, source_row_number, row_fingerprint, created_at`; verbietet UPDATE archivierter Zeilen außer `unarchive` |
 | `recompute_business_fingerprint()` | berechnet `business_fingerprint` serverseitig neu bei INSERT/UPDATE relevanter Felder (eine Wahrheit, CALCULATION_RULES.md §5) |
 | `profiles_on_signup()` | legt Profil bei Registrierung an |
