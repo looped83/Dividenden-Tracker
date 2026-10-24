@@ -35,7 +35,6 @@ import {
   forecastTwelveMonths,
   monthGaps,
   type ForecastFacets,
-  type GapFiller,
   type MonthGap,
   type TwelveMonthForecast,
 } from "./forecast";
@@ -232,9 +231,9 @@ function toBarData(forecast: TwelveMonthForecast): CategoryDatum[] {
 // --- Monatslücken -------------------------------------------------------------
 
 /**
- * Monate unter dem Ø der Prognose, je mit dem Zukauf einer gehaltenen
- * Position, der die Lücke schließt (CALCULATION_RULES.md §14.3). Die Zeile
- * führt zum Asset — dort steht, was es zahlt und wann.
+ * Monate unter dem Ø der Prognose, je mit den Zukäufen gehaltener Positionen,
+ * die die Lücke schließen (CALCULATION_RULES.md §14.3). Jedes Asset führt zu
+ * seiner Seite — dort steht, was es zahlt und wann.
  */
 function MonthGapsSection({ forecast }: { forecast: TwelveMonthForecast }) {
   const { average, gaps } = React.useMemo(() => monthGaps(forecast), [forecast]);
@@ -268,27 +267,17 @@ function rhythm(payouts: number): string {
   return RHYTHM[payouts] ?? `${String(payouts)}× im Jahr`;
 }
 
-/** „+10,00 € je 1.000 € · bis Ø 200 €" — eine Zeile je Füller. */
-function FillerFigures({ filler }: { filler: GapFiller }) {
-  return (
-    <span className="tabular-amount">
-      +{formatMoney(filler.perThousand)} je 1.000 € · bis Ø{" "}
-      {formatMoneyWhole(filler.invest)}
-    </span>
-  );
-}
-
 /**
- * Eine Lücke mit ihrem besten Füller (kleinster Zukauf). Weitere Füller aus
- * dem Bestand (seit 2.15.0, bis zu zwei) klappen unter der Zeile auf: So
- * bleibt die Liste so kurz wie zuvor, und wer lieber eine andere Position
- * aufstockt, findet sie mit denselben Zahlen.
+ * Eine Lücke als ruhige, einzeilige Zeile: Monat, Fehlbetrag, erwartete Summe.
+ * Die Assets aus dem Bestand, die sie schließen (bis zu drei, kleinster Zukauf
+ * zuerst), klappen erst auf Klick auf (seit 2.17.0). Zuvor stand der beste
+ * Füller mit zwei Zeilen in jeder Lücke und darunter ein eigener Knopf für
+ * die übrigen — die Liste las sich unruhig.
  */
 function GapRow({ gap }: { gap: MonthGap }) {
   const [open, setOpen] = React.useState(false);
-  const best = gap.fillers.at(0);
-  const more = gap.fillers.slice(1);
-  const moreId = `luecke-${String(gap.year)}-${String(gap.month)}`;
+  const fillersId = `luecke-${String(gap.year)}-${String(gap.month)}`;
+  const count = gap.fillers.length;
   const body = (
     <>
       <ListTile primary={monthNameDeShort(gap.month)} secondary={String(gap.year)} />
@@ -302,16 +291,9 @@ function GapRow({ gap }: { gap: MonthGap }) {
           </>
         }
         meta={
-          best ? (
-            <span className="flex flex-col gap-0.5">
-              <span>
-                {best.name} · {rhythm(best.payouts)}
-              </span>
-              <FillerFigures filler={best} />
-            </span>
-          ) : (
-            <span>Kein Füller im Bestand</span>
-          )
+          count > 0
+            ? formatCountNoun(count, "Asset zum Auffüllen", "Assets zum Auffüllen")
+            : "Kein passendes Asset im Bestand"
         }
         trailing={
           <>
@@ -322,56 +304,49 @@ function GapRow({ gap }: { gap: MonthGap }) {
       />
     </>
   );
+  if (count === 0) return <ListRow>{body}</ListRow>;
   return (
     <>
-      {best ? (
-        <ListRow asChild>
-          <Link to={`/depot/${best.securityId}`}>{body}</Link>
-        </ListRow>
-      ) : (
-        <ListRow>{body}</ListRow>
-      )}
-      {more.length > 0 && (
+      <ListRow asChild>
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls={open ? fillersId : undefined}
+          onClick={() => {
+            setOpen((current) => !current);
+          }}
+        >
+          {body}
+          <ChevronDown
+            aria-hidden
+            className={cn(
+              "size-4 shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none",
+              open && "rotate-180",
+            )}
+          />
+        </button>
+      </ListRow>
+      {open && (
         // Eingerückt auf die Textspalte der Zeile: Kachel (44px) + Abstand.
-        <div className="-mt-2 pb-2 pl-[4.25rem] pr-3">
-          <button
-            type="button"
-            aria-expanded={open}
-            aria-controls={open ? moreId : undefined}
-            onClick={() => {
-              setOpen((current) => !current);
-            }}
-            className="inline-flex min-h-11 items-center gap-1 rounded-sm text-sm font-medium text-primary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            {open
-              ? "Weniger Optionen"
-              : formatCountNoun(more.length, "weitere Option", "weitere Optionen")}
-            <ChevronDown
-              aria-hidden
-              className={cn(
-                "size-4 transition-transform motion-reduce:transition-none",
-                open && "rotate-180",
-              )}
-            />
-          </button>
-          {open && (
-            <ul id={moreId} className="space-y-1">
-              {more.map((filler) => (
-                <li key={filler.securityId}>
-                  <Link
-                    to={`/depot/${filler.securityId}`}
-                    className="-mx-3 flex flex-col gap-0.5 rounded-xl px-3 py-2 text-sm text-muted-foreground outline-none transition-colors hover:bg-accent/60 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring motion-reduce:transition-none"
-                  >
-                    <span className="font-medium text-foreground">
-                      {filler.name} · {rhythm(filler.payouts)}
-                    </span>
-                    <FillerFigures filler={filler} />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        <ul id={fillersId} className="space-y-0.5 pb-2 pl-[4.25rem] pr-3">
+          {gap.fillers.map((filler) => (
+            <li key={filler.securityId}>
+              <Link
+                to={`/depot/${filler.securityId}`}
+                className="-mx-3 flex flex-col gap-0.5 rounded-xl px-3 py-2 text-sm text-muted-foreground outline-none transition-colors hover:bg-accent/60 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring motion-reduce:transition-none"
+              >
+                <span className="truncate-fade">
+                  <span className="font-medium text-foreground">{filler.name}</span> ·{" "}
+                  {rhythm(filler.payouts)}
+                </span>
+                <span className="tabular-amount">
+                  +{formatMoney(filler.perThousand)} je 1.000 € · bis Ø{" "}
+                  {formatMoneyWhole(filler.invest)}
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
       )}
     </>
   );
