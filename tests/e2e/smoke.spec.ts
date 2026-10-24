@@ -60,9 +60,42 @@ test.describe("Rauchtest", () => {
         });
       });
 
+      const log: string[] = [];
+      page.on("request", (r) => {
+        if (r.url().includes("RegisterPage"))
+          log.push(`req ${r.url()} ${r.serviceWorker() ? "sw" : ""}`);
+      });
+      page.on("requestfailed", (r) =>
+        log.push(`failed ${r.url()} ${r.failure()?.errorText ?? ""}`),
+      );
+      page.on("response", (r) => {
+        if (r.url().includes("RegisterPage"))
+          log.push(`res ${String(r.status())} ${r.url()}`);
+      });
+      page.on("framenavigated", (f) => log.push(`nav ${f.url()}`));
+      page.on("console", (m) => log.push(`console ${m.type()} ${m.text()}`));
+      page.on("pageerror", (e) => log.push(`pageerror ${e.message}`));
+
       await page.goto("/#/registrieren");
 
-      await expect(page.getByLabel("E-Mail-Adresse")).toBeVisible();
+      try {
+        await expect(page.getByLabel("E-Mail-Adresse")).toBeVisible();
+      } catch (error) {
+        const text = await page
+          .locator("body")
+          .innerText()
+          .catch(() => "");
+        const storage = await page
+          .evaluate(() => [
+            navigator.onLine,
+            sessionStorage.getItem("dividend-tracker:chunk-reload"),
+          ])
+          .catch(() => []);
+        throw new Error(
+          `DIAG\n${log.join("\n")}\nstorage ${JSON.stringify(storage)}\nbody ${text.slice(0, 500)}\n${String(error)}`,
+          { cause: error },
+        );
+      }
       expect(failed).toBe(true);
     });
   });
