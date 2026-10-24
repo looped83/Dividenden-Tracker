@@ -699,6 +699,18 @@ gespeichert sind nur die Annahmen des Schneeballs (`profiles.forecast_settings`,
   (Horizont 30 Jahre). Kursgewinne fließen nicht ein. Gerechnet wird mit Decimal, angezeigt in
   vollen Euro.
 
+### 14.3 Monatslücken (`monthGaps`, seit 2.13.0)
+
+- **Lücke:** jeder Monat der Prognose (§14.1) unter ihrem Ø-Monat (`Summe ÷ 12`);
+  `Lücke = Ø − Monat`. Reihenfolge wie die Prognose.
+- **Füller:** unter den Positionen, die in dem Monat zahlen, nur solche mit weniger als zwölf
+  Zahlungen im Jahr (ein Monatszahler hebt alle Monate gleich) und mit Marktwert > 0. Zukauf
+  `= Lücke × Marktwert ÷ Betrag je Zahlung` (netto, wie in der Prognose), auf volle 100 €
+  aufgerundet. Gezeigt wird der kleinste Zukauf, dazu was 1.000 € Zukauf in dem Monat bringen
+  (`1.000 × Betrag je Zahlung ÷ Marktwert`); ohne passende Position „kein Füller“.
+- Der Zukauf hebt auch die übrigen Zahlmonate der Position; er ist eine Orientierung, keine
+  Kaufempfehlung, und wird nicht gespeichert.
+
 ---
 
 ## 15. Fortschritt (seit 2.12.0)

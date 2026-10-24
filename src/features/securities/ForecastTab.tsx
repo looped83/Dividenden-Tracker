@@ -1,8 +1,10 @@
 import * as React from "react";
+import { Link } from "react-router";
 import { TrendingUp } from "lucide-react";
 import { KpiHero, KpiHeroSkeleton, TrendPill } from "@/components/domain/KpiHero";
 import { AmountText } from "@/components/money/AmountText";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ListGroup, ListItemBody, ListRow, ListTile } from "@/components/ui/list";
 import { AmountInput } from "@/components/ui/amount-input";
 import { Section } from "@/components/ui/section";
 import { Select } from "@/components/ui/select";
@@ -11,6 +13,7 @@ import {
   EUR,
   Money,
   MoneyDecimal,
+  formatMoney,
   formatMoneyWhole,
   formatPercent,
   type DecimalInstance,
@@ -29,7 +32,9 @@ import {
 import { PortfolioImportButton, PortfolioImportDialog } from "./PortfolioImportDialog";
 import {
   forecastTwelveMonths,
+  monthGaps,
   type ForecastFacets,
+  type MonthGap,
   type TwelveMonthForecast,
 } from "./forecast";
 import {
@@ -143,6 +148,8 @@ export function ForecastTab() {
         />
       </Section>
 
+      <MonthGapsSection forecast={forecast} />
+
       <SnowballSection
         depot={depot}
         netRatio={forecast.netRatio}
@@ -218,6 +225,89 @@ function toBarData(forecast: TwelveMonthForecast): CategoryDatum[] {
       .slice(0, TOOLTIP_PAYERS)
       .map((item) => ({ name: item.name, money: item.amount })),
   }));
+}
+
+// --- Monatslücken -------------------------------------------------------------
+
+/**
+ * Monate unter dem Ø der Prognose, je mit dem Zukauf einer gehaltenen
+ * Position, der die Lücke schließt (CALCULATION_RULES.md §14.3). Die Zeile
+ * führt zum Asset — dort steht, was es zahlt und wann.
+ */
+function MonthGapsSection({ forecast }: { forecast: TwelveMonthForecast }) {
+  const { average, gaps } = React.useMemo(() => monthGaps(forecast), [forecast]);
+  return (
+    <Section
+      title="Monatslücken"
+      description={`Monate unter deinem Ø von ${formatMoneyWhole(average)}`}
+    >
+      {gaps.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Kein Monat liegt unter deinem Ø.</p>
+      ) : (
+        <ListGroup>
+          {gaps.map((gap) => (
+            <li key={`${String(gap.year)}-${String(gap.month)}`}>
+              <GapRow gap={gap} />
+            </li>
+          ))}
+        </ListGroup>
+      )}
+    </Section>
+  );
+}
+
+const RHYTHM: Record<number, string> = {
+  1: "jährlich",
+  2: "halbjährlich",
+  4: "quartalsweise",
+};
+
+function GapRow({ gap }: { gap: MonthGap }) {
+  const { filler } = gap;
+  const body = (
+    <>
+      <ListTile primary={monthNameDeShort(gap.month)} secondary={String(gap.year)} />
+      <ListItemBody
+        title={
+          <>
+            <span className="sr-only">
+              {monthNameDe(gap.month)} {gap.year}:{" "}
+            </span>
+            {formatMoneyWhole(gap.gap)} unter Ø
+          </>
+        }
+        meta={
+          filler ? (
+            <span className="flex flex-col gap-0.5">
+              <span>
+                {filler.name} ·{" "}
+                {RHYTHM[filler.payouts] ?? `${String(filler.payouts)}× im Jahr`}
+              </span>
+              <span className="tabular-amount">
+                +{formatMoney(filler.perThousand)} je 1.000 € · bis Ø{" "}
+                {formatMoneyWhole(filler.invest)}
+              </span>
+            </span>
+          ) : (
+            <span>Kein Füller im Bestand</span>
+          )
+        }
+        trailing={
+          <>
+            {formatMoneyWhole(gap.total)}
+            <span className="sr-only"> erwartet</span>
+          </>
+        }
+      />
+    </>
+  );
+  return filler ? (
+    <ListRow asChild>
+      <Link to={`/depot/${filler.securityId}`}>{body}</Link>
+    </ListRow>
+  ) : (
+    <ListRow>{body}</ListRow>
+  );
 }
 
 // --- Schneeball --------------------------------------------------------------
