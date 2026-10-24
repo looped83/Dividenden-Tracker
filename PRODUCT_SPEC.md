@@ -384,7 +384,9 @@ Position, Gedecktes und weitere Offene klappen ein. Jede Position hat eine Detai
 (`/fortschritt/fixkosten/:id`) mit Bearbeiten und Löschen wie eine Dividende; neu angelegt wird
 über „Neu“. Ab lg links Fixkosten und nächste Meilensteine, rechts das Erreichte. Seit 2.15.0
 Beträge der Fixkosten mit Cent und eine Pflegeseite „Alle Fixkosten“ (`/fortschritt/fixkosten`,
-alphabetisch, je Zeile Stift und Papierkorb), verlinkt unter der Liste.
+verlinkt unter der Liste). Seit 2.16.0 aufgebaut wie Bestand › Assets: Filterleiste (Name, Status
+gedeckt/offen, Sortierung nach Name oder Betrag), Kennzahlkopf, Abschnitt mit „Neue Position“, ab md
+eine Tabelle mit Stift und Papierkorb je Zeile, auf dem Telefon eine Liste zur Detailseite.
 
 ### 5.8 Datensicherung
 

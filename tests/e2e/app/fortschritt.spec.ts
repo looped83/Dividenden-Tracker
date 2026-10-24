@@ -12,7 +12,7 @@ test.use({
   },
 });
 
-test("trägt Fixkosten ein, bearbeitet und löscht sie", async ({ page }) => {
+test("trägt Fixkosten ein, bearbeitet und löscht sie", async ({ page }, testInfo) => {
   await page.goto("/#/fortschritt");
   const dialog = page.getByRole("dialog");
 
@@ -54,14 +54,30 @@ test("trägt Fixkosten ein, bearbeitet und löscht sie", async ({ page }) => {
     "1 · 29,95 €",
   );
 
-  // Pflegeseite: alle Positionen mit Stift und Papierkorb.
+  // Pflegeseite: alle Positionen, filterbar; ab md als Tabelle mit Stift
+  // und Papierkorb, auf dem Telefon führen die Zeilen zur Detailseite.
   await liste.getByRole("link", { name: "Alle Fixkosten" }).click();
-  await expect(page.getByText("1 Position · 29,95 € im Monat")).toBeVisible();
-  await page.getByRole("button", { name: "Handy bearbeiten" }).click();
-  await dialog.getByLabel("Monatsbetrag (€)").fill("25,50");
-  await dialog.getByRole("button", { name: "Speichern" }).click();
-  await expect(page.getByText("1 Position · 25,50 € im Monat")).toBeVisible();
-  await page.getByRole("button", { name: "Handy löschen" }).click();
-  await dialog.getByRole("button", { name: "Löschen" }).click();
+  await expect(page.getByRole("heading", { name: "Fixkosten", level: 1 })).toBeVisible();
+  const filter = page.getByRole("button", { name: /^Filter/ });
+  if (await filter.isVisible()) await filter.click();
+  await page.getByLabel("Status").selectOption("open");
+  await expect(page.getByText("Keine Fixkosten für diese Filter")).toBeVisible();
+  await page.getByLabel("Status").selectOption("covered");
+  const positionen = page.getByRole("region", { name: "Positionen" });
+  await expect(positionen.getByRole("link", { name: "Handy" })).toBeVisible();
+
+  if (testInfo.project.name === "Desktop") {
+    await page.getByRole("button", { name: "Handy bearbeiten" }).click();
+    await dialog.getByLabel("Monatsbetrag (€)").fill("25,50");
+    await dialog.getByRole("button", { name: "Speichern" }).click();
+    await expect(positionen.getByRole("cell", { name: "25,50 €" })).toBeVisible();
+    await page.getByRole("button", { name: "Handy löschen" }).click();
+    await dialog.getByRole("button", { name: "Löschen" }).click();
+  } else {
+    await positionen.getByRole("link", { name: "Handy" }).click();
+    await page.getByRole("button", { name: "Löschen" }).click();
+    await dialog.getByRole("button", { name: "Löschen" }).click();
+    await page.goto("/#/fortschritt/fixkosten");
+  }
   await expect(page.getByText("Noch keine Fixkosten")).toBeVisible();
 });
