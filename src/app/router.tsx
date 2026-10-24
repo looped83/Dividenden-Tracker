@@ -93,6 +93,9 @@ const GoalDetailPage = React.lazy(async () => ({
 const ProgressPage = React.lazy(async () => ({
   default: (await routeChunks.progress()).ProgressPage,
 }));
+const FixedCostDetailPage = React.lazy(async () => ({
+  default: (await routeChunks.fixedCostDetail()).FixedCostDetailPage,
+}));
 const SettingsPage = React.lazy(async () => ({
   default: (await routeChunks.settings()).SettingsPage,
 }));
@@ -225,6 +228,7 @@ export const router = createHashRouter([
       { path: "ziele/beendet", element: <Navigate to="/ziele" replace /> },
       { path: "ziele/:id", element: <GoalDetailPage /> },
       { path: "fortschritt", element: <ProgressPage /> },
+      { path: "fortschritt/fixkosten/:id", element: <FixedCostDetailPage /> },
       {
         path: "einstellungen",
         element: <SettingsPage />,

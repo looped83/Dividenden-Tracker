@@ -1,5 +1,6 @@
 import * as React from "react";
-import { Check, Pencil, Plus, Trophy } from "lucide-react";
+import { Link } from "react-router";
+import { Check, Plus, Trophy } from "lucide-react";
 import { KpiHero, KpiHeroSkeleton, type KpiStat } from "@/components/domain/KpiHero";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ import {
   MoneyDecimal,
   formatMoneyWhole,
   formatPercent,
+  sumMoney,
   type DecimalInstance,
 } from "@/lib/money";
 import {
@@ -32,7 +34,8 @@ import { cn } from "@/lib/utils/cn";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { formatCalendarDate } from "@/lib/utils/formatDate";
 import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
-import { FixedCostsDialog } from "./FixedCostsDialog";
+import { FixedCostDialog } from "./FixedCostDialog";
+import { ProgressBar } from "./ProgressBar";
 import { useFixedCosts } from "./hooks";
 
 const euro = (value: number) =>
@@ -50,7 +53,7 @@ export function ProgressPage() {
   const today = useToday();
   const { payments, isLoading, isError, error } = useGoalProgressPayments();
   const costsQuery = useFixedCosts();
-  const [editing, setEditing] = React.useState(false);
+  const [adding, setAdding] = React.useState(false);
 
   const costs = React.useMemo(() => costsQuery.data ?? [], [costsQuery.data]);
   const data = React.useMemo(() => {
@@ -62,8 +65,8 @@ export function ProgressPage() {
     };
   }, [payments, costs, today]);
 
-  const edit = () => {
-    setEditing(true);
+  const add = () => {
+    setAdding(true);
   };
 
   let content: React.ReactNode;
@@ -94,22 +97,29 @@ export function ProgressPage() {
           coverage={data.coverage}
           reached={data.milestones.reached.length}
         />
-        <CoverageSection coverage={data.coverage} onEdit={edit} />
-        <Section title="Nächste Meilensteine">
-          <ul className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
-            {data.milestones.next.map((milestone) => (
-              <li key={milestone.kind}>
-                <NextTile milestone={milestone} />
-              </li>
-            ))}
-          </ul>
-        </Section>
-        {data.milestones.reached.length > 0 && (
-          <ReachedSection
-            reached={data.milestones.reached}
-            currentYear={String(today.year)}
-          />
-        )}
+        {/* Ab lg zweispaltig: links Fixkosten und nächste Meilensteine (das,
+            worauf man hinarbeitet), rechts das Erreichte. So sind beide
+            Spalten etwa gleich lang. Auf dem Telefon untereinander. */}
+        <div className="grid gap-10 lg:grid-cols-2 lg:items-start lg:gap-12">
+          <div className="space-y-10 lg:space-y-12">
+            <CoverageSection coverage={data.coverage} onAdd={add} />
+            <Section title="Nächste Meilensteine">
+              <ul className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-1 xl:grid-cols-2">
+                {data.milestones.next.map((milestone) => (
+                  <li key={milestone.kind}>
+                    <NextTile milestone={milestone} />
+                  </li>
+                ))}
+              </ul>
+            </Section>
+          </div>
+          {data.milestones.reached.length > 0 && (
+            <ReachedSection
+              reached={data.milestones.reached}
+              currentYear={String(today.year)}
+            />
+          )}
+        </div>
       </div>
     );
   }
@@ -118,7 +128,7 @@ export function ProgressPage() {
     <div className="space-y-6">
       <PageHeader title="Fortschritt" />
       {content}
-      <FixedCostsDialog open={editing} onOpenChange={setEditing} costs={costs} />
+      <FixedCostDialog open={adding} onOpenChange={setAdding} costs={costs} />
     </div>
   );
 }
@@ -134,10 +144,11 @@ function ProgressHero({
 }) {
   const stats: KpiStat[] = [];
   if (coverage.items.length > 0) {
+    // Die Summe steht neben dem Ø-Monat, damit beides direkt vergleichbar ist.
     stats.push({
-      label: "Gedeckt",
-      value: `${String(coverage.covered)} von ${String(coverage.items.length)}`,
-      caption: "Fixkosten",
+      label: "Fixkosten",
+      value: formatMoneyWhole(coverage.total),
+      caption: `${String(coverage.covered)} von ${String(coverage.items.length)} gedeckt`,
     });
     stats.push(
       coverage.next
@@ -163,7 +174,7 @@ function ProgressHero({
       caption={share ? `deckt ${formatPercent(share, 0)} deiner Fixkosten` : undefined}
       footer={
         share ? (
-          <Bar percent={share.toNumber()} label="Anteil gedeckter Fixkosten" />
+          <ProgressBar percent={share.toNumber()} label="Anteil gedeckter Fixkosten" />
         ) : undefined
       }
       stats={stats}
@@ -171,32 +182,31 @@ function ProgressHero({
   );
 }
 
-function Bar({ percent, label }: { percent: number; label: string }) {
-  const width = Math.min(100, Math.max(0, percent));
-  return (
-    <span
-      role="progressbar"
-      aria-label={label}
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-valuenow={Math.round(width)}
-      className="flex h-1 w-full overflow-hidden rounded-full bg-border"
-    >
-      <span
-        className="h-full rounded-full bg-primary"
-        style={{ width: `${String(width)}%` }}
-      />
-    </span>
-  );
-}
-
+/**
+ * Die Fixkosten kurz gefasst (seit 2.14.0): Die nächste Position steht offen
+ * da, Gedecktes und weitere Offene klappen ein — eine lange Liste mit dreißig
+ * Zeilen verdrängte sonst alles darunter. Jede Zeile führt zur Detailseite,
+ * dort stehen Bearbeiten und Löschen wie bei einer Dividende.
+ */
 function CoverageSection({
   coverage,
-  onEdit,
+  onAdd,
 }: {
   coverage: CoverageResult;
-  onEdit: () => void;
+  onAdd: () => void;
 }) {
+  const [open, setOpen] = React.useState<ReadonlySet<CoverageGroup>>(new Set());
+  const groups = React.useMemo(() => {
+    const covered = coverage.items.filter((item) => item.status === "covered");
+    const open = coverage.items.filter((item) => item.status === "open");
+    return (
+      [
+        { key: "covered", title: "Gedeckt", items: covered },
+        { key: "open", title: coverage.next ? "Weitere offen" : "Offen", items: open },
+      ] as const
+    ).filter((group) => group.items.length > 0);
+  }, [coverage]);
+
   if (coverage.items.length === 0) {
     return (
       <Section title="Was deine Dividenden bezahlen">
@@ -205,7 +215,7 @@ function CoverageSection({
           title="Noch keine Fixkosten"
           description="Trag ein, was jeden Monat anfällt, etwa Strom, Handy oder Fitnessstudio. Dann siehst du, was deine Dividenden schon bezahlen."
           action={
-            <Button onClick={onEdit}>
+            <Button onClick={onAdd}>
               <Plus aria-hidden /> Fixkosten eintragen
             </Button>
           }
@@ -214,61 +224,109 @@ function CoverageSection({
     );
   }
 
+  const toggle = (key: CoverageGroup) => {
+    setOpen((current) => {
+      const next = new Set(current);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
   return (
     <Section
       title="Was deine Dividenden bezahlen"
       action={
-        <SectionButton icon={Pencil} onClick={onEdit}>
-          Bearbeiten
+        <SectionButton icon={Plus} onClick={onAdd} aria-haspopup="dialog">
+          Neu
         </SectionButton>
       }
     >
-      <ListGroup>
-        {coverage.items.map((item, index) => (
-          <li key={`${String(index)}-${item.cost.name}`}>
-            <CoverageRow item={item} />
-          </li>
-        ))}
-      </ListGroup>
+      <div className="space-y-2">
+        {coverage.next && (
+          <ListGroup aria-label="Als Nächstes">
+            <CoverageRow item={coverage.next} />
+          </ListGroup>
+        )}
+        <MonthSections>
+          {groups.map((group) => (
+            <CollapsibleMonth
+              key={group.key}
+              id={`fixkosten-${group.key}`}
+              title={group.title}
+              aside={`${formatCountNumber(group.items.length)} · ${formatMoneyWhole(
+                sumMoney(
+                  group.items.map((item) => item.cost.amount),
+                  EUR,
+                ),
+              )}`}
+              open={open.has(group.key)}
+              onToggle={() => {
+                toggle(group.key);
+              }}
+            >
+              <ListGroup>
+                {group.items.map((item) => (
+                  <CoverageRow key={item.cost.id} item={item} />
+                ))}
+              </ListGroup>
+            </CollapsibleMonth>
+          ))}
+        </MonthSections>
+      </div>
     </Section>
   );
 }
+
+type CoverageGroup = "covered" | "open";
 
 function CoverageRow({ item }: { item: CostCoverage }) {
   const { status } = item;
   const percent = formatPercent(item.percent, 0);
   return (
-    <ListRow>
-      <span
-        aria-hidden
-        className={cn(
-          "flex size-11 shrink-0 items-center justify-center rounded-xl bg-muted text-sm font-semibold tabular-amount",
-          status === "covered" && "text-positive",
-          status === "open" && "text-muted-foreground",
-        )}
-      >
-        {status === "covered" ? <Check className="size-5" strokeWidth={2.5} /> : percent}
-      </span>
-      <ListItemBody
-        title={item.cost.name}
-        meta={
-          status === "covered" ? (
-            <span>gedeckt</span>
-          ) : (
-            <span>
-              <span className="sr-only">{percent} gedeckt, </span>noch{" "}
-              {formatMoneyWhole(item.missing)}
-            </span>
-          )
-        }
-        trailing={
-          <>
-            {formatMoneyWhole(item.cost.amount)}
-            <span className="sr-only"> im Monat</span>
-          </>
-        }
-      />
-    </ListRow>
+    <li>
+      <ListRow asChild>
+        <Link to={`/fortschritt/fixkosten/${item.cost.id}`}>
+          <ListItemBody
+            leading={
+              <span
+                aria-hidden
+                className={cn(
+                  "flex size-11 shrink-0 items-center justify-center rounded-xl bg-muted text-sm font-semibold tabular-amount",
+                  status === "covered" && "text-positive",
+                  status === "open" && "text-muted-foreground",
+                )}
+              >
+                {status === "covered" ? (
+                  <Check className="size-5" strokeWidth={2.5} />
+                ) : (
+                  percent
+                )}
+              </span>
+            }
+            title={item.cost.name}
+            meta={
+              status === "covered" ? (
+                <span>gedeckt</span>
+              ) : status === "next" ? (
+                <span>
+                  <span className="sr-only">Als Nächstes, </span>
+                  {percent} gedeckt · noch {formatMoneyWhole(item.missing)}
+                </span>
+              ) : (
+                <span>noch {formatMoneyWhole(item.missing)}</span>
+              )
+            }
+            trailing={
+              <>
+                {formatMoneyWhole(item.cost.amount)}
+                <span className="sr-only"> im Monat</span>
+              </>
+            }
+          />
+        </Link>
+      </ListRow>
+    </li>
   );
 }
 
@@ -307,7 +365,7 @@ function NextTile({ milestone }: { milestone: NextMilestone }) {
         {format(milestone.current)}
       </span>
       <div className="mt-auto space-y-1.5">
-        <Bar
+        <ProgressBar
           percent={milestone.percent.toNumber()}
           label={`${label}: Weg zum nächsten Meilenstein`}
         />

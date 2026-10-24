@@ -3,7 +3,11 @@ import { EUR, Money } from "@/lib/money";
 import { coverFixedCosts, type FixedCost } from "@/lib/progress";
 
 const eur = (value: string) => Money.fromString(value, EUR);
-const cost = (name: string, amount: string): FixedCost => ({ name, amount: eur(amount) });
+const cost = (name: string, amount: string): FixedCost => ({
+  id: name,
+  name,
+  amount: eur(amount),
+});
 
 const KOSTEN = [cost("Miete", "900"), cost("Handy", "30"), cost("Strom", "80")];
 

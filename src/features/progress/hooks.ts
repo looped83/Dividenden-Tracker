@@ -7,11 +7,12 @@ import { fetchFixedCosts, updateFixedCosts } from "@/lib/supabase/repositories/p
 const FIXED_COSTS_KEY = ["fixed-costs"] as const;
 
 /** Obergrenzen, gegen die auch der Dialog prüft. */
-export const FIXED_COSTS_MAX = 20;
+export const FIXED_COSTS_MAX = 50;
 export const FIXED_COST_NAME_MAX = 40;
 export const FIXED_COST_AMOUNT_MAX = 100_000;
 
 const storedCost = z.object({
+  id: z.string().min(1).max(16).optional(),
   name: z.string().trim().min(1).max(FIXED_COST_NAME_MAX),
   amount: z
     .string()
@@ -25,15 +26,33 @@ const storedCost = z.object({
 /**
  * Liest die gespeicherte Liste. Eine einzelne ungültige Position (ältere
  * Fassung, Handeingriff) fällt weg, statt die ganze Liste zu verwerfen.
+ * Positionen aus 2.12–2.13 tragen noch keine Kennung: Sie bekommen eine aus
+ * ihrer Stelle, die mit dem nächsten Speichern bleibt.
  */
 function parseFixedCosts(raw: unknown): FixedCost[] {
   if (!Array.isArray(raw)) return [];
-  return raw.flatMap((entry) => {
+  const seen = new Set<string>();
+  return raw.flatMap((entry, index) => {
     const parsed = storedCost.safeParse(entry);
-    return parsed.success
-      ? [{ name: parsed.data.name, amount: Money.fromString(parsed.data.amount, EUR) }]
-      : [];
+    if (!parsed.success) return [];
+    let id = parsed.data.id ?? `p${String(index)}`;
+    if (seen.has(id)) id = `${id}-${String(index)}`;
+    seen.add(id);
+    return [
+      { id, name: parsed.data.name, amount: Money.fromString(parsed.data.amount, EUR) },
+    ];
   });
+}
+
+/** Kurze Kennung für eine neue Position (8 Zeichen, base36). */
+export function newFixedCostId(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(8));
+  return Array.from(bytes, (byte) => (byte % 36).toString(36)).join("");
+}
+
+export function useFixedCost(id: string | undefined) {
+  const query = useFixedCosts();
+  return { ...query, cost: query.data?.find((cost) => cost.id === id) ?? null };
 }
 
 export function useFixedCosts() {
@@ -60,5 +79,9 @@ export function useSaveFixedCosts() {
 }
 
 function toStored(costs: readonly FixedCost[]) {
-  return costs.map((cost) => ({ name: cost.name, amount: cost.amount.toStringValue() }));
+  return costs.map((cost) => ({
+    id: cost.id,
+    name: cost.name,
+    amount: cost.amount.toStringValue(),
+  }));
 }

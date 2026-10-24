@@ -2,6 +2,8 @@ import { EUR, Money, MoneyDecimal, sumMoney, type DecimalInstance } from "@/lib/
 
 /** Eine monatliche Fixkostenposition (profiles.fixed_costs). */
 export interface FixedCost {
+  /** Kennung für Detailseite und Liste; kurz, weil die Liste 4 KB nicht überschreiten darf. */
+  id: string;
   name: string;
   /** Monatsbetrag, > 0. */
   amount: Money;
