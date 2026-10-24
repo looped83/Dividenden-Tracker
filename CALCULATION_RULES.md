@@ -706,8 +706,10 @@ gespeichert sind nur die Annahmen des Schneeballs (`profiles.forecast_settings`,
 - **Füller:** unter den Positionen, die in dem Monat zahlen, nur solche mit weniger als zwölf
   Zahlungen im Jahr (ein Monatszahler hebt alle Monate gleich) und mit Marktwert > 0. Zukauf
   `= Lücke × Marktwert ÷ Betrag je Zahlung` (netto, wie in der Prognose), auf volle 100 €
-  aufgerundet. Gezeigt wird der kleinste Zukauf, dazu was 1.000 € Zukauf in dem Monat bringen
-  (`1.000 × Betrag je Zahlung ÷ Marktwert`); ohne passende Position „kein Füller“.
+  aufgerundet. Gezeigt werden bis zu drei Füller (seit 2.15.0), der kleinste Zukauf zuerst
+  (bei Gleichstand mehr je 1.000 €, dann Name), je mit dem, was 1.000 € Zukauf in dem Monat
+  bringen (`1.000 × Betrag je Zahlung ÷ Marktwert`); der beste steht in der Zeile, die übrigen
+  klappen auf. Nur Positionen aus dem eigenen Bestand; ohne passende Position „kein Füller“.
 - Der Zukauf hebt auch die übrigen Zahlmonate der Position; er ist eine Orientierung, keine
   Kaufempfehlung, und wird nicht gespeichert.
 

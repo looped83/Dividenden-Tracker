@@ -256,15 +256,21 @@ describe("monthGaps", () => {
     expect(gapOf(2027, 3)?.gap.toStringValue()).toBe("2.00");
   });
 
-  it("wählt den Füller mit dem kleinsten Zukauf, nie einen Monatszahler", () => {
+  it("nennt die Füller nach Zukauf geordnet, nie einen Monatszahler", () => {
     // Gamma: 2 € × 600 € ÷ 6 € = 200 €; Delta: 2 € × 900 € ÷ 3 € = 600 €
-    expect(gapOf(2027, 3)?.filler).toMatchObject({ name: "Gamma", payouts: 1 });
-    expect(gapOf(2027, 3)?.filler?.invest.toStringValue()).toBe("200.00");
-    // 1.000 € × 6 € ÷ 600 € = 10 € mehr im März
-    expect(gapOf(2027, 3)?.filler?.perThousand.toStringValue()).toBe("10.00");
+    const march = gapOf(2027, 3)?.fillers ?? [];
+    expect(march.map((filler) => filler.name)).toEqual(["Gamma", "Delta"]);
+    expect(march[0]).toMatchObject({ name: "Gamma", payouts: 1 });
+    expect(march[0]?.invest.toStringValue()).toBe("200.00");
+    expect(march[1]?.invest.toStringValue()).toBe("600.00");
+    // 1.000 € × 6 € ÷ 600 € = 10 € mehr im März; Delta 1.000 × 3 ÷ 900
+    expect(march[0]?.perThousand.toStringValue()).toBe("10.00");
+    expect(march[1]?.perThousand.toStringValue()).toBe("3.33");
     // 8 € × 900 € ÷ 3 € = 2.400 €
-    expect(gapOf(2027, 9)?.filler?.invest.toStringValue()).toBe("2400.00");
+    expect(
+      gapOf(2027, 9)?.fillers.map((filler) => filler.invest.toStringValue()),
+    ).toEqual(["2400.00"]);
     // Nur Beta zahlt im November — monatlich, also kein Füller.
-    expect(gapOf(2026, 11)?.filler).toBeNull();
+    expect(gapOf(2026, 11)?.fillers).toEqual([]);
   });
 });
