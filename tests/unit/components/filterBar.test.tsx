@@ -55,10 +55,11 @@ describe("FilterBar", () => {
     );
   });
 
-  it("zeigt wirkende Filter an und startet ausgeklappt", () => {
+  it("zeigt wirkende Filter am Schalter an und startet trotzdem eingeklappt", () => {
+    // Wer per Link mit Filtern ankommt, sieht zuerst das Ergebnis.
     renderBar(2);
     const toggle = screen.getByRole("button", { name: /Filter/ });
-    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
     expect(toggle).toHaveTextContent("2 aktiv");
     // Der Schalter steuert die Felder, die er auf- und zuklappt.
     expect(

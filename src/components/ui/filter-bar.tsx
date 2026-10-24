@@ -21,7 +21,7 @@ import { Select } from "@/components/ui/select";
  * **rechts im Kopf dessen, was er filtert** (Seitenkopf, Abschnittskopf) —
  * dort, wo auf der Uebersicht die Jahresauswahl steht. Die Felder klappen
  * darunter auf. Ab `sm` sind die Felder dauerhaft sichtbar und der Schalter
- * entfaellt.
+ * entfaellt. Sie startet immer eingeklappt, auch mit gesetzten Filtern.
  *
  * **Ohne Rahmen, Felder als Pillen** (seit 1.9.0): in der Form der
  * Jahresauswahl. Die Leiste ist ein Werkzeug ueber dem Inhalt, kein eigener
@@ -38,9 +38,10 @@ export interface FilterDisclosure {
 
 export function useFilterDisclosure(activeCount: number): FilterDisclosure {
   const panelId = React.useId();
-  // Wer mit gesetzten Filtern ankommt (Link, Lesezeichen, Zurueck-Navigation),
-  // soll sie sehen und nicht erst suchen muessen.
-  const [open, setOpen] = React.useState(activeCount > 0);
+  // Immer eingeklappt, auch wer mit gesetzten Filtern ankommt (Link aus einer
+  // Kachel, Lesezeichen, Zurueck-Navigation): Er will das Ergebnis sehen, nicht
+  // die Felder. Dass Filter greifen, zeigt die Zahl am Schalter.
+  const [open, setOpen] = React.useState(false);
   const toggle = React.useCallback(() => {
     setOpen((value) => !value);
   }, []);
