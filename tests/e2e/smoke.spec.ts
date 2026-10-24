@@ -38,20 +38,30 @@ test.describe("Rauchtest", () => {
     await expect(page.getByLabel("E-Mail-Adresse")).toBeVisible();
   });
 
-  test("ein fehlender Teil nach einem Deploy laedt die Seite neu", async ({ page }) => {
-    // Wie nach einem Deploy: Der Teil der alten Fassung ist weg. Nur die erste
-    // Anfrage scheitert; nach dem Neuladen kommt er an.
-    let failed = false;
-    await page.route(/\/assets\/RegisterPage-[^/]+\.js$/, async (route) => {
-      if (failed) return route.continue();
-      failed = true;
-      return route.fulfill({ status: 404, body: "" });
+  test.describe("nach einem Deploy", () => {
+    // Ohne Service Worker: Er uebernimmt die Seite je nach Tempo des Runners
+    // vor oder nach der Anfrage nach dem Teil, und Anfragen ueber ihn erreicht
+    // `page.route` in WebKit nicht verlaesslich. Getestet wird hier allein das
+    // Neuladen (src/main.tsx); den Service Worker pruefen die Tests unten.
+    test.use({ serviceWorkers: "block" });
+
+    test("ein fehlender Teil nach einem Deploy laedt die Seite neu", async ({ page }) => {
+      // Wie nach einem Deploy: Der Teil der alten Fassung ist weg. Nur die erste
+      // Anfrage scheitert; nach dem Neuladen kommt er an.
+      let failed = false;
+      await page.route(/\/assets\/RegisterPage-[^/]+\.js$/, async (route) => {
+        if (failed) return route.continue();
+        failed = true;
+        return route.fulfill({ status: 404, body: "" });
+      });
+
+      await page.goto("/#/registrieren");
+
+      // Scheitern, Neuladen und erneutes Holen brauchen auf einem ausgelasteten
+      // Runner mehr als die ueblichen fuenf Sekunden.
+      await expect(page.getByLabel("E-Mail-Adresse")).toBeVisible({ timeout: 15_000 });
+      expect(failed).toBe(true);
     });
-
-    await page.goto("/#/registrieren");
-
-    await expect(page.getByLabel("E-Mail-Adresse")).toBeVisible();
-    expect(failed).toBe(true);
   });
 
   test("das Startpaket bleibt schlank", async ({ page }) => {
