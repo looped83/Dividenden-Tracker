@@ -25,7 +25,7 @@ abgelehnt.
 
 Die historischen Daten aus Numbers sind einmalig importiert. Seit Version 2.0.0 gibt es kein
 Audit Log und keine Import-Herkunftsspalten mehr (Migrationen 0037 und 0038, DECISIONS.md
-ADR-008 und ADR-009). Neue Sicherungen enthalten diese Felder nicht und lassen sich daher nicht
+ADR-008 und ADR-009); seit 2.11.5 ist auch die leere Tabelle `audit_log` entfernt (0040, ADR-011). Neue Sicherungen enthalten diese Felder nicht und lassen sich daher nicht
 in Versionen vor 2.0.0 einspielen; ältere Sicherungen bleiben lesbar
 ([docs/BACKUP_FORMAT.md](docs/BACKUP_FORMAT.md)).
 

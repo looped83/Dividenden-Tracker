@@ -39,8 +39,8 @@ SECURITY_MODEL.md §9. Beträge im JSON als Strings (Skalenerhalt, CALCULATION_R
     "imports":          [ ... ],      // Metadaten, Bilanz, row_report
     "security_aliases": [ ... ],      // beim Import bestätigte Schreibweisen (ab v2)
     "security_snapshot_runs": [ ... ],// Uploads des Portfolio-Exports (ab v2)
-    "security_snapshots":     [ ... ],// Depotstände je Unternehmen und Stichtag (ab v2)
-    "audit_log":        [ ... ]       // notwendige Auditinformationen
+    "security_snapshots":     [ ... ] // Depotstände je Unternehmen und Stichtag (ab v2)
+    // "audit_log" nur in alten Dateien; wird beim Einspielen übergangen
   },
   "integrity": {
     "counts":   { "dividend_payments": 4812, "securities": 63, ... },

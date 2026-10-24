@@ -422,6 +422,7 @@ const backupDataSchema = z.object({
   security_aliases: z.array(securityAliasBackupSchema).default([]),
   security_snapshot_runs: z.array(snapshotRunBackupSchema).default([]),
   security_snapshots: z.array(securitySnapshotBackupSchema).default([]),
+  // Nur in alten Sicherungen; die Tabelle gibt es seit 0040 nicht mehr (ADR-011).
   audit_log: z.array(z.record(z.string(), z.any())).optional(),
 });
 export type BackupData = z.infer<typeof backupDataSchema>;

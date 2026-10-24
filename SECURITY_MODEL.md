@@ -60,8 +60,6 @@ create policy upd on <t> for update using (user_id = (select auth.uid()))
    - `imports`: zusätzlich `delete using (user_id = auth.uid() and status in ('analyzing','pending_confirmation','discarded'))`.
    - `dividend_payments`: zusätzlich `delete using (user_id = auth.uid())` — eigene Eingänge
      lassen sich löschen, aktiv oder storniert (Migration 0020, siehe „Phase 6 – Ergänzungen").
-   - `audit_log`: nur `select using (user_id = auth.uid())`; kein INSERT/UPDATE/DELETE über die
-     API. Seit Migration 0037 schreibt kein Trigger mehr hinein (§8).
 4. `anon`-Rolle hat keinerlei Zugriff auf `public`-Tabellen (Policies gelten für
    `authenticated`); Grants werden explizit minimal gesetzt (Least Privilege): `revoke all …
    from anon, authenticated` gefolgt von gezielten `grant select/insert/update`.
@@ -177,27 +175,9 @@ gelöscht (nur die eigenen, erkennbar am Präfix `dividend-tracker-shell-`).
 
 ## 8. Audit Log
 
-**Seit Migration 0037 abgeschaltet (DECISIONS.md ADR-008).** Die Trigger sind entfernt, die
-Tabelle ist leer und bleibt für Clients lesbar (nur eigene Zeilen) und schreibgeschützt. Der
-folgende Abschnitt beschreibt das frühere Verhalten, falls das Protokoll wieder eingeschaltet
-wird.
-
-Auditiert wurden Änderungen an: Dividendeneingängen, Unternehmen, Depots, Portfolios, Zielen,
-Imports (Commit/Rollback), Wiederherstellungen, Profil (fachliche Felder).
-
-Jeder Eintrag: Nutzer, Entität, Entitäts-ID, Aktion, vorherige Werte, neue Werte, Zeitpunkt,
-Herkunft (`ui`/`import`/`rollback`/`restore`/`migration`) — siehe DATA_MODEL.md §3.8.
-
-**Nicht protokolliert werden** (Ausschlussliste):
-
-- technische Felder: `updated_at`, `created_at`
-- unveränderte Felder (nur Diff)
-- Auth-Daten: Passwörter/Hashes, Tokens, Session-IDs (liegen ohnehin nie in `public`)
-- vollständige Importdatei-Inhalte (nur Metadaten/Bericht in `imports`)
-
-Das Audit Log war insert-only (keine UPDATE/DELETE-Pfade, auch nicht für den Eigentümer).
-Neue Datensicherungen enthalten es nicht mehr; ältere Dateien mit `audit_log` lassen sich weiter
-einlesen.
+**Entfernt.** Migration 0037 schaltete das Protokoll ab (DECISIONS.md ADR-008), Migration 0040
+löschte Tabelle, Triggerfunktion und Enums (ADR-011). Ältere Datensicherungen mit `audit_log`
+lassen sich weiter einlesen; das Feld wird übergangen.
 
 ## 9. Export-/Import-Härtung
 
@@ -221,8 +201,7 @@ Mit **zwei Testnutzern A und B** gegen lokale Supabase-Instanz (Details TEST_STR
 6. Anfragen ohne Session (`anon`) → kein Zugriff auf irgendeine Tabelle/View/RPC.
 7. Direkte PostgREST-Aufrufe (ohne App) mit manipulierten Filtern/Headern → RLS hält.
 8. RPCs mit fremden IDs (`rollback_import`, `archive_payment`, `restore_backup`) → kein Effekt.
-9. `audit_log` (ohne Trigger, §8): INSERT/UPDATE/DELETE über API → abgelehnt; SELECT nur eigene Einträge.
-10. Views (`v_stats_*`) liefern nur eigene Daten (security_invoker-Test).
+9. Views (`v_stats_*`) liefern nur eigene Daten (security_invoker-Test).
 
 ## 11. Fehlerprotokollierung
 

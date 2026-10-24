@@ -213,9 +213,6 @@ describe("6) Zugriff ohne Anmeldung (anon)", () => {
     await expect(
       asAnon((client) => client.query("select id from profiles")),
     ).rejects.toThrow(/permission denied/);
-    await expect(
-      asAnon((client) => client.query("select id from audit_log")),
-    ).rejects.toThrow(/permission denied/);
   });
 
   it("anon kann nichts einfuegen", async () => {
@@ -272,46 +269,6 @@ describe("8) RPC mit fremder ID", () => {
     const archived = firstRow(result);
     expect(archived.archived_at).not.toBeNull();
     expect(archived.archive_reason).toBe("Testgrund");
-  });
-});
-
-describe("9) audit_log: nur eigene Eintraege lesbar, kein Schreibzugriff", () => {
-  it("A sieht nur eigene Audit-Eintraege, B keinen davon", async () => {
-    // Seit ADR-008 schreibt kein Trigger mehr; der Eintrag kommt direkt.
-    await asSuperuser((client) =>
-      client.query(
-        `insert into audit_log (user_id, entity_type, entity_id, action, new_values, origin)
-         values ($1, 'depot', $2, 'insert', '{}'::jsonb, 'ui')`,
-        [userA, depotA],
-      ),
-    );
-    const auditA = await asUser(userA, (client) =>
-      client.query(
-        "select entity_id from audit_log where entity_type = 'depot' and entity_id = $1",
-        [depotA],
-      ),
-    );
-    const auditB = await asUser(userB, (client) =>
-      client.query(
-        "select entity_id from audit_log where entity_type = 'depot' and entity_id = $1",
-        [depotA],
-      ),
-    );
-
-    expect(auditA.rowCount).toBeGreaterThan(0);
-    expect(auditB.rowCount).toBe(0);
-  });
-
-  it("kein Nutzer kann direkt in audit_log schreiben", async () => {
-    await expect(
-      asUser(userA, (client) =>
-        client.query(
-          `insert into audit_log (user_id, entity_type, entity_id, action, new_values, origin)
-           values ($1, 'depot', $2, 'insert', '{}'::jsonb, 'ui')`,
-          [userA, depotA],
-        ),
-      ),
-    ).rejects.toThrow();
   });
 });
 

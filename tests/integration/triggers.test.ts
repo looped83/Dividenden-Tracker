@@ -154,46 +154,27 @@ describe("protect_payment_immutables", () => {
   });
 });
 
-describe("Audit Log abgeschaltet (DECISIONS.md ADR-008)", () => {
-  it("schreibt bei Anlage, Änderung, Archivierung und Löschung keine Einträge", async () => {
-    const depotId = await asUser(userId, (client) => seedDepot(client, "Depot Audit 1"));
-    const securityId = await asUser(userId, (client) =>
-      seedSecurity(client, { name: "Audit AG 1" }),
-    );
-    const payment = await asUser(userId, (client) =>
-      seedPayment(client, { securityId, depotId }),
-    );
-
-    await asUser(userId, async (client) => {
-      await client.query("update depots set note = 'Notiz' where id = $1", [depotId]);
-      await client.query(
-        "update dividend_payments set archived_at = now() where id = $1",
-        [payment.id],
-      );
-      await client.query("delete from dividend_payments where id = $1", [payment.id]);
-    });
-
-    const entries = await asSuperuser((client) =>
-      client.query<{ count: string }>(
-        "select count(*)::text as count from audit_log where entity_id = any($1::uuid[])",
-        [[depotId, securityId, payment.id]],
+describe("Änderungsprotokoll entfernt (DECISIONS.md ADR-011)", () => {
+  it("hat weder Tabelle noch Funktion oder Enums", async () => {
+    const result = await asSuperuser((client) =>
+      client.query<{ table: string | null; fn: string | null; type: string | null }>(
+        `select to_regclass('public.audit_log')::text as table,
+                to_regproc('public.audit_row_change')::text as fn,
+                to_regtype('public.audit_origin')::text as type`,
       ),
     );
-    expect(firstRow(entries).count).toBe("0");
+    expect(firstRow(result)).toEqual({ table: null, fn: null, type: null });
   });
 
-  it("audit_log ist für Clients schreibgeschützt", async () => {
-    // Kein UPDATE/DELETE-Grant fuer authenticated (Least Privilege) -> die
-    // Datenbank verweigert den Zugriff bereits vor jeder RLS-Auswertung.
-    await expect(
-      asUser(userId, (client) =>
-        client.query("update audit_log set origin = 'restore' where id = 1"),
+  it("setzt in keiner Funktion mehr eine Protokoll-Herkunft", async () => {
+    const result = await asSuperuser((client) =>
+      client.query<{ proname: string }>(
+        `select p.proname from pg_proc p
+           join pg_namespace n on n.oid = p.pronamespace
+          where n.nspname = 'public' and p.prosrc like '%audit_origin%'`,
       ),
-    ).rejects.toThrow(/permission denied/);
-
-    await expect(
-      asUser(userId, (client) => client.query("delete from audit_log where id = 1")),
-    ).rejects.toThrow(/permission denied/);
+    );
+    expect(result.rows).toEqual([]);
   });
 });
 
@@ -235,7 +216,6 @@ describe("Härtung der Trigger-Funktionen (0035)", () => {
     "guard_import_status",
     "enforce_own_security",
     "enforce_own_depot",
-    "audit_row_change",
     "handle_new_user",
   ];
 
@@ -259,7 +239,7 @@ describe("Härtung der Trigger-Funktionen (0035)", () => {
       client.query<{ role: string; fn: string; allowed: boolean }>(
         `select r.role, f.fn, has_function_privilege(r.role, ('public.' || f.fn || '()')::regprocedure, 'execute') as allowed
            from unnest(array['anon', 'authenticated']) as r(role)
-           cross join unnest(array['audit_row_change', 'handle_new_user']) as f(fn)`,
+           cross join unnest(array['handle_new_user']) as f(fn)`,
       ),
     );
     expect(result.rows.filter((row) => row.allowed)).toEqual([]);

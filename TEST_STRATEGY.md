@@ -142,8 +142,8 @@ dieselben Rohdaten sein (String-Vergleich der Decimal-Ergebnisse).
   weiterhin für aktive oder fremde Zeilen
 - Trigger: `updated_at`, `enforce_user_id`, `protect_payment_immutables` (Änderung von
   `source`/`import_id`/`created_at` scheitert), `recompute_business_fingerprint`
-- Audit Log (ADR-008): Änderungen erzeugen keine Einträge mehr; für Clients bleibt die Tabelle
-  schreibgeschützt
+- Änderungsprotokoll entfernt (ADR-011): weder `audit_log` noch `audit_row_change()`, keine
+  Funktion setzt `app.audit_origin`
 
 ## 6. Sicherheitstests (RLS, CI-blockierend)
 
