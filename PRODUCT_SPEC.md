@@ -68,7 +68,7 @@ ist bewusst und dauerhaft; Features aus dieser Liste werden auch nicht „nebenb
 
 ## 3. Nicht verhandelbare Produktgrundsätze
 
-Diese 15 Grundsätze sind Abnahmekriterien für jede Phase (siehe IMPLEMENTATION_PLAN.md):
+Diese 15 Grundsätze sind Abnahmekriterien für jede Änderung:
 
 1. Jeder Dividendeneingang stellt ein konkretes Finanzereignis dar.
 2. Kein Eingang darf stillschweigend verändert werden → jede Änderung erzeugt einen Audit-Log-Eintrag mit Alt-/Neuwerten.
@@ -425,12 +425,10 @@ Datenexport-Verknüpfung, App-Version und Schemaversion.
 | DATA_DICTIONARY.md | Feldliste mit Pflicht/optional/abgeleitet/technisch |
 | IMPORT_SPEC.md | Importprozess, Formate, Duplikate, Bilanz, Rollback |
 | CALCULATION_RULES.md | Geld-/Rundungskonzept, Kennzahldefinitionen |
-| SECURITY_MODEL.md | Auth, RLS, CSP, Audit Log, Bedrohungsmodell |
+| SECURITY_MODEL.md | Auth, RLS, Grants, CSP, Bedrohungsmodell |
 | BACKUP_AND_RESTORE.md | Backupformat, Restore, Integritätsprüfung |
 | TEST_STRATEGY.md | Teststrategie über alle Ebenen |
-| MIGRATION_PLAN.md | Kontrollierte Numbers-Migration |
 | UX_AND_DESIGN_SYSTEM.md | Designsystem, responsive Layouts |
-| IMPLEMENTATION_PLAN.md | Phasenplan mit Abnahmekriterien |
 | DECISIONS.md | Getroffene Annahmen und Architekturentscheidungen |
 
 ## Phase 6 – Dividendeneingänge verwalten und Datenqualität sichern

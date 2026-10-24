@@ -61,7 +61,7 @@ Der Assistent führt durch vier Phasen; die Schritte entsprechen 1:1 der Vorgabe
 14. Jede einzelne Zeile validieren (Zod-Schema je Zeile; Fehler mit Zeilennummer, Spalte, Originalwert, Grund)
 15. Exakte Duplikate erkennen (Stufe 2, §7)
 16. Mögliche fachliche Duplikate erkennen (Stufen 3–4, §7)
-17. Kontrollsummen erzeugen (Anzahl, Σ brutto, Σ netto je Währung — zur Abstimmung mit der Quelle, MIGRATION_PLAN.md)
+17. Kontrollsummen erzeugen (Anzahl, Σ brutto, Σ netto je Währung — zur Abstimmung mit der Quelle)
 18. Fehler und Warnungen anzeigen (gruppiert nach Typ, jede betroffene Zeile einsehbar)
 19. Nutzerentscheidung zu unsicheren Zeilen (je mögliche-Duplikat-Zeile: „importieren" / „überspringen" / Vergleichsansicht mit vorhandenem Datensatz; je Fehlerzeile: nur „ausschließen" oder Abbruch und Datei korrigieren)
 
@@ -264,11 +264,10 @@ persistenten Status, da der Commit atomar in einer Transaktion läuft.
 
 ### Kontrollsummen (verifiziert gegen die reale Datei)
 
-1.439 Zeilen · 15.11.2012–17.07.2026 · **49.391,57 €** · Broker Consorsbank 312 /
-Trade Republic 1.012 / Scalable Capital 115 · alle 15 Jahreswerte exakt ·
-Gladstone Capital 30.09.2025 bleibt zweimal (4,76 € und 7,84 €). Die Serverseite
-(`commit_import`) verifiziert dieselben Summen erneut und lehnt bei Abweichung
-den gesamten Import ab (Integrationstest `tests/integration/import.test.ts`).
+Zeilenzahl, Zeitraum, Gesamtsumme, Summen je Jahr und je Broker stimmen exakt mit der
+Quelle überein; zwei verschiedene Beträge desselben Papiers am selben Tag bleiben zwei
+Zahlungen. Die Serverseite (`commit_import`) verifiziert dieselben Summen erneut und lehnt
+bei Abweichung den gesamten Import ab.
 
 ## Phase 6 – Erneuter Import nach Einzellöschung
 

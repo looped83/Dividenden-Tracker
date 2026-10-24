@@ -143,19 +143,12 @@ Datenbanktests. Der Merge auf `main` veröffentlicht die App auf GitHub Pages.
 | [SECURITY_MODEL.md](SECURITY_MODEL.md) | Auth, RLS, Grants, CSP, Bedrohungsmodell |
 | [BACKUP_AND_RESTORE.md](BACKUP_AND_RESTORE.md) | Backupformat, Validierung, Voll-/Merge-Restore |
 | [TEST_STRATEGY.md](TEST_STRATEGY.md) | Unit-, Import-, DB-, Sicherheits-, Backup-, E2E-, A11y-Tests |
-| [MIGRATION_PLAN.md](MIGRATION_PLAN.md) | Kontrollierte Migration aus Numbers (Golden Source) |
 | [UX_AND_DESIGN_SYSTEM.md](UX_AND_DESIGN_SYSTEM.md) | Designsystem, responsive Layouts, Barrierefreiheit |
-| [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) | 10 Phasen mit Scope, Tests und Abnahmekriterien |
 | [DECISIONS.md](DECISIONS.md) | Entscheidungsprotokoll (D-Einträge und ADRs) |
 | [docs/BACKUP_FORMAT.md](docs/BACKUP_FORMAT.md) | Aufbau der Sicherungsdatei, Formatversionen |
-| [docs/BACKUP_USER_GUIDE.md](docs/BACKUP_USER_GUIDE.md) | Sichern und Wiederherstellen in der App |
 | [docs/CALENDAR_INTEGRATION.md](docs/CALENDAR_INTEGRATION.md) | Kalender: Edge Function, Secret, Datenmodell, Synchronisation, Ex-Tage |
 | [docs/PORTFOLIO_IMPORT.md](docs/PORTFOLIO_IMPORT.md) | Depotstand: CSV-Import, Zuordnung, Datenmodell, Kennzahlen |
-| [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md) | Einrichtung und Auslieferung |
-| [docs/ACCESSIBILITY_AUDIT.md](docs/ACCESSIBILITY_AUDIT.md) | Prüfung der Barrierefreiheit |
 | [docs/AUDIT_2026-07-29.md](docs/AUDIT_2026-07-29.md) | Bestandsaufnahme vom Juli 2026 (historisch) |
-
-Ältere Phasenberichte liegen in [docs/history](docs/history).
 
 ## Lizenz
 
