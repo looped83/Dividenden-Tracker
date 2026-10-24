@@ -82,7 +82,10 @@ test("trägt Fixkosten ein, bearbeitet und löscht sie", async ({ page }, testIn
     await positionen.getByRole("link", { name: "Handy" }).click();
     await page.getByRole("button", { name: "Löschen" }).click();
     await dialog.getByRole("button", { name: "Löschen" }).click();
-    await page.goto("/#/fortschritt/fixkosten");
+    // Nach dem Löschen geht es im Verlauf zurück zur Pflegeseite (seit 2.17.1).
+    await expect(
+      page.getByRole("heading", { name: "Fixkosten", level: 1 }),
+    ).toBeVisible();
   }
   await expect(page.getByText("Noch keine Fixkosten")).toBeVisible();
 });
