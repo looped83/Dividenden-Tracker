@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { EUR, Money } from "@/lib/money";
 import type { AnalyticsPayment } from "@/lib/statistics";
@@ -28,24 +27,17 @@ const entities = (names: string[]): Map<string, EntityInfo> =>
   new Map(names.map((name) => [name, { name, archived: false }]));
 
 const SECURITIES = entities(["A", "B", "C", "D", "E", "F"]);
-const DEPOTS = entities(["Depot 1", "Depot 2"]);
 
 function renderSection(payments: AnalyticsPayment[]) {
   return render(
     <MemoryRouter>
-      <Distribution
-        periodPayments={payments}
-        selection={2026}
-        securities={SECURITIES}
-        depots={DEPOTS}
-      />
+      <Distribution periodPayments={payments} selection={2026} securities={SECURITIES} />
     </MemoryRouter>,
   );
 }
 
 describe("Distribution", () => {
-  it("zeigt die fünf stärksten Assets und schaltet auf die Depots um", async () => {
-    const user = userEvent.setup();
+  it("zeigt die fünf stärksten Assets mit „Alle“ im Kopf, ohne Umschalter", () => {
     renderSection([
       payment("A", "Depot 1", "60.00"),
       payment("B", "Depot 1", "50.00"),
@@ -57,24 +49,18 @@ describe("Distribution", () => {
     expect(screen.getByRole("heading", { name: "Verteilung" })).toBeInTheDocument();
     const assets = screen.getByRole("list", { name: "Top-Assets nach Nettodividende" });
     expect(assets.querySelectorAll("li")).toHaveLength(5);
-    expect(screen.getByRole("link", { name: "Alle 6 Assets" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Alle" })).toHaveAttribute(
       "href",
       "/statistiken/unternehmen?year=2026",
     );
-
-    await user.click(screen.getByRole("radio", { name: "Depots" }));
-    expect(
-      screen.getByRole("list", { name: "Nettodividende je Depot" }),
-    ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Depot 2/ })).toHaveTextContent(/100,00\s?€/);
+    expect(screen.queryByRole("radiogroup")).not.toBeInTheDocument();
   });
 
-  it("verzichtet mit nur einem Depot auf den Umschalter", () => {
-    renderSection([payment("A", "Depot 1", "60.00"), payment("B", "Depot 1", "50.00")]);
-    expect(screen.getByRole("heading", { name: "Top-Assets" })).toBeInTheDocument();
-    expect(screen.queryByRole("radiogroup")).not.toBeInTheDocument();
+  it("zeigt ohne Zahlungen keinen Link", () => {
+    renderSection([]);
     expect(
-      screen.queryByRole("link", { name: /Alle .* Assets/ }),
-    ).not.toBeInTheDocument();
+      screen.getByText("Keine Assets im ausgewählten Zeitraum."),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Alle" })).not.toBeInTheDocument();
   });
 });
