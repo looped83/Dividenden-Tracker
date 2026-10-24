@@ -97,12 +97,12 @@ export function ProgressPage() {
           coverage={data.coverage}
           reached={data.milestones.reached.length}
         />
-        {/* Ab lg zweispaltig: links die lange Fixkostenliste, rechts
-            Meilensteine und Erreichtes — sonst stünde die Liste über die
-            ganze Breite mit leerer Mitte. Auf dem Telefon untereinander. */}
+        {/* Ab lg zweispaltig: links Fixkosten und nächste Meilensteine (das,
+            worauf man hinarbeitet), rechts das Erreichte. So sind beide
+            Spalten etwa gleich lang. Auf dem Telefon untereinander. */}
         <div className="grid gap-10 lg:grid-cols-2 lg:items-start lg:gap-12">
-          <CoverageSection coverage={data.coverage} onAdd={add} />
           <div className="space-y-10 lg:space-y-12">
+            <CoverageSection coverage={data.coverage} onAdd={add} />
             <Section title="Nächste Meilensteine">
               <ul className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-1 xl:grid-cols-2">
                 {data.milestones.next.map((milestone) => (
@@ -112,13 +112,13 @@ export function ProgressPage() {
                 ))}
               </ul>
             </Section>
-            {data.milestones.reached.length > 0 && (
-              <ReachedSection
-                reached={data.milestones.reached}
-                currentYear={String(today.year)}
-              />
-            )}
           </div>
+          {data.milestones.reached.length > 0 && (
+            <ReachedSection
+              reached={data.milestones.reached}
+              currentYear={String(today.year)}
+            />
+          )}
         </div>
       </div>
     );

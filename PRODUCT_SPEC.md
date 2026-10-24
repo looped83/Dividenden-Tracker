@@ -382,7 +382,7 @@ Datensicherung — wie die Annahmen des Schneeballs). Rechenregeln: CALCULATION_
 Seit 2.14.0 steht die Summe der Fixkosten im Kopf neben dem Ø-Monat; die Liste zeigt die nächste
 Position, Gedecktes und weitere Offene klappen ein. Jede Position hat eine Detailseite
 (`/fortschritt/fixkosten/:id`) mit Bearbeiten und Löschen wie eine Dividende; neu angelegt wird
-über „Neu“. Ab lg stehen Fixkosten und Meilensteine nebeneinander.
+über „Neu“. Ab lg links Fixkosten und nächste Meilensteine, rechts das Erreichte.
 
 ### 5.8 Datensicherung
 
