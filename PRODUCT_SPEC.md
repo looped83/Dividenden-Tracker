@@ -379,6 +379,10 @@ gegenübergestellt (günstigste zuerst gedeckt), dazu automatisch erkannte Meile
 erhalten, bestes Jahr, bester Monat, Monate in Folge, verschiedene Zahler) mit Datum und der
 jeweils nächsten Stufe. Gepflegt werden nur die Fixkosten (`profiles.fixed_costs`, nicht Teil der
 Datensicherung — wie die Annahmen des Schneeballs). Rechenregeln: CALCULATION_RULES.md §15.
+Seit 2.14.0 steht die Summe der Fixkosten im Kopf neben dem Ø-Monat; die Liste zeigt die nächste
+Position, Gedecktes und weitere Offene klappen ein. Jede Position hat eine Detailseite
+(`/fortschritt/fixkosten/:id`) mit Bearbeiten und Löschen wie eine Dividende; neu angelegt wird
+über „Neu“. Ab lg stehen Fixkosten und Meilensteine nebeneinander.
 
 ### 5.8 Datensicherung
 
