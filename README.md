@@ -5,16 +5,17 @@ Dividendeneingänge** — als Ablösung einer langjährig gepflegten Numbers-Tab
 PWA für Mac, iPad und iPhone, ausgeliefert über GitHub Pages. Supabase Postgres ist die
 Source of Truth. Die aktuelle Version steht in `package.json` und in den Einstellungen.
 
-## Funktionsumfang (Stand 2026-10-22)
+## Funktionsumfang (Stand v2.16.0, 2026-10-24)
 
 | Bereich | Inhalt |
 |---|---|
-| Übersicht | Kennzahlen, eigenes Monatsdiagramm, Prognose; vom 15.12. bis 10.1. Einstieg in den Jahresrückblick |
-| Dividenden | erfassen, bearbeiten, stornieren, löschen; Detailseite mit Link zum Asset; Datenqualität (Dubletten, Auffälligkeiten) |
+| Übersicht | Kennzahlen, eigenes Monatsdiagramm, Verteilung, Prognose; vom 15.12. bis 10.1. Einstieg in den Jahresrückblick |
+| Dividenden | erfassen, bearbeiten, stornieren, löschen; Liste mit einklappbaren Monaten und Nachladen beim Scrollen; Detailseite mit Verlauf je Monat und Link zum Asset; Datenqualität (Dubletten, Auffälligkeiten) |
 | Kalender | Umschalter Dividenden \| Ex-Tage, als Liste oder Monat; angekündigte Zahl- und Ex-Tage aus dem DivvyDiary-iCal-Feed ([docs/CALENDAR_INTEGRATION.md](docs/CALENDAR_INTEGRATION.md)) |
-| Bestand | Assets (Bestand, Marktwert, erwartete Ausschüttung aus dem DivvyDiary-Portfolio-Export, [docs/PORTFOLIO_IMPORT.md](docs/PORTFOLIO_IMPORT.md)), Entwicklung, Analyse (Asset-Typ, Währung, Rhythmus, Branche, Länder), Prognose mit Dividenden-Schneeball (DECISIONS.md ADR-006) |
+| Bestand | Assets (Bestand, Marktwert, erwartete Ausschüttung aus dem DivvyDiary-Portfolio-Export, [docs/PORTFOLIO_IMPORT.md](docs/PORTFOLIO_IMPORT.md)), Entwicklung, Analyse (Asset-Typ, Währung, Rhythmus, Branche, Länder), Prognose mit Monatslücken und Dividenden-Schneeball (DECISIONS.md ADR-006) |
 | Statistiken | Übersicht, Verlauf, Vergleich, Aufteilung nach Unternehmen und Depots, Drill-down; Jahresrückblick je Jahr |
-| Ziele | Jahres- und Monatsziele mit Fortschritt (laufend, bevorstehend, beendet) |
+| Ziele | Jahres- und Monatsziele mit Zielbilanz, Monatsansicht und Zielvorschlag |
+| Fortschritt | welche Fixkosten die Dividenden schon decken, nächste und erreichte Meilensteine; eigene Pflegeseite für Fixkosten mit Filtern |
 | Einstellungen | Allgemein, Depots, CSV-/Excel-Import mit Bilanz und Rollback, Datensicherung, Wiederherstellung und Export |
 | PWA | installierbar, App-Hülle offline, Aktualisierungshinweis |
 
