@@ -38,20 +38,40 @@ test.describe("Rauchtest", () => {
     await expect(page.getByLabel("E-Mail-Adresse")).toBeVisible();
   });
 
-  test("ein fehlender Teil nach einem Deploy laedt die Seite neu", async ({ page }) => {
-    // Wie nach einem Deploy: Der Teil der alten Fassung ist weg. Nur die erste
-    // Anfrage scheitert; nach dem Neuladen kommt er an.
-    let failed = false;
-    await page.route(/\/assets\/RegisterPage-[^/]+\.js$/, async (route) => {
-      if (failed) return route.continue();
-      failed = true;
-      return route.fulfill({ status: 404, body: "" });
+  test.describe("nach einem Deploy", () => {
+    // Ohne Service Worker: Er uebernimmt die Seite je nach Tempo des Runners
+    // vor oder nach der Anfrage nach dem Teil. Getestet wird hier allein das
+    // Neuladen (src/main.tsx); den Service Worker pruefen die Tests unten.
+    test.use({ serviceWorkers: "block" });
+
+    test("ein fehlender Teil nach einem Deploy laedt die Seite neu", async ({
+      page,
+      browserName,
+    }) => {
+      // Wie nach einem Deploy: Der Teil der alten Fassung ist weg. Nur die erste
+      // Anfrage scheitert.
+      let failed = false;
+      await page.route(/\/assets\/RegisterPage-[^/]+\.js$/, async (route) => {
+        if (failed) return route.continue();
+        failed = true;
+        return route.fulfill({ status: 404, body: "" });
+      });
+      let documents = 0;
+      page.on("request", (request) => {
+        if (request.resourceType() === "document") documents += 1;
+      });
+
+      await page.goto("/#/registrieren");
+
+      await expect.poll(() => documents).toBe(2);
+      expect(failed).toBe(true);
+      // WebKit fragt eine Adresse, deren Import gescheitert ist, nach dem
+      // Neuladen nicht erneut an. Nach einem echten Deploy verlangt die neue
+      // Fassung andere Dateinamen; dass sie ankommen, zeigt hier Chromium.
+      if (browserName !== "webkit") {
+        await expect(page.getByLabel("E-Mail-Adresse")).toBeVisible();
+      }
     });
-
-    await page.goto("/#/registrieren");
-
-    await expect(page.getByLabel("E-Mail-Adresse")).toBeVisible();
-    expect(failed).toBe(true);
   });
 
   test("das Startpaket bleibt schlank", async ({ page }) => {
