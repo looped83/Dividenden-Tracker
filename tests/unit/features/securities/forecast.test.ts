@@ -260,6 +260,8 @@ describe("monthGaps", () => {
     // Gamma: 2 € × 600 € ÷ 6 € = 200 €; Delta: 2 € × 900 € ÷ 3 € = 600 €
     expect(gapOf(2027, 3)?.filler).toMatchObject({ name: "Gamma", payouts: 1 });
     expect(gapOf(2027, 3)?.filler?.invest.toStringValue()).toBe("200.00");
+    // 1.000 € × 6 € ÷ 600 € = 10 € mehr im März
+    expect(gapOf(2027, 3)?.filler?.perThousand.toStringValue()).toBe("10.00");
     // 8 € × 900 € ÷ 3 € = 2.400 €
     expect(gapOf(2027, 9)?.filler?.invest.toStringValue()).toBe("2400.00");
     // Nur Beta zahlt im November — monatlich, also kein Füller.

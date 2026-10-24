@@ -13,6 +13,7 @@ import {
   EUR,
   Money,
   MoneyDecimal,
+  formatMoney,
   formatMoneyWhole,
   formatPercent,
   type DecimalInstance,
@@ -277,11 +278,14 @@ function GapRow({ gap }: { gap: MonthGap }) {
         }
         meta={
           filler ? (
-            <span>
-              +{formatMoneyWhole(filler.invest)} in {filler.name}
-              <span className="text-muted-foreground/80">
-                {" "}
-                · {RHYTHM[filler.payouts] ?? `${String(filler.payouts)}× im Jahr`}
+            <span className="flex flex-col gap-0.5">
+              <span>
+                {filler.name} ·{" "}
+                {RHYTHM[filler.payouts] ?? `${String(filler.payouts)}× im Jahr`}
+              </span>
+              <span className="tabular-amount">
+                +{formatMoney(filler.perThousand)} je 1.000 € · bis Ø{" "}
+                {formatMoneyWhole(filler.invest)}
               </span>
             </span>
           ) : (

@@ -4,12 +4,13 @@ import { KpiHero, KpiHeroSkeleton, type KpiStat } from "@/components/domain/KpiH
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { ListGroup, ListItemBody, ListRow, ListTile } from "@/components/ui/list";
-import { LoadMore } from "@/components/ui/load-more";
+import { ListDateTile, ListGroup, ListItemBody, ListRow } from "@/components/ui/list";
+import { CollapsibleMonth, MonthSections } from "@/components/ui/month-section";
 import { Section, SectionButton } from "@/components/ui/section";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGoalProgressPayments } from "@/features/goals/hooks";
 import { trailingMonthlyAverage } from "@/lib/goals";
+import { useOpenMonths } from "@/lib/hooks/useOpenMonths";
 import { useToday } from "@/lib/hooks/useToday";
 import {
   EUR,
@@ -27,15 +28,13 @@ import {
   type Milestone,
   type NextMilestone,
 } from "@/lib/progress";
-import { monthNameDeShort } from "@/lib/statistics";
+import { isoFromRef, monthNameDe } from "@/lib/statistics";
 import { cn } from "@/lib/utils/cn";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { formatCalendarDate } from "@/lib/utils/formatDate";
-import { formatCountNumber } from "@/lib/utils/formatNumber";
+import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
 import { FixedCostsDialog } from "./FixedCostsDialog";
 import { useFixedCosts } from "./hooks";
-
-const REACHED_STEP = 8;
 
 const euro = (value: number) =>
   formatMoneyWhole(Money.fromDecimal(new MoneyDecimal(value), EUR));
@@ -107,7 +106,10 @@ export function ProgressPage() {
           </ul>
         </Section>
         {data.milestones.reached.length > 0 && (
-          <ReachedSection reached={data.milestones.reached} />
+          <ReachedSection
+            reached={data.milestones.reached}
+            currentMonth={isoFromRef(today).slice(0, 7)}
+          />
         )}
       </div>
     );
@@ -337,42 +339,68 @@ function reachedText(milestone: Milestone): string {
   }
 }
 
-function ReachedSection({ reached }: { reached: readonly Milestone[] }) {
-  const [shown, setShown] = React.useState(REACHED_STEP);
-  const visible = reached.slice(0, shown);
+/**
+ * Erreichte Meilensteine nach Monaten, einklappbar wie die Dividendenliste
+ * (`useOpenMonths`): offen ist der jüngste Monat mit einem Meilenstein.
+ */
+function ReachedSection({
+  reached,
+  currentMonth,
+}: {
+  reached: readonly Milestone[];
+  currentMonth: string;
+}) {
+  const groups = React.useMemo(() => {
+    const byMonth = new Map<string, Milestone[]>();
+    for (const milestone of reached) {
+      const key = milestone.reachedOn.slice(0, 7);
+      const group = byMonth.get(key);
+      if (group) group.push(milestone);
+      else byMonth.set(key, [milestone]);
+    }
+    return [...byMonth].map(([key, items]) => ({ key, items }));
+  }, [reached]);
+  const { isOpen, toggle } = useOpenMonths(
+    groups.map((group) => group.key),
+    currentMonth,
+  );
+
   return (
     <Section title="Erreicht">
-      <ListGroup>
-        {visible.map((milestone) => (
-          <li key={`${milestone.kind}-${String(milestone.threshold)}`}>
-            <ListRow>
-              <ListTile
-                primary={monthNameDeShort(
-                  Number.parseInt(milestone.reachedOn.slice(5, 7), 10),
-                )}
-                secondary={milestone.reachedOn.slice(0, 4)}
-              />
-              <ListItemBody
-                title={reachedText(milestone)}
-                meta={formatCalendarDate(milestone.reachedOn)}
-              />
-            </ListRow>
-          </li>
-        ))}
-      </ListGroup>
-      {reached.length > visible.length && (
-        <div className="mt-4">
-          <LoadMore
-            shown={visible.length}
-            total={reached.length}
-            onLoad={() => {
-              setShown((value) => value + REACHED_STEP);
+      <MonthSections>
+        {groups.map((group) => (
+          <CollapsibleMonth
+            key={group.key}
+            id={`erreicht-${group.key}`}
+            title={`${monthNameDe(Number.parseInt(group.key.slice(5, 7), 10))} ${group.key.slice(0, 4)}`}
+            aside={formatCountNoun(group.items.length, "Meilenstein", "Meilensteine")}
+            open={isOpen(group.key)}
+            onToggle={() => {
+              toggle(group.key);
             }}
           >
-            Weitere anzeigen
-          </LoadMore>
-        </div>
-      )}
+            <ListGroup>
+              {group.items.map((milestone) => (
+                <li key={`${milestone.kind}-${String(milestone.threshold)}`}>
+                  <ListRow>
+                    <ListDateTile iso={milestone.reachedOn} />
+                    <ListItemBody
+                      title={
+                        <>
+                          {reachedText(milestone)}
+                          <span className="sr-only">
+                            , am {formatCalendarDate(milestone.reachedOn)}
+                          </span>
+                        </>
+                      }
+                    />
+                  </ListRow>
+                </li>
+              ))}
+            </ListGroup>
+          </CollapsibleMonth>
+        ))}
+      </MonthSections>
     </Section>
   );
 }

@@ -254,10 +254,19 @@ export interface MonthGap {
   /** Abstand zum Ø-Monat. */
   gap: Money;
   /** Gehaltene Position, deren Zukauf die Luecke am guenstigsten schliesst. */
-  filler: { securityId: string; name: string; payouts: number; invest: Money } | null;
+  filler: {
+    securityId: string;
+    name: string;
+    payouts: number;
+    /** Zukauf, der die Luecke bis zum Ø schliesst. */
+    invest: Money;
+    /** Mehr in diesem Monat je 1.000 € Zukauf (netto). */
+    perThousand: Money;
+  } | null;
 }
 
 const INVEST_STEP = new MoneyDecimal(100);
+const THOUSAND = new MoneyDecimal(1000);
 
 /**
  * Monatsluecken (CALCULATION_RULES.md §14.3): Monate der Prognose unter ihrem
@@ -267,7 +276,8 @@ const INVEST_STEP = new MoneyDecimal(100);
  * ein Monatszahler hebt alle Monate gleich und schliesst keine Luecke. Unter
  * ihnen die mit der hoechsten Ausschuettung je Zahlung im Verhaeltnis zum
  * Marktwert: Sie braucht den kleinsten Zukauf. Der Zukauf ist
- * `Luecke × Marktwert ÷ Betrag je Zahlung`, auf volle 100 € aufgerundet.
+ * `Luecke × Marktwert ÷ Betrag je Zahlung`, auf volle 100 € aufgerundet;
+ * dazu, was 1.000 € Zukauf in dem Monat bringen.
  */
 export function monthGaps(forecast: TwelveMonthForecast): {
   average: Money;
@@ -296,6 +306,12 @@ export function monthGaps(forecast: TwelveMonthForecast): {
             name: item.name,
             payouts: item.payouts,
             invest,
+            perThousand: Money.fromDecimal(
+              THOUSAND.times(item.amount.toDecimal()).dividedBy(
+                item.marketValue.toDecimal(),
+              ),
+              EUR,
+            ),
           };
         }
       }
