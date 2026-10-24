@@ -698,3 +698,40 @@ gespeichert sind nur die Annahmen des Schneeballs (`profiles.forecast_settings`,
 - **Ziel und Meilensteine:** erstes Jahr, in dem die monatliche Nettodividende das Ziel erreicht
   (Horizont 30 Jahre). Kursgewinne fließen nicht ein. Gerechnet wird mit Decimal, angezeigt in
   vollen Euro.
+
+---
+
+## 15. Fortschritt (seit 2.12.0)
+
+Abgeleitet aus derselben Datenbasis wie die Ziele (§13, effektives Zahlungsdatum, netto). Nichts
+davon wird gespeichert außer den Fixkosten selbst (`profiles.fixed_costs`, Migration 0041).
+
+### 15.1 Was deine Dividenden bezahlen (`coverFixedCosts`)
+
+- **Basis:** Ø-Monat = Nettosumme der letzten zwölf Monate ÷ 12 (`trailingMonthlyAverage`,
+  dieselbe Zahl wie im Kopf der Ziele).
+- **Reihenfolge:** günstigste Position zuerst (bei Gleichstand nach Name). Jede Position, die der
+  verbleibende Betrag ganz deckt, gilt als **gedeckt** und wird abgezogen.
+- **Nächste:** die erste nicht gedeckte Position; der Rest zählt anteilig
+  (`Rest ÷ Betrag × 100`), `noch = Betrag − Rest`. Alle weiteren sind **offen**, auch wenn eine
+  spätere zufällig in den Rest passte — die Leiter wird der Reihe nach erklommen.
+- **Anteil gesamt:** `min(Ø-Monat, Summe) ÷ Summe × 100`, also höchstens 100 %.
+
+### 15.2 Meilensteine (`milestoneOverview`)
+
+Zahlungen chronologisch (effektives Datum, dann `created_at`). Jede Schwelle gilt als erreicht am
+Datum der Zahlung, mit der der Stand sie erstmals erreicht; danach nie wieder aberkannt.
+
+| Art | Stand | Schwellen |
+| --- | --- | --- |
+| Erste Dividende | erste Zahlung | – |
+| Insgesamt erhalten | laufende Summe | ab 1.000 €, je Zehnerpotenz 1 · 1,5 · 2 · 3 · 4 · 5 · 7,5 |
+| Bestes Jahr | Summe des Kalenderjahres | ab 500 €, dieselben Stufen |
+| Bester Monat | Summe des Kalendermonats | ab 100 €, dieselben Stufen |
+| Monate in Folge | lückenlose Kalendermonate mit Zahlung | 3, 6, 12, 24, 36, 48, 60, danach +12 |
+| Verschiedene Zahler | verschiedene Assets mit Zahlung | 5, 10, 15, 20, 25, 30, 40, 50, 75, 100, danach +50 |
+
+**Nächster Meilenstein** je Art: die erste noch nicht erreichte Schwelle mit dem heutigen Stand
+(bestes Jahr bzw. bester Monat bisher; bei der Serie die laufende Serie — sie läuft weiter, solange
+der laufende oder der Vormonat eine Zahlung hat). Fortschritt `Stand ÷ Schwelle`, auf 0–100 %
+begrenzt.

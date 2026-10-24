@@ -5,6 +5,7 @@ import {
   LayoutDashboard,
   Settings,
   Target,
+  Trophy,
   Wallet,
   type LucideIcon,
 } from "lucide-react";
@@ -70,7 +71,16 @@ export const PRIMARY_NAV_ITEMS: readonly NavItem[] = [
     to: "/ziele",
     label: "Ziele",
     icon: Target,
-    description: "Zielbeträge und Fortschritt",
+    description: "Zielbeträge und Zielbilanz",
+  },
+  // Direkt hinter den Zielen: Beide beantworten, ob es vorangeht — die Ziele
+  // gegen selbst gesetzte Beträge, der Fortschritt gegen Fixkosten und
+  // Meilensteine.
+  {
+    to: "/fortschritt",
+    label: "Fortschritt",
+    icon: Trophy,
+    description: "Was deine Dividenden bezahlen",
   },
   {
     to: "/einstellungen",
@@ -100,6 +110,7 @@ export const BOTTOM_NAV_MORE_ITEMS: readonly NavItem[] = [
   findNavItem("/kalender"),
   findNavItem("/depot"),
   findNavItem("/ziele"),
+  findNavItem("/fortschritt"),
   findNavItem("/einstellungen"),
 ];
 

@@ -51,6 +51,7 @@ export interface Database {
           backup_reminder_days: number;
           last_backup_at: string | null;
           forecast_settings: Json | null;
+          fixed_costs: Json | null;
           created_at: string;
           updated_at: string;
         };
@@ -62,6 +63,7 @@ export interface Database {
           backup_reminder_days: number;
           last_backup_at: string | null;
           forecast_settings: Json | null;
+          fixed_costs: Json | null;
         }>;
         Relationships: [];
       };

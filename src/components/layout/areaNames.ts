@@ -16,6 +16,7 @@ const AREA_NAMES: readonly { prefix: string; name: string; exact?: boolean }[] =
   { prefix: "/ziele/bevorstehend", name: "Ziele, bevorstehend" },
   { prefix: "/ziele/beendet", name: "Ziele, beendet" },
   { prefix: "/ziele", name: "Ziele" },
+  { prefix: "/fortschritt", name: "Fortschritt" },
   { prefix: "/einstellungen/depots", name: "Einstellungen, Depots" },
   { prefix: "/einstellungen/importe", name: "Einstellungen, Import" },
   { prefix: "/einstellungen/datensicherung", name: "Einstellungen, Sicherung" },

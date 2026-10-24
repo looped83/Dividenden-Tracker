@@ -112,6 +112,7 @@ Feldnamen wie „Zahlungsdatum" und „Zahlungsart" bleiben, ebenso die Adresse 
 | **Statistiken** | Vertiefte Auswertungen, Vergleiche, Aufteilungen |
 | **Importe** | Import-Assistent, Importhistorie, Rollback |
 | **Ziele** | Persönliche Jahres- und Langfristziele |
+| **Fortschritt** | Welche Fixkosten die Dividenden bezahlen, Meilensteine (seit 2.12.0) |
 | **Datensicherung** | Export, Backup, Restore, Backup-Status |
 | **Einstellungen** | Profil, Basiswährung, Darstellung, Sicherheit |
 
@@ -370,6 +371,14 @@ Zieltypen: Nettodividenden pro Kalenderjahr, Bruttodividenden pro Kalenderjahr, 
 Zwölfmonatssumme, durchschnittliche monatliche Nettodividende, langfristiges Ziel mit Zieljahr.
 Ziele sind reine Vergleichswerte; sie erzeugen keine prognostizierten Einzelzahlungen und werden
 vollständig getrennt von den Ist-Daten gespeichert (eigene Tabelle `goals`).
+
+### 5.7a Fortschritt (seit 2.12.0)
+
+Motivation statt Verwaltung: Der Ø-Monat der letzten zwölf Monate wird eigenen Fixkosten
+gegenübergestellt (günstigste zuerst gedeckt), dazu automatisch erkannte Meilensteine (insgesamt
+erhalten, bestes Jahr, bester Monat, Monate in Folge, verschiedene Zahler) mit Datum und der
+jeweils nächsten Stufe. Gepflegt werden nur die Fixkosten (`profiles.fixed_costs`, nicht Teil der
+Datensicherung — wie die Annahmen des Schneeballs). Rechenregeln: CALCULATION_RULES.md §15.
 
 ### 5.8 Datensicherung
 

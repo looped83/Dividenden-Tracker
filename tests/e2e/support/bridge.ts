@@ -539,6 +539,19 @@ async function handleAuth(
 
 // --- REST --------------------------------------------------------------------
 
+/**
+ * Spaltenwert fuer den Treiber. Ein Array aus Objekten ist eine jsonb-Liste
+ * (`profiles.fixed_costs`) und geht als Text hinein — der Treiber banden es
+ * sonst als Postgres-Array. Arrays aus einfachen Werten (`payout_months`)
+ * bleiben Arrays.
+ */
+function bindValue(value: unknown): unknown {
+  return Array.isArray(value) &&
+    value.some((item) => typeof item === "object" && item !== null)
+    ? JSON.stringify(value)
+    : value;
+}
+
 async function handleRest(
   pool: Pool,
   req: IncomingMessage,
@@ -637,7 +650,7 @@ async function handleRest(
     const rows = await inRequestContext(pool, requester, async (client) => {
       const inserted: Record<string, unknown>[] = [];
       for (const record of records) {
-        const values = columns.map((column) => record[column]);
+        const values = columns.map((column) => bindValue(record[column]));
         const placeholders = columns
           .map((_, index) => `$${String(index + 1)}`)
           .join(", ");
@@ -672,7 +685,7 @@ async function handleRest(
         `with geaendert as (update ${ident(table)} t set ${assignments}` +
           where.sql +
           " returning t.*) select to_jsonb(geaendert) as row from geaendert",
-        [...columns.map((column) => body[column]), ...where.values],
+        [...columns.map((column) => bindValue(body[column])), ...where.values],
       );
       return result.rows.map((entry) => entry.row);
     });
