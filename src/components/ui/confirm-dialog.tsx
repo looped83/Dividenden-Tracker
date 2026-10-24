@@ -32,8 +32,8 @@ export function ConfirmDialog({
   title: string;
   /** Was betroffen ist, meist eine {@link ConfirmSummary}. */
   summary?: ReactNode;
-  /** Was passiert — ein Satz zur Wirkung. */
-  description: ReactNode;
+  /** Was passiert — ein Satz zur Wirkung, wenn der Titel nicht reicht. */
+  description?: ReactNode;
   /** Zusätzliche Eingaben, etwa ein Grund. */
   children?: ReactNode;
   error: string | null;
@@ -49,7 +49,7 @@ export function ConfirmDialog({
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
         {summary}
-        <p className="text-sm text-muted-foreground">{description}</p>
+        {description && <p className="text-sm text-muted-foreground">{description}</p>}
         {children}
         {error && (
           <p role="alert" className="text-sm text-negative">

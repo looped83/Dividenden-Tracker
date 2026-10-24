@@ -13,8 +13,7 @@ interface DeleteGoalDialogProps {
 
 /**
  * Bestätigungsdialog für die dauerhafte Löschung eines Ziels (Auftrag §23).
- * Zeigt Titel, Zielart, Zeitraum und Zielbetrag und weist ausdrücklich darauf
- * hin, dass keine Dividenden verändert werden.
+ * Zeigt Titel, Zielart, Zeitraum und Zielbetrag.
  */
 export function DeleteGoalDialog({ goal, ...props }: DeleteGoalDialogProps) {
   return (
@@ -33,7 +32,6 @@ export function DeleteGoalDialog({ goal, ...props }: DeleteGoalDialogProps) {
           />
         )
       }
-      description="Das Ziel wird endgültig entfernt. Deine Dividenden, die Übersicht und die Statistik bleiben unverändert."
       confirmLabel="Dauerhaft löschen"
       pendingLabel="Wird gelöscht …"
     />
