@@ -235,7 +235,7 @@ Mit **zwei Testnutzern A und B** gegen lokale Supabase-Instanz (Details TEST_STR
 - `guard_import_status()` verhindert, dass ein Client `imports.status` selbst auf
   `committed`/`rolled_back` setzt (nur über die RPCs, GUC `app.import_txn`).
 
-### Abgewehrte Angriffe (RLS-Teil getestet in `rls.test.ts`)
+### Automatisiert getestete Angriffe (`tests/integration/import.test.ts`, `rls.test.ts`)
 
 - Nutzer B sieht Import/Importzeilen/Zahlungen von Nutzer A nicht.
 - Nutzer B kann den Import von Nutzer A nicht zurückrollen.

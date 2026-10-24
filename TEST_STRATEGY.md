@@ -312,10 +312,11 @@ Hash; zwei verschiedene Beträge am selben Tag bleiben zwei Zahlungen),
 Kontrollsummen je Jahr/Broker.
 
 Die GUI-Wizard-Schicht ist eine dünne Hülle über exakt diesen getesteten Funktionen.
-Die frühere Suite gegen die echte Excel-Datei (`tests/integration/import.test.ts`) ist
-entfernt: Sie lief ohne die nicht eingecheckte Datei nie in CI und enthielt echte
-Kontrollwerte. `commit_import`/`rollback_import` haben damit derzeit keinen eigenen
-Integrationstest.
+`tests/integration/import.test.ts` fährt die Client-Pipeline mit erfundenen Zeilen durch und
+prüft gegen die echten Migrationen: atomares `commit_import` (Summe, archivierte
+Unternehmen, Depots, zwei Beträge am selben Tag), Ablehnung eines manipulierten
+Erwartungswerts, Erkennung am Datei-Hash, vollständiges `rollback_import`, RLS zwischen zwei
+Nutzern, Statusguard und Anon-Sperre. Echte Depotdaten gehören nicht ins Repository.
 
 ## Phase 5A — Dashboard-Tests
 
