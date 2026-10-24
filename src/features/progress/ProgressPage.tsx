@@ -28,7 +28,6 @@ import {
   type Milestone,
   type NextMilestone,
 } from "@/lib/progress";
-import { isoFromRef, monthNameDe } from "@/lib/statistics";
 import { cn } from "@/lib/utils/cn";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { formatCalendarDate } from "@/lib/utils/formatDate";
@@ -108,7 +107,7 @@ export function ProgressPage() {
         {data.milestones.reached.length > 0 && (
           <ReachedSection
             reached={data.milestones.reached}
-            currentMonth={isoFromRef(today).slice(0, 7)}
+            currentYear={String(today.year)}
           />
         )}
       </div>
@@ -340,20 +339,24 @@ function reachedText(milestone: Milestone): string {
 }
 
 /**
- * Erreichte Meilensteine nach Monaten, einklappbar wie die Dividendenliste
- * (`useOpenMonths`): offen ist der jüngste Monat mit einem Meilenstein.
+ * Erreichte Meilensteine nach Jahren, einklappbar wie die Monate der
+ * Dividendenliste (`useOpenMonths`): offen ist das jüngste Jahr. Jahre statt
+ * Monate, weil fast jeder Monat nur einen Meilenstein trägt — bei einer
+ * langen Historie wären das Dutzende Zeilen mit je einem Eintrag. Eine zweite
+ * Ebene mit Monaten kostete einen Tipp mehr je Eintrag; den Monat nennt die
+ * Datumskachel.
  */
 function ReachedSection({
   reached,
-  currentMonth,
+  currentYear,
 }: {
   reached: readonly Milestone[];
-  currentMonth: string;
+  currentYear: string;
 }) {
   const groups = React.useMemo(() => {
     const byMonth = new Map<string, Milestone[]>();
     for (const milestone of reached) {
-      const key = milestone.reachedOn.slice(0, 7);
+      const key = milestone.reachedOn.slice(0, 4);
       const group = byMonth.get(key);
       if (group) group.push(milestone);
       else byMonth.set(key, [milestone]);
@@ -362,7 +365,7 @@ function ReachedSection({
   }, [reached]);
   const { isOpen, toggle } = useOpenMonths(
     groups.map((group) => group.key),
-    currentMonth,
+    currentYear,
   );
 
   return (
@@ -372,7 +375,7 @@ function ReachedSection({
           <CollapsibleMonth
             key={group.key}
             id={`erreicht-${group.key}`}
-            title={`${monthNameDe(Number.parseInt(group.key.slice(5, 7), 10))} ${group.key.slice(0, 4)}`}
+            title={group.key}
             aside={formatCountNoun(group.items.length, "Meilenstein", "Meilensteine")}
             open={isOpen(group.key)}
             onToggle={() => {
