@@ -185,17 +185,24 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
 
-      # Nur beim Cache-Fehlschlag: Browser laden **und** Systempakete setzen.
+      # Nur beim Cache-Fehlschlag: Browser laden.
       - name: Browser installieren
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium webkit
+        run: npx playwright install chromium webkit
 
-      # Bei einem Treffer liegen die Browser bereits vor; die Systembibliotheken
-      # gehoeren dem Runner und nicht dem Cache, muessen also weiterhin gesetzt
-      # werden — das ist reines `apt` ohne Download.
+      # Die Systembibliotheken gehoeren dem Runner und nicht dem Cache. Fuer
+      # WebKit (u. a. GStreamer) laedt `apt` sie bei jedem Lauf vom
+      # Ubuntu-Spiegel — meist in 20–30 s, am 23.10.2026 aber zweimal ueber
+      # 12 Minuten haengend, bis das Job-Limit griff. Deshalb pro Versuch
+      # 3 Minuten und ein zweiter Anlauf: Ein haengender Spiegel kostet so
+      # hoechstens 6 Minuten statt des ganzen Jobs.
       - name: Systembibliotheken sicherstellen
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium webkit
+        run: |
+          for versuch in 1 2; do
+            timeout 180 npx playwright install-deps chromium webkit && exit 0
+            echo "::warning::install-deps Versuch $versuch abgebrochen oder fehlgeschlagen"
+          done
+          exit 1
 
       # Der Playwright-Server baut selbst und liefert das Ergebnis aus
       # (playwright.config.ts) — geprueft wird der gebaute Stand.
@@ -251,11 +258,16 @@ jobs:
 
       - name: Browser installieren
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium webkit
+        run: npx playwright install chromium webkit
 
+      # Zeitlimit und zweiter Anlauf wie in e2e-smoke.
       - name: Systembibliotheken sicherstellen
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium webkit
+        run: |
+          for versuch in 1 2; do
+            timeout 180 npx playwright install-deps chromium webkit && exit 0
+            echo "::warning::install-deps Versuch $versuch abgebrochen oder fehlgeschlagen"
+          done
+          exit 1
 
       # Baut die Testdatenbank aus supabase/migrations auf und faehrt danach
       # Bruecke, Build und Browsertests (siehe package.json).
