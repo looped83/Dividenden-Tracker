@@ -5,16 +5,17 @@ Dividendeneingänge** — als Ablösung einer langjährig gepflegten Numbers-Tab
 PWA für Mac, iPad und iPhone, ausgeliefert über GitHub Pages. Supabase Postgres ist die
 Source of Truth. Die aktuelle Version steht in `package.json` und in den Einstellungen.
 
-## Funktionsumfang (Stand 2026-10-22)
+## Funktionsumfang (Stand v2.16.0, 2026-10-24)
 
 | Bereich | Inhalt |
 |---|---|
-| Übersicht | Kennzahlen, eigenes Monatsdiagramm, Prognose; vom 15.12. bis 10.1. Einstieg in den Jahresrückblick |
-| Dividenden | erfassen, bearbeiten, stornieren, löschen; Detailseite mit Link zum Asset; Datenqualität (Dubletten, Auffälligkeiten) |
+| Übersicht | Kennzahlen, eigenes Monatsdiagramm, Verteilung, Prognose; vom 15.12. bis 10.1. Einstieg in den Jahresrückblick |
+| Dividenden | erfassen, bearbeiten, stornieren, löschen; Liste mit einklappbaren Monaten und Nachladen beim Scrollen; Detailseite mit Verlauf je Monat und Link zum Asset; Datenqualität (Dubletten, Auffälligkeiten) |
 | Kalender | Umschalter Dividenden \| Ex-Tage, als Liste oder Monat; angekündigte Zahl- und Ex-Tage aus dem DivvyDiary-iCal-Feed ([docs/CALENDAR_INTEGRATION.md](docs/CALENDAR_INTEGRATION.md)) |
-| Bestand | Assets (Bestand, Marktwert, erwartete Ausschüttung aus dem DivvyDiary-Portfolio-Export, [docs/PORTFOLIO_IMPORT.md](docs/PORTFOLIO_IMPORT.md)), Entwicklung, Analyse (Asset-Typ, Währung, Rhythmus, Branche, Länder), Prognose mit Dividenden-Schneeball (DECISIONS.md ADR-006) |
+| Bestand | Assets (Bestand, Marktwert, erwartete Ausschüttung aus dem DivvyDiary-Portfolio-Export, [docs/PORTFOLIO_IMPORT.md](docs/PORTFOLIO_IMPORT.md)), Entwicklung, Analyse (Asset-Typ, Währung, Rhythmus, Branche, Länder), Prognose mit Monatslücken und Dividenden-Schneeball (DECISIONS.md ADR-006) |
 | Statistiken | Übersicht, Verlauf, Vergleich, Aufteilung nach Unternehmen und Depots, Drill-down; Jahresrückblick je Jahr |
-| Ziele | Jahres- und Monatsziele mit Fortschritt (laufend, bevorstehend, beendet) |
+| Ziele | Jahres- und Monatsziele mit Zielbilanz, Monatsansicht und Zielvorschlag |
+| Fortschritt | welche Fixkosten die Dividenden schon decken, nächste und erreichte Meilensteine; eigene Pflegeseite für Fixkosten mit Filtern |
 | Einstellungen | Allgemein, Depots, CSV-/Excel-Import mit Bilanz und Rollback, Datensicherung, Wiederherstellung und Export |
 | PWA | installierbar, App-Hülle offline, Aktualisierungshinweis |
 
@@ -142,19 +143,12 @@ Datenbanktests. Der Merge auf `main` veröffentlicht die App auf GitHub Pages.
 | [SECURITY_MODEL.md](SECURITY_MODEL.md) | Auth, RLS, Grants, CSP, Bedrohungsmodell |
 | [BACKUP_AND_RESTORE.md](BACKUP_AND_RESTORE.md) | Backupformat, Validierung, Voll-/Merge-Restore |
 | [TEST_STRATEGY.md](TEST_STRATEGY.md) | Unit-, Import-, DB-, Sicherheits-, Backup-, E2E-, A11y-Tests |
-| [MIGRATION_PLAN.md](MIGRATION_PLAN.md) | Kontrollierte Migration aus Numbers (Golden Source) |
 | [UX_AND_DESIGN_SYSTEM.md](UX_AND_DESIGN_SYSTEM.md) | Designsystem, responsive Layouts, Barrierefreiheit |
-| [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) | 10 Phasen mit Scope, Tests und Abnahmekriterien |
 | [DECISIONS.md](DECISIONS.md) | Entscheidungsprotokoll (D-Einträge und ADRs) |
 | [docs/BACKUP_FORMAT.md](docs/BACKUP_FORMAT.md) | Aufbau der Sicherungsdatei, Formatversionen |
-| [docs/BACKUP_USER_GUIDE.md](docs/BACKUP_USER_GUIDE.md) | Sichern und Wiederherstellen in der App |
 | [docs/CALENDAR_INTEGRATION.md](docs/CALENDAR_INTEGRATION.md) | Kalender: Edge Function, Secret, Datenmodell, Synchronisation, Ex-Tage |
 | [docs/PORTFOLIO_IMPORT.md](docs/PORTFOLIO_IMPORT.md) | Depotstand: CSV-Import, Zuordnung, Datenmodell, Kennzahlen |
-| [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md) | Einrichtung und Auslieferung |
-| [docs/ACCESSIBILITY_AUDIT.md](docs/ACCESSIBILITY_AUDIT.md) | Prüfung der Barrierefreiheit |
 | [docs/AUDIT_2026-07-29.md](docs/AUDIT_2026-07-29.md) | Bestandsaufnahme vom Juli 2026 (historisch) |
-
-Ältere Phasenberichte liegen in [docs/history](docs/history).
 
 ## Lizenz
 
