@@ -18,7 +18,7 @@ test("trägt Fixkosten ein, bearbeitet und löscht sie", async ({ page }) => {
 
   await page.getByRole("button", { name: "Fixkosten eintragen" }).click();
   await dialog.getByLabel("Name").fill("Handy");
-  await dialog.getByLabel("Monatsbetrag (€)").fill("30");
+  await dialog.getByLabel("Monatsbetrag (€)").fill("29,95");
   await dialog.getByRole("button", { name: "Anlegen" }).click();
   await expect(dialog).toBeHidden();
 
@@ -32,8 +32,8 @@ test("trägt Fixkosten ein, bearbeitet und löscht sie", async ({ page }) => {
   await expect(page.getByText("deckt 11 % deiner Fixkosten")).toBeVisible();
   const liste = page.getByRole("region", { name: "Was deine Dividenden bezahlen" });
   // Eingeklappt: nur „Als Nächstes" ist zu sehen, Gedecktes klappt auf.
-  await expect(liste.getByRole("link")).toHaveCount(1);
-  await expect(liste.getByRole("link")).toContainText("noch 830 €");
+  await expect(liste.getByRole("listitem")).toHaveCount(1);
+  await expect(liste.getByRole("listitem")).toContainText("noch 829,95 €");
   await liste.getByRole("button", { name: /Gedeckt/ }).click();
   await expect(liste.getByRole("link", { name: /Handy/ })).toContainText("gedeckt");
 
@@ -43,12 +43,25 @@ test("trägt Fixkosten ein, bearbeitet und löscht sie", async ({ page }) => {
   await dialog.getByLabel("Monatsbetrag (€)").fill("800");
   await dialog.getByRole("button", { name: "Speichern" }).click();
   await expect(dialog).toBeHidden();
-  await expect(page.getByText("noch 730 €")).toBeVisible();
+  await expect(page.getByText("noch 729,95 €")).toBeVisible();
 
   await page.getByRole("button", { name: "Löschen" }).click();
   await dialog.getByRole("button", { name: "Löschen" }).click();
   await expect(page).toHaveURL(/#\/fortschritt$/);
   await page.reload();
-  await expect(liste.getByRole("link")).toHaveCount(0);
-  await expect(liste.getByRole("button", { name: /Gedeckt/ })).toContainText("1 · 30 €");
+  await expect(liste.getByRole("listitem")).toHaveCount(0);
+  await expect(liste.getByRole("button", { name: /Gedeckt/ })).toContainText(
+    "1 · 29,95 €",
+  );
+
+  // Pflegeseite: alle Positionen mit Stift und Papierkorb.
+  await liste.getByRole("link", { name: "Alle Fixkosten" }).click();
+  await expect(page.getByText("1 Position · 29,95 € im Monat")).toBeVisible();
+  await page.getByRole("button", { name: "Handy bearbeiten" }).click();
+  await dialog.getByLabel("Monatsbetrag (€)").fill("25,50");
+  await dialog.getByRole("button", { name: "Speichern" }).click();
+  await expect(page.getByText("1 Position · 25,50 € im Monat")).toBeVisible();
+  await page.getByRole("button", { name: "Handy löschen" }).click();
+  await dialog.getByRole("button", { name: "Löschen" }).click();
+  await expect(page.getByText("Noch keine Fixkosten")).toBeVisible();
 });

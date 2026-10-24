@@ -706,8 +706,10 @@ gespeichert sind nur die Annahmen des Schneeballs (`profiles.forecast_settings`,
 - **Füller:** unter den Positionen, die in dem Monat zahlen, nur solche mit weniger als zwölf
   Zahlungen im Jahr (ein Monatszahler hebt alle Monate gleich) und mit Marktwert > 0. Zukauf
   `= Lücke × Marktwert ÷ Betrag je Zahlung` (netto, wie in der Prognose), auf volle 100 €
-  aufgerundet. Gezeigt wird der kleinste Zukauf, dazu was 1.000 € Zukauf in dem Monat bringen
-  (`1.000 × Betrag je Zahlung ÷ Marktwert`); ohne passende Position „kein Füller“.
+  aufgerundet. Gezeigt werden bis zu drei Füller (seit 2.15.0), der kleinste Zukauf zuerst
+  (bei Gleichstand mehr je 1.000 €, dann Name), je mit dem, was 1.000 € Zukauf in dem Monat
+  bringen (`1.000 × Betrag je Zahlung ÷ Marktwert`); der beste steht in der Zeile, die übrigen
+  klappen auf. Nur Positionen aus dem eigenen Bestand; ohne passende Position „kein Füller“.
 - Der Zukauf hebt auch die übrigen Zahlmonate der Position; er ist eine Orientierung, keine
   Kaufempfehlung, und wird nicht gespeichert.
 
@@ -741,7 +743,9 @@ Datum der Zahlung, mit der der Stand sie erstmals erreicht; danach nie wieder ab
 | Bestes Jahr | Summe des Kalenderjahres | ab 500 €, dieselben Stufen |
 | Bester Monat | Summe des Kalendermonats | ab 100 €, dieselben Stufen |
 | Monate in Folge | lückenlose Kalendermonate mit Zahlung | 3, 6, 12, 24, 36, 48, 60, danach +12 |
-| Verschiedene Zahler | verschiedene Assets mit Zahlung | 5, 10, 15, 20, 25, 30, 40, 50, 75, 100, danach +50 |
+
+Die Zahl verschiedener Zahler ist seit 2.15.0 kein Meilenstein mehr: Mehr Positionen sind kein Ziel
+an sich.
 
 **Nächster Meilenstein** je Art: die erste noch nicht erreichte Schwelle mit dem heutigen Stand
 (bestes Jahr bzw. bester Monat bisher; bei der Serie die laufende Serie — sie läuft weiter, solange

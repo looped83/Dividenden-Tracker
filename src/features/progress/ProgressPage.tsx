@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ListDateTile, ListGroup, ListItemBody, ListRow } from "@/components/ui/list";
 import { CollapsibleMonth, MonthSections } from "@/components/ui/month-section";
-import { Section, SectionButton } from "@/components/ui/section";
+import { Section, SectionButton, SectionLink } from "@/components/ui/section";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGoalProgressPayments } from "@/features/goals/hooks";
 import { trailingMonthlyAverage } from "@/lib/goals";
@@ -17,6 +17,7 @@ import {
   EUR,
   Money,
   MoneyDecimal,
+  formatMoney,
   formatMoneyWhole,
   formatPercent,
   sumMoney,
@@ -147,7 +148,7 @@ function ProgressHero({
     // Die Summe steht neben dem Ø-Monat, damit beides direkt vergleichbar ist.
     stats.push({
       label: "Fixkosten",
-      value: formatMoneyWhole(coverage.total),
+      value: formatMoney(coverage.total),
       caption: `${String(coverage.covered)} von ${String(coverage.items.length)} gedeckt`,
     });
     stats.push(
@@ -155,7 +156,7 @@ function ProgressHero({
         ? {
             label: "Als Nächstes",
             value: <span className="block truncate-fade">{coverage.next.cost.name}</span>,
-            caption: `noch ${formatMoneyWhole(coverage.next.missing)}`,
+            caption: `noch ${formatMoney(coverage.next.missing)}`,
           }
         : { label: "Als Nächstes", value: "–", caption: "alles gedeckt" },
     );
@@ -254,7 +255,7 @@ function CoverageSection({
               key={group.key}
               id={`fixkosten-${group.key}`}
               title={group.title}
-              aside={`${formatCountNumber(group.items.length)} · ${formatMoneyWhole(
+              aside={`${formatCountNumber(group.items.length)} · ${formatMoney(
                 sumMoney(
                   group.items.map((item) => item.cost.amount),
                   EUR,
@@ -274,6 +275,12 @@ function CoverageSection({
           ))}
         </MonthSections>
       </div>
+      {/* Gepflegt wird auf einer eigenen Seite (seit 2.15.0): hier bleibt
+            die Liste kurz, dort stehen alle Positionen mit Stift und
+            Papierkorb. */}
+      <SectionLink to="/fortschritt/fixkosten" className="mt-2">
+        Alle Fixkosten
+      </SectionLink>
     </Section>
   );
 }
@@ -311,15 +318,15 @@ function CoverageRow({ item }: { item: CostCoverage }) {
               ) : status === "next" ? (
                 <span>
                   <span className="sr-only">Als Nächstes, </span>
-                  {percent} gedeckt · noch {formatMoneyWhole(item.missing)}
+                  {percent} gedeckt · noch {formatMoney(item.missing)}
                 </span>
               ) : (
-                <span>noch {formatMoneyWhole(item.missing)}</span>
+                <span>noch {formatMoney(item.missing)}</span>
               )
             }
             trailing={
               <>
-                {formatMoneyWhole(item.cost.amount)}
+                {formatMoney(item.cost.amount)}
                 <span className="sr-only"> im Monat</span>
               </>
             }
@@ -335,7 +342,6 @@ const NEXT_LABEL: Record<NextMilestone["kind"], string> = {
   year: "Bestes Jahr",
   month: "Bester Monat",
   streak: "Monate in Folge",
-  payers: "Verschiedene Zahler",
 };
 
 function isMoney(kind: Milestone["kind"]): boolean {
@@ -391,8 +397,6 @@ function reachedText(milestone: Milestone): string {
       return `Erstmals ${euro(milestone.threshold)} in einem Monat`;
     case "streak":
       return `${n} Monate in Folge mit Dividende`;
-    case "payers":
-      return `${n} verschiedene Zahler`;
   }
 }
 

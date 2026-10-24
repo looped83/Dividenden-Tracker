@@ -59,8 +59,7 @@ describe("milestoneOverview", () => {
     expect(byKind("total")?.percent.toFixed(0)).toBe("80");
     expect(byKind("year")?.threshold).toBe(1000);
     expect(byKind("month")?.threshold).toBe(1000);
-    expect(byKind("payers")?.threshold).toBe(5);
-    expect(byKind("payers")?.current.toFixed(0)).toBe("2");
+    expect(byKind("payers")).toBeUndefined();
   });
 
   it("zählt eine Serie nur, solange der Vormonat bezahlt hat", () => {

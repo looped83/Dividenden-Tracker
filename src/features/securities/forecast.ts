@@ -246,6 +246,17 @@ export function forecastTwelveMonths({
   };
 }
 
+/** Gehaltene Position, deren Zukauf eine Monatsluecke schliesst. */
+export interface GapFiller {
+  securityId: string;
+  name: string;
+  payouts: number;
+  /** Zukauf, der die Luecke bis zum Ø schliesst. */
+  invest: Money;
+  /** Mehr in diesem Monat je 1.000 € Zukauf (netto). */
+  perThousand: Money;
+}
+
 /** Ein Monat unter dem Durchschnitt der Prognose. */
 export interface MonthGap {
   year: number;
@@ -253,29 +264,22 @@ export interface MonthGap {
   total: Money;
   /** Abstand zum Ø-Monat. */
   gap: Money;
-  /** Gehaltene Position, deren Zukauf die Luecke am guenstigsten schliesst. */
-  filler: {
-    securityId: string;
-    name: string;
-    payouts: number;
-    /** Zukauf, der die Luecke bis zum Ø schliesst. */
-    invest: Money;
-    /** Mehr in diesem Monat je 1.000 € Zukauf (netto). */
-    perThousand: Money;
-  } | null;
+  /** Bis zu {@link MAX_FILLERS} Fueller, der kleinste Zukauf zuerst. */
+  fillers: GapFiller[];
 }
 
 const INVEST_STEP = new MoneyDecimal(100);
 const THOUSAND = new MoneyDecimal(1000);
+const MAX_FILLERS = 3;
 
 /**
  * Monatsluecken (CALCULATION_RULES.md §14.3): Monate der Prognose unter ihrem
- * Ø-Monat, je mit einem Fueller aus dem eigenen Bestand.
+ * Ø-Monat, je mit bis zu drei Fuellern aus dem eigenen Bestand.
  *
  * Fueller ist eine Position, die in dem Monat zahlt, aber nicht monatlich —
- * ein Monatszahler hebt alle Monate gleich und schliesst keine Luecke. Unter
- * ihnen die mit der hoechsten Ausschuettung je Zahlung im Verhaeltnis zum
- * Marktwert: Sie braucht den kleinsten Zukauf. Der Zukauf ist
+ * ein Monatszahler hebt alle Monate gleich und schliesst keine Luecke. Je
+ * hoeher die Ausschuettung je Zahlung im Verhaeltnis zum Marktwert, desto
+ * kleiner der Zukauf; danach sind sie geordnet. Der Zukauf ist
  * `Luecke × Marktwert ÷ Betrag je Zahlung`, auf volle 100 € aufgerundet;
  * dazu, was 1.000 € Zukauf in dem Monat bringen.
  */
@@ -288,7 +292,7 @@ export function monthGaps(forecast: TwelveMonthForecast): {
     .filter((month) => month.total.compareTo(average) < 0)
     .map((month): MonthGap => {
       const gap = average.subtract(month.total);
-      let filler: MonthGap["filler"] = null;
+      const fillers: GapFiller[] = [];
       for (const item of month.contributions) {
         if (item.payouts >= 12 || item.marketValue === null) continue;
         if (!item.marketValue.isPositive() || !item.amount.isPositive()) continue;
@@ -296,26 +300,35 @@ export function monthGaps(forecast: TwelveMonthForecast): {
           .toDecimal()
           .times(item.marketValue.toDecimal())
           .dividedBy(item.amount.toDecimal());
-        const invest = Money.fromDecimal(
-          raw.dividedBy(INVEST_STEP).ceil().times(INVEST_STEP),
-          EUR,
-        );
-        if (filler === null || invest.compareTo(filler.invest) < 0) {
-          filler = {
-            securityId: item.securityId,
-            name: item.name,
-            payouts: item.payouts,
-            invest,
-            perThousand: Money.fromDecimal(
-              THOUSAND.times(item.amount.toDecimal()).dividedBy(
-                item.marketValue.toDecimal(),
-              ),
-              EUR,
+        fillers.push({
+          securityId: item.securityId,
+          name: item.name,
+          payouts: item.payouts,
+          invest: Money.fromDecimal(
+            raw.dividedBy(INVEST_STEP).ceil().times(INVEST_STEP),
+            EUR,
+          ),
+          perThousand: Money.fromDecimal(
+            THOUSAND.times(item.amount.toDecimal()).dividedBy(
+              item.marketValue.toDecimal(),
             ),
-          };
-        }
+            EUR,
+          ),
+        });
       }
-      return { year: month.year, month: month.month, total: month.total, gap, filler };
+      fillers.sort(
+        (a, b) =>
+          a.invest.compareTo(b.invest) ||
+          b.perThousand.compareTo(a.perThousand) ||
+          a.name.localeCompare(b.name, "de"),
+      );
+      return {
+        year: month.year,
+        month: month.month,
+        total: month.total,
+        gap,
+        fillers: fillers.slice(0, MAX_FILLERS),
+      };
     });
   return { average, gaps };
 }

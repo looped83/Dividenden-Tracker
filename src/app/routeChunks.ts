@@ -28,6 +28,7 @@ export const routeChunks = {
   goalDetail: () => import("@/features/goals/GoalDetailPage"),
   progress: () => import("@/features/progress/ProgressPage"),
   fixedCostDetail: () => import("@/features/progress/FixedCostDetailPage"),
+  fixedCosts: () => import("@/features/progress/FixedCostsPage"),
   settings: () => import("@/features/settings/SettingsPage"),
   settingsGeneral: () => import("@/features/settings/GeneralSettingsTab"),
   settingsDepots: () => import("@/features/depots/DepotsPage"),
