@@ -16,12 +16,6 @@ export interface NavItem {
   label: string;
   icon: LucideIcon;
   /**
-   * Ein Satzteil, der sagt, was der Bereich beantwortet. Sichtbar in der
-   * „Mehr"-Uebersicht des iPhones, wo neben dem Namen Platz dafuer ist —
-   * Sidebar und Bottom-Navigation zeigen weiterhin nur die Beschriftung.
-   */
-  description: string;
-  /**
    * Beginnt eine neue Gruppe der Seitenleiste (seit 2.20.0): Zahlungen
    * (Dividenden, Kalender, Statistiken), Depot (Bestand, Planer), Motivation
    * (Ziele, Fortschritt). Seit 2.27.0 trennt eine feine Linie die Gruppen —
@@ -49,13 +43,11 @@ export const PRIMARY_NAV_ITEMS: readonly NavItem[] = [
     to: "/",
     label: "Übersicht",
     icon: LayoutDashboard,
-    description: "Kennzahlen des Jahres",
   },
   {
     to: "/eingaenge",
     label: "Dividenden",
     icon: Wallet,
-    description: "Erhaltene Dividenden erfassen und prüfen",
     groupStart: true,
   },
   // Direkt hinter den erfassten Eingaengen: Beide Bereiche beantworten dieselbe
@@ -65,13 +57,11 @@ export const PRIMARY_NAV_ITEMS: readonly NavItem[] = [
     to: "/kalender",
     label: "Kalender",
     icon: CalendarDays,
-    description: "Angekündigte Zahltage",
   },
   {
     to: "/statistiken",
     label: "Statistiken",
     icon: BarChart3,
-    description: "Jahre, Monate, Vergleiche",
   },
   // „Depot" statt „Unternehmen": Der Bereich fuehrt laengst nicht nur
   // Aktiengesellschaften, sondern ebenso ETFs, Fonds und Anleihen — alles, was
@@ -80,7 +70,6 @@ export const PRIMARY_NAV_ITEMS: readonly NavItem[] = [
     to: "/depot",
     label: "Bestand",
     icon: Briefcase,
-    description: "Assets, Bestände und Entwicklung",
     groupStart: true,
   },
   // Direkt hinter dem Bestand: Der zeigt, was ist und was voraussichtlich
@@ -89,13 +78,11 @@ export const PRIMARY_NAV_ITEMS: readonly NavItem[] = [
     to: "/planer",
     label: "Planer",
     icon: Compass,
-    description: "Was dein nächster Kauf bringt",
   },
   {
     to: "/ziele",
     label: "Ziele",
     icon: Target,
-    description: "Zielbeträge und Zielbilanz",
     groupStart: true,
   },
   // Direkt hinter den Zielen: Beide beantworten, ob es vorangeht — die Ziele
@@ -105,13 +92,11 @@ export const PRIMARY_NAV_ITEMS: readonly NavItem[] = [
     to: "/fortschritt",
     label: "Fortschritt",
     icon: Trophy,
-    description: "Was deine Dividenden bezahlen",
   },
   {
     to: "/einstellungen",
     label: "Einstellungen",
     icon: Settings,
-    description: "Depots, Import und Datensicherung",
     footer: true,
   },
 ];
