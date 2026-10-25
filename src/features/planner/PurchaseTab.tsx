@@ -286,7 +286,7 @@ function Purchase({
         ) : (
           <SpreadLine
             spread={spread}
-            cap={caps.get(spread?.position.key ?? "") ?? POSITION_CAP_DEFAULT}
+            cap={caps.get(spread?.position.key ?? "") ?? null}
             plan={plan}
           />
         )}
@@ -345,12 +345,15 @@ function SpreadLine({
   plan,
 }: {
   spread: ReturnType<typeof concentrationAfter>;
-  /** Grenze der größten Position (eigene oder Standard). */
-  cap: number;
+  /**
+   * Gewichtung der größten Position; `null` ohne eigene. Dann gibt es nichts
+   * zu überschreiten: Der Standard 0 % hieße sonst „immer darüber".
+   */
+  cap: number | null;
   plan: PurchasePlan;
 }) {
   if (spread === null) return null;
-  const over = spread.position.percent.greaterThan(cap);
+  const over = cap !== null && spread.position.percent.greaterThan(cap);
   const part = (label: string, entry: { name: string; percent: DecimalInstance }) =>
     `${label} ${entry.name} ${formatPercent(entry.percent, 1)}`;
   return (

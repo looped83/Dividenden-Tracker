@@ -143,8 +143,12 @@ function SavingsPlanForm({
       return;
     }
     const value = new MoneyDecimal(canonical);
-    if (value.lte(0) || value.gt(SAVINGS_PLAN_AMOUNT_MAX)) {
+    if (value.lte(0)) {
       setError("Die Rate muss größer als 0 sein.");
+      return;
+    }
+    if (value.gt(SAVINGS_PLAN_AMOUNT_MAX)) {
+      setError("Die Rate darf höchstens 100.000 € betragen.");
       return;
     }
     const entry: SavingsPlan = {

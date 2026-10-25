@@ -12,6 +12,7 @@
  * des Umschalters: Eine Branche kann ein Zehntel des Werts stellen und ein
  * Viertel der Dividende.
  */
+import { countryLabel } from "@/lib/utils/countryLabel";
 import {
   Money,
   MoneyDecimal,
@@ -128,35 +129,6 @@ export function effectiveFrequency(
 ): DividendFrequency | null {
   if (exported === "none") return exported;
   return FREQUENCY_BY_MONTH_COUNT[payoutMonths.length] ?? exported;
-}
-
-let countryNames: Intl.DisplayNames | null | undefined;
-
-/** „US" → „Vereinigte Staaten"; der Code selbst, wo der Browser ihn nicht kennt. */
-/**
- * Codes, die Laenderfeld und ISIN-Praefix teilen, aber kein Land sind. „XS"
- * traegt jedes international ueber Euroclear/Clearstream begebene Papier
- * (Anleihen, ETCs/ETPs); beim Import landet das ISIN-Praefix dann als Land.
- */
-const NON_COUNTRY_LABELS: Readonly<Record<string, string>> = {
-  XS: "International (XS)",
-};
-
-function countryLabel(code: string): string {
-  const special = NON_COUNTRY_LABELS[code];
-  if (special) return special;
-  if (countryNames === undefined) {
-    try {
-      countryNames = new Intl.DisplayNames(["de"], { type: "region" });
-    } catch {
-      countryNames = null;
-    }
-  }
-  try {
-    return countryNames?.of(code) ?? code;
-  } catch {
-    return code;
-  }
 }
 
 function normalizedCountry(value: string | null | undefined): string {
