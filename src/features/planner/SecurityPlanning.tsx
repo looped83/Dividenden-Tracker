@@ -2,7 +2,7 @@ import * as React from "react";
 import { ChevronRight, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Section, SectionLink } from "@/components/ui/section";
-import { Select } from "@/components/ui/select";
+import { AmountInput } from "@/components/ui/amount-input";
 import {
   MoneyDecimal,
   formatMoneyWhole,
@@ -14,10 +14,7 @@ import { formatDayMonth } from "@/lib/utils/formatDate";
 import { useDepots } from "@/features/depots/hooks";
 import { useSecuritySnapshots } from "@/features/securities/hooks";
 import { latestAsOf, snapshotsAt } from "@/features/securities/snapshots";
-import {
-  DEFAULT_FORECAST_SETTINGS,
-  useForecastSettings,
-} from "@/features/securities/forecastSettings";
+import { parseGermanNumber } from "@/features/securities/forecastSettings";
 import { SavingsPlanDialog } from "./SavingsPlanDialog";
 import { useSavingsPlans } from "./savingsPlanHooks";
 import {
@@ -26,8 +23,11 @@ import {
   nextExecution,
   type SavingsPlan,
 } from "./savingsPlans";
+import { formatDecimal } from "./format";
 import {
-  POSITION_CAP_CHOICES,
+  POSITION_CAP_DEFAULT,
+  POSITION_CAP_MAX,
+  POSITION_CAP_MIN,
   usePositionCaps,
   useSavePositionCap,
 } from "./positionCaps";
@@ -39,7 +39,7 @@ const ROW =
 /**
  * Abschnitt „Planung" auf der Seite eines Assets (seit 2.24.0): was mit dem
  * Asset vorgesehen ist — Sparpläne (CALCULATION_RULES.md §17) und die
- * Positionsgrenze des Nachkaufs (§16). Zuvor zwei eigene Abschnitte mit je
+ * Gewichtung fuer den Nachkauf (§16). Zuvor zwei eigene Abschnitte mit je
  * Ueberschrift; als Zeilen stehen sie kompakt neben den Stammdaten.
  */
 export function SecurityPlanning({
@@ -121,7 +121,7 @@ export function SecurityPlanning({
             </Button>
           </div>
         )}
-        {!archived && <PositionCapRow securityId={securityId} />}
+        {!archived && <WeightingRow securityId={securityId} />}
       </div>
       <SavingsPlanDialog
         open={adding}
@@ -143,15 +143,26 @@ export function SecurityPlanning({
 }
 
 /**
- * Anteil am Depot heute und die Grenze, bis zu der der Nachkauf das Asset
- * aufstockt — der Standard des Nachkaufs oder eine eigene. Gespeichert wird
- * nur eine Abweichung vom Standard.
+ * Gewichtung (seit 2.24.0, zuvor „Positionsgrenze"): Anteil am Depot heute und
+ * der Anteil, bis zu dem der Nachkauf das Asset aufstockt — der Standard oder
+ * ein eigener, auf eine Nachkommastelle (CALCULATION_RULES.md §16). Ein leeres
+ * Feld folgt dem Standard; gespeichert wird nur eine Abweichung davon.
+ * Gespeichert wird erst beim Verlassen des Felds, nicht bei jedem Tastendruck.
  */
-function PositionCapRow({ securityId }: { securityId: string }) {
-  const standard = (useForecastSettings().data ?? DEFAULT_FORECAST_SETTINGS).positionCap;
+function WeightingRow({ securityId }: { securityId: string }) {
   const { data: caps, isLoading } = usePositionCaps();
   const { data: snapshots = [] } = useSecuritySnapshots();
   const save = useSavePositionCap();
+  const ownCap = caps?.get(securityId);
+  const shown = ownCap === undefined ? "" : formatDecimal(ownCap);
+  const [draft, setDraft] = React.useState(shown);
+  // Gespeicherter Wert hat sich geaendert (Laden, anderes Geraet, verworfene
+  // Eingabe): Entwurf nachziehen — waehrend des Renderns, nicht in einem Effekt.
+  const [lastShown, setLastShown] = React.useState(shown);
+  if (shown !== lastShown) {
+    setLastShown(shown);
+    setDraft(shown);
+  }
 
   const share = React.useMemo(() => {
     let total = new MoneyDecimal(0);
@@ -166,37 +177,61 @@ function PositionCapRow({ securityId }: { securityId: string }) {
   }, [snapshots, securityId]);
 
   if (isLoading || caps === undefined) return null;
-  const ownCap = caps.get(securityId);
-  const cap = ownCap ?? standard;
+  const cap = ownCap ?? POSITION_CAP_DEFAULT;
   const over = share?.greaterThan(cap) ?? false;
+
+  const commit = () => {
+    const parsed = parseGermanNumber(draft);
+    // Unsinn oder ausserhalb des Bereichs stellt den gespeicherten Wert wieder her.
+    if (
+      parsed === undefined ||
+      (parsed !== null && (parsed < POSITION_CAP_MIN || parsed > POSITION_CAP_MAX))
+    ) {
+      setDraft(shown);
+      return;
+    }
+    if ((parsed ?? undefined) === ownCap) {
+      setDraft(shown);
+      return;
+    }
+    const next = new Map(caps);
+    if (parsed === null) next.delete(securityId);
+    else next.set(securityId, parsed);
+    save.mutate({ caps: next });
+  };
 
   return (
     <div className={`${ROW} items-start`}>
-      <label htmlFor="position-cap" className="pt-2.5 text-muted-foreground">
-        Positionsgrenze
+      <label htmlFor="weighting" className="pt-2 text-muted-foreground">
+        Gewichtung
       </label>
       <div className="flex flex-col items-end gap-1 text-right">
-        <Select
-          id="position-cap"
-          className="h-10 w-auto"
-          aria-describedby="position-cap-share"
-          value={ownCap === undefined ? "" : String(ownCap)}
-          disabled={save.isPending}
-          onChange={(event) => {
-            const next = new Map(caps);
-            if (event.target.value === "") next.delete(securityId);
-            else next.set(securityId, Number.parseInt(event.target.value, 10));
-            save.mutate({ caps: next });
-          }}
-        >
-          <option value="">Standard ({String(standard)} %)</option>
-          {POSITION_CAP_CHOICES.map((choice) => (
-            <option key={choice} value={choice}>
-              höchstens {choice} %
-            </option>
-          ))}
-        </Select>
-        <span id="position-cap-share" className="text-[0.8125rem] text-muted-foreground">
+        <div className="relative w-24">
+          <AmountInput
+            id="weighting"
+            maxFractionDigits={1}
+            aria-describedby="weighting-share"
+            value={draft}
+            placeholder={formatDecimal(POSITION_CAP_DEFAULT)}
+            disabled={save.isPending}
+            className="h-10 pr-7 text-right tabular-nums"
+            onChange={(event) => {
+              setDraft(event.target.value);
+            }}
+            onBlur={commit}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") event.currentTarget.blur();
+            }}
+          />
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center text-sm text-muted-foreground"
+          >
+            %
+          </span>
+        </div>
+        <span id="weighting-share" className="text-[0.8125rem] text-muted-foreground">
+          {ownCap === undefined && `Standard ${formatDecimal(POSITION_CAP_DEFAULT)} % · `}
           {share === null ? (
             "nicht im aktuellen Depotstand"
           ) : (
@@ -204,8 +239,7 @@ function PositionCapRow({ securityId }: { securityId: string }) {
               heute{" "}
               <span className={over ? "font-medium text-negative" : "text-foreground"}>
                 {formatPercent(share, 1)}
-              </span>{" "}
-              des Depots
+              </span>
               {over && " · kein Nachkauf"}
             </>
           )}

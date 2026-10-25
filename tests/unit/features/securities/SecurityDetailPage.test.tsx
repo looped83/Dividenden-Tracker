@@ -102,11 +102,6 @@ vi.mock("@/features/planner/positionCaps", async (importOriginal) => ({
   usePositionCaps: () => ({ data: new Map(), isLoading: false }),
   useSavePositionCap: () => ({ mutate: vi.fn(), isPending: false }),
 }));
-vi.mock("@/features/securities/forecastSettings", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/features/securities/forecastSettings")>()),
-  useForecastSettings: () => ({ data: undefined }),
-}));
-
 const { SecurityDetailPage } = await import("@/features/securities/SecurityDetailPage");
 
 function renderPage(id = SECURITY_ID) {
@@ -243,12 +238,13 @@ describe("SecurityDetailPage", () => {
     expect(section.getByRole("button", { name: "Sparplan" })).toBeInTheDocument();
   });
 
-  it("bietet die Positionsgrenze mit dem Standard an", () => {
+  it("bietet die Gewichtung leer mit dem Standard an", () => {
     renderPage();
     const section = within(screen.getByRole("region", { name: "Planung" }));
-    expect(section.getByRole("combobox", { name: "Positionsgrenze" })).toHaveDisplayValue(
-      "Standard (8 %)",
-    );
+    const field = section.getByRole("textbox", { name: "Gewichtung" });
+    expect(field).toHaveValue("");
+    expect(field).toHaveAttribute("placeholder", "8");
+    expect(section.getByText(/Standard 8\s%/)).toBeInTheDocument();
   });
 
   it("nennt den Rhythmus am Ausschuettungsplan", () => {

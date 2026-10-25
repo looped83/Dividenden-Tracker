@@ -22,7 +22,7 @@ import {
   useForecastSettings,
 } from "@/features/securities/forecastSettings";
 import { rhythm } from "./format";
-import { usePositionCaps } from "./positionCaps";
+import { POSITION_CAP_DEFAULT, usePositionCaps } from "./positionCaps";
 
 /**
  * Planer › **Monatslücken**: Monate unter dem Ø der Prognose, je mit den
@@ -40,7 +40,7 @@ export function GapsTab() {
         <MonthGaps
           forecast={forecast}
           excluded={settings.excluded}
-          capPercent={settings.positionCap}
+          capPercent={POSITION_CAP_DEFAULT}
           caps={caps}
         />
       )}

@@ -18,6 +18,11 @@ describe("parsePositionCaps", () => {
     expect(parsePositionCaps([1, 2]).size).toBe(0);
   });
 
+  it("liest eine Gewichtung mit Nachkommastelle", () => {
+    expect(parsePositionCaps({ [ID]: 1.5 }).get(ID)).toBe(1.5);
+    expect(parsePositionCaps({ [ID]: 0.4 }).size).toBe(0);
+  });
+
   it("speichert leer als null und übersteht den Rundweg", () => {
     expect(toStoredPositionCaps(new Map())).toBeNull();
     const stored = toStoredPositionCaps(new Map([[ID, 20]]));
