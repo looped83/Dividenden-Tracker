@@ -7,7 +7,11 @@ import {
   type TwelveMonthForecast,
 } from "@/features/securities/forecast";
 import { parseForecastSettings } from "@/features/securities/forecastSettings";
-import { planPurchase, purchaseCandidates } from "@/features/planner/purchase";
+import {
+  concentrationAfter,
+  planPurchase,
+  purchaseCandidates,
+} from "@/features/planner/purchase";
 
 const TODAY = { year: 2026, month: 10, day: 25 };
 
@@ -281,5 +285,25 @@ describe("Positionsgrenze je Asset", () => {
     expect(result?.buys.map((buy) => [buy.name, buy.invest.toStringValue()])).toEqual([
       ["Beta", "1000.00"],
     ]);
+  });
+});
+
+describe("concentrationAfter", () => {
+  it("fasst Ländercodes wie die Analyse zusammen und nennt das Land beim Namen", () => {
+    const facets = new Map<string, ForecastFacets>([
+      ["sec-a", { name: "Alpha", payoutMonths: [], country: "us ", sector: "Tech" }],
+      ["sec-b", { name: "Beta", payoutMonths: [], country: "US", sector: " Tech" }],
+      ["sec-c", { name: "Gamma", payoutMonths: [], country: "DE", sector: "Bank" }],
+    ]);
+    const spread = concentrationAfter({
+      snapshots: SNAPSHOTS.slice(0, 3),
+      facets,
+      names: new Map([["sec-a", "Alpha"]]),
+      plan: { buys: [] } as unknown as Parameters<typeof concentrationAfter>[0]["plan"],
+      mode: "einmal",
+    });
+    expect(spread?.country).toMatchObject({ key: "US", name: "Vereinigte Staaten" });
+    expect(spread?.country?.percent.toFixed(2)).toBe("66.67");
+    expect(spread?.sector).toMatchObject({ key: "Tech" });
   });
 });

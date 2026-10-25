@@ -842,7 +842,7 @@ Von Hand gepflegte Stammdaten, keine Buchungen: Sparpläne erzeugen keine Eingä
 Bestand noch Prognose.
 
 - **Speicher:** `profiles.savings_plans` (Migration 0042), eine jsonb-Liste wie die Fixkosten,
-  höchstens 50 Pläne und 8 KB; nicht in der Datensicherung. Je Plan: Asset, Rate (> 0, bis
+  höchstens 30 Pläne (die Spalte fasst 8 KB, rund 37 Pläne); nicht in der Datensicherung. Je Plan: Asset, Rate (> 0, bis
   100.000 €), Rhythmus monatlich oder wöchentlich, optional Depot, ein Ausführungsdatum als Anker
   und „pausiert". Ein ungültiger Eintrag fällt beim Lesen weg, statt die Liste zu verwerfen.
 - **Monatsbetrag:** monatlich die Rate, wöchentlich Rate × 52 ÷ 12.

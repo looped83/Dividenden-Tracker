@@ -25,7 +25,11 @@ export interface SavingsPlan {
   paused: boolean;
 }
 
-export const SAVINGS_PLANS_MAX = 50;
+/**
+ * Die Spalte fasst höchstens 8 KB (0042); ein Plan braucht rund 210 Byte, ab
+ * etwa 37 Plänen schlüge das Speichern fehl. 30 lässt Luft für große Raten.
+ */
+export const SAVINGS_PLANS_MAX = 30;
 export const SAVINGS_PLAN_AMOUNT_MAX = 100_000;
 
 export const INTERVAL_LABEL: Record<SavingsInterval, string> = {

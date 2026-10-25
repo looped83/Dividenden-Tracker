@@ -83,7 +83,12 @@ export function ProgressPage() {
   };
 
   let content: React.ReactNode;
-  if (isLoading || costsQuery.isLoading || snapshotsQuery.isLoading) {
+  if (
+    isLoading ||
+    costsQuery.isLoading ||
+    snapshotsQuery.isLoading ||
+    securitiesQuery.isLoading
+  ) {
     content = (
       <div className="space-y-10" aria-busy="true">
         <span className="sr-only">Fortschritt wird geladen …</span>
