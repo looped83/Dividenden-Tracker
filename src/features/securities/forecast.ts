@@ -319,8 +319,15 @@ export interface GapFiller {
   securityId: string;
   name: string;
   payouts: number;
-  /** Zukauf, der die Luecke bis zum Ø schliesst. */
+  /**
+   * Zukauf, der die Luecke bis zum Ø schliesst — oder, wo die Gewichtung
+   * vorher endet, der groesste, der noch darunter passt (`partial`).
+   */
   invest: Money;
+  /** Mehr in diesem Monat durch `invest` (netto), hoechstens die Luecke. */
+  closes: Money;
+  /** Der Zukauf schliesst die Luecke nur zum Teil (seit 2.27.0). */
+  partial: boolean;
   /** Mehr in diesem Monat je 1.000 € Zukauf (netto). */
   perThousand: Money;
 }
@@ -351,9 +358,12 @@ const MAX_FILLERS = 3;
  * `Luecke × Marktwert ÷ Betrag je Zahlung`, auf volle 100 € aufgerundet;
  * dazu, was 1.000 € Zukauf in dem Monat bringen. Im Planer ausgeschlossene
  * Assets (`excluded`) fuellen keine Luecke, zaehlen aber in der Prognose.
- * Mit `capPercent` (seit 2.22.0) faellt ein Fueller weg, den sein Zukauf ueber
- * diesen Anteil am Depot hoebe (Positionsgrenze des Nachkaufs); eigene Grenzen
- * je Asset (`caps`) gehen vor.
+ * Mit `capPercent` (seit 2.22.0) waechst kein Fueller ueber diesen Anteil am
+ * Depot (Gewichtung des Nachkaufs); eigene Grenzen je Asset (`caps`) gehen
+ * vor. Passt der ganze Zukauf nicht darunter, gilt seit 2.27.0 der groesste,
+ * der passt (`partial`) — vorher fiel das Asset weg, und bei Gewichtungen von
+ * wenigen Prozent blieb fast jede Luecke ohne Fueller. Unter 100 € Platz
+ * faellt es weiter weg. Geordnet nach geschlossenem Betrag, dann Zukauf.
  */
 export function monthGaps(
   forecast: TwelveMonthForecast,
@@ -374,23 +384,41 @@ export function monthGaps(
         if (item.payouts >= 12 || item.marketValue === null) continue;
         if (excluded.has(item.securityId)) continue;
         if (!item.marketValue.isPositive() || !item.amount.isPositive()) continue;
-        const raw = gap
+        const value = item.marketValue.toDecimal();
+        const amount = item.amount.toDecimal();
+        const needed = gap
           .toDecimal()
-          .times(item.marketValue.toDecimal())
-          .dividedBy(item.amount.toDecimal());
-        const invest = raw.dividedBy(INVEST_STEP).ceil().times(INVEST_STEP);
+          .times(value)
+          .dividedBy(amount)
+          .dividedBy(INVEST_STEP)
+          .ceil()
+          .times(INVEST_STEP);
+        let invest = needed;
         const cap = caps.get(item.securityId) ?? capPercent;
-        const after = item.marketValue.toDecimal().plus(invest).times(100);
-        if (
-          cap !== null &&
-          after.greaterThan(forecast.depotValue.toDecimal().plus(invest).times(cap))
-        )
-          continue;
+        if (cap !== null) {
+          // W + x ≤ g·(D + x)  ⇔  x ≤ (g·D − W) ÷ (1 − g), g als Anteil
+          const share = new MoneyDecimal(cap).dividedBy(100);
+          if (share.lessThan(1)) {
+            const room = share
+              .times(forecast.depotValue.toDecimal())
+              .minus(value)
+              .dividedBy(ONE.minus(share));
+            const fits = room.dividedBy(INVEST_STEP).floor().times(INVEST_STEP);
+            if (fits.lessThan(INVEST_STEP)) continue;
+            if (fits.lessThan(invest)) invest = fits;
+          }
+        }
+        const closes = Money.fromDecimal(
+          MoneyDecimal.min(invest.times(amount).dividedBy(value), gap.toDecimal()),
+          EUR,
+        );
         fillers.push({
           securityId: item.securityId,
           name: item.name,
           payouts: item.payouts,
           invest: Money.fromDecimal(invest, EUR),
+          closes,
+          partial: invest.lessThan(needed),
           perThousand: Money.fromDecimal(
             THOUSAND.times(item.amount.toDecimal()).dividedBy(
               item.marketValue.toDecimal(),
@@ -401,6 +429,7 @@ export function monthGaps(
       }
       fillers.sort(
         (a, b) =>
+          b.closes.compareTo(a.closes) ||
           a.invest.compareTo(b.invest) ||
           b.perThousand.compareTo(a.perThousand) ||
           a.name.localeCompare(b.name, "de"),

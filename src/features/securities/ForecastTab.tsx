@@ -50,7 +50,7 @@ export function ForecastTab() {
 }
 
 /**
- * Ruhiger Verweis auf Planer › Monatslücken im Kopf des Diagramms, nur wenn
+ * Ruhiger Verweis auf Planer › Optimierungen im Kopf des Diagramms, nur wenn
  * es Lücken gibt.
  */
 function GapsLink({ forecast }: { forecast: TwelveMonthForecast }) {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EUR, Money, formatPercent } from "@/lib/money";
+import { EUR, Money, MoneyDecimal, formatPercent } from "@/lib/money";
 import type { AnalyticsPayment } from "@/lib/statistics/types";
 import type { SecuritySnapshot } from "@/lib/supabase/repositories/securitySnapshots";
 import {
@@ -314,5 +314,28 @@ describe("monthGaps", () => {
     ).toEqual(["2400.00"]);
     // Nur Beta zahlt im November — monatlich, also kein Füller.
     expect(gapOf(2026, 11)?.fillers).toEqual([]);
+  });
+
+  it("kürzt einen Füller auf den Platz unter seiner Gewichtung, statt ihn wegzulassen", () => {
+    // Delta schlösse den September mit 2.400 €. Gewichtung so, dass genau
+    // 1.050 € Platz bleiben (auf 1.000 € abgerundet): g = (W + x) ÷ (D + x).
+    const depot = forecast.depotValue.toDecimal();
+    const cap = new MoneyDecimal(1950).dividedBy(depot.plus(1050)).times(100);
+    const capped = monthGaps(
+      forecast,
+      new Set(),
+      0,
+      new Map([["sec-d", cap.toNumber()]]),
+    );
+    const september = capped.gaps.find((gap) => gap.month === 9)?.fillers ?? [];
+    expect(september).toHaveLength(1);
+    expect(september[0]).toMatchObject({ name: "Delta", partial: true });
+    expect(september[0]?.invest.toStringValue()).toBe("1000.00");
+    // 1.000 € × 3 € ÷ 900 € = 3,33 € von 8 € Lücke
+    expect(september[0]?.closes.toStringValue()).toBe("3.33");
+    // Ohne eigene Gewichtung (0 %) kein Füller
+    expect(
+      capped.gaps.find((gap) => gap.month === 3)?.fillers.map((f) => f.name),
+    ).toEqual(["Delta"]);
   });
 });

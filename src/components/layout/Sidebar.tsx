@@ -1,6 +1,7 @@
+import { Fragment } from "react";
 import { NavLink } from "react-router";
 import { Plus } from "lucide-react";
-import { PRIMARY_NAV_ITEMS } from "@/app/navigation";
+import { PRIMARY_NAV_ITEMS, type NavItem } from "@/app/navigation";
 import { prefetchProps } from "@/app/routeChunks";
 import { Button } from "@/components/ui/button";
 import { usePaymentComposer } from "@/features/payments/PaymentComposer";
@@ -30,30 +31,46 @@ export function Sidebar() {
           <Plus aria-hidden /> Neue Dividende
         </Button>
       </div>
-      <nav aria-label="Hauptnavigation" className="flex-1 space-y-1 px-3">
-        {PRIMARY_NAV_ITEMS.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.to === "/"}
-            {...prefetchProps(item.to)}
-            className={({ isActive }) =>
-              cn(
-                "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium outline-none",
-                item.groupStart && "mt-4",
-                "focus-visible:ring-2 focus-visible:ring-ring",
-                isActive
-                  ? "bg-accent font-semibold text-accent-foreground"
-                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-              )
-            }
-          >
-            <item.icon className="size-4 shrink-0" aria-hidden />
-            {item.label}
-          </NavLink>
+      <nav aria-label="Hauptnavigation" className="flex flex-1 flex-col gap-1 px-3 pb-3">
+        {LIST_ITEMS.map((item) => (
+          <Fragment key={item.to}>
+            {item.groupStart && <div aria-hidden className="mx-3 my-2 h-px bg-border" />}
+            <SidebarLink item={item} />
+          </Fragment>
         ))}
+        {/* Einstellungen am Fuß: Verwaltung, kein täglicher Arbeitsbereich (seit 2.27.0). */}
+        <div className="mt-auto border-t border-border pt-3">
+          {FOOTER_ITEMS.map((item) => (
+            <SidebarLink key={item.to} item={item} />
+          ))}
+        </div>
       </nav>
     </aside>
+  );
+}
+
+const LIST_ITEMS = PRIMARY_NAV_ITEMS.filter((item) => !item.footer);
+const FOOTER_ITEMS = PRIMARY_NAV_ITEMS.filter((item) => item.footer);
+
+function SidebarLink({ item }: { item: NavItem }) {
+  return (
+    <NavLink
+      to={item.to}
+      end={item.to === "/"}
+      {...prefetchProps(item.to)}
+      className={({ isActive }) =>
+        cn(
+          "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium outline-none",
+          "focus-visible:ring-2 focus-visible:ring-ring",
+          isActive
+            ? "bg-accent font-semibold text-accent-foreground"
+            : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+        )
+      }
+    >
+      <item.icon className="size-4 shrink-0" aria-hidden />
+      {item.label}
+    </NavLink>
   );
 }
 
@@ -79,28 +96,41 @@ export function CompactSidebar() {
         aria-label="Hauptnavigation"
         className="flex flex-1 flex-col items-center gap-1"
       >
-        {PRIMARY_NAV_ITEMS.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.to === "/"}
-            title={item.label}
-            aria-label={item.label}
-            {...prefetchProps(item.to)}
-            className={({ isActive }) =>
-              cn(
-                "flex size-11 items-center justify-center rounded-xl outline-none",
-                "focus-visible:ring-2 focus-visible:ring-ring",
-                isActive
-                  ? "bg-accent font-semibold text-accent-foreground"
-                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-              )
-            }
-          >
-            <item.icon className="size-5" aria-hidden />
-          </NavLink>
+        {LIST_ITEMS.map((item) => (
+          <Fragment key={item.to}>
+            {item.groupStart && <div aria-hidden className="my-1 h-px w-8 bg-border" />}
+            <CompactLink item={item} />
+          </Fragment>
         ))}
+        <div className="mt-auto">
+          {FOOTER_ITEMS.map((item) => (
+            <CompactLink key={item.to} item={item} />
+          ))}
+        </div>
       </nav>
     </aside>
+  );
+}
+
+function CompactLink({ item }: { item: NavItem }) {
+  return (
+    <NavLink
+      to={item.to}
+      end={item.to === "/"}
+      title={item.label}
+      aria-label={item.label}
+      {...prefetchProps(item.to)}
+      className={({ isActive }) =>
+        cn(
+          "flex size-11 items-center justify-center rounded-xl outline-none",
+          "focus-visible:ring-2 focus-visible:ring-ring",
+          isActive
+            ? "bg-accent font-semibold text-accent-foreground"
+            : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+        )
+      }
+    >
+      <item.icon className="size-5" aria-hidden />
+    </NavLink>
   );
 }

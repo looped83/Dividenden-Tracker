@@ -8,7 +8,7 @@ import { TabNav } from "@/components/layout/TabNav";
 
 /**
  * Rahmen des **Planers** (seit 2.20.0): alles, was durchrechnet, was wäre,
- * wenn du kaufst oder sparst — Nachkauf, Monatslücken, Schneeball. Der
+ * wenn du kaufst oder sparst — Nachkauf, Optimierungen, Schneeball. Der
  * Bestand zeigt, was ist und was voraussichtlich kommt; der Planer, was du
  * daran ändern kannst. Monatslücken und Schneeball standen bis 2.19 in
  * Bestand › Prognose.
