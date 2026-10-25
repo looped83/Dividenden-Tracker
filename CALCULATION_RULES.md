@@ -852,3 +852,10 @@ Bestand noch Prognose.
   nach Name des Assets (seit 2.21.1).
 - **Schneeball:** Ist keine eigene Sparrate eingetragen (0), rechnet er mit der gerundeten
   Monatssumme der aktiven Pläne; das Feld zeigt sie als Platzhalter.
+- **Tipps** (seit 2.26.0, `savingsPlanTips`): Abgleich mit den Gewichtungen (§16) beim
+  Depotstand, Kurse unverändert. Erstens aktive Pläne, deren Asset schon über seiner Gewichtung
+  liegt oder sie in höchstens 24 Monaten erreicht: n = ⌈(g·D − W) ÷ (r − g·R)⌉ mit Gewichtung g,
+  Depotwert D, Marktwert W, Monatsrate r des Assets und Summe R aller aktiven Raten (das Depot
+  wächst mit). Zweitens aktive Pläne auf Assets ohne Gewichtung. Drittens höchstens drei gehaltene
+  Assets mit Gewichtung, ohne Plan (auch keinen pausierten) und nicht ausgeschlossen, mit dem
+  meisten Platz bis zur Gewichtung (mindestens 12 × 25 €). Ohne Befund fehlt der Abschnitt.

@@ -113,6 +113,11 @@ test("pflegt Sparpläne und zeigt sie am Asset", async ({ page, konto }) => {
   await expect(plaene.getByText("Allianz", { exact: true })).toBeVisible();
   await expect(page.getByText("Sparpläne im Monat")).toBeVisible();
   await expect(plaene.getByText("≈ 130 €")).toBeVisible();
+  // Alle Assets mit 30 % Gewichtung, nur Allianz mit Plan: Tipps nennen die
+  // mit dem meisten Platz, Allianz nicht.
+  const tipps = page.getByRole("region", { name: "Tipps" });
+  await expect(tipps.getByRole("listitem")).toHaveCount(3);
+  await expect(tipps.getByText("Allianz", { exact: true })).toHaveCount(0);
 
   await page.goto("/#/depot");
   await page
