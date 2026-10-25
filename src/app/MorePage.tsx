@@ -35,7 +35,9 @@ const GROUPS: readonly (readonly NavItem[])[] = BOTTOM_NAV_MORE_ITEMS.reduce<Nav
 export function MorePage() {
   return (
     <div className="space-y-6">
-      <PageHeader title="Mehr" />
+      {/* App-Name statt „Mehr": Der Reiter darunter sagt schon, wo man ist; die
+          Überschrift doppelte ihn nur. */}
+      <PageHeader title="Dividenden-Tracker" />
       <nav aria-label="Weitere Bereiche" className="max-w-xl space-y-4">
         {GROUPS.map((group) => (
           // Die Listenform der App (ListGroup/ListRow) auf gedaempfter Flaeche:
