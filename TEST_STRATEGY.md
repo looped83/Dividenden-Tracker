@@ -174,8 +174,8 @@ Auth-Nutzern (A, B) über supabase-js:
 eigener Auftrag). Sie laufen gegen den **gebauten** Stand — `vite build` + `vite preview` über
 `playwright.config.ts` — und decken die Fehlerklasse ab, die Unit-Tests nicht sehen können:
 weiße Seite nach dem Bauen, kaputtes Nachladen der Bereiche, fehlendes Manifest, ins Startpaket
-gerutschte schwere Abhängigkeit (Größenschwelle). Zwei Projekte: iPhone-Geometrie (im CI mit
-WebKit, lokal mit Chromium) und Desktop-Chromium.
+gerutschte schwere Abhängigkeit (Größenschwelle). Zwei Projekte: iPhone-Geometrie (auf main mit
+WebKit, in Pull Requests und lokal mit Chromium) und Desktop-Chromium.
 
 Alles, was ein Konto und Daten braucht, liegt seit Phase A in einer eigenen Suite (§8.1). Die
 folgende Liste bleibt der Zielumfang; abgehakt ist, was dort tatsächlich läuft:
@@ -196,7 +196,7 @@ folgende Liste bleibt der Zielumfang; abgehakt ist, was dort tatsächlich läuft
 9. ✅ Sicherung erstellen (Datei, Vollständigkeit, Integritätsblock, Sicherungsstand) —
    offen: Export CSV/XLSX und Restore mit Vorschau
 10. ⬜ Ziele anlegen, Zielfortschritt
-11. ✅ Beide Suiten laufen im iPhone-Projekt (im CI mit WebKit); Touch-Ziele und
+11. ✅ Beide Suiten laufen im iPhone-Projekt (auf main mit WebKit, in PRs Chromium); Touch-Ziele und
     Formulareingabe deckt zusätzlich `tests/e2e/mobile.spec.ts` ab
 12. ⬜ PWA: Offline-Banner, Lesecache nach Reload offline (Manifest-Check läuft)
 13. ⬜ Excel-Import Unternehmen: Name/Ticker/ISIN/WKN sowie optionale Depot-/Broker-Spalte →
@@ -205,7 +205,7 @@ folgende Liste bleibt der Zielumfang; abgehakt ist, was dort tatsächlich läuft
 ### 8.1 Angemeldete Abläufe gegen eine echte Datenbank
 
 **Stand: umgesetzt** (`tests/e2e/app/`, `playwright.app.config.ts`, `npm run test:e2e:app`,
-im CI als Job `e2e-app`). 38 Tests je Projekt, Desktop-Chromium und iPhone (im CI WebKit).
+im CI als Job `e2e-app`). 38 Tests je Projekt, Desktop-Chromium und iPhone (auf main WebKit, in PRs Chromium).
 
 Aufbau — bewusst ohne Attrappen:
 

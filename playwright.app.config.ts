@@ -38,12 +38,15 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
     {
-      // Im CI mit Safaris Motor (WebKit ist dort installiert), lokal mit
-      // Chromium in iPhone-Geometrie — wie in den Rauchtests.
+      // Auf main mit Safaris Motor (E2E_WEBKIT, siehe ci.yml), in Pull
+      // Requests und lokal mit Chromium in iPhone-Geometrie — wie in den
+      // Rauchtests.
       name: "iPhone",
       use: {
         ...devices["iPhone 14"],
-        ...(process.env.CI ? {} : { browserName: "chromium" as const }),
+        ...(process.env.E2E_WEBKIT === "true"
+          ? {}
+          : { browserName: "chromium" as const }),
       },
     },
   ],
