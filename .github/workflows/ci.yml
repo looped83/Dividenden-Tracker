@@ -204,7 +204,12 @@ jobs:
       # 12 Minuten haengend, bis das Job-Limit griff. Deshalb pro Versuch
       # 3 Minuten und ein zweiter Anlauf: Ein haengender Spiegel kostet so
       # hoechstens 6 Minuten statt des ganzen Jobs.
+      # Nur auf main (WebKit): Chromium laeuft auf dem Ubuntu-Runner ohne
+      # Nachinstallation, dessen Bibliotheken bringt der vorinstallierte Chrome
+      # mit. In PRs entfaellt damit der apt-Lauf, der am 25.10.2026 selbst nur
+      # fuer Chromium bei 80 kB/s am Spiegel beide Versuche verbrauchte.
       - name: Systembibliotheken sicherstellen
+        if: env.E2E_WEBKIT == 'true'
         # `timeout` beendet nur npx, nicht das apt-get darunter: Es hielt die
         # dpkg-Sperre, und der zweite Versuch scheiterte sofort daran. Mit
         # Lock::Timeout wartet er stattdessen, bis die Sperre frei ist.
@@ -277,7 +282,12 @@ jobs:
         run: npx playwright install $PW_BROWSERS
 
       # Zeitlimit und zweiter Anlauf wie in e2e-smoke.
+      # Nur auf main (WebKit): Chromium laeuft auf dem Ubuntu-Runner ohne
+      # Nachinstallation, dessen Bibliotheken bringt der vorinstallierte Chrome
+      # mit. In PRs entfaellt damit der apt-Lauf, der am 25.10.2026 selbst nur
+      # fuer Chromium bei 80 kB/s am Spiegel beide Versuche verbrauchte.
       - name: Systembibliotheken sicherstellen
+        if: env.E2E_WEBKIT == 'true'
         # `timeout` beendet nur npx, nicht das apt-get darunter: Es hielt die
         # dpkg-Sperre, und der zweite Versuch scheiterte sofort daran. Mit
         # Lock::Timeout wartet er stattdessen, bis die Sperre frei ist.
