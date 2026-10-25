@@ -108,6 +108,7 @@ Feldnamen wie „Zahlungsdatum" und „Zahlungsart" bleiben, ebenso die Adresse 
 | **Dividendeneingänge** | Vollständige Zahlungshistorie, Erfassung, Bearbeitung, Detailansicht |
 | **Kalender** | Angekündigte Zahltage aus dem persönlichen DivvyDiary-iCal-Feed |
 | **Depot** | Assets (Aktien, ETFs, Fonds, Anleihen): Stammdaten, Bestände, Entwicklung |
+| **Planer** | Nachkauf-Planer (Einmalkauf, Sparpläne), Monatslücken, Schneeball (seit 2.20.0) |
 | **Depotkonten** | Verwaltung der Konten bei den Brokern und Auswertung je Konto |
 | **Statistiken** | Vertiefte Auswertungen, Vergleiche, Aufteilungen |
 | **Importe** | Import-Assistent, Importhistorie, Rollback |

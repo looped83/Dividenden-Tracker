@@ -33,6 +33,7 @@ const ROUTEN = [
   // barrierefrei sein, und er ist der erste, den jemand hier zu sehen bekommt.
   { pfad: "/#/depot/entwicklung", name: "Bestand Entwicklung", warten: "Bestand" },
   { pfad: "/#/depot/analyse", name: "Bestand Analyse", warten: "Bestand" },
+  { pfad: "/#/planer", name: "Planer", warten: "Planer" },
   { pfad: "/#/statistiken", name: "Statistiken", warten: "Statistik" },
   { pfad: "/#/statistiken/verlauf", name: "Statistik Verlauf", warten: "Statistik" },
   {

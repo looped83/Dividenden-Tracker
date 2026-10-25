@@ -675,6 +675,9 @@ Dashboard und Statistik. Es bleibt kein veralteter Zielstand zurück.
 
 ## 14. Prognose und Dividenden-Schneeball (Bestand › Prognose, seit 1.44.0)
 
+Seit 2.20.0 stehen Monatslücken (§14.3) und Schneeball (§14.2) im Planer; Bestand › Prognose
+zeigt nur noch die nächsten zwölf Monate (§14.1). Die Regeln sind unverändert.
+
 Beide Anzeigen sind **Schätzungen**. Sie werden beim Anzeigen gerechnet und nie gespeichert;
 gespeichert sind nur die Annahmen des Schneeballs (`profiles.forecast_settings`, Migration
 0034). Sie fließen weder in Statistik noch in Ziele (PRODUCT_SPEC.md Grundsatz 8).
@@ -725,6 +728,7 @@ gespeichert sind nur die Annahmen des Schneeballs (`profiles.forecast_settings`,
   Bestand; ohne passende Position „Kein passendes Asset im Bestand“.
 - Der Zukauf hebt auch die übrigen Zahlmonate der Position; er ist eine Orientierung, keine
   Kaufempfehlung, und wird nicht gespeichert.
+- Im Planer ausgeschlossene Assets (§16) sind keine Füller (seit 2.20.0).
 
 ---
 
@@ -778,3 +782,32 @@ begrenzt.
 
 Der Einstand ist der heutige Durchschnitt der Quelle: Ein Nachkauf erhöht ihn und senkt den Anteil.
 Deshalb gibt es dafür keine Meilensteine, die einmal erreicht nie wieder aberkannt würden (§15.2).
+
+---
+
+## 16. Nachkauf-Planer (Planer › Nachkauf, seit 2.20.0)
+
+Eine Rechnung beim Anzeigen (`planPurchase`), keine Kaufempfehlung. Gespeichert wird kein Plan;
+die Eingaben stehen in der Adresse (`?modus=sparplan&betrag=1000&fokus=monate&anzahl=3`).
+
+- **Kandidaten** (`purchaseCandidates`): Positionen der Prognose (§14.1) mit Marktwert > 0 und
+  Betrag > 0, ohne ausgeschlossene Assets. Ertrag je Zahlung und Euro = Betrag je Zahlung der
+  Prognose (netto) ÷ Marktwert; Zahlmonate wie in der Prognose. Neue Assets außerhalb des Bestands
+  gehen nicht (dafür fehlen Kurs und Dividende).
+- **Modi:** Einmalkauf in Schritten zu 50 €, mindestens 100 € je Kauf, 1–5 Käufe (Standard 3);
+  Sparpläne in Schritten zu 25 €, mindestens 25 € je Plan, bis zu 10 (Standard 5). Beim Sparplan
+  ist der Betrag die Monatsrate, die Wirkung zählt zwölf Raten. Höchstens 200 Schritte: Größere
+  Beträge verteilen in einem Vielfachen der Schrittweite. Weniger Käufe, wenn der Betrag für den
+  Mindestbetrag je Kauf nicht reicht; der Rest unter einem Schritt geht an den größten Kauf.
+- **Mehr Dividende:** die Kandidaten mit dem höchsten Ertrag je Euro im Jahr, zu gleichen Teilen.
+- **Dividendenwachstum:** wie oben, gereiht nach Ertrag × (1 + CAGR)⁵, CAGR auf 0–15 % begrenzt
+  (ohne Angabe 0 %).
+- **Monate glätten:** Schritt für Schritt an den Kandidaten, der die Summe der Abstände aller Monate
+  unter ihrem Ø am stärksten verringert (bei Gleichstand der höhere Ertrag). Sind so viele Assets
+  gewählt wie Käufe erlaubt, gehen weitere Schritte nur an diese. Käufe unter dem Mindestbetrag
+  werden auf den größten umgelegt.
+- **Ergebnis:** mehr netto im Jahr, Ertrag des Plans (÷ investiert), Ø-Monat und schwächster Monat
+  vorher und nachher, je Kauf ungefähre Stückzahl zum letzten Kurs des Depotstands.
+- **Ausschließen:** bis zu 30 Assets, gespeichert mit den Schneeball-Annahmen in
+  `profiles.forecast_settings.excluded` (nicht in der Datensicherung). Sie zählen weiter in der
+  Prognose, werden aber weder im Nachkauf noch als Füller der Monatslücken vorgeschlagen.

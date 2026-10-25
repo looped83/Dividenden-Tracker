@@ -47,11 +47,38 @@ export function parseSnowballSettings(raw: unknown): SnowballSettings {
   return settingsSchema.parse({ ...DEFAULT_SNOWBALL_SETTINGS, ...raw });
 }
 
+/**
+ * Annahmen des Schneeballs und die vom Nachkauf-Planer ausgeschlossenen Assets
+ * (CALCULATION_RULES.md §16) — eine Zeile, eine Spalte (`forecast_settings`),
+ * damit dafuer keine Migration noetig ist. Die Obergrenze haelt die Spalte
+ * unter ihrer Groessenpruefung (0034: 2 KB).
+ */
+export interface ForecastSettings extends SnowballSettings {
+  excluded: readonly string[];
+}
+
+export const EXCLUDED_MAX = 30;
+
+export const DEFAULT_FORECAST_SETTINGS: ForecastSettings = {
+  ...DEFAULT_SNOWBALL_SETTINGS,
+  excluded: [],
+};
+
+const excludedSchema = z.array(z.guid()).max(EXCLUDED_MAX).catch([]);
+
+export function parseForecastSettings(raw: unknown): ForecastSettings {
+  const excluded =
+    raw !== null && typeof raw === "object" && "excluded" in raw
+      ? excludedSchema.parse(raw.excluded)
+      : [];
+  return { ...parseSnowballSettings(raw), excluded };
+}
+
 export function useForecastSettings() {
   return useQuery({
     queryKey: FORECAST_SETTINGS_KEY,
     queryFn: fetchForecastSettings,
-    select: parseSnowballSettings,
+    select: parseForecastSettings,
   });
 }
 
@@ -63,9 +90,13 @@ export function useForecastSettings() {
 export function useSaveForecastSettings() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (settings: SnowballSettings) => updateForecastSettings({ ...settings }),
+    mutationFn: (settings: ForecastSettings) =>
+      updateForecastSettings({ ...settings, excluded: [...settings.excluded] }),
     onMutate: (settings) => {
-      queryClient.setQueryData(FORECAST_SETTINGS_KEY, { ...settings });
+      queryClient.setQueryData(FORECAST_SETTINGS_KEY, {
+        ...settings,
+        excluded: [...settings.excluded],
+      });
     },
     onError: () =>
       void queryClient.invalidateQueries({ queryKey: FORECAST_SETTINGS_KEY }),

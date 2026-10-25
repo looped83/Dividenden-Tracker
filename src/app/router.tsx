@@ -60,6 +60,18 @@ const AnalysisTab = React.lazy(async () => ({
 const ForecastTab = React.lazy(async () => ({
   default: (await routeChunks.depotForecast()).ForecastTab,
 }));
+const PlannerPage = React.lazy(async () => ({
+  default: (await routeChunks.planner()).PlannerPage,
+}));
+const PurchaseTab = React.lazy(async () => ({
+  default: (await routeChunks.plannerPurchase()).PurchaseTab,
+}));
+const GapsTab = React.lazy(async () => ({
+  default: (await routeChunks.plannerGaps()).GapsTab,
+}));
+const SnowballTab = React.lazy(async () => ({
+  default: (await routeChunks.plannerSnowball()).SnowballTab,
+}));
 const SecurityDetailPage = React.lazy(async () => ({
   default: (await import("@/features/securities/SecurityDetailPage")).SecurityDetailPage,
 }));
@@ -210,6 +222,15 @@ export const router = createHashRouter([
       // dynamischen Segment; ein Asset mit der Kennung „entwicklung", „analyse" oder „prognose" gibt es
       // nicht (UUIDs).
       { path: "depot/:id", element: <SecurityDetailPage /> },
+      {
+        path: "planer",
+        element: <PlannerPage />,
+        children: [
+          { index: true, element: <PurchaseTab /> },
+          { path: "luecken", element: <GapsTab /> },
+          { path: "schneeball", element: <SnowballTab /> },
+        ],
+      },
       {
         path: "statistiken",
         element: <StatisticsPage />,

@@ -2,6 +2,7 @@ import {
   BarChart3,
   Briefcase,
   CalendarDays,
+  Compass,
   LayoutDashboard,
   Settings,
   Target,
@@ -20,11 +21,22 @@ export interface NavItem {
    * Sidebar und Bottom-Navigation zeigen weiterhin nur die Beschriftung.
    */
   description: string;
+  /**
+   * Beginnt eine neue Gruppe der Seitenleiste (seit 2.20.0): Zahlungen
+   * (Dividenden, Kalender, Statistiken), Depot (Bestand, Planer), Motivation
+   * (Ziele, Fortschritt), Verwaltung (Einstellungen). Der Abstand zeigt die
+   * Ordnung ohne zusätzliche Überschriften.
+   */
+  groupStart?: boolean;
 }
 
 /**
  * Hauptnavigation (PRODUCT_SPEC.md §4). Einzige Quelle der
  * Navigationsstruktur fuer Sidebar und Bottom-Navigation.
+ *
+ * Geordnet nach Themen (seit 2.20.0): erst alles zu den Zahlungen
+ * (erhalten, angekuendigt, ausgewertet), dann das Depot (was ist, was waere
+ * wenn), dann die Motivation (Ziele, Fortschritt), zuletzt die Verwaltung.
  *
  * Depotkonten, Importe und Datensicherung stehen nicht mehr hier, sondern als
  * Unterbereiche der Einstellungen (siehe SETTINGS_TABS) — es sind
@@ -42,6 +54,7 @@ export const PRIMARY_NAV_ITEMS: readonly NavItem[] = [
     label: "Dividenden",
     icon: Wallet,
     description: "Erhaltene Dividenden erfassen und prüfen",
+    groupStart: true,
   },
   // Direkt hinter den erfassten Eingaengen: Beide Bereiche beantworten dieselbe
   // Frage entlang der Zeit — was kam an, was ist angekuendigt. Getrennte
@@ -52,6 +65,12 @@ export const PRIMARY_NAV_ITEMS: readonly NavItem[] = [
     icon: CalendarDays,
     description: "Angekündigte Zahltage",
   },
+  {
+    to: "/statistiken",
+    label: "Statistiken",
+    icon: BarChart3,
+    description: "Jahre, Monate, Vergleiche",
+  },
   // „Depot" statt „Unternehmen": Der Bereich fuehrt laengst nicht nur
   // Aktiengesellschaften, sondern ebenso ETFs, Fonds und Anleihen — alles, was
   // im Depot liegt. Der alte Name benannte einen Sonderfall als Ganzes.
@@ -60,18 +79,22 @@ export const PRIMARY_NAV_ITEMS: readonly NavItem[] = [
     label: "Bestand",
     icon: Briefcase,
     description: "Assets, Bestände und Entwicklung",
+    groupStart: true,
   },
+  // Direkt hinter dem Bestand: Der zeigt, was ist und was voraussichtlich
+  // kommt; der Planer rechnet durch, was ein Kauf oder Sparplan daran aendert.
   {
-    to: "/statistiken",
-    label: "Statistiken",
-    icon: BarChart3,
-    description: "Jahre, Monate, Vergleiche",
+    to: "/planer",
+    label: "Planer",
+    icon: Compass,
+    description: "Was dein nächster Kauf bringt",
   },
   {
     to: "/ziele",
     label: "Ziele",
     icon: Target,
     description: "Zielbeträge und Zielbilanz",
+    groupStart: true,
   },
   // Direkt hinter den Zielen: Beide beantworten, ob es vorangeht — die Ziele
   // gegen selbst gesetzte Beträge, der Fortschritt gegen Fixkosten und
@@ -87,6 +110,7 @@ export const PRIMARY_NAV_ITEMS: readonly NavItem[] = [
     label: "Einstellungen",
     icon: Settings,
     description: "Depots, Import und Datensicherung",
+    groupStart: true,
   },
 ];
 
@@ -109,6 +133,7 @@ export const BOTTOM_NAV_PRIMARY_ITEMS: readonly NavItem[] = [
 export const BOTTOM_NAV_MORE_ITEMS: readonly NavItem[] = [
   findNavItem("/kalender"),
   findNavItem("/depot"),
+  findNavItem("/planer"),
   findNavItem("/ziele"),
   findNavItem("/fortschritt"),
   findNavItem("/einstellungen"),
@@ -121,7 +146,7 @@ export const BOTTOM_NAV_MORE_ITEMS: readonly NavItem[] = [
  * **Entwicklung** stellt der erwarteten Jahresausschuettung des heutigen
  * Bestands gegenueber, was tatsaechlich hereinkam, **Analyse** schluesselt den
  * juengsten Depotstand nach Gattung, Waehrung, Rhythmus, Branche und Region auf, **Prognose**
- * schaetzt die naechsten zwoelf Monate und rechnet den Dividenden-Schneeball hoch. Die Entwicklung stand
+ * schaetzt die naechsten zwoelf Monate (Monatsluecken und Schneeball seit 2.20.0 im Planer). Die Entwicklung stand
  * frueher in der Statistik; sie ist als einziger Unterbereich dort auf den
  * Depotstaenden aufgebaut statt auf den erfassten Zahlungen
  * (docs/PORTFOLIO_IMPORT.md) und gehoert damit hierher. Ihr alter Pfad leitet
@@ -132,6 +157,17 @@ export const DEPOT_TABS: readonly { to: string; label: string; end?: boolean }[]
   { to: "/depot/entwicklung", label: "Entwicklung" },
   { to: "/depot/analyse", label: "Analyse" },
   { to: "/depot/prognose", label: "Prognose" },
+];
+
+/**
+ * Unterbereiche des Planers (seit 2.20.0): **Nachkauf** verteilt einen Betrag
+ * auf den Bestand, **Monatsluecken** zeigt die schwachen Monate der Prognose,
+ * **Schneeball** rechnet hoch, ab wann Dividenden das Ziel tragen.
+ */
+export const PLANNER_TABS: readonly { to: string; label: string; end?: boolean }[] = [
+  { to: "/planer", label: "Nachkauf", end: true },
+  { to: "/planer/luecken", label: "Monatslücken" },
+  { to: "/planer/schneeball", label: "Schneeball" },
 ];
 
 /**
