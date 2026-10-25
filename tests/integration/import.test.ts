@@ -32,7 +32,7 @@ const TOTAL = "1039.15";
 
 async function buildPayload() {
   const fileHash = await hashFile(new TextEncoder().encode(JSON.stringify(ROWS)).buffer);
-  const rows = await normalizeRows(
+  const rows = normalizeRows(
     ROWS,
     { date: 0, investment: 1, amount: 2, broker: 3 },
     {

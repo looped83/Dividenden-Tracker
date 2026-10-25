@@ -230,7 +230,7 @@ export function ImportWizard({ onFinished }: { onFinished: () => void }) {
     setPhase("analyzing");
     try {
       const aliases = await fetchSecurityAliases();
-      const normalized = await normalizeRows(
+      const normalized = normalizeRows(
         data.rows.slice(1),
         { date: pay_date, investment: security, amount: net_amount, broker },
         {

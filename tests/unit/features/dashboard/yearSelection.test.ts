@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   parseYearSelection,
   serializeYearSelection,
@@ -23,6 +23,17 @@ describe("parseYearSelection (§3 URL-Zustand)", () => {
     expect(parseYearSelection("1969")).toBe(CURRENT_YEAR); // vor pay_date-Grenze
     expect(parseYearSelection(String(CURRENT_YEAR + 5))).toBe(CURRENT_YEAR); // Zukunft
     expect(parseYearSelection("20260")).toBe(CURRENT_YEAR); // keine 4 Ziffern
+  });
+
+  it("folgt dem Jahreswechsel, auch wenn die App ueber Neujahr offen bleibt", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2027, 0, 2, 9, 0));
+    expect(parseYearSelection(null)).toBe(2027);
+    expect(parseYearSelection("2027")).toBe(2027);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("serialisiert zurueck in den URL-Wert", () => {

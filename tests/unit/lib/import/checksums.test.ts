@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { computeChecksums } from "@/lib/import/checksums";
-import { rowFingerprint } from "@/lib/import/fingerprint";
 
 describe("computeChecksums", () => {
   it("summiert decimal-sicher (keine Float-Abweichung)", () => {
@@ -23,44 +22,5 @@ describe("computeChecksums", () => {
       { payDate: "2025-01-01", netAmount: "0.2", broker: "X" },
     ]);
     expect(result.totalNet).toBe("0.30");
-  });
-});
-
-describe("rowFingerprint", () => {
-  it("erzeugt fuer identische fachliche Werte denselben Hash", async () => {
-    const a = await rowFingerprint({
-      payDate: "2025-09-30",
-      investmentName: "Gladstone Capital",
-      netAmount: "4.76",
-      currency: "EUR",
-      brokerName: "Trade Republic",
-    });
-    const b = await rowFingerprint({
-      payDate: "2025-09-30",
-      investmentName: "  gladstone   capital ",
-      netAmount: "4.76",
-      currency: "eur",
-      brokerName: "Trade Republic",
-    });
-    expect(a).toBe(b);
-    expect(a).toMatch(/^[0-9a-f]{64}$/);
-  });
-
-  it("unterscheidet die legitime Mehrfachzahlung (4,76 vs 7,84)", async () => {
-    const a = await rowFingerprint({
-      payDate: "2025-09-30",
-      investmentName: "Gladstone Capital",
-      netAmount: "4.76",
-      currency: "EUR",
-      brokerName: "Trade Republic",
-    });
-    const b = await rowFingerprint({
-      payDate: "2025-09-30",
-      investmentName: "Gladstone Capital",
-      netAmount: "7.84",
-      currency: "EUR",
-      brokerName: "Trade Republic",
-    });
-    expect(a).not.toBe(b);
   });
 });

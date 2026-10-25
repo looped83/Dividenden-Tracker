@@ -5,7 +5,6 @@ import { toGermanDecimalString } from "@/lib/money/germanDecimalInput";
 import { compareGerman } from "@/lib/utils/compareText";
 import { parseDateValue, type DateFormat } from "./parseDate";
 import { parseAmount, type NumberFormat } from "./parseAmount";
-import { rowFingerprint } from "./fingerprint";
 import { normalizeCompareName, normalizeBrokerName } from "./normalizeName";
 import { matchCompany, type ExistingSecurity, type ExistingAlias } from "./matchCompany";
 import { matchBroker, type ExistingDepot } from "./brokerMatch";
@@ -56,12 +55,12 @@ function isBlankRow(cells: ImportCellValue[]): boolean {
  * Zeilen unterhalb der Kopfzeile; `firstDataRowNumber` ist die 1-indizierte
  * Nummer der ersten Datenzeile in der Quelldatei (i. d. R. 2).
  */
-export async function normalizeRows(
+export function normalizeRows(
   dataRows: ImportCellValue[][],
   columns: ColumnIndexes,
   options: NormalizeOptions,
   firstDataRowNumber = 2,
-): Promise<NormalizedRow[]> {
+): NormalizedRow[] {
   const result: NormalizedRow[] = [];
 
   for (let i = 0; i < dataRows.length; i++) {
@@ -151,17 +150,6 @@ export async function normalizeRows(
     const brokerName = raw.broker;
     if (brokerName === "") errors.push(`Zeile ${String(sourceRowNumber)}: Broker fehlt.`);
 
-    let fingerprint: string | null = null;
-    if (payDate && netAmount && investmentName && brokerName) {
-      fingerprint = await rowFingerprint({
-        payDate,
-        investmentName,
-        netAmount,
-        currency: options.currency,
-        brokerName,
-      });
-    }
-
     result.push({
       sourceRowNumber,
       raw,
@@ -170,7 +158,6 @@ export async function normalizeRows(
       currency: options.currency,
       investmentName,
       brokerName,
-      rowFingerprint: fingerprint,
       status:
         errors.length > 0 ? "invalid" : warnings.length > 0 ? "valid_warning" : "valid",
       warnings,

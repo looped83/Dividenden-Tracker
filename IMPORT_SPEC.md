@@ -122,6 +122,7 @@ Fortfahren möglich (z. B. nach Rollback), aber nie stillschweigend.
 
 > Stufe 2 und 3 waren nie gegen die Datenbank verdrahtet; die Spalten `row_fingerprint` und
 > `business_fingerprint` sind seit Migration 0038 entfernt (ADR-009). Wirksam ist Stufe 1.
+> Seit 2.29.1 berechnet der Import auch keinen Zeilen-Fingerprint mehr (er wurde verworfen).
 
 **Stufe 2 — Exakter Zeilen-Fingerprint:** SHA-256 über die normalisierten, gemappten Zellwerte
 (Feldreihenfolge fest, Trennzeichen ``). Treffer gegen `dividend_payments.row_fingerprint`
@@ -146,7 +147,7 @@ Datensatz nebeneinander und entscheidet je Zeile (Schritt 19).
 (und damit die Schritte 15, 16 und 19) sind bewusst nicht Teil des Imports. Überschneidungen
 mit dem Bestand findet anschließend die Datenqualitätsansicht (gleiches Unternehmen, Depot
 und Datum; mit gleichem Betrag als „hohe Wahrscheinlichkeit"); dort werden sie storniert oder
-als „keine Dublette" markiert (D-6-5). Die Zeilen-Fingerprints werden weiterhin gespeichert.
+als „keine Dublette" markiert (D-6-5).
 
 ## 8. Importbilanz
 
@@ -232,7 +233,7 @@ Abweichungen von der Planung oben.
 Mehrdeutigkeitsmeldung) · `parseAmount` (deutsch/englisch/neutral, nie
 `parseFloat`, Decimal) · `normalizeName` · `similarity` (Levenshtein +
 Token-Enthaltensein) · `columnMapping` (Synonyme de/en) · `matchCompany`
-(Stufen A–D) · `brokerMatch` · `fingerprint` (SHA-256 via Web Crypto) ·
+(Stufen A–D) · `brokerMatch` · `fingerprint` (Datei-Hash, SHA-256 via Web Crypto) ·
 `checksums` (Decimal, je Jahr/Broker) · `pipeline` (Normalisierung/Gruppierung) ·
 `buildCommitPayload` (RPC-Nutzlast inkl. erwarteter Kontrollsummen).
 

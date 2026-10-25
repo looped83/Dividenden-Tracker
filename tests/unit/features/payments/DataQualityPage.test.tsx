@@ -161,3 +161,25 @@ describe("DataQualityPage – markierte Paare", () => {
     );
   });
 });
+
+describe("DataQualityPage – lange Listen", () => {
+  it("zeigt Dubletten schrittweise statt alle auf einmal", async () => {
+    // Acht Eingänge am selben Tag: 28 Paare, dazu das Paar p1/p2 — 29.
+    const extra = Array.from({ length: 8 }, (_, index) =>
+      zahlung(`x${String(index)}`, { pay_date: "2026-04-01" }),
+    );
+    zahlungen.push(...extra);
+    try {
+      renderPage();
+      expect(screen.getAllByRole("button", { name: "Keine Dublette" })).toHaveLength(20);
+      expect(screen.getByText("20 von 29 angezeigt")).toBeInTheDocument();
+
+      await userEvent.click(screen.getByRole("button", { name: "Weitere anzeigen" }));
+
+      expect(screen.getAllByRole("button", { name: "Keine Dublette" })).toHaveLength(29);
+      expect(screen.queryByRole("button", { name: "Weitere anzeigen" })).toBeNull();
+    } finally {
+      zahlungen.splice(-extra.length);
+    }
+  });
+});

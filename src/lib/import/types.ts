@@ -24,7 +24,6 @@ export interface NormalizedRow {
   investmentName: string;
   /** Sichtbarer Original-Brokername (getrimmt). */
   brokerName: string;
-  rowFingerprint: string | null;
   status: RowStatus;
   warnings: string[];
   errors: string[];

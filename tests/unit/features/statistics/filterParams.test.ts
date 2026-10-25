@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   applyStatisticsFilter,
   parseStatisticsFilter,
@@ -41,6 +41,17 @@ describe("parseStatisticsFilter (§11)", () => {
   it("verwirft Jahre in der Zukunft", () => {
     const params = new URLSearchParams({ year: String(CURRENT_YEAR + 1) });
     expect(parseStatisticsFilter(params).year).toBeNull();
+  });
+
+  it("nimmt das neue Jahr an, auch wenn die App ueber Neujahr offen bleibt", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2027, 0, 2, 9, 0));
+    try {
+      const params = new URLSearchParams({ year: "2027" });
+      expect(parseStatisticsFilter(params).year).toBe(2027);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
