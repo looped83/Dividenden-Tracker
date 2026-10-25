@@ -794,8 +794,9 @@ die Eingaben stehen in der Adresse (`?modus=sparplan&betrag=1000&fokus=monate&an
   Betrag > 0, ohne ausgeschlossene Assets. Ertrag je Zahlung und Euro = Betrag je Zahlung der
   Prognose (netto) ÷ Marktwert; Zahlmonate wie in der Prognose. Neue Assets außerhalb des Bestands
   gehen nicht (dafür fehlen Kurs und Dividende).
-- **Modi:** Einmalkauf in Schritten zu 50 €, mindestens 100 € je Kauf, 1–5 Käufe (Standard 3);
-  Sparpläne in Schritten zu 25 €, mindestens 25 € je Plan, bis zu 10 (Standard 5). Beim Sparplan
+- **Modi:** Einmalkauf in Schritten zu 50 €, mindestens 100 € je Kauf, 1–5 Käufe (Standard 3,
+  vorbelegt 3.000 €); Sparpläne in Schritten zu 25 €, mindestens 25 € je Plan, bis zu 10
+  (Standard 5, vorbelegt 1.000 € im Monat, seit 2.20.1). Beim Sparplan
   ist der Betrag die Monatsrate, die Wirkung zählt zwölf Raten. Höchstens 200 Schritte: Größere
   Beträge verteilen in einem Vielfachen der Schrittweite. Weniger Käufe, wenn der Betrag für den
   Mindestbetrag je Kauf nicht reicht; der Rest unter einem Schritt geht an den größten Kauf.

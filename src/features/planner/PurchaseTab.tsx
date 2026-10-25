@@ -12,7 +12,6 @@ import { EUR, Money, formatMoney, formatMoneyWhole, formatPercent } from "@/lib/
 import { monthNameDe, monthNameDeShort } from "@/lib/statistics/dates";
 import { useBackState } from "@/lib/hooks/useBackState";
 import { cn } from "@/lib/utils/cn";
-import { formatCalendarDate } from "@/lib/utils/formatDate";
 import { formatCountNoun } from "@/lib/utils/formatNumber";
 import {
   CategoryBarChart,
@@ -52,8 +51,6 @@ const FOCUS_LABEL: Record<PlanFocus, string> = {
   wachstum: "Dividendenwachstum",
 };
 
-const DEFAULT_AMOUNT = 1000;
-
 const sharesFormat = new Intl.NumberFormat("de-DE", { maximumFractionDigits: 1 });
 
 /**
@@ -73,21 +70,17 @@ export function PurchaseTab() {
   );
 }
 
-function readInputs(params: URLSearchParams, settings: ForecastSettings) {
+function readInputs(params: URLSearchParams) {
   const mode: PlanMode = params.get("modus") === "sparplan" ? "sparplan" : "einmal";
   const rules = MODE_RULES[mode];
   const rawFocus = params.get("fokus");
   const focus: PlanFocus =
     rawFocus === "monate" || rawFocus === "wachstum" ? rawFocus : "dividende";
-  const fallback =
-    mode === "sparplan" && settings.monthlySavings > 0
-      ? settings.monthlySavings
-      : DEFAULT_AMOUNT;
   const rawAmount = parseGermanNumber(params.get("betrag") ?? "");
   const amount =
     typeof rawAmount === "number" && rawAmount > 0 && rawAmount <= AMOUNT_MAX
       ? rawAmount
-      : fallback;
+      : rules.defaultAmount;
   const rawBuys = Number.parseInt(params.get("anzahl") ?? "", 10);
   const buys = rawBuys >= 1 && rawBuys <= rules.maxBuys ? rawBuys : rules.defaultBuys;
   return { mode, focus, amount, buys };
@@ -102,7 +95,7 @@ function Purchase({
 }) {
   const { forecast, snapshots, names } = basis;
   const [params, setParams] = useSearchParams();
-  const { mode, focus, amount, buys } = readInputs(params, settings);
+  const { mode, focus, amount, buys } = readInputs(params);
   const rules = MODE_RULES[mode];
   const { mutate: save } = useSaveForecastSettings();
 
@@ -271,11 +264,6 @@ function Purchase({
           setExcluded(settings.excluded.filter((entry) => entry !== id));
         }}
       />
-
-      <p className="px-1 text-xs text-muted-foreground">
-        Kurse und Dividenden vom {formatCalendarDate(forecast.asOf)} · Rechnung, keine
-        Kaufempfehlung
-      </p>
     </div>
   );
 }
