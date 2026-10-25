@@ -1,3 +1,4 @@
+import * as React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createGoal,
@@ -10,9 +11,16 @@ import {
   type GoalRow,
   type GoalUpdate,
 } from "@/lib/supabase/repositories/goals";
-import type { Goal } from "@/lib/goals";
-import type { AnalyticsPayment } from "@/lib/statistics";
+import type { ExpectedRest, Goal } from "@/lib/goals";
+import {
+  isoFromRef,
+  yearEndForecast,
+  type AnalyticsPayment,
+  type RefDate,
+} from "@/lib/statistics";
+import { announcedForForecast } from "@/lib/calendar/summary";
 import { useEffectivePayments } from "@/features/dashboard/hooks";
+import { useCalendarEvents } from "@/features/calendar/hooks";
 
 /**
  * Zentraler Query-Key-Namespace aller Zielabfragen (Auftrag §30/§32). Jede
@@ -120,4 +128,30 @@ export function useGoalProgressPayments(): {
     isError: paymentsQuery.isError || securitiesQuery.isError,
     error: paymentsQuery.error ?? securitiesQuery.error ?? null,
   };
+}
+
+/**
+ * Prognose des laufenden Jahres (CALCULATION_RULES.md §9.7) samt dem noch
+ * erwarteten Rest, aus dem `computeGoalCourse` die Hochrechnung je Ziel
+ * bildet. Dieselbe Rechnung wie auf der Übersicht.
+ */
+export function useYearEndForecast(
+  payments: readonly AnalyticsPayment[],
+  today: RefDate,
+): { forecast: ReturnType<typeof yearEndForecast>; rest: ExpectedRest } {
+  const calendarEvents = useCalendarEvents().data;
+  return React.useMemo(() => {
+    const forecast = yearEndForecast(
+      payments,
+      today,
+      announcedForForecast(calendarEvents ?? [], isoFromRef(today)),
+    );
+    return {
+      forecast,
+      rest: {
+        year: forecast.forecast.subtract(forecast.received),
+        byMonth: forecast.restByMonth,
+      },
+    };
+  }, [payments, today, calendarEvents]);
 }
