@@ -113,8 +113,9 @@ export function ProgressPage() {
         {/* Ab lg zweispaltig: links Fixkosten und nächste Meilensteine (das,
             worauf man hinarbeitet), rechts der zurückverdiente Kaufpreis und das
             Erreichte. So sind beide Spalten etwa gleich lang. Auf dem Telefon
-            untereinander. */}
-        <div className="grid gap-10 lg:grid-cols-2 lg:items-start lg:gap-12">
+            untereinander; `grid-cols-1` (minmax(0, 1fr)), sonst dehnt ein
+            langer Asset-Name die Spalte über den Bildschirm hinaus. */}
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:items-start lg:gap-12">
           <div className="space-y-10 lg:space-y-12">
             <CoverageSection coverage={data.coverage} onAdd={add} />
             <Section title="Nächste Meilensteine">
