@@ -11,7 +11,7 @@ import { SegmentedControl, type SegmentOption } from "@/components/ui/segmented"
 import { useToast } from "@/components/ui/toast";
 import { isoFromRef, refDateFromDate } from "@/lib/statistics";
 import { useToday } from "@/lib/hooks/useToday";
-import { shiftMonth } from "@/lib/calendar/month";
+import { earliestCalendarMonth, shiftMonth } from "@/lib/calendar/month";
 import { buildCalendarSummary } from "@/lib/calendar/summary";
 import { EVENT_KIND_TEXT, lastSyncLabel } from "@/lib/calendar/format";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
@@ -47,6 +47,12 @@ const TYPE_OPTIONS: readonly SegmentOption<CalendarEventType>[] = [
 
 const SYNC_FAILED_HINT =
   "Der Dividendenkalender konnte gerade nicht aktualisiert werden. Die zuletzt gespeicherten Termine werden weiterhin angezeigt.";
+
+/** Liegt der Monat nach dem fruehesten geladenen (Ladegrenze, siehe month.ts)? */
+function isAfterEarliestMonth(visible: { year: number; month: number }): boolean {
+  const earliest = earliestCalendarMonth(refDateFromDate());
+  return visible.year * 12 + visible.month > earliest.year * 12 + earliest.month;
+}
 
 function CalendarSkeleton() {
   return (
@@ -267,6 +273,7 @@ export function CalendarPage() {
                 <CalendarToolbar
                   year={visibleMonth.year}
                   month={visibleMonth.month}
+                  canGoBack={isAfterEarliestMonth(visibleMonth)}
                   onShiftMonth={(delta) => {
                     setVisibleMonth((current) =>
                       shiftMonth(current.year, current.month, delta),

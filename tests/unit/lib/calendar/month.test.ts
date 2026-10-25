@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { addDays, buildMonthGrid, shiftMonth, weekdayIndex } from "@/lib/calendar/month";
+import {
+  addDays,
+  buildMonthGrid,
+  calendarLoadStart,
+  shiftMonth,
+  weekdayIndex,
+} from "@/lib/calendar/month";
 import { buildAgenda } from "@/lib/calendar/agenda";
 import { dayCellLabel, lastSyncLabel, spokenDate } from "@/lib/calendar/format";
 import type { CalendarEvent } from "@/lib/calendar/types";
@@ -155,5 +161,12 @@ describe("Beschriftungen", () => {
     expect(lastSyncLabel("2026-07-30T06:14:00.000Z", "2026-08-03")).toBe(
       "30.07.2026, 08:14 Uhr",
     );
+  });
+});
+
+describe("calendarLoadStart", () => {
+  it("beginnt am Ersten des Vormonats, auch ueber den Jahreswechsel", () => {
+    expect(calendarLoadStart({ year: 2026, month: 10 })).toBe("2026-09-01");
+    expect(calendarLoadStart({ year: 2027, month: 1 })).toBe("2026-12-01");
   });
 });
