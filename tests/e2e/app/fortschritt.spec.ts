@@ -107,6 +107,11 @@ test("zeigt, wie viel vom Kaufpreis zurückverdient ist", async ({ page, konto }
          from securities where name = 'Allianz'`,
       [konto.depotId],
     );
+    // Ein langer Name darf die Seite auf dem Telefon nicht verbreitern (2.18.1).
+    await client.query(
+      `update securities set name = 'Vanguard FTSE All-World High Dividend Yield UCITS ETF'
+        where name = 'BASF'`,
+    );
   });
 
   await page.goto("/#/fortschritt");
@@ -115,6 +120,13 @@ test("zeigt, wie viel vom Kaufpreis zurückverdient ist", async ({ page, konto }
   await expect(bereich.getByRole("link", { name: /Allianz/ })).toContainText(
     "50 % zurück · noch 2.600 €",
   );
+  await bereich.getByRole("button", { name: /Unter der Hälfte/ }).click();
+  await expect(bereich.getByRole("link", { name: /Vanguard FTSE/ })).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    ),
+  ).toBe(0);
   await bereich.getByRole("link", { name: /Allianz/ }).click();
   await expect(page.getByRole("heading", { name: "Allianz" })).toBeVisible();
   await page.getByRole("link", { name: "Zum Fortschritt" }).click();
