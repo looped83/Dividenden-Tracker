@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useBackState } from "@/lib/hooks/useBackState";
 import { KpiHero, KpiStats, type KpiStat } from "@/components/domain/KpiHero";
 import { ListGroup } from "@/components/ui/list";
 import { Section, SectionLink } from "@/components/ui/section";
@@ -138,6 +139,7 @@ export function PaymentInsightsView({
   securityName: string;
 }) {
   const { history, nearby } = insights;
+  const backState = useBackState();
   const { data: depots = [] } = useDepots();
 
   const [view, setView] = React.useState<HistoryView>("monthly");
@@ -229,7 +231,11 @@ export function PaymentInsightsView({
             seiner Detailseite — sichtbarer als der verlinkte Name im Kopf. */}
           <Section
             title="Einordnung"
-            action={<SectionLink to={`/depot/${securityId}`}>Zum Asset</SectionLink>}
+            action={
+              <SectionLink to={`/depot/${securityId}`} state={backState}>
+                Zum Asset
+              </SectionLink>
+            }
           >
             <KpiStats stats={summary} />
           </Section>

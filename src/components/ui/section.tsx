@@ -85,13 +85,16 @@ export function SectionLink({
   to,
   children,
   className,
+  state,
 }: {
   to: string;
   children: React.ReactNode;
   className?: string;
+  /** Link-Zustand, etwa die Herkunft fuer den Rueckweg (`useBackState`). */
+  state?: unknown;
 }) {
   return (
-    <Link to={to} className={cn(sectionActionClass, className)}>
+    <Link to={to} state={state} className={cn(sectionActionClass, className)}>
       {children}
       <ChevronRight className="size-4" aria-hidden />
     </Link>

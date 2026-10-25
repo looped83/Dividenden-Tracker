@@ -1,5 +1,7 @@
 import * as React from "react";
 import { Link } from "react-router";
+import { useBackState } from "@/lib/hooks/useBackState";
+import { useOpenKeys } from "@/lib/hooks/useOpenKeys";
 import { Check, Plus, Trophy } from "lucide-react";
 import { KpiHero, KpiHeroSkeleton, type KpiStat } from "@/components/domain/KpiHero";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -196,7 +198,8 @@ function CoverageSection({
   coverage: CoverageResult;
   onAdd: () => void;
 }) {
-  const [open, setOpen] = React.useState<ReadonlySet<CoverageGroup>>(new Set());
+  const { isOpen, toggle } = useOpenKeys("fixkosten");
+  const backState = useBackState();
   const groups = React.useMemo(() => {
     const covered = coverage.items.filter((item) => item.status === "covered");
     const open = coverage.items.filter((item) => item.status === "open");
@@ -225,15 +228,6 @@ function CoverageSection({
     );
   }
 
-  const toggle = (key: CoverageGroup) => {
-    setOpen((current) => {
-      const next = new Set(current);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
-  };
-
   return (
     <Section
       title="Was deine Dividenden bezahlen"
@@ -261,7 +255,7 @@ function CoverageSection({
                   EUR,
                 ),
               )}`}
-              open={open.has(group.key)}
+              open={isOpen(group.key)}
               onToggle={() => {
                 toggle(group.key);
               }}
@@ -278,22 +272,21 @@ function CoverageSection({
       {/* Gepflegt wird auf einer eigenen Seite (seit 2.15.0): hier bleibt
             die Liste kurz, dort stehen alle Positionen mit Stift und
             Papierkorb. */}
-      <SectionLink to="/fortschritt/fixkosten" className="mt-2">
+      <SectionLink to="/fortschritt/fixkosten" state={backState} className="mt-2">
         Alle Fixkosten
       </SectionLink>
     </Section>
   );
 }
 
-type CoverageGroup = "covered" | "open";
-
 function CoverageRow({ item }: { item: CostCoverage }) {
   const { status } = item;
+  const backState = useBackState();
   const percent = formatPercent(item.percent, 0);
   return (
     <li>
       <ListRow asChild>
-        <Link to={`/fortschritt/fixkosten/${item.cost.id}`}>
+        <Link to={`/fortschritt/fixkosten/${item.cost.id}`} state={backState}>
           <ListItemBody
             leading={
               <span

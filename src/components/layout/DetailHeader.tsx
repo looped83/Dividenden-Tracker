@@ -1,26 +1,52 @@
 import * as React from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useBackFrom } from "@/lib/hooks/useBackState";
 
 /**
  * Rueckweg einer Detailseite. Er steht in **jedem** Zustand oben — auch
  * waehrend des Ladens und wenn der Datensatz nicht existiert. Ein Zurueck, das
  * erst nach dem Laden erscheint, ist genau dann nicht da, wenn man es braucht.
+ *
+ * Kam man aus einer Liste, die ihre Adresse als `from` mitgab (`useBackState`),
+ * geht der Weg im Verlauf einen Schritt zurueck: Filter, aufgeklappte
+ * Abschnitte und Bildlaufposition sind wieder da (seit 2.17.1). Ein neuer
+ * Aufruf von `to` begann oben und mit allem eingeklappt. Ohne Herkunft (direkt
+ * geoeffnet, neu geladen ohne Verlauf) fuehrt der Link nach `to`.
+ * `labels` benennt den Weg je Herkunft (Pfadanfang → Beschriftung, der erste
+ * Treffer gilt), etwa „Zu den Fixkosten".
  */
 export function DetailBackLink({
   to,
   label,
-  state,
+  labels,
 }: {
   to: string;
   label: string;
-  state?: unknown;
+  labels?: Readonly<Record<string, string>>;
 }) {
+  const from = useBackFrom();
+  const navigate = useNavigate();
+  const fromPath = from?.split("?")[0];
+  const shown =
+    (fromPath !== undefined
+      ? Object.entries(labels ?? {}).find(
+          ([prefix]) => fromPath === prefix || fromPath.startsWith(`${prefix}/`),
+        )?.[1]
+      : undefined) ?? label;
   return (
     <Button asChild variant="ghost" size="sm" className="-ml-3 w-fit">
-      <Link to={to} state={state}>
-        <ArrowLeft aria-hidden /> {label}
+      <Link
+        to={from ?? to}
+        onClick={(event) => {
+          if (from === undefined || event.metaKey || event.ctrlKey || event.shiftKey)
+            return;
+          event.preventDefault();
+          void navigate(-1);
+        }}
+      >
+        <ArrowLeft aria-hidden /> {shown}
       </Link>
     </Button>
   );

@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Link } from "react-router";
+import { useBackState } from "@/lib/hooks/useBackState";
 import { TrendingUp } from "lucide-react";
 import { Section } from "@/components/ui/section";
 import { Button } from "@/components/ui/button";
@@ -192,6 +193,7 @@ export function DevelopmentView({
   portfolio: PortfolioSeries;
 }) {
   const [query, setQuery] = React.useState("");
+  const backState = useBackState();
   const isWide = useMediaQuery(MD_BREAKPOINT_QUERY);
   const search = (
     <StatSearch value={query} onChange={setQuery} placeholder="Asset suchen …" />
@@ -300,6 +302,7 @@ export function DevelopmentView({
         render: (row) => (
           <Link
             to={`/depot/${row.securityId}`}
+            state={backState}
             title={row.name}
             className="block w-fit max-w-full truncate rounded-sm font-medium outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
           >
@@ -367,7 +370,7 @@ export function DevelopmentView({
           ),
       },
     ],
-    [],
+    [backState],
   );
 
   if (latest === null) {

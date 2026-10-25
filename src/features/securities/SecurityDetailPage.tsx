@@ -185,7 +185,13 @@ export function SecurityDetailPage() {
   // Ziel ist die Assetliste statt `history.back()`: Die Seite wird auch aus der
   // Statistik und von Zahlungen aus erreicht, und ein per Lesezeichen
   // geoeffneter Aufruf haette keine Vorgeschichte.
-  const backLink = <DetailBackLink to="/depot" label="Zum Bestand" />;
+  const backLink = (
+    <DetailBackLink
+      to="/depot"
+      label="Zum Bestand"
+      labels={{ "/statistiken": "Zu den Statistiken", "/eingaenge": "Zur Dividende" }}
+    />
+  );
 
   if (isLoading || securitiesLoading) {
     return (

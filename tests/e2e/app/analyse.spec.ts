@@ -23,6 +23,10 @@ test("schlüsselt den Depotstand auf und schaltet die Bezugsgröße um", async (
   // Ein Klick auf das Land zeigt die Positionen dahinter.
   await land.getByText("Deutschland").click();
   await expect(land.getByRole("link", { name: "Allianz" })).toBeVisible();
+  // Zurück vom Asset bleibt das Land aufgeklappt (seit 2.17.1).
+  await land.getByRole("link", { name: "Allianz" }).click();
+  await page.getByRole("link", { name: "Zum Bestand" }).click();
+  await expect(land.getByRole("link", { name: "Allianz" })).toBeVisible();
 
   // Der Rhythmus kennt nur ausschuettende Positionen.
   await expect(page.getByText("Keine Ausschüttung")).toHaveCount(0);

@@ -9,6 +9,7 @@ import { ConfirmDialog, ConfirmSummary } from "@/components/ui/confirm-dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useGoalProgressPayments } from "@/features/goals/hooks";
 import { trailingMonthlyAverage } from "@/lib/goals";
+import { useBackFrom } from "@/lib/hooks/useBackState";
 import { useToday } from "@/lib/hooks/useToday";
 import { EUR, Money, formatMoney, formatPercent } from "@/lib/money";
 import { coverFixedCosts } from "@/lib/progress";
@@ -25,6 +26,7 @@ import { useFixedCost, useSaveFixedCosts } from "./hooks";
 export function FixedCostDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const from = useBackFrom();
   const today = useToday();
   const { cost, data: costs = [], isLoading, isError, error } = useFixedCost(id);
   const payments = useGoalProgressPayments();
@@ -39,7 +41,13 @@ export function FixedCostDetailPage() {
     [costs, payments.payments, today],
   );
 
-  const backLink = <DetailBackLink to="/fortschritt" label="Zum Fortschritt" />;
+  const backLink = (
+    <DetailBackLink
+      to="/fortschritt"
+      label="Zum Fortschritt"
+      labels={{ "/fortschritt/fixkosten": "Zu den Fixkosten" }}
+    />
+  );
 
   if (isLoading || payments.isLoading) {
     return (
@@ -80,7 +88,8 @@ export function FixedCostDetailPage() {
       {
         onSuccess: () => {
           setDeleteOpen(false);
-          void navigate("/fortschritt");
+          // Mit Herkunft zurueck im Verlauf, wie der Rueckweg oben.
+          void (from === undefined ? navigate("/fortschritt") : navigate(-1));
         },
         onError: (cause) => {
           setDeleteError(

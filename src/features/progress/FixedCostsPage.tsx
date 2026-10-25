@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Link } from "react-router";
+import { useBackState } from "@/lib/hooks/useBackState";
 import { Pencil, Plus, Receipt, Trash2 } from "lucide-react";
 import { KpiHero, KpiHeroSkeleton } from "@/components/domain/KpiHero";
 import { DetailBackLink } from "@/components/layout/DetailHeader";
@@ -77,6 +78,7 @@ export function FixedCostsPage() {
   const [direction, setDirection] = React.useState<FilterSortDirection>("asc");
   const activeFilters = (search.trim() ? 1 : 0) + (status ? 1 : 0);
   const disclosure = useFilterDisclosure(activeFilters);
+  const backState = useBackState();
 
   const coverage = React.useMemo(
     () => coverFixedCosts(costs, trailingMonthlyAverage(payments.payments, today)),
@@ -313,6 +315,7 @@ export function FixedCostsPage() {
                         <TableCell className="font-medium">
                           <Link
                             to={`/fortschritt/fixkosten/${item.cost.id}`}
+                            state={backState}
                             className="rounded-sm outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
                           >
                             {item.cost.name}
@@ -340,7 +343,10 @@ export function FixedCostsPage() {
                   {rows.map((item) => (
                     <li key={item.cost.id}>
                       <ListRow asChild>
-                        <Link to={`/fortschritt/fixkosten/${item.cost.id}`}>
+                        <Link
+                          to={`/fortschritt/fixkosten/${item.cost.id}`}
+                          state={backState}
+                        >
                           <ListItemBody
                             title={item.cost.name}
                             meta={

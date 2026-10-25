@@ -1,5 +1,7 @@
 import * as React from "react";
 import { Link } from "react-router";
+import { useBackState } from "@/lib/hooks/useBackState";
+import { useOpenKeys } from "@/lib/hooks/useOpenKeys";
 import { ChevronDown, TrendingUp } from "lucide-react";
 import { KpiHero, KpiHeroSkeleton, TrendPill } from "@/components/domain/KpiHero";
 import { AmountText } from "@/components/money/AmountText";
@@ -275,8 +277,10 @@ function rhythm(payouts: number): string {
  * die übrigen — die Liste las sich unruhig.
  */
 function GapRow({ gap }: { gap: MonthGap }) {
-  const [open, setOpen] = React.useState(false);
   const fillersId = `luecke-${String(gap.year)}-${String(gap.month)}`;
+  const openKeys = useOpenKeys("luecke");
+  const open = openKeys.isOpen(fillersId);
+  const backState = useBackState();
   const count = gap.fillers.length;
   const body = (
     <>
@@ -313,7 +317,7 @@ function GapRow({ gap }: { gap: MonthGap }) {
           aria-expanded={open}
           aria-controls={open ? fillersId : undefined}
           onClick={() => {
-            setOpen((current) => !current);
+            openKeys.toggle(fillersId);
           }}
         >
           {body}
@@ -333,6 +337,7 @@ function GapRow({ gap }: { gap: MonthGap }) {
             <li key={filler.securityId}>
               <Link
                 to={`/depot/${filler.securityId}`}
+                state={backState}
                 className="-mx-3 flex flex-col gap-0.5 rounded-xl px-3 py-2 text-sm text-muted-foreground outline-none transition-colors hover:bg-accent/60 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring motion-reduce:transition-none"
               >
                 <span className="truncate-fade">
