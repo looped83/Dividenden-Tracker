@@ -40,6 +40,7 @@ export function Sidebar() {
             className={({ isActive }) =>
               cn(
                 "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium outline-none",
+                item.groupStart && "mt-4",
                 "focus-visible:ring-2 focus-visible:ring-ring",
                 isActive
                   ? "bg-accent font-semibold text-accent-foreground"

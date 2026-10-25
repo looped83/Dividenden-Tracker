@@ -21,11 +21,22 @@ export interface NavItem {
    * Sidebar und Bottom-Navigation zeigen weiterhin nur die Beschriftung.
    */
   description: string;
+  /**
+   * Beginnt eine neue Gruppe der Seitenleiste (seit 2.20.0): Zahlungen
+   * (Dividenden, Kalender, Statistiken), Depot (Bestand, Planer), Motivation
+   * (Ziele, Fortschritt), Verwaltung (Einstellungen). Der Abstand zeigt die
+   * Ordnung ohne zusätzliche Überschriften.
+   */
+  groupStart?: boolean;
 }
 
 /**
  * Hauptnavigation (PRODUCT_SPEC.md §4). Einzige Quelle der
  * Navigationsstruktur fuer Sidebar und Bottom-Navigation.
+ *
+ * Geordnet nach Themen (seit 2.20.0): erst alles zu den Zahlungen
+ * (erhalten, angekuendigt, ausgewertet), dann das Depot (was ist, was waere
+ * wenn), dann die Motivation (Ziele, Fortschritt), zuletzt die Verwaltung.
  *
  * Depotkonten, Importe und Datensicherung stehen nicht mehr hier, sondern als
  * Unterbereiche der Einstellungen (siehe SETTINGS_TABS) — es sind
@@ -43,6 +54,7 @@ export const PRIMARY_NAV_ITEMS: readonly NavItem[] = [
     label: "Dividenden",
     icon: Wallet,
     description: "Erhaltene Dividenden erfassen und prüfen",
+    groupStart: true,
   },
   // Direkt hinter den erfassten Eingaengen: Beide Bereiche beantworten dieselbe
   // Frage entlang der Zeit — was kam an, was ist angekuendigt. Getrennte
@@ -53,6 +65,12 @@ export const PRIMARY_NAV_ITEMS: readonly NavItem[] = [
     icon: CalendarDays,
     description: "Angekündigte Zahltage",
   },
+  {
+    to: "/statistiken",
+    label: "Statistiken",
+    icon: BarChart3,
+    description: "Jahre, Monate, Vergleiche",
+  },
   // „Depot" statt „Unternehmen": Der Bereich fuehrt laengst nicht nur
   // Aktiengesellschaften, sondern ebenso ETFs, Fonds und Anleihen — alles, was
   // im Depot liegt. Der alte Name benannte einen Sonderfall als Ganzes.
@@ -61,6 +79,7 @@ export const PRIMARY_NAV_ITEMS: readonly NavItem[] = [
     label: "Bestand",
     icon: Briefcase,
     description: "Assets, Bestände und Entwicklung",
+    groupStart: true,
   },
   // Direkt hinter dem Bestand: Der zeigt, was ist und was voraussichtlich
   // kommt; der Planer rechnet durch, was ein Kauf oder Sparplan daran aendert.
@@ -71,16 +90,11 @@ export const PRIMARY_NAV_ITEMS: readonly NavItem[] = [
     description: "Was dein nächster Kauf bringt",
   },
   {
-    to: "/statistiken",
-    label: "Statistiken",
-    icon: BarChart3,
-    description: "Jahre, Monate, Vergleiche",
-  },
-  {
     to: "/ziele",
     label: "Ziele",
     icon: Target,
     description: "Zielbeträge und Zielbilanz",
+    groupStart: true,
   },
   // Direkt hinter den Zielen: Beide beantworten, ob es vorangeht — die Ziele
   // gegen selbst gesetzte Beträge, der Fortschritt gegen Fixkosten und
@@ -96,6 +110,7 @@ export const PRIMARY_NAV_ITEMS: readonly NavItem[] = [
     label: "Einstellungen",
     icon: Settings,
     description: "Depots, Import und Datensicherung",
+    groupStart: true,
   },
 ];
 
