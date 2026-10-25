@@ -32,7 +32,7 @@ test("trägt Fixkosten ein, bearbeitet und löscht sie", async ({ page }, testIn
 
   await page.reload();
   await expect(page.getByText("deckt 11 % deiner Fixkosten")).toBeVisible();
-  const liste = page.getByRole("region", { name: "Was deine Dividenden bezahlen" });
+  const liste = page.getByRole("region", { name: "Was Dividenden decken" });
   // Eingeklappt: nur „Als Nächstes" ist zu sehen, Gedecktes klappt auf.
   await expect(liste.getByRole("listitem")).toHaveCount(1);
   await expect(liste.getByRole("listitem")).toContainText("noch 829,95 €");
