@@ -293,22 +293,20 @@ export function SecurityDetailPage() {
         next.source === "calendar"
           ? formatCalendarDate(next.date)
           : `${monthNameDeShort(next.month)} ${String(next.year)}`,
-      // Ein Kalendertermin steht fuer sich, nur der vermutete Wert sagt es dazu.
+      // Ein Kalendertermin steht fuer sich; beim vermuteten Wert sagt es das
+      // „≈" — ausgeschrieben nur fuer Sprachausgaben, damit die Zeile auch
+      // auf dem Telefon einzeilig bleibt.
       caption:
         next.source === "calendar" ? (
           next.amount && <AmountText amount={next.amount} />
-        ) : (
-          // Betrag und Hinweis brechen je als Ganzes um, nie mitten darin.
+        ) : next.amount ? (
           <>
-            {next.amount && (
-              <>
-                <span className="whitespace-nowrap">
-                  ≈ <AmountText amount={next.amount} />
-                </span>{" "}
-              </>
-            )}
-            <span className="whitespace-nowrap">vermutet</span>
+            <span aria-hidden="true">≈&nbsp;</span>
+            <AmountText amount={next.amount} />
+            <span className="sr-only"> vermutet</span>
           </>
+        ) : (
+          "vermutet"
         ),
     });
   }

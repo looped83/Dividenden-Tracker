@@ -192,9 +192,9 @@ export function KpiStats({
           </dd>
           {/* Die Unterzeile schrumpft mit, damit kurze Texte wie „28/31
               gedeckt" auch auf dem iPhone SE einzeilig bleiben; volle Größe
-              ab gut 95px Feldbreite. */}
+              ab 100px Feldbreite. */}
           {stat.caption !== undefined && (
-            <dd className="mt-0.5 text-[clamp(0.625rem,13.5cqi,0.8125rem)] text-muted-foreground">
+            <dd className="mt-0.5 text-[clamp(0.625rem,13cqi,0.8125rem)] text-muted-foreground">
               {stat.caption}
             </dd>
           )}

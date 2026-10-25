@@ -425,7 +425,7 @@ function PlanSummary({
               {
                 label: "Deine Sparpläne",
                 value: `+${formatMoneyWhole(current)}`,
-                caption: "nach 12 Monaten",
+                caption: "in 12 Monaten",
               },
             ]
           : []),

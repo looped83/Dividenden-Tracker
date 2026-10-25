@@ -195,7 +195,7 @@ function PlansSummary({ overview }: { overview: SavingsPlanOverview }) {
         {
           label: "Mehr Dividende",
           value: `+${formatMoneyWhole(overview.annual)}`,
-          caption: "im Jahr nach 12 Monaten",
+          caption: "p. a. in 12 Monaten",
         },
         {
           label: "Ertrag",

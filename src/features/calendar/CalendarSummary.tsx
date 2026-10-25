@@ -52,7 +52,7 @@ export function CalendarSummaryTiles({
               next.events.length > 1
               ? `${relativeDayLabel(next.daysAway)} · ${formatCountNumber(next.events.length)} Termine`
               : relativeDayLabel(next.daysAway)
-            : "keine angekündigten Termine",
+            : "nichts angekündigt",
         },
         {
           label: `${month} gesamt`,
