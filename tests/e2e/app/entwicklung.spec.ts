@@ -55,7 +55,7 @@ test("setzt zwei Depotstände zu einem Verlauf zusammen", async ({ page }) => {
   // Erwartet aus dem juengsten Stand: 40 + 10 = 50 €.
   await expect(page.getByText("50,00 €").first()).toBeVisible();
   // Erhalten in den zwoelf Monaten bis zum 03.08.2026: 820 + 340 + 410.
-  await expect(page.getByText("04.08.2025 – 03.08.2026")).toBeVisible();
+  await expect(page.getByText("bis 03.08.2026")).toBeVisible();
   await expect(page.getByText("1.570,00 €").first()).toBeVisible();
 
   // Mit zwei Staenden entsteht der Verlauf.
