@@ -232,6 +232,9 @@ function GoalsOverview({
   const monthlyGoalsThisYear = goals.some(
     (goal) => goal.goalType === "monthly" && goal.year === today.year,
   );
+  const showHistory = data.history.length > 0;
+  const showMonths = current !== null || monthlyGoalsThisYear;
+  const hasCharts = showHistory || showMonths;
   const currentCourse = current ? (data.courses.get(current.goal.id) ?? null) : null;
 
   return (
@@ -254,45 +257,59 @@ function GoalsOverview({
         />
       )}
 
-      {data.history.length > 0 && (
-        <Section title="Zielbilanz">
-          <GoalBarChart
-            data={data.years}
-            ariaLabel="Jahresziele und erhaltene Nettodividende je Jahr"
-            categoryHeader="Jahr"
-          />
-        </Section>
-      )}
+      {/* Desktop wie die Übersicht (ab xl, darunter wurden die Monatsbalken zu schmal): Diagramme links, die Liste rechts in
+          fester Breite — sonst stand „Alle Ziele" erst nach zwei Diagrammen. */}
+      <div
+        className={cn(
+          "flex flex-col gap-10",
+          hasCharts &&
+            "xl:grid xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-start xl:gap-x-16",
+        )}
+      >
+        {hasCharts && (
+          <div className="space-y-10 lg:space-y-12">
+            {showHistory && (
+              <Section title="Zielbilanz">
+                <GoalBarChart
+                  data={data.years}
+                  ariaLabel="Jahresziele und erhaltene Nettodividende je Jahr"
+                  categoryHeader="Jahr"
+                />
+              </Section>
+            )}
 
-      {(current !== null || monthlyGoalsThisYear) && (
-        <Section
-          title={`${String(today.year)} Monat für Monat`}
-          description={
-            current && currentCourse
-              ? `Hochrechnung ${formatMoneyWhole(currentCourse.expected)} von ${formatMoneyWhole(current.target)} · ${courseLabel(currentCourse.kind)}`
-              : undefined
-          }
-        >
-          <GoalBarChart
-            data={data.months}
-            ariaLabel={`Monatsziele und erhaltene Nettodividende ${String(today.year)} je Monat`}
-            categoryHeader="Monat"
-          />
-        </Section>
-      )}
+            {showMonths && (
+              <Section
+                title={`${String(today.year)} Monat für Monat`}
+                description={
+                  current && currentCourse
+                    ? `Hochrechnung ${formatMoneyWhole(currentCourse.expected)} von ${formatMoneyWhole(current.target)} · ${courseLabel(currentCourse.kind)}`
+                    : undefined
+                }
+              >
+                <GoalBarChart
+                  data={data.months}
+                  ariaLabel={`Monatsziele und erhaltene Nettodividende ${String(today.year)} je Monat`}
+                  categoryHeader="Monat"
+                />
+              </Section>
+            )}
+          </div>
+        )}
 
-      <Section title="Alle Ziele">
-        <ListGroup>
-          {data.list.map((progress) => (
-            <li key={progress.goal.id}>
-              <GoalRow
-                progress={progress}
-                course={data.courses.get(progress.goal.id) ?? null}
-              />
-            </li>
-          ))}
-        </ListGroup>
-      </Section>
+        <Section title="Alle Ziele">
+          <ListGroup>
+            {data.list.map((progress) => (
+              <li key={progress.goal.id}>
+                <GoalRow
+                  progress={progress}
+                  course={data.courses.get(progress.goal.id) ?? null}
+                />
+              </li>
+            ))}
+          </ListGroup>
+        </Section>
+      </div>
     </div>
   );
 }
