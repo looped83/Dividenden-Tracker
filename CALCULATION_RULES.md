@@ -752,3 +752,17 @@ an sich.
 (bestes Jahr bzw. bester Monat bisher; bei der Serie die laufende Serie — sie läuft weiter, solange
 der laufende oder der Vormonat eine Zahlung hat). Fortschritt `Stand ÷ Schwelle`, auf 0–100 %
 begrenzt.
+
+### 15.3 Kaufpreis zurückverdient (`paybackOverview`, seit 2.18.0)
+
+- **Positionen:** die Zeilen des jüngsten Depotstands mit Einstand (`buyin_total` > 0) in Euro. Andere
+  Währungen fallen weg, statt zu einem erfundenen Kurs gerechnet zu werden.
+- **Erhalten:** Nettosumme aller Zahlungen des Assets, gleich wann (auch vor einem Nachkauf);
+  nie unter 0. Zahlungen verkaufter Assets zählen nicht.
+- **Anteil:** `Erhalten ÷ Einstand × 100`, nicht begrenzt. Ab 100 % **ganz zurück**, ab 50 % **über
+  die Hälfte**, sonst **unter der Hälfte**; `noch = max(0, Einstand − Erhalten)`.
+- **Als Nächstes:** das Asset mit dem höchsten Anteil unter 100 %.
+- **Insgesamt:** Summe Erhalten ÷ Summe Einstand über dieselben Positionen.
+
+Der Einstand ist der heutige Durchschnitt der Quelle: Ein Nachkauf erhöht ihn und senkt den Anteil.
+Deshalb gibt es dafür keine Meilensteine, die einmal erreicht nie wieder aberkannt würden (§15.2).
