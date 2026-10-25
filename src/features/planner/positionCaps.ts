@@ -14,11 +14,11 @@ import {
 export type PositionCaps = ReadonlyMap<string, number>;
 
 /**
- * Gewichtung für Assets ohne eigene (seit 2.23.1 fest, seit 2.24.0 1 % statt
- * 8 %): Gepflegt wird je Asset,
- * ein eigener Standard im Nachkauf doppelte sich nur damit.
+ * Gewichtung für Assets ohne eigene: 0 % (seit 2.25.0; 2.24.0 1 %, zuvor
+ * 8 %). Nachkauf und Lücken-Füller schlagen nur Assets vor, denen eine
+ * Gewichtung gegeben ist — sie wird je Asset auf seiner Seite festgelegt.
  */
-export const POSITION_CAP_DEFAULT = 1;
+export const POSITION_CAP_DEFAULT = 0;
 
 /**
  * Eigene Gewichtung je Asset in Prozent, auf eine Nachkommastelle (seit

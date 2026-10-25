@@ -245,6 +245,14 @@ describe("Positionsgrenze", () => {
     expect(result?.unplaced.toStringValue()).toBe("1000.00");
   });
 
+  it("schlägt ohne Gewichtung nichts vor (Standard 0 %)", () => {
+    const result = plan({ capPercent: 0 });
+    expect(result?.buys).toHaveLength(0);
+    expect(
+      plan({ capPercent: 0, caps: new Map([["sec-b", 40]]) })?.buys,
+    ).not.toHaveLength(0);
+  });
+
   it("hält die Grenze auch beim Glätten der Monate", () => {
     const result = plan({ focus: "monate", buys: 3, capPercent: 30 });
     expect(
