@@ -1,12 +1,14 @@
 import * as React from "react";
+import { Link } from "react-router";
 import { PiggyBank, Plus } from "lucide-react";
 import { KpiHero, KpiHeroSkeleton } from "@/components/domain/KpiHero";
 import { AmountText } from "@/components/money/AmountText";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { ListGroup, ListRow } from "@/components/ui/list";
+import { ListGroup, ListItemBody, ListRow } from "@/components/ui/list";
 import { Section } from "@/components/ui/section";
-import { formatMoney, formatMoneyWhole, formatPercent } from "@/lib/money";
+import { EUR, Money, formatMoney, formatMoneyWhole, formatPercent } from "@/lib/money";
+import { useBackState } from "@/lib/hooks/useBackState";
 import { monthNameDe, monthNameDeShort } from "@/lib/statistics/dates";
 import { formatCountNoun } from "@/lib/utils/formatNumber";
 import {
@@ -15,7 +17,14 @@ import {
 } from "@/features/statistics/components/charts";
 import { useDepots } from "@/features/depots/hooks";
 import { ForecastGate, type ForecastBasis } from "@/features/securities/ForecastGate";
+import {
+  DEFAULT_FORECAST_SETTINGS,
+  useForecastSettings,
+} from "@/features/securities/forecastSettings";
+import { formatDecimal } from "./format";
+import { usePositionCaps } from "./positionCaps";
 import { purchaseCandidates } from "./purchase";
+import { savingsPlanTips, type SavingsPlanTip } from "./savingsPlanTips";
 import { SavingsPlanDialog } from "./SavingsPlanDialog";
 import { useSavingsPlans } from "./savingsPlanHooks";
 import {
@@ -68,6 +77,15 @@ function SavingsPlans({
         names,
       ),
     [forecast, snapshots, plans, names],
+  );
+  const caps = usePositionCaps().data;
+  const excluded = (useForecastSettings().data ?? DEFAULT_FORECAST_SETTINGS).excluded;
+  const tips = React.useMemo(
+    () =>
+      caps === undefined
+        ? []
+        : savingsPlanTips({ plans, snapshots, caps, excluded: new Set(excluded), names }),
+    [plans, snapshots, caps, excluded, names],
   );
   const full = plans.length >= SAVINGS_PLANS_MAX;
   const add = () => {
@@ -146,6 +164,8 @@ function SavingsPlans({
       {overview.paused.length > 0 && (
         <Section title="Pausiert">{rowList(overview.paused, true)}</Section>
       )}
+
+      {tips.length > 0 && <PlanTips tips={tips} />}
 
       {overview.annual.isPositive() && (
         <Section title="Nächste 12 Monate">
@@ -243,6 +263,52 @@ function PlanRow({
       </button>
     </ListRow>
   );
+}
+
+/**
+ * Tipps (seit 2.26.0, `savingsPlanTips`): Abgleich der Pläne mit den
+ * Gewichtungen. Jede Zeile führt zum Asset, wo Plan und Gewichtung stehen.
+ * Ohne Befund fehlt der Abschnitt.
+ */
+function PlanTips({ tips }: { tips: readonly SavingsPlanTip[] }) {
+  const backState = useBackState();
+  return (
+    <Section title="Tipps">
+      <ListGroup>
+        {tips.map((tip) => (
+          <li key={`${tip.kind}-${tip.securityId}`}>
+            <ListRow asChild>
+              <Link to={`/depot/${tip.securityId}`} state={backState}>
+                <ListItemBody title={tip.name} {...tipText(tip)} />
+              </Link>
+            </ListRow>
+          </li>
+        ))}
+      </ListGroup>
+    </Section>
+  );
+}
+
+function tipText(tip: SavingsPlanTip): { meta: string; trailing?: string } {
+  switch (tip.kind) {
+    case "over":
+      return {
+        meta: `Über der Gewichtung von ${formatDecimal(tip.cap)}\u00A0%`,
+        trailing: formatPercent(tip.percent, 1),
+      };
+    case "reaching":
+      return {
+        meta: `Erreicht die Gewichtung von ${formatDecimal(tip.cap)}\u00A0%`,
+        trailing: `in ${formatCountNoun(tip.months, "Monat", "Monaten")}`,
+      };
+    case "unweighted":
+      return { meta: "Sparplan ohne Gewichtung" };
+    case "room":
+      return {
+        meta: `Gewichtung ${formatDecimal(tip.cap)}\u00A0% · kein Sparplan`,
+        trailing: `${formatMoneyWhole(Money.fromDecimal(tip.room, EUR))} frei`,
+      };
+  }
 }
 
 function toBarData(
