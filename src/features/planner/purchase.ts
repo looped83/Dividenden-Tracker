@@ -122,6 +122,8 @@ function shortfall(months: readonly number[]): number {
   );
 }
 
+const NO_CAPS: ReadonlyMap<string, number> = new Map();
+
 /** Hoechstens so viele Schritte; groessere Betraege verteilen in groesseren. */
 const MAX_STEPS = 200;
 
@@ -182,6 +184,7 @@ export function planPurchase({
   mode,
   buys,
   capPercent = null,
+  caps = NO_CAPS,
 }: {
   forecast: TwelveMonthForecast;
   candidates: readonly PurchaseCandidate[];
@@ -191,6 +194,8 @@ export function planPurchase({
   buys: number;
   /** Hoechstens so viel Prozent des Depots je Position; `null` ohne Grenze. */
   capPercent?: number | null;
+  /** Eigene Grenzen je Asset (Prozent), sie gehen dem Standard vor. */
+  caps?: ReadonlyMap<string, number>;
 }): PurchasePlan | null {
   const { step, minimum } = MODE_RULES[mode];
   // Schrittweite: die des Modus oder ein Vielfaches davon (MAX_STEPS).
@@ -203,14 +208,15 @@ export function planPurchase({
   // Platz je Position in Schritten: Grenze × Depot nach dem Kauf − Marktwert.
   const room = new Map<PurchaseCandidate, number>();
   for (const candidate of candidates) {
-    if (capPercent === null) {
+    const cap = caps.get(candidate.securityId) ?? capPercent;
+    if (cap === null) {
       room.set(candidate, Number.POSITIVE_INFINITY);
       continue;
     }
     const limit = forecast.depotValue
       .toDecimal()
       .plus(amount * factor)
-      .times(capPercent)
+      .times(cap)
       .dividedBy(100);
     const free = limit.minus(candidate.marketValue).dividedBy(unit * factor);
     room.set(candidate, Math.max(0, Math.floor(free.toNumber())));
@@ -367,6 +373,8 @@ function emptyPlan(forecast: TwelveMonthForecast, amount: number): PurchasePlan 
 }
 
 export interface Concentration {
+  /** Asset-Kennung (bei der Position) bzw. Branche oder Land. */
+  key: string;
   name: string;
   /** Anteil am Depot in Prozent. */
   percent: DecimalInstance;
@@ -413,7 +421,9 @@ export function concentrationAfter({
     let best: [string, DecimalInstance] | null = null;
     for (const entry of groups)
       if (best === null || entry[1].greaterThan(best[1])) best = entry;
-    return best ? { name: best[0], percent: best[1].dividedBy(total).times(100) } : null;
+    return best
+      ? { key: best[0], name: best[0], percent: best[1].dividedBy(total).times(100) }
+      : null;
   };
   const grouped = (key: "sector" | "country") => {
     const groups = new Map<string, DecimalInstance>();

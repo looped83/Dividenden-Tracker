@@ -265,3 +265,13 @@ describe("Sparplan im Hochlauf", () => {
     expect(delta(6).toFixed(2)).toBe("42.00");
   });
 });
+
+describe("Positionsgrenze je Asset", () => {
+  it("lässt eine eigene Grenze dem Standard vorgehen", () => {
+    // Standard 30 % (500 € Platz), Beta mit eigener Grenze 40 % (1.000 € Platz).
+    const result = plan({ buys: 1, capPercent: 30, caps: new Map([["sec-b", 40]]) });
+    expect(result?.buys.map((buy) => [buy.name, buy.invest.toStringValue()])).toEqual([
+      ["Beta", "1000.00"],
+    ]);
+  });
+});

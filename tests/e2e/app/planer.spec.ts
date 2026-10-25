@@ -110,3 +110,23 @@ test("pflegt Sparpläne und zeigt sie am Asset", async ({ page, konto }) => {
   await expect(page.getByLabel("Sparrate pro Monat")).toHaveValue("130");
   await expect(page.getByText("Deine Sparpläne")).toBeVisible();
 });
+
+test("merkt sich eine eigene Positionsgrenze am Asset", async ({ page, konto }) => {
+  await seedPortfolio(konto.userId);
+  await page.goto("/#/depot");
+  await page
+    .getByRole("link", { name: /Allianz/ })
+    .first()
+    .click();
+
+  const grenze = page
+    .getByRole("region", { name: "Positionsgrenze" })
+    .getByRole("combobox");
+  await expect(grenze).toHaveValue("");
+  await grenze.selectOption("20");
+
+  await page.reload();
+  await expect(
+    page.getByRole("region", { name: "Positionsgrenze" }).getByRole("combobox"),
+  ).toHaveValue("20");
+});

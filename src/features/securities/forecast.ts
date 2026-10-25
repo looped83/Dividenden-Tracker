@@ -352,12 +352,14 @@ const MAX_FILLERS = 3;
  * dazu, was 1.000 € Zukauf in dem Monat bringen. Im Planer ausgeschlossene
  * Assets (`excluded`) fuellen keine Luecke, zaehlen aber in der Prognose.
  * Mit `capPercent` (seit 2.22.0) faellt ein Fueller weg, den sein Zukauf ueber
- * diesen Anteil am Depot hoebe (Positionsgrenze des Nachkaufs).
+ * diesen Anteil am Depot hoebe (Positionsgrenze des Nachkaufs); eigene Grenzen
+ * je Asset (`caps`) gehen vor.
  */
 export function monthGaps(
   forecast: TwelveMonthForecast,
   excluded: ReadonlySet<string> = new Set(),
   capPercent: number | null = null,
+  caps: ReadonlyMap<string, number> = new Map(),
 ): {
   average: Money;
   gaps: MonthGap[];
@@ -377,13 +379,11 @@ export function monthGaps(
           .times(item.marketValue.toDecimal())
           .dividedBy(item.amount.toDecimal());
         const invest = raw.dividedBy(INVEST_STEP).ceil().times(INVEST_STEP);
+        const cap = caps.get(item.securityId) ?? capPercent;
+        const after = item.marketValue.toDecimal().plus(invest).times(100);
         if (
-          capPercent !== null &&
-          item.marketValue
-            .toDecimal()
-            .plus(invest)
-            .times(100)
-            .greaterThan(forecast.depotValue.toDecimal().plus(invest).times(capPercent))
+          cap !== null &&
+          after.greaterThan(forecast.depotValue.toDecimal().plus(invest).times(cap))
         )
           continue;
         fillers.push({

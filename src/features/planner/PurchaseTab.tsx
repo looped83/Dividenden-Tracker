@@ -39,7 +39,7 @@ import {
 } from "@/features/securities/forecastSettings";
 import { PlannerHeaderActions } from "./PlannerPage";
 import { NumberField, SettingCell, SettingsList } from "./fields";
-import { formatDecimal, rhythm } from "./format";
+import { rhythm } from "./format";
 import {
   MODE_RULES,
   concentrationAfter,
@@ -50,6 +50,7 @@ import {
   type PlannedBuy,
   type PurchasePlan,
 } from "./purchase";
+import { usePositionCaps } from "./positionCaps";
 import { useSavingsPlans } from "./savingsPlanHooks";
 import { activeMonthlyTotal, savingsPlanOverview } from "./savingsPlans";
 
@@ -63,6 +64,8 @@ const FOCUS_LABEL: Record<PlanFocus, string> = {
   monate: "Monate glätten",
   wachstum: "Dividendenwachstum",
 };
+
+const NO_CAPS: ReadonlyMap<string, number> = new Map();
 
 const sharesFormat = new Intl.NumberFormat("de-DE", { maximumFractionDigits: 1 });
 
@@ -115,6 +118,7 @@ function Purchase({
   const { forecast, snapshots, names, facets } = basis;
   const [params, setParams] = useSearchParams();
   const { data: savingsPlans = [] } = useSavingsPlans();
+  const caps = usePositionCaps().data ?? NO_CAPS;
   const savingsTotal = Math.round(activeMonthlyTotal(savingsPlans).toNumber());
   const { mode, focus, amount, buys } = readInputs(params, savingsTotal);
   const rules = MODE_RULES[mode];
@@ -162,8 +166,9 @@ function Purchase({
         mode,
         buys,
         capPercent: settings.positionCap,
+        caps,
       }),
-    [forecast, candidates, amount, focus, mode, buys, settings.positionCap],
+    [forecast, candidates, amount, focus, mode, buys, settings.positionCap, caps],
   );
   const spread = React.useMemo(
     () =>
@@ -266,8 +271,8 @@ function Purchase({
           <NumberField
             id="purchase-cap"
             max={POSITION_CAP_MAX}
-            label="Max. je Asset"
-            fullLabel="Höchstens so viel Prozent des Depots je Asset"
+            label="Grenze je Asset"
+            fullLabel="Standardgrenze: höchstens so viel Prozent des Depots je Asset"
             suffix="%"
             value={settings.positionCap}
             onCommit={(value) => {
@@ -288,12 +293,16 @@ function Purchase({
               ? "Im Bestand ist kein Asset mit Kurs und Dividende, das sich nachkaufen ließe."
               : plan === null
                 ? `Mindestens ${String(rules.minimum)} € je ${isSavings ? "Sparplan" : "Kauf"}.`
-                : `Kein Asset hat unter der Grenze von ${formatDecimal(settings.positionCap)} % noch Platz.`}
+                : "Kein Asset hat unter seiner Positionsgrenze noch Platz."}
           </p>
         ) : (
           <>
             <PlanSummary plan={plan} mode={mode} current={current?.annual ?? null} />
-            <SpreadLine spread={spread} cap={settings.positionCap} plan={plan} />
+            <SpreadLine
+              spread={spread}
+              cap={caps.get(spread?.position.key ?? "") ?? settings.positionCap}
+              plan={plan}
+            />
           </>
         )}
       </div>
@@ -351,6 +360,7 @@ function SpreadLine({
   plan,
 }: {
   spread: ReturnType<typeof concentrationAfter>;
+  /** Grenze der größten Position (eigene oder Standard). */
   cap: number;
   plan: PurchasePlan;
 }) {
@@ -370,9 +380,8 @@ function SpreadLine({
       </p>
       {plan.unplaced.isPositive() && (
         <p>
-          {formatMoneyWhole(plan.unplaced)} finden unter der Grenze von{" "}
-          {formatDecimal(cap)} % keinen Platz. Mehr Käufe oder eine höhere Grenze
-          verteilen sie.
+          {formatMoneyWhole(plan.unplaced)} finden unter den Positionsgrenzen keinen
+          Platz. Mehr Käufe oder höhere Grenzen verteilen sie.
         </p>
       )}
     </div>

@@ -96,6 +96,17 @@ vi.mock("@/features/planner/savingsPlanHooks", () => ({
   newSavingsPlanId: () => "plan1",
 }));
 
+// Positionsgrenze (seit 2.22.0): keine eigene, Standard 8 %.
+vi.mock("@/features/planner/positionCaps", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/features/planner/positionCaps")>()),
+  usePositionCaps: () => ({ data: new Map(), isLoading: false }),
+  useSavePositionCap: () => ({ mutate: vi.fn(), isPending: false }),
+}));
+vi.mock("@/features/securities/forecastSettings", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/features/securities/forecastSettings")>()),
+  useForecastSettings: () => ({ data: undefined }),
+}));
+
 const { SecurityDetailPage } = await import("@/features/securities/SecurityDetailPage");
 
 function renderPage(id = SECURITY_ID) {
@@ -231,6 +242,12 @@ describe("SecurityDetailPage", () => {
     const section = within(screen.getByRole("region", { name: "Sparplan" }));
     expect(section.getByText("Kein Sparplan hinterlegt.")).toBeInTheDocument();
     expect(section.getByRole("button", { name: "Sparplan" })).toBeInTheDocument();
+  });
+
+  it("bietet die Positionsgrenze mit dem Standard an", () => {
+    renderPage();
+    const section = within(screen.getByRole("region", { name: "Positionsgrenze" }));
+    expect(section.getByRole("combobox")).toHaveDisplayValue("Standard (8 %)");
   });
 
   it("weist auf unvollstaendige Stammdaten hin", () => {
