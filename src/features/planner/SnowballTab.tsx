@@ -31,15 +31,20 @@ import {
 } from "@/features/securities/snowball";
 import { NumberField, SettingCell, SettingsList } from "./fields";
 import { formatDecimal } from "./format";
+import { useSavingsPlans } from "./savingsPlanHooks";
+import { activeMonthlyTotal } from "./savingsPlans";
 
 /**
  * Planer › **Schneeball**: ab wann tragen mich Dividenden? Zog mit 2.20.0 aus
  * Bestand › Prognose hierher — er rechnet durch, was waere, wenn du sparst,
  * und gehoert damit zum Planer statt zum Bestand (CALCULATION_RULES.md §14.2).
- * Gespeichert sind nur die Annahmen.
+ * Gespeichert sind nur die Annahmen. Ohne eigene Sparrate gilt die Summe der
+ * gepflegten Sparpläne (seit 2.21.0, §17).
  */
 export function SnowballTab() {
   const settingsQuery = useForecastSettings();
+  const { data: plans = [] } = useSavingsPlans();
+  const planSavings = Math.round(activeMonthlyTotal(plans).toNumber());
   return (
     <ForecastGate emptyDescription="Der Schneeball rechnet hoch, ab wann deine Dividenden dein Ziel tragen. Dafür braucht er einen Depotstand aus dem DivvyDiary-Portfolio-Export.">
       {({ forecast, depot, startYear }) => (
@@ -47,6 +52,7 @@ export function SnowballTab() {
           depot={depot}
           netRatio={forecast.netRatio}
           settings={settingsQuery.data ?? DEFAULT_FORECAST_SETTINGS}
+          planSavings={planSavings}
           startYear={startYear}
         />
       )}
@@ -57,20 +63,30 @@ export function SnowballTab() {
 function SnowballSection({
   depot,
   netRatio,
-  settings,
+  settings: stored,
+  planSavings,
   startYear,
 }: {
   depot: DepotAssumptions;
   netRatio: DecimalInstance | null;
   settings: ForecastSettings;
+  /** Summe der aktiven Sparpläne im Monat, gerundet; 0 ohne Pläne. */
+  planSavings: number;
   startYear: number;
 }) {
   const { mutate: save } = useSaveForecastSettings();
   const update = React.useCallback(
     (patch: Partial<SnowballSettings>) => {
-      save({ ...settings, ...patch });
+      save({ ...stored, ...patch });
     },
-    [save, settings],
+    [save, stored],
+  );
+  // Leere Sparrate mit Platzhalter steht für die Sparpläne — wie leere
+  // Prozentfelder für die Werte aus dem Depot.
+  const fromPlans = stored.monthlySavings === 0 && planSavings > 0;
+  const settings = React.useMemo(
+    () => (fromPlans ? { ...stored, monthlySavings: planSavings } : stored),
+    [fromPlans, stored, planSavings],
   );
 
   const result = React.useMemo(
@@ -91,7 +107,8 @@ function SnowballSection({
           label="Sparrate"
           fullLabel="Sparrate pro Monat"
           suffix="€"
-          value={settings.monthlySavings}
+          value={fromPlans ? null : stored.monthlySavings}
+          placeholder={planSavings > 0 ? formatDecimal(planSavings) : undefined}
           onCommit={(value) => {
             update({ monthlySavings: value ?? 0 });
           }}

@@ -52,6 +52,7 @@ export interface Database {
           last_backup_at: string | null;
           forecast_settings: Json | null;
           fixed_costs: Json | null;
+          savings_plans: Json | null;
           created_at: string;
           updated_at: string;
         };
@@ -64,6 +65,7 @@ export interface Database {
           last_backup_at: string | null;
           forecast_settings: Json | null;
           fixed_costs: Json | null;
+          savings_plans: Json | null;
         }>;
         Relationships: [];
       };

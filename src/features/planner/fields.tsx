@@ -85,7 +85,7 @@ export function NumberField({
   max: number;
   onCommit: (value: number | null) => void;
   suffix: string;
-  placeholder?: string;
+  placeholder?: string | undefined;
 }) {
   const shown = value === null ? "" : formatDecimal(value);
   const [draft, setDraft] = React.useState(shown);

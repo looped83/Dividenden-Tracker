@@ -39,6 +39,8 @@ import {
   type PlannedBuy,
   type PurchasePlan,
 } from "./purchase";
+import { useSavingsPlans } from "./savingsPlanHooks";
+import { activeMonthlyTotal, savingsPlanOverview } from "./savingsPlans";
 
 const MODE_OPTIONS: readonly SegmentOption<PlanMode>[] = [
   { value: "einmal", label: "Einmalkauf" },
@@ -70,7 +72,11 @@ export function PurchaseTab() {
   );
 }
 
-function readInputs(params: URLSearchParams) {
+/**
+ * Eingaben aus der Adresse. Ohne Betrag gilt die Vorbelegung des Modus; beim
+ * Sparplan die Summe der eigenen Pläne, sobald welche gepflegt sind (§17).
+ */
+function readInputs(params: URLSearchParams, savingsTotal: number) {
   const mode: PlanMode = params.get("modus") === "sparplan" ? "sparplan" : "einmal";
   const rules = MODE_RULES[mode];
   const rawFocus = params.get("fokus");
@@ -80,7 +86,9 @@ function readInputs(params: URLSearchParams) {
   const amount =
     typeof rawAmount === "number" && rawAmount > 0 && rawAmount <= AMOUNT_MAX
       ? rawAmount
-      : rules.defaultAmount;
+      : mode === "sparplan" && savingsTotal > 0
+        ? savingsTotal
+        : rules.defaultAmount;
   const rawBuys = Number.parseInt(params.get("anzahl") ?? "", 10);
   const buys = rawBuys >= 1 && rawBuys <= rules.maxBuys ? rawBuys : rules.defaultBuys;
   return { mode, focus, amount, buys };
@@ -95,7 +103,9 @@ function Purchase({
 }) {
   const { forecast, snapshots, names } = basis;
   const [params, setParams] = useSearchParams();
-  const { mode, focus, amount, buys } = readInputs(params);
+  const { data: savingsPlans = [] } = useSavingsPlans();
+  const savingsTotal = Math.round(activeMonthlyTotal(savingsPlans).toNumber());
+  const { mode, focus, amount, buys } = readInputs(params, savingsTotal);
   const rules = MODE_RULES[mode];
   const { mutate: save } = useSaveForecastSettings();
 
@@ -137,6 +147,18 @@ function Purchase({
   );
 
   const isSavings = mode === "sparplan";
+  // Zum Vergleich: was die gepflegten Sparpläne heute bringen.
+  const current = React.useMemo(
+    () =>
+      isSavings && savingsPlans.length > 0
+        ? savingsPlanOverview(
+            forecast,
+            purchaseCandidates(forecast, snapshots, new Set()),
+            savingsPlans,
+          )
+        : null,
+    [isSavings, forecast, snapshots, savingsPlans],
+  );
 
   return (
     <div className="space-y-10 lg:space-y-12">
@@ -222,7 +244,7 @@ function Purchase({
               : `Mindestens ${String(rules.minimum)} € je ${isSavings ? "Sparplan" : "Kauf"}.`}
           </p>
         ) : (
-          <PlanSummary plan={plan} mode={mode} />
+          <PlanSummary plan={plan} mode={mode} current={current?.annual ?? null} />
         )}
       </div>
 
@@ -268,7 +290,16 @@ function Purchase({
   );
 }
 
-function PlanSummary({ plan, mode }: { plan: PurchasePlan; mode: PlanMode }) {
+function PlanSummary({
+  plan,
+  mode,
+  current,
+}: {
+  plan: PurchasePlan;
+  mode: PlanMode;
+  /** Mehr im Jahr durch die gepflegten Sparpläne; `null` ohne Pläne. */
+  current: Money | null;
+}) {
   const average = (values: PurchasePlan["before"]) =>
     Money.fromDecimal(
       values
@@ -303,6 +334,15 @@ function PlanSummary({ plan, mode }: { plan: PurchasePlan; mode: PlanMode }) {
           value: formatMoneyWhole(weakest(plan.after)),
           caption: `vorher ${formatMoneyWhole(weakest(plan.before))}`,
         },
+        ...(current
+          ? [
+              {
+                label: "Deine Sparpläne",
+                value: `+${formatMoneyWhole(current)}`,
+                caption: "nach 12 Monaten",
+              },
+            ]
+          : []),
       ]}
     />
   );
