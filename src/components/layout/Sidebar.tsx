@@ -102,7 +102,8 @@ export function CompactSidebar() {
             <CompactLink item={item} />
           </Fragment>
         ))}
-        <div className="mt-auto">
+        <div className="mt-auto flex flex-col items-center gap-1">
+          <div aria-hidden className="my-1 h-px w-8 bg-border" />
           {FOOTER_ITEMS.map((item) => (
             <CompactLink key={item.to} item={item} />
           ))}
