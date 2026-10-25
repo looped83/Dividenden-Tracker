@@ -13,6 +13,12 @@ import {
 
 export type PositionCaps = ReadonlyMap<string, number>;
 
+/**
+ * Grenze für Assets ohne eigene (seit 2.23.1 fest): Gepflegt wird je Asset,
+ * ein eigener Standard im Nachkauf doppelte sich nur damit.
+ */
+export const POSITION_CAP_DEFAULT = 8;
+
 /** Wählbare Grenzen auf der Seite des Assets. */
 export const POSITION_CAP_CHOICES = [
   2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30, 40, 50,
