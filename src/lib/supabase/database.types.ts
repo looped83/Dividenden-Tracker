@@ -53,6 +53,7 @@ export interface Database {
           forecast_settings: Json | null;
           fixed_costs: Json | null;
           savings_plans: Json | null;
+          position_caps: Json | null;
           created_at: string;
           updated_at: string;
         };
@@ -66,6 +67,7 @@ export interface Database {
           forecast_settings: Json | null;
           fixed_costs: Json | null;
           savings_plans: Json | null;
+          position_caps: Json | null;
         }>;
         Relationships: [];
       };

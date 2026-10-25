@@ -71,3 +71,22 @@ export async function updateSavingsPlans(plans: Json): Promise<void> {
     .eq("id", await currentUserId());
   if (error) throw error;
 }
+
+/** Positionsgrenzen je Asset am eigenen Profil (Migration 0043). */
+export async function fetchPositionCaps(): Promise<Json | null> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("position_caps")
+    .eq("id", await currentUserId())
+    .single();
+  if (error) throw error;
+  return data.position_caps;
+}
+
+export async function updatePositionCaps(caps: Json): Promise<void> {
+  const { error } = await supabase
+    .from("profiles")
+    .update({ position_caps: caps })
+    .eq("id", await currentUserId());
+  if (error) throw error;
+}

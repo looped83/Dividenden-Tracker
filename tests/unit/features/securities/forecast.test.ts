@@ -7,6 +7,7 @@ import {
   forecastWindow,
   monthGaps,
   netRatio,
+  netRatioByCountry,
   payoutMonthsOf,
   type ForecastFacets,
   type TwelveMonthForecast,
@@ -133,6 +134,47 @@ describe("netRatio", () => {
       "2026-10-21",
     );
     expect(ratio?.toString()).toBe("1");
+  });
+});
+
+describe("netRatioByCountry", () => {
+  const facets = new Map<string, ForecastFacets>([
+    ["sec-us", { name: "US-Titel", payoutMonths: [], country: "US" }],
+    ["sec-ie", { name: "ETF", payoutMonths: [], country: "IE" }],
+    ["sec-x", { name: "Ohne Land", payoutMonths: [] }],
+  ]);
+  const payments = [
+    payment("sec-us", "2026-03-10", "63.00", "100.00"),
+    payment("sec-us", "2026-06-10", "63.00", "100.00"),
+    payment("sec-us", "2026-09-10", "63.00", "100.00"),
+    payment("sec-ie", "2026-03-10", "74.00", "100.00"),
+    payment("sec-ie", "2026-06-10", "74.00", "100.00"),
+    payment("sec-x", "2026-06-10", "50.00", "100.00"),
+  ];
+
+  it("teilt netto durch brutto je Land, ab drei Zahlungen", () => {
+    const ratios = netRatioByCountry(payments, facets, "2026-10-21");
+    expect(ratios.get("US")?.toFixed(2)).toBe("0.63");
+    // Zwei Zahlungen reichen nicht für eine eigene Quote.
+    expect(ratios.has("IE")).toBe(false);
+  });
+
+  it("rechnet die Prognose mit der Quote des Landes, sonst mit der gesamten", () => {
+    const forecast = run({
+      snapshots: [
+        snapshot({ security_id: "sec-us", annual_dividend_total: "400.00" }),
+        snapshot({ security_id: "sec-ie", annual_dividend_total: "400.00" }),
+      ],
+      facets: new Map([
+        ["sec-us", { name: "US-Titel", payoutMonths: [1, 4, 7, 10], country: "US" }],
+        ["sec-ie", { name: "ETF", payoutMonths: [2, 5, 8, 11], country: "IE" }],
+      ]),
+      payments,
+    });
+    // US: 100 € je Zahlung × 0,63; IE: gesamte Quote 387 ÷ 600 = 0,645.
+    expect(monthTotal(forecast, 2027, 1)).toBe("63.00");
+    expect(monthTotal(forecast, 2027, 2)).toBe("64.50");
+    expect(forecast.depotValue.toStringValue()).toBe("2400.00");
   });
 });
 

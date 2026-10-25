@@ -54,6 +54,7 @@ import { usePaymentComposer } from "@/features/payments/PaymentComposer";
 import { useResolvedCalendarEvents } from "@/features/calendar/resolvedEvents";
 import { useToday } from "@/lib/hooks/useToday";
 import { nextDividend } from "@/features/securities/nextDividend";
+import { SecurityPositionCap } from "@/features/planner/SecurityPositionCap";
 import { SecuritySavingsPlans } from "@/features/planner/SecuritySavingsPlans";
 
 /**
@@ -516,6 +517,8 @@ export function SecurityDetailPage() {
           </Section>
 
           <SecuritySavingsPlans securityId={id} archived={archived} />
+
+          {!archived && <SecurityPositionCap securityId={id} />}
 
           {/* Dieselben Zeilen wie Position und „Brutto zu Netto". */}
           {/* DivvyDiary findet das Papier ueber die ISIN und leitet auf seine

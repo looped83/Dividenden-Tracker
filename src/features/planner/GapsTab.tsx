@@ -22,6 +22,7 @@ import {
   useForecastSettings,
 } from "@/features/securities/forecastSettings";
 import { rhythm } from "./format";
+import { usePositionCaps } from "./positionCaps";
 
 /**
  * Planer › **Monatslücken**: Monate unter dem Ø der Prognose, je mit den
@@ -32,9 +33,17 @@ import { rhythm } from "./format";
  */
 export function GapsTab() {
   const settings = useForecastSettings().data ?? DEFAULT_FORECAST_SETTINGS;
+  const caps = usePositionCaps().data;
   return (
     <ForecastGate emptyDescription="Die Monatslücken zeigen, welche Monate unter deinem Ø liegen und welche Assets aus deinem Bestand sie auffüllen. Dafür brauchen sie einen Depotstand aus dem DivvyDiary-Portfolio-Export.">
-      {({ forecast }) => <MonthGaps forecast={forecast} excluded={settings.excluded} />}
+      {({ forecast }) => (
+        <MonthGaps
+          forecast={forecast}
+          excluded={settings.excluded}
+          capPercent={settings.positionCap}
+          caps={caps}
+        />
+      )}
     </ForecastGate>
   );
 }
@@ -42,13 +51,17 @@ export function GapsTab() {
 function MonthGaps({
   forecast,
   excluded,
+  capPercent,
+  caps,
 }: {
   forecast: TwelveMonthForecast;
   excluded: readonly string[];
+  capPercent: number;
+  caps: ReadonlyMap<string, number> | undefined;
 }) {
   const { average, gaps } = React.useMemo(
-    () => monthGaps(forecast, new Set(excluded)),
-    [forecast, excluded],
+    () => monthGaps(forecast, new Set(excluded), capPercent, caps),
+    [forecast, excluded, capPercent, caps],
   );
   const missing = gaps.reduce((sum, gap) => sum.add(gap.gap), Money.zero(EUR));
   return (

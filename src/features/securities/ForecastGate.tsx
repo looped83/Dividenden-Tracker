@@ -21,6 +21,8 @@ export interface ForecastBasis {
   depot: DepotAssumptions;
   snapshots: readonly SecuritySnapshot[];
   names: ReadonlyMap<string, string>;
+  /** Stammdaten je Asset (Land, Branche) fuer die Streuung im Planer. */
+  facets: ReadonlyMap<string, ForecastFacets>;
   startYear: number;
 }
 
@@ -50,6 +52,8 @@ export function ForecastGate({
       facetMap.set(security.id, {
         name: security.name,
         payoutMonths: normalizePayoutMonths(security.payout_months),
+        country: security.country,
+        sector: security.sector,
       });
       nameMap.set(security.id, security.name);
     }
@@ -106,6 +110,7 @@ export function ForecastGate({
     depot,
     snapshots,
     names,
+    facets,
     startYear: today.year,
   });
 }

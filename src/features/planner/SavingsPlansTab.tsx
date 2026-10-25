@@ -8,8 +8,6 @@ import { ListGroup, ListItemBody, ListRow } from "@/components/ui/list";
 import { Section } from "@/components/ui/section";
 import { formatMoney, formatMoneyWhole, formatPercent } from "@/lib/money";
 import { monthNameDe, monthNameDeShort } from "@/lib/statistics/dates";
-import { useToday } from "@/lib/hooks/useToday";
-import { formatDayMonth } from "@/lib/utils/formatDate";
 import { formatCountNoun } from "@/lib/utils/formatNumber";
 import {
   CategoryBarChart,
@@ -22,7 +20,6 @@ import { SavingsPlanDialog } from "./SavingsPlanDialog";
 import { useSavingsPlans } from "./savingsPlanHooks";
 import {
   SAVINGS_PLANS_MAX,
-  nextExecution,
   savingsPlanOverview,
   type SavingsPlan,
   type SavingsPlanOverview,
@@ -68,8 +65,9 @@ function SavingsPlans({
         forecast,
         purchaseCandidates(forecast, snapshots, NO_EXCLUSIONS),
         plans,
+        names,
       ),
-    [forecast, snapshots, plans],
+    [forecast, snapshots, plans, names],
   );
   const full = plans.length >= SAVINGS_PLANS_MAX;
   const add = () => {
@@ -193,7 +191,8 @@ function PlansSummary({ overview }: { overview: SavingsPlanOverview }) {
 }
 
 /**
- * Ein Plan als Zeile: Rhythmus, nächste Ausführung und Depot links, rechts die
+ * Ein Plan als Zeile: Rhythmus und Depot links (die nächste Ausführung steht
+ * seit 2.21.1 nur noch auf der Seite des Assets), rechts die
  * Rate und was zwölf Raten im Jahr bringen. Die ganze Zeile öffnet den Dialog.
  */
 function PlanRow({
@@ -208,9 +207,7 @@ function PlanRow({
   onOpen: () => void;
 }) {
   const { plan } = row;
-  const today = useToday();
   const { data: depots = [] } = useDepots();
-  const next = muted ? null : nextExecution(plan, today);
   const depot = depots.find((entry) => entry.id === plan.depotId)?.name;
   const weekly = plan.interval === "weekly";
   return (
@@ -227,7 +224,6 @@ function PlanRow({
               <span>
                 {weekly ? `${formatMoneyWhole(plan.amount)} wöchentlich` : "monatlich"}
               </span>
-              {next && <span>nächste {formatDayMonth(next)}</span>}
               {depot && <span>{depot}</span>}
             </>
           }
