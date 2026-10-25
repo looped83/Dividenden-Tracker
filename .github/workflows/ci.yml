@@ -149,6 +149,13 @@ jobs:
     runs-on: ubuntu-24.04
     # Ohne Cache dauert allein die Browser-Installation rund 7 Minuten.
     timeout-minutes: 12
+    # WebKit nur auf main (seit 2026-10-25): In Pull Requests laeuft der
+    # iPhone-Test mit Chromium. Der WebKit-Lauf und seine Systembibliotheken
+    # (apt vom Ubuntu-Spiegel, teils haengend) kosteten jeden PR Minuten;
+    # Safari-Fehler fallen dafuer erst nach dem Merge auf main auf.
+    env:
+      E2E_WEBKIT: ${{ github.event_name == 'push' }}
+      PW_BROWSERS: ${{ github.event_name == 'push' && 'chromium webkit' || 'chromium' }}
     steps:
       - uses: actions/checkout@v7
 
@@ -160,8 +167,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Chromium und WebKit: Der iPhone-Lauf soll im CI mit Safaris Motor
-      # laufen, nicht nur mit Chromiums Geometrie.
+      # Chromium, auf main auch WebKit: Dort soll der iPhone-Lauf mit Safaris
+      # Motor laufen, nicht nur mit Chromiums Geometrie.
       #
       # Beide Browser wurden zuvor bei **jedem** Lauf neu geladen — rund
       # 150 MB Download plus `apt-get` fuer die Systembibliotheken. Der Schritt
@@ -169,7 +176,8 @@ jobs:
       # 1:29, `db-integration` 0:50, `e2e-smoke` ueber 7 Minuten, davon fast
       # alles hier).
       #
-      # Der Cache haengt an der Playwright-Version: Er wird verworfen, sobald
+      # Der Cache haengt an der Playwright-Version und den Browsern (ein
+      # PR-Cache nur mit Chromium darf main nicht ohne WebKit lassen): Er wird verworfen, sobald
       # sie sich aendert, und kann deshalb nie zu einem veralteten Browser
       # fuehren. Frueher hing er am ganzen Lockfile — damit verfehlte jeder
       # Versionsbump der App den Cache, und die Installation dauerte so lange
@@ -183,12 +191,12 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}-${{ env.PW_BROWSERS }}
 
       # Nur beim Cache-Fehlschlag: Browser laden.
       - name: Browser installieren
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install chromium webkit
+        run: npx playwright install $PW_BROWSERS
 
       # Die Systembibliotheken gehoeren dem Runner und nicht dem Cache. Fuer
       # WebKit (u. a. GStreamer) laedt `apt` sie bei jedem Lauf vom
@@ -196,14 +204,19 @@ jobs:
       # 12 Minuten haengend, bis das Job-Limit griff. Deshalb pro Versuch
       # 3 Minuten und ein zweiter Anlauf: Ein haengender Spiegel kostet so
       # hoechstens 6 Minuten statt des ganzen Jobs.
+      # Nur auf main (WebKit): Chromium laeuft auf dem Ubuntu-Runner ohne
+      # Nachinstallation, dessen Bibliotheken bringt der vorinstallierte Chrome
+      # mit. In PRs entfaellt damit der apt-Lauf, der am 25.10.2026 selbst nur
+      # fuer Chromium bei 80 kB/s am Spiegel beide Versuche verbrauchte.
       - name: Systembibliotheken sicherstellen
+        if: env.E2E_WEBKIT == 'true'
         # `timeout` beendet nur npx, nicht das apt-get darunter: Es hielt die
         # dpkg-Sperre, und der zweite Versuch scheiterte sofort daran. Mit
         # Lock::Timeout wartet er stattdessen, bis die Sperre frei ist.
         run: |
           echo 'DPkg::Lock::Timeout "150";' | sudo tee /etc/apt/apt.conf.d/99-lock-timeout >/dev/null
           for versuch in 1 2; do
-            timeout 180 npx playwright install-deps chromium webkit && exit 0
+            timeout 180 npx playwright install-deps $PW_BROWSERS && exit 0
             echo "::warning::install-deps Versuch $versuch abgebrochen oder fehlgeschlagen"
           done
           exit 1
@@ -221,6 +234,10 @@ jobs:
     runs-on: ubuntu-24.04
     # Tests rund 5 Minuten, ohne Browser-Cache kommen rund 7 dazu.
     timeout-minutes: 15
+    # WebKit nur auf main, wie in e2e-smoke.
+    env:
+      E2E_WEBKIT: ${{ github.event_name == 'push' }}
+      PW_BROWSERS: ${{ github.event_name == 'push' && 'chromium webkit' || 'chromium' }}
     services:
       postgres:
         image: postgres:16
@@ -258,21 +275,26 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}-${{ env.PW_BROWSERS }}
 
       - name: Browser installieren
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install chromium webkit
+        run: npx playwright install $PW_BROWSERS
 
       # Zeitlimit und zweiter Anlauf wie in e2e-smoke.
+      # Nur auf main (WebKit): Chromium laeuft auf dem Ubuntu-Runner ohne
+      # Nachinstallation, dessen Bibliotheken bringt der vorinstallierte Chrome
+      # mit. In PRs entfaellt damit der apt-Lauf, der am 25.10.2026 selbst nur
+      # fuer Chromium bei 80 kB/s am Spiegel beide Versuche verbrauchte.
       - name: Systembibliotheken sicherstellen
+        if: env.E2E_WEBKIT == 'true'
         # `timeout` beendet nur npx, nicht das apt-get darunter: Es hielt die
         # dpkg-Sperre, und der zweite Versuch scheiterte sofort daran. Mit
         # Lock::Timeout wartet er stattdessen, bis die Sperre frei ist.
         run: |
           echo 'DPkg::Lock::Timeout "150";' | sudo tee /etc/apt/apt.conf.d/99-lock-timeout >/dev/null
           for versuch in 1 2; do
-            timeout 180 npx playwright install-deps chromium webkit && exit 0
+            timeout 180 npx playwright install-deps $PW_BROWSERS && exit 0
             echo "::warning::install-deps Versuch $versuch abgebrochen oder fehlgeschlagen"
           done
           exit 1

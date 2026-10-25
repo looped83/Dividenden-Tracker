@@ -37,11 +37,13 @@ export default defineConfig({
       name: "iPhone",
       use: {
         ...devices["iPhone 14"],
-        // Im CI steht WebKit bereit (siehe ci.yml) — dort laeuft der
-        // iPhone-Test mit Safaris Motor. Lokal genuegt Chromium mit
-        // iPhone-Geometrie, damit die Rauchtests ohne weitere Installation
-        // laufen.
-        ...(process.env.CI ? {} : { browserName: "chromium" as const }),
+        // Auf main setzt die CI E2E_WEBKIT (siehe ci.yml) — dort laeuft der
+        // iPhone-Test mit Safaris Motor. In Pull Requests und lokal genuegt
+        // Chromium mit iPhone-Geometrie: Der WebKit-Lauf samt seiner
+        // Systembibliotheken kostete jeden PR mehrere Minuten.
+        ...(process.env.E2E_WEBKIT === "true"
+          ? {}
+          : { browserName: "chromium" as const }),
       },
     },
     { name: "Desktop", use: { ...devices["Desktop Chrome"] } },
