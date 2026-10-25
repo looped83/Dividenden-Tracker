@@ -245,7 +245,7 @@ function CoverageSection({
 
   if (coverage.items.length === 0) {
     return (
-      <Section title="Was deine Dividenden bezahlen">
+      <Section title="Was Dividenden decken">
         <EmptyState
           icon={Check}
           title="Noch keine Fixkosten"
@@ -262,7 +262,7 @@ function CoverageSection({
 
   return (
     <Section
-      title="Was deine Dividenden bezahlen"
+      title="Was Dividenden decken"
       action={
         <SectionButton icon={Plus} onClick={onAdd} aria-haspopup="dialog">
           Neu

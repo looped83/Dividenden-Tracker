@@ -21,7 +21,7 @@ const GROUP_TITLE: Record<PaybackStatus, string> = {
 /**
  * Kaufpreis zurückverdient (seit 2.18.0): wie viel vom Einstand die
  * Dividenden schon zurückgezahlt haben (CALCULATION_RULES.md §15.3). Aufbau
- * wie „Was deine Dividenden bezahlen“: das nächste Asset offen, die Gruppen
+ * wie „Was Dividenden decken“: das nächste Asset offen, die Gruppen
  * eingeklappt.
  */
 export function PaybackSection({ payback }: { payback: PaybackResult }) {
