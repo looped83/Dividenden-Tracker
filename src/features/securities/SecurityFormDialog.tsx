@@ -53,11 +53,16 @@ export function SecurityFormDialog({
   const [payoutMonths, setPayoutMonths] = React.useState<number[]>(
     security?.payout_months ?? [],
   );
+  // Pflichtfeld (seit 2.23.0): Der Hinweis erscheint erst nach dem ersten
+  // Speicherversuch und verschwindet, sobald ein Monat gewaehlt ist.
+  const [submitAttempted, setSubmitAttempted] = React.useState(false);
   const [payoutSource, setPayoutSource] = React.useState(security);
   if (payoutSource !== security) {
     setPayoutSource(security);
     setPayoutMonths(security?.payout_months ?? []);
+    setSubmitAttempted(false);
   }
+  const monthsMissing = payoutMonths.length === 0;
   const togglePayoutMonth = (month: number) => {
     setPayoutMonths((prev) =>
       prev.includes(month) ? prev.filter((m) => m !== month) : [...prev, month],
@@ -85,6 +90,7 @@ export function SecurityFormDialog({
 
   const onSubmit = handleSubmit(async (values) => {
     setSubmitError(null);
+    if (monthsMissing) return;
     const input = {
       name: values.name,
       ticker: emptyToNull(values.ticker),
@@ -116,6 +122,7 @@ export function SecurityFormDialog({
         await createSecurity.mutateAsync(input);
       }
       reset();
+      setSubmitAttempted(false);
       onOpenChange(false);
     } catch (error) {
       setSubmitError(getErrorMessage(error, "Speichern fehlgeschlagen."));
@@ -143,7 +150,10 @@ export function SecurityFormDialog({
           <DialogTitle>{security ? "Asset bearbeiten" : "Neues Asset"}</DialogTitle>
         </DialogHeader>
         <form
-          onSubmit={(event) => void onSubmit(event)}
+          onSubmit={(event) => {
+            setSubmitAttempted(true);
+            void onSubmit(event);
+          }}
           className="space-y-3 sm:space-y-4"
         >
           {/* Kurze Felder teilen sich eine Zeile, damit das Formular auf dem
@@ -211,11 +221,16 @@ export function SecurityFormDialog({
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label>Ausschüttungsmonate (optional)</Label>
+            <Label id="security-payout-months-label">Ausschüttungsmonate</Label>
             <div
               className="grid grid-cols-6 gap-1.5"
               role="group"
-              aria-label="Ausschüttungsmonate"
+              aria-labelledby="security-payout-months-label"
+              aria-describedby={
+                submitAttempted && monthsMissing
+                  ? "security-payout-months-error"
+                  : undefined
+              }
             >
               {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => {
                 const active = payoutMonths.includes(month);
@@ -239,6 +254,11 @@ export function SecurityFormDialog({
                 );
               })}
             </div>
+            {submitAttempted && monthsMissing && (
+              <p id="security-payout-months-error" className="text-sm text-negative">
+                Wähle mindestens einen Monat.
+              </p>
+            )}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="security-note">Notiz</Label>

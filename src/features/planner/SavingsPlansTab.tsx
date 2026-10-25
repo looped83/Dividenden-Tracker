@@ -4,7 +4,7 @@ import { KpiHero, KpiHeroSkeleton } from "@/components/domain/KpiHero";
 import { AmountText } from "@/components/money/AmountText";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { ListGroup, ListItemBody, ListRow } from "@/components/ui/list";
+import { ListGroup, ListRow } from "@/components/ui/list";
 import { Section } from "@/components/ui/section";
 import { formatMoney, formatMoneyWhole, formatPercent } from "@/lib/money";
 import { monthNameDe, monthNameDeShort } from "@/lib/statistics/dates";
@@ -191,9 +191,10 @@ function PlansSummary({ overview }: { overview: SavingsPlanOverview }) {
 }
 
 /**
- * Ein Plan als Zeile: Rhythmus und Depot links (die nächste Ausführung steht
- * seit 2.21.1 nur noch auf der Seite des Assets), rechts die
- * Rate und was zwölf Raten im Jahr bringen. Die ganze Zeile öffnet den Dialog.
+ * Ein Plan als Zeile, **zwei Zeilen hoch** (seit 2.23.0): oben Name und Rate,
+ * unten Rhythmus mit Depot und was zwölf Raten im Jahr bringen. Lange Namen
+ * laufen aus, statt der Rate eine eigene Zeile zu geben — die Liste bleibt
+ * gleichmäßig. Die ganze Zeile öffnet den Dialog.
  */
 function PlanRow({
   row,
@@ -210,6 +211,7 @@ function PlanRow({
   const { data: depots = [] } = useDepots();
   const depot = depots.find((entry) => entry.id === plan.depotId)?.name;
   const weekly = plan.interval === "weekly";
+  const rhythm = weekly ? `${formatMoneyWhole(plan.amount)} wöchentlich` : "monatlich";
   return (
     <ListRow asChild>
       <button
@@ -217,31 +219,27 @@ function PlanRow({
         onClick={onOpen}
         className={muted ? "text-muted-foreground" : undefined}
       >
-        <ListItemBody
-          title={name}
-          meta={
-            <>
-              <span>
-                {weekly ? `${formatMoneyWhole(plan.amount)} wöchentlich` : "monatlich"}
-              </span>
-              {depot && <span>{depot}</span>}
-            </>
-          }
-          trailing={
-            <span className="flex flex-col items-end">
-              <span className="font-medium text-foreground">
-                {weekly && "≈ "}
-                {formatMoneyWhole(row.monthly)}
-                <span className="text-muted-foreground">/Monat</span>
-              </span>
-              <span>
-                {row.annual === null
-                  ? "keine Dividende"
-                  : `+${formatMoney(row.annual)} im Jahr`}
-              </span>
+        <span className="min-w-0 flex-1">
+          <span className="flex items-baseline justify-between gap-3">
+            <span className="min-w-0 flex-1 truncate-fade font-medium">{name}</span>
+            <span className="shrink-0 font-semibold tabular-amount">
+              {weekly && "≈ "}
+              {formatMoneyWhole(row.monthly)}
+              <span className="text-muted-foreground">/Monat</span>
             </span>
-          }
-        />
+          </span>
+          <span className="mt-0.5 flex items-baseline justify-between gap-3 text-sm">
+            <span className="min-w-0 flex-1 truncate-fade text-muted-foreground">
+              {rhythm}
+              {depot && <span className="ml-2">{depot}</span>}
+            </span>
+            <span className="shrink-0 font-semibold tabular-amount">
+              {row.annual === null
+                ? "keine Dividende"
+                : `+${formatMoney(row.annual)} im Jahr`}
+            </span>
+          </span>
+        </span>
       </button>
     </ListRow>
   );
