@@ -133,7 +133,7 @@ describe("DevelopmentView", () => {
 
   it("nennt das Fenster, aus dem die erhaltene Summe stammt", () => {
     renderTab();
-    expect(screen.getByText("04.08.2025 – 03.08.2026")).toBeInTheDocument();
+    expect(screen.getByText("bis 03.08.2026")).toBeInTheDocument();
   });
 
   it("rechnet den Zuwachs als erwartet minus erhalten", () => {

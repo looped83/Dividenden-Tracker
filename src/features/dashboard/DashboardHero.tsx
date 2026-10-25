@@ -31,6 +31,7 @@ import {
   homeReviewYear,
   isoFromRef,
   monthNameDe,
+  monthNameDeShort,
   selectedPeriodAggregate,
   selectedYearComparison,
   yearEndForecast,
@@ -42,7 +43,6 @@ import {
 } from "@/lib/statistics";
 import {
   describeSelection,
-  formatMonthYear,
   paymentsListHref,
   splitComparison,
   withoutSign,
@@ -442,7 +442,7 @@ function buildStats(
       label: "Bester Monat",
       value: <AmountText amount={data.best.net} />,
       caption: data.isAll
-        ? formatMonthYear(data.best.year, data.best.month)
+        ? `${monthNameDeShort(data.best.month)} ${String(data.best.year)}`
         : monthNameDe(data.best.month),
       to: paymentsListHref({ year: data.best.year, month: data.best.month }),
       drillLabel: "Dividenden des besten Monats anzeigen",
