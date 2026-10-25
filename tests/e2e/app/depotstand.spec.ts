@@ -111,8 +111,10 @@ test("importiert einen Depotstand und zeigt seine Kennzahlen", async ({
   const karte = page.getByRole("heading", { name: /^Position Stand 03\.08\.2026$/ });
   await expect(karte).toBeVisible();
   await expect(page.getByText("Marktwert", { exact: true })).toBeVisible();
-  // Rhythmus und die uebrigen Detailwerte stehen offen als Zeilen darunter.
-  await expect(page.getByText("vierteljährlich")).toBeVisible();
+  // Der Rhythmus steht als Marke am Ausschuettungsplan.
+  await expect(
+    page.getByRole("heading", { name: /^Ausschüttungsplan vierteljährlich$/ }),
+  ).toBeVisible();
 });
 
 test("ersetzt einen Stand desselben Tages, statt ihn zu verdoppeln", async ({

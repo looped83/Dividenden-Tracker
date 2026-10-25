@@ -153,14 +153,14 @@ describe("SecurityDetailPage", () => {
     expect(screen.getByText(/^3 Dividenden/)).toBeInTheDocument();
   });
 
-  it("stellt die letzten Eingaenge vor Ausschuettungsplan und Stammdaten", () => {
+  it("stellt die letzten Eingaenge vor Ausschuettungsplan, Planung und Stammdaten", () => {
     renderPage();
     const eingaenge = screen.getByRole("heading", { name: "Letzte Dividenden" });
-    for (const name of ["Ausschüttungsplan", "Stammdaten"]) {
+    for (const name of [/^Ausschüttungsplan/, "Planung", "Stammdaten"]) {
       const spaeter = screen.getByRole("heading", { name });
       expect(
         eingaenge.compareDocumentPosition(spaeter) & Node.DOCUMENT_POSITION_FOLLOWING,
-        `${name} steht vor den letzten Eingängen`,
+        `${String(name)} steht vor den letzten Eingängen`,
       ).toBeTruthy();
     }
   });
@@ -230,7 +230,7 @@ describe("SecurityDetailPage", () => {
     // Alle zwoelf Monate stehen da; geplante sind fuer Hilfsmittel als solche
     // ausgezeichnet, nicht nur farblich (Farbe allein traegt keine Aussage).
     // Im Plan, nicht in den Datumsfeldern der letzten Eingänge.
-    const plan = within(screen.getByRole("region", { name: "Ausschüttungsplan" }));
+    const plan = within(screen.getByRole("region", { name: /^Ausschüttungsplan/ }));
     expect(plan.getByText("Mär")).toBeInTheDocument();
     expect(plan.getByText("Jan")).toBeInTheDocument();
     expect(screen.getAllByText("Geplant:")).toHaveLength(2);
@@ -239,15 +239,23 @@ describe("SecurityDetailPage", () => {
 
   it("bietet ohne Sparplan an, einen anzulegen", () => {
     renderPage();
-    const section = within(screen.getByRole("region", { name: "Sparplan" }));
-    expect(section.getByText("Kein Sparplan hinterlegt.")).toBeInTheDocument();
+    const section = within(screen.getByRole("region", { name: "Planung" }));
     expect(section.getByRole("button", { name: "Sparplan" })).toBeInTheDocument();
   });
 
   it("bietet die Positionsgrenze mit dem Standard an", () => {
     renderPage();
-    const section = within(screen.getByRole("region", { name: "Positionsgrenze" }));
-    expect(section.getByRole("combobox")).toHaveDisplayValue("Standard (8 %)");
+    const section = within(screen.getByRole("region", { name: "Planung" }));
+    expect(section.getByRole("combobox", { name: "Positionsgrenze" })).toHaveDisplayValue(
+      "Standard (8 %)",
+    );
+  });
+
+  it("nennt den Rhythmus am Ausschuettungsplan", () => {
+    renderPage();
+    expect(
+      screen.getByRole("region", { name: "Ausschüttungsplan halbjährlich" }),
+    ).toBeInTheDocument();
   });
 
   it("weist auf unvollstaendige Stammdaten hin", () => {

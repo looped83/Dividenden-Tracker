@@ -102,7 +102,7 @@ test("pflegt Sparpläne und zeigt sie am Asset", async ({ page, konto }) => {
     .getByRole("link", { name: /Allianz/ })
     .first()
     .click();
-  const abschnitt = page.getByRole("region", { name: "Sparplan" });
+  const abschnitt = page.getByRole("region", { name: "Planung" });
   await expect(abschnitt.getByText("30 € wöchentlich")).toBeVisible();
 
   // Der Nachkauf übernimmt die Summe der Pläne als Monatsrate.
@@ -119,14 +119,10 @@ test("merkt sich eine eigene Positionsgrenze am Asset", async ({ page, konto }) 
     .first()
     .click();
 
-  const grenze = page
-    .getByRole("region", { name: "Positionsgrenze" })
-    .getByRole("combobox");
+  const grenze = page.getByRole("combobox", { name: "Positionsgrenze" });
   await expect(grenze).toHaveValue("");
   await grenze.selectOption("20");
 
   await page.reload();
-  await expect(
-    page.getByRole("region", { name: "Positionsgrenze" }).getByRole("combobox"),
-  ).toHaveValue("20");
+  await expect(page.getByRole("combobox", { name: "Positionsgrenze" })).toHaveValue("20");
 });
