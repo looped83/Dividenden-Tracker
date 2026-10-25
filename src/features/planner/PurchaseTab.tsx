@@ -29,9 +29,6 @@ import {
   AMOUNT_MAX,
   DEFAULT_FORECAST_SETTINGS,
   EXCLUDED_MAX,
-  POSITION_CAP_DEFAULT,
-  POSITION_CAP_MAX,
-  POSITION_CAP_MIN,
   parseGermanNumber,
   useForecastSettings,
   useSaveForecastSettings,
@@ -50,7 +47,7 @@ import {
   type PlannedBuy,
   type PurchasePlan,
 } from "./purchase";
-import { usePositionCaps } from "./positionCaps";
+import { POSITION_CAP_DEFAULT, usePositionCaps } from "./positionCaps";
 import { useSavingsPlans } from "./savingsPlanHooks";
 import { activeMonthlyTotal, savingsPlanOverview } from "./savingsPlans";
 
@@ -165,10 +162,10 @@ function Purchase({
         focus,
         mode,
         buys,
-        capPercent: settings.positionCap,
+        capPercent: POSITION_CAP_DEFAULT,
         caps,
       }),
-    [forecast, candidates, amount, focus, mode, buys, settings.positionCap, caps],
+    [forecast, candidates, amount, focus, mode, buys, caps],
   );
   const spread = React.useMemo(
     () =>
@@ -213,7 +210,7 @@ function Purchase({
       </PlannerHeaderActions>
 
       <div className="space-y-6">
-        <SettingsList label="Eingaben" className="grid-cols-3 md:grid-cols-4">
+        <SettingsList label="Eingaben" className="grid-cols-2 md:grid-cols-3">
           <NumberField
             id="purchase-amount"
             max={AMOUNT_MAX}
@@ -229,7 +226,7 @@ function Purchase({
           <SettingCell
             label="Schwerpunkt"
             htmlFor="purchase-focus"
-            className="order-last col-span-3 md:order-none md:col-span-1"
+            className="order-last col-span-2 md:order-none md:col-span-1"
           >
             <Select
               id="purchase-focus"
@@ -268,23 +265,6 @@ function Purchase({
               )}
             </Select>
           </SettingCell>
-          <NumberField
-            id="purchase-cap"
-            max={POSITION_CAP_MAX}
-            label="Grenze je Asset"
-            fullLabel="Standardgrenze: höchstens so viel Prozent des Depots je Asset"
-            suffix="%"
-            value={settings.positionCap}
-            onCommit={(value) => {
-              save({
-                ...settings,
-                positionCap:
-                  value === null
-                    ? POSITION_CAP_DEFAULT
-                    : Math.max(POSITION_CAP_MIN, value),
-              });
-            }}
-          />
         </SettingsList>
 
         {plan === null || plan.buys.length === 0 ? (
@@ -300,7 +280,7 @@ function Purchase({
             <PlanSummary plan={plan} mode={mode} current={current?.annual ?? null} />
             <SpreadLine
               spread={spread}
-              cap={caps.get(spread?.position.key ?? "") ?? settings.positionCap}
+              cap={caps.get(spread?.position.key ?? "") ?? POSITION_CAP_DEFAULT}
               plan={plan}
             />
           </>

@@ -818,10 +818,10 @@ die Eingaben stehen in der Adresse (`?modus=sparplan&betrag=1000&fokus=monate&an
   `profiles.forecast_settings.excluded` (nicht in der Datensicherung). Sie zählen weiter in der
   Prognose, werden aber weder im Nachkauf noch als Füller der Monatslücken vorgeschlagen.
 - **Positionsgrenze** (seit 2.22.0): Keine Position wächst über diesen Anteil am Depot nach dem
-  Kauf (Marktwert aller Positionen + investiert; beim Sparplan zwölf Raten). Vorbelegt 8 %,
-  einstellbar 5–15 %, gespeichert in `profiles.forecast_settings.positionCap`. **Je Asset** lässt
-  sich auf seiner Seite eine eigene Grenze wählen (2–50 %, `profiles.position_caps`, Migration
-  0043, nicht in der Datensicherung); sie geht dem Standard vor, auch bei den Monatslücken. Positionen ohne
+  Kauf (Marktwert aller Positionen + investiert; beim Sparplan zwölf Raten). Die Grenze
+  wählst du **je Asset** auf seiner Seite (2–50 %, `profiles.position_caps`, Migration 0043, nicht
+  in der Datensicherung); ohne eigene gilt fest 8 % (seit 2.23.1; zuvor ein einstellbarer Standard
+  im Nachkauf). Gilt auch bei den Monatslücken. Positionen ohne
   Platz für den Mindestbetrag fallen weg; ist eine gewählte voll, bekommen die übrigen mehr. Die
   gewählte Zahl der Käufe bleibt; was darin keinen Platz findet, nennt der Plan.
 - **Streuung nach dem Kauf:** größte Position, Branche und Land nach Marktwert plus Kauf; eine

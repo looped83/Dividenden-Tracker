@@ -5,11 +5,8 @@ import { MoneyDecimal, formatPercent, type DecimalInstance } from "@/lib/money";
 import { useSecuritySnapshots } from "@/features/securities/hooks";
 import { latestAsOf, snapshotsAt } from "@/features/securities/snapshots";
 import {
-  DEFAULT_FORECAST_SETTINGS,
-  useForecastSettings,
-} from "@/features/securities/forecastSettings";
-import {
   POSITION_CAP_CHOICES,
+  POSITION_CAP_DEFAULT,
   usePositionCaps,
   useSavePositionCap,
 } from "./positionCaps";
@@ -17,11 +14,11 @@ import {
 /**
  * Abschnitt „Positionsgrenze" auf der Seite eines Assets (seit 2.22.0):
  * Anteil am Depot heute und die Grenze, bis zu der der Nachkauf das Asset
- * aufstockt — der Standard des Nachkaufs oder eine eigene (CALCULATION_RULES.md
+ * aufstockt — der Standard (8 %) oder eine eigene (CALCULATION_RULES.md
  * §16). Gespeichert wird nur eine Abweichung vom Standard.
  */
 export function SecurityPositionCap({ securityId }: { securityId: string }) {
-  const standard = (useForecastSettings().data ?? DEFAULT_FORECAST_SETTINGS).positionCap;
+  const standard = POSITION_CAP_DEFAULT;
   const { data: caps, isLoading } = usePositionCaps();
   const { data: snapshots = [] } = useSecuritySnapshots();
   const save = useSavePositionCap();

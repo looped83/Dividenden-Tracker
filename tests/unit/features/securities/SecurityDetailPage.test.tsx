@@ -102,11 +102,6 @@ vi.mock("@/features/planner/positionCaps", async (importOriginal) => ({
   usePositionCaps: () => ({ data: new Map(), isLoading: false }),
   useSavePositionCap: () => ({ mutate: vi.fn(), isPending: false }),
 }));
-vi.mock("@/features/securities/forecastSettings", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/features/securities/forecastSettings")>()),
-  useForecastSettings: () => ({ data: undefined }),
-}));
-
 const { SecurityDetailPage } = await import("@/features/securities/SecurityDetailPage");
 
 function renderPage(id = SECURITY_ID) {
