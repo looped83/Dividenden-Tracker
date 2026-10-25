@@ -92,7 +92,13 @@ function forecast(): TwelveMonthForecast {
 
 function overview(plans: SavingsPlan[]) {
   const base = forecast();
-  return savingsPlanOverview(base, purchaseCandidates(base, SNAPSHOTS, new Set()), plans);
+  const names = new Map([...FACETS].map(([id, facets]) => [id, facets.name]));
+  return savingsPlanOverview(
+    base,
+    purchaseCandidates(base, SNAPSHOTS, new Set()),
+    plans,
+    names,
+  );
 }
 
 describe("parseSavingsPlans", () => {
@@ -193,8 +199,8 @@ describe("savingsPlanOverview", () => {
     expect(result.monthly.toStringValue()).toBe("230.00");
     expect(result.yearly.toStringValue()).toBe("2760.00");
     expect(result.yieldPercent?.toFixed(2)).toBe("3.43");
-    // Größter Monatsbetrag zuerst.
-    expect(result.rows.map((row) => row.plan.id)).toEqual(["plan2", "plan1"]);
+    // Alphabetisch: Alpha vor Gamma.
+    expect(result.rows.map((row) => row.plan.id)).toEqual(["plan1", "plan2"]);
     // Alpha zahlt im Januar 12 € mehr, Gamma jeden Monat 3,90 €.
     const january = forecast().months.findIndex((month) => month.month === 1);
     expect(result.after[january].subtract(result.before[january]).toStringValue()).toBe(

@@ -831,6 +831,7 @@ Bestand noch Prognose.
 - **Wirkung** (`savingsPlanOverview`): zwölf Monatsbeträge je aktivem Plan mal Ertrag je Euro und
   Zahlmonate des Kandidaten aus §16 (ohne Ausschlüsse). Ein Asset ohne Kandidat (nicht im
   Depotstand, ohne Dividende) zählt in der Summe der Raten, aber nicht in der Dividende. Ertrag =
-  mehr netto im Jahr ÷ zwölf Monatssummen. Pausierte Pläne zählen nirgends.
+  mehr netto im Jahr ÷ zwölf Monatssummen. Pausierte Pläne zählen nirgends. Die Liste steht alphabetisch
+  nach Name des Assets (seit 2.21.1).
 - **Schneeball:** Ist keine eigene Sparrate eingetragen (0), rechnet er mit der gerundeten
   Monatssumme der aktiven Pläne; das Feld zeigt sie als Platzhalter.

@@ -155,9 +155,10 @@ function Purchase({
             forecast,
             purchaseCandidates(forecast, snapshots, new Set()),
             savingsPlans,
+            names,
           )
         : null,
-    [isSavings, forecast, snapshots, savingsPlans],
+    [isSavings, forecast, snapshots, savingsPlans, names],
   );
 
   return (

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { EUR, Money, MoneyDecimal, type DecimalInstance } from "@/lib/money";
+import { compareGerman } from "@/lib/utils/compareText";
 import { isoDate, lastDayOfMonth, type RefDate } from "@/lib/statistics/dates";
 import type { TwelveMonthForecast } from "@/features/securities/forecast";
 import type { PurchaseCandidate } from "./purchase";
@@ -153,12 +154,13 @@ export interface SavingsPlanOverview {
  * Was die Pläne bringen: zwölf Raten je aktivem Plan, verzinst mit dem Ertrag
  * je Euro und den Zahlmonaten der Prognose (dieselben Kandidaten wie im
  * Nachkauf, §16). Pläne auf Assets ohne Ausschüttung zählen in der Summe, aber
- * nicht in der Dividende. Größter Monatsbetrag zuerst.
+ * nicht in der Dividende. Alphabetisch nach Name des Assets (seit 2.21.1).
  */
 export function savingsPlanOverview(
   forecast: TwelveMonthForecast,
   candidates: readonly PurchaseCandidate[],
   plans: readonly SavingsPlan[],
+  names: ReadonlyMap<string, string>,
 ): SavingsPlanOverview {
   const byId = new Map(candidates.map((candidate) => [candidate.securityId, candidate]));
   const before = forecast.months.map((month) => month.total.toDecimal());
@@ -190,16 +192,16 @@ export function savingsPlanOverview(
     };
   };
 
-  const byMonthly = (a: SavingsPlanRow, b: SavingsPlanRow) =>
-    b.monthly.compareTo(a.monthly);
+  const byName = (a: SavingsPlanRow, b: SavingsPlanRow) =>
+    compareGerman(names.get(a.plan.securityId) ?? "", names.get(b.plan.securityId) ?? "");
   const rows = plans
     .filter((plan) => !plan.paused)
     .map((plan) => toRow(plan, true))
-    .sort(byMonthly);
+    .sort(byName);
   const paused = plans
     .filter((plan) => plan.paused)
     .map((plan) => toRow(plan, false))
-    .sort(byMonthly);
+    .sort(byName);
 
   const yearly = monthly.times(12);
   return {
