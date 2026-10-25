@@ -14,10 +14,11 @@ import {
 export type PositionCaps = ReadonlyMap<string, number>;
 
 /**
- * Grenze für Assets ohne eigene (seit 2.23.1 fest): Gepflegt wird je Asset,
+ * Gewichtung für Assets ohne eigene (seit 2.23.1 fest, seit 2.24.0 1 % statt
+ * 8 %): Gepflegt wird je Asset,
  * ein eigener Standard im Nachkauf doppelte sich nur damit.
  */
-export const POSITION_CAP_DEFAULT = 8;
+export const POSITION_CAP_DEFAULT = 1;
 
 /**
  * Eigene Gewichtung je Asset in Prozent, auf eine Nachkommastelle (seit

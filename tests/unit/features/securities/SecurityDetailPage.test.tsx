@@ -96,7 +96,7 @@ vi.mock("@/features/planner/savingsPlanHooks", () => ({
   newSavingsPlanId: () => "plan1",
 }));
 
-// Positionsgrenze (seit 2.22.0): keine eigene, Standard 8 %.
+// Gewichtung: keine eigene, Standard 1 % (seit 2.24.0).
 vi.mock("@/features/planner/positionCaps", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/features/planner/positionCaps")>()),
   usePositionCaps: () => ({ data: new Map(), isLoading: false }),
@@ -243,8 +243,8 @@ describe("SecurityDetailPage", () => {
     const section = within(screen.getByRole("region", { name: "Planung" }));
     const field = section.getByRole("textbox", { name: "Gewichtung" });
     expect(field).toHaveValue("");
-    expect(field).toHaveAttribute("placeholder", "8");
-    expect(section.getByText(/Standard 8\s%/)).toBeInTheDocument();
+    expect(field).toHaveAttribute("placeholder", "1");
+    expect(section.getByText(/Standard 1\s%/)).toBeInTheDocument();
   });
 
   it("nennt den Rhythmus am Ausschuettungsplan", () => {

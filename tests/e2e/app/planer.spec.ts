@@ -1,4 +1,5 @@
 import { seedPortfolio } from "../support/portfolio";
+import { asUser } from "../support/db";
 import { expect, test } from "../support/appTest";
 
 /**
@@ -6,11 +7,25 @@ import { expect, test } from "../support/appTest";
  * ausgeschlossene Assets stehen am Profil und ueberdauern ein Neuladen
  * (Migration 0034).
  */
+
+/**
+ * Ohne eigene Gewichtung gilt 1 % (seit 2.24.0) — im Beispieldepot liegt jede
+ * Position darueber, der Nachkauf schlüge nichts vor. Hier deshalb je Asset 30 %.
+ */
+async function seedWeights(userId: string): Promise<void> {
+  await asUser(userId, async (client) => {
+    await client.query(
+      `update profiles set position_caps =
+         (select jsonb_object_agg(id, 30) from securities)`,
+    );
+  });
+}
 test("verteilt einen Einmalkauf und merkt sich ausgeschlossene Assets", async ({
   page,
   konto,
 }) => {
   await seedPortfolio(konto.userId);
+  await seedWeights(konto.userId);
   await page.goto("/#/planer");
 
   await expect(page.getByText("Mehr im Jahr · netto")).toBeVisible();
@@ -39,6 +54,7 @@ test("verteilt einen Einmalkauf und merkt sich ausgeschlossene Assets", async ({
 
 test("rechnet Sparpläne als Monatsrate", async ({ page, konto }) => {
   await seedPortfolio(konto.userId);
+  await seedWeights(konto.userId);
   await page.goto("/#/planer?modus=sparplan&betrag=500");
 
   await expect(page.getByText("Mehr im Jahr nach 12 Monaten · netto")).toBeVisible();
@@ -80,6 +96,7 @@ test("verwirft Annahmen über der Obergrenze, statt still anders zu rechnen", as
 
 test("pflegt Sparpläne und zeigt sie am Asset", async ({ page, konto }) => {
   await seedPortfolio(konto.userId);
+  await seedWeights(konto.userId);
   await page.goto("/#/planer/sparplaene");
 
   await page.getByRole("button", { name: "Sparplan eintragen" }).click();
