@@ -794,8 +794,10 @@ die Eingaben stehen in der Adresse (`?modus=sparplan&betrag=1000&fokus=monate&an
   Betrag > 0, ohne ausgeschlossene Assets. Ertrag je Zahlung und Euro = Betrag je Zahlung der
   Prognose (netto) ÷ Marktwert; Zahlmonate wie in der Prognose. Neue Assets außerhalb des Bestands
   gehen nicht (dafür fehlen Kurs und Dividende).
-- **Modi:** Einmalkauf in Schritten zu 50 €, mindestens 100 € je Kauf, 1–5 Käufe (Standard 3);
-  Sparpläne in Schritten zu 25 €, mindestens 25 € je Plan, bis zu 10 (Standard 5). Beim Sparplan
+- **Modi:** Einmalkauf in Schritten zu 50 €, mindestens 100 € je Kauf, 1–5 Käufe (Standard 3,
+  vorbelegt 3.000 €); Sparpläne in Schritten zu 25 €, mindestens 25 € je Plan, bis zu 10
+  (Standard 5, vorbelegt 1.000 € im Monat, seit 2.20.1; mit gepflegten Sparplänen deren
+  Monatssumme, §17). Beim Sparplan
   ist der Betrag die Monatsrate, die Wirkung zählt zwölf Raten. Höchstens 200 Schritte: Größere
   Beträge verteilen in einem Vielfachen der Schrittweite. Weniger Käufe, wenn der Betrag für den
   Mindestbetrag je Kauf nicht reicht; der Rest unter einem Schritt geht an den größten Kauf.
@@ -811,3 +813,24 @@ die Eingaben stehen in der Adresse (`?modus=sparplan&betrag=1000&fokus=monate&an
 - **Ausschließen:** bis zu 30 Assets, gespeichert mit den Schneeball-Annahmen in
   `profiles.forecast_settings.excluded` (nicht in der Datensicherung). Sie zählen weiter in der
   Prognose, werden aber weder im Nachkauf noch als Füller der Monatslücken vorgeschlagen.
+- **Vergleich:** Im Modus Sparpläne nennt die Zusammenfassung zusätzlich, was die gepflegten
+  Sparpläne (§17) nach zwölf Raten bringen.
+
+## 17. Sparpläne (Planer › Sparpläne und Seite des Assets, seit 2.21.0)
+
+Von Hand gepflegte Stammdaten, keine Buchungen: Sparpläne erzeugen keine Eingänge und ändern weder
+Bestand noch Prognose.
+
+- **Speicher:** `profiles.savings_plans` (Migration 0042), eine jsonb-Liste wie die Fixkosten,
+  höchstens 50 Pläne und 8 KB; nicht in der Datensicherung. Je Plan: Asset, Rate (> 0, bis
+  100.000 €), Rhythmus monatlich oder wöchentlich, optional Depot, ein Ausführungsdatum als Anker
+  und „pausiert". Ein ungültiger Eintrag fällt beim Lesen weg, statt die Liste zu verwerfen.
+- **Monatsbetrag:** monatlich die Rate, wöchentlich Rate × 52 ÷ 12.
+- **Nächste Ausführung:** der Anker, im Rhythmus fortgeschrieben, bis er nicht vor heute liegt.
+  Monatlich bleibt der Tag des Ankers, am Monatsende gekürzt (31. → 28.02.).
+- **Wirkung** (`savingsPlanOverview`): zwölf Monatsbeträge je aktivem Plan mal Ertrag je Euro und
+  Zahlmonate des Kandidaten aus §16 (ohne Ausschlüsse). Ein Asset ohne Kandidat (nicht im
+  Depotstand, ohne Dividende) zählt in der Summe der Raten, aber nicht in der Dividende. Ertrag =
+  mehr netto im Jahr ÷ zwölf Monatssummen. Pausierte Pläne zählen nirgends.
+- **Schneeball:** Ist keine eigene Sparrate eingetragen (0), rechnet er mit der gerundeten
+  Monatssumme der aktiven Pläne; das Feld zeigt sie als Platzhalter.

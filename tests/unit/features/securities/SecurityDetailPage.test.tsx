@@ -89,6 +89,13 @@ vi.mock("@/features/depots/hooks", () => ({
   useDepots: () => ({ data: [{ id: "dep-1", name: "Hauptdepot", archived_at: null }] }),
 }));
 
+// Sparpläne (seit 2.21.0): keiner hinterlegt.
+vi.mock("@/features/planner/savingsPlanHooks", () => ({
+  useSavingsPlans: () => ({ data: [], isLoading: false }),
+  useSaveSavingsPlans: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  newSavingsPlanId: () => "plan1",
+}));
+
 const { SecurityDetailPage } = await import("@/features/securities/SecurityDetailPage");
 
 function renderPage(id = SECURITY_ID) {
@@ -217,6 +224,13 @@ describe("SecurityDetailPage", () => {
     expect(plan.getByText("Jan")).toBeInTheDocument();
     expect(screen.getAllByText("Geplant:")).toHaveLength(2);
     expect(screen.getAllByText("Nicht geplant:")).toHaveLength(10);
+  });
+
+  it("bietet ohne Sparplan an, einen anzulegen", () => {
+    renderPage();
+    const section = within(screen.getByRole("region", { name: "Sparplan" }));
+    expect(section.getByText("Kein Sparplan hinterlegt.")).toBeInTheDocument();
+    expect(section.getByRole("button", { name: "Sparplan" })).toBeInTheDocument();
   });
 
   it("weist auf unvollstaendige Stammdaten hin", () => {

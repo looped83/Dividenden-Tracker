@@ -77,3 +77,36 @@ test("verwirft Annahmen über der Obergrenze, statt still anders zu rechnen", as
   await page.reload();
   await expect(page.getByLabel("Inflation pro Jahr")).toHaveValue("2");
 });
+
+test("pflegt Sparpläne und zeigt sie am Asset", async ({ page, konto }) => {
+  await seedPortfolio(konto.userId);
+  await page.goto("/#/planer/sparplaene");
+
+  await page.getByRole("button", { name: "Sparplan eintragen" }).click();
+  const dialog = page.getByRole("dialog", { name: "Neuer Sparplan" });
+  await dialog.getByLabel("Asset").selectOption({ label: "Allianz" });
+  await dialog.getByLabel("Rate (€)").fill("30");
+  await dialog.getByLabel("Rhythmus").selectOption("weekly");
+  await dialog.getByRole("button", { name: "Anlegen" }).click();
+  await expect(dialog).toHaveCount(0);
+
+  // 30 € wöchentlich sind 130 € im Monat.
+  await page.reload();
+  const plaene = page.getByRole("region", { name: "Pläne" });
+  await expect(plaene.getByText("Allianz", { exact: true })).toBeVisible();
+  await expect(page.getByText("Sparpläne im Monat")).toBeVisible();
+  await expect(plaene.getByText("≈ 130 €")).toBeVisible();
+
+  await page.goto("/#/depot");
+  await page
+    .getByRole("link", { name: /Allianz/ })
+    .first()
+    .click();
+  const abschnitt = page.getByRole("region", { name: "Sparplan" });
+  await expect(abschnitt.getByText("30 € wöchentlich")).toBeVisible();
+
+  // Der Nachkauf übernimmt die Summe der Pläne als Monatsrate.
+  await page.goto("/#/planer?modus=sparplan");
+  await expect(page.getByLabel("Sparrate pro Monat")).toHaveValue("130");
+  await expect(page.getByText("Deine Sparpläne")).toBeVisible();
+});

@@ -16,10 +16,17 @@ export type PlanFocus = "dividende" | "monate" | "wachstum";
 /** Grenzen je Modus: Schrittweite, Mindestbetrag je Kauf, Auswahl der Anzahl. */
 export const MODE_RULES: Record<
   PlanMode,
-  { step: number; minimum: number; maxBuys: number; defaultBuys: number }
+  {
+    step: number;
+    minimum: number;
+    maxBuys: number;
+    defaultBuys: number;
+    /** Vorbelegter Betrag (beim Sparplan je Monat). */
+    defaultAmount: number;
+  }
 > = {
-  einmal: { step: 50, minimum: 100, maxBuys: 5, defaultBuys: 3 },
-  sparplan: { step: 25, minimum: 25, maxBuys: 10, defaultBuys: 5 },
+  einmal: { step: 50, minimum: 100, maxBuys: 5, defaultBuys: 3, defaultAmount: 3000 },
+  sparplan: { step: 25, minimum: 25, maxBuys: 10, defaultBuys: 5, defaultAmount: 1000 },
 };
 
 /** Eine Position, die nachgekauft werden kann. */

@@ -52,3 +52,22 @@ export async function updateFixedCosts(costs: Json): Promise<void> {
     .eq("id", await currentUserId());
   if (error) throw error;
 }
+
+/** Sparpläne des Planers am eigenen Profil (Migration 0042). */
+export async function fetchSavingsPlans(): Promise<Json | null> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("savings_plans")
+    .eq("id", await currentUserId())
+    .single();
+  if (error) throw error;
+  return data.savings_plans;
+}
+
+export async function updateSavingsPlans(plans: Json): Promise<void> {
+  const { error } = await supabase
+    .from("profiles")
+    .update({ savings_plans: plans })
+    .eq("id", await currentUserId());
+  if (error) throw error;
+}

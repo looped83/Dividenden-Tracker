@@ -54,6 +54,7 @@ import { usePaymentComposer } from "@/features/payments/PaymentComposer";
 import { useResolvedCalendarEvents } from "@/features/calendar/resolvedEvents";
 import { useToday } from "@/lib/hooks/useToday";
 import { nextDividend } from "@/features/securities/nextDividend";
+import { SecuritySavingsPlans } from "@/features/planner/SecuritySavingsPlans";
 
 /**
  * Wie viele Zahlungen die Seite direkt zeigt — so viele wie die Uebersicht.
@@ -513,6 +514,8 @@ export function SecurityDetailPage() {
               )}
             </div>
           </Section>
+
+          <SecuritySavingsPlans securityId={id} archived={archived} />
 
           {/* Dieselben Zeilen wie Position und „Brutto zu Netto". */}
           {/* DivvyDiary findet das Papier ueber die ISIN und leitet auf seine
