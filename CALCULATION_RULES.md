@@ -717,22 +717,26 @@ gespeichert sind nur die Annahmen des Schneeballs (`profiles.forecast_settings`,
   (Horizont 30 Jahre). Kursgewinne fließen nicht ein. Gerechnet wird mit Decimal, angezeigt in
   vollen Euro.
 
-### 14.3 Monatslücken (`monthGaps`, seit 2.13.0)
+### 14.3 Monatslücken (`monthGaps`, seit 2.13.0; Planer › Optimierungen)
 
 - **Lücke:** jeder Monat der Prognose (§14.1) unter ihrem Ø-Monat (`Summe ÷ 12`);
   `Lücke = Ø − Monat`. Reihenfolge wie die Prognose.
 - **Füller:** unter den Positionen, die in dem Monat zahlen, nur solche mit weniger als zwölf
   Zahlungen im Jahr (ein Monatszahler hebt alle Monate gleich) und mit Marktwert > 0. Zukauf
   `= Lücke × Marktwert ÷ Betrag je Zahlung` (netto, wie in der Prognose), auf volle 100 €
-  aufgerundet. Gezeigt werden bis zu drei Füller (seit 2.15.0), der kleinste Zukauf zuerst
+  aufgerundet. Gezeigt werden bis zu drei Füller (seit 2.15.0), geordnet wie unten
   (bei Gleichstand mehr je 1.000 €, dann Name), je mit dem, was 1.000 € Zukauf in dem Monat
   bringen (`1.000 × Betrag je Zahlung ÷ Marktwert`). Die Zeile nennt nur ihre Anzahl („3 Assets
   zum Auffüllen“), alle klappen erst auf Klick auf (seit 2.17.0). Nur Positionen aus dem eigenen
   Bestand; ohne passende Position „Kein passendes Asset im Bestand“.
 - Der Zukauf hebt auch die übrigen Zahlmonate der Position; er ist eine Orientierung, keine
   Kaufempfehlung, und wird nicht gespeichert.
-- Im Planer ausgeschlossene Assets (§16) sind keine Füller (seit 2.20.0), ebenso Positionen,
-  die der Zukauf über die Gewichtung (§16) höbe (seit 2.22.0).
+- Im Planer ausgeschlossene Assets (§16) sind keine Füller (seit 2.20.0). Kein Füller wächst über
+  seine Gewichtung (§16, seit 2.22.0): Passt der ganze Zukauf nicht darunter, gilt seit 2.27.0 der
+  größte, der passt (`x ≤ (g·D − W) ÷ (1 − g)`, auf volle 100 € abgerundet), mit dem Betrag, den
+  er von der Lücke schließt („3.000 € bis zur Gewichtung schließen 22 €“); unter 100 € Platz fällt
+  er weg (bis 2.26 fiel jeder Füller weg, dessen ganzer Zukauf nicht passte). Geordnet nach
+  geschlossenem Betrag, dann kleinster Zukauf.
 
 ---
 

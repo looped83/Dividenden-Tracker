@@ -25,8 +25,9 @@ import { rhythm } from "./format";
 import { POSITION_CAP_DEFAULT, usePositionCaps } from "./positionCaps";
 
 /**
- * Planer › **Monatslücken**: Monate unter dem Ø der Prognose, je mit den
- * Zukäufen gehaltener Positionen, die die Lücke schließen
+ * Planer › **Optimierungen** (bis 2.26 „Monatslücken", die Adresse blieb):
+ * Monate unter dem Ø der Prognose, je mit den Zukäufen gehaltener Positionen,
+ * die die Lücke schließen
  * (CALCULATION_RULES.md §14.3). Zog mit 2.20.0 aus Bestand › Prognose hierher.
  * Jedes Asset führt zu seiner Seite; „Im Nachkauf rechnen" öffnet den
  * Nachkauf mit dem Schwerpunkt „Monate glätten".
@@ -35,7 +36,7 @@ export function GapsTab() {
   const settings = useForecastSettings().data ?? DEFAULT_FORECAST_SETTINGS;
   const caps = usePositionCaps().data;
   return (
-    <ForecastGate emptyDescription="Die Monatslücken zeigen, welche Monate unter deinem Ø liegen und welche Assets aus deinem Bestand sie auffüllen. Dafür brauchen sie einen Depotstand aus dem DivvyDiary-Portfolio-Export.">
+    <ForecastGate emptyDescription="Die Optimierungen zeigen, welche Monate unter deinem Ø liegen und welche Assets aus deinem Bestand sie auffüllen. Dafür brauchen sie einen Depotstand aus dem DivvyDiary-Portfolio-Export.">
       {({ forecast }) => (
         <MonthGaps
           forecast={forecast}
@@ -178,8 +179,10 @@ function GapRow({ gap }: { gap: MonthGap }) {
                   {rhythm(filler.payouts)}
                 </span>
                 <span className="tabular-amount">
-                  +{formatMoney(filler.perThousand)} je 1.000 € · bis Ø{" "}
-                  {formatMoneyWhole(filler.invest)}
+                  +{formatMoney(filler.perThousand)} je 1.000 € ·{" "}
+                  {filler.partial
+                    ? `${formatMoneyWhole(filler.invest)} bis zur Gewichtung schließen ${formatMoneyWhole(filler.closes)}`
+                    : `bis Ø ${formatMoneyWhole(filler.invest)}`}
                 </span>
               </Link>
             </li>

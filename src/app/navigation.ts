@@ -24,10 +24,12 @@ export interface NavItem {
   /**
    * Beginnt eine neue Gruppe der Seitenleiste (seit 2.20.0): Zahlungen
    * (Dividenden, Kalender, Statistiken), Depot (Bestand, Planer), Motivation
-   * (Ziele, Fortschritt), Verwaltung (Einstellungen). Der Abstand zeigt die
-   * Ordnung ohne zusätzliche Überschriften.
+   * (Ziele, Fortschritt). Seit 2.27.0 trennt eine feine Linie die Gruppen —
+   * ein bloßer Abstand wirkte wie ein Fehler.
    */
   groupStart?: boolean;
+  /** Steht unten am Fuß der Seitenleiste statt in der Liste (Einstellungen). */
+  footer?: boolean;
 }
 
 /**
@@ -110,7 +112,7 @@ export const PRIMARY_NAV_ITEMS: readonly NavItem[] = [
     label: "Einstellungen",
     icon: Settings,
     description: "Depots, Import und Datensicherung",
-    groupStart: true,
+    footer: true,
   },
 ];
 
@@ -162,13 +164,13 @@ export const DEPOT_TABS: readonly { to: string; label: string; end?: boolean }[]
 /**
  * Unterbereiche des Planers (seit 2.20.0): **Nachkauf** verteilt einen Betrag
  * auf den Bestand, **Sparplaene** (seit 2.21.0) zeigt die eigenen Sparplaene
- * und was sie bringen, **Monatsluecken** zeigt die schwachen Monate der Prognose,
+ * und was sie bringen, **Optimierungen** (bis 2.26 „Monatslücken") zeigt die schwachen Monate,
  * **Schneeball** rechnet hoch, ab wann Dividenden das Ziel tragen.
  */
 export const PLANNER_TABS: readonly { to: string; label: string; end?: boolean }[] = [
   { to: "/planer", label: "Nachkauf", end: true },
   { to: "/planer/sparplaene", label: "Sparpläne" },
-  { to: "/planer/luecken", label: "Monatslücken" },
+  { to: "/planer/luecken", label: "Optimierungen" },
   { to: "/planer/schneeball", label: "Schneeball" },
 ];
 

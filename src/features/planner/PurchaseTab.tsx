@@ -176,6 +176,7 @@ function Purchase({
   );
 
   const isSavings = mode === "sparplan";
+  const hasPlan = plan !== null && plan.buys.length > 0;
   // Zum Vergleich: was die gepflegten Sparpläne heute bringen.
   const current = React.useMemo(
     () =>
@@ -210,6 +211,11 @@ function Purchase({
       </PlannerHeaderActions>
 
       <div className="space-y-6">
+        {/* Wie im Schneeball: Ergebnis oben, darunter die Eingaben (seit 2.27.0). */}
+        {hasPlan && (
+          <PlanSummary plan={plan} mode={mode} current={current?.annual ?? null} />
+        )}
+
         <SettingsList label="Eingaben" className="grid-cols-2 md:grid-cols-3">
           <NumberField
             id="purchase-amount"
@@ -222,28 +228,6 @@ function Purchase({
               setParam({ betrag: value === null ? null : String(value) });
             }}
           />
-          {/* Mobil volle Breite und zuletzt: „Dividendenwachstum" passt nicht in ein Drittel. */}
-          <SettingCell
-            label="Schwerpunkt"
-            htmlFor="purchase-focus"
-            className="order-last col-span-2 md:order-none md:col-span-1"
-          >
-            <Select
-              id="purchase-focus"
-              className="h-9 py-0"
-              value={focus}
-              onChange={(event) => {
-                const next = event.target.value as PlanFocus;
-                setParam({ fokus: next === "dividende" ? null : next });
-              }}
-            >
-              {(Object.keys(FOCUS_LABEL) as PlanFocus[]).map((key) => (
-                <option key={key} value={key}>
-                  {FOCUS_LABEL[key]}
-                </option>
-              ))}
-            </Select>
-          </SettingCell>
           <SettingCell label={isSavings ? "Pläne" : "Käufe"} htmlFor="purchase-buys">
             <Select
               id="purchase-buys"
@@ -265,9 +249,31 @@ function Purchase({
               )}
             </Select>
           </SettingCell>
+          {/* Mobil volle Breite: „Dividendenwachstum" passt nicht in ein Drittel. */}
+          <SettingCell
+            label="Schwerpunkt"
+            htmlFor="purchase-focus"
+            className="col-span-2 md:col-span-1"
+          >
+            <Select
+              id="purchase-focus"
+              className="h-9 py-0"
+              value={focus}
+              onChange={(event) => {
+                const next = event.target.value as PlanFocus;
+                setParam({ fokus: next === "dividende" ? null : next });
+              }}
+            >
+              {(Object.keys(FOCUS_LABEL) as PlanFocus[]).map((key) => (
+                <option key={key} value={key}>
+                  {FOCUS_LABEL[key]}
+                </option>
+              ))}
+            </Select>
+          </SettingCell>
         </SettingsList>
 
-        {plan === null || plan.buys.length === 0 ? (
+        {!hasPlan ? (
           <p className="px-1 text-sm text-muted-foreground">
             {candidates.length === 0
               ? "Im Bestand ist kein Asset mit Kurs und Dividende, das sich nachkaufen ließe."
@@ -278,18 +284,15 @@ function Purchase({
                   : "Kein Asset hat unter seiner Gewichtung noch Platz."}
           </p>
         ) : (
-          <>
-            <PlanSummary plan={plan} mode={mode} current={current?.annual ?? null} />
-            <SpreadLine
-              spread={spread}
-              cap={caps.get(spread?.position.key ?? "") ?? POSITION_CAP_DEFAULT}
-              plan={plan}
-            />
-          </>
+          <SpreadLine
+            spread={spread}
+            cap={caps.get(spread?.position.key ?? "") ?? POSITION_CAP_DEFAULT}
+            plan={plan}
+          />
         )}
       </div>
 
-      {plan !== null && plan.buys.length > 0 && (
+      {hasPlan && (
         <>
           <Section title={isSavings ? "Sparpläne" : "Käufe"}>
             <ListGroup>
