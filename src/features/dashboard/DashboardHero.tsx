@@ -497,6 +497,7 @@ function AnnualGoal({
     >
       <span
         role="progressbar"
+        aria-label="Jahresziel"
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={Math.round(reached)}

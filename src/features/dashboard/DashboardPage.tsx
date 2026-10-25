@@ -18,6 +18,7 @@ import { UpcomingPayments } from "./UpcomingPayments";
 import { Distribution } from "./Distributions";
 import { RecentPayments } from "./RecentPayments";
 import { HistoricalOverview } from "./HistoricalOverview";
+import { MonthRecapCard } from "./MonthRecapCard";
 import { buildEntityMap, describeSelection } from "./format";
 import { usePaymentComposer } from "@/features/payments/PaymentComposer";
 
@@ -146,12 +147,19 @@ export function DashboardPage() {
         </p>
       )}
 
-      {/* Telefon: eine Spalte in der Reihenfolge Kopf, Demnächst, Verteilung,
+      {/* Telefon: eine Spalte in der Reihenfolge (Monatsabschluss), Kopf, Demnächst, Verteilung,
           Eingänge, Gesamt. Ab `lg` zwei Spalten — links Kopf und Eingänge,
           rechts was daneben gelesen wird. Die Spalten sind auf dem Telefon
           `contents`, damit `order` die Abschnitte über beide hinweg ordnet. */}
       <div className="flex flex-col gap-10 lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start lg:gap-x-16">
         <div className="contents lg:flex lg:flex-col lg:gap-12">
+          {/* Der Abschluss gehört wie „Demnächst" zum Jetzt. Steht er da, ist
+              er das Erste, was man zum Monatsanfang sieht. */}
+          {(selection === "all" || selection === today.year) && (
+            <div className="order-first empty:hidden">
+              <MonthRecapCard payments={payments} securities={securities} today={today} />
+            </div>
+          )}
           <div className="order-1">
             <DashboardHero payments={payments} selection={selection} today={today} />
           </div>

@@ -352,7 +352,10 @@ maximaler Kontrast auf Schwarz lässt Schrift auf OLED ausfransen.
 
 ## Dashboard (Phase 5A)
 
-**Aufbau (von oben):** Seitenüberschrift mit Jahres-Pille → Kopf (`DashboardHero`: Hauptzahl,
+**Aufbau (von oben):** Seitenüberschrift mit Jahres-Pille → in den ersten sieben Tagen eines
+Monats der **Monatsabschluss** des Vormonats (gedämpfte Fläche mit Überschrift, Schließen und
+drei Kennzahlen: Erhalten mit Vorjahresmonat, Top-Zahler, Monatsziel; CALCULATION_RULES.md
+§11.13) → Kopf (`DashboardHero`: Hauptzahl,
 Veränderung, Jahresziel, Diagramm, Kennzahlen) → „Demnächst" (nur laufendes Jahr und „Alle
 Jahre") → „Verteilung" (Assets/Depots umschaltbar) → letzte Dividenden → Summe seit Beginn. Alle
 Abschnitte ohne Kartenrahmen (`Section`). **Ab `lg` zwei Spalten:** links Kopf und letzte
