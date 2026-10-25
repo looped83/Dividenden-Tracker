@@ -189,7 +189,11 @@ export function SecurityDetailPage() {
     <DetailBackLink
       to="/depot"
       label="Zum Bestand"
-      labels={{ "/statistiken": "Zu den Statistiken", "/eingaenge": "Zur Dividende" }}
+      labels={{
+        "/statistiken": "Zu den Statistiken",
+        "/eingaenge": "Zur Dividende",
+        "/fortschritt": "Zum Fortschritt",
+      }}
     />
   );
 

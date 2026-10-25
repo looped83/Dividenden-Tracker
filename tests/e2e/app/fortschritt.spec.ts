@@ -117,4 +117,6 @@ test("zeigt, wie viel vom Kaufpreis zurückverdient ist", async ({ page, konto }
   );
   await bereich.getByRole("link", { name: /Allianz/ }).click();
   await expect(page.getByRole("heading", { name: "Allianz" })).toBeVisible();
+  await page.getByRole("link", { name: "Zum Fortschritt" }).click();
+  await expect(bereich).toBeVisible();
 });
