@@ -131,29 +131,14 @@ export function validateBeforeRestore(backup: BackupRoot): {
 // Cache Invalidation
 // ============================================================================
 
-/** Laedt nach dem Einspielen alle Ansichten neu. */
+/**
+ * Laedt nach dem Einspielen alle Ansichten neu. Ein Aufruf fuer alles: Die
+ * fruehere Liste einzelner Schluessel davor (teils gar nicht vergeben) loeste
+ * je aktiver Abfrage einen Abruf aus, den der Gesamtaufruf gleich wieder
+ * abbrach und neu startete — doppelte Anfragen fuer nichts.
+ */
 function invalidateBackupAffectedCaches(): void {
-  const keysToInvalidate = [
-    ["depots"],
-    ["securities"],
-    ["dividend_payments"],
-    ["goals"],
-    ["imports"],
-    ["profile"],
-    ["statistics"],
-    ["dashboard"],
-    ["payments"],
-  ];
-
-  for (const key of keysToInvalidate) {
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    queryClient.invalidateQueries({ queryKey: key });
-  }
-
-  // Sicherheitsnetz: Nach einem Restore ist jede zwischengespeicherte Antwort
-  // veraltet — auch die, die oben nicht namentlich steht.
-  // eslint-disable-next-line @typescript-eslint/no-floating-promises
-  queryClient.invalidateQueries();
+  void queryClient.invalidateQueries();
 }
 
 /**

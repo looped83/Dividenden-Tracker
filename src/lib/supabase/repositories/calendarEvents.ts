@@ -1,6 +1,8 @@
 import { supabase } from "@/lib/supabase/client";
 import { fetchAllPages } from "@/lib/supabase/fetchAllPages";
 import type { CalendarEventRow, CalendarSyncStatusRow } from "@/lib/calendar/types";
+import { calendarLoadStart } from "@/lib/calendar/month";
+import { refDateFromDate } from "@/lib/statistics/dates";
 
 /** Name der Edge Function; eine Stelle fuer Aufruf und Dokumentation. */
 const CALENDAR_SYNC_FUNCTION = "sync-divvydiary-calendar";
@@ -11,6 +13,9 @@ const CALENDAR_SYNC_FUNCTION = "sync-divvydiary-calendar";
  * Aus der Quelle entfernte Termine bleiben in der Datenbank nachvollziehbar
  * erhalten, gehoeren aber nicht mehr in die Ansicht — sie werden serverseitig
  * herausgefiltert, statt sie unnoetig zu uebertragen.
+ *
+ * Geladen wird erst ab Beginn des Vormonats (`calendarLoadStart`): Uebersicht
+ * und Ziele brauchen nur Kommendes, das Monatsraster blaettert bis dorthin.
  *
  * Eindeutige Sortierung (Datum plus `id`), weil `fetchAllPages` sonst ueber
  * Seitengrenzen hinweg Zeilen doppelt oder gar nicht sehen kann.
@@ -27,6 +32,7 @@ export async function fetchCalendarEvents(): Promise<CalendarEventRow[]> {
       .from("dividend_calendar_events")
       .select(CALENDAR_EVENT_COLUMNS)
       .neq("event_state", "removed_from_source")
+      .gte("event_date", calendarLoadStart(refDateFromDate()))
       .order("event_date", { ascending: true })
       .order("id", { ascending: true })
       .range(from, to),

@@ -22,9 +22,9 @@ function normalize(amounts: ImportCellValue[]) {
 }
 
 describe("normalizeRows — Beträge", () => {
-  it("weist negative Beträge und 0 als fehlerhafte Zeile aus", async () => {
+  it("weist negative Beträge und 0 als fehlerhafte Zeile aus", () => {
     // 0,004 ist zwar positiv, ergibt gerundet aber einen Eingang ueber 0,00 €.
-    const rows = await normalize(["-5,00", "(1,50)", "0,00", 0, "0,0040"]);
+    const rows = normalize(["-5,00", "(1,50)", "0,00", 0, "0,0040"]);
 
     for (const row of rows) {
       expect(row.status).toBe("invalid");
@@ -32,8 +32,8 @@ describe("normalizeRows — Beträge", () => {
     }
   });
 
-  it("rundet mehr als zwei Nachkommastellen kaufmännisch (R-1) und warnt", async () => {
-    const [fromNumber, fromText] = await normalize([12.3456789, "1,0050"]);
+  it("rundet mehr als zwei Nachkommastellen kaufmännisch (R-1) und warnt", () => {
+    const [fromNumber, fromText] = normalize([12.3456789, "1,0050"]);
 
     expect(fromNumber.netAmount).toBe("12.35");
     expect(fromNumber.status).toBe("valid_warning");
@@ -41,17 +41,17 @@ describe("normalizeRows — Beträge", () => {
     expect(fromText.netAmount).toBe("1.01");
   });
 
-  it("laesst Beträge mit bis zu zwei Nachkommastellen unverändert", async () => {
-    const [row] = await normalize(["12,50"]);
+  it("laesst Beträge mit bis zu zwei Nachkommastellen unverändert", () => {
+    const [row] = normalize(["12,50"]);
 
     expect(row.netAmount).toBe("12.50");
     expect(row.status).toBe("valid");
   });
 
-  it("erwartet dieselben Summen, die die Datenbank aus gerundeten Zeilen bildet", async () => {
+  it("erwartet dieselben Summen, die die Datenbank aus gerundeten Zeilen bildet", () => {
     // Je Zeile gerundet: 1,01 + 1,01 = 2,02 — ungerundet summiert waeren es
     // 2,01, und der Server haette den Import abgelehnt.
-    const rows = await normalize([1.005, 1.005]);
+    const rows = normalize([1.005, 1.005]);
     const payload = buildCommitPayload({
       rows,
       companyDecisions: new Map(),

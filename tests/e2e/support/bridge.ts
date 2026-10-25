@@ -195,6 +195,12 @@ function buildWhere(
         values.push(value);
         index += 1;
         break;
+      // Der Kalender laedt erst ab Beginn des Vormonats (`event_date >= …`).
+      case "gte":
+        conditions.push(`t.${column} >= $${String(index)}`);
+        values.push(value);
+        index += 1;
+        break;
       case "is":
         if (value !== "null") {
           throw new BridgeError(501, "PGRSTX03", `is.${value} wird nicht unterstuetzt.`);

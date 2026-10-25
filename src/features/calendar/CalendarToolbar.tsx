@@ -10,11 +10,14 @@ import { monthNameDe } from "@/lib/statistics";
 export function CalendarToolbar({
   year,
   month,
+  canGoBack,
   onShiftMonth,
   onToday,
 }: {
   year: number;
   month: number;
+  /** Falsch im fruehesten geladenen Monat: Davor stuende ein leeres Raster. */
+  canGoBack: boolean;
   onShiftMonth: (delta: number) => void;
   onToday: () => void;
 }) {
@@ -25,6 +28,7 @@ export function CalendarToolbar({
         size="icon"
         aria-label="Vorheriger Monat"
         className="-ml-3"
+        disabled={!canGoBack}
         onClick={() => {
           onShiftMonth(-1);
         }}

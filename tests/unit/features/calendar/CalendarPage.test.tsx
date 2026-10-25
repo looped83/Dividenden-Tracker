@@ -310,6 +310,18 @@ describe("Monatsansicht", () => {
     expect(screen.getByRole("heading", { name: "August 2026" })).toBeInTheDocument();
   });
 
+  it("blaettert nur bis zum Vormonat zurueck — aeltere Termine werden nicht geladen", async () => {
+    const user = userEvent.setup();
+    zustand.events = [event({ id: "1", date: "2026-08-13" })];
+    renderPage("month");
+
+    const zurueck = screen.getByRole("button", { name: "Vorheriger Monat" });
+    expect(zurueck).toBeEnabled();
+    await user.click(zurueck);
+    expect(screen.getByRole("heading", { name: "Juli 2026" })).toBeInTheDocument();
+    expect(zurueck).toBeDisabled();
+  });
+
   it("beschriftet die Wochentagsspalten vollstaendig", () => {
     zustand.events = [event({ id: "1", date: "2026-08-13" })];
     renderPage("month");

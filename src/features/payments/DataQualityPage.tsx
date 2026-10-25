@@ -10,6 +10,7 @@ import { Section } from "@/components/ui/section";
 import { Disclosure } from "@/components/ui/disclosure";
 import { useToast } from "@/components/ui/toast";
 import { ListGroup, ListItemBody, ListRow } from "@/components/ui/list";
+import { LoadMore } from "@/components/ui/load-more";
 import { AmountText } from "@/components/money/AmountText";
 import { formatCountNumber } from "@/lib/utils/formatNumber";
 import { formatCalendarDate, formatTimestamp } from "@/lib/utils/formatDate";
@@ -38,6 +39,13 @@ import { isoFromRef } from "@/lib/statistics";
 import { useToday } from "@/lib/hooks/useToday";
 import { isImported, sourceLabel } from "./paymentDisplay";
 import { DeleteDialog, StornoDialog, type PaymentSummaryData } from "./dialogs";
+
+/**
+ * Befunde je Schritt. Ohne Grenze zeichnete die Seite jeden Befund: Ein doppelt
+ * eingespielter Export ergibt so viele Dubletten wie Zeilen — bei 1.400
+ * Zahlungen rund 40.000 Elemente und sekundenlanges Stocken auf dem Telefon.
+ */
+const STEP = 20;
 
 export function DataQualityPage() {
   const { data: securities = [] } = useSecurities();
@@ -82,6 +90,8 @@ export function DataQualityPage() {
   // Wie bei den Dubletten: offene Befunde oben, als geprüft markierte
   // eingeklappt darunter. Eine Markierung, deren Befund nicht mehr besteht
   // (Betrag korrigiert, storniert, gelöscht), erscheint nicht.
+  const [shownDuplicates, setShownDuplicates] = React.useState(STEP);
+  const [shownAnomalies, setShownAnomalies] = React.useState(STEP);
   const { anomalies, reviewedAnomalies } = React.useMemo(() => {
     const reviewedSet = new Set(reviewedKeys);
     const all = detectAnomalies(payments, today);
@@ -247,7 +257,7 @@ export function DataQualityPage() {
                 )
               ) : (
                 <ul className="space-y-4">
-                  {duplicatePairs.map((pair) => (
+                  {duplicatePairs.slice(0, shownDuplicates).map((pair) => (
                     <DuplicateCard
                       key={pair.key}
                       pair={pair}
@@ -268,6 +278,17 @@ export function DataQualityPage() {
                     />
                   ))}
                 </ul>
+              )}
+              {duplicatePairs.length > shownDuplicates && (
+                <LoadMore
+                  shown={shownDuplicates}
+                  total={duplicatePairs.length}
+                  onLoad={() => {
+                    setShownDuplicates((count) => count + STEP);
+                  }}
+                >
+                  Weitere anzeigen
+                </LoadMore>
               )}
               {dismissedPairs.length > 0 && (
                 <Disclosure
@@ -363,7 +384,7 @@ export function DataQualityPage() {
                 // Dublette" bei den Dubletten. Neben dem Text stand sie auf dem
                 // Telefon im Weg: Der Hinweis brach dort auf fünf Zeilen um.
                 <ListGroup>
-                  {anomalies.map((anomaly) => {
+                  {anomalies.slice(0, shownAnomalies).map((anomaly) => {
                     const asset = securityName(anomaly.payment.security_id);
                     const date = formatCalendarDate(anomaly.payment.pay_date);
                     return (
@@ -406,6 +427,17 @@ export function DataQualityPage() {
                     );
                   })}
                 </ListGroup>
+              )}
+              {anomalies.length > shownAnomalies && (
+                <LoadMore
+                  shown={shownAnomalies}
+                  total={anomalies.length}
+                  onLoad={() => {
+                    setShownAnomalies((count) => count + STEP);
+                  }}
+                >
+                  Weitere anzeigen
+                </LoadMore>
               )}
               {reviewedAnomalies.length > 0 && (
                 <Disclosure

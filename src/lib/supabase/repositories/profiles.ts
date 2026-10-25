@@ -3,7 +3,8 @@ import type { Json } from "@/lib/supabase/database.types";
 
 /**
  * Einstellungen am eigenen Profil: Annahmen des Dividenden-Schneeballs
- * (Migration 0034) und Fixkosten des Fortschritts (Migration 0041).
+ * (Migration 0034), Fixkosten des Fortschritts (0041), Sparplaene (0042) und
+ * Gewichtungen je Asset (0043).
  *
  * Gefiltert wird ueber die Kennung der lokalen Sitzung, nicht ueber
  * `getUser()` — das kostete einen Umlauf zum Auth-Server. Welche Zeile gelesen
@@ -16,77 +17,46 @@ async function currentUserId(): Promise<string> {
   return id;
 }
 
-export async function fetchForecastSettings(): Promise<Json | null> {
+/** Die JSON-Spalten des Profils, die jeweils einen Bereich der App tragen. */
+type SettingsColumn =
+  "forecast_settings" | "fixed_costs" | "savings_plans" | "position_caps";
+
+/**
+ * Liest genau eine Spalte — je Bereich ein eigener Cache-Eintrag, damit ein
+ * Speichern der Sparplaene nicht die Fixkosten neu laedt.
+ */
+async function fetchSetting(column: SettingsColumn): Promise<Json | null> {
   const { data, error } = await supabase
     .from("profiles")
-    .select("forecast_settings")
+    .select(column)
     .eq("id", await currentUserId())
     .single();
   if (error) throw error;
-  return data.forecast_settings;
+  // Der Ergebnistyp einer zur Laufzeit gewaehlten Spalte ist fuer PostgREST
+  // nicht ableitbar; alle vier Spalten sind `jsonb`.
+  return (data as Record<SettingsColumn, Json | null>)[column];
 }
 
-export async function updateForecastSettings(settings: Json): Promise<void> {
+async function updateSetting(column: SettingsColumn, value: Json): Promise<void> {
+  // Typisiert statt inline: Einen berechneten Schluessel weitet TypeScript zur
+  // Indexsignatur, die PostgREST als ueberzaehlige Spalte ablehnt.
+  const patch: Partial<Record<SettingsColumn, Json>> = { [column]: value };
   const { error } = await supabase
     .from("profiles")
-    .update({ forecast_settings: settings })
+    .update(patch)
     .eq("id", await currentUserId());
   if (error) throw error;
 }
 
-/** Fixkosten des Fortschritts am eigenen Profil (Migration 0041). */
-export async function fetchFixedCosts(): Promise<Json | null> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("fixed_costs")
-    .eq("id", await currentUserId())
-    .single();
-  if (error) throw error;
-  return data.fixed_costs;
-}
+export const fetchForecastSettings = () => fetchSetting("forecast_settings");
+export const updateForecastSettings = (settings: Json) =>
+  updateSetting("forecast_settings", settings);
 
-export async function updateFixedCosts(costs: Json): Promise<void> {
-  const { error } = await supabase
-    .from("profiles")
-    .update({ fixed_costs: costs })
-    .eq("id", await currentUserId());
-  if (error) throw error;
-}
+export const fetchFixedCosts = () => fetchSetting("fixed_costs");
+export const updateFixedCosts = (costs: Json) => updateSetting("fixed_costs", costs);
 
-/** Sparpläne des Planers am eigenen Profil (Migration 0042). */
-export async function fetchSavingsPlans(): Promise<Json | null> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("savings_plans")
-    .eq("id", await currentUserId())
-    .single();
-  if (error) throw error;
-  return data.savings_plans;
-}
+export const fetchSavingsPlans = () => fetchSetting("savings_plans");
+export const updateSavingsPlans = (plans: Json) => updateSetting("savings_plans", plans);
 
-export async function updateSavingsPlans(plans: Json): Promise<void> {
-  const { error } = await supabase
-    .from("profiles")
-    .update({ savings_plans: plans })
-    .eq("id", await currentUserId());
-  if (error) throw error;
-}
-
-/** Positionsgrenzen je Asset am eigenen Profil (Migration 0043). */
-export async function fetchPositionCaps(): Promise<Json | null> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("position_caps")
-    .eq("id", await currentUserId())
-    .single();
-  if (error) throw error;
-  return data.position_caps;
-}
-
-export async function updatePositionCaps(caps: Json): Promise<void> {
-  const { error } = await supabase
-    .from("profiles")
-    .update({ position_caps: caps })
-    .eq("id", await currentUserId());
-  if (error) throw error;
-}
+export const fetchPositionCaps = () => fetchSetting("position_caps");
+export const updatePositionCaps = (caps: Json) => updateSetting("position_caps", caps);

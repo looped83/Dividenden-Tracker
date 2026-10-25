@@ -58,6 +58,24 @@ export function addDays(iso: string, days: number): string {
   );
 }
 
+/**
+ * Fruehester Monat, den die App aus dem Kalender laedt: der Vormonat. Aeltere
+ * Termine braucht nur das Zurueckblaettern; sie machten aber rund drei Viertel
+ * jedes Abrufs aus (Stand 2.29.0) und wuchsen mit jedem Monat weiter.
+ */
+export function earliestCalendarMonth(today: { year: number; month: number }): {
+  year: number;
+  month: number;
+} {
+  return shiftMonth(today.year, today.month, -1);
+}
+
+/** Erster Tag von {@link earliestCalendarMonth} als ISO-Datum — die Ladegrenze. */
+export function calendarLoadStart(today: { year: number; month: number }): string {
+  const { year, month } = earliestCalendarMonth(today);
+  return isoDate(year, month, 1);
+}
+
 /** Verschiebt Jahr/Monat um `delta` Monate (month 1-basiert). */
 export function shiftMonth(
   year: number,
