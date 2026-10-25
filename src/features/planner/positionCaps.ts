@@ -14,17 +14,20 @@ import {
 export type PositionCaps = ReadonlyMap<string, number>;
 
 /**
- * Grenze für Assets ohne eigene (seit 2.23.1 fest): Gepflegt wird je Asset,
+ * Gewichtung für Assets ohne eigene (seit 2.23.1 fest, seit 2.24.0 1 % statt
+ * 8 %): Gepflegt wird je Asset,
  * ein eigener Standard im Nachkauf doppelte sich nur damit.
  */
-export const POSITION_CAP_DEFAULT = 8;
+export const POSITION_CAP_DEFAULT = 1;
 
-/** Wählbare Grenzen auf der Seite des Assets. */
-export const POSITION_CAP_CHOICES = [
-  2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30, 40, 50,
-] as const;
+/**
+ * Eigene Gewichtung je Asset in Prozent, auf eine Nachkommastelle (seit
+ * 2.24.0; zuvor eine Auswahl ganzer Werte von 2 bis 50).
+ */
+export const POSITION_CAP_MIN = 0.5;
+export const POSITION_CAP_MAX = 50;
 
-const capSchema = z.number().int().min(1).max(100);
+const capSchema = z.number().min(POSITION_CAP_MIN).max(100);
 
 /** Liest die gespeicherten Grenzen; ungültige Einträge fallen weg. */
 export function parsePositionCaps(raw: unknown): Map<string, number> {

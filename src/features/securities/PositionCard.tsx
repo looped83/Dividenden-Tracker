@@ -7,7 +7,6 @@ import { AmountText } from "@/components/money/AmountText";
 import { Money, formatPercent, toCurrencyCode } from "@/lib/money";
 import { formatCalendarDate } from "@/lib/utils/formatDate";
 import { ratioToPercent, type SnapshotStatus } from "@/features/securities/snapshots";
-import { effectiveFrequency, FREQUENCY_LABELS } from "@/features/securities/analysis";
 
 /**
  * Der Depotstand eines Unternehmens (docs/PORTFOLIO_IMPORT.md).
@@ -26,22 +25,15 @@ import { effectiveFrequency, FREQUENCY_LABELS } from "@/features/securities/anal
  * darunter alle Detailwerte offen als Zeilen — das Aufklappen „Alle
  * Kennzahlen" entfaellt, weil der Abschnitt ohnehin weit unten steht.
  *
+ * Der Rhythmus steht seit 2.24.0 am Ausschuettungsplan, nicht mehr hier.
+ *
  * Kein Wert dieses Abschnitts fliesst in Statistik oder Ziele (PRODUCT_SPEC.md
  * Grundsatz 8); es sind Marktdaten und **erwartete** Ausschuettungen einer
  * fremden Quelle.
  */
-export function PositionCard({
-  status,
-  payoutMonths,
-}: {
-  status: SnapshotStatus;
-  /** Gepflegte Ausschuettungsmonate; sie gehen dem Rhythmus des Exports vor. */
-  payoutMonths: readonly number[];
-}) {
+export function PositionCard({ status }: { status: SnapshotStatus }) {
   const { snapshot, current } = status;
   if (snapshot === null) return null;
-
-  const frequency = effectiveFrequency(snapshot.dividend_frequency, payoutMonths);
 
   const currency = toCurrencyCode(snapshot.currency);
   const money = (value: string | null) =>
@@ -101,9 +93,6 @@ export function PositionCard({
           </DetailRow>
           <DetailRow label="Dividende je Aktie">
             {orDash(dividendPerShare && <AmountText amount={dividendPerShare} />)}
-          </DetailRow>
-          <DetailRow label="Rhythmus">
-            {orDash(frequency && FREQUENCY_LABELS[frequency])}
           </DetailRow>
           <DetailRow label="Wachstum">
             {orDash(

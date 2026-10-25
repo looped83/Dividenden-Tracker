@@ -732,7 +732,7 @@ gespeichert sind nur die Annahmen des Schneeballs (`profiles.forecast_settings`,
 - Der Zukauf hebt auch die übrigen Zahlmonate der Position; er ist eine Orientierung, keine
   Kaufempfehlung, und wird nicht gespeichert.
 - Im Planer ausgeschlossene Assets (§16) sind keine Füller (seit 2.20.0), ebenso Positionen,
-  die der Zukauf über die Positionsgrenze (§16) höbe (seit 2.22.0).
+  die der Zukauf über die Gewichtung (§16) höbe (seit 2.22.0).
 
 ---
 
@@ -817,10 +817,11 @@ die Eingaben stehen in der Adresse (`?modus=sparplan&betrag=1000&fokus=monate&an
 - **Ausschließen:** bis zu 30 Assets, gespeichert mit den Schneeball-Annahmen in
   `profiles.forecast_settings.excluded` (nicht in der Datensicherung). Sie zählen weiter in der
   Prognose, werden aber weder im Nachkauf noch als Füller der Monatslücken vorgeschlagen.
-- **Positionsgrenze** (seit 2.22.0): Keine Position wächst über diesen Anteil am Depot nach dem
+- **Gewichtung** (seit 2.22.0 als „Positionsgrenze“, seit 2.24.0 so benannt): Keine Position wächst über diesen Anteil am Depot nach dem
   Kauf (Marktwert aller Positionen + investiert; beim Sparplan zwölf Raten). Die Grenze
-  wählst du **je Asset** auf seiner Seite (2–50 %, `profiles.position_caps`, Migration 0043, nicht
-  in der Datensicherung); ohne eigene gilt fest 8 % (seit 2.23.1; zuvor ein einstellbarer Standard
+  wählst du **je Asset** auf seiner Seite (0,5–50 % auf eine Nachkommastelle, seit 2.24.0; zuvor ganze
+  Werte 2–50 %; `profiles.position_caps`, Migration 0043, nicht
+  in der Datensicherung); ohne eigene gilt fest 1 % (seit 2.24.0; 2.23.1 fest 8 %, zuvor ein einstellbarer Standard
   im Nachkauf). Gilt auch bei den Monatslücken. Positionen ohne
   Platz für den Mindestbetrag fallen weg; ist eine gewählte voll, bekommen die übrigen mehr. Die
   gewählte Zahl der Käufe bleibt; was darin keinen Platz findet, nennt der Plan.

@@ -36,9 +36,7 @@ function snapshot(overrides: Partial<SecuritySnapshot> = {}): SecuritySnapshot {
 
 describe("PositionCard", () => {
   it("zeigt Marktwert und Rendite als Kennzahlen", () => {
-    render(
-      <PositionCard status={{ snapshot: snapshot(), current: true }} payoutMonths={[]} />,
-    );
+    render(<PositionCard status={{ snapshot: snapshot(), current: true }} />);
     expect(screen.getByText("Marktwert")).toBeInTheDocument();
     expect(screen.getByText(/^\+888,00\s€$/)).toBeInTheDocument();
     expect(screen.getByText(/^auf Einstand 6,08\s%$/)).toBeInTheDocument();
@@ -48,31 +46,20 @@ describe("PositionCard", () => {
 
   it("zeigt die uebrigen Werte offen als Zeilen", () => {
     const { container } = render(
-      <PositionCard status={{ snapshot: snapshot(), current: true }} payoutMonths={[]} />,
+      <PositionCard status={{ snapshot: snapshot(), current: true }} />,
     );
     expect(container.querySelector("details")).toBeNull();
     expect(screen.getByText("Stückzahl")).toBeInTheDocument();
     expect(screen.getByText("120")).toBeInTheDocument();
-    expect(screen.getByText("monatlich")).toBeInTheDocument();
+    // Der Rhythmus steht seit 2.24.0 am Ausschuettungsplan der Seite.
+    expect(screen.queryByText("Rhythmus")).not.toBeInTheDocument();
     expect(screen.getByText(/4,2\s% p\. a\. über 5 Jahre/)).toBeInTheDocument();
-  });
-
-  it("nennt den Rhythmus nach den gepflegten Ausschuettungsmonaten", () => {
-    render(
-      <PositionCard
-        status={{ snapshot: snapshot(), current: true }}
-        payoutMonths={[3, 6, 9, 12]}
-      />,
-    );
-    expect(screen.getByText("vierteljährlich")).toBeInTheDocument();
-    expect(screen.queryByText("monatlich")).not.toBeInTheDocument();
   });
 
   it("kennzeichnet einen verkauften Bestand in der Ueberschrift", () => {
     render(
       <PositionCard
         status={{ snapshot: snapshot({ as_of: "2026-03-31" }), current: false }}
-        payoutMonths={[]}
       />,
     );
     expect(

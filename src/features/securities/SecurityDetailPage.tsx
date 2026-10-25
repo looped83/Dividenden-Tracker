@@ -54,8 +54,8 @@ import { usePaymentComposer } from "@/features/payments/PaymentComposer";
 import { useResolvedCalendarEvents } from "@/features/calendar/resolvedEvents";
 import { useToday } from "@/lib/hooks/useToday";
 import { nextDividend } from "@/features/securities/nextDividend";
-import { SecurityPositionCap } from "@/features/planner/SecurityPositionCap";
-import { SecuritySavingsPlans } from "@/features/planner/SecuritySavingsPlans";
+import { SecurityPlanning } from "@/features/planner/SecurityPlanning";
+import { effectiveFrequency, FREQUENCY_LABELS } from "@/features/securities/analysis";
 
 /**
  * Wie viele Zahlungen die Seite direkt zeigt — so viele wie die Uebersicht.
@@ -229,6 +229,11 @@ export function SecurityDetailPage() {
   const payoutMonths = normalizePayoutMonths(security.payout_months);
   const quality = deriveDataQuality(security);
   const archived = Boolean(security.archived_at);
+  // Gepflegte Monate gehen dem Rhythmus des Depotstands vor (seit 1.41.3).
+  const frequency = effectiveFrequency(
+    snapshotStatus.snapshot?.dividend_frequency ?? null,
+    payoutMonths,
+  );
 
   // Kopf: was dieses Papier bringt. Erwartet (laut Depotstand) neben dem
   // zuletzt abgeschlossenen Jahr — ein laufendes Jahr liesse die Erwartung
@@ -376,8 +381,8 @@ export function SecurityDetailPage() {
 
       {/* Reihenfolge seit 1.30.0 wie auf der Detailseite einer Dividende:
           erst was das Papier bringt (Summe, Erwartung, letztes Jahr, naechste
-          Zahlung), dann der Verlauf und die letzten Eingaenge, zuletzt Position,
-          Ausschuettungsplan und Stammdaten. Zuvor standen Position und
+          Zahlung), dann der Verlauf und die letzten Eingaenge, danach Position
+          und Ausschuettungsplan, zuletzt Planung und Stammdaten. Zuvor standen Position und
           „Erhalten insgesamt" als zwei gleich starke Koepfe untereinander. */}
       {stats.count === 0 ? (
         <EmptyState
@@ -473,12 +478,25 @@ export function SecurityDetailPage() {
       )}
 
       {/* Die Position steht ausserhalb der Bedingung oben: Ein frisch gekauftes
-          Papier hat einen Bestand, aber noch keinen Eingang. */}
+          Papier hat einen Bestand, aber noch keinen Eingang.
+          Seit 2.24.0 nach Fragen: was ist es wert (Position), wann zahlt es
+          und was habe ich vor (Ausschuettung, Planung), was ist es
+          (Stammdaten). So sind beide Spalten etwa gleich hoch; zuvor standen
+          rechts vier Abschnitte neben der einen Position. */}
       <div className="grid grid-cols-1 gap-10 pt-4 lg:grid-cols-2 lg:gap-x-16">
-        <PositionCard status={snapshotStatus} payoutMonths={payoutMonths} />
+        <PositionCard status={snapshotStatus} />
 
         <div className="space-y-10">
-          <Section title="Ausschüttungsplan">
+          <Section
+            title={
+              <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                Ausschüttungsplan{" "}
+                {frequency && (
+                  <Badge variant="neutral">{FREQUENCY_LABELS[frequency]}</Badge>
+                )}
+              </span>
+            }
+          >
             <div>
               {payoutMonths.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
@@ -486,8 +504,6 @@ export function SecurityDetailPage() {
                   tatsächlich eingegangen sind.
                 </p>
               ) : (
-                // Die Zaehlregel steht nicht mehr hier: Sie gilt fuer jeden Plan
-                // gleich und sagte auf der Seite eines Assets nichts Eigenes.
                 // Zwei Reihen zu je sechs Monaten in gleich breiten Spalten
                 // (seit 1.30.1): Zuvor brach die Reihe je nach Breite nach
                 // sieben, neun oder elf Monaten um.
@@ -516,61 +532,62 @@ export function SecurityDetailPage() {
             </div>
           </Section>
 
-          <SecuritySavingsPlans securityId={id} archived={archived} />
-
-          {!archived && <SecurityPositionCap securityId={id} />}
-
-          {/* Dieselben Zeilen wie Position und „Brutto zu Netto". */}
-          {/* DivvyDiary findet das Papier ueber die ISIN und leitet auf seine
-              Seite weiter — ohne ISIN gibt es kein verlaessliches Ziel. */}
-          <Section
-            title="Stammdaten"
-            action={
-              security.isin?.trim() && (
-                <SectionExternalLink href={divvyDiaryUrl(security.isin.trim())}>
-                  DivvyDiary
-                </SectionExternalLink>
-              )
-            }
-          >
-            <div className="space-y-4">
-              <div>
-                <Field label="ISIN" value={security.isin} copyable />
-                <Field label="WKN" value={security.wkn} copyable />
-                <Field label="Ticker" value={security.ticker} copyable />
-                <Field label="Land" value={security.country} />
-                <Field label="Branche" value={security.sector} />
-                <Field label="Währung" value={security.currency} />
-                <Field
-                  label="Depot"
-                  value={
-                    security.default_depot_id
-                      ? depotName(security.default_depot_id)
-                      : null
-                  }
-                />
-              </div>
-
-              {quality === "incomplete" && (
-                <p className="flex gap-2 rounded-2xl bg-muted p-3 text-sm text-muted-foreground">
-                  <ShieldAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
-                  <span>
-                    Die Stammdaten sind unvollständig. Das beeinträchtigt nichts an den
-                    Auswertungen — es erschwert aber das Wiederfinden und den Abgleich mit
-                    Broker-Belegen.
-                  </span>
-                </p>
-              )}
-
-              {security.note && (
-                <div className="border-t border-border pt-3">
-                  <p className="text-sm text-muted-foreground">Notiz</p>
-                  <p className="whitespace-pre-wrap text-sm">{security.note}</p>
-                </div>
-              )}
-            </div>
-          </Section>
+          <SecurityPlanning securityId={id} archived={archived} />
         </div>
+      </div>
+
+      {/* Stammdaten ueber die ganze Breite, die Felder auf dem Desktop in zwei
+          Spalten: Allein in einer halben Zeile bliebe rechts eine Luecke. */}
+      <div className="pt-4">
+        {/* DivvyDiary findet das Papier ueber die ISIN und leitet auf seine
+            Seite weiter — ohne ISIN gibt es kein verlaessliches Ziel. */}
+        <Section
+          title="Stammdaten"
+          action={
+            security.isin?.trim() && (
+              <SectionExternalLink href={divvyDiaryUrl(security.isin.trim())}>
+                DivvyDiary
+              </SectionExternalLink>
+            )
+          }
+        >
+          <div className="space-y-4">
+            {/* Die eigene Notiz zuerst: Am Ende der Seite ging sie unter. */}
+            {security.note && (
+              <div className="border-b border-border pb-3">
+                <p className="text-sm text-muted-foreground">Notiz</p>
+                <p className="whitespace-pre-wrap text-sm">{security.note}</p>
+              </div>
+            )}
+
+            {/* Sieben Felder: links drei, rechts vier; die dritte Zeile endet die linke Spalte ohne Linie. */}
+            <div className="lg:columns-2 lg:gap-x-16 [&>*]:break-inside-avoid lg:[&>*:nth-child(3)]:border-b-0">
+              <Field label="ISIN" value={security.isin} copyable />
+              <Field label="WKN" value={security.wkn} copyable />
+              <Field label="Ticker" value={security.ticker} copyable />
+              <Field label="Land" value={security.country} />
+              <Field label="Branche" value={security.sector} />
+              <Field label="Währung" value={security.currency} />
+              <Field
+                label="Depot"
+                value={
+                  security.default_depot_id ? depotName(security.default_depot_id) : null
+                }
+              />
+            </div>
+
+            {quality === "incomplete" && (
+              <p className="flex gap-2 rounded-2xl bg-muted p-3 text-sm text-muted-foreground">
+                <ShieldAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+                <span>
+                  Die Stammdaten sind unvollständig. Das beeinträchtigt nichts an den
+                  Auswertungen — es erschwert aber das Wiederfinden und den Abgleich mit
+                  Broker-Belegen.
+                </span>
+              </p>
+            )}
+          </div>
+        </Section>
       </div>
 
       <SecurityFormDialog

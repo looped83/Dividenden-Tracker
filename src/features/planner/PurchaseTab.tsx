@@ -273,7 +273,7 @@ function Purchase({
               ? "Im Bestand ist kein Asset mit Kurs und Dividende, das sich nachkaufen ließe."
               : plan === null
                 ? `Mindestens ${String(rules.minimum)} € je ${isSavings ? "Sparplan" : "Kauf"}.`
-                : "Kein Asset hat unter seiner Positionsgrenze noch Platz."}
+                : "Kein Asset hat unter seiner Gewichtung noch Platz."}
           </p>
         ) : (
           <>
@@ -360,8 +360,8 @@ function SpreadLine({
       </p>
       {plan.unplaced.isPositive() && (
         <p>
-          {formatMoneyWhole(plan.unplaced)} finden unter den Positionsgrenzen keinen
-          Platz. Mehr Käufe oder höhere Grenzen verteilen sie.
+          {formatMoneyWhole(plan.unplaced)} finden unter den Gewichtungen keinen Platz.
+          Mehr Käufe oder höhere Gewichtungen verteilen sie.
         </p>
       )}
     </div>
