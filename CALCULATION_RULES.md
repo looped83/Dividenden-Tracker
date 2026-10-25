@@ -581,6 +581,18 @@ unten — in die Richtung, in der ein Bildschirm nachgibt.
   bleibt in der URL, wird aber benannt.
 - **Keine Prognose, keine Hochrechnung** (PRODUCT_SPEC.md Grundsatz 8).
 
+## 11.13 Monatsabschluss (`monthRecap`, Startseite, seit 2.19.0)
+
+- **Zeitraum:** vom 1. bis 7. eines Monats der ganze Vormonat; nicht im Januar, dort steht der
+  Jahresrückblick (bis 10.1.). Nur bei Auswahl des laufenden Jahres oder „Alle Jahre".
+- **Erhalten:** Nettosumme des Vormonats (effektives Datum, §10), verglichen mit dem **ganzen**
+  Vorjahresmonat über `comparePeriods` (§6.4).
+- **Top-Zahler:** stärkstes Asset des Monats nach §9-Rangfolge (Summe aller Zahlungen des Assets).
+- **Monatsziel:** Status und Erreichung aus der Zielschicht (§13), Anzeige mit einer Nachkommastelle;
+  ohne Ziel stattdessen Zahl der Dividenden und Assets.
+- Ein Monat ohne Zahlungen und ohne Ziel zeigt keinen Abschluss. Ausgeblendet bleibt er auf dem
+  Gerät für diesen Monat weg.
+
 ## Phase 6 – Validierung und Datenqualität
 
 **Zahlungsdatum.** Gültiges Kalenderdatum, ≥ 1970-01-01 und ≤ heute (lokal,
