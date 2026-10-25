@@ -171,7 +171,19 @@ function ProgressHero({
     stats.push({
       label: "Fixkosten",
       value: formatMoney(coverage.total),
-      caption: `${String(coverage.covered)} von ${String(coverage.items.length)} gedeckt`,
+      // Kurz als „28/31", damit die Zeile auch auf dem iPhone SE einzeilig
+      // bleibt wie die Nachbarn; vorgelesen wird „28 von 31".
+      caption: (
+        <>
+          <span aria-hidden="true">
+            {coverage.covered}/{coverage.items.length}
+          </span>
+          <span className="sr-only">
+            {coverage.covered} von {coverage.items.length}
+          </span>{" "}
+          gedeckt
+        </>
+      ),
     });
     stats.push(
       coverage.next
