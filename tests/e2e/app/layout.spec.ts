@@ -122,3 +122,43 @@ test("Depotstand-Vorschau auf dem Telefon: so breit wie der Bildschirm, Fußzeil
   // Höchstens der Rahmen des Panels (1px) liegt unter der Fußzeile.
   expect(masse.abstandUnten).toBeLessThanOrEqual(1.5);
 });
+
+/**
+ * Seitenleiste auf dem iPad: Sie steht fest, nur der Inhalt rechts scrollt.
+ * Vorher wuchs sie mit dem Inhalt; der Fuß mit den Einstellungen lag dann am
+ * Seitenende statt am unteren Bildschirmrand. Geprüft in beiden Varianten:
+ * kompakt (iPad hoch, md) und mit Beschriftung (iPad quer, lg).
+ */
+for (const fenster of [
+  { name: "hoch", width: 820, height: 1180 },
+  { name: "quer", width: 1180, height: 820 },
+]) {
+  test(`Seitenleiste iPad ${fenster.name}: Einstellungen bleiben beim Scrollen sichtbar`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: fenster.width, height: fenster.height });
+    await page.goto("/#/eingaenge");
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+
+    const einstellungen = page
+      .getByRole("navigation", { name: "Hauptnavigation" })
+      .getByRole("link", { name: "Einstellungen" });
+    await expect(einstellungen).toBeInViewport();
+
+    // Die Prüfung braucht eine Seite, die länger ist als das Fenster.
+    const scrollbar = await page.evaluate(
+      () => document.documentElement.scrollHeight > window.innerHeight,
+    );
+    expect(scrollbar).toBe(true);
+
+    await page.evaluate(() => {
+      window.scrollTo(0, document.documentElement.scrollHeight);
+    });
+    await expect(einstellungen).toBeInViewport();
+    await expect(
+      page.getByRole("navigation", { name: "Hauptnavigation" }).getByRole("link", {
+        name: "Übersicht",
+      }),
+    ).toBeInViewport();
+  });
+}
