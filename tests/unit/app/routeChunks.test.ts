@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   DEPOT_TABS,
+  PLANNER_TABS,
   PRIMARY_NAV_ITEMS,
   SETTINGS_TABS,
   STATISTICS_TABS,
@@ -17,6 +18,7 @@ const NAVIGIERBARE_PFADE = [
   ...PRIMARY_NAV_ITEMS.map((item) => item.to),
   ...BOTTOM_NAV_MORE_ITEMS.map((item) => item.to),
   ...DEPOT_TABS.map((tab) => tab.to),
+  ...PLANNER_TABS.map((tab) => tab.to),
   ...STATISTICS_TABS.map((tab) => tab.to),
   ...SETTINGS_TABS.map((tab) => tab.to),
   "/mehr",
@@ -32,6 +34,7 @@ describe("routeChunks", () => {
 
   it("laedt bei verschachtelten Bereichen Huelle und ersten Reiter", () => {
     expect(chunksFor("/depot")).toEqual(["depot", "securities"]);
+    expect(chunksFor("/planer")).toEqual(["planner", "plannerPurchase"]);
     expect(chunksFor("/statistiken")).toEqual(["statistics", "statisticsOverview"]);
     expect(chunksFor("/einstellungen")).toEqual(["settings", "settingsGeneral"]);
   });

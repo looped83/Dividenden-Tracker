@@ -281,9 +281,13 @@ const MAX_FILLERS = 3;
  * hoeher die Ausschuettung je Zahlung im Verhaeltnis zum Marktwert, desto
  * kleiner der Zukauf; danach sind sie geordnet. Der Zukauf ist
  * `Luecke × Marktwert ÷ Betrag je Zahlung`, auf volle 100 € aufgerundet;
- * dazu, was 1.000 € Zukauf in dem Monat bringen.
+ * dazu, was 1.000 € Zukauf in dem Monat bringen. Im Planer ausgeschlossene
+ * Assets (`excluded`) fuellen keine Luecke, zaehlen aber in der Prognose.
  */
-export function monthGaps(forecast: TwelveMonthForecast): {
+export function monthGaps(
+  forecast: TwelveMonthForecast,
+  excluded: ReadonlySet<string> = new Set(),
+): {
   average: Money;
   gaps: MonthGap[];
 } {
@@ -295,6 +299,7 @@ export function monthGaps(forecast: TwelveMonthForecast): {
       const fillers: GapFiller[] = [];
       for (const item of month.contributions) {
         if (item.payouts >= 12 || item.marketValue === null) continue;
+        if (excluded.has(item.securityId)) continue;
         if (!item.marketValue.isPositive() || !item.amount.isPositive()) continue;
         const raw = gap
           .toDecimal()
