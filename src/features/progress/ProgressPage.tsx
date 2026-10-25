@@ -12,6 +12,7 @@ import { CollapsibleMonth, MonthSections } from "@/components/ui/month-section";
 import { Section, SectionButton, SectionLink } from "@/components/ui/section";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGoalProgressPayments } from "@/features/goals/hooks";
+import { useSecurities, useSecuritySnapshots } from "@/features/securities/hooks";
 import { trailingMonthlyAverage } from "@/lib/goals";
 import { useOpenMonths } from "@/lib/hooks/useOpenMonths";
 import { useToday } from "@/lib/hooks/useToday";
@@ -28,6 +29,7 @@ import {
 import {
   coverFixedCosts,
   milestoneOverview,
+  paybackOverview,
   type CostCoverage,
   type CoverageResult,
   type Milestone,
@@ -38,6 +40,8 @@ import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { formatCalendarDate } from "@/lib/utils/formatDate";
 import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
 import { FixedCostDialog } from "./FixedCostDialog";
+import { PaybackSection } from "./PaybackSection";
+import { paybackHoldings } from "./paybackHoldings";
 import { ProgressBar } from "./ProgressBar";
 import { useFixedCosts } from "./hooks";
 
@@ -56,6 +60,8 @@ export function ProgressPage() {
   const today = useToday();
   const { payments, isLoading, isError, error } = useGoalProgressPayments();
   const costsQuery = useFixedCosts();
+  const snapshotsQuery = useSecuritySnapshots();
+  const securitiesQuery = useSecurities();
   const [adding, setAdding] = React.useState(false);
 
   const costs = React.useMemo(() => costsQuery.data ?? [], [costsQuery.data]);
@@ -65,15 +71,19 @@ export function ProgressPage() {
       average,
       coverage: coverFixedCosts(costs, average),
       milestones: milestoneOverview(payments, today),
+      payback: paybackOverview(
+        payments,
+        paybackHoldings(snapshotsQuery.data ?? [], securitiesQuery.data ?? []),
+      ),
     };
-  }, [payments, costs, today]);
+  }, [payments, costs, today, snapshotsQuery.data, securitiesQuery.data]);
 
   const add = () => {
     setAdding(true);
   };
 
   let content: React.ReactNode;
-  if (isLoading || costsQuery.isLoading) {
+  if (isLoading || costsQuery.isLoading || snapshotsQuery.isLoading) {
     content = (
       <div className="space-y-10" aria-busy="true">
         <span className="sr-only">Fortschritt wird geladen …</span>
@@ -101,8 +111,9 @@ export function ProgressPage() {
           reached={data.milestones.reached.length}
         />
         {/* Ab lg zweispaltig: links Fixkosten und nächste Meilensteine (das,
-            worauf man hinarbeitet), rechts das Erreichte. So sind beide
-            Spalten etwa gleich lang. Auf dem Telefon untereinander. */}
+            worauf man hinarbeitet), rechts der zurückverdiente Kaufpreis und das
+            Erreichte. So sind beide Spalten etwa gleich lang. Auf dem Telefon
+            untereinander. */}
         <div className="grid gap-10 lg:grid-cols-2 lg:items-start lg:gap-12">
           <div className="space-y-10 lg:space-y-12">
             <CoverageSection coverage={data.coverage} onAdd={add} />
@@ -116,12 +127,15 @@ export function ProgressPage() {
               </ul>
             </Section>
           </div>
-          {data.milestones.reached.length > 0 && (
-            <ReachedSection
-              reached={data.milestones.reached}
-              currentYear={String(today.year)}
-            />
-          )}
+          <div className="space-y-10 lg:space-y-12">
+            <PaybackSection payback={data.payback} />
+            {data.milestones.reached.length > 0 && (
+              <ReachedSection
+                reached={data.milestones.reached}
+                currentYear={String(today.year)}
+              />
+            )}
+          </div>
         </div>
       </div>
     );

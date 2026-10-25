@@ -1,4 +1,6 @@
 import { expect, test } from "../support/appTest";
+import { asUser } from "../support/db";
+import { seedPortfolio } from "../support/portfolio";
 
 /**
  * Fixkosten eintragen, bearbeiten und löschen: Die Liste landet als JSON am
@@ -88,4 +90,33 @@ test("trägt Fixkosten ein, bearbeitet und löscht sie", async ({ page }, testIn
     ).toBeVisible();
   }
   await expect(page.getByText("Noch keine Fixkosten")).toBeVisible();
+});
+
+/**
+ * Kaufpreis zurückverdient: erhaltene Dividenden je Asset gegen den Einstand
+ * des jüngsten Depotstands (CALCULATION_RULES.md §15.3).
+ */
+test("zeigt, wie viel vom Kaufpreis zurückverdient ist", async ({ page, konto }) => {
+  await seedPortfolio(konto.userId);
+  await asUser(konto.userId, async (client) => {
+    await client.query(
+      `insert into dividend_payments
+         (security_id, depot_id, pay_date, gross_amount, net_amount,
+          withholding_tax, domestic_tax, original_currency, payment_type, source)
+       select id, $1, '2026-06-15', 2600, 2600, 0, 0, 'EUR', 'regular', 'manual'
+         from securities where name = 'Allianz'`,
+      [konto.depotId],
+    );
+  });
+
+  await page.goto("/#/fortschritt");
+  const bereich = page.getByRole("region", { name: "Kaufpreis zurückverdient" });
+  // Allianz: 2.600 € von 5.200 € Einstand — die Hälfte, als Nächstes offen.
+  await expect(bereich.getByRole("link", { name: /Allianz/ })).toContainText(
+    "50 % zurück · noch 2.600 €",
+  );
+  await bereich.getByRole("link", { name: /Allianz/ }).click();
+  await expect(page.getByRole("heading", { name: "Allianz" })).toBeVisible();
+  await page.getByRole("link", { name: "Zum Fortschritt" }).click();
+  await expect(bereich).toBeVisible();
 });
