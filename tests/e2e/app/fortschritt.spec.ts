@@ -121,7 +121,7 @@ test("zeigt, wie viel vom Kaufpreis zurückverdient ist", async ({ page, konto }
     "50 % zurück · noch 2.600 €",
   );
   await bereich.getByRole("button", { name: /Unter der Hälfte/ }).click();
-  await expect(bereich.getByRole("link", { name: /Vanguard/ })).toBeVisible();
+  await expect(bereich.getByRole("link", { name: /Vanguard FTSE/ })).toBeVisible();
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
