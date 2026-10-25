@@ -55,23 +55,38 @@ export function parseSnowballSettings(raw: unknown): SnowballSettings {
  */
 export interface ForecastSettings extends SnowballSettings {
   excluded: readonly string[];
+  /** Höchstens so viel Prozent des Depots je Position nach einem Nachkauf. */
+  positionCap: number;
 }
 
 export const EXCLUDED_MAX = 30;
 
+/** Positionsgrenze des Nachkaufs in Prozent (CALCULATION_RULES.md §16, seit 2.22.0). */
+export const POSITION_CAP_DEFAULT = 8;
+export const POSITION_CAP_MIN = 5;
+export const POSITION_CAP_MAX = 15;
+
 export const DEFAULT_FORECAST_SETTINGS: ForecastSettings = {
   ...DEFAULT_SNOWBALL_SETTINGS,
   excluded: [],
+  positionCap: POSITION_CAP_DEFAULT,
 };
 
 const excludedSchema = z.array(z.guid()).max(EXCLUDED_MAX).catch([]);
+const positionCapSchema = z
+  .number()
+  .min(POSITION_CAP_MIN)
+  .max(POSITION_CAP_MAX)
+  .catch(POSITION_CAP_DEFAULT);
 
 export function parseForecastSettings(raw: unknown): ForecastSettings {
-  const excluded =
-    raw !== null && typeof raw === "object" && "excluded" in raw
-      ? excludedSchema.parse(raw.excluded)
-      : [];
-  return { ...parseSnowballSettings(raw), excluded };
+  const fields = raw !== null && typeof raw === "object" ? raw : {};
+  const excluded = "excluded" in fields ? excludedSchema.parse(fields.excluded) : [];
+  const positionCap =
+    "positionCap" in fields
+      ? positionCapSchema.parse(fields.positionCap)
+      : POSITION_CAP_DEFAULT;
+  return { ...parseSnowballSettings(raw), excluded, positionCap };
 }
 
 export function useForecastSettings() {

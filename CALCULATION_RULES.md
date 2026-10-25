@@ -687,7 +687,10 @@ gespeichert sind nur die Annahmen des Schneeballs (`profiles.forecast_settings`,
 - **Fenster:** die zwölf vollen Monate nach dem laufenden (am 21.10.2026: Nov 2026 – Okt 2027).
 - **Netto-Quote** (`netRatio`): Summe netto ÷ Summe brutto der Zahlungen der zwölf Monate bis
   heute (tatsächliches Eingangsdatum, nur EUR), höchstens 1. Ohne Zahlungen wird brutto
-  gerechnet und so beschriftet.
+  gerechnet und so beschriftet. **Je Land** (seit 2.22.0, `netRatioByCountry`): Hat das Land
+  eines Assets mindestens drei Zahlungen in dem Zeitraum, gilt dessen Quote (Quellensteuer);
+  sonst die gesamte. Bewusst nicht je Asset: Der Freistellungsauftrag ist am Jahresanfang
+  verbraucht, ein Asset, das nur im Januar zahlt, sähe sonst steuerfrei aus.
 - **Geschätzt:** je gehaltener Position des jüngsten Depotstands die erwartete Jahresdividende
   (brutto) × Netto-Quote ÷ Anzahl Zahlmonate, in jedem Zahlmonat. Zahlmonate in dieser
   Rangfolge (`payoutMonthsOf`): gepflegte Ausschüttungsmonate, Monate der Zahlungen der letzten
@@ -728,7 +731,8 @@ gespeichert sind nur die Annahmen des Schneeballs (`profiles.forecast_settings`,
   Bestand; ohne passende Position „Kein passendes Asset im Bestand“.
 - Der Zukauf hebt auch die übrigen Zahlmonate der Position; er ist eine Orientierung, keine
   Kaufempfehlung, und wird nicht gespeichert.
-- Im Planer ausgeschlossene Assets (§16) sind keine Füller (seit 2.20.0).
+- Im Planer ausgeschlossene Assets (§16) sind keine Füller (seit 2.20.0), ebenso Positionen,
+  die der Zukauf über die Positionsgrenze (§16) höbe (seit 2.22.0).
 
 ---
 
@@ -813,6 +817,15 @@ die Eingaben stehen in der Adresse (`?modus=sparplan&betrag=1000&fokus=monate&an
 - **Ausschließen:** bis zu 30 Assets, gespeichert mit den Schneeball-Annahmen in
   `profiles.forecast_settings.excluded` (nicht in der Datensicherung). Sie zählen weiter in der
   Prognose, werden aber weder im Nachkauf noch als Füller der Monatslücken vorgeschlagen.
+- **Positionsgrenze** (seit 2.22.0): Keine Position wächst über diesen Anteil am Depot nach dem
+  Kauf (Marktwert aller Positionen + investiert; beim Sparplan zwölf Raten). Vorbelegt 8 %,
+  einstellbar 5–15 %, gespeichert in `profiles.forecast_settings.positionCap`. Positionen ohne
+  Platz für den Mindestbetrag fallen weg; ist eine gewählte voll, bekommen die übrigen mehr. Die
+  gewählte Zahl der Käufe bleibt; was darin keinen Platz findet, nennt der Plan.
+- **Streuung nach dem Kauf:** größte Position, Branche und Land nach Marktwert plus Kauf; eine
+  Position über der Grenze ist hervorgehoben. Assets ohne Branche oder Land bilden keine Gruppe.
+- **Hochlauf beim Sparplan** (seit 2.22.0): Das Diagramm der nächsten zwölf Monate zählt im
+  k-ten Monat k Raten; „mehr im Jahr nach 12 Monaten" zählt alle zwölf.
 - **Vergleich:** Im Modus Sparpläne nennt die Zusammenfassung zusätzlich, was die gepflegten
   Sparpläne (§17) nach zwölf Raten bringen.
 
@@ -831,7 +844,8 @@ Bestand noch Prognose.
 - **Wirkung** (`savingsPlanOverview`): zwölf Monatsbeträge je aktivem Plan mal Ertrag je Euro und
   Zahlmonate des Kandidaten aus §16 (ohne Ausschlüsse). Ein Asset ohne Kandidat (nicht im
   Depotstand, ohne Dividende) zählt in der Summe der Raten, aber nicht in der Dividende. Ertrag =
-  mehr netto im Jahr ÷ zwölf Monatssummen. Pausierte Pläne zählen nirgends. Die Liste steht alphabetisch
+  mehr netto im Jahr ÷ zwölf Monatssummen. Pausierte Pläne zählen nirgends. Das Diagramm zählt
+  im k-ten Monat k Raten (Hochlauf wie §16). Die Liste steht alphabetisch
   nach Name des Assets (seit 2.21.1).
 - **Schneeball:** Ist keine eigene Sparrate eingetragen (0), rechnet er mit der gerundeten
   Monatssumme der aktiven Pläne; das Feld zeigt sie als Platzhalter.

@@ -39,6 +39,10 @@ export interface ForecastFacets {
   name: string;
   /** Gepflegte Ausschuettungsmonate (1–12); leer, wenn nicht gepflegt. */
   payoutMonths: readonly number[];
+  /** Land (ISO-Code) fuer die Netto-Quote je Land; fehlt ohne Angabe. */
+  country?: string | null | undefined;
+  /** Branche, nur fuer die Streuung im Planer. */
+  sector?: string | null | undefined;
 }
 
 /** Ein Beitrag zu einem Monat. */
@@ -69,6 +73,8 @@ export interface TwelveMonthForecast {
   receivedLast12: Money;
   /** Netto ÷ brutto der letzten zwoelf Monate; `null` ohne Bruttobetraege. */
   netRatio: DecimalInstance | null;
+  /** Marktwert aller Positionen des Stands (auch ohne Dividende). */
+  depotValue: Money;
   /** Gehaltene Positionen, fuer die die Quelle keine Jahresdividende nennt. */
   withoutAmount: number;
 }
@@ -112,6 +118,53 @@ export function netRatio(
   }
   if (!gross.greaterThan(0) || !net.greaterThan(0)) return null;
   return MoneyDecimal.min(net.dividedBy(gross), ONE);
+}
+
+/** Mindestens so viele Zahlungen, damit ein Land eine eigene Netto-Quote hat. */
+const COUNTRY_MIN_PAYMENTS = 3;
+
+/**
+ * Netto-Quote je Land (seit 2.22.0): wie {@link netRatio}, aber nur ueber die
+ * Zahlungen von Assets eines Landes. So traegt ein US-Titel seine
+ * Quellensteuer, ein irischer ETF keine. Bewusst nicht je Asset: Der
+ * Freistellungsauftrag ist am Jahresanfang aufgebraucht, und ein Asset, das
+ * nur im Januar zahlt, saehe sonst steuerfrei aus. Ueber ein Land mitteln
+ * sich die Zeitpunkte. Laender mit weniger als drei Zahlungen fehlen.
+ */
+export function netRatioByCountry(
+  payments: readonly AnalyticsPayment[],
+  facets: ReadonlyMap<string, ForecastFacets>,
+  todayIso: string,
+): Map<string, DecimalInstance> {
+  const range = trailingYearRange(todayIso);
+  const sums = new Map<
+    string,
+    { net: DecimalInstance; gross: DecimalInstance; count: number }
+  >();
+  for (const payment of payments) {
+    if (!isInRange(payment.actualPayDate, range)) continue;
+    if (payment.grossAmount.currency !== EUR || payment.netAmount.currency !== EUR)
+      continue;
+    const country = facets.get(payment.securityId)?.country;
+    if (!country) continue;
+    const sum = sums.get(country) ?? {
+      net: new MoneyDecimal(0),
+      gross: new MoneyDecimal(0),
+      count: 0,
+    };
+    sums.set(country, {
+      net: sum.net.plus(payment.netAmount.toDecimal()),
+      gross: sum.gross.plus(payment.grossAmount.toDecimal()),
+      count: sum.count + 1,
+    });
+  }
+  const ratios = new Map<string, DecimalInstance>();
+  for (const [country, sum] of sums) {
+    if (sum.count < COUNTRY_MIN_PAYMENTS) continue;
+    if (!sum.gross.greaterThan(0) || !sum.net.greaterThan(0)) continue;
+    ratios.set(country, MoneyDecimal.min(sum.net.dividedBy(sum.gross), ONE));
+  }
+  return ratios;
 }
 
 /** Die zwoelf vollen Monate nach dem laufenden. */
@@ -173,7 +226,11 @@ export function forecastTwelveMonths({
 
   const todayIso = isoDate(today.year, today.month, today.day);
   const ratio = netRatio(payments, todayIso);
-  const factor = ratio ?? ONE;
+  const byCountry = netRatioByCountry(payments, facets, todayIso);
+  const factorOf = (securityId: string) => {
+    const country = facets.get(securityId)?.country;
+    return (country ? byCountry.get(country) : undefined) ?? ratio ?? ONE;
+  };
 
   const recentRange = trailingYearRange(todayIso);
   const recentMonthsBySecurity = new Map<string, Set<number>>();
@@ -196,7 +253,10 @@ export function forecastTwelveMonths({
   }));
 
   let withoutAmount = 0;
+  let depotValue = Money.zero(currency);
   for (const row of rows) {
+    if (row.market_value !== null)
+      depotValue = depotValue.add(Money.fromString(row.market_value, currency));
     if (row.annual_dividend_total === null) {
       withoutAmount += 1;
       continue;
@@ -213,7 +273,7 @@ export function forecastTwelveMonths({
       ),
     );
     const amount = Money.fromDecimal(
-      annual.times(factor).dividedBy(payout.size),
+      annual.times(factorOf(row.security_id)).dividedBy(payout.size),
       currency,
     );
     const name = facets.get(row.security_id)?.name ?? "Unbekannt";
@@ -242,7 +302,15 @@ export function forecastTwelveMonths({
 
   return {
     kind: "ok",
-    forecast: { asOf, months, total, receivedLast12, netRatio: ratio, withoutAmount },
+    forecast: {
+      asOf,
+      months,
+      total,
+      receivedLast12,
+      netRatio: ratio,
+      depotValue,
+      withoutAmount,
+    },
   };
 }
 
@@ -283,10 +351,13 @@ const MAX_FILLERS = 3;
  * `Luecke × Marktwert ÷ Betrag je Zahlung`, auf volle 100 € aufgerundet;
  * dazu, was 1.000 € Zukauf in dem Monat bringen. Im Planer ausgeschlossene
  * Assets (`excluded`) fuellen keine Luecke, zaehlen aber in der Prognose.
+ * Mit `capPercent` (seit 2.22.0) faellt ein Fueller weg, den sein Zukauf ueber
+ * diesen Anteil am Depot hoebe (Positionsgrenze des Nachkaufs).
  */
 export function monthGaps(
   forecast: TwelveMonthForecast,
   excluded: ReadonlySet<string> = new Set(),
+  capPercent: number | null = null,
 ): {
   average: Money;
   gaps: MonthGap[];
@@ -305,14 +376,21 @@ export function monthGaps(
           .toDecimal()
           .times(item.marketValue.toDecimal())
           .dividedBy(item.amount.toDecimal());
+        const invest = raw.dividedBy(INVEST_STEP).ceil().times(INVEST_STEP);
+        if (
+          capPercent !== null &&
+          item.marketValue
+            .toDecimal()
+            .plus(invest)
+            .times(100)
+            .greaterThan(forecast.depotValue.toDecimal().plus(invest).times(capPercent))
+        )
+          continue;
         fillers.push({
           securityId: item.securityId,
           name: item.name,
           payouts: item.payouts,
-          invest: Money.fromDecimal(
-            raw.dividedBy(INVEST_STEP).ceil().times(INVEST_STEP),
-            EUR,
-          ),
+          invest: Money.fromDecimal(invest, EUR),
           perThousand: Money.fromDecimal(
             THOUSAND.times(item.amount.toDecimal()).dividedBy(
               item.marketValue.toDecimal(),

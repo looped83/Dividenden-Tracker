@@ -1,6 +1,6 @@
 import { EUR, Money, MoneyDecimal, type DecimalInstance } from "@/lib/money";
 import type { SecuritySnapshot } from "@/lib/supabase/repositories/securitySnapshots";
-import type { TwelveMonthForecast } from "@/features/securities/forecast";
+import type { ForecastFacets, TwelveMonthForecast } from "@/features/securities/forecast";
 import { latestAsOf, snapshotsAt } from "@/features/securities/snapshots";
 
 /**
@@ -41,6 +41,8 @@ export interface PurchaseCandidate {
   price: DecimalInstance | null;
   /** Dividenden-CAGR als Anteil (0,07 = 7 %); `null` ohne Angabe. */
   cagr: DecimalInstance | null;
+  /** Marktwert laut Depotstand (> 0). */
+  marketValue: DecimalInstance;
 }
 
 const ZERO = new MoneyDecimal(0);
@@ -81,6 +83,7 @@ export function purchaseCandidates(
         months: [month.month],
         price: price?.greaterThan(0) ? price : null,
         cagr: row?.dividend_cagr ? new MoneyDecimal(row.dividend_cagr) : null,
+        marketValue: item.marketValue.toDecimal(),
       });
     }
   }
@@ -141,9 +144,14 @@ export interface PurchasePlan {
   annual: Money;
   /** Ertrag des Plans: annual ÷ invested × 100. */
   yieldPercent: DecimalInstance;
-  /** Zwoelf Monate der Prognose vorher und mit dem Plan, gleiche Reihenfolge. */
+  /**
+   * Zwoelf Monate der Prognose vorher und mit dem Plan, gleiche Reihenfolge.
+   * Beim Sparplan im Hochlauf: Im k-ten Monat zaehlen k Raten.
+   */
   before: Money[];
   after: Money[];
+  /** Was unter der Positionsgrenze keinen Platz fand (beim Sparplan je Monat). */
+  unplaced: Money;
 }
 
 /**
@@ -151,10 +159,16 @@ export interface PurchasePlan {
  * groessten Kauf):
  *
  * - **Mehr Dividende / Dividendenwachstum:** die besten `buys` Positionen nach
- *   Ertrag je Euro bzw. Dividende in fuenf Jahren, zu gleichen Teilen.
+ *   Ertrag je Euro bzw. Dividende in fuenf Jahren, reihum zu gleichen Teilen.
  * - **Monate glaetten:** Schritt fuer Schritt an die Position, die die Summe
  *   der Abstaende unter dem Ø am staerksten verringert (bei Gleichstand der
  *   hoehere Ertrag); sind `buys` Positionen gewaehlt, nur noch an diese.
+ *
+ * **Positionsgrenze** (`capPercent`, seit 2.22.0): Keine Position waechst
+ * ueber diesen Anteil am Depot nach dem Kauf. Positionen ohne Platz fuer den
+ * Mindestbetrag fallen weg; ist eine gewaehlte voll, bekommen die uebrigen
+ * mehr. Die Zahl der Kaeufe bleibt `buys`: Was darin keinen Platz findet,
+ * bleibt `unplaced` (statt Kleinstkaeufe ueber die gewaehlte Zahl hinaus).
  *
  * Weniger als der Mindestbetrag je Kauf wird auf die verbleibenden Kaeufe
  * umgelegt. Beim Sparplan ist `amount` die Monatsrate; die Wirkung zaehlt
@@ -167,6 +181,7 @@ export function planPurchase({
   focus,
   mode,
   buys,
+  capPercent = null,
 }: {
   forecast: TwelveMonthForecast;
   candidates: readonly PurchaseCandidate[];
@@ -174,23 +189,53 @@ export function planPurchase({
   focus: PlanFocus;
   mode: PlanMode;
   buys: number;
+  /** Hoechstens so viel Prozent des Depots je Position; `null` ohne Grenze. */
+  capPercent?: number | null;
 }): PurchasePlan | null {
   const { step, minimum } = MODE_RULES[mode];
   // Schrittweite: die des Modus oder ein Vielfaches davon (MAX_STEPS).
   const unit = step * Math.max(1, Math.ceil(amount / step / MAX_STEPS));
   const steps = Math.floor(amount / unit);
   const maxBuys = Math.max(1, Math.min(buys, Math.floor(amount / minimum)));
-  if (candidates.length === 0 || steps === 0 || amount < minimum) return null;
+  const factor = mode === "sparplan" ? 12 : 1;
+  const minSteps = Math.ceil(minimum / unit);
+
+  // Platz je Position in Schritten: Grenze × Depot nach dem Kauf − Marktwert.
+  const room = new Map<PurchaseCandidate, number>();
+  for (const candidate of candidates) {
+    if (capPercent === null) {
+      room.set(candidate, Number.POSITIVE_INFINITY);
+      continue;
+    }
+    const limit = forecast.depotValue
+      .toDecimal()
+      .plus(amount * factor)
+      .times(capPercent)
+      .dividedBy(100);
+    const free = limit.minus(candidate.marketValue).dividedBy(unit * factor);
+    room.set(candidate, Math.max(0, Math.floor(free.toNumber())));
+  }
+  const eligible = candidates.filter(
+    (candidate) => (room.get(candidate) ?? 0) >= Math.min(minSteps, steps),
+  );
+  if (eligible.length === 0 || steps === 0 || amount < minimum) {
+    return candidates.length === 0 || steps === 0 || amount < minimum
+      ? null
+      : emptyPlan(forecast, amount);
+  }
 
   const before = forecast.months.map((month) => month.total.toDecimal());
   const allocation = new Map<PurchaseCandidate, number>();
+  const hasRoom = (candidate: PurchaseCandidate) =>
+    (allocation.get(candidate) ?? 0) < (room.get(candidate) ?? 0);
+  let placed = 0;
 
   if (focus === "monate") {
     // Nur zum Abwaegen in Gleitkomma: Die Reihenfolge haengt nicht an Cents,
     // und so bleibt die Rechnung auch bei vielen Schritten schnell. Betraege
     // rechnet unten wieder Decimal.
     const current = before.map((value) => value.toNumber());
-    const ordered = [...candidates].sort(byScore(annualPerEuro));
+    const ordered = [...eligible].sort(byScore(annualPerEuro));
     const perStep = new Map(
       ordered.map((candidate) => [
         candidate,
@@ -199,10 +244,13 @@ export function planPurchase({
     );
     const pays = forecast.months.map((month) => month.month);
     for (let index = 0; index < steps; index += 1) {
-      const pool = allocation.size < maxBuys ? ordered : [...allocation.keys()];
-      const base = shortfall(current);
+      const pool = (allocation.size < maxBuys ? ordered : [...allocation.keys()]).filter(
+        hasRoom,
+      );
+      if (pool.length === 0) break;
       let best = pool[0];
       let bestGain = -Infinity;
+      const base = shortfall(current);
       for (const candidate of pool) {
         const added = perStep.get(candidate) ?? 0;
         const next = current.map((value, position) =>
@@ -216,31 +264,51 @@ export function planPurchase({
         }
       }
       allocation.set(best, (allocation.get(best) ?? 0) + 1);
+      placed += 1;
       const added = perStep.get(best) ?? 0;
       pays.forEach((month, position) => {
         if (best.months.includes(month)) current[position] += added;
       });
     }
-    // Unter dem Mindestbetrag: auf die groessten Kaeufe umlegen.
-    const minSteps = Math.ceil(minimum / unit);
-    for (const [candidate, count] of [...allocation].sort((a, b) => a[1] - b[1])) {
-      if (count >= minSteps || allocation.size === 1) continue;
-      allocation.delete(candidate);
-      const largest = [...allocation].sort((a, b) => b[1] - a[1])[0][0];
-      allocation.set(largest, (allocation.get(largest) ?? 0) + count);
-    }
   } else {
     const score = focus === "wachstum" ? growthScore : annualPerEuro;
-    const chosen = [...candidates].sort(byScore(score)).slice(0, maxBuys);
-    chosen.forEach((candidate, index) => {
-      const share =
-        Math.floor(steps / chosen.length) + (index < steps % chosen.length ? 1 : 0);
-      if (share > 0) allocation.set(candidate, share);
-    });
+    const ordered = [...eligible].sort(byScore(score));
+    const active = ordered.slice(0, maxBuys);
+    for (let index = 0; index < steps; index += 1) {
+      // Reihum: die Position mit den wenigsten Schritten, die noch Platz hat.
+      let pick: PurchaseCandidate | undefined;
+      for (const candidate of active) {
+        if (!hasRoom(candidate)) continue;
+        if (
+          pick === undefined ||
+          (allocation.get(candidate) ?? 0) < (allocation.get(pick) ?? 0)
+        )
+          pick = candidate;
+      }
+      if (pick === undefined) break;
+      allocation.set(pick, (allocation.get(pick) ?? 0) + 1);
+      placed += 1;
+    }
   }
 
-  const factor = mode === "sparplan" ? 12 : 1;
-  const remainder = amount - steps * unit;
+  // Unter dem Mindestbetrag: auf die groessten Kaeufe mit Platz umlegen.
+  for (const [candidate, count] of [...allocation].sort((a, b) => a[1] - b[1])) {
+    if (count >= minSteps || allocation.size === 1) continue;
+    const target = [...allocation]
+      .filter(
+        ([other, taken]) =>
+          other !== candidate && taken + count <= (room.get(other) ?? 0),
+      )
+      .sort((a, b) => b[1] - a[1])
+      .at(0);
+    if (target === undefined) continue;
+    allocation.delete(candidate);
+    allocation.set(target[0], target[1] + count);
+  }
+
+  const unplacedSteps = steps - placed;
+  // Der Rest unter einem Schritt geht an den groessten Kauf, wenn alles Platz fand.
+  const remainder = unplacedSteps === 0 ? amount - steps * unit : 0;
   const sorted = [...allocation].sort(
     (a, b) => b[1] - a[1] || a[0].name.localeCompare(b[0].name, "de"),
   );
@@ -251,8 +319,11 @@ export function planPurchase({
     const total = invest.times(factor);
     const perPayout = candidate.perPayoutPerEuro.times(total);
     forecast.months.forEach((month, position) => {
-      if (candidate.months.includes(month.month))
-        after[position] = after[position].plus(perPayout);
+      if (!candidate.months.includes(month.month)) return;
+      // Sparplan im Hochlauf: Im k-ten Monat sind erst k von zwoelf Raten angelegt.
+      const share =
+        mode === "sparplan" ? perPayout.times(position + 1).dividedBy(12) : perPayout;
+      after[position] = after[position].plus(share);
     });
     const yearly = perPayout.times(candidate.months.length);
     annual = annual.plus(yearly);
@@ -266,13 +337,97 @@ export function planPurchase({
     };
   });
 
-  const invested = new MoneyDecimal(amount).times(factor);
+  const unplaced = new MoneyDecimal(
+    unplacedSteps * unit + (unplacedSteps > 0 ? amount - steps * unit : 0),
+  );
+  const invested = new MoneyDecimal(amount).minus(unplaced).times(factor);
   return {
     buys: planned,
     invested: Money.fromDecimal(invested, EUR),
     annual: Money.fromDecimal(annual, EUR),
-    yieldPercent: annual.dividedBy(invested).times(100),
+    yieldPercent: invested.greaterThan(0) ? annual.dividedBy(invested).times(100) : ZERO,
     before: before.map((value) => Money.fromDecimal(value, EUR)),
     after: after.map((value) => Money.fromDecimal(value, EUR)),
+    unplaced: Money.fromDecimal(unplaced, EUR),
   };
+}
+
+/** Kein Kandidat hat Platz unter der Grenze: nichts angelegt, alles uebrig. */
+function emptyPlan(forecast: TwelveMonthForecast, amount: number): PurchasePlan {
+  const months = forecast.months.map((month) => month.total);
+  return {
+    buys: [],
+    invested: Money.zero(EUR),
+    annual: Money.zero(EUR),
+    yieldPercent: ZERO,
+    before: months,
+    after: months,
+    unplaced: Money.fromDecimal(new MoneyDecimal(amount), EUR),
+  };
+}
+
+export interface Concentration {
+  name: string;
+  /** Anteil am Depot in Prozent. */
+  percent: DecimalInstance;
+}
+
+/**
+ * Streuung nach dem Kauf (seit 2.22.0): groesste Position, Branche und Land
+ * gemessen am Marktwert des Depotstands plus der Kaeufe (beim Sparplan zwoelf
+ * Raten). Positionen ohne Branche oder Land zaehlen dort nicht als Gruppe.
+ */
+export function concentrationAfter({
+  snapshots,
+  facets,
+  names,
+  plan,
+  mode,
+}: {
+  snapshots: readonly SecuritySnapshot[];
+  facets: ReadonlyMap<string, ForecastFacets>;
+  names: ReadonlyMap<string, string>;
+  plan: PurchasePlan;
+  mode: PlanMode;
+}): {
+  position: Concentration;
+  sector: Concentration | null;
+  country: Concentration | null;
+} | null {
+  const factor = mode === "sparplan" ? 12 : 1;
+  const values = new Map<string, DecimalInstance>();
+  for (const row of snapshotsAt(snapshots, latestAsOf(snapshots))) {
+    if (row.market_value === null) continue;
+    values.set(row.security_id, new MoneyDecimal(row.market_value));
+  }
+  for (const buy of plan.buys) {
+    values.set(
+      buy.securityId,
+      (values.get(buy.securityId) ?? ZERO).plus(buy.invest.toDecimal().times(factor)),
+    );
+  }
+  const total = [...values.values()].reduce((sum, value) => sum.plus(value), ZERO);
+  if (!total.greaterThan(0)) return null;
+
+  const top = (groups: Map<string, DecimalInstance>): Concentration | null => {
+    let best: [string, DecimalInstance] | null = null;
+    for (const entry of groups)
+      if (best === null || entry[1].greaterThan(best[1])) best = entry;
+    return best ? { name: best[0], percent: best[1].dividedBy(total).times(100) } : null;
+  };
+  const grouped = (key: "sector" | "country") => {
+    const groups = new Map<string, DecimalInstance>();
+    for (const [id, value] of values) {
+      const group = facets.get(id)?.[key];
+      if (!group) continue;
+      groups.set(group, (groups.get(group) ?? ZERO).plus(value));
+    }
+    return top(groups);
+  };
+  const largest = top(values);
+  const position = largest && {
+    ...largest,
+    name: names.get(largest.name) ?? "Unbekanntes Asset",
+  };
+  return position && { position, sector: grouped("sector"), country: grouped("country") };
 }

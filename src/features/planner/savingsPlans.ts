@@ -176,9 +176,10 @@ export function savingsPlanOverview(
       const perPayout = candidate.perPayoutPerEuro.times(perMonth.times(12));
       yearly = perPayout.times(candidate.months.length);
       if (active) {
+        // Hochlauf: Im k-ten Monat sind erst k von zwölf Raten angelegt.
         forecast.months.forEach((month, index) => {
           if (candidate.months.includes(month.month))
-            after[index] = after[index].plus(perPayout);
+            after[index] = after[index].plus(perPayout.times(index + 1).dividedBy(12));
         });
         annual = annual.plus(yearly);
       }

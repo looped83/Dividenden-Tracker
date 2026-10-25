@@ -8,7 +8,14 @@ import { ListGroup, ListItemBody, ListRow } from "@/components/ui/list";
 import { Section } from "@/components/ui/section";
 import { SegmentedControl, type SegmentOption } from "@/components/ui/segmented";
 import { Select } from "@/components/ui/select";
-import { EUR, Money, formatMoney, formatMoneyWhole, formatPercent } from "@/lib/money";
+import {
+  EUR,
+  Money,
+  formatMoney,
+  formatMoneyWhole,
+  formatPercent,
+  type DecimalInstance,
+} from "@/lib/money";
 import { monthNameDe, monthNameDeShort } from "@/lib/statistics/dates";
 import { useBackState } from "@/lib/hooks/useBackState";
 import { cn } from "@/lib/utils/cn";
@@ -22,6 +29,9 @@ import {
   AMOUNT_MAX,
   DEFAULT_FORECAST_SETTINGS,
   EXCLUDED_MAX,
+  POSITION_CAP_DEFAULT,
+  POSITION_CAP_MAX,
+  POSITION_CAP_MIN,
   parseGermanNumber,
   useForecastSettings,
   useSaveForecastSettings,
@@ -29,9 +39,10 @@ import {
 } from "@/features/securities/forecastSettings";
 import { PlannerHeaderActions } from "./PlannerPage";
 import { NumberField, SettingCell, SettingsList } from "./fields";
-import { rhythm } from "./format";
+import { formatDecimal, rhythm } from "./format";
 import {
   MODE_RULES,
+  concentrationAfter,
   planPurchase,
   purchaseCandidates,
   type PlanFocus,
@@ -101,7 +112,7 @@ function Purchase({
   basis: ForecastBasis;
   settings: ForecastSettings;
 }) {
-  const { forecast, snapshots, names } = basis;
+  const { forecast, snapshots, names, facets } = basis;
   const [params, setParams] = useSearchParams();
   const { data: savingsPlans = [] } = useSavingsPlans();
   const savingsTotal = Math.round(activeMonthlyTotal(savingsPlans).toNumber());
@@ -142,8 +153,24 @@ function Purchase({
     [forecast, snapshots, excludedSet],
   );
   const plan = React.useMemo(
-    () => planPurchase({ forecast, candidates, amount, focus, mode, buys }),
-    [forecast, candidates, amount, focus, mode, buys],
+    () =>
+      planPurchase({
+        forecast,
+        candidates,
+        amount,
+        focus,
+        mode,
+        buys,
+        capPercent: settings.positionCap,
+      }),
+    [forecast, candidates, amount, focus, mode, buys, settings.positionCap],
+  );
+  const spread = React.useMemo(
+    () =>
+      plan && plan.buys.length > 0
+        ? concentrationAfter({ snapshots, facets, names, plan, mode })
+        : null,
+    [snapshots, facets, names, plan, mode],
   );
 
   const isSavings = mode === "sparplan";
@@ -181,7 +208,7 @@ function Purchase({
       </PlannerHeaderActions>
 
       <div className="space-y-6">
-        <SettingsList label="Eingaben" className="grid-cols-2 md:grid-cols-3">
+        <SettingsList label="Eingaben" className="grid-cols-3 md:grid-cols-4">
           <NumberField
             id="purchase-amount"
             max={AMOUNT_MAX}
@@ -197,7 +224,7 @@ function Purchase({
           <SettingCell
             label="Schwerpunkt"
             htmlFor="purchase-focus"
-            className="order-last col-span-2 md:order-none md:col-span-1"
+            className="order-last col-span-3 md:order-none md:col-span-1"
           >
             <Select
               id="purchase-focus"
@@ -236,20 +263,42 @@ function Purchase({
               )}
             </Select>
           </SettingCell>
+          <NumberField
+            id="purchase-cap"
+            max={POSITION_CAP_MAX}
+            label="Max. je Asset"
+            fullLabel="Höchstens so viel Prozent des Depots je Asset"
+            suffix="%"
+            value={settings.positionCap}
+            onCommit={(value) => {
+              save({
+                ...settings,
+                positionCap:
+                  value === null
+                    ? POSITION_CAP_DEFAULT
+                    : Math.max(POSITION_CAP_MIN, value),
+              });
+            }}
+          />
         </SettingsList>
 
-        {plan === null ? (
+        {plan === null || plan.buys.length === 0 ? (
           <p className="px-1 text-sm text-muted-foreground">
             {candidates.length === 0
               ? "Im Bestand ist kein Asset mit Kurs und Dividende, das sich nachkaufen ließe."
-              : `Mindestens ${String(rules.minimum)} € je ${isSavings ? "Sparplan" : "Kauf"}.`}
+              : plan === null
+                ? `Mindestens ${String(rules.minimum)} € je ${isSavings ? "Sparplan" : "Kauf"}.`
+                : `Kein Asset hat unter der Grenze von ${formatDecimal(settings.positionCap)} % noch Platz.`}
           </p>
         ) : (
-          <PlanSummary plan={plan} mode={mode} current={current?.annual ?? null} />
+          <>
+            <PlanSummary plan={plan} mode={mode} current={current?.annual ?? null} />
+            <SpreadLine spread={spread} cap={settings.positionCap} plan={plan} />
+          </>
         )}
       </div>
 
-      {plan !== null && (
+      {plan !== null && plan.buys.length > 0 && (
         <>
           <Section title={isSavings ? "Sparpläne" : "Käufe"}>
             <ListGroup>
@@ -287,6 +336,45 @@ function Purchase({
           setExcluded(settings.excluded.filter((entry) => entry !== id));
         }}
       />
+    </div>
+  );
+}
+
+/**
+ * Streuung nach dem Kauf in einer Zeile (seit 2.22.0): größte Position,
+ * Branche und Land. Eine Position über der Grenze ist hervorgehoben — das
+ * kann nur eine sein, die schon vorher darüber lag.
+ */
+function SpreadLine({
+  spread,
+  cap,
+  plan,
+}: {
+  spread: ReturnType<typeof concentrationAfter>;
+  cap: number;
+  plan: PurchasePlan;
+}) {
+  if (spread === null) return null;
+  const over = spread.position.percent.greaterThan(cap);
+  const part = (label: string, entry: { name: string; percent: DecimalInstance }) =>
+    `${label} ${entry.name} ${formatPercent(entry.percent, 1)}`;
+  return (
+    <div className="space-y-1 px-1 text-sm text-muted-foreground">
+      <p>
+        <span className="font-medium text-foreground">Nach dem Kauf:</span>{" "}
+        <span className={cn(over && "font-medium text-negative")}>
+          {part("größte Position", spread.position)}
+        </span>
+        {spread.sector && <> · {part("Branche", spread.sector)}</>}
+        {spread.country && <> · {part("Land", spread.country)}</>}
+      </p>
+      {plan.unplaced.isPositive() && (
+        <p>
+          {formatMoneyWhole(plan.unplaced)} finden unter der Grenze von{" "}
+          {formatDecimal(cap)} % keinen Platz. Mehr Käufe oder eine höhere Grenze
+          verteilen sie.
+        </p>
+      )}
     </div>
   );
 }
@@ -377,7 +465,7 @@ function BuyRow({
             <>
               <span>{rhythm(buy.months.length)}</span>
               {months && <span>{months}</span>}
-              {buy.shares && (
+              {buy.shares?.greaterThanOrEqualTo("0.1") && (
                 <span className="tabular-amount">
                   ≈ {sharesFormat.format(buy.shares.toNumber())} Stück
                 </span>

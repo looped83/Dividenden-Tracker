@@ -205,3 +205,63 @@ describe("parseForecastSettings", () => {
     expect(parseForecastSettings({ monthlySavings: 500 }).monthlySavings).toBe(500);
   });
 });
+
+describe("Positionsgrenze", () => {
+  // Depot 4.000 €, jede Position 1.000 €. Nach 1.000 € Kauf: 5.000 €.
+  it("füllt eine Position bis zur Grenze und nennt den Rest", () => {
+    // 30 % von 5.000 € = 1.500 €: Beta nimmt 500 €, ein Kauf ist gewählt.
+    const result = plan({ buys: 1, capPercent: 30 });
+    expect(result?.buys.map((buy) => [buy.name, buy.invest.toStringValue()])).toEqual([
+      ["Beta", "500.00"],
+    ]);
+    expect(result?.unplaced.toStringValue()).toBe("500.00");
+    expect(result?.invested.toStringValue()).toBe("500.00");
+  });
+
+  it("gibt mehr an die übrigen, wenn eine gewählte voll ist", () => {
+    // 30 % von 5.200 € = 1.560 €: je 560 € Platz; 1.200 € passen in drei Käufe.
+    const result = plan({ buys: 3, amount: 1200, capPercent: 30 });
+    expect(result?.buys.map((buy) => buy.invest.toStringValue())).toEqual([
+      "400.00",
+      "400.00",
+      "400.00",
+    ]);
+    expect(result?.unplaced.isZero()).toBe(true);
+  });
+
+  it("verteilt bei enger Grenze auf mehr Positionen", () => {
+    // 25 % von 5.000 € = 1.250 €: je Position 250 € Platz.
+    const result = plan({ buys: 4, capPercent: 25 });
+    expect(result?.buys).toHaveLength(4);
+    expect(result?.buys.every((buy) => buy.invest.toStringValue() === "250.00")).toBe(
+      true,
+    );
+  });
+
+  it("nennt, was keinen Platz findet", () => {
+    // 5 % von 5.000 € = 250 €: Jede Position liegt mit 1.000 € darüber.
+    const result = plan({ capPercent: 5 });
+    expect(result?.buys).toHaveLength(0);
+    expect(result?.unplaced.toStringValue()).toBe("1000.00");
+  });
+
+  it("hält die Grenze auch beim Glätten der Monate", () => {
+    const result = plan({ focus: "monate", buys: 3, capPercent: 30 });
+    expect(
+      result?.buys.every((buy) => buy.invest.toDecimal().lessThanOrEqualTo(500)),
+    ).toBe(true);
+    expect(result?.unplaced.isZero()).toBe(true);
+  });
+});
+
+describe("Sparplan im Hochlauf", () => {
+  it("zählt im ersten Monat eine Rate, im zwölften alle", () => {
+    const result = plan({ mode: "sparplan", amount: 100, buys: 1, focus: "dividende" });
+    if (!result) throw new Error("Plan erwartet");
+    const delta = (index: number) =>
+      result.after[index].subtract(result.before[index]).toDecimal();
+    // Beta zahlt im Mai (Index 6) 6 % auf 7 Raten, als Jahreswert 1.200 € × 6 % = 72 €.
+    expect(result.annual.toStringValue()).toBe("72.00");
+    expect(delta(6).toFixed(2)).toBe("42.00");
+  });
+});
