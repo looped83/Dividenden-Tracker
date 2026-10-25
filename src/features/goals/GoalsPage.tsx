@@ -10,17 +10,18 @@ import { ListGroup, ListItemBody, ListRow, ListTile } from "@/components/ui/list
 import { KpiHero, KpiHeroSkeleton, type KpiStat } from "@/components/domain/KpiHero";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { GoalBarChart, type GoalBarDatum } from "@/features/statistics/components/charts";
-import { useCalendarEvents } from "@/features/calendar/hooks";
 import { useForecastSettings } from "@/features/securities/forecastSettings";
-import { announcedForForecast } from "@/lib/calendar/summary";
 import { useToday } from "@/lib/hooks/useToday";
 import {
   annualGoalHistory,
   annualHitRate,
+  computeGoalCourse,
   computeGoalProgress,
   suggestAnnualGoal,
   trailingMonthlyAverage,
+  type ExpectedRest,
   type Goal,
+  type GoalCourse,
   type GoalProgress,
   type GoalSuggestion,
 } from "@/lib/goals";
@@ -33,19 +34,29 @@ import {
   formatPercent,
 } from "@/lib/money";
 import {
-  isoFromRef,
   monthNameDe,
   monthNameDeShort,
   monthlyBuckets,
-  yearEndForecast,
   type AnalyticsPayment,
   type RefDate,
 } from "@/lib/statistics";
 import { cn } from "@/lib/utils/cn";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
-import { useGoalProgressPayments, useGoals, type GoalWithMeta } from "./hooks";
+import {
+  useGoalProgressPayments,
+  useGoals,
+  useYearEndForecast,
+  type GoalWithMeta,
+} from "./hooks";
 import { GoalFormDialog } from "./GoalFormDialog";
-import { achievementText, goalTitle, statusLabel, statusTone } from "./format";
+import {
+  achievementText,
+  courseLabel,
+  courseVariant,
+  goalTitle,
+  statusLabel,
+  statusTone,
+} from "./format";
 
 const badgeVariantByTone = {
   positive: "positive",
@@ -69,23 +80,13 @@ export function GoalsPage() {
   const goalsQuery = useGoals();
   const { payments, isLoading: paymentsLoading } = useGoalProgressPayments();
   const settings = useForecastSettings().data;
-  const calendarEvents = useCalendarEvents().data;
+  const { forecast, rest } = useYearEndForecast(payments, today);
   const [form, setForm] = React.useState<{
     open: boolean;
     preset?: GoalSuggestion | undefined;
   }>({ open: false });
 
   const goals = React.useMemo(() => goalsQuery.data ?? [], [goalsQuery.data]);
-
-  const forecast = React.useMemo(
-    () =>
-      yearEndForecast(
-        payments,
-        today,
-        announcedForForecast(calendarEvents ?? [], isoFromRef(today)),
-      ),
-    [payments, today, calendarEvents],
-  );
 
   // Stabil je Vorschlag: Der Dialog setzt sich bei einer neuen Vorbelegung
   // zurueck — ein neues Objekt bei jedem Rendern verwarf sonst die Eingabe.
@@ -163,6 +164,7 @@ export function GoalsPage() {
         payments={payments}
         today={today}
         forecast={forecast}
+        rest={rest}
         targetMonthly={settings?.targetMonthly ?? null}
         onSuggest={openCreate}
       />
@@ -185,13 +187,15 @@ export function GoalsPage() {
   );
 }
 
-type Forecast = ReturnType<typeof yearEndForecast>;
+type Forecast = ReturnType<typeof useYearEndForecast>["forecast"];
+type Courses = ReadonlyMap<string, GoalCourse>;
 
 function GoalsOverview({
   goals,
   payments,
   today,
   forecast,
+  rest,
   targetMonthly,
   onSuggest,
 }: {
@@ -199,29 +203,36 @@ function GoalsOverview({
   payments: readonly AnalyticsPayment[];
   today: RefDate;
   forecast: Forecast;
+  rest: ExpectedRest;
   targetMonthly: number | null;
   onSuggest: (suggestion: GoalSuggestion) => void;
 }) {
   const data = React.useMemo(() => {
     const history = annualGoalHistory(goals, payments, today);
     const progress = goals.map((goal) => computeGoalProgress(goal, payments, today));
+    const courses = new Map<string, GoalCourse>();
+    for (const item of progress) {
+      const course = computeGoalCourse(item, rest, today);
+      if (course) courses.set(item.goal.id, course);
+    }
     return {
       history,
+      courses,
       hitRate: annualHitRate(history),
       average: trailingMonthlyAverage(payments, today),
       suggestion: suggestAnnualGoal(goals, payments, today, forecast.forecast),
       list: sortForList(progress),
-      years: toYearData(history, forecast, today),
-      months: toMonthData(goals, payments, forecast, today),
+      years: toYearData(history, forecast, courses, today),
+      months: toMonthData(goals, payments, forecast, courses, today),
     };
-  }, [goals, payments, today, forecast]);
+  }, [goals, payments, today, forecast, rest]);
 
   const current = data.history.find((p) => p.goal.year === today.year) ?? null;
   const next = data.history.find((p) => p.goal.year === today.year + 1) ?? null;
   const monthlyGoalsThisYear = goals.some(
     (goal) => goal.goalType === "monthly" && goal.year === today.year,
   );
-  const restOfYear = forecast.forecast.subtract(forecast.received);
+  const currentCourse = current ? (data.courses.get(current.goal.id) ?? null) : null;
 
   return (
     <div className="space-y-10 lg:space-y-12">
@@ -257,8 +268,8 @@ function GoalsOverview({
         <Section
           title={`${String(today.year)} Monat für Monat`}
           description={
-            current?.status === "active"
-              ? `Noch ${formatMoneyWhole(current.remaining)} bis zum Ziel · erwartet ${formatMoneyWhole(restOfYear)}`
+            current && currentCourse
+              ? `Hochrechnung ${formatMoneyWhole(currentCourse.expected)} von ${formatMoneyWhole(current.target)} · ${courseLabel(currentCourse.kind)}`
               : undefined
           }
         >
@@ -274,7 +285,10 @@ function GoalsOverview({
         <ListGroup>
           {data.list.map((progress) => (
             <li key={progress.goal.id}>
-              <GoalRow progress={progress} />
+              <GoalRow
+                progress={progress}
+                course={data.courses.get(progress.goal.id) ?? null}
+              />
             </li>
           ))}
         </ListGroup>
@@ -417,7 +431,13 @@ function SuggestionBox({
   );
 }
 
-function GoalRow({ progress }: { progress: GoalProgress }) {
+function GoalRow({
+  progress,
+  course,
+}: {
+  progress: GoalProgress;
+  course: GoalCourse | null;
+}) {
   const { goal, status } = progress;
   const isMonthly = goal.goalType === "monthly" && goal.month !== null;
   const upcoming = status === "upcoming";
@@ -438,15 +458,24 @@ function GoalRow({ progress }: { progress: GoalProgress }) {
                   (vorher brach der Betrag mobil je nach Länge mal um, mal nicht). */}
               <span aria-hidden>Dividendenziel</span>
               <span className="sr-only">{goalTitle(goal)}</span>
-              <Badge
-                variant={badgeVariantByTone[statusTone(status)]}
-                className={cn(
-                  "ml-2 align-[0.125em]",
-                  statusTone(status) === "neutral" && "bg-muted",
-                )}
-              >
-                {statusLabel(status)}
-              </Badge>
+              {course ? (
+                <Badge
+                  variant={courseVariant(course.kind)}
+                  className="ml-2 align-[0.125em]"
+                >
+                  {courseLabel(course.kind)}
+                </Badge>
+              ) : (
+                <Badge
+                  variant={badgeVariantByTone[statusTone(status)]}
+                  className={cn(
+                    "ml-2 align-[0.125em]",
+                    statusTone(status) === "neutral" && "bg-muted",
+                  )}
+                >
+                  {statusLabel(status)}
+                </Badge>
+              )}
             </>
           }
           meta={
@@ -471,7 +500,13 @@ function sortForList(items: GoalProgress[]): GoalProgress[] {
   );
 }
 
-function resultNote(progress: GoalProgress): string | undefined {
+function resultNote(
+  progress: GoalProgress,
+  course: GoalCourse | undefined,
+): string | undefined {
+  if (course) {
+    return `${courseLabel(course.kind)}: Hochrechnung ${formatMoney(course.expected)}`;
+  }
   switch (progress.status) {
     case "exceeded":
       return `Übertroffen um ${formatMoney(progress.overshoot)}`;
@@ -489,6 +524,7 @@ function resultNote(progress: GoalProgress): string | undefined {
 function toYearData(
   history: readonly GoalProgress[],
   forecast: Forecast,
+  courses: Courses,
   today: RefDate,
 ): GoalBarDatum[] {
   return history.map((progress) => {
@@ -506,7 +542,7 @@ function toYearData(
       actualMoney: progress.actual,
       restMoney,
       targetMoney: progress.target,
-      note: resultNote(progress),
+      note: resultNote(progress, courses.get(progress.goal.id)),
     };
   });
 }
@@ -515,6 +551,7 @@ function toMonthData(
   goals: readonly Goal[],
   payments: readonly AnalyticsPayment[],
   forecast: Forecast,
+  courses: Courses,
   today: RefDate,
 ): GoalBarDatum[] {
   const buckets = monthlyBuckets(payments, today.year);
@@ -539,7 +576,7 @@ function toMonthData(
       actualMoney: bucket.net,
       restMoney,
       targetMoney: goal ? goal.targetAmount : null,
-      note: progress ? resultNote(progress) : undefined,
+      note: progress ? resultNote(progress, courses.get(progress.goal.id)) : undefined,
     };
   });
 }

@@ -8,13 +8,20 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { DetailBackLink, DetailHeader } from "@/components/layout/DetailHeader";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { useToday } from "@/lib/hooks/useToday";
-import { computeGoalProgress } from "@/lib/goals";
-import { useDeleteGoal, useGoal, useGoalProgressPayments } from "./hooks";
+import { computeGoalCourse, computeGoalProgress } from "@/lib/goals";
+import {
+  useDeleteGoal,
+  useGoal,
+  useGoalProgressPayments,
+  useYearEndForecast,
+} from "./hooks";
 import { GoalProgressBar } from "./GoalProgressBar";
 import { GoalMark } from "./GoalMark";
 import { GoalFormDialog } from "./GoalFormDialog";
 import { DeleteGoalDialog } from "./DeleteGoalDialog";
 import {
+  courseLabel,
+  courseVariant,
   drillDownHref,
   goalTitle,
   money,
@@ -24,6 +31,7 @@ import {
   timeProgressText,
 } from "./format";
 import { formatTimestampDate } from "@/lib/utils/formatDate";
+import { cn } from "@/lib/utils/cn";
 
 const badgeVariantByTone = {
   positive: "positive",
@@ -38,6 +46,7 @@ export function GoalDetailPage() {
   const goalQuery = useGoal(id);
   const { payments, isLoading: paymentsLoading } = useGoalProgressPayments();
   const deleteGoal = useDeleteGoal();
+  const { rest } = useYearEndForecast(payments, today);
 
   const [editOpen, setEditOpen] = React.useState(false);
   const [deleteOpen, setDeleteOpen] = React.useState(false);
@@ -85,6 +94,8 @@ export function GoalDetailPage() {
   const progress = computeGoalProgress(goal, payments, today);
   const tone = statusTone(progress.status);
   const isUpcoming = progress.status === "upcoming";
+  const course = computeGoalCourse(progress, rest, today);
+  const tiles = 1 + (isUpcoming ? 0 : 2) + (course ? 1 : 0);
 
   const confirmDelete = () => {
     setDeleteError(null);
@@ -143,7 +154,13 @@ export function GoalDetailPage() {
         leading={<GoalMark className="mt-0.5" />}
         title={title}
         badge={
-          <Badge variant={badgeVariantByTone[tone]}>{statusLabel(progress.status)}</Badge>
+          course ? (
+            <Badge variant={courseVariant(course.kind)}>{courseLabel(course.kind)}</Badge>
+          ) : (
+            <Badge variant={badgeVariantByTone[tone]}>
+              {statusLabel(progress.status)}
+            </Badge>
+          )
         }
         subtitle={subtitle}
       />
@@ -155,7 +172,12 @@ export function GoalDetailPage() {
 
         {/* Zwei Spalten schon auf dem Telefon: Vier Werte untereinander
             fuellten den halben Bildschirm. */}
-        <dl className="grid grid-cols-2 gap-1 rounded-2xl bg-muted p-1.5 sm:grid-cols-3">
+        <dl
+          className={cn(
+            "grid grid-cols-2 gap-1 rounded-2xl bg-muted p-1.5",
+            tiles === 4 ? "sm:grid-cols-4" : "sm:grid-cols-3",
+          )}
+        >
           <div className="min-w-0 px-2.5 py-2 sm:px-4 sm:py-3">
             <dt className="text-[0.8125rem] text-muted-foreground">Zielbetrag</dt>
             <dd className="mt-0.5 text-[1.0625rem] font-semibold tabular-nums">
@@ -179,6 +201,16 @@ export function GoalDetailPage() {
                 </dd>
               </div>
             </>
+          )}
+          {course && (
+            // Erhalten + im Zeitraum noch erwartet (§13.1), getrennt vom
+            // Fortschritt: Balken und Restbetrag bleiben beim Ist.
+            <div className="min-w-0 px-2.5 py-2 sm:px-4 sm:py-3">
+              <dt className="text-[0.8125rem] text-muted-foreground">Hochrechnung</dt>
+              <dd className="mt-0.5 text-[1.0625rem] font-semibold tabular-nums">
+                {money(course.expected)}
+              </dd>
+            </div>
           )}
         </dl>
 

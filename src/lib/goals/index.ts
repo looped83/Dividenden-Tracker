@@ -23,3 +23,9 @@ export {
   trailingMonthlyAverage,
   type GoalSuggestion,
 } from "./overview";
+export {
+  computeGoalCourse,
+  type ExpectedRest,
+  type GoalCourse,
+  type GoalCourseKind,
+} from "./course";

@@ -660,16 +660,36 @@ Prozentwert wird auch über 100 % angezeigt.
 
 **Zeitfortschritt (§12), rein beschreibend.** Vergangene Kalendertage ÷ gesamte
 Kalendertage des Zeitraums; der aktuelle Tag wird inklusiv gezählt (konsistent
-zu den YTD-/Monatszeiträumen). Vor Beginn 0 %, nach Ende 100 %. **Keine**
-Hochrechnung, keine erwartete Zielerreichung, kein voraussichtliches
-Erreichungsdatum. Die Prognose auf der Übersicht (§9.7) ist eine eigene, getrennt
-gerechnete Anzeige daneben, kein Bestandteil des Zielfortschritts.
+zu den YTD-/Monatszeiträumen). Vor Beginn 0 %, nach Ende 100 %. Keine
+Hochrechnung im Zeitfortschritt, kein voraussichtliches Erreichungsdatum. Die
+Prognose auf der Übersicht (§9.7) und die Hochrechnung je Ziel (§13.1) sind
+eigene, getrennt gerechnete Anzeigen daneben, kein Bestandteil des
+Zielfortschritts.
 
 **Dynamik (§28).** Da Zielstände aus den aktuellen Zahlungen abgeleitet werden,
 aktualisiert jede Zahlungs-/Import-Mutation (Anlegen, Bearbeiten, Datum-/
 Betragsänderung, Storno, Reaktivierung, Löschung, Import-Commit/-Rollback) über
 die Invalidierung von `["payments"]` automatisch alle betroffenen Ziele,
 Dashboard und Statistik. Es bleibt kein veralteter Zielstand zurück.
+
+### 13.1 Hochrechnung je Ziel (`computeGoalCourse`, seit 2.31.0)
+
+Wo landet ein Ziel bis zum Ende seines Zeitraums?
+
+`Hochrechnung = erhalten (Ist, §13) + im Zeitraum noch erwartet`
+
+- *Noch erwartet* ist der Rest der Jahresprognose (§9.7, `yearEndForecast`): für das Jahresziel
+  `forecast − received`, für ein Monatsziel `restByMonth` seines Monats. Damit ist die
+  Hochrechnung genau die Höhe der gestreiften „Erwartet"-Balken der Zielseite und dieselbe
+  Prognose wie auf der Übersicht. Ein negativer Rest zählt nicht.
+- Bewusst nicht die Prognose aus Bestand › Prognose (§14.1): Sie beginnt erst mit dem nächsten
+  vollen Monat, ließe also den Rest des laufenden Monats aus, und braucht einen Depotstand.
+- **Nur für Ziele des laufenden Jahres, die noch offen sind** (`active` oder `upcoming`): das
+  Jahresziel dieses Jahres und Monatsziele ab dem laufenden Monat. Erreichte, übertroffene und
+  vergangene Ziele haben ein Ergebnis; über das Jahr hinaus kennt die Prognose nichts.
+- **Kurs:** *Im Plan* ab 100 % des Zielbetrags, *Knapp* ab 95 %, darunter *Unter Plan*. Das
+  Etikett ersetzt „Aktiv"/„Bevorstehend" in Liste und Detailseite; Status, Prozent, Balken und
+  Restbetrag des Ziels bleiben beim Ist.
 
 ---
 

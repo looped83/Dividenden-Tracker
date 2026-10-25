@@ -5,7 +5,7 @@ import {
   type DecimalInstance,
 } from "@/lib/money";
 import { monthNameDe } from "@/lib/statistics";
-import type { Goal, GoalProgress, GoalStatus } from "@/lib/goals";
+import type { Goal, GoalCourseKind, GoalProgress, GoalStatus } from "@/lib/goals";
 
 /**
  * Titel eines Ziels, immer automatisch (seit 2.5.1): „Dividendenziel 2027"
@@ -72,6 +72,22 @@ export function statusTone(status: GoalStatus): "positive" | "neutral" | "negati
     default:
       return "neutral";
   }
+}
+
+const COURSE_LABELS: Record<GoalCourseKind, string> = {
+  onTrack: "Im Plan",
+  close: "Knapp",
+  behind: "Unter Plan",
+};
+
+/** Etikett der Hochrechnung; ersetzt „Aktiv"/„Bevorstehend", wo es eine gibt. */
+export function courseLabel(kind: GoalCourseKind): string {
+  return COURSE_LABELS[kind];
+}
+
+/** Etikettfarbe der Hochrechnung — immer mit Text daneben. */
+export function courseVariant(kind: GoalCourseKind): "positive" | "warning" | "negative" {
+  return kind === "onTrack" ? "positive" : kind === "close" ? "warning" : "negative";
 }
 
 /** Prozenttext der Zielerreichung, auch ueber 100 %. */
