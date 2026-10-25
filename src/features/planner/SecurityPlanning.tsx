@@ -182,21 +182,25 @@ function WeightingRow({ securityId }: { securityId: string }) {
 
   const commit = () => {
     const parsed = parseGermanNumber(draft);
-    // Unsinn oder ausserhalb des Bereichs stellt den gespeicherten Wert wieder her.
+    // Unsinn oder ausserhalb des Bereichs stellt den gespeicherten Wert wieder
+    // her. 0 ist wie leer: keine Gewichtung, kein Nachkauf.
     if (
       parsed === undefined ||
-      (parsed !== null && (parsed < POSITION_CAP_MIN || parsed > POSITION_CAP_MAX))
+      (parsed !== null &&
+        parsed !== 0 &&
+        (parsed < POSITION_CAP_MIN || parsed > POSITION_CAP_MAX))
     ) {
       setDraft(shown);
       return;
     }
-    if ((parsed ?? undefined) === ownCap) {
+    const value = parsed === null || parsed === 0 ? undefined : parsed;
+    if (value === ownCap) {
       setDraft(shown);
       return;
     }
     const next = new Map(caps);
-    if (parsed === null) next.delete(securityId);
-    else next.set(securityId, parsed);
+    if (value === undefined) next.delete(securityId);
+    else next.set(securityId, value);
     save.mutate({ caps: next });
   };
 
@@ -231,18 +235,25 @@ function WeightingRow({ securityId }: { securityId: string }) {
           </span>
         </div>
         <span id="weighting-share" className="text-[0.8125rem] text-muted-foreground">
-          {ownCap === undefined && `Standard ${formatDecimal(POSITION_CAP_DEFAULT)} % · `}
           {share === null ? (
             "nicht im aktuellen Depotstand"
           ) : (
             <>
               heute{" "}
-              <span className={over ? "font-medium text-negative" : "text-foreground"}>
+              <span
+                className={
+                  over && ownCap !== undefined
+                    ? "font-medium text-negative"
+                    : "text-foreground"
+                }
+              >
                 {formatPercent(share, 1)}
               </span>
-              {over && " · kein Nachkauf"}
             </>
           )}
+          {ownCap === undefined
+            ? " · ohne Gewichtung kein Nachkauf"
+            : over && " · kein Nachkauf"}
         </span>
       </div>
     </div>

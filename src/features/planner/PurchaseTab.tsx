@@ -273,7 +273,9 @@ function Purchase({
               ? "Im Bestand ist kein Asset mit Kurs und Dividende, das sich nachkaufen ließe."
               : plan === null
                 ? `Mindestens ${String(rules.minimum)} € je ${isSavings ? "Sparplan" : "Kauf"}.`
-                : "Kein Asset hat unter seiner Gewichtung noch Platz."}
+                : caps.size === 0
+                  ? "Gib Assets auf ihrer Seite eine Gewichtung, dann schlägt der Nachkauf sie vor."
+                  : "Kein Asset hat unter seiner Gewichtung noch Platz."}
           </p>
         ) : (
           <>

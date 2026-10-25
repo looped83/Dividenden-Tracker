@@ -821,7 +821,7 @@ die Eingaben stehen in der Adresse (`?modus=sparplan&betrag=1000&fokus=monate&an
   Kauf (Marktwert aller Positionen + investiert; beim Sparplan zwölf Raten). Die Grenze
   wählst du **je Asset** auf seiner Seite (0,5–50 % auf eine Nachkommastelle, seit 2.24.0; zuvor ganze
   Werte 2–50 %; `profiles.position_caps`, Migration 0043, nicht
-  in der Datensicherung); ohne eigene gilt fest 1 % (seit 2.24.0; 2.23.1 fest 8 %, zuvor ein einstellbarer Standard
+  in der Datensicherung); ohne eigene gilt 0 %: Das Asset wird nicht vorgeschlagen (seit 2.25.0; 2.24.0 fest 1 %, 2.23.1 fest 8 %, zuvor ein einstellbarer Standard
   im Nachkauf). Gilt auch bei den Monatslücken. Positionen ohne
   Platz für den Mindestbetrag fallen weg; ist eine gewählte voll, bekommen die übrigen mehr. Die
   gewählte Zahl der Käufe bleibt; was darin keinen Platz findet, nennt der Plan.

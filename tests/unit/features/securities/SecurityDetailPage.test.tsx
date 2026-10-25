@@ -96,7 +96,7 @@ vi.mock("@/features/planner/savingsPlanHooks", () => ({
   newSavingsPlanId: () => "plan1",
 }));
 
-// Gewichtung: keine eigene, Standard 1 % (seit 2.24.0).
+// Gewichtung: keine eigene, Standard 0 % (seit 2.25.0).
 vi.mock("@/features/planner/positionCaps", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/features/planner/positionCaps")>()),
   usePositionCaps: () => ({ data: new Map(), isLoading: false }),
@@ -238,13 +238,13 @@ describe("SecurityDetailPage", () => {
     expect(section.getByRole("button", { name: "Sparplan" })).toBeInTheDocument();
   });
 
-  it("bietet die Gewichtung leer mit dem Standard an", () => {
+  it("bietet die Gewichtung leer an: ohne sie kein Nachkauf", () => {
     renderPage();
     const section = within(screen.getByRole("region", { name: "Planung" }));
     const field = section.getByRole("textbox", { name: "Gewichtung" });
     expect(field).toHaveValue("");
-    expect(field).toHaveAttribute("placeholder", "1");
-    expect(section.getByText(/Standard 1\s%/)).toBeInTheDocument();
+    expect(field).toHaveAttribute("placeholder", "0");
+    expect(section.getByText(/ohne Gewichtung kein Nachkauf/)).toBeInTheDocument();
   });
 
   it("nennt den Rhythmus am Ausschuettungsplan", () => {

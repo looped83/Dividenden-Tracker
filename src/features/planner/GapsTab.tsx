@@ -130,7 +130,7 @@ function GapRow({ gap }: { gap: MonthGap }) {
         meta={
           count > 0
             ? formatCountNoun(count, "Asset zum Auffüllen", "Assets zum Auffüllen")
-            : "Kein passendes Asset im Bestand"
+            : "Kein passendes Asset mit Gewichtung"
         }
         trailing={
           <>

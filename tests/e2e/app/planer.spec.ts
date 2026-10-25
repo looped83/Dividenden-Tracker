@@ -9,8 +9,8 @@ import { expect, test } from "../support/appTest";
  */
 
 /**
- * Ohne eigene Gewichtung gilt 1 % (seit 2.24.0) — im Beispieldepot liegt jede
- * Position darueber, der Nachkauf schlüge nichts vor. Hier deshalb je Asset 30 %.
+ * Ohne eigene Gewichtung gilt 0 % (seit 2.25.0) — dann schlüge der
+ * Nachkauf nichts vor. Hier deshalb je Asset 30 %.
  */
 async function seedWeights(userId: string): Promise<void> {
   await asUser(userId, async (client) => {
