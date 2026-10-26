@@ -176,7 +176,7 @@ test("merkt sich eine eigene Gewichtung am Asset", async ({ page, konto }) => {
     .first()
     .click();
 
-  const gewichtung = page.getByRole("textbox", { name: "Gewichtung" });
+  const gewichtung = page.getByRole("textbox", { name: "Zielgewichtung" });
   await expect(gewichtung).toHaveValue("");
   // Auf eine Nachkommastelle genau; gespeichert wird beim Verlassen.
   await gewichtung.fill("1,5");
@@ -184,5 +184,5 @@ test("merkt sich eine eigene Gewichtung am Asset", async ({ page, konto }) => {
   await expect(page.getByText("kein Nachkauf")).toBeVisible();
 
   await page.reload();
-  await expect(page.getByRole("textbox", { name: "Gewichtung" })).toHaveValue("1,5");
+  await expect(page.getByRole("textbox", { name: "Zielgewichtung" })).toHaveValue("1,5");
 });

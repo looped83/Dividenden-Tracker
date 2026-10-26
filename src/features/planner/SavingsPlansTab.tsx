@@ -405,7 +405,7 @@ function PlanTips({ tips }: { tips: readonly SavingsPlanTip[] }) {
     return (
       <Section title="Tipps">
         <Table>
-          <caption className="sr-only">Tipps zu Sparplänen und Gewichtungen</caption>
+          <caption className="sr-only">Tipps zu Sparplänen und Zielgewichtungen</caption>
           <TableHeader>
             <TableRow>
               <TableHead>Asset</TableHead>
@@ -456,19 +456,19 @@ function tipText(tip: SavingsPlanTip): { meta: string; trailing?: string } {
   switch (tip.kind) {
     case "over":
       return {
-        meta: `Über der Gewichtung von ${formatDecimal(tip.cap)}\u00A0%`,
+        meta: `Über der Zielgewichtung von ${formatDecimal(tip.cap)}\u00A0%`,
         trailing: formatPercent(tip.percent, 1),
       };
     case "reaching":
       return {
-        meta: `Erreicht die Gewichtung von ${formatDecimal(tip.cap)}\u00A0%`,
+        meta: `Erreicht die Zielgewichtung von ${formatDecimal(tip.cap)}\u00A0%`,
         trailing: `in ${formatCountNoun(tip.months, "Monat", "Monaten")}`,
       };
     case "unweighted":
-      return { meta: "Sparplan ohne Gewichtung" };
+      return { meta: "Sparplan ohne Zielgewichtung" };
     case "room":
       return {
-        meta: `Gewichtung ${formatDecimal(tip.cap)}\u00A0% · kein Sparplan`,
+        meta: `Zielgewichtung ${formatDecimal(tip.cap)}\u00A0% · kein Sparplan`,
         trailing: `${formatMoneyWhole(Money.fromDecimal(tip.room, EUR))} frei`,
       };
   }
