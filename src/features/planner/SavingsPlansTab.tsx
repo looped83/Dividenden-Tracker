@@ -16,6 +16,7 @@ import {
   type CategoryDatum,
 } from "@/features/statistics/components/charts";
 import { useDepots } from "@/features/depots/hooks";
+import { monthsEarlier } from "@/features/securities/snowball";
 import { ForecastGate, type ForecastBasis } from "@/features/securities/ForecastGate";
 import {
   DEFAULT_FORECAST_SETTINGS,
@@ -29,11 +30,14 @@ import { SavingsPlanDialog } from "./SavingsPlanDialog";
 import { useSavingsPlans } from "./savingsPlanHooks";
 import {
   SAVINGS_PLANS_MAX,
+  activeMonthlyTotal,
   savingsPlanOverview,
   type SavingsPlan,
   type SavingsPlanOverview,
   type SavingsPlanRow,
 } from "./savingsPlans";
+import { TargetGain } from "./TargetGain";
+import { withPlanSavings } from "./targetTime";
 
 const NO_EXCLUSIONS: ReadonlySet<string> = new Set();
 
@@ -65,7 +69,7 @@ function SavingsPlans({
   basis: ForecastBasis;
   plans: readonly SavingsPlan[];
 }) {
-  const { forecast, snapshots, names } = basis;
+  const { forecast, snapshots, names, depot } = basis;
   const [adding, setAdding] = React.useState(false);
   const [editing, setEditing] = React.useState<SavingsPlan | null>(null);
   const overview = React.useMemo(
@@ -79,7 +83,24 @@ function SavingsPlans({
     [forecast, snapshots, plans, names],
   );
   const caps = usePositionCaps().data;
-  const excluded = (useForecastSettings().data ?? DEFAULT_FORECAST_SETTINGS).excluded;
+  const forecastSettings = useForecastSettings().data ?? DEFAULT_FORECAST_SETTINGS;
+  const excluded = forecastSettings.excluded;
+  // Ziel-Zeit (§14.4): der Schneeball mit und ohne die aktiven Pläne.
+  const target = forecastSettings.targetMonthly;
+  const gain = React.useMemo(() => {
+    const planSavings = Math.round(activeMonthlyTotal(plans).toNumber());
+    if (planSavings <= 0) return null;
+    const { settings } = withPlanSavings(forecastSettings, planSavings);
+    return monthsEarlier({
+      depot,
+      settings: {
+        ...settings,
+        monthlySavings: Math.max(settings.monthlySavings - planSavings, 0),
+      },
+      netRatio: forecast.netRatio,
+      extraSavings: planSavings,
+    });
+  }, [plans, forecastSettings, depot, forecast.netRatio]);
   const tips = React.useMemo(
     () =>
       caps === undefined
@@ -144,7 +165,18 @@ function SavingsPlans({
 
   return (
     <div className="space-y-10 lg:space-y-12">
-      <PlansSummary overview={overview} />
+      <PlansSummary
+        overview={overview}
+        gain={
+          gain !== null && gain > 0 ? (
+            <TargetGain
+              months={gain}
+              target={target}
+              lead="Deine Sparpläne bringen dich"
+            />
+          ) : undefined
+        }
+      />
 
       <Section
         title="Pläne"
@@ -184,13 +216,21 @@ function SavingsPlans({
   );
 }
 
-function PlansSummary({ overview }: { overview: SavingsPlanOverview }) {
+function PlansSummary({
+  overview,
+  gain,
+}: {
+  overview: SavingsPlanOverview;
+  /** Ziel-Zeit unter der Hauptzahl ({@link TargetGain}). */
+  gain: React.ReactNode;
+}) {
   const count = overview.rows.length;
   return (
     <KpiHero
       label="Sparpläne im Monat"
       value={<AmountText amount={overview.monthly} />}
       caption={`${formatMoneyWhole(overview.yearly)} im Jahr · ${formatCountNoun(count, "aktiver Plan", "aktive Pläne")}`}
+      footer={gain}
       stats={[
         {
           label: "Mehr Dividende",

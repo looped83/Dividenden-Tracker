@@ -75,6 +75,41 @@ test("speichert die Annahmen des Schneeballs", async ({ page, konto }) => {
   await expect(page.getByLabel("Sparrate pro Monat")).toHaveValue("500");
 });
 
+test.describe("Reise und Ziel-Zeit (seit 2.32.0)", () => {
+  test.use({
+    seed: {
+      payments: [
+        { payDate: "2023-06-15", netAmount: "240.00" },
+        { payDate: "2025-06-15", netAmount: "960.00" },
+      ],
+    },
+  });
+
+  test("zeigt den bisherigen Weg und wie viel früher ein Kauf ans Ziel bringt", async ({
+    page,
+    konto,
+  }) => {
+    await seedPortfolio(konto.userId);
+    await seedWeights(konto.userId);
+    await asUser(konto.userId, (client) =>
+      client.query(
+        `update profiles set forecast_settings = '{"monthlySavings": 500, "targetMonthly": 1000}'`,
+      ),
+    );
+
+    await page.goto("/#/planer/schneeball");
+    // 240 € im ersten Jahr sind 20 € im Monat.
+    await expect(page.getByText("2023: 20 €")).toBeVisible();
+    await expect(page.getByText("Bisher", { exact: true })).toBeVisible();
+
+    await page.goto("/#/planer");
+    const gain = page.getByRole("link", { name: /Dieser Kauf bringt dich .* früher/ });
+    await expect(gain).toBeVisible();
+    await gain.click();
+    await expect(page).toHaveURL(/#\/planer\/schneeball$/);
+  });
+});
+
 test("verwirft Annahmen über der Obergrenze, statt still anders zu rechnen", async ({
   page,
   konto,

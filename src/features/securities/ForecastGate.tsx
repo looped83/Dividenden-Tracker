@@ -5,6 +5,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { normalizePayoutMonths } from "@/lib/statistics/effectiveMonth";
 import { useToday } from "@/lib/hooks/useToday";
+import type { AnalyticsPayment } from "@/lib/statistics";
 import type { SecuritySnapshot } from "@/lib/supabase/repositories/securitySnapshots";
 import { useEffectivePayments } from "@/features/dashboard/hooks";
 import { PortfolioImportButton, PortfolioImportDialog } from "./PortfolioImportDialog";
@@ -23,6 +24,8 @@ export interface ForecastBasis {
   names: ReadonlyMap<string, string>;
   /** Stammdaten je Asset (Land, Branche) fuer die Streuung im Planer. */
   facets: ReadonlyMap<string, ForecastFacets>;
+  /** Aktive Zahlungen mit effektivem Datum (§10), für den bisherigen Weg im Schneeball. */
+  payments: readonly AnalyticsPayment[];
   startYear: number;
 }
 
@@ -111,6 +114,7 @@ export function ForecastGate({
     snapshots,
     names,
     facets,
+    payments,
     startYear: today.year,
   });
 }

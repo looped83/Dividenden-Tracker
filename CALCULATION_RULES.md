@@ -736,6 +736,11 @@ gespeichert sind nur die Annahmen des Schneeballs (`profiles.forecast_settings`,
 - **Ziel und Meilensteine:** erstes Jahr, in dem die monatliche Nettodividende das Ziel erreicht
   (Horizont 30 Jahre). Kursgewinne fließen nicht ein. Gerechnet wird mit Decimal, angezeigt in
   vollen Euro.
+- **Bisheriger Weg** (`snowballHistory`, seit 2.32.0): je abgeschlossenem Kalenderjahr vor dem
+  laufenden die erhaltene Nettodividende (aktive Eingänge, effektives Datum §10) ÷ 12, vom ersten
+  Jahr mit einer Zahlung an; Jahre ohne Zahlung dazwischen zählen 0. In **Nennwerten** (keine
+  Inflationsbereinigung: es ist, was ankam). Im Diagramm durchgezogen bis heute, die Hochrechnung
+  ab heute gestrichelt; unter „Heute“ steht das erste Jahr mit seinem Wert („2019: 12 €“).
 
 ### 14.3 Monatslücken (`monthGaps`, seit 2.13.0; Planer › Optimierungen)
 
@@ -757,6 +762,23 @@ gespeichert sind nur die Annahmen des Schneeballs (`profiles.forecast_settings`,
   er von der Lücke schließt („3.000 € bis zur Gewichtung schließen 22 €“); unter 100 € Platz fällt
   er weg (bis 2.26 fiel jeder Füller weg, dessen ganzer Zukauf nicht passte). Geordnet nach
   geschlossenem Betrag, dann kleinster Zukauf.
+
+### 14.4 Ziel-Zeit (`monthsToTarget`, `monthsEarlier`, seit 2.32.0)
+
+- **Monate bis zum Ziel:** dieselbe Rechnung wie §14.2 im Basisszenario, aber nach jedem Monat
+  geprüft (Inflation je Monat `(1 + Inflation)^(1/12)`, Wachstum weiter am Jahresende); 0 = schon
+  erreicht, ohne Ziel oder nach 30 Jahren nicht erreicht = unbekannt.
+- **Früher am Ziel** = Monate ohne − Monate mit dem Zusatz; „ohne“ wird bis 60 Jahre gerechnet
+  (ohne Sparpläne liegt das Ziel oft hinter dem Horizont, gerade dann zählt der Abstand). Annahmen wie im Schneeball, ohne
+  eigene Sparrate also die Summe der Sparpläne (§17).
+  - **Nachkauf, Einmalkauf:** Zusatz = Mehr im Jahr netto des Plans ab heute (über die
+    Netto-Quote in brutto zurückgerechnet).
+  - **Nachkauf, Sparpläne:** Zusatz = Rate im Monat, zusätzlich zur Sparrate des Schneeballs.
+  - **Sparpläne:** mit gegen ohne die aktiven Pläne (Sparrate des Schneeballs abzüglich ihrer
+    Summe, nie unter 0).
+- Gezeigt ab einem Monat, unter der Hauptzahl („bringt dich 4 Monate früher an dein Ziel von
+  1.000 € im Monat“, führt zum Schneeball). Nicht gezeigt, wenn das Ziel schon erreicht ist, mit dem
+  Zusatz nicht in 30 oder ohne ihn nicht in 60 Jahren.
 
 ---
 

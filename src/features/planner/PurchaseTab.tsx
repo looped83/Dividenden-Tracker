@@ -25,6 +25,7 @@ import {
   type CategoryDatum,
 } from "@/features/statistics/components/charts";
 import { ForecastGate, type ForecastBasis } from "@/features/securities/ForecastGate";
+import { monthsEarlier } from "@/features/securities/snowball";
 import {
   AMOUNT_MAX,
   DEFAULT_FORECAST_SETTINGS,
@@ -50,6 +51,8 @@ import {
 import { POSITION_CAP_DEFAULT, usePositionCaps } from "./positionCaps";
 import { useSavingsPlans } from "./savingsPlanHooks";
 import { activeMonthlyTotal, savingsPlanOverview } from "./savingsPlans";
+import { TargetGain } from "./TargetGain";
+import { withPlanSavings } from "./targetTime";
 
 const MODE_OPTIONS: readonly SegmentOption<PlanMode>[] = [
   { value: "einmal", label: "Einmalkauf" },
@@ -112,7 +115,7 @@ function Purchase({
   basis: ForecastBasis;
   settings: ForecastSettings;
 }) {
-  const { forecast, snapshots, names, facets } = basis;
+  const { forecast, snapshots, names, facets, depot } = basis;
   const [params, setParams] = useSearchParams();
   const { data: savingsPlans = [] } = useSavingsPlans();
   const caps = usePositionCaps().data ?? NO_CAPS;
@@ -177,6 +180,27 @@ function Purchase({
 
   const isSavings = mode === "sparplan";
   const hasPlan = plan !== null && plan.buys.length > 0;
+  // Ziel-Zeit (§14.4): Der Kauf kommt zu dem hinzu, womit der Schneeball
+  // ohnehin rechnet — beim Sparplan als zusätzliche Rate, sonst als
+  // zusätzliche Dividende ab heute.
+  const snowball = React.useMemo(
+    () => withPlanSavings(settings, savingsTotal).settings,
+    [settings, savingsTotal],
+  );
+  const gain = React.useMemo(
+    () =>
+      plan && plan.buys.length > 0
+        ? monthsEarlier({
+            depot,
+            settings: snowball,
+            netRatio: forecast.netRatio,
+            ...(isSavings
+              ? { extraSavings: plan.invested.toDecimal().dividedBy(12).toNumber() }
+              : { extraAnnualNet: plan.annual.toDecimal() }),
+          })
+        : null,
+    [plan, depot, snowball, forecast.netRatio, isSavings],
+  );
   // Zum Vergleich: was die gepflegten Sparpläne heute bringen.
   const current = React.useMemo(
     () =>
@@ -213,7 +237,22 @@ function Purchase({
       <div className="space-y-6">
         {/* Wie im Schneeball: Ergebnis oben, darunter die Eingaben (seit 2.27.0). */}
         {hasPlan && (
-          <PlanSummary plan={plan} mode={mode} current={current?.annual ?? null} />
+          <PlanSummary
+            plan={plan}
+            mode={mode}
+            current={current?.annual ?? null}
+            gain={
+              gain !== null && gain > 0 ? (
+                <TargetGain
+                  months={gain}
+                  target={snowball.targetMonthly}
+                  lead={
+                    isSavings ? "Diese Sparpläne bringen dich" : "Dieser Kauf bringt dich"
+                  }
+                />
+              ) : undefined
+            }
+          />
         )}
 
         <SettingsList label="Eingaben" className="grid-cols-2 md:grid-cols-3">
@@ -380,11 +419,14 @@ function PlanSummary({
   plan,
   mode,
   current,
+  gain,
 }: {
   plan: PurchasePlan;
   mode: PlanMode;
   /** Mehr im Jahr durch die gepflegten Sparpläne; `null` ohne Pläne. */
   current: Money | null;
+  /** Ziel-Zeit unter der Hauptzahl ({@link TargetGain}). */
+  gain: React.ReactNode;
 }) {
   const average = (values: PurchasePlan["before"]) =>
     Money.fromDecimal(
@@ -409,6 +451,7 @@ function PlanSummary({
         </>
       }
       caption={`${formatPercent(plan.yieldPercent, 1)} auf ${formatMoneyWhole(plan.invested)}`}
+      footer={gain}
       stats={[
         {
           label: "Ø im Monat",
