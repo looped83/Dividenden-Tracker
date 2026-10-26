@@ -184,3 +184,33 @@ export function milestoneOverview(
     ],
   };
 }
+
+export interface YearMilestones {
+  /** In diesem Jahr erreicht, älteste zuerst. */
+  reached: Milestone[];
+  /** Nächste Stufe der Summe seit Beginn, gemessen am Ende des Jahres. */
+  nextTotal: NextMilestone;
+}
+
+/**
+ * Meilensteine eines Jahres für den Jahresrückblick: dieselben Leitern wie
+ * im Fortschritt, nur aus den Zahlungen bis einschließlich `year` — ein
+ * späteres Jahr ändert den Rückblick nicht.
+ */
+export function yearMilestones(
+  payments: readonly AnalyticsPayment[],
+  year: number,
+  today: RefDate,
+): YearMilestones {
+  const prefix = String(year);
+  const overview = milestoneOverview(
+    payments.filter((payment) => payment.payDate.slice(0, 4) <= prefix),
+    today,
+  );
+  return {
+    reached: overview.reached
+      .filter((milestone) => milestone.reachedOn.startsWith(prefix))
+      .reverse(),
+    nextTotal: overview.next[0],
+  };
+}

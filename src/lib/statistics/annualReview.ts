@@ -66,11 +66,6 @@ export interface AnnualReview {
   /** Laufendes Jahr: Die Zahlen gelten „bis heute". */
   isPartial: boolean;
   net: Money;
-  gross: Money;
-  /** Brutto minus netto: Quellensteuer, Abgeltungsteuer, Soli, Kirchensteuer, Gebuehren. */
-  deductions: Money;
-  /** Anteil der Abzuege am Brutto in Prozentpunkten; null bei Brutto ≤ 0. */
-  deductionShare: DecimalInstance | null;
   count: number;
   distinctSecurities: number;
   /** Monate des Jahres mit mindestens einer Zahlung. */
@@ -108,38 +103,10 @@ export interface AnnualReview {
   growthFactor: DecimalInstance | null;
   /** Durchschnitt der Jahre vor diesem; null ohne Vorjahre. */
   priorAverage: Money | null;
-  /** Naechste runde Marke der Summe seit Beginn. */
-  nextMilestone: ReviewMilestone | null;
-}
-
-export interface ReviewMilestone {
-  target: Money;
-  remaining: Money;
-  /** Jahre bis zur Marke im Tempo dieses Jahres (aufgerundet); null bei Netto ≤ 0. */
-  yearsToGo: number | null;
 }
 
 const ZERO = Money.zero(EUR);
 const TOP_PAYERS = 5;
-/** Runde Marken der Summe seit Beginn, in Euro. */
-const MILESTONES = [
-  1_000, 2_500, 5_000, 10_000, 25_000, 50_000, 100_000, 250_000, 500_000, 1_000_000,
-];
-
-function nextMilestone(cumulative: Money, yearNet: Money): ReviewMilestone | null {
-  const amount = MILESTONES.find((value) => cumulative.toDecimal().lt(value));
-  if (amount === undefined) return null;
-  const target = Money.fromString(String(amount), EUR);
-  const remaining = target.subtract(cumulative);
-  return {
-    target,
-    remaining,
-    yearsToGo: yearNet.isPositive()
-      ? remaining.toDecimal().div(yearNet.toDecimal()).ceil().toNumber()
-      : null,
-  };
-}
-
 /** Ab diesem Dezembertag gibt es den Rueckblick auf das laufende Jahr. */
 const REVIEW_OPENS_DAY = 15;
 /** Bis zu diesem Januartag steht der Rueckblick des Vorjahres auf der Startseite. */
@@ -220,11 +187,6 @@ export function annualReview(
   if (rows.length === 0) return null;
 
   const { net, count } = aggregate(rows);
-  const gross = sumMoney(
-    rows.map((p) => p.grossAmount),
-    EUR,
-  );
-  const deductions = gross.subtract(net);
 
   const years = yearlyBuckets(history);
   const prior = years.find((bucket) => bucket.year === year - 1) ?? null;
@@ -320,11 +282,6 @@ export function annualReview(
     year,
     isPartial,
     net,
-    gross,
-    deductions,
-    deductionShare: gross.isPositive()
-      ? deductions.toDecimal().div(gross.toDecimal()).times(100)
-      : null,
     count,
     distinctSecurities: distinctSecurities(rows),
     activeMonths: activeMonthCount(rows),
@@ -347,7 +304,6 @@ export function annualReview(
     years,
     growthFactor,
     priorAverage,
-    nextMilestone: nextMilestone(cumulativeNet, net),
   };
 }
 
