@@ -38,8 +38,8 @@ test("sortiert die Assettabelle per Spaltenkopf", async ({ page, konto }) => {
   await expect(wert).toHaveAttribute("aria-sort", "ascending");
   await expect(ersteZeile).toContainText("Toyota");
 
-  // Gewichtung steht neben dem Anteil; ohne eigene stehen Assets am Ende.
-  await page.getByRole("button", { name: "Nach Gewichtung sortieren" }).click();
+  // Zielgewichtung steht neben der Gewichtung; ohne eigene stehen Assets am Ende.
+  await page.getByRole("button", { name: "Nach Zielgewichtung sortieren" }).click();
   await expect(ersteZeile).toContainText("Allianz");
   await expect(ersteZeile).toContainText("8,0 %");
   await expect(tabelle.locator("tbody tr").nth(1)).toContainText("BASF");

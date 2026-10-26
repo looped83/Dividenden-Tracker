@@ -485,11 +485,16 @@ export function SecuritiesPage() {
                   {withPositions && (
                     <>
                       {sortHead("value", "Wert", "right")}
-                      {/* Anteil folgt dem Wert — dieselbe Reihenfolge. Daneben
-                      die Gewichtung, das Ziel des Nachkaufs: Ist und Soll
-                      nebeneinander, wie auf der Asset-Seite (ab lg). */}
-                      {sortHead("value", "Anteil", "right")}
-                      {sortHead("weight", "Gewichtung", "right", "hidden lg:table-cell")}
+                      {/* Gewichtung (Ist, Anteil am Depot) folgt dem Wert —
+                      dieselbe Reihenfolge. Daneben die Zielgewichtung des
+                      Nachkaufs (ab lg). */}
+                      {sortHead("value", "Gewichtung", "right")}
+                      {sortHead(
+                        "weight",
+                        "Zielgewichtung",
+                        "right",
+                        "hidden lg:table-cell",
+                      )}
                       {sortHead("expected", "Erwartet p. a.", "right")}
                       {sortHead("yield", "Rendite", "right")}
                       {sortHead("gain", "Gewinn", "right")}
@@ -538,7 +543,7 @@ export function SecuritiesPage() {
                             <PercentCell
                               value={position?.allocationPercent}
                               digits={1}
-                              // Ueber der eigenen Gewichtung rot — wie auf der
+                              // Ueber der Zielgewichtung rot — wie auf der
                               // Asset-Seite: dort endet der Nachkauf.
                               over={
                                 row.targetWeight !== null &&

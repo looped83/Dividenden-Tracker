@@ -133,7 +133,10 @@ describe("SecuritiesPage", () => {
       screen.getByRole("columnheader", { name: "Erwartet p. a." }),
     ).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "Gewinn" })).toBeInTheDocument();
-    expect(screen.getByRole("columnheader", { name: "Anteil" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Gewichtung" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("columnheader", { name: "Zielgewichtung" }),
+    ).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "Rendite" })).toBeInTheDocument();
 
     const zeile = screen.getByRole("row", { name: /Alpha AG/ });
