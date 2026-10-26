@@ -32,6 +32,7 @@ function row(
       ...overrides,
     } as Security,
     depotName,
+    targetWeight: null,
     position:
       position === null
         ? null
@@ -159,7 +160,13 @@ describe("Sortierauswahl", () => {
     const withPositions = securitySortOptions(true).map((option) => option.value);
 
     expect(withoutPositions).not.toContain("value");
-    expect(withPositions.slice(0, 4)).toEqual(["value", "expected", "yield", "gain"]);
+    expect(withPositions.slice(0, 5)).toEqual([
+      "value",
+      "weight",
+      "expected",
+      "yield",
+      "gain",
+    ]);
   });
 
   it("beginnt bei Zahlenfeldern absteigend, bei Textfeldern aufsteigend", () => {
@@ -190,5 +197,30 @@ describe("parseSecuritySort", () => {
   it("faellt bei unbekanntem Feld auf die Vorgabe zurueck", () => {
     expect(parseSecuritySort("unsinn", "desc")).toEqual(DEFAULT_SECURITY_SORT);
     expect(parseSecuritySort(null, null)).toEqual(DEFAULT_SECURITY_SORT);
+  });
+});
+
+describe("Sortierung nach Gewichtung", () => {
+  const withWeight = (name: string, targetWeight: number | null) => ({
+    ...row({ name }),
+    targetWeight,
+  });
+
+  it("ordnet nach eigener Gewichtung, Assets ohne stehen am Ende", () => {
+    const rows = [
+      withWeight("Ohne", null),
+      withWeight("Klein", 2),
+      withWeight("Gross", 8.5),
+    ];
+    expect(namesOf(sortAssetRows(rows, { field: "weight", direction: "desc" }))).toEqual([
+      "Gross",
+      "Klein",
+      "Ohne",
+    ]);
+    expect(namesOf(sortAssetRows(rows, { field: "weight", direction: "asc" }))).toEqual([
+      "Klein",
+      "Gross",
+      "Ohne",
+    ]);
   });
 });
