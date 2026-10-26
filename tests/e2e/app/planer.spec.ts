@@ -29,16 +29,19 @@ test("verteilt einen Einmalkauf und merkt sich ausgeschlossene Assets", async ({
   await page.goto("/#/planer");
 
   await expect(page.getByText("Mehr im Jahr · netto")).toBeVisible();
-  const kaeufe = page.getByRole("region", { name: "Käufe" }).getByRole("listitem");
+  // Telefon: Liste; ab md seit 2.32.0 eine Tabelle.
+  const kaeufe = page.getByRole("region", { name: "Käufe" }).locator("li, tbody tr");
   await expect(kaeufe).toHaveCount(3);
 
-  const erster = kaeufe.first().getByRole("link");
-  const name = (await erster.locator(".font-medium").first().textContent()) ?? "";
-  expect(name).not.toBe("");
-  await kaeufe
+  const ausblenden = kaeufe
     .first()
-    .getByRole("button", { name: `${name} nicht mehr vorschlagen` })
-    .click();
+    .getByRole("button", { name: / nicht mehr vorschlagen$/ });
+  const name = ((await ausblenden.getAttribute("aria-label")) ?? "").replace(
+    " nicht mehr vorschlagen",
+    "",
+  );
+  expect(name).not.toBe("");
+  await ausblenden.click();
   await expect(page.getByText("1 Asset ausgeschlossen")).toBeVisible();
 
   await page.reload();
@@ -73,6 +76,41 @@ test("speichert die Annahmen des Schneeballs", async ({ page, konto }) => {
 
   await page.reload();
   await expect(page.getByLabel("Sparrate pro Monat")).toHaveValue("500");
+});
+
+test.describe("Reise und Ziel-Zeit (seit 2.32.0)", () => {
+  test.use({
+    seed: {
+      payments: [
+        { payDate: "2023-06-15", netAmount: "240.00" },
+        { payDate: "2025-06-15", netAmount: "960.00" },
+      ],
+    },
+  });
+
+  test("zeigt den bisherigen Weg und wie viel früher ein Kauf ans Ziel bringt", async ({
+    page,
+    konto,
+  }) => {
+    await seedPortfolio(konto.userId);
+    await seedWeights(konto.userId);
+    await asUser(konto.userId, (client) =>
+      client.query(
+        `update profiles set forecast_settings = '{"monthlySavings": 500, "targetMonthly": 1000}'`,
+      ),
+    );
+
+    await page.goto("/#/planer/schneeball");
+    // 240 € im ersten Jahr sind 20 € im Monat.
+    await expect(page.getByText("2023: 20 €")).toBeVisible();
+    await expect(page.getByText("Bisher", { exact: true })).toBeVisible();
+
+    await page.goto("/#/planer");
+    const gain = page.getByRole("link", { name: /Dieser Kauf bringt dich .* früher/ });
+    await expect(gain).toBeVisible();
+    await gain.click();
+    await expect(page).toHaveURL(/#\/planer\/schneeball$/);
+  });
 });
 
 test("verwirft Annahmen über der Obergrenze, statt still anders zu rechnen", async ({
@@ -116,7 +154,7 @@ test("pflegt Sparpläne und zeigt sie am Asset", async ({ page, konto }) => {
   // Alle Assets mit 30 % Gewichtung, nur Allianz mit Plan: Tipps nennen die
   // mit dem meisten Platz, Allianz nicht.
   const tipps = page.getByRole("region", { name: "Tipps" });
-  await expect(tipps.getByRole("listitem")).toHaveCount(3);
+  await expect(tipps.locator("li, tbody tr")).toHaveCount(3);
   await expect(tipps.getByText("Allianz", { exact: true })).toHaveCount(0);
 
   await page.goto("/#/depot");

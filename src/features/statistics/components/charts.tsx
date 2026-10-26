@@ -541,19 +541,24 @@ export function DonutChart({
 // Dividenden-Schneeball (Bestand › Prognose)
 // ============================================================================
 
-/** Ein Jahr der Hochrechnung; Werte vorab gerechnet (features/securities/snowball.ts). */
+/**
+ * Ein Jahr des Schneeballs; Werte vorab gerechnet (features/securities/snowball.ts).
+ * Vergangene Jahre tragen nur `actual`, die Hochrechnung `base`/`band`.
+ */
 export interface SnowballDatum {
   year: number;
   label: string;
-  base: number;
+  /** Erhalten: Nettodividende des Jahres ÷ 12; heute zusätzlich als Übergang. */
+  actual: number | null;
+  actualMoney: Money | null;
+  base: number | null;
   /** Spanne vorsichtig–optimistisch (Recharts zeichnet ein Band aus `[von, bis]`). */
-  band: [number, number];
-  baseMoney: Money;
-  lowMoney: Money;
-  highMoney: Money;
+  band: [number, number] | null;
+  projection: { base: Money; low: Money; high: Money } | null;
 }
 
 const SNOWBALL_BAND_FILL = "color-mix(in srgb, var(--primary) 16%, transparent)";
+const SNOWBALL_DASH = "6 4";
 
 function SnowballTooltip({
   active,
@@ -567,19 +572,28 @@ function SnowballTooltip({
   return (
     <ChartTooltipBox>
       <p className="font-medium">{row.year}</p>
-      <p>{formatMoneyWhole(row.baseMoney)} im Monat</p>
-      <p className="text-muted-foreground">
-        Spanne {formatMoneyWhole(row.lowMoney)} – {formatMoneyWhole(row.highMoney)}
-      </p>
+      {row.projection ? (
+        <>
+          <p>{formatMoneyWhole(row.projection.base)} im Monat</p>
+          <p className="text-muted-foreground">
+            Spanne {formatMoneyWhole(row.projection.low)} –{" "}
+            {formatMoneyWhole(row.projection.high)}
+          </p>
+        </>
+      ) : (
+        row.actualMoney && <p>Ø {formatMoneyWhole(row.actualMoney)} im Monat erhalten</p>
+      )}
     </ChartTooltipBox>
   );
 }
 
 /**
- * Monatliche Nettodividende ueber die Jahre: Basis als Linie in der
- * Akzentfarbe, die Spanne der Szenarien als helles Band dahinter, das Ziel als
- * gestrichelte Linie. Das Band zeigt die Unsicherheit, ohne dass drei Linien
- * um Aufmerksamkeit konkurrieren.
+ * Monatliche Nettodividende über die Jahre: links der bisherige Weg aus den
+ * erhaltenen Dividenden als durchgezogene Linie (seit 2.32.0), ab heute die
+ * Hochrechnung gestrichelt in derselben Farbe — ein Weg, der weitergeht. Die
+ * Spanne der Szenarien liegt als helles Band dahinter, das Ziel als
+ * gestrichelte Linie in Grau. Das Band zeigt die Unsicherheit, ohne dass drei
+ * Linien um Aufmerksamkeit konkurrieren.
  */
 export function SnowballChart({
   data,
@@ -591,13 +605,20 @@ export function SnowballChart({
   target: number | null;
   ariaLabel: string;
 }) {
+  const hasHistory = data.some((row) => row.actualMoney !== null);
+  const dash = (money: Money | null) => (money ? formatMoneyWhole(money) : "–");
   return (
     <div className="space-y-4">
       <ChartCanvas ariaLabel={ariaLabel}>
         <ComposedChart data={[...data]} margin={{ ...CHART_MARGIN, right: 16 }}>
           <CartesianGrid {...CHART_GRID_PROPS} />
-          {/* Jedes fuenfte Jahr: 31 Jahre passen sonst auf keine Achse. */}
-          <XAxis dataKey="label" {...CHART_X_AXIS_PROPS} interval={4} />
+          {/* Höchstens acht Beschriftungen: 31 Jahre und mehr passen sonst auf
+          keine Achse, zwölf Jahre brauchen nur jedes zweite. */}
+          <XAxis
+            dataKey="label"
+            {...CHART_X_AXIS_PROPS}
+            interval={Math.max(Math.ceil(data.length / 8) - 1, 0)}
+          />
           <YAxis {...CHART_Y_AXIS_PROPS} />
           <Tooltip content={<SnowballTooltip />} cursor={CHART_LINE_CURSOR} />
           <Area
@@ -618,12 +639,25 @@ export function SnowballChart({
               ifOverflow="extendDomain"
             />
           )}
+          {hasHistory && (
+            <Line
+              type="monotone"
+              dataKey="actual"
+              name="Bisher"
+              stroke="var(--primary)"
+              strokeWidth={2.25}
+              dot={false}
+              activeDot={{ r: 5 }}
+              {...CHART_SERIES_PROPS}
+            />
+          )}
           <Line
             type="monotone"
             dataKey="base"
-            name="Basis"
+            name="Hochrechnung"
             stroke="var(--primary)"
             strokeWidth={2.25}
+            {...(hasHistory && { strokeDasharray: SNOWBALL_DASH })}
             dot={false}
             activeDot={{ r: 5 }}
             {...CHART_SERIES_PROPS}
@@ -633,7 +667,12 @@ export function SnowballChart({
 
       <ChartLegend
         items={[
-          { label: "Basis", color: "var(--primary)" },
+          ...(hasHistory ? [{ label: "Bisher", color: "var(--primary)" }] : []),
+          {
+            label: hasHistory ? "Hochrechnung" : "Basis",
+            color: "var(--primary)",
+            dashed: hasHistory,
+          },
           { label: "Spanne der Szenarien", color: SNOWBALL_BAND_FILL },
           ...(target !== null
             ? [{ label: "Ziel", color: "var(--series-prior)", dashed: true }]
@@ -647,6 +686,7 @@ export function SnowballChart({
           <TableHeader>
             <TableRow>
               <TableHead>Jahr</TableHead>
+              {hasHistory && <TableHead className="text-right">Erhalten</TableHead>}
               <TableHead className="text-right">Vorsichtig</TableHead>
               <TableHead className="text-right">Basis</TableHead>
               <TableHead className="text-right">Optimistisch</TableHead>
@@ -656,14 +696,19 @@ export function SnowballChart({
             {data.map((row) => (
               <TableRow key={row.year}>
                 <ChartRowHeader>{row.year}</ChartRowHeader>
+                {hasHistory && (
+                  <TableCell className="text-right tabular-nums">
+                    {dash(row.actualMoney)}
+                  </TableCell>
+                )}
                 <TableCell className="text-right tabular-nums">
-                  {formatMoneyWhole(row.lowMoney)}
+                  {dash(row.projection?.low ?? null)}
                 </TableCell>
                 <TableCell className="text-right tabular-nums">
-                  {formatMoneyWhole(row.baseMoney)}
+                  {dash(row.projection?.base ?? null)}
                 </TableCell>
                 <TableCell className="text-right tabular-nums">
-                  {formatMoneyWhole(row.highMoney)}
+                  {dash(row.projection?.high ?? null)}
                 </TableCell>
               </TableRow>
             ))}

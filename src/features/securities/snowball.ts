@@ -19,6 +19,7 @@
  *    (1 + Inflation)^Jahre.
  */
 import { MoneyDecimal, type DecimalInstance } from "@/lib/money";
+import { yearlyBuckets, type AnalyticsPayment } from "@/lib/statistics";
 import type { SecuritySnapshot } from "@/lib/supabase/repositories/securitySnapshots";
 import { latestAsOf, snapshotsAt } from "./snapshots";
 
@@ -284,4 +285,139 @@ export function projectSnowball({
     growthLowPercent: growthLow,
     yieldPercent: yieldRate,
   };
+}
+
+export interface SnowballHistoryPoint {
+  year: number;
+  /** Erhaltene Nettodividende des Jahres ÷ 12, in Nennwerten. */
+  monthly: DecimalInstance;
+}
+
+/**
+ * Der bisherige Weg (seit 2.32.0): je abgeschlossenem Kalenderjahr vor
+ * `startYear` die erhaltene Nettodividende ÷ 12 — vom ersten Jahr mit einer
+ * Zahlung an, Jahre ohne Zahlung dazwischen mit 0. Das laufende Jahr fehlt:
+ * Es ist noch nicht vorbei, und „heute" zeigt schon der erste Punkt der
+ * Hochrechnung.
+ */
+export function snowballHistory(
+  payments: readonly AnalyticsPayment[],
+  startYear: number,
+): SnowballHistoryPoint[] {
+  const past = yearlyBuckets(payments).filter(
+    (bucket) => bucket.year < startYear && bucket.net.isPositive(),
+  );
+  if (past.length === 0) return [];
+  const byYear = new Map(past.map((bucket) => [bucket.year, bucket.net.toDecimal()]));
+  const history: SnowballHistoryPoint[] = [];
+  for (let year = past[0].year; year < startYear; year += 1) {
+    history.push({
+      year,
+      monthly: (byYear.get(year) ?? new MoneyDecimal(0)).dividedBy(TWELVE),
+    });
+  }
+  return history;
+}
+
+/**
+ * Monate bis zum Ziel im Basisszenario, gerechnet wie {@link projectSnowball},
+ * aber Monat für Monat geprüft (seit 2.32.0): Das Jahresraster sagt bei einem
+ * Kauf meist „gleiches Jahr", die Monate zeigen, was er wirklich bewegt.
+ * `extraAnnualNet` ist zusätzliche Nettodividende im Jahr ab heute (ein
+ * Einmalkauf), `extraSavings` zusätzliche Sparrate im Monat. 0 = schon
+ * erreicht, `null` = ohne Ziel oder nicht innerhalb des Horizonts.
+ */
+export function monthsToTarget({
+  depot,
+  settings,
+  netRatio,
+  extraAnnualNet,
+  extraSavings = 0,
+  years = SNOWBALL_YEARS,
+}: {
+  depot: DepotAssumptions;
+  settings: SnowballSettings;
+  netRatio: DecimalInstance | null;
+  extraAnnualNet?: DecimalInstance;
+  extraSavings?: number;
+  years?: number;
+}): number | null {
+  const target = new MoneyDecimal(Math.max(settings.targetMonthly, 0));
+  if (!target.greaterThan(0)) return null;
+  const ratio = netRatio?.greaterThan(0) ? netRatio : ONE;
+  const growth =
+    settings.growthPercent === null
+      ? depot.growthPercent
+      : new MoneyDecimal(settings.growthPercent);
+  const yieldRate =
+    settings.yieldPercent === null
+      ? depot.yieldPercent
+      : new MoneyDecimal(settings.yieldPercent);
+  const growthFactor = ONE.plus(growth.dividedBy(HUNDRED));
+  const yieldShare = yieldRate.dividedBy(HUNDRED);
+  const savings = new MoneyDecimal(Math.max(settings.monthlySavings + extraSavings, 0));
+  // Kaufkraft je Monat: zwölf Schritte ergeben genau die Jahresinflation.
+  const monthlyInflation = ONE.plus(
+    new MoneyDecimal(Math.max(settings.inflationPercent, 0)).dividedBy(HUNDRED),
+  ).pow(ONE.dividedBy(TWELVE));
+  const monthlyNet = (annual: DecimalInstance) => annual.times(ratio).dividedBy(TWELVE);
+
+  let annual = depot.annualGross.plus(
+    (extraAnnualNet ?? new MoneyDecimal(0)).dividedBy(ratio),
+  );
+  let deflator = ONE;
+  if (monthlyNet(annual).greaterThanOrEqualTo(target)) return 0;
+  for (let month = 1; month <= years * 12; month += 1) {
+    const invested = settings.reinvest ? savings.plus(monthlyNet(annual)) : savings;
+    annual = annual.plus(invested.times(yieldShare));
+    if (month % 12 === 0) annual = annual.times(growthFactor);
+    deflator = deflator.times(monthlyInflation);
+    if (monthlyNet(annual).dividedBy(deflator).greaterThanOrEqualTo(target)) return month;
+  }
+  return null;
+}
+
+/**
+ * Wie viele Monate ein Kauf oder eine Sparrate das Ziel vorzieht (seit
+ * 2.32.0). Ohne den Zusatz wird bis zum doppelten Horizont gerechnet: Ohne
+ * Sparpläne liegt das Ziel oft jenseits von 30 Jahren, und gerade dann ist
+ * der Abstand die Nachricht. `null`, wenn es nichts vorzuziehen gibt: kein
+ * Ziel, schon erreicht, mit dem Zusatz nicht innerhalb des Horizonts oder
+ * ohne ihn auch im doppelten nicht.
+ */
+export function monthsEarlier(
+  input: Parameters<typeof monthsToTarget>[0],
+): number | null {
+  const without = monthsToTarget({
+    ...input,
+    extraAnnualNet: new MoneyDecimal(0),
+    extraSavings: 0,
+    years: (input.years ?? SNOWBALL_YEARS) * 2,
+  });
+  const withExtra = monthsToTarget(input);
+  if (without === null || without === 0 || withExtra === null) return null;
+  return without - withExtra;
+}
+
+/** Diagramm: Jahre nach dem vorsichtigen Zieljahr und Mindestlänge ab heute. */
+const CHART_YEARS_AFTER_TARGET = 3;
+const CHART_MIN_YEARS = 10;
+
+/**
+ * Letztes Jahr im Diagramm (seit 2.32.0): kurz nach dem Zieljahr des
+ * vorsichtigen Szenarios, mindestens zehn Jahre ab heute. Bis zum Ende des
+ * Horizonts gezeichnet, wuchs die Kurve so weit über das Ziel hinaus, dass
+ * die Ziellinie am Boden klebte und der Weg dorthin nicht zu sehen war. Ohne
+ * erreichtes Ziel bleibt es beim ganzen Horizont.
+ */
+export function snowballChartEndYear(result: SnowballResult, startYear: number): number {
+  const last = result.points[result.points.length - 1].year;
+  if (result.targetYearLatest === null) return last;
+  return Math.min(
+    last,
+    Math.max(
+      result.targetYearLatest + CHART_YEARS_AFTER_TARGET,
+      startYear + CHART_MIN_YEARS,
+    ),
+  );
 }

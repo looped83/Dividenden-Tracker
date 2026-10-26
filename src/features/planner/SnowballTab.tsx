@@ -25,7 +25,10 @@ import {
 } from "@/features/securities/forecastSettings";
 import {
   projectSnowball,
+  snowballChartEndYear,
+  snowballHistory,
   type DepotAssumptions,
+  type SnowballHistoryPoint,
   type SnowballResult,
   type SnowballSettings,
 } from "@/features/securities/snowball";
@@ -33,13 +36,15 @@ import { NumberField, SettingCell, SettingsList } from "./fields";
 import { formatDecimal } from "./format";
 import { useSavingsPlans } from "./savingsPlanHooks";
 import { activeMonthlyTotal } from "./savingsPlans";
+import { withPlanSavings } from "./targetTime";
 
 /**
  * Planer › **Schneeball**: ab wann tragen mich Dividenden? Zog mit 2.20.0 aus
  * Bestand › Prognose hierher — er rechnet durch, was waere, wenn du sparst,
  * und gehoert damit zum Planer statt zum Bestand (CALCULATION_RULES.md §14.2).
  * Gespeichert sind nur die Annahmen. Ohne eigene Sparrate gilt die Summe der
- * gepflegten Sparpläne (seit 2.21.0, §17).
+ * gepflegten Sparpläne (seit 2.21.0, §17). Seit 2.32.0 zeigt er links von
+ * heute auch den bisherigen Weg aus den erhaltenen Dividenden.
  */
 export function SnowballTab() {
   const settingsQuery = useForecastSettings();
@@ -47,9 +52,10 @@ export function SnowballTab() {
   const planSavings = Math.round(activeMonthlyTotal(plans).toNumber());
   return (
     <ForecastGate emptyDescription="Der Schneeball rechnet hoch, ab wann deine Dividenden dein Ziel tragen. Dafür braucht er einen Depotstand aus dem DivvyDiary-Portfolio-Export.">
-      {({ forecast, depot, startYear }) => (
+      {({ forecast, depot, payments, startYear }) => (
         <SnowballSection
           depot={depot}
+          history={snowballHistory(payments, startYear)}
           netRatio={forecast.netRatio}
           settings={settingsQuery.data ?? DEFAULT_FORECAST_SETTINGS}
           planSavings={planSavings}
@@ -62,12 +68,14 @@ export function SnowballTab() {
 
 function SnowballSection({
   depot,
+  history,
   netRatio,
   settings: stored,
   planSavings,
   startYear,
 }: {
   depot: DepotAssumptions;
+  history: readonly SnowballHistoryPoint[];
   netRatio: DecimalInstance | null;
   settings: ForecastSettings;
   /** Summe der aktiven Sparpläne im Monat, gerundet; 0 ohne Pläne. */
@@ -83,22 +91,25 @@ function SnowballSection({
   );
   // Leere Sparrate mit Platzhalter steht für die Sparpläne — wie leere
   // Prozentfelder für die Werte aus dem Depot.
-  const fromPlans = stored.monthlySavings === 0 && planSavings > 0;
-  const settings = React.useMemo(
-    () => (fromPlans ? { ...stored, monthlySavings: planSavings } : stored),
-    [fromPlans, stored, planSavings],
+  const { settings, fromPlans } = React.useMemo(
+    () => withPlanSavings(stored, planSavings),
+    [stored, planSavings],
   );
 
   const result = React.useMemo(
     () => projectSnowball({ depot, settings, netRatio, startYear }),
     [depot, settings, netRatio, startYear],
   );
-  const chartData = React.useMemo(() => toSnowballData(result), [result]);
+  const endYear = snowballChartEndYear(result, startYear);
+  const chartData = React.useMemo(
+    () => toSnowballData(history, result, endYear),
+    [history, result, endYear],
+  );
   const real = settings.inflationPercent > 0;
 
   return (
     <div className="space-y-6">
-      <SnowballHeadline result={result} settings={settings} />
+      <SnowballHeadline result={result} settings={settings} start={history[0]} />
 
       <SettingsList label="Annahmen" className="grid-cols-3 md:grid-cols-6">
         <NumberField
@@ -178,7 +189,7 @@ function SnowballSection({
       <SnowballChart
         data={chartData}
         target={settings.targetMonthly > 0 ? settings.targetMonthly : null}
-        ariaLabel={`Hochgerechnete Nettodividende pro Monat bis ${String(startYear + chartData.length - 1)}${real ? " in heutiger Kaufkraft" : ""}`}
+        ariaLabel={`Nettodividende pro Monat${history.length > 0 ? ` seit ${String(history[0].year)}` : ""}, hochgerechnet bis ${String(endYear)}${real ? " in heutiger Kaufkraft" : ""}`}
       />
 
       <Milestones result={result} startYear={startYear} />
@@ -189,14 +200,17 @@ function SnowballSection({
 /**
  * Kopf des Schneeballs im selben `KpiHero` wie der Seitenkopf: das Zieljahr
  * als Hauptzahl, rechts (auf dem Telefon darunter) der heutige Monatswert und
- * die Zieljahre der beiden Szenarien.
+ * die Zieljahre der beiden Szenarien. Unter „Heute" steht seit 2.32.0, wo der
+ * Weg begann — das erste Jahr mit Dividenden.
  */
 function SnowballHeadline({
   result,
   settings,
+  start,
 }: {
   result: SnowballResult;
   settings: SnowballSettings;
+  start: SnowballHistoryPoint | undefined;
 }) {
   if (settings.targetMonthly <= 0) return null;
   const target = formatMoneyWhole(
@@ -223,7 +237,9 @@ function SnowballHeadline({
         {
           label: "Heute",
           value: formatMoneyWhole(Money.fromDecimal(first.base, EUR)),
-          caption: "netto im Monat",
+          caption: start
+            ? `${String(start.year)}: ${formatMoneyWhole(Money.fromDecimal(start.monthly, EUR))}`
+            : "netto im Monat",
         },
         {
           label: "Optimistisch",
@@ -275,14 +291,38 @@ function Milestones({
   );
 }
 
-function toSnowballData(result: SnowballResult): SnowballDatum[] {
-  return result.points.map((point) => ({
+/**
+ * Bisheriger Weg und Hochrechnung in einer Reihe: Vergangene Jahre tragen nur
+ * `actual`, die Hochrechnung nur `base`/`band`. Heute trägt beides, damit die
+ * Linie des Wegs in die Hochrechnung übergeht.
+ */
+function toSnowballData(
+  history: readonly SnowballHistoryPoint[],
+  result: SnowballResult,
+  endYear: number,
+): SnowballDatum[] {
+  const past: SnowballDatum[] = history.map((point) => ({
     year: point.year,
     label: String(point.year),
+    actual: point.monthly.toNumber(),
+    actualMoney: Money.fromDecimal(point.monthly, EUR),
+    base: null,
+    band: null,
+    projection: null,
+  }));
+  const shown = result.points.filter((point) => point.year <= endYear);
+  const future: SnowballDatum[] = shown.map((point, index) => ({
+    year: point.year,
+    label: String(point.year),
+    actual: index === 0 && history.length > 0 ? point.base.toNumber() : null,
+    actualMoney: null,
     base: point.base.toNumber(),
     band: [point.low.toNumber(), point.high.toNumber()],
-    baseMoney: Money.fromDecimal(point.base, EUR),
-    lowMoney: Money.fromDecimal(point.low, EUR),
-    highMoney: Money.fromDecimal(point.high, EUR),
+    projection: {
+      base: Money.fromDecimal(point.base, EUR),
+      low: Money.fromDecimal(point.low, EUR),
+      high: Money.fromDecimal(point.high, EUR),
+    },
   }));
+  return [...past, ...future];
 }
