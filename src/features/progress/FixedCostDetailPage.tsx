@@ -11,18 +11,21 @@ import { useGoalProgressPayments } from "@/features/goals/hooks";
 import { trailingMonthlyAverage } from "@/lib/goals";
 import { useBackFrom } from "@/lib/hooks/useBackState";
 import { useToday } from "@/lib/hooks/useToday";
-import { EUR, Money, formatMoney, formatPercent } from "@/lib/money";
-import { coverFixedCosts } from "@/lib/progress";
+import { formatMoney, formatPercent } from "@/lib/money";
+import { coverFixedCosts, yearlyCost, type NextMilestone } from "@/lib/progress";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { FixedCostDialog } from "./FixedCostDialog";
 import { ProgressBar } from "./ProgressBar";
-import { useFixedCost, useSaveFixedCosts } from "./hooks";
+import { useFixedCost, useProgressEtas, useSaveFixedCosts } from "./hooks";
+import { monthLabel, paymentText } from "./format";
 
 /**
  * Eine Fixkostenposition (seit 2.14.0), aufgebaut wie die Detailseite einer
  * Dividende: oben Rückweg und Symbolaktionen Bearbeiten und Löschen, darunter
  * Betrag und wie weit die Dividende ihn deckt.
  */
+const NO_MILESTONES: readonly NextMilestone[] = [];
+
 export function FixedCostDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -40,6 +43,12 @@ export function FixedCostDetailPage() {
     () => coverFixedCosts(costs, trailingMonthlyAverage(payments.payments, today)),
     [costs, payments.payments, today],
   );
+  const etas = useProgressEtas({
+    payments: payments.payments,
+    today,
+    milestones: NO_MILESTONES,
+    coverage,
+  });
 
   const backLink = (
     <DetailBackLink
@@ -104,6 +113,7 @@ export function FixedCostDetailPage() {
   const percent = formatPercent(item.percent, 0);
   const share = cost.amount.toDecimal().div(coverage.total.toDecimal()).times(100);
   const rank = coverage.items.indexOf(item) + 1;
+  const eta = etas.costs.get(cost.id);
 
   return (
     <div className="space-y-6">
@@ -143,7 +153,9 @@ export function FixedCostDetailPage() {
             <Badge variant="primary">Als Nächstes</Badge>
           ) : undefined
         }
-        subtitle="Fixkosten"
+        subtitle={
+          paymentText(cost) ? `Fixkosten · ${String(paymentText(cost))}` : "Fixkosten"
+        }
       />
 
       <KpiHero
@@ -163,16 +175,19 @@ export function FixedCostDetailPage() {
         stats={[
           {
             label: "Im Jahr",
-            value: formatMoney(Money.fromDecimal(cost.amount.toDecimal().times(12), EUR)),
+            value: formatMoney(yearlyCost(cost)),
           },
           {
             label: "Anteil",
             value: formatPercent(share, 0),
           },
-          {
-            label: "Platz",
-            value: `${String(rank)} von ${String(coverage.items.length)}`,
-          },
+          // Offen mit Termin (§15.4): wann, statt an welcher Stelle der Leiter.
+          eta
+            ? { label: "Gedeckt ab", value: monthLabel(eta), caption: "voraussichtlich" }
+            : {
+                label: "Platz",
+                value: `${String(rank)} von ${String(coverage.items.length)}`,
+              },
         ]}
       />
 

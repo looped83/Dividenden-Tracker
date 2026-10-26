@@ -1,7 +1,25 @@
+import * as React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { EUR, Money, MoneyDecimal } from "@/lib/money";
-import type { FixedCost } from "@/lib/progress";
+import {
+  FIXED_COST_INTERVALS,
+  NO_ETAS,
+  fixedCost,
+  progressEtas,
+  type CoverageResult,
+  type FixedCost,
+  type NextMilestone,
+  type ProgressEtas,
+} from "@/lib/progress";
+import { isoFromRef, type AnalyticsPayment, type RefDate } from "@/lib/statistics";
+import { activeMonthlyTotal } from "@/features/planner/savingsPlans";
+import { useSavingsPlans } from "@/features/planner/savingsPlanHooks";
+import { withPlanSavings } from "@/features/planner/targetTime";
+import { netRatio } from "@/features/securities/forecast";
+import { useForecastSettings } from "@/features/securities/forecastSettings";
+import { useSecuritySnapshots } from "@/features/securities/hooks";
+import { depotAssumptions, projectMonthlyNet } from "@/features/securities/snowball";
 import { fetchFixedCosts, updateFixedCosts } from "@/lib/supabase/repositories/profiles";
 
 const FIXED_COSTS_KEY = ["fixed-costs"] as const;
@@ -21,6 +39,8 @@ const storedCost = z.object({
       const amount = new MoneyDecimal(value);
       return amount.gt(0) && amount.lte(FIXED_COST_AMOUNT_MAX);
     }),
+  /** Seit 2.34.0; fehlt bei monatlichen Positionen. `amount` ist dann der Betrag je Fälligkeit. */
+  every: z.literal(FIXED_COST_INTERVALS).optional(),
 });
 
 /**
@@ -39,7 +59,12 @@ function parseFixedCosts(raw: unknown): FixedCost[] {
     if (seen.has(id)) id = `${id}-${String(index)}`;
     seen.add(id);
     return [
-      { id, name: parsed.data.name, amount: Money.fromString(parsed.data.amount, EUR) },
+      fixedCost(
+        id,
+        parsed.data.name,
+        Money.fromString(parsed.data.amount, EUR),
+        parsed.data.every,
+      ),
     ];
   });
 }
@@ -85,9 +110,57 @@ export function useSaveFixedCosts() {
  */
 function toStored(costs: readonly FixedCost[]) {
   if (costs.length === 0) return null;
+  // Monatliche Positionen ohne `every`: Die Liste darf 4 KB nicht überschreiten.
   return costs.map((cost) => ({
     id: cost.id,
     name: cost.name,
-    amount: cost.amount.toStringValue(),
+    amount: cost.payment.toStringValue(),
+    ...(cost.interval !== 1 && { every: cost.interval }),
   }));
+}
+
+/** Wie der Schneeball (§14.2): Weiter als 30 Jahre voraus nennt der Fortschritt keinen Termin. */
+const ETA_MONTHS = 30 * 12;
+
+/**
+ * Termine für die nächsten Meilensteine und offenen Fixkosten (§15.4) aus
+ * dem Schneeball: Depotstand, Annahmen und aktive Sparpläne wie im Planer.
+ * Ohne Depotstand gibt es keine Termine; die Seite zeigt dann nur Beträge.
+ */
+export function useProgressEtas({
+  payments,
+  today,
+  milestones,
+  coverage,
+}: {
+  payments: readonly AnalyticsPayment[];
+  today: RefDate;
+  milestones: readonly NextMilestone[];
+  coverage: CoverageResult;
+}): ProgressEtas {
+  const snapshots = useSecuritySnapshots().data;
+  const settings = useForecastSettings().data;
+  const plans = useSavingsPlans().data;
+  const growth = React.useMemo(() => {
+    const depot = snapshots ? depotAssumptions(snapshots) : null;
+    if (!depot || !settings) return null;
+    const [now, ...future] = projectMonthlyNet({
+      depot,
+      settings: withPlanSavings(
+        settings,
+        Math.round(activeMonthlyTotal(plans ?? []).toNumber()),
+      ),
+      netRatio: netRatio(payments, isoFromRef(today)),
+      months: ETA_MONTHS,
+    });
+    // Nur das Wachstum zählt: Der Depotstand kennt nicht jede Zahlung, die
+    // Termine setzen auf dem Erhaltenen auf.
+    if (!now.greaterThan(0)) return null;
+    return future.map((value) => value.dividedBy(now));
+  }, [snapshots, settings, plans, payments, today]);
+  return React.useMemo(
+    () =>
+      growth ? progressEtas({ payments, today, growth, milestones, coverage }) : NO_ETAS,
+    [growth, payments, today, milestones, coverage],
+  );
 }

@@ -3,13 +3,13 @@ import { TrendingUp } from "lucide-react";
 import { KpiHeroSkeleton } from "@/components/domain/KpiHero";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
-import { normalizePayoutMonths } from "@/lib/statistics/effectiveMonth";
 import { useToday } from "@/lib/hooks/useToday";
 import type { AnalyticsPayment } from "@/lib/statistics";
 import type { SecuritySnapshot } from "@/lib/supabase/repositories/securitySnapshots";
 import { useEffectivePayments } from "@/features/dashboard/hooks";
 import { PortfolioImportButton, PortfolioImportDialog } from "./PortfolioImportDialog";
 import {
+  forecastFacets,
   forecastTwelveMonths,
   type ForecastFacets,
   type TwelveMonthForecast,
@@ -49,18 +49,9 @@ export function ForecastGate({
   const [importOpen, setImportOpen] = React.useState(false);
 
   const { facets, names } = React.useMemo(() => {
-    const facetMap = new Map<string, ForecastFacets>();
     const nameMap = new Map<string, string>();
-    for (const security of securities) {
-      facetMap.set(security.id, {
-        name: security.name,
-        payoutMonths: normalizePayoutMonths(security.payout_months),
-        country: security.country,
-        sector: security.sector,
-      });
-      nameMap.set(security.id, security.name);
-    }
-    return { facets: facetMap, names: nameMap };
+    for (const security of securities) nameMap.set(security.id, security.name);
+    return { facets: forecastFacets(securities), names: nameMap };
   }, [securities]);
 
   const result = React.useMemo(

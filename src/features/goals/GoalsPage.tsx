@@ -1,20 +1,21 @@
 import * as React from "react";
 import { Link } from "react-router";
-import { Plus, Target } from "lucide-react";
+import { CalendarRange, Plus, Target } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Section } from "@/components/ui/section";
+import { Section, SectionButton } from "@/components/ui/section";
 import { ListGroup, ListItemBody, ListRow, ListTile } from "@/components/ui/list";
 import { KpiHero, KpiHeroSkeleton, type KpiStat } from "@/components/domain/KpiHero";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { DeriveMonthlyGoalsDialog } from "./DeriveMonthlyGoalsDialog";
+import { GapPurchaseBox } from "./GapPurchaseBox";
 import { GoalBarChart, type GoalBarDatum } from "@/features/statistics/components/charts";
 import { useForecastSettings } from "@/features/securities/forecastSettings";
 import { useToday } from "@/lib/hooks/useToday";
 import {
   annualGoalHistory,
-  annualHitRate,
   computeGoalCourse,
   computeGoalProgress,
   suggestAnnualGoal,
@@ -44,6 +45,7 @@ import { cn } from "@/lib/utils/cn";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import {
   useGoalProgressPayments,
+  useDerivedMonthlyGoals,
   useGoals,
   useYearEndForecast,
   type GoalWithMeta,
@@ -218,7 +220,6 @@ function GoalsOverview({
     return {
       history,
       courses,
-      hitRate: annualHitRate(history),
       average: trailingMonthlyAverage(payments, today),
       suggestion: suggestAnnualGoal(goals, payments, today, forecast.forecast),
       list: sortForList(progress),
@@ -236,17 +237,35 @@ function GoalsOverview({
   const showMonths = current !== null || monthlyGoalsThisYear;
   const hasCharts = showHistory || showMonths;
   const currentCourse = current ? (data.courses.get(current.goal.id) ?? null) : null;
+  const derived = useDerivedMonthlyGoals({
+    annual: current?.goal ?? null,
+    goals,
+    payments,
+    forecast,
+    today,
+  });
+  const [deriving, setDeriving] = React.useState(false);
 
   return (
     <div className="space-y-10 lg:space-y-12">
       <GoalsHero
+        forecast={forecast}
+        course={currentCourse}
         average={data.average}
         targetMonthly={targetMonthly}
         current={current}
         next={next}
-        hitRate={data.hitRate}
         year={today.year}
       />
+
+      {current && (
+        <GapPurchaseBox
+          goal={current.goal}
+          target={current.target}
+          course={currentCourse}
+          today={today}
+        />
+      )}
 
       {data.suggestion && (
         <SuggestionBox
@@ -281,6 +300,19 @@ function GoalsOverview({
             {showMonths && (
               <Section
                 title={`${String(today.year)} Monat für Monat`}
+                action={
+                  derived.length > 0 ? (
+                    <SectionButton
+                      icon={CalendarRange}
+                      aria-haspopup="dialog"
+                      onClick={() => {
+                        setDeriving(true);
+                      }}
+                    >
+                      Monatsziele
+                    </SectionButton>
+                  ) : undefined
+                }
                 description={
                   current && currentCourse
                     ? `Hochrechnung ${formatMoneyWhole(currentCourse.expected)} von ${formatMoneyWhole(current.target)} · ${courseLabel(currentCourse.kind)}`
@@ -295,6 +327,15 @@ function GoalsOverview({
               </Section>
             )}
           </div>
+        )}
+
+        {current && (
+          <DeriveMonthlyGoalsDialog
+            open={deriving}
+            onOpenChange={setDeriving}
+            year={today.year}
+            derived={derived}
+          />
         )}
 
         <Section title="Alle Ziele">
@@ -317,52 +358,67 @@ function GoalsOverview({
 const HUNDRED = new MoneyDecimal(100);
 
 /**
- * Kopf: der Ø der letzten zwölf Monate gegen das Langfristziel des
- * Schneeballs. Die Hauptzahl führt in die Prognose, wo das Ziel gepflegt und
- * sein Zieljahr gerechnet wird — hier steht nur, wo du heute stehst.
+ * Kopf (seit 2.34.0): Wo landet das laufende Jahr? Die Hochrechnung (§13.1)
+ * gegen das Jahresziel, daneben das bisher Erhaltene, der Stand zum
+ * Langfristziel des Schneeballs und das Ziel fürs nächste Jahr. Den Ø der
+ * letzten zwölf Monate zeigt der Fortschritt; bis 2.33 stand er hier doppelt.
  */
 function GoalsHero({
+  forecast,
+  course,
   average,
   targetMonthly,
   current,
   next,
-  hitRate,
   year,
 }: {
+  forecast: Forecast;
+  course: GoalCourse | null;
   average: Money;
   targetMonthly: number | null;
   current: GoalProgress | null;
   next: GoalProgress | null;
-  hitRate: { hit: number; total: number };
   year: number;
 }) {
+  const expected = course?.expected ?? forecast.forecast;
+  const expectedShare = current
+    ? expected.toDecimal().div(current.target.toDecimal()).times(HUNDRED)
+    : null;
   const target =
     targetMonthly !== null && targetMonthly > 0
       ? Money.fromDecimal(new MoneyDecimal(targetMonthly), EUR)
       : null;
-  const share = target
+  const longTerm = target
     ? average.toDecimal().div(target.toDecimal()).times(HUNDRED)
     : null;
 
   const stats: KpiStat[] = [
     current
       ? {
-          label: `Ziel ${String(year)}`,
-          value: formatPercent(current.percent, 0),
-          caption: `von ${formatMoneyWhole(current.target)}`,
-          to: `/ziele/${current.goal.id}`,
-          drillLabel: `Jahresziel ${String(year)} öffnen`,
+          label: "Erhalten",
+          value: formatMoneyWhole(current.actual),
+          caption: `${formatPercent(current.percent, 0)} erreicht`,
         }
-      : { label: `Ziel ${String(year)}`, value: "–", caption: "nicht festgelegt" },
-  ];
-  if (hitRate.total > 0) {
-    stats.push({
-      label: "Erreicht",
-      value: `${String(hitRate.hit)} von ${String(hitRate.total)}`,
-      caption: "Jahresziele",
-    });
-  }
-  stats.push(
+      : {
+          label: "Erhalten",
+          value: formatMoneyWhole(forecast.received),
+          caption: "bis heute",
+        },
+    longTerm && target
+      ? {
+          label: "Langfristziel",
+          value: formatPercent(longTerm, 0),
+          caption: `von ${formatMoneyWhole(target)}`,
+          to: "/planer/schneeball",
+          drillLabel: "Langfristziel im Schneeball öffnen",
+        }
+      : {
+          label: "Langfristziel",
+          value: "–",
+          caption: "nicht festgelegt",
+          to: "/planer/schneeball",
+          drillLabel: "Langfristziel im Schneeball festlegen",
+        },
     next
       ? {
           label: `Ziel ${String(year + 1)}`,
@@ -382,31 +438,42 @@ function GoalsHero({
           drillLabel: `Jahresziel ${String(year + 1)} öffnen`,
         }
       : { label: `Ziel ${String(year + 1)}`, value: "–", caption: "offen" },
-  );
+  ];
 
   return (
     <KpiHero
-      label="Ø im Monat · letzte 12 Monate"
-      value={formatMoneyWhole(average)}
+      label={`Hochrechnung ${String(year)}`}
+      value={formatMoneyWhole(expected)}
       caption={
-        target && share
-          ? `${formatPercent(share, 0)} vom Langfristziel ${formatMoneyWhole(target)}`
-          : undefined
+        current && expectedShare
+          ? `${formatPercent(expectedShare, 0)} vom Ziel ${formatMoneyWhole(current.target)}${
+              course ? ` · ${courseLabel(course.kind)}` : ""
+            }`
+          : `Ziel ${String(year)} nicht festgelegt`
       }
-      to="/depot/prognose"
-      drillLabel="Langfristziel in der Prognose öffnen"
-      footer={share ? <LongTermBar percent={share.toNumber()} /> : undefined}
+      {...(current && {
+        to: `/ziele/${current.goal.id}`,
+        drillLabel: `Jahresziel ${String(year)} öffnen`,
+      })}
+      footer={
+        expectedShare ? (
+          <GoalBar
+            percent={expectedShare.toNumber()}
+            label={`Hochrechnung ${String(year)} im Verhältnis zum Jahresziel`}
+          />
+        ) : undefined
+      }
       stats={stats}
     />
   );
 }
 
-function LongTermBar({ percent }: { percent: number }) {
+function GoalBar({ percent, label }: { percent: number; label: string }) {
   const width = Math.min(100, Math.max(0, percent));
   return (
     <span
       role="progressbar"
-      aria-label="Fortschritt zum Langfristziel"
+      aria-label={label}
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={Math.round(width)}

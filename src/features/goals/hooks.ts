@@ -2,6 +2,7 @@ import * as React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createGoal,
+  createGoals,
   deleteGoal,
   fetchGoalById,
   fetchGoals,
@@ -11,9 +12,15 @@ import {
   type GoalRow,
   type GoalUpdate,
 } from "@/lib/supabase/repositories/goals";
-import type { ExpectedRest, Goal } from "@/lib/goals";
+import {
+  deriveMonthlyGoals,
+  type DerivedMonthlyGoal,
+  type ExpectedRest,
+  type Goal,
+} from "@/lib/goals";
 import {
   isoFromRef,
+  monthlyBuckets,
   yearEndForecast,
   type AnalyticsPayment,
   type RefDate,
@@ -72,6 +79,16 @@ export function useCreateGoal() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: GoalInsert) => createGoal(input),
+    onSuccess: () => {
+      invalidateGoals(queryClient);
+    },
+  });
+}
+
+export function useCreateGoals() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (inputs: readonly GoalInsert[]) => createGoals(inputs),
     onSuccess: () => {
       invalidateGoals(queryClient);
     },
@@ -154,4 +171,30 @@ export function useYearEndForecast(
       },
     };
   }, [payments, today, calendarEvents]);
+}
+
+/**
+ * Monatsziele, die aus dem Jahresziel folgen (§13.2): Muster und Erhaltenes
+ * des laufenden Jahres aus derselben Prognose wie die Monatsbalken der
+ * Zielseite. Leer, wenn es nichts abzuleiten gibt.
+ */
+export function useDerivedMonthlyGoals({
+  annual,
+  goals,
+  payments,
+  forecast,
+  today,
+}: {
+  annual: Goal | null;
+  goals: readonly Goal[];
+  payments: readonly AnalyticsPayment[];
+  forecast: ReturnType<typeof yearEndForecast>;
+  today: RefDate;
+}): DerivedMonthlyGoal[] {
+  return React.useMemo(() => {
+    if (!annual) return [];
+    const received = monthlyBuckets(payments, today.year).map((bucket) => bucket.net);
+    const pattern = received.map((net, index) => net.add(forecast.restByMonth[index]));
+    return deriveMonthlyGoals({ annual, goals, pattern, received, ref: today });
+  }, [annual, goals, payments, forecast, today]);
 }

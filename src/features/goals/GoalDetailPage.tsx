@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Link, useNavigate, useParams } from "react-router";
-import { ExternalLink, Pencil, Target, Trash2 } from "lucide-react";
+import { CalendarRange, ExternalLink, Pencil, Target, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -8,10 +8,12 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { DetailBackLink, DetailHeader } from "@/components/layout/DetailHeader";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { useToday } from "@/lib/hooks/useToday";
-import { computeGoalCourse, computeGoalProgress } from "@/lib/goals";
+import { computeGoalCourse, computeGoalProgress, type Goal } from "@/lib/goals";
 import {
   useDeleteGoal,
+  useDerivedMonthlyGoals,
   useGoal,
+  useGoals,
   useGoalProgressPayments,
   useYearEndForecast,
 } from "./hooks";
@@ -19,6 +21,8 @@ import { GoalProgressBar } from "./GoalProgressBar";
 import { GoalMark } from "./GoalMark";
 import { GoalFormDialog } from "./GoalFormDialog";
 import { DeleteGoalDialog } from "./DeleteGoalDialog";
+import { DeriveMonthlyGoalsDialog } from "./DeriveMonthlyGoalsDialog";
+import { GapPurchaseBox } from "./GapPurchaseBox";
 import {
   courseLabel,
   courseVariant,
@@ -39,6 +43,8 @@ const badgeVariantByTone = {
   negative: "negative",
 } as const;
 
+const NO_GOALS: readonly Goal[] = [];
+
 export function GoalDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -46,13 +52,22 @@ export function GoalDetailPage() {
   const goalQuery = useGoal(id);
   const { payments, isLoading: paymentsLoading } = useGoalProgressPayments();
   const deleteGoal = useDeleteGoal();
-  const { rest } = useYearEndForecast(payments, today);
+  const { forecast, rest } = useYearEndForecast(payments, today);
+  const goals = useGoals().data;
 
   const [editOpen, setEditOpen] = React.useState(false);
   const [deleteOpen, setDeleteOpen] = React.useState(false);
   const [deleteError, setDeleteError] = React.useState<string | null>(null);
+  const [deriving, setDeriving] = React.useState(false);
 
   const goal = goalQuery.data ?? null;
+  const derived = useDerivedMonthlyGoals({
+    annual: goal?.goalType === "annual" ? goal : null,
+    goals: goals ?? NO_GOALS,
+    payments,
+    forecast,
+    today,
+  });
 
   const backLink = <DetailBackLink to="/ziele" label="Zur Zielübersicht" />;
 
@@ -214,18 +229,39 @@ export function GoalDetailPage() {
           )}
         </dl>
 
-        <Button
-          asChild
-          variant="outline"
-          // Das Label ist zu lang fuer schmale Viewports; Buttons sind
-          // standardmaessig whitespace-nowrap und wuerden sonst ueberstehen.
-          className="h-auto min-h-11 w-full whitespace-normal py-2 sm:w-auto"
-        >
-          <Link to={drillDownHref(goal)}>
-            <ExternalLink aria-hidden className="shrink-0" /> Dividenden des Zeitraums
-            anzeigen
-          </Link>
-        </Button>
+        <GapPurchaseBox
+          goal={goal}
+          target={progress.target}
+          course={course}
+          today={today}
+        />
+
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button
+            asChild
+            variant="outline"
+            // Das Label ist zu lang fuer schmale Viewports; Buttons sind
+            // standardmaessig whitespace-nowrap und wuerden sonst ueberstehen.
+            className="h-auto min-h-11 w-full whitespace-normal py-2 sm:w-auto"
+          >
+            <Link to={drillDownHref(goal)}>
+              <ExternalLink aria-hidden className="shrink-0" /> Dividenden des Zeitraums
+              anzeigen
+            </Link>
+          </Button>
+          {derived.length > 0 && (
+            <Button
+              variant="outline"
+              aria-haspopup="dialog"
+              className="h-auto min-h-11 w-full whitespace-normal py-2 sm:w-auto"
+              onClick={() => {
+                setDeriving(true);
+              }}
+            >
+              <CalendarRange aria-hidden className="shrink-0" /> Monatsziele ableiten
+            </Button>
+          )}
+        </div>
 
         <dl className="grid grid-cols-2 gap-3 border-t border-border pt-4 text-xs text-muted-foreground sm:gap-4">
           <div>
@@ -240,6 +276,12 @@ export function GoalDetailPage() {
       </div>
 
       <GoalFormDialog open={editOpen} onOpenChange={setEditOpen} goal={goal} />
+      <DeriveMonthlyGoalsDialog
+        open={deriving}
+        onOpenChange={setDeriving}
+        year={goal.year}
+        derived={derived}
+      />
       <DeleteGoalDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}

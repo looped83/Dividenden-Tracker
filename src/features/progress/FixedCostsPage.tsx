@@ -33,13 +33,19 @@ import { useGoalProgressPayments } from "@/features/goals/hooks";
 import { trailingMonthlyAverage } from "@/lib/goals";
 import { MD_BREAKPOINT_QUERY, useMediaQuery } from "@/lib/hooks/useMediaQuery";
 import { useToday } from "@/lib/hooks/useToday";
-import { EUR, Money, formatMoney, formatPercent, sumMoney } from "@/lib/money";
-import { coverFixedCosts, type CostCoverage, type FixedCost } from "@/lib/progress";
+import { EUR, formatMoney, formatPercent, sumMoney } from "@/lib/money";
+import {
+  coverFixedCosts,
+  yearlyCost,
+  type CostCoverage,
+  type FixedCost,
+} from "@/lib/progress";
 import { cn } from "@/lib/utils/cn";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
 import { FixedCostDialog } from "./FixedCostDialog";
 import { FIXED_COSTS_MAX, useFixedCosts, useSaveFixedCosts } from "./hooks";
+import { paymentText } from "./format";
 
 type StatusFilter = "" | "covered" | "open";
 type SortField = "name" | "amount";
@@ -48,9 +54,6 @@ const SORT_OPTIONS = [
   { value: "name", label: "Nach Name" },
   { value: "amount", label: "Nach Betrag" },
 ] as const;
-
-const yearly = (amount: Money) =>
-  formatMoney(Money.fromDecimal(amount.toDecimal().times(12), EUR));
 
 /**
  * Alle Fixkosten (seit 2.15.0): die Pflegeseite zur kurzen Liste im
@@ -265,7 +268,15 @@ export function FixedCostsPage() {
                   value: `${String(coverage.covered)} von ${String(costs.length)}`,
                   caption: "Positionen",
                 },
-                { label: "Im Jahr", value: yearly(total) },
+                {
+                  label: "Im Jahr",
+                  value: formatMoney(
+                    sumMoney(
+                      costs.map((cost) => yearlyCost(cost)),
+                      EUR,
+                    ),
+                  ),
+                },
               ]}
             />
 
@@ -328,7 +339,7 @@ export function FixedCostsPage() {
                           {formatMoney(item.cost.amount)}
                         </TableCell>
                         <TableCell className="text-right text-muted-foreground tabular-amount">
-                          {yearly(item.cost.amount)}
+                          {formatMoney(yearlyCost(item.cost))}
                         </TableCell>
                         <TableCell className="text-right text-muted-foreground tabular-amount">
                           {share(item.cost)}
@@ -351,7 +362,10 @@ export function FixedCostsPage() {
                             title={item.cost.name}
                             meta={
                               <>
-                                <StatusText item={item} /> · {share(item.cost)}
+                                {/* Statt des Anteils der Betrag je Fälligkeit, wo er
+                                    vom Monatsbetrag rechts abweicht. */}
+                                <StatusText item={item} /> ·{" "}
+                                {paymentText(item.cost) ?? share(item.cost)}
                               </>
                             }
                             trailing={

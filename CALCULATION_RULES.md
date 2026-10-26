@@ -691,6 +691,31 @@ Wo landet ein Ziel bis zum Ende seines Zeitraums?
   Etikett ersetzt „Aktiv"/„Bevorstehend" in Liste und Detailseite; Status, Prozent, Balken und
   Restbetrag des Ziels bleiben beim Ist.
 
+### 13.2 Monatsziele aus dem Jahresziel (`deriveMonthlyGoals`, seit 2.34.0)
+
+- **Monate:** im laufenden Jahr ab dem laufenden Monat, in einem späteren Jahr alle zwölf;
+  vergangene Jahre nie. Monate mit eigenem Monatsziel bleiben unverändert.
+- **Zu verteilen:** `Jahresziel − erhalten vor dem laufenden Monat − Ziele der vorhandenen
+  Monatsziele in diesen Monaten`, auf volle Euro aufgerundet. Ist nichts mehr offen, gibt es nichts
+  abzuleiten.
+- **Muster:** je Monat erhalten plus noch erwartet des laufenden Jahres (§9.7, dieselben Balken wie
+  „Monat für Monat"); für ein späteres Jahr dasselbe Muster. Monate ohne Erwartung bekommen kein
+  Ziel; erwartet keiner etwas, wird gleichmäßig verteilt.
+- **Rundung:** volle Euro, abgerundet, die übrigen Euro an die Monate mit dem größten Rest — die
+  Summe trifft den Betrag genau. Angelegt wird erst nach Bestätigung, danach sind es gewöhnliche
+  Monatsziele.
+
+### 13.3 Lücke als Zukauf (`purchaseForGap`, seit 2.34.0)
+
+- Nur für offene Ziele des laufenden Jahres auf *Knapp* oder *Unter Plan* (§13.1).
+  `Lücke = Zielbetrag − Hochrechnung`.
+- Je Asset der Prognose (§14.1) zählen die Zahlungen je Euro Marktwert in den Monaten des
+  Zeitraums, **frühestens im übernächsten Monat** (den Ex-Tag des nächsten verpasst ein Kauf heute
+  oft); beim Monatsziel nur sein Monat. Im Planer ausgeschlossene Assets fehlen.
+- `Zukauf = Lücke ÷ Zahlungen je Euro`, auf volle 100 € aufgerundet; vorgeschlagen wird das Asset
+  mit dem kleinsten Zukauf, höchstens bis zum Höchstbetrag des Nachkaufs. Der Knopf öffnet den
+  Nachkauf mit diesem Betrag. Zahlt im Zeitraum kein Asset mehr, bleibt es bei der Lücke.
+
 ---
 
 ## 14. Prognose und Dividenden-Schneeball (Bestand › Prognose, seit 1.44.0)
@@ -793,8 +818,11 @@ davon wird gespeichert außer den Fixkosten selbst (`profiles.fixed_costs`, Migr
 
 ### 15.1 Was deine Dividenden bezahlen (`coverFixedCosts`)
 
+- **Rhythmus** (seit 2.34.0): monatlich, vierteljährlich, halbjährlich oder jährlich. Gespeichert
+  ist der Betrag je Fälligkeit; gerechnet wird mit `Betrag ÷ Monate`, auf Cent gerundet. „Im Jahr"
+  kommt aus dem Betrag je Fälligkeit (`Betrag × 12 ÷ Monate`), nicht aus dem gerundeten Monat.
 - **Basis:** Ø-Monat = Nettosumme der letzten zwölf Monate ÷ 12 (`trailingMonthlyAverage`,
-  dieselbe Zahl wie im Kopf der Ziele).
+  dieselbe Zahl wie im Kopf des Fortschritts).
 - **Reihenfolge:** günstigste Position zuerst (bei Gleichstand nach Name). Jede Position, die der
   verbleibende Betrag ganz deckt, gilt als **gedeckt** und wird abgezogen.
 - **Nächste:** die erste nicht gedeckte Position; der Rest zählt anteilig
@@ -822,6 +850,24 @@ an sich.
 (bestes Jahr bzw. bester Monat bisher; bei der Serie die laufende Serie — sie läuft weiter, solange
 der laufende oder der Vormonat eine Zahlung hat). Fortschritt `Stand ÷ Schwelle`, auf 0–100 %
 begrenzt.
+
+### 15.4 Termine (`progressEtas`, seit 2.34.0)
+
+Wann fällt der nächste Meilenstein, ab wann ist eine offene Fixkostenposition gedeckt? Eine
+Schätzung wie der Schneeball (§14), nie gespeichert; ohne Depotstand gibt es keine Termine.
+
+- **Künftige Monate:** derselbe Kalendermonat der zwölf vollen Monate vor dem laufenden, mal dem
+  **Wachstum** des Schneeballs gegenüber heute (§14.2 im Basisszenario, Einmalkäufe plus aktive
+  Sparpläne wie §14.4, in **Nennwerten** ohne Inflation, `projectMonthlyNet`). Nur das Wachstum
+  kommt aus dem Depotstand, die Höhe aus dem Erhaltenen: Der Depotstand kennt nicht jede Zahlung.
+  Ein Monat ohne Zahlung bleibt ohne Zahlung; ohne Zahlungen in diesen zwölf Monaten gibt es keine
+  Termine. Der laufende Monat bringt nichts mehr hinzu.
+- **Meilensteine** (§15.2) mit der Reihe fortgeschrieben: *Insgesamt* die laufende Summe, *Bestes
+  Jahr* die Summe des Kalenderjahres (das laufende ab dem Erhaltenen), *Bester Monat* der einzelne
+  Monat, *Monate in Folge* die Serie (der laufende Monat zählt mit, wenn er laut Muster zahlt).
+- **Fixkosten** (§15.1): eine offene Position ist gedeckt, sobald der Ø der zwölf Monate bis dahin
+  (erhalten, dann geschätzt) sie und alle günstigeren trägt.
+- Horizont 30 Jahre; gezeigt als Monat („≈ Mai 2027", „ab Mai 2027").
 
 ### 15.3 Kaufpreis zurückverdient (`paybackOverview`, seit 2.18.0)
 
