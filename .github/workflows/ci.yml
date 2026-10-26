@@ -224,8 +224,8 @@ jobs:
       - name: Systembibliotheken sicherstellen
         if: env.E2E_WEBKIT == 'true'
         # `timeout` beendet nur npx, nicht das apt-get darunter: Es hielt die
-        # dpkg-Sperre, und der zweite Versuch scheiterte sofort daran. Mit
-        # Lock::Timeout wartet er stattdessen, bis die Sperre frei ist.
+        # dpkg-Sperre, und der zweite Versuch scheiterte daran. Deshalb wird
+        # es vor dem zweiten Versuch beendet; Lock::Timeout faengt den Rest ab.
         # Die .deb-Pakete kommen aus dem Cache (Schritt davor), `apt` laedt
         # dann nur noch die Paketlisten und neuere Versionen vom Spiegel.
         run: |
@@ -240,6 +240,13 @@ jobs:
               exit 0
             fi
             echo "::warning::install-deps Versuch $versuch abgebrochen oder fehlgeschlagen"
+            # Das haengende apt-get beenden (sonst haelt es die Sperre) und
+            # im zweiten Versuch am Azure-Spiegel vorbei direkt bei Ubuntu laden.
+            sudo pkill -x apt-get || true
+            sleep 2
+            sudo dpkg --configure -a || true
+            sudo sed -i '/azure\.archive\.ubuntu\.com/d' /etc/apt/apt-mirrors.txt || true
+            cat /etc/apt/apt-mirrors.txt || true
           done
           exit 1
 
@@ -319,8 +326,8 @@ jobs:
       - name: Systembibliotheken sicherstellen
         if: env.E2E_WEBKIT == 'true'
         # `timeout` beendet nur npx, nicht das apt-get darunter: Es hielt die
-        # dpkg-Sperre, und der zweite Versuch scheiterte sofort daran. Mit
-        # Lock::Timeout wartet er stattdessen, bis die Sperre frei ist.
+        # dpkg-Sperre, und der zweite Versuch scheiterte daran. Deshalb wird
+        # es vor dem zweiten Versuch beendet; Lock::Timeout faengt den Rest ab.
         # Die .deb-Pakete kommen aus dem Cache (Schritt davor), `apt` laedt
         # dann nur noch die Paketlisten und neuere Versionen vom Spiegel.
         run: |
@@ -335,6 +342,13 @@ jobs:
               exit 0
             fi
             echo "::warning::install-deps Versuch $versuch abgebrochen oder fehlgeschlagen"
+            # Das haengende apt-get beenden (sonst haelt es die Sperre) und
+            # im zweiten Versuch am Azure-Spiegel vorbei direkt bei Ubuntu laden.
+            sudo pkill -x apt-get || true
+            sleep 2
+            sudo dpkg --configure -a || true
+            sudo sed -i '/azure\.archive\.ubuntu\.com/d' /etc/apt/apt-mirrors.txt || true
+            cat /etc/apt/apt-mirrors.txt || true
           done
           exit 1
 
