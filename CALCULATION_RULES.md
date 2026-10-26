@@ -760,9 +760,9 @@ gespeichert sind nur die Annahmen des Schneeballs (`profiles.forecast_settings`,
   mehr Wachstum; im Diagramm als Band, im Kopf mit der jeweils gerechneten CAGR beschriftet.
 - **Ziel und Meilensteine:** Kalenderjahr des ersten Monats, in dem die monatliche
   Nettodividende das Ziel erreicht (Horizont 30 Jahre; Inflation dabei je Monat
-  `(1 + Inflation)^(1/12)`, an jedem Jahrestag genau `(1 + Inflation)^n`). Seit 2.35.0 monatsgenau:
-  Bis 2.34 zählte der erste Jahrestag ab heute, ein Ziel im Dezember rutschte so ins Folgejahr.
-- **Punkte im Diagramm** (seit 2.35.0): je Jahresende (Dezember); „Heute“ im Kopf ist der Stand des
+  `(1 + Inflation)^(1/12)`, an jedem Jahrestag genau `(1 + Inflation)^n`). Seit 2.36.0 monatsgenau:
+  Bis 2.35 zählte der erste Jahrestag ab heute, ein Ziel im Dezember rutschte so ins Folgejahr.
+- **Punkte im Diagramm** (seit 2.36.0): je Jahresende (Dezember); „Heute“ im Kopf ist der Stand des
   laufenden Monats. Ein Ziel im Jahr J heißt: Punkt J liegt darüber, Punkt J − 1 darunter. Kursgewinne fließen nicht ein. Gerechnet wird mit Decimal, angezeigt in
   vollen Euro.
 - **Bisheriger Weg** (`snowballHistory`, seit 2.32.0): je abgeschlossenem Kalenderjahr vor dem
@@ -773,7 +773,7 @@ gespeichert sind nur die Annahmen des Schneeballs (`profiles.forecast_settings`,
 - **Diagrammlänge** (`snowballChartEndYear`, seit 2.32.0): bis drei Jahre nach dem Zieljahr des
   vorsichtigen Szenarios, mindestens zehn Jahre ab heute, höchstens 30; ohne erreichtes Ziel
   (vorsichtig) der ganze Horizont. Meilensteine und Kopf rechnen weiter über 30 Jahre.
-- **Zeitraum** (seit 2.35.0): „Max | 20 J. | 10 J.“ über dem Diagramm. 20 und 10 Jahre zeigen
+- **Zeitraum** (seit 2.36.0): „Max | 20 J. | 10 J.“ über dem Diagramm. 20 und 10 Jahre zeigen
   zuerst die Hochrechnung bis zum Diagrammende und füllen den Rest mit dem bisherigen Weg; eine
   Stufe erscheint nur, wenn sie kürzer ist als der ganze Verlauf. Ohne Legende (Tooltip und
   Datentabelle nennen die Reihen).

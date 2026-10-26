@@ -328,7 +328,7 @@ function formatEuro(value: number): string {
 
 type SnowballRange = "max" | "20" | "10";
 
-/** Zeitraum des Diagramms (seit 2.35.0), wie die übrigen Umschalter als Pille. */
+/** Zeitraum des Diagramms (seit 2.36.0), wie die übrigen Umschalter als Pille. */
 const RANGES: readonly SegmentOption<SnowballRange>[] = [
   { value: "max", label: "Max" },
   { value: "20", label: "20 J." },

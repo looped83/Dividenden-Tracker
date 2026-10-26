@@ -158,7 +158,7 @@ const MAX_MILESTONES = 4;
  * Ein Szenario Monat für Monat: Index 0 ist heute, Index m der Stand nach m
  * Monaten, in heutiger Kaufkraft. Das Wachstum greift alle zwölf Monate ab
  * heute, die Inflation je Monat mit `(1 + Inflation)^(1/12)` — an jedem
- * Jahrestag genau `(1 + Inflation)^n` wie bis 2.34.
+ * Jahrestag genau `(1 + Inflation)^n` wie bis 2.35.
  */
 function simulate({
   annualGross,
@@ -204,7 +204,7 @@ function simulate({
 
 /**
  * Kalenderjahr, in dem die Monatsreihe das Ziel zuerst erreicht (seit
- * 2.35.0 monatsgenau). Bis 2.34 zählte der erste Jahrestag ab heute, der
+ * 2.36.0 monatsgenau). Bis 2.35 zählte der erste Jahrestag ab heute, der
  * darüber lag: Im Oktober gerechnet, rutschte ein Ziel aus dem Dezember so
  * ins Folgejahr — das optimistische Szenario landete oft im Jahr der Basis.
  */
@@ -221,7 +221,7 @@ function firstYearReaching(
 /**
  * Rechnet drei Szenarien: Basis mit dem angenommenen Wachstum, vorsichtig und
  * optimistisch {@link SCENARIO_SPREAD} Prozentpunkte darunter bzw. darueber
- * (nie unter 0 %). Die Punkte stehen seit 2.35.0 je Jahresende (Dezember),
+ * (nie unter 0 %). Die Punkte stehen seit 2.36.0 je Jahresende (Dezember),
  * damit Diagramm, Datentabelle und Zieljahre dasselbe Jahr meinen: Ein Ziel
  * im Jahr J heißt, der Punkt J liegt darüber, der Punkt J − 1 darunter.
  */

@@ -95,7 +95,7 @@ test.describe("Reise und Ziel-Zeit (seit 2.32.0)", () => {
     await page.goto("/#/planer/schneeball");
     // 240 € im ersten Jahr sind 20 € im Monat.
     await expect(page.getByText("2023: 20 €")).toBeVisible();
-    // Seit 2.35.0 ohne Legende; „10 J." blendet den Weg aus und zeigt nur
+    // Seit 2.36.0 ohne Legende; „10 J." blendet den Weg aus und zeigt nur
     // die Hochrechnung.
     await expect(page.getByRole("img", { name: /seit 2023/ })).toBeVisible();
     await page.getByRole("radio", { name: "10 J." }).click();
