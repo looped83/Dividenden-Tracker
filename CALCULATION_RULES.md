@@ -770,14 +770,17 @@ gespeichert sind nur die Annahmen des Schneeballs (`profiles.forecast_settings`,
 
 - **Monate bis zum Ziel:** dieselbe Rechnung wie §14.2 im Basisszenario, aber nach jedem Monat
   geprüft (Inflation je Monat `(1 + Inflation)^(1/12)`, Wachstum weiter am Jahresende); 0 = schon
-  erreicht, ohne Ziel oder nach 30 Jahren nicht erreicht = unbekannt.
+  erreicht, ohne Ziel oder nach 30 Jahren nicht erreicht = unbekannt. Seit 2.33.1 anteilig im
+  Monat des Erreichens (linear zwischen Vor- und Zielmonat, real), sonst ergab ein kleiner Kauf
+  ohne Reinvestieren „0 Monate“.
 - **Früher am Ziel** = Monate ohne − Monate mit dem Zusatz; „ohne“ wird bis 60 Jahre gerechnet
   (ohne Sparpläne liegt das Ziel oft hinter dem Horizont, gerade dann zählt der Abstand). Annahmen wie im Schneeball:
   Einmalkäufe plus Summe der Sparpläne (§17).
   - **Nachkauf:** Zusatz = Mehr im Jahr netto des Plans ab heute (über die Netto-Quote in brutto
     zurückgerechnet).
   - **Sparpläne:** mit gegen ohne die aktiven Pläne (nur die Einmalkäufe des Schneeballs).
-- Gezeigt ab einem Monat, unter der Hauptzahl in einer Zeile („4 Monate früher am Ziel“, seit
+- Gezeigt ab einem Tag (seit 2.33.1; davor ab einem Monat), ab einem Monat in ganzen Monaten,
+  darunter in Wochen oder Tagen („2 Wochen früher am Ziel“), unter der Hauptzahl in einer Zeile („4 Monate früher am Ziel“, seit
   2.33.0; das Ziel nennt der Link für Screenreader, er führt zum Schneeball). Nicht gezeigt, wenn das Ziel schon erreicht ist, mit dem
   Zusatz nicht in 30 oder ohne ihn nicht in 60 Jahren.
 

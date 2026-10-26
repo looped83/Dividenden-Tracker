@@ -17,10 +17,27 @@ export function withPlanSavings(
     : stored;
 }
 
-/** „4 Monate", „1 Jahr", „2 Jahre 3 Monate". */
+/**
+ * Ab wann „früher am Ziel" gezeigt wird: ein Tag. Darunter ist der Vorsprung
+ * Rechenrauschen.
+ */
+export const MIN_GAIN_MONTHS = 12 / 365;
+
+/**
+ * „3 Tage", „2 Wochen", „4 Monate", „1 Jahr", „2 Jahre 3 Monate". Ab einem
+ * Monat auf ganze Monate gerundet, darunter in Wochen oder Tagen, damit auch
+ * ein kleiner Kauf zeigt, was er bringt.
+ */
 export function formatMonths(months: number): string {
-  const years = Math.floor(months / 12);
-  const rest = months % 12;
+  if (months < 1) {
+    const weeks = Math.round((months * 52) / 12);
+    if (weeks >= 1) return formatCountNoun(weeks, "Woche", "Wochen");
+    const days = Math.max(1, Math.round((months * 365) / 12));
+    return formatCountNoun(days, "Tag", "Tage");
+  }
+  const whole = Math.round(months);
+  const years = Math.floor(whole / 12);
+  const rest = whole % 12;
   const parts = [
     years > 0 ? formatCountNoun(years, "Jahr", "Jahre") : null,
     rest > 0 ? formatCountNoun(rest, "Monat", "Monate") : null,
