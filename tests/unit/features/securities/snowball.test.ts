@@ -323,6 +323,18 @@ describe("monthsToTarget / monthsEarlier", () => {
     ).toBe(20);
   });
 
+  it("zählt auch Bruchteile eines Monats", () => {
+    // +15 € im Jahr = +1,25 € im Monat: 98,75 € fehlen, also 39,5 Monate.
+    expect(
+      monthsEarlier({
+        depot: DEPOT,
+        settings: plain,
+        netRatio: null,
+        extraAnnualNet: new MoneyDecimal(15),
+      }),
+    ).toBeCloseTo(0.5, 10);
+  });
+
   it("rechnet einen Einmalkauf über die Netto-Quote zurück", () => {
     // Netto-Quote 0,5: heute 50 €; +600 € netto heben auf 100 € = Ziel.
     expect(

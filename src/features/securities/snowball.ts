@@ -366,20 +366,28 @@ export function monthsToTarget({
     (extraAnnualNet ?? new MoneyDecimal(0)).dividedBy(ratio),
   );
   let deflator = ONE;
-  if (monthlyNet(annual).greaterThanOrEqualTo(target)) return 0;
+  let previous = monthlyNet(annual);
+  if (previous.greaterThanOrEqualTo(target)) return 0;
   for (let month = 1; month <= years * 12; month += 1) {
     const invested = settings.reinvest ? savings.plus(monthlyNet(annual)) : savings;
     annual = annual.plus(invested.times(yieldShare));
     if (month % 12 === 0) annual = annual.times(growthFactor);
     deflator = deflator.times(monthlyInflation);
-    if (monthlyNet(annual).dividedBy(deflator).greaterThanOrEqualTo(target)) return month;
+    const real = monthlyNet(annual).dividedBy(deflator);
+    if (real.greaterThanOrEqualTo(target)) {
+      // Anteilig im Monat (seit 2.33.1): Ganze Monate rundeten kleine Käufe
+      // auf „0 früher" ab, gerade ohne Reinvestieren.
+      const share = target.minus(previous).dividedBy(real.minus(previous));
+      return month - 1 + share.toNumber();
+    }
+    previous = real;
   }
   return null;
 }
 
 /**
  * Wie viele Monate ein Kauf oder eine Sparrate das Ziel vorzieht (seit
- * 2.32.0). Ohne den Zusatz wird bis zum doppelten Horizont gerechnet: Ohne
+ * 2.32.0, seit 2.33.1 mit Monatsbruchteilen). Ohne den Zusatz wird bis zum doppelten Horizont gerechnet: Ohne
  * Sparpläne liegt das Ziel oft jenseits von 30 Jahren, und gerade dann ist
  * der Abstand die Nachricht. `null`, wenn es nichts vorzuziehen gibt: kein
  * Ziel, schon erreicht, mit dem Zusatz nicht innerhalb des Horizonts oder

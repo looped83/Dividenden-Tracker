@@ -48,6 +48,7 @@ import {
   type SavingsPlanRow,
 } from "./savingsPlans";
 import { TargetGain } from "./TargetGain";
+import { MIN_GAIN_MONTHS } from "./targetTime";
 
 const NO_EXCLUSIONS: ReadonlySet<string> = new Set();
 
@@ -162,7 +163,7 @@ function SavingsPlans({
       <PlansSummary
         overview={overview}
         gain={
-          gain !== null && gain > 0 ? (
+          gain !== null && gain >= MIN_GAIN_MONTHS ? (
             <TargetGain months={gain} target={target} />
           ) : undefined
         }

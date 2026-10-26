@@ -8,6 +8,14 @@ describe("formatMonths", () => {
     expect(formatMonths(4)).toBe("4 Monate");
     expect(formatMonths(12)).toBe("1 Jahr");
     expect(formatMonths(27)).toBe("2 Jahre 3 Monate");
+    expect(formatMonths(26.6)).toBe("2 Jahre 3 Monate");
+  });
+
+  it("nennt unter einem Monat Wochen oder Tage", () => {
+    expect(formatMonths(0.5)).toBe("2 Wochen");
+    expect(formatMonths(0.2)).toBe("1 Woche");
+    expect(formatMonths(0.1)).toBe("3 Tage");
+    expect(formatMonths(12 / 365)).toBe("1 Tag");
   });
 });
 

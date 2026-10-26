@@ -59,7 +59,7 @@ import { POSITION_CAP_DEFAULT, usePositionCaps } from "./positionCaps";
 import { useSavingsPlans } from "./savingsPlanHooks";
 import { activeMonthlyTotal } from "./savingsPlans";
 import { TargetGain } from "./TargetGain";
-import { withPlanSavings } from "./targetTime";
+import { MIN_GAIN_MONTHS, withPlanSavings } from "./targetTime";
 
 const FOCUS_LABEL: Record<PlanFocus, string> = {
   dividende: "Mehr Dividende",
@@ -200,7 +200,7 @@ function Purchase({
           <PlanSummary
             plan={plan}
             gain={
-              gain !== null && gain > 0 ? (
+              gain !== null && gain >= MIN_GAIN_MONTHS ? (
                 <TargetGain months={gain} target={snowball.targetMonthly} />
               ) : undefined
             }
