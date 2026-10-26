@@ -109,7 +109,8 @@ function SnowballSection({
   const ranges = RANGES.filter(
     (option) => option.value === "max" || RANGE_YEARS[option.value] < endYear - firstYear,
   );
-  const [range, setRange] = React.useState<SnowballRange>("max");
+  // Standard „10 J." (seit 2.37.2, Lutz: Zukunftsblick); ohne diese Stufe Max.
+  const [range, setRange] = React.useState<SnowballRange>("10");
   const shown = ranges.some((option) => option.value === range) ? range : "max";
   const fromYear = chartStartYear(shown, firstYear, startYear, endYear);
   const chartData = React.useMemo(
