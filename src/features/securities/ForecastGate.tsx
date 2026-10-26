@@ -27,6 +27,8 @@ export interface ForecastBasis {
   /** Aktive Zahlungen mit effektivem Datum (§10), für den bisherigen Weg im Schneeball. */
   payments: readonly AnalyticsPayment[];
   startYear: number;
+  /** Kalendermonat von heute (1–12), für die Jahresenden im Schneeball. */
+  startMonth: number;
 }
 
 /**
@@ -107,5 +109,6 @@ export function ForecastGate({
     facets,
     payments,
     startYear: today.year,
+    startMonth: today.month,
   });
 }

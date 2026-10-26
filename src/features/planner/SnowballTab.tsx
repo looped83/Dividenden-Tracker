@@ -1,6 +1,8 @@
 import * as React from "react";
 import { KpiHero } from "@/components/domain/KpiHero";
+import { Section } from "@/components/ui/section";
 import { Select } from "@/components/ui/select";
+import { SegmentedControl, type SegmentOption } from "@/components/ui/segmented";
 import {
   EUR,
   Money,
@@ -52,7 +54,7 @@ export function SnowballTab() {
   const planSavings = Math.round(activeMonthlyTotal(plans).toNumber());
   return (
     <ForecastGate emptyDescription="Der Schneeball rechnet hoch, ab wann deine Dividenden dein Ziel tragen. Dafür braucht er einen Depotstand aus dem DivvyDiary-Portfolio-Export.">
-      {({ forecast, depot, payments, startYear }) => (
+      {({ forecast, depot, payments, startYear, startMonth }) => (
         <SnowballSection
           depot={depot}
           history={snowballHistory(payments, startYear)}
@@ -60,6 +62,7 @@ export function SnowballTab() {
           settings={settingsQuery.data ?? DEFAULT_FORECAST_SETTINGS}
           planSavings={planSavings}
           startYear={startYear}
+          startMonth={startMonth}
         />
       )}
     </ForecastGate>
@@ -73,6 +76,7 @@ function SnowballSection({
   settings: stored,
   planSavings,
   startYear,
+  startMonth,
 }: {
   depot: DepotAssumptions;
   history: readonly SnowballHistoryPoint[];
@@ -81,6 +85,7 @@ function SnowballSection({
   /** Summe der aktiven Sparpläne im Monat, gerundet; 0 ohne Pläne. */
   planSavings: number;
   startYear: number;
+  startMonth: number;
 }) {
   const { mutate: save } = useSaveForecastSettings();
   const update = React.useCallback(
@@ -96,13 +101,20 @@ function SnowballSection({
   );
 
   const result = React.useMemo(
-    () => projectSnowball({ depot, settings, netRatio, startYear }),
-    [depot, settings, netRatio, startYear],
+    () => projectSnowball({ depot, settings, netRatio, startYear, startMonth }),
+    [depot, settings, netRatio, startYear, startMonth],
   );
   const endYear = snowballChartEndYear(result, startYear);
+  const firstYear = history[0]?.year ?? startYear;
+  const ranges = RANGES.filter(
+    (option) => option.value === "max" || RANGE_YEARS[option.value] < endYear - firstYear,
+  );
+  const [range, setRange] = React.useState<SnowballRange>("max");
+  const shown = ranges.some((option) => option.value === range) ? range : "max";
+  const fromYear = chartStartYear(shown, firstYear, startYear, endYear);
   const chartData = React.useMemo(
-    () => toSnowballData(history, result, endYear),
-    [history, result, endYear],
+    () => toSnowballData(history, result, fromYear, endYear),
+    [history, result, fromYear, endYear],
   );
   const real = settings.inflationPercent > 0;
 
@@ -194,13 +206,28 @@ function SnowballSection({
         </p>
       )}
 
-      <SnowballChart
-        data={chartData}
-        target={settings.targetMonthly > 0 ? settings.targetMonthly : null}
-        ariaLabel={`Nettodividende pro Monat${history.length > 0 ? ` seit ${String(history[0].year)}` : ""}, hochgerechnet bis ${String(endYear)}${real ? " in heutiger Kaufkraft" : ""}`}
-      />
+      <Section
+        title="Verlauf"
+        {...(ranges.length > 1 && {
+          action: (
+            <SegmentedControl
+              label="Zeitraum"
+              options={ranges}
+              value={shown}
+              onChange={setRange}
+              variant="pill"
+            />
+          ),
+        })}
+      >
+        <SnowballChart
+          data={chartData}
+          target={settings.targetMonthly > 0 ? settings.targetMonthly : null}
+          ariaLabel={`Nettodividende pro Monat${fromYear < startYear ? ` seit ${String(fromYear)}` : ""}, hochgerechnet bis ${String(endYear)}${real ? " in heutiger Kaufkraft" : ""}`}
+        />
+      </Section>
 
-      <Milestones result={result} startYear={startYear} />
+      <Milestones result={result} />
     </div>
   );
 }
@@ -237,14 +264,16 @@ function SnowballHeadline({
       caption={
         targetYear === null
           ? "Mit diesen Annahmen nicht innerhalb von 30 Jahren erreicht."
-          : targetYear === first.year
+          : result.today.greaterThanOrEqualTo(settings.targetMonthly)
             ? "Schon erreicht."
-            : `in ${formatCountNoun(targetYear - first.year, "Jahr", "Jahren")}`
+            : targetYear === first.year
+              ? "noch in diesem Jahr"
+              : `in ${formatCountNoun(targetYear - first.year, "Jahr", "Jahren")}`
       }
       stats={[
         {
           label: "Heute",
-          value: formatMoneyWhole(Money.fromDecimal(first.base, EUR)),
+          value: formatMoneyWhole(Money.fromDecimal(result.today, EUR)),
           caption: start
             ? `${String(start.year)}: ${formatMoneyWhole(Money.fromDecimal(start.monthly, EUR))}`
             : "netto im Monat",
@@ -264,13 +293,7 @@ function SnowballHeadline({
   );
 }
 
-function Milestones({
-  result,
-  startYear,
-}: {
-  result: SnowballResult;
-  startYear: number;
-}) {
+function Milestones({ result }: { result: SnowballResult }) {
   if (result.milestones.length === 0) return null;
   return (
     <ul
@@ -289,7 +312,7 @@ function Milestones({
           <span className="tabular-nums text-muted-foreground">
             {milestone.year === null
               ? "nicht absehbar"
-              : milestone.year <= startYear
+              : result.today.greaterThanOrEqualTo(milestone.amount)
                 ? "erreicht"
                 : String(milestone.year)}
           </span>
@@ -299,21 +322,51 @@ function Milestones({
   );
 }
 
+function formatEuro(value: number): string {
+  return formatMoneyWhole(Money.fromDecimal(new MoneyDecimal(value), EUR));
+}
+
+type SnowballRange = "max" | "20" | "10";
+
+/** Zeitraum des Diagramms (seit 2.35.0), wie die übrigen Umschalter als Pille. */
+const RANGES: readonly SegmentOption<SnowballRange>[] = [
+  { value: "max", label: "Max" },
+  { value: "20", label: "20 J." },
+  { value: "10", label: "10 J." },
+];
+const RANGE_YEARS: Record<SnowballRange, number> = { max: Infinity, "20": 20, "10": 10 };
+
+/**
+ * Erstes Jahr im Diagramm: „Max" zeigt den ganzen Weg, 20 und 10 Jahre zuerst
+ * die Hochrechnung bis zum Ende des Diagramms und füllen den Rest mit dem
+ * bisherigen Weg. So rückt der Weg zum Ziel ins Bild, statt dass lange Jahre
+ * mit kleinen Beträgen die halbe Breite füllen.
+ */
+function chartStartYear(
+  range: SnowballRange,
+  firstYear: number,
+  startYear: number,
+  endYear: number,
+): number {
+  if (range === "max") return firstYear;
+  const span = RANGE_YEARS[range];
+  const ahead = Math.min(endYear - startYear, span);
+  return Math.max(firstYear, startYear - (span - ahead));
+}
+
 /**
  * Bisheriger Weg und Hochrechnung in einer Reihe: Vergangene Jahre tragen nur
  * `actual`, die Hochrechnung nur `base`/`band`. Heute trägt beides, damit die
  * Linie des Wegs in die Hochrechnung übergeht.
  */
-function formatEuro(value: number): string {
-  return formatMoneyWhole(Money.fromDecimal(new MoneyDecimal(value), EUR));
-}
-
 function toSnowballData(
   history: readonly SnowballHistoryPoint[],
   result: SnowballResult,
+  fromYear: number,
   endYear: number,
 ): SnowballDatum[] {
-  const past: SnowballDatum[] = history.map((point) => ({
+  const visible = history.filter((point) => point.year >= fromYear);
+  const past: SnowballDatum[] = visible.map((point) => ({
     year: point.year,
     label: String(point.year),
     actual: point.monthly.toNumber(),
@@ -326,7 +379,7 @@ function toSnowballData(
   const future: SnowballDatum[] = shown.map((point, index) => ({
     year: point.year,
     label: String(point.year),
-    actual: index === 0 && history.length > 0 ? point.base.toNumber() : null,
+    actual: index === 0 && visible.length > 0 ? point.base.toNumber() : null,
     actualMoney: null,
     base: point.base.toNumber(),
     band: [point.low.toNumber(), point.high.toNumber()],

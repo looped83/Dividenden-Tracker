@@ -117,7 +117,7 @@ export function depotAssumptions(
 }
 
 export interface SnowballPoint {
-  /** Kalenderjahr; der erste Punkt ist heute. */
+  /** Kalenderjahr; der Punkt steht am Jahresende (Dezember). */
   year: number;
   /** Nettodividende pro Monat (heutige Kaufkraft bei Inflation > 0). */
   base: DecimalInstance;
@@ -134,6 +134,8 @@ export interface SnowballMilestone {
 }
 
 export interface SnowballResult {
+  /** Nettodividende pro Monat heute. */
+  today: DecimalInstance;
   points: SnowballPoint[];
   /** Ziel erreicht im Basisszenario; `null` = nicht innerhalb des Horizonts. */
   targetYear: number | null;
@@ -152,7 +154,12 @@ export interface SnowballResult {
 const MILESTONES = [100, 250, 500, 1000, 1500, 2000, 3000, 5000, 7500, 10000] as const;
 const MAX_MILESTONES = 4;
 
-/** Ein Szenario: monatliche Nettodividende am Ende jedes Jahres, Jahr 0 = heute. */
+/**
+ * Ein Szenario Monat für Monat: Index 0 ist heute, Index m der Stand nach m
+ * Monaten, in heutiger Kaufkraft. Das Wachstum greift alle zwölf Monate ab
+ * heute, die Inflation je Monat mit `(1 + Inflation)^(1/12)` — an jedem
+ * Jahrestag genau `(1 + Inflation)^n` wie bis 2.34.
+ */
 function simulate({
   annualGross,
   ratio,
@@ -160,7 +167,8 @@ function simulate({
   reinvest,
   growth,
   yieldRate,
-  years,
+  inflation,
+  months,
 }: {
   annualGross: DecimalInstance;
   ratio: DecimalInstance;
@@ -168,44 +176,61 @@ function simulate({
   reinvest: boolean;
   growth: DecimalInstance;
   yieldRate: DecimalInstance;
-  years: number;
+  /** `1 + Inflation p. a.` */
+  inflation: DecimalInstance;
+  months: number;
 }): DecimalInstance[] {
   const growthFactor = ONE.plus(growth.dividedBy(HUNDRED));
   const yieldShare = yieldRate.dividedBy(HUNDRED);
+  const monthlyInflation = inflation.pow(ONE.dividedBy(TWELVE));
   const monthlyNet = (annual: DecimalInstance) => annual.times(ratio).dividedBy(TWELVE);
 
   let annual = annualGross;
+  let deflator = ONE;
   const series = [monthlyNet(annual)];
-  for (let year = 1; year <= years; year += 1) {
-    for (let month = 0; month < 12; month += 1) {
-      const invested = reinvest ? savings.plus(monthlyNet(annual)) : savings;
-      annual = annual.plus(invested.times(yieldShare));
+  for (let month = 1; month <= months; month += 1) {
+    const invested = reinvest ? savings.plus(monthlyNet(annual)) : savings;
+    annual = annual.plus(invested.times(yieldShare));
+    if (month % 12 === 0) {
+      annual = annual.times(growthFactor);
+      deflator = inflation.pow(month / 12);
+    } else {
+      deflator = deflator.times(monthlyInflation);
     }
-    annual = annual.times(growthFactor);
-    series.push(monthlyNet(annual));
+    series.push(monthlyNet(annual).dividedBy(deflator));
   }
   return series;
 }
 
+/**
+ * Kalenderjahr, in dem die Monatsreihe das Ziel zuerst erreicht (seit
+ * 2.35.0 monatsgenau). Bis 2.34 zählte der erste Jahrestag ab heute, der
+ * darüber lag: Im Oktober gerechnet, rutschte ein Ziel aus dem Dezember so
+ * ins Folgejahr — das optimistische Szenario landete oft im Jahr der Basis.
+ */
 function firstYearReaching(
   series: readonly DecimalInstance[],
   target: DecimalInstance,
   startYear: number,
+  startMonth: number,
 ): number | null {
   const index = series.findIndex((value) => value.greaterThanOrEqualTo(target));
-  return index === -1 ? null : startYear + index;
+  return index === -1 ? null : startYear + Math.floor((startMonth - 1 + index) / 12);
 }
 
 /**
  * Rechnet drei Szenarien: Basis mit dem angenommenen Wachstum, vorsichtig und
  * optimistisch {@link SCENARIO_SPREAD} Prozentpunkte darunter bzw. darueber
- * (nie unter 0 %).
+ * (nie unter 0 %). Die Punkte stehen seit 2.35.0 je Jahresende (Dezember),
+ * damit Diagramm, Datentabelle und Zieljahre dasselbe Jahr meinen: Ein Ziel
+ * im Jahr J heißt, der Punkt J liegt darüber, der Punkt J − 1 darunter.
  */
 export function projectSnowball({
   depot,
   settings,
   netRatio,
   startYear,
+  startMonth = 12,
   years = SNOWBALL_YEARS,
 }: {
   depot: DepotAssumptions;
@@ -213,6 +238,8 @@ export function projectSnowball({
   /** Netto-Quote (0–1); `null` rechnet brutto. */
   netRatio: DecimalInstance | null;
   startYear: number;
+  /** Kalendermonat von heute (1–12). */
+  startMonth?: number;
   years?: number;
 }): SnowballResult {
   const growth =
@@ -223,35 +250,39 @@ export function projectSnowball({
     settings.yieldPercent === null
       ? depot.yieldPercent
       : new MoneyDecimal(settings.yieldPercent);
+  // Monate bis zum letzten Dezember des Horizonts.
+  const toDecember = 12 - startMonth;
   const common = {
     annualGross: depot.annualGross,
     ratio: netRatio ?? ONE,
     savings: new MoneyDecimal(Math.max(settings.monthlySavings, 0)),
     reinvest: settings.reinvest,
     yieldRate,
-    years,
+    inflation: ONE.plus(
+      new MoneyDecimal(Math.max(settings.inflationPercent, 0)).dividedBy(HUNDRED),
+    ),
+    months: toDecember + years * 12,
   };
-
-  const inflation = ONE.plus(
-    new MoneyDecimal(Math.max(settings.inflationPercent, 0)).dividedBy(HUNDRED),
-  );
-  const real = (series: DecimalInstance[]) =>
-    series.map((value, year) => value.dividedBy(inflation.pow(year)));
 
   const growthLow = MoneyDecimal.max(growth.minus(SCENARIO_SPREAD), 0);
   const growthHigh = growth.plus(SCENARIO_SPREAD);
-  const base = real(simulate({ ...common, growth }));
-  const low = real(simulate({ ...common, growth: growthLow }));
-  const high = real(simulate({ ...common, growth: growthHigh }));
+  const base = simulate({ ...common, growth });
+  const low = simulate({ ...common, growth: growthLow });
+  const high = simulate({ ...common, growth: growthHigh });
 
-  const points = base.map((value, index) => ({
-    year: startYear + index,
-    base: value,
-    low: low[index],
-    high: high[index],
-  }));
+  const points = Array.from({ length: years + 1 }, (_, index) => {
+    const month = toDecember + index * 12;
+    return {
+      year: startYear + index,
+      base: base[month],
+      low: low[month],
+      high: high[month],
+    };
+  });
 
   const target = new MoneyDecimal(Math.max(settings.targetMonthly, 0));
+  const reach = (series: readonly DecimalInstance[], amount: DecimalInstance) =>
+    firstYearReaching(series, amount, startYear, startMonth);
   const now = base[0];
   const milestones: SnowballMilestone[] = MILESTONES.filter(
     (amount) => now.lessThan(amount) && target.greaterThan(amount),
@@ -259,26 +290,23 @@ export function projectSnowball({
     .slice(-(MAX_MILESTONES - 1))
     .map((amount) => ({
       amount,
-      year: firstYearReaching(base, new MoneyDecimal(amount), startYear),
+      year: reach(base, new MoneyDecimal(amount)),
       isTarget: false,
     }));
   if (target.greaterThan(0)) {
     milestones.push({
       amount: settings.targetMonthly,
-      year: firstYearReaching(base, target, startYear),
+      year: reach(base, target),
       isTarget: true,
     });
   }
 
   return {
+    today: now,
     points,
-    targetYear: target.greaterThan(0) ? firstYearReaching(base, target, startYear) : null,
-    targetYearEarliest: target.greaterThan(0)
-      ? firstYearReaching(high, target, startYear)
-      : null,
-    targetYearLatest: target.greaterThan(0)
-      ? firstYearReaching(low, target, startYear)
-      : null,
+    targetYear: target.greaterThan(0) ? reach(base, target) : null,
+    targetYearEarliest: target.greaterThan(0) ? reach(high, target) : null,
+    targetYearLatest: target.greaterThan(0) ? reach(low, target) : null,
     milestones,
     growthPercent: growth,
     growthHighPercent: growthHigh,
