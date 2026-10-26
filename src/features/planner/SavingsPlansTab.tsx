@@ -48,7 +48,6 @@ import {
   type SavingsPlanRow,
 } from "./savingsPlans";
 import { TargetGain } from "./TargetGain";
-import { withPlanSavings } from "./targetTime";
 
 const NO_EXCLUSIONS: ReadonlySet<string> = new Set();
 
@@ -96,18 +95,15 @@ function SavingsPlans({
   const caps = usePositionCaps().data;
   const forecastSettings = useForecastSettings().data ?? DEFAULT_FORECAST_SETTINGS;
   const excluded = forecastSettings.excluded;
-  // Ziel-Zeit (§14.4): der Schneeball mit und ohne die aktiven Pläne.
+  // Ziel-Zeit (§14.4): der Schneeball mit und ohne die aktiven Pläne; sie
+  // kommen zu den Einmalkäufen hinzu.
   const target = forecastSettings.targetMonthly;
   const gain = React.useMemo(() => {
     const planSavings = Math.round(activeMonthlyTotal(plans).toNumber());
     if (planSavings <= 0) return null;
-    const { settings } = withPlanSavings(forecastSettings, planSavings);
     return monthsEarlier({
       depot,
-      settings: {
-        ...settings,
-        monthlySavings: Math.max(settings.monthlySavings - planSavings, 0),
-      },
+      settings: forecastSettings,
       netRatio: forecast.netRatio,
       extraSavings: planSavings,
     });
@@ -167,11 +163,7 @@ function SavingsPlans({
         overview={overview}
         gain={
           gain !== null && gain > 0 ? (
-            <TargetGain
-              months={gain}
-              target={target}
-              lead="Deine Sparpläne bringen dich"
-            />
+            <TargetGain months={gain} target={target} />
           ) : undefined
         }
       />

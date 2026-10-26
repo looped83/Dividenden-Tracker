@@ -6,7 +6,6 @@ import { AmountText } from "@/components/money/AmountText";
 import { Button } from "@/components/ui/button";
 import { ListGroup, ListItemBody, ListRow } from "@/components/ui/list";
 import { Section } from "@/components/ui/section";
-import { SegmentedControl, type SegmentOption } from "@/components/ui/segmented";
 import { Select } from "@/components/ui/select";
 import {
   Table,
@@ -45,29 +44,22 @@ import {
   type ForecastSettings,
 } from "@/features/securities/forecastSettings";
 import { AssetLink } from "./AssetLink";
-import { PlannerHeaderActions } from "./PlannerPage";
 import { NumberField, SettingCell, SettingsList } from "./fields";
 import { rhythm } from "./format";
 import {
-  MODE_RULES,
+  PURCHASE_RULES,
   concentrationAfter,
   planPurchase,
   purchaseCandidates,
   type PlanFocus,
-  type PlanMode,
   type PlannedBuy,
   type PurchasePlan,
 } from "./purchase";
 import { POSITION_CAP_DEFAULT, usePositionCaps } from "./positionCaps";
 import { useSavingsPlans } from "./savingsPlanHooks";
-import { activeMonthlyTotal, savingsPlanOverview } from "./savingsPlans";
+import { activeMonthlyTotal } from "./savingsPlans";
 import { TargetGain } from "./TargetGain";
 import { withPlanSavings } from "./targetTime";
-
-const MODE_OPTIONS: readonly SegmentOption<PlanMode>[] = [
-  { value: "einmal", label: "Einmalkauf" },
-  { value: "sparplan", label: "Sparpläne" },
-];
 
 const FOCUS_LABEL: Record<PlanFocus, string> = {
   dividende: "Mehr Dividende",
@@ -81,11 +73,11 @@ const sharesFormat = new Intl.NumberFormat("de-DE", { maximumFractionDigits: 1 }
 
 /**
  * Planer › **Nachkauf**: Was bringt der nächste Kauf? Ein Betrag wird auf
- * Positionen des eigenen Bestands verteilt — als Einmalkauf (wenige Titel,
- * mindestens 100 € je Kauf) oder als monatliche Sparpläne (mehr Titel, ab
- * 25 €). Die Eingaben stehen in der Adresse (`?modus=sparplan&betrag=1000`),
+ * Positionen des eigenen Bestands verteilt (wenige Titel, mindestens 100 €
+ * je Kauf). Die Eingaben stehen in der Adresse (`?betrag=1000&anzahl=2`),
  * damit Zurück und Direktlinks sie behalten; gespeichert werden nur die
- * ausgeschlossenen Assets (CALCULATION_RULES.md §16).
+ * ausgeschlossenen Assets (CALCULATION_RULES.md §16). Sparpläne plant seit
+ * 2.33.0 nur noch Planer › Sparpläne.
  */
 export function PurchaseTab() {
   const settings = useForecastSettings().data ?? DEFAULT_FORECAST_SETTINGS;
@@ -96,13 +88,9 @@ export function PurchaseTab() {
   );
 }
 
-/**
- * Eingaben aus der Adresse. Ohne Betrag gilt die Vorbelegung des Modus; beim
- * Sparplan die Summe der eigenen Pläne, sobald welche gepflegt sind (§17).
- */
-function readInputs(params: URLSearchParams, savingsTotal: number) {
-  const mode: PlanMode = params.get("modus") === "sparplan" ? "sparplan" : "einmal";
-  const rules = MODE_RULES[mode];
+/** Eingaben aus der Adresse; ohne Angabe gilt die Vorbelegung. */
+function readInputs(params: URLSearchParams) {
+  const rules = PURCHASE_RULES;
   const rawFocus = params.get("fokus");
   const focus: PlanFocus =
     rawFocus === "monate" || rawFocus === "wachstum" ? rawFocus : "dividende";
@@ -110,12 +98,10 @@ function readInputs(params: URLSearchParams, savingsTotal: number) {
   const amount =
     typeof rawAmount === "number" && rawAmount > 0 && rawAmount <= AMOUNT_MAX
       ? rawAmount
-      : mode === "sparplan" && savingsTotal > 0
-        ? savingsTotal
-        : rules.defaultAmount;
+      : rules.defaultAmount;
   const rawBuys = Number.parseInt(params.get("anzahl") ?? "", 10);
   const buys = rawBuys >= 1 && rawBuys <= rules.maxBuys ? rawBuys : rules.defaultBuys;
-  return { mode, focus, amount, buys };
+  return { focus, amount, buys };
 }
 
 function Purchase({
@@ -130,8 +116,8 @@ function Purchase({
   const { data: savingsPlans = [] } = useSavingsPlans();
   const caps = usePositionCaps().data ?? NO_CAPS;
   const savingsTotal = Math.round(activeMonthlyTotal(savingsPlans).toNumber());
-  const { mode, focus, amount, buys } = readInputs(params, savingsTotal);
-  const rules = MODE_RULES[mode];
+  const { focus, amount, buys } = readInputs(params);
+  const rules = PURCHASE_RULES;
   const { mutate: save } = useSaveForecastSettings();
 
   const setParam = React.useCallback(
@@ -173,28 +159,25 @@ function Purchase({
         candidates,
         amount,
         focus,
-        mode,
         buys,
         capPercent: POSITION_CAP_DEFAULT,
         caps,
       }),
-    [forecast, candidates, amount, focus, mode, buys, caps],
+    [forecast, candidates, amount, focus, buys, caps],
   );
   const spread = React.useMemo(
     () =>
       plan && plan.buys.length > 0
-        ? concentrationAfter({ snapshots, facets, names, plan, mode })
+        ? concentrationAfter({ snapshots, facets, names, plan })
         : null,
-    [snapshots, facets, names, plan, mode],
+    [snapshots, facets, names, plan],
   );
 
-  const isSavings = mode === "sparplan";
   const hasPlan = plan !== null && plan.buys.length > 0;
-  // Ziel-Zeit (§14.4): Der Kauf kommt zu dem hinzu, womit der Schneeball
-  // ohnehin rechnet — beim Sparplan als zusätzliche Rate, sonst als
-  // zusätzliche Dividende ab heute.
+  // Ziel-Zeit (§14.4): Der Kauf kommt als zusätzliche Dividende ab heute zu
+  // dem hinzu, womit der Schneeball ohnehin rechnet.
   const snowball = React.useMemo(
-    () => withPlanSavings(settings, savingsTotal).settings,
+    () => withPlanSavings(settings, savingsTotal),
     [settings, savingsTotal],
   );
   const gain = React.useMemo(
@@ -204,62 +187,21 @@ function Purchase({
             depot,
             settings: snowball,
             netRatio: forecast.netRatio,
-            ...(isSavings
-              ? { extraSavings: plan.invested.toDecimal().dividedBy(12).toNumber() }
-              : { extraAnnualNet: plan.annual.toDecimal() }),
+            extraAnnualNet: plan.annual.toDecimal(),
           })
         : null,
-    [plan, depot, snowball, forecast.netRatio, isSavings],
+    [plan, depot, snowball, forecast.netRatio],
   );
-  // Zum Vergleich: was die gepflegten Sparpläne heute bringen.
-  const current = React.useMemo(
-    () =>
-      isSavings && savingsPlans.length > 0
-        ? savingsPlanOverview(
-            forecast,
-            purchaseCandidates(forecast, snapshots, new Set()),
-            savingsPlans,
-            names,
-          )
-        : null,
-    [isSavings, forecast, snapshots, savingsPlans, names],
-  );
-
   return (
     <div className="space-y-10 lg:space-y-12">
-      <PlannerHeaderActions>
-        <SegmentedControl<PlanMode>
-          label="Art des Kaufs"
-          variant="pill"
-          options={MODE_OPTIONS}
-          value={mode}
-          onChange={(next) => {
-            // Betrag und Anzahl gehören zum Modus: ein Sparplan ist keine 1.000-€-Order.
-            setParam({
-              modus: next === "sparplan" ? next : null,
-              betrag: null,
-              anzahl: null,
-            });
-          }}
-        />
-      </PlannerHeaderActions>
-
       <div className="space-y-6">
         {/* Wie im Schneeball: Ergebnis oben, darunter die Eingaben (seit 2.27.0). */}
         {hasPlan && (
           <PlanSummary
             plan={plan}
-            mode={mode}
-            current={current?.annual ?? null}
             gain={
               gain !== null && gain > 0 ? (
-                <TargetGain
-                  months={gain}
-                  target={snowball.targetMonthly}
-                  lead={
-                    isSavings ? "Diese Sparpläne bringen dich" : "Dieser Kauf bringt dich"
-                  }
-                />
+                <TargetGain months={gain} target={snowball.targetMonthly} />
               ) : undefined
             }
           />
@@ -269,20 +211,18 @@ function Purchase({
           <NumberField
             id="purchase-amount"
             max={AMOUNT_MAX}
-            label={isSavings ? "Pro Monat" : "Betrag"}
-            fullLabel={isSavings ? "Sparrate pro Monat" : "Betrag des Einmalkaufs"}
+            label="Betrag"
+            fullLabel="Betrag des Einmalkaufs"
             suffix="€"
             value={amount}
             onCommit={(value) => {
               setParam({ betrag: value === null ? null : String(value) });
             }}
           />
-          <SettingCell label={isSavings ? "Pläne" : "Käufe"} htmlFor="purchase-buys">
+          <SettingCell label="Käufe" htmlFor="purchase-buys">
             <Select
               id="purchase-buys"
-              aria-label={
-                isSavings ? "Höchstens so viele Sparpläne" : "Höchstens so viele Käufe"
-              }
+              aria-label="Höchstens so viele Käufe"
               className="h-9 py-0"
               value={String(buys)}
               onChange={(event) => {
@@ -292,7 +232,7 @@ function Purchase({
               {Array.from({ length: rules.maxBuys }, (_, index) => index + 1).map(
                 (count) => (
                   <option key={count} value={count}>
-                    {isSavings ? `bis ${String(count)}` : String(count)}
+                    {String(count)}
                   </option>
                 ),
               )}
@@ -327,7 +267,7 @@ function Purchase({
             {candidates.length === 0
               ? "Im Bestand ist kein Asset mit Kurs und Dividende, das sich nachkaufen ließe."
               : plan === null
-                ? `Mindestens ${String(rules.minimum)} € je ${isSavings ? "Sparplan" : "Kauf"}.`
+                ? `Mindestens ${String(rules.minimum)} € je Kauf.`
                 : caps.size === 0
                   ? "Gib Assets auf ihrer Seite eine Gewichtung, dann schlägt der Nachkauf sie vor."
                   : "Kein Asset hat unter seiner Gewichtung noch Platz."}
@@ -343,10 +283,9 @@ function Purchase({
 
       {hasPlan && (
         <>
-          <Section title={isSavings ? "Sparpläne" : "Käufe"}>
+          <Section title="Käufe">
             <BuyList
               plan={plan}
-              mode={mode}
               canExclude={settings.excluded.length < EXCLUDED_MAX}
               onExclude={(id) => {
                 setExcluded([...settings.excluded, id]);
@@ -421,14 +360,9 @@ function SpreadLine({
 
 function PlanSummary({
   plan,
-  mode,
-  current,
   gain,
 }: {
   plan: PurchasePlan;
-  mode: PlanMode;
-  /** Mehr im Jahr durch die gepflegten Sparpläne; `null` ohne Pläne. */
-  current: Money | null;
   /** Ziel-Zeit unter der Hauptzahl ({@link TargetGain}). */
   gain: React.ReactNode;
 }) {
@@ -444,11 +378,8 @@ function PlanSummary({
     values.reduce((low, value) => (value.compareTo(low) < 0 ? value : low));
   return (
     <KpiHero
-      label={
-        mode === "sparplan"
-          ? "Mehr im Jahr nach 12 Monaten · netto"
-          : "Mehr im Jahr · netto"
-      }
+      // Netto wie überall im Planer; „netto" stand bis 2.32 im Etikett.
+      label="Dieser Kauf bringt im Jahr"
       value={
         <>
           +<AmountText amount={plan.annual} />
@@ -467,15 +398,6 @@ function PlanSummary({
           value: formatMoneyWhole(weakest(plan.after)),
           caption: `vorher ${formatMoneyWhole(weakest(plan.before))}`,
         },
-        ...(current
-          ? [
-              {
-                label: "Deine Sparpläne",
-                value: `+${formatMoneyWhole(current)}`,
-                caption: "in 12 Monaten",
-              },
-            ]
-          : []),
       ]}
     />
   );
@@ -505,17 +427,14 @@ function sharesText(buy: PlannedBuy): string | null {
  */
 function BuyList({
   plan,
-  mode,
   canExclude,
   onExclude,
 }: {
   plan: PurchasePlan;
-  mode: PlanMode;
   canExclude: boolean;
   onExclude: (securityId: string) => void;
 }) {
   const isWide = useMediaQuery(MD_BREAKPOINT_QUERY);
-  const isSavings = mode === "sparplan";
   if (!isWide) {
     return (
       <ListGroup>
@@ -523,7 +442,6 @@ function BuyList({
           <li key={buy.securityId}>
             <BuyRow
               buy={buy}
-              mode={mode}
               canExclude={canExclude}
               onExclude={() => {
                 onExclude(buy.securityId);
@@ -536,17 +454,13 @@ function BuyList({
   }
   return (
     <Table>
-      <caption className="sr-only">
-        {isSavings ? "Vorgeschlagene Sparpläne" : "Vorgeschlagene Käufe"}
-      </caption>
+      <caption className="sr-only">Vorgeschlagene Käufe</caption>
       <TableHeader>
         <TableRow>
           <TableHead>Asset</TableHead>
           <TableHead>Ausschüttung</TableHead>
           <TableHead className="whitespace-nowrap text-right">Stück</TableHead>
-          <TableHead className="whitespace-nowrap text-right">
-            {isSavings ? "Rate" : "Betrag"}
-          </TableHead>
+          <TableHead className="whitespace-nowrap text-right">Betrag</TableHead>
           <TableHead className="whitespace-nowrap text-right">Mehr im Jahr</TableHead>
           <TableHead className="w-0">
             <span className="sr-only">Aktionen</span>
@@ -571,7 +485,6 @@ function BuyList({
               </TableCell>
               <TableCell className="whitespace-nowrap text-right font-semibold tabular-amount">
                 {formatMoneyWhole(buy.invest)}
-                {isSavings && <span className="text-muted-foreground">/Monat</span>}
               </TableCell>
               <TableCell className="whitespace-nowrap text-right tabular-amount">
                 +{formatMoney(buy.annual)}
@@ -601,12 +514,10 @@ function BuyList({
 
 function BuyRow({
   buy,
-  mode,
   canExclude,
   onExclude,
 }: {
   buy: PlannedBuy;
-  mode: PlanMode;
   canExclude: boolean;
   onExclude: () => void;
 }) {
@@ -633,9 +544,6 @@ function BuyRow({
             <span className="flex flex-col items-end">
               <span className="font-medium text-foreground">
                 {formatMoneyWhole(buy.invest)}
-                {mode === "sparplan" && (
-                  <span className="text-muted-foreground">/Monat</span>
-                )}
               </span>
               <span>+{formatMoney(buy.annual)} im Jahr</span>
             </span>

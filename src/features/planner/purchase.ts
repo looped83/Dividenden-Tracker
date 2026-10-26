@@ -11,24 +11,20 @@ import { countryLabel } from "@/lib/utils/countryLabel";
  * nichts.
  */
 
-export type PlanMode = "einmal" | "sparplan";
 export type PlanFocus = "dividende" | "monate" | "wachstum";
 
-/** Grenzen je Modus: Schrittweite, Mindestbetrag je Kauf, Auswahl der Anzahl. */
-export const MODE_RULES: Record<
-  PlanMode,
-  {
-    step: number;
-    minimum: number;
-    maxBuys: number;
-    defaultBuys: number;
-    /** Vorbelegter Betrag (beim Sparplan je Monat). */
-    defaultAmount: number;
-  }
-> = {
-  einmal: { step: 50, minimum: 100, maxBuys: 5, defaultBuys: 3, defaultAmount: 3000 },
-  sparplan: { step: 25, minimum: 25, maxBuys: 10, defaultBuys: 5, defaultAmount: 1000 },
-};
+/**
+ * Schrittweite, Mindestbetrag je Kauf und Auswahl der Anzahl. Bis 2.32 gab es
+ * daneben einen Sparplan-Modus; Sparpläne stehen seit 2.33.0 nur noch unter
+ * Planer › Sparpläne.
+ */
+export const PURCHASE_RULES = {
+  step: 50,
+  minimum: 100,
+  maxBuys: 5,
+  defaultBuys: 3,
+  defaultAmount: 3000,
+} as const;
 
 /** Eine Position, die nachgekauft werden kann. */
 export interface PurchaseCandidate {
@@ -131,29 +127,28 @@ const MAX_STEPS = 200;
 export interface PlannedBuy {
   securityId: string;
   name: string;
-  /** Betrag je Kauf (beim Sparplan je Monat). */
+  /** Betrag je Kauf. */
   invest: Money;
   /** Ungefaehre Stueckzahl zum letzten Kurs; `null` ohne Kurs. */
   shares: DecimalInstance | null;
-  /** Mehr netto im Jahr (beim Sparplan nach zwoelf Monaten). */
+  /** Mehr netto im Jahr. */
   annual: Money;
   months: readonly number[];
 }
 
 export interface PurchasePlan {
   buys: PlannedBuy[];
-  /** Investiert insgesamt (beim Sparplan zwoelf Raten). */
+  /** Investiert insgesamt. */
   invested: Money;
   annual: Money;
   /** Ertrag des Plans: annual ÷ invested × 100. */
   yieldPercent: DecimalInstance;
   /**
    * Zwoelf Monate der Prognose vorher und mit dem Plan, gleiche Reihenfolge.
-   * Beim Sparplan im Hochlauf: Im k-ten Monat zaehlen k Raten.
    */
   before: Money[];
   after: Money[];
-  /** Was unter der Positionsgrenze keinen Platz fand (beim Sparplan je Monat). */
+  /** Was unter der Positionsgrenze keinen Platz fand. */
   unplaced: Money;
 }
 
@@ -174,15 +169,13 @@ export interface PurchasePlan {
  * bleibt `unplaced` (statt Kleinstkaeufe ueber die gewaehlte Zahl hinaus).
  *
  * Weniger als der Mindestbetrag je Kauf wird auf die verbleibenden Kaeufe
- * umgelegt. Beim Sparplan ist `amount` die Monatsrate; die Wirkung zaehlt
- * zwoelf Raten.
+ * umgelegt.
  */
 export function planPurchase({
   forecast,
   candidates,
   amount,
   focus,
-  mode,
   buys,
   capPercent = null,
   caps = NO_CAPS,
@@ -191,19 +184,17 @@ export function planPurchase({
   candidates: readonly PurchaseCandidate[];
   amount: number;
   focus: PlanFocus;
-  mode: PlanMode;
   buys: number;
   /** Hoechstens so viel Prozent des Depots je Position; `null` ohne Grenze. */
   capPercent?: number | null;
   /** Eigene Grenzen je Asset (Prozent), sie gehen dem Standard vor. */
   caps?: ReadonlyMap<string, number>;
 }): PurchasePlan | null {
-  const { step, minimum } = MODE_RULES[mode];
-  // Schrittweite: die des Modus oder ein Vielfaches davon (MAX_STEPS).
+  const { step, minimum } = PURCHASE_RULES;
+  // Schrittweite: die Grundschrittweite oder ein Vielfaches davon (MAX_STEPS).
   const unit = step * Math.max(1, Math.ceil(amount / step / MAX_STEPS));
   const steps = Math.floor(amount / unit);
   const maxBuys = Math.max(1, Math.min(buys, Math.floor(amount / minimum)));
-  const factor = mode === "sparplan" ? 12 : 1;
   const minSteps = Math.ceil(minimum / unit);
 
   // Platz je Position in Schritten: Grenze × Depot nach dem Kauf − Marktwert.
@@ -214,12 +205,8 @@ export function planPurchase({
       room.set(candidate, Number.POSITIVE_INFINITY);
       continue;
     }
-    const limit = forecast.depotValue
-      .toDecimal()
-      .plus(amount * factor)
-      .times(cap)
-      .dividedBy(100);
-    const free = limit.minus(candidate.marketValue).dividedBy(unit * factor);
+    const limit = forecast.depotValue.toDecimal().plus(amount).times(cap).dividedBy(100);
+    const free = limit.minus(candidate.marketValue).dividedBy(unit);
     room.set(candidate, Math.max(0, Math.floor(free.toNumber())));
   }
   const eligible = candidates.filter(
@@ -323,14 +310,10 @@ export function planPurchase({
   let annual = ZERO;
   const planned = sorted.map(([candidate, count], index): PlannedBuy => {
     const invest = new MoneyDecimal(count * unit + (index === 0 ? remainder : 0));
-    const total = invest.times(factor);
-    const perPayout = candidate.perPayoutPerEuro.times(total);
+    const perPayout = candidate.perPayoutPerEuro.times(invest);
     forecast.months.forEach((month, position) => {
       if (!candidate.months.includes(month.month)) return;
-      // Sparplan im Hochlauf: Im k-ten Monat sind erst k von zwoelf Raten angelegt.
-      const share =
-        mode === "sparplan" ? perPayout.times(position + 1).dividedBy(12) : perPayout;
-      after[position] = after[position].plus(share);
+      after[position] = after[position].plus(perPayout);
     });
     const yearly = perPayout.times(candidate.months.length);
     annual = annual.plus(yearly);
@@ -347,7 +330,7 @@ export function planPurchase({
   const unplaced = new MoneyDecimal(
     unplacedSteps * unit + (unplacedSteps > 0 ? amount - steps * unit : 0),
   );
-  const invested = new MoneyDecimal(amount).minus(unplaced).times(factor);
+  const invested = new MoneyDecimal(amount).minus(unplaced);
   return {
     buys: planned,
     invested: Money.fromDecimal(invested, EUR),
@@ -383,27 +366,23 @@ export interface Concentration {
 
 /**
  * Streuung nach dem Kauf (seit 2.22.0): groesste Position, Branche und Land
- * gemessen am Marktwert des Depotstands plus der Kaeufe (beim Sparplan zwoelf
- * Raten). Positionen ohne Branche oder Land zaehlen dort nicht als Gruppe.
+ * gemessen am Marktwert des Depotstands plus der Kaeufe. Positionen ohne Branche oder Land zaehlen dort nicht als Gruppe.
  */
 export function concentrationAfter({
   snapshots,
   facets,
   names,
   plan,
-  mode,
 }: {
   snapshots: readonly SecuritySnapshot[];
   facets: ReadonlyMap<string, ForecastFacets>;
   names: ReadonlyMap<string, string>;
   plan: PurchasePlan;
-  mode: PlanMode;
 }): {
   position: Concentration;
   sector: Concentration | null;
   country: Concentration | null;
 } | null {
-  const factor = mode === "sparplan" ? 12 : 1;
   const values = new Map<string, DecimalInstance>();
   for (const row of snapshotsAt(snapshots, latestAsOf(snapshots))) {
     if (row.market_value === null) continue;
@@ -412,7 +391,7 @@ export function concentrationAfter({
   for (const buy of plan.buys) {
     values.set(
       buy.securityId,
-      (values.get(buy.securityId) ?? ZERO).plus(buy.invest.toDecimal().times(factor)),
+      (values.get(buy.securityId) ?? ZERO).plus(buy.invest.toDecimal()),
     );
   }
   const total = [...values.values()].reduce((sum, value) => sum.plus(value), ZERO);

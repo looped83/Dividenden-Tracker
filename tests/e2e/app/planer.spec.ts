@@ -28,7 +28,7 @@ test("verteilt einen Einmalkauf und merkt sich ausgeschlossene Assets", async ({
   await seedWeights(konto.userId);
   await page.goto("/#/planer");
 
-  await expect(page.getByText("Mehr im Jahr · netto")).toBeVisible();
+  await expect(page.getByText("Dieser Kauf bringt im Jahr")).toBeVisible();
   // Telefon: Liste; ab md seit 2.32.0 eine Tabelle.
   const kaeufe = page.getByRole("region", { name: "Käufe" }).locator("li, tbody tr");
   await expect(kaeufe).toHaveCount(3);
@@ -55,27 +55,19 @@ test("verteilt einen Einmalkauf und merkt sich ausgeschlossene Assets", async ({
   await expect(page.getByText("1 Asset ausgeschlossen")).toHaveCount(0);
 });
 
-test("rechnet Sparpläne als Monatsrate", async ({ page, konto }) => {
-  await seedPortfolio(konto.userId);
-  await seedWeights(konto.userId);
-  await page.goto("/#/planer?modus=sparplan&betrag=500");
-
-  await expect(page.getByText("Mehr im Jahr nach 12 Monaten · netto")).toBeVisible();
-  await expect(page.getByLabel("Sparrate pro Monat")).toHaveValue("500");
-  await expect(page.getByRole("heading", { name: "Sparpläne" })).toBeVisible();
-});
-
 test("speichert die Annahmen des Schneeballs", async ({ page, konto }) => {
   await seedPortfolio(konto.userId);
   await page.goto("/#/planer/schneeball");
 
-  const savings = page.getByLabel("Sparrate pro Monat");
+  const savings = page.getByLabel("Einmalkäufe pro Monat, zusätzlich zu den Sparplänen");
   await savings.fill("500");
   await savings.press("Enter");
   await expect(savings).toHaveValue("500");
 
   await page.reload();
-  await expect(page.getByLabel("Sparrate pro Monat")).toHaveValue("500");
+  await expect(
+    page.getByLabel("Einmalkäufe pro Monat, zusätzlich zu den Sparplänen"),
+  ).toHaveValue("500");
 });
 
 test.describe("Reise und Ziel-Zeit (seit 2.32.0)", () => {
@@ -106,7 +98,7 @@ test.describe("Reise und Ziel-Zeit (seit 2.32.0)", () => {
     await expect(page.getByText("Bisher", { exact: true })).toBeVisible();
 
     await page.goto("/#/planer");
-    const gain = page.getByRole("link", { name: /Dieser Kauf bringt dich .* früher/ });
+    const gain = page.getByRole("link", { name: /früher am Ziel/ });
     await expect(gain).toBeVisible();
     await gain.click();
     await expect(page).toHaveURL(/#\/planer\/schneeball$/);
@@ -165,10 +157,9 @@ test("pflegt Sparpläne und zeigt sie am Asset", async ({ page, konto }) => {
   const abschnitt = page.getByRole("region", { name: "Planung" });
   await expect(abschnitt.getByText("30 € wöchentlich")).toBeVisible();
 
-  // Der Nachkauf übernimmt die Summe der Pläne als Monatsrate.
-  await page.goto("/#/planer?modus=sparplan");
-  await expect(page.getByLabel("Sparrate pro Monat")).toHaveValue("130");
-  await expect(page.getByText("Deine Sparpläne")).toBeVisible();
+  // Der Schneeball rechnet die Pläne zu den Einmalkäufen hinzu (seit 2.33.0).
+  await page.goto("/#/planer/schneeball");
+  await expect(page.getByText("Dazu 130 € Sparpläne im Monat")).toBeVisible();
 });
 
 test("merkt sich eine eigene Gewichtung am Asset", async ({ page, konto }) => {

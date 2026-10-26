@@ -12,21 +12,16 @@ describe("formatMonths", () => {
 });
 
 describe("withPlanSavings", () => {
-  it("nimmt ohne eigene Sparrate die Sparpläne", () => {
-    const result = withPlanSavings(
-      { ...DEFAULT_FORECAST_SETTINGS, monthlySavings: 0 },
+  it("rechnet die Sparpläne zu den Einmalkäufen hinzu", () => {
+    const settings = withPlanSavings(
+      { ...DEFAULT_FORECAST_SETTINGS, monthlySavings: 3000 },
       800,
     );
-    expect(result.fromPlans).toBe(true);
-    expect(result.settings.monthlySavings).toBe(800);
+    expect(settings.monthlySavings).toBe(3800);
   });
 
-  it("lässt eine eigene Sparrate stehen", () => {
-    const result = withPlanSavings(
-      { ...DEFAULT_FORECAST_SETTINGS, monthlySavings: 500 },
-      800,
-    );
-    expect(result.fromPlans).toBe(false);
-    expect(result.settings.monthlySavings).toBe(500);
+  it("lässt die Annahmen ohne Pläne unverändert", () => {
+    const stored = { ...DEFAULT_FORECAST_SETTINGS, monthlySavings: 500 };
+    expect(withPlanSavings(stored, 0)).toBe(stored);
   });
 });
