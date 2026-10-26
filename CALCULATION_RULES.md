@@ -775,7 +775,8 @@ gespeichert sind nur die Annahmen des Schneeballs (`profiles.forecast_settings`,
   (vorsichtig) der ganze Horizont. Meilensteine und Kopf rechnen weiter über 30 Jahre.
 - **Zeitraum** (seit 2.36.0): „Max | 20 J. | 10 J.“ über dem Diagramm. 20 und 10 Jahre zeigen
   zuerst die Hochrechnung bis zum Diagrammende und füllen den Rest mit dem bisherigen Weg; eine
-  Stufe erscheint nur, wenn sie kürzer ist als der ganze Verlauf. Ohne Legende (Tooltip und
+  Stufe erscheint nur, wenn sie kürzer ist als der ganze Verlauf. Vorgewählt ist seit 2.37.2 „10 J.“
+  (Zukunftsblick), ohne diese Stufe „Max“. Ohne Legende (Tooltip und
   Datentabelle nennen die Reihen).
 
 ### 14.3 Monatslücken (`monthGaps`, seit 2.13.0; Planer › Optimierungen)
