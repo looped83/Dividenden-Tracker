@@ -557,7 +557,10 @@ export interface SnowballDatum {
   projection: { base: Money; low: Money; high: Money } | null;
 }
 
-const SNOWBALL_BAND_FILL = "color-mix(in srgb, var(--primary) 16%, transparent)";
+// Das Band ist seit 2.37.1 kräftiger und hat Ränder: Mit 16 % Deckkraft war
+// es im dunklen Schema auf dem iPad kaum zu sehen.
+const SNOWBALL_BAND_FILL = "color-mix(in srgb, var(--primary) 26%, transparent)";
+const SNOWBALL_BAND_EDGE = "color-mix(in srgb, var(--primary) 55%, transparent)";
 const SNOWBALL_DASH = "6 4";
 
 function SnowballTooltip({
@@ -625,7 +628,8 @@ export function SnowballChart({
             type="monotone"
             dataKey="band"
             name="Spanne"
-            stroke="none"
+            stroke={SNOWBALL_BAND_EDGE}
+            strokeWidth={1}
             fill={SNOWBALL_BAND_FILL}
             activeDot={false}
             {...CHART_SERIES_PROPS}
@@ -657,7 +661,9 @@ export function SnowballChart({
             name="Hochrechnung"
             stroke="var(--primary)"
             strokeWidth={2.25}
-            {...(hasHistory && { strokeDasharray: SNOWBALL_DASH })}
+            // Immer gestrichelt (seit 2.37.1): Bei „10 J." fehlt der bisherige
+            // Weg, eine durchgezogene Linie las sich dann wie schon erreicht.
+            strokeDasharray={SNOWBALL_DASH}
             dot={false}
             activeDot={{ r: 5 }}
             {...CHART_SERIES_PROPS}
