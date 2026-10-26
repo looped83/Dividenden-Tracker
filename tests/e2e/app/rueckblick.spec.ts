@@ -1,3 +1,4 @@
+import { asUser } from "../support/db";
 import { expect, test } from "../support/appTest";
 
 /**
@@ -126,4 +127,47 @@ test("Wisch nach unten schließt die Story", async ({ page }) => {
   await page.mouse.up();
   await expect(story).toBeHidden();
   await expect(page).toHaveURL(/#\/statistiken\?year=2025$/);
+});
+
+test("erzählt Jahresziel, Fixkosten und Meilensteine des Jahres", async ({
+  page,
+  konto,
+}) => {
+  await asUser(konto.userId, async (client) => {
+    await client.query(
+      `insert into goals (goal_type, year, month, target_amount) values
+         ('annual', 2025, null, 100), ('monthly', 2025, 3, 50), ('monthly', 2025, 9, 80)`,
+    );
+    await client.query(`update profiles set fixed_costs = $1::jsonb where id = $2`, [
+      JSON.stringify([
+        { id: "a1", name: "Streaming", amount: "5.00" },
+        { id: "b2", name: "Strom", amount: "60.00" },
+      ]),
+      konto.userId,
+    ]);
+  });
+  // Im Januar gilt der Rückblick 2025 noch als Vorjahr: Fixkosten sind dabei.
+  await page.clock.setFixedTime(new Date("2026-01-05T12:00:00"));
+  await page.goto("/#/statistiken/rueckblick/2025");
+  const story = page.getByRole("dialog", { name: "Rückblick 2025" });
+  await expect(story.getByText("Dein Dividendenjahr")).toBeVisible();
+
+  const forward = async (steps: number, heading: string) => {
+    for (let k = 0; k < steps; k++) await page.keyboard.press("ArrowRight");
+    await expect(story.getByText(heading, { exact: true })).toBeVisible();
+  };
+
+  await forward(3, "Dein Jahresziel 2025");
+  await expect(story.getByText("115,0 %")).toBeVisible();
+  await expect(story.getByText("1 von 2 erreicht")).toBeVisible();
+
+  await forward(3, "Was Dividenden decken");
+  await expect(story.getByText("1 von 2", { exact: true })).toBeVisible();
+  await expect(story.getByText("Als Nächstes")).toBeVisible();
+
+  // 2025 fiel keine Stufe: Die Karte zeigt die Summe seit Beginn wie bisher.
+  await forward(4, "Seit 2024");
+  await forward(1, "Dein nächster Meilenstein");
+  await expect(story.getByText("1.000 €")).toBeVisible();
+  await expect(story.getByText("Steuern und Abzüge")).toHaveCount(0);
 });

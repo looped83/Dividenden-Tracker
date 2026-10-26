@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { EUR, Money } from "@/lib/money";
-import { milestoneOverview } from "@/lib/progress";
+import { milestoneOverview, yearMilestones } from "@/lib/progress";
 import type { AnalyticsPayment, RefDate } from "@/lib/statistics";
 
 let seq = 0;
@@ -95,5 +95,29 @@ describe("milestoneOverview", () => {
     const { reached, next } = milestoneOverview([], TODAY);
     expect(reached).toEqual([]);
     expect(next.every((m) => m.percent.isZero())).toBe(true);
+  });
+});
+
+describe("yearMilestones", () => {
+  const payments = [
+    payment("2024-06-01", "600"),
+    payment("2025-03-01", "500"),
+    payment("2026-02-01", "900"),
+  ];
+
+  it("nennt nur die Meilensteine des Jahres, älteste zuerst", () => {
+    const { reached } = yearMilestones(payments, 2025, TODAY);
+    expect(reached.every((m) => m.reachedOn.startsWith("2025"))).toBe(true);
+    expect(reached.map((m) => m.reachedOn)).toEqual(
+      [...reached.map((m) => m.reachedOn)].sort(),
+    );
+    expect(reached.some((m) => m.kind === "total" && m.threshold === 1000)).toBe(true);
+  });
+
+  it("misst die nächste Summen-Stufe am Ende des Jahres, ohne spätere Jahre", () => {
+    const { nextTotal } = yearMilestones(payments, 2025, TODAY);
+    expect(nextTotal.kind).toBe("total");
+    expect(nextTotal.current.toFixed(0)).toBe("1100");
+    expect(nextTotal.threshold).toBe(1500);
   });
 });

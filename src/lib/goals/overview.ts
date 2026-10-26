@@ -118,3 +118,44 @@ export function suggestAnnualGoal(
   if (base.lte(0)) return null;
   return { year: ref.year + 1, amount: roundToHundred(base), forecast, growth };
 }
+
+export interface YearGoals {
+  /** Jahresziel des Jahres mit Fortschritt; null ohne Jahresziel. */
+  annual: GoalProgress | null;
+  /** Monatsziele des Jahres mit Ergebnis (erreicht, übertroffen, verfehlt). */
+  monthlyDecided: number;
+  /** Davon erreicht oder übertroffen. */
+  monthlyHit: number;
+}
+
+/**
+ * Ziele eines Jahres für den Jahresrückblick: das Jahresziel und die
+ * Bilanz der Monatsziele. Monatsziele ohne Ergebnis (laufend, bevorstehend)
+ * zählen nicht mit. `null`, wenn es für das Jahr kein Ziel gibt.
+ */
+export function yearGoals(
+  goals: readonly Goal[],
+  payments: readonly AnalyticsPayment[],
+  year: number,
+  ref: RefDate,
+): YearGoals | null {
+  const ofYear = goals.filter((goal) => goal.year === year);
+  if (ofYear.length === 0) return null;
+  const annualGoal = ofYear.find((goal) => goal.goalType === "annual");
+  let monthlyDecided = 0;
+  let monthlyHit = 0;
+  for (const goal of ofYear) {
+    if (goal.goalType !== "monthly") continue;
+    const { status } = computeGoalProgress(goal, payments, ref);
+    if (status === "reached" || status === "exceeded") monthlyHit += 1;
+    if (status === "reached" || status === "exceeded" || status === "missed") {
+      monthlyDecided += 1;
+    }
+  }
+  if (!annualGoal && monthlyDecided === 0) return null;
+  return {
+    annual: annualGoal ? computeGoalProgress(annualGoal, payments, ref) : null,
+    monthlyDecided,
+    monthlyHit,
+  };
+}

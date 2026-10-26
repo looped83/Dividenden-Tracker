@@ -21,7 +21,9 @@ export {
   recentAnnualGrowth,
   suggestAnnualGoal,
   trailingMonthlyAverage,
+  yearGoals,
   type GoalSuggestion,
+  type YearGoals,
 } from "./overview";
 export {
   computeGoalCourse,

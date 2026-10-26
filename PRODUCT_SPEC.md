@@ -321,9 +321,13 @@ Ist im Filter ein Jahr gewählt, hängt unter der Leiste der Nebenkennzahlen ein
 zum **Jahresrückblick** dieses Jahres
 (`/statistiken/rueckblick/<jahr>`): eine Vollbild-Story mit einer Karte nach der anderen —
 Nettosumme samt Vorjahr und Rang, „Dein Weg" (Vielfaches des ersten Jahres, Jahresdiagramm),
-„pro Tag", „Ganz nebenbei" (pro Nacht, Stunde, Woche, Monat), Rekordmonat (Diagramm mit Tooltip), Top-Zahler,
-Neuzugänge und größte Steigerung, Länder und Branchen, Steuern und Abzüge, Summe seit Beginn,
-nächste runde Marke als Ziel und eine Zusammenfassung ohne Bezug auf andere Jahre. Rückblicke gibt es für abgeschlossene Jahre, für das laufende erst
+Jahresziel (Erreichung wie in Ziele, Bilanz der Monatsziele, im laufenden Jahr mit Hochrechnung; nur mit Ziel),
+„pro Tag", „Ganz nebenbei" (pro Nacht, Stunde, Woche, Monat), „Was Dividenden decken" (Fixkosten mit dem
+Ø Monat des Jahres; nur für das laufende und das Vorjahr, weil Fixkosten nur den heutigen Stand kennen),
+Rekordmonat (Diagramm mit Tooltip), Top-Zahler,
+Neuzugänge und größte Steigerung, Länder und Branchen, Summe seit Beginn mit den Meilensteinen des Jahres
+(dieselben Stufen wie Fortschritt, je Art die höchste), nächster Meilenstein der Summe seit Beginn und eine
+Zusammenfassung ohne Bezug auf andere Jahre. Rückblicke gibt es für abgeschlossene Jahre, für das laufende erst
 ab 15. Dezember („bis heute"); vom 15. Dezember bis 10. Januar hängt derselbe Sockel auch auf der
 Startseite unter den Kennzahlen (für das zu Ende gehende Jahr, unabhängig vom gewählten Zeitraum); in der Statistik gibt es ohne gewähltes Jahr keinen Einstieg und keine Auswahl anderer
 Jahre. Der Rückblick steht am Ende seines Jahres: Spätere Jahre gehen in keine Kennzahl ein

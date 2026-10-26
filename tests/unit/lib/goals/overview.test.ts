@@ -7,6 +7,7 @@ import {
   recentAnnualGrowth,
   suggestAnnualGoal,
   trailingMonthlyAverage,
+  yearGoals,
   type Goal,
 } from "@/lib/goals";
 
@@ -121,5 +122,36 @@ describe("suggestAnnualGoal", () => {
   it("schweigt, wenn beide Jahre ein Ziel haben", () => {
     const goals = [goal(2026, "2000"), goal(2027, "2500")];
     expect(suggestAnnualGoal(goals, PAYMENTS, OCT_2026, eur("2000"))).toBeNull();
+  });
+});
+
+describe("yearGoals", () => {
+  const today: RefDate = { year: 2026, month: 12, day: 20 };
+  const payments = [
+    payment("2025-01-10", "120"),
+    payment("2025-02-10", "80"),
+    payment("2025-07-10", "300"),
+  ];
+
+  it("liefert null ohne Ziel im Jahr", () => {
+    expect(yearGoals([goal(2024, "100")], payments, 2025, today)).toBeNull();
+  });
+
+  it("bewertet Jahresziel und Monatsziele des Jahres", () => {
+    const result = yearGoals(
+      [goal(2025, "1000"), goal(2025, "100", 1), goal(2025, "100", 2), goal(2026, "50")],
+      payments,
+      2025,
+      today,
+    );
+    expect(result?.annual?.percent.toFixed(0)).toBe("50");
+    expect(result?.annual?.status).toBe("missed");
+    expect(result?.monthlyDecided).toBe(2);
+    expect(result?.monthlyHit).toBe(1);
+  });
+
+  it("zählt laufende Monatsziele nicht mit", () => {
+    const result = yearGoals([goal(2026, "100", 12)], payments, 2026, today);
+    expect(result).toBeNull();
   });
 });

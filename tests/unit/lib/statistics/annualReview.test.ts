@@ -75,14 +75,11 @@ describe("annualReview", () => {
     expect(annualReview(payments, 2023, REF, NO_FACETS)).toBeNull();
   });
 
-  it("berechnet Summe, Abzuege, Vorjahr und Platz", () => {
+  it("berechnet Summe, Vorjahr und Platz", () => {
     const review = annualReview(payments, 2025, REF, NO_FACETS);
     expect(review).not.toBeNull();
     if (!review) return;
     expect(review.net.toStringValue()).toBe("250.00");
-    expect(review.gross.toStringValue()).toBe("330.00");
-    expect(review.deductions.toStringValue()).toBe("80.00");
-    expect(review.deductionShare?.toFixed(2)).toBe("24.24");
     expect(review.change.kind).toBe("percent");
     expect(review.priorYearNet?.toStringValue()).toBe("150.00");
     expect(review.rank).toBe(1);
@@ -133,13 +130,10 @@ describe("annualReview", () => {
     expect(review?.change.kind).toBe("no-comparison");
   });
 
-  it("misst den Weg seit dem ersten Jahr und die naechste Marke", () => {
+  it("misst den Weg seit dem ersten Jahr", () => {
     const review = annualReview(payments, 2025, REF, NO_FACETS);
     expect(review?.growthFactor?.toFixed(2)).toBe("1.67");
     expect(review?.priorAverage?.toStringValue()).toBe("150.00");
-    expect(review?.nextMilestone?.target.toStringValue()).toBe("1000.00");
-    expect(review?.nextMilestone?.remaining.toStringValue()).toBe("600.00");
-    expect(review?.nextMilestone?.yearsToGo).toBe(3);
     expect(annualReview(payments, 2024, REF, NO_FACETS)?.growthFactor).toBeNull();
   });
 

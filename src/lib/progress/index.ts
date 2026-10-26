@@ -11,10 +11,12 @@ export {
 } from "./coverage";
 export {
   milestoneOverview,
+  yearMilestones,
   type Milestone,
   type MilestoneKind,
   type MilestoneOverview,
   type NextMilestone,
+  type YearMilestones,
 } from "./milestones";
 export {
   paybackOverview,
