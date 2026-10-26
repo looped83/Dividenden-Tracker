@@ -1,14 +1,24 @@
 import * as React from "react";
 import { Link } from "react-router";
-import { PiggyBank, Plus } from "lucide-react";
+import { Pencil, PiggyBank, Plus } from "lucide-react";
 import { KpiHero, KpiHeroSkeleton } from "@/components/domain/KpiHero";
 import { AmountText } from "@/components/money/AmountText";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ListGroup, ListItemBody, ListRow } from "@/components/ui/list";
 import { Section } from "@/components/ui/section";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { EUR, Money, formatMoney, formatMoneyWhole, formatPercent } from "@/lib/money";
 import { useBackState } from "@/lib/hooks/useBackState";
+import { MD_BREAKPOINT_QUERY, useMediaQuery } from "@/lib/hooks/useMediaQuery";
+import { cn } from "@/lib/utils/cn";
 import { monthNameDe, monthNameDeShort } from "@/lib/statistics/dates";
 import { formatCountNoun } from "@/lib/utils/formatNumber";
 import {
@@ -22,6 +32,7 @@ import {
   DEFAULT_FORECAST_SETTINGS,
   useForecastSettings,
 } from "@/features/securities/forecastSettings";
+import { AssetLink } from "./AssetLink";
 import { formatDecimal } from "./format";
 import { usePositionCaps } from "./positionCaps";
 import { purchaseCandidates } from "./purchase";
@@ -147,20 +158,7 @@ function SavingsPlans({
   }
 
   const rowList = (rows: readonly SavingsPlanRow[], muted = false) => (
-    <ListGroup>
-      {rows.map((row) => (
-        <li key={row.plan.id}>
-          <PlanRow
-            row={row}
-            name={names.get(row.plan.securityId) ?? "Unbekanntes Asset"}
-            muted={muted}
-            onOpen={() => {
-              setEditing(row.plan);
-            }}
-          />
-        </li>
-      ))}
-    </ListGroup>
+    <PlanList rows={rows} names={names} muted={muted} onOpen={setEditing} />
   );
 
   return (
@@ -251,6 +249,103 @@ function PlansSummary({
 }
 
 /**
+ * Pläne ab `md` als Tabelle wie Bestand › Assets (seit 2.32.0): Der Name
+ * führt zum Asset, der Stift öffnet den Dialog. Auf dem Telefon eine Liste,
+ * in der die ganze Zeile den Dialog öffnet.
+ */
+function PlanList({
+  rows,
+  names,
+  muted,
+  onOpen,
+}: {
+  rows: readonly SavingsPlanRow[];
+  names: ReadonlyMap<string, string>;
+  muted: boolean;
+  onOpen: (plan: SavingsPlan) => void;
+}) {
+  const isWide = useMediaQuery(MD_BREAKPOINT_QUERY);
+  const { data: depots = [] } = useDepots();
+  const nameOf = (row: SavingsPlanRow) =>
+    names.get(row.plan.securityId) ?? "Unbekanntes Asset";
+  if (!isWide) {
+    return (
+      <ListGroup>
+        {rows.map((row) => (
+          <li key={row.plan.id}>
+            <PlanRow
+              row={row}
+              name={nameOf(row)}
+              depot={depots.find((entry) => entry.id === row.plan.depotId)?.name}
+              muted={muted}
+              onOpen={() => {
+                onOpen(row.plan);
+              }}
+            />
+          </li>
+        ))}
+      </ListGroup>
+    );
+  }
+  return (
+    <Table className={cn(muted && "text-muted-foreground")}>
+      <caption className="sr-only">{muted ? "Pausierte Sparpläne" : "Sparpläne"}</caption>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Asset</TableHead>
+          <TableHead>Rhythmus</TableHead>
+          <TableHead>Depot</TableHead>
+          <TableHead className="whitespace-nowrap text-right">Im Monat</TableHead>
+          <TableHead className="whitespace-nowrap text-right">Mehr im Jahr</TableHead>
+          <TableHead className="w-0">
+            <span className="sr-only">Aktionen</span>
+          </TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {rows.map((row) => {
+          const { plan } = row;
+          const name = nameOf(row);
+          const weekly = plan.interval === "weekly";
+          return (
+            <TableRow key={plan.id}>
+              <TableCell>
+                <AssetLink id={plan.securityId} name={name} />
+              </TableCell>
+              <TableCell className="text-muted-foreground">
+                {weekly ? `${formatMoneyWhole(plan.amount)} wöchentlich` : "monatlich"}
+              </TableCell>
+              <TableCell className="text-muted-foreground">
+                {depots.find((entry) => entry.id === plan.depotId)?.name ?? "—"}
+              </TableCell>
+              <TableCell className="whitespace-nowrap text-right font-semibold tabular-amount">
+                {weekly && "≈ "}
+                {formatMoneyWhole(row.monthly)}
+              </TableCell>
+              <TableCell className="whitespace-nowrap text-right tabular-amount">
+                {row.annual === null ? "keine Dividende" : `+${formatMoney(row.annual)}`}
+              </TableCell>
+              <TableCell className="text-right">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label={`Sparplan ${name} bearbeiten`}
+                  onClick={() => {
+                    onOpen(plan);
+                  }}
+                >
+                  <Pencil />
+                </Button>
+              </TableCell>
+            </TableRow>
+          );
+        })}
+      </TableBody>
+    </Table>
+  );
+}
+
+/**
  * Ein Plan als Zeile, **zwei Zeilen hoch** (seit 2.23.0): oben Name und Rate,
  * unten Rhythmus mit Depot und was zwölf Raten im Jahr bringen. Lange Namen
  * laufen aus, statt der Rate eine eigene Zeile zu geben — die Liste bleibt
@@ -259,17 +354,17 @@ function PlansSummary({
 function PlanRow({
   row,
   name,
+  depot,
   muted,
   onOpen,
 }: {
   row: SavingsPlanRow;
   name: string;
+  depot: string | undefined;
   muted: boolean;
   onOpen: () => void;
 }) {
   const { plan } = row;
-  const { data: depots = [] } = useDepots();
-  const depot = depots.find((entry) => entry.id === plan.depotId)?.name;
   const weekly = plan.interval === "weekly";
   const rhythm = weekly ? `${formatMoneyWhole(plan.amount)} wöchentlich` : "monatlich";
   return (
@@ -308,10 +403,45 @@ function PlanRow({
 /**
  * Tipps (seit 2.26.0, `savingsPlanTips`): Abgleich der Pläne mit den
  * Gewichtungen. Jede Zeile führt zum Asset, wo Plan und Gewichtung stehen.
- * Ohne Befund fehlt der Abschnitt.
+ * Ohne Befund fehlt der Abschnitt. Ab `md` als Tabelle (seit 2.32.0).
  */
 function PlanTips({ tips }: { tips: readonly SavingsPlanTip[] }) {
   const backState = useBackState();
+  const isWide = useMediaQuery(MD_BREAKPOINT_QUERY);
+  if (isWide) {
+    return (
+      <Section title="Tipps">
+        <Table>
+          <caption className="sr-only">Tipps zu Sparplänen und Gewichtungen</caption>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Asset</TableHead>
+              <TableHead>Hinweis</TableHead>
+              <TableHead className="text-right">
+                <span className="sr-only">Wert</span>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {tips.map((tip) => {
+              const text = tipText(tip);
+              return (
+                <TableRow key={`${tip.kind}-${tip.securityId}`}>
+                  <TableCell>
+                    <AssetLink id={tip.securityId} name={tip.name} />
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{text.meta}</TableCell>
+                  <TableCell className="whitespace-nowrap text-right font-semibold tabular-amount">
+                    {text.trailing ?? ""}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </Section>
+    );
+  }
   return (
     <Section title="Tipps">
       <ListGroup>

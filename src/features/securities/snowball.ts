@@ -398,3 +398,26 @@ export function monthsEarlier(
   if (without === null || without === 0 || withExtra === null) return null;
   return without - withExtra;
 }
+
+/** Diagramm: Jahre nach dem vorsichtigen Zieljahr und Mindestlänge ab heute. */
+const CHART_YEARS_AFTER_TARGET = 3;
+const CHART_MIN_YEARS = 10;
+
+/**
+ * Letztes Jahr im Diagramm (seit 2.32.0): kurz nach dem Zieljahr des
+ * vorsichtigen Szenarios, mindestens zehn Jahre ab heute. Bis zum Ende des
+ * Horizonts gezeichnet, wuchs die Kurve so weit über das Ziel hinaus, dass
+ * die Ziellinie am Boden klebte und der Weg dorthin nicht zu sehen war. Ohne
+ * erreichtes Ziel bleibt es beim ganzen Horizont.
+ */
+export function snowballChartEndYear(result: SnowballResult, startYear: number): number {
+  const last = result.points[result.points.length - 1].year;
+  if (result.targetYearLatest === null) return last;
+  return Math.min(
+    last,
+    Math.max(
+      result.targetYearLatest + CHART_YEARS_AFTER_TARGET,
+      startYear + CHART_MIN_YEARS,
+    ),
+  );
+}

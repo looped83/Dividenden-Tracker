@@ -612,8 +612,13 @@ export function SnowballChart({
       <ChartCanvas ariaLabel={ariaLabel}>
         <ComposedChart data={[...data]} margin={{ ...CHART_MARGIN, right: 16 }}>
           <CartesianGrid {...CHART_GRID_PROPS} />
-          {/* Jedes fuenfte Jahr: 31 Jahre und mehr passen sonst auf keine Achse. */}
-          <XAxis dataKey="label" {...CHART_X_AXIS_PROPS} interval={4} />
+          {/* Höchstens acht Beschriftungen: 31 Jahre und mehr passen sonst auf
+          keine Achse, zwölf Jahre brauchen nur jedes zweite. */}
+          <XAxis
+            dataKey="label"
+            {...CHART_X_AXIS_PROPS}
+            interval={Math.max(Math.ceil(data.length / 8) - 1, 0)}
+          />
           <YAxis {...CHART_Y_AXIS_PROPS} />
           <Tooltip content={<SnowballTooltip />} cursor={CHART_LINE_CURSOR} />
           <Area

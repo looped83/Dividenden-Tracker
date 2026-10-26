@@ -25,6 +25,7 @@ import {
 } from "@/features/securities/forecastSettings";
 import {
   projectSnowball,
+  snowballChartEndYear,
   snowballHistory,
   type DepotAssumptions,
   type SnowballHistoryPoint,
@@ -99,9 +100,10 @@ function SnowballSection({
     () => projectSnowball({ depot, settings, netRatio, startYear }),
     [depot, settings, netRatio, startYear],
   );
+  const endYear = snowballChartEndYear(result, startYear);
   const chartData = React.useMemo(
-    () => toSnowballData(history, result),
-    [history, result],
+    () => toSnowballData(history, result, endYear),
+    [history, result, endYear],
   );
   const real = settings.inflationPercent > 0;
 
@@ -187,7 +189,7 @@ function SnowballSection({
       <SnowballChart
         data={chartData}
         target={settings.targetMonthly > 0 ? settings.targetMonthly : null}
-        ariaLabel={`Nettodividende pro Monat${history.length > 0 ? ` seit ${String(history[0].year)}` : ""}, hochgerechnet bis ${String(result.points[result.points.length - 1].year)}${real ? " in heutiger Kaufkraft" : ""}`}
+        ariaLabel={`Nettodividende pro Monat${history.length > 0 ? ` seit ${String(history[0].year)}` : ""}, hochgerechnet bis ${String(endYear)}${real ? " in heutiger Kaufkraft" : ""}`}
       />
 
       <Milestones result={result} startYear={startYear} />
@@ -297,6 +299,7 @@ function Milestones({
 function toSnowballData(
   history: readonly SnowballHistoryPoint[],
   result: SnowballResult,
+  endYear: number,
 ): SnowballDatum[] {
   const past: SnowballDatum[] = history.map((point) => ({
     year: point.year,
@@ -307,7 +310,8 @@ function toSnowballData(
     band: null,
     projection: null,
   }));
-  const future: SnowballDatum[] = result.points.map((point, index) => ({
+  const shown = result.points.filter((point) => point.year <= endYear);
+  const future: SnowballDatum[] = shown.map((point, index) => ({
     year: point.year,
     label: String(point.year),
     actual: index === 0 && history.length > 0 ? point.base.toNumber() : null,

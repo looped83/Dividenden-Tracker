@@ -9,6 +9,14 @@ import { Section } from "@/components/ui/section";
 import { SegmentedControl, type SegmentOption } from "@/components/ui/segmented";
 import { Select } from "@/components/ui/select";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
   EUR,
   Money,
   formatMoney,
@@ -18,6 +26,7 @@ import {
 } from "@/lib/money";
 import { monthNameDe, monthNameDeShort } from "@/lib/statistics/dates";
 import { useBackState } from "@/lib/hooks/useBackState";
+import { MD_BREAKPOINT_QUERY, useMediaQuery } from "@/lib/hooks/useMediaQuery";
 import { cn } from "@/lib/utils/cn";
 import { formatCountNoun } from "@/lib/utils/formatNumber";
 import {
@@ -35,6 +44,7 @@ import {
   useSaveForecastSettings,
   type ForecastSettings,
 } from "@/features/securities/forecastSettings";
+import { AssetLink } from "./AssetLink";
 import { PlannerHeaderActions } from "./PlannerPage";
 import { NumberField, SettingCell, SettingsList } from "./fields";
 import { rhythm } from "./format";
@@ -334,20 +344,14 @@ function Purchase({
       {hasPlan && (
         <>
           <Section title={isSavings ? "Sparpläne" : "Käufe"}>
-            <ListGroup>
-              {plan.buys.map((buy) => (
-                <li key={buy.securityId}>
-                  <BuyRow
-                    buy={buy}
-                    mode={mode}
-                    canExclude={settings.excluded.length < EXCLUDED_MAX}
-                    onExclude={() => {
-                      setExcluded([...settings.excluded, buy.securityId]);
-                    }}
-                  />
-                </li>
-              ))}
-            </ListGroup>
+            <BuyList
+              plan={plan}
+              mode={mode}
+              canExclude={settings.excluded.length < EXCLUDED_MAX}
+              onExclude={(id) => {
+                setExcluded([...settings.excluded, id]);
+              }}
+            />
           </Section>
 
           <Section title="Nächste 12 Monate">
@@ -477,6 +481,124 @@ function PlanSummary({
   );
 }
 
+/** „monatlich" oder „quartalsweise · Mär, Jun, Sep, Dez". */
+function payoutText(months: readonly number[]): {
+  rhythm: string;
+  months: string | null;
+} {
+  return {
+    rhythm: rhythm(months.length),
+    // Ein Monatszahler braucht keine Monatsliste: „monatlich" sagt alles.
+    months: months.length === 12 ? null : months.map(monthNameDeShort).join(", "),
+  };
+}
+
+function sharesText(buy: PlannedBuy): string | null {
+  return buy.shares?.greaterThanOrEqualTo("0.1")
+    ? `≈ ${sharesFormat.format(buy.shares.toNumber())} Stück`
+    : null;
+}
+
+/**
+ * Käufe des Plans: ab `md` als Tabelle wie Bestand › Assets (seit 2.32.0),
+ * auf dem Telefon als Liste.
+ */
+function BuyList({
+  plan,
+  mode,
+  canExclude,
+  onExclude,
+}: {
+  plan: PurchasePlan;
+  mode: PlanMode;
+  canExclude: boolean;
+  onExclude: (securityId: string) => void;
+}) {
+  const isWide = useMediaQuery(MD_BREAKPOINT_QUERY);
+  const isSavings = mode === "sparplan";
+  if (!isWide) {
+    return (
+      <ListGroup>
+        {plan.buys.map((buy) => (
+          <li key={buy.securityId}>
+            <BuyRow
+              buy={buy}
+              mode={mode}
+              canExclude={canExclude}
+              onExclude={() => {
+                onExclude(buy.securityId);
+              }}
+            />
+          </li>
+        ))}
+      </ListGroup>
+    );
+  }
+  return (
+    <Table>
+      <caption className="sr-only">
+        {isSavings ? "Vorgeschlagene Sparpläne" : "Vorgeschlagene Käufe"}
+      </caption>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Asset</TableHead>
+          <TableHead>Ausschüttung</TableHead>
+          <TableHead className="whitespace-nowrap text-right">Stück</TableHead>
+          <TableHead className="whitespace-nowrap text-right">
+            {isSavings ? "Rate" : "Betrag"}
+          </TableHead>
+          <TableHead className="whitespace-nowrap text-right">Mehr im Jahr</TableHead>
+          <TableHead className="w-0">
+            <span className="sr-only">Aktionen</span>
+          </TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {plan.buys.map((buy) => {
+          const payout = payoutText(buy.months);
+          const shares = sharesText(buy);
+          return (
+            <TableRow key={buy.securityId}>
+              <TableCell>
+                <AssetLink id={buy.securityId} name={buy.name} />
+              </TableCell>
+              <TableCell className="text-muted-foreground">
+                {payout.rhythm}
+                {payout.months && <span className="block text-xs">{payout.months}</span>}
+              </TableCell>
+              <TableCell className="whitespace-nowrap text-right tabular-amount text-muted-foreground">
+                {shares ?? "—"}
+              </TableCell>
+              <TableCell className="whitespace-nowrap text-right font-semibold tabular-amount">
+                {formatMoneyWhole(buy.invest)}
+                {isSavings && <span className="text-muted-foreground">/Monat</span>}
+              </TableCell>
+              <TableCell className="whitespace-nowrap text-right tabular-amount">
+                +{formatMoney(buy.annual)}
+              </TableCell>
+              <TableCell className="text-right">
+                {canExclude && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`${buy.name} nicht mehr vorschlagen`}
+                    title="Nicht mehr vorschlagen"
+                    onClick={() => {
+                      onExclude(buy.securityId);
+                    }}
+                  >
+                    <EyeOff aria-hidden />
+                  </Button>
+                )}
+              </TableCell>
+            </TableRow>
+          );
+        })}
+      </TableBody>
+    </Table>
+  );
+}
+
 function BuyRow({
   buy,
   mode,
@@ -489,9 +611,8 @@ function BuyRow({
   onExclude: () => void;
 }) {
   const backState = useBackState();
-  // Ein Monatszahler braucht keine Monatsliste: „monatlich" sagt alles.
-  const months =
-    buy.months.length === 12 ? null : buy.months.map(monthNameDeShort).join(", ");
+  const payout = payoutText(buy.months);
+  const shares = sharesText(buy);
   return (
     <ListRow className="gap-1 py-0 pr-0">
       <Link
@@ -503,13 +624,9 @@ function BuyRow({
           title={buy.name}
           meta={
             <>
-              <span>{rhythm(buy.months.length)}</span>
-              {months && <span>{months}</span>}
-              {buy.shares?.greaterThanOrEqualTo("0.1") && (
-                <span className="tabular-amount">
-                  ≈ {sharesFormat.format(buy.shares.toNumber())} Stück
-                </span>
-              )}
+              <span>{payout.rhythm}</span>
+              {payout.months && <span>{payout.months}</span>}
+              {shares && <span className="tabular-amount">{shares}</span>}
             </>
           }
           trailing={

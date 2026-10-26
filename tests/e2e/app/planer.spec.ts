@@ -29,16 +29,19 @@ test("verteilt einen Einmalkauf und merkt sich ausgeschlossene Assets", async ({
   await page.goto("/#/planer");
 
   await expect(page.getByText("Mehr im Jahr · netto")).toBeVisible();
-  const kaeufe = page.getByRole("region", { name: "Käufe" }).getByRole("listitem");
+  // Telefon: Liste; ab md seit 2.32.0 eine Tabelle.
+  const kaeufe = page.getByRole("region", { name: "Käufe" }).locator("li, tbody tr");
   await expect(kaeufe).toHaveCount(3);
 
-  const erster = kaeufe.first().getByRole("link");
-  const name = (await erster.locator(".font-medium").first().textContent()) ?? "";
-  expect(name).not.toBe("");
-  await kaeufe
+  const ausblenden = kaeufe
     .first()
-    .getByRole("button", { name: `${name} nicht mehr vorschlagen` })
-    .click();
+    .getByRole("button", { name: / nicht mehr vorschlagen$/ });
+  const name = ((await ausblenden.getAttribute("aria-label")) ?? "").replace(
+    " nicht mehr vorschlagen",
+    "",
+  );
+  expect(name).not.toBe("");
+  await ausblenden.click();
   await expect(page.getByText("1 Asset ausgeschlossen")).toBeVisible();
 
   await page.reload();
@@ -151,7 +154,7 @@ test("pflegt Sparpläne und zeigt sie am Asset", async ({ page, konto }) => {
   // Alle Assets mit 30 % Gewichtung, nur Allianz mit Plan: Tipps nennen die
   // mit dem meisten Platz, Allianz nicht.
   const tipps = page.getByRole("region", { name: "Tipps" });
-  await expect(tipps.getByRole("listitem")).toHaveCount(3);
+  await expect(tipps.locator("li, tbody tr")).toHaveCount(3);
   await expect(tipps.getByText("Allianz", { exact: true })).toHaveCount(0);
 
   await page.goto("/#/depot");

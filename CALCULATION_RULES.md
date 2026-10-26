@@ -741,6 +741,9 @@ gespeichert sind nur die Annahmen des Schneeballs (`profiles.forecast_settings`,
   Jahr mit einer Zahlung an; Jahre ohne Zahlung dazwischen zählen 0. In **Nennwerten** (keine
   Inflationsbereinigung: es ist, was ankam). Im Diagramm durchgezogen bis heute, die Hochrechnung
   ab heute gestrichelt; unter „Heute“ steht das erste Jahr mit seinem Wert („2019: 12 €“).
+- **Diagrammlänge** (`snowballChartEndYear`, seit 2.32.0): bis drei Jahre nach dem Zieljahr des
+  vorsichtigen Szenarios, mindestens zehn Jahre ab heute, höchstens 30; ohne erreichtes Ziel
+  (vorsichtig) der ganze Horizont. Meilensteine und Kopf rechnen weiter über 30 Jahre.
 
 ### 14.3 Monatslücken (`monthGaps`, seit 2.13.0; Planer › Optimierungen)
 

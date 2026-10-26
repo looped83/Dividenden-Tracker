@@ -8,6 +8,7 @@ import {
   monthsEarlier,
   monthsToTarget,
   projectSnowball,
+  snowballChartEndYear,
   snowballHistory,
   type DepotAssumptions,
   type SnowballSettings,
@@ -378,5 +379,36 @@ describe("monthsToTarget / monthsEarlier", () => {
         netRatio: null,
       }),
     ).toBeNull();
+  });
+});
+
+describe("snowballChartEndYear", () => {
+  const project = (partial: Partial<SnowballSettings>) =>
+    projectSnowball({
+      depot: DEPOT,
+      settings: settings(partial),
+      netRatio: null,
+      startYear: 2026,
+    });
+
+  it("endet drei Jahre nach dem vorsichtigen Zieljahr", () => {
+    const result = project({
+      monthlySavings: 3000,
+      targetMonthly: 300,
+      growthPercent: 5,
+    });
+    expect(result.targetYearLatest).not.toBeNull();
+    const latest = result.targetYearLatest ?? 0;
+    expect(snowballChartEndYear(result, 2026)).toBe(Math.max(latest + 3, 2036));
+  });
+
+  it("zeigt mindestens zehn Jahre", () => {
+    expect(snowballChartEndYear(project({ targetMonthly: 50 }), 2026)).toBe(2036);
+  });
+
+  it("zeigt ohne erreichtes Ziel den ganzen Horizont", () => {
+    expect(
+      snowballChartEndYear(project({ reinvest: false, targetMonthly: 5000 }), 2026),
+    ).toBe(2056);
   });
 });
