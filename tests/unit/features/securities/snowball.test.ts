@@ -198,6 +198,26 @@ describe("projectSnowball", () => {
     expect([...years].sort((a, b) => a - b)).toEqual(years);
   });
 
+  it("setzt die Punkte ans Jahresende und findet das Zieljahr monatsgenau", () => {
+    // Heute Oktober 2026, 100 € im Monat, +2,50 € je Monat Sparrate.
+    const result = projectSnowball({
+      depot: DEPOT,
+      settings: settings({ reinvest: false, monthlySavings: 1000, targetMonthly: 192.5 }),
+      netRatio: null,
+      startYear: 2026,
+      startMonth: 10,
+    });
+    expect(result.today.toString()).toBe("100");
+    // Dezember 2026 (+2 Monate) und Dezember 2027 (+14 Monate).
+    expect(result.points[0].base.toString()).toBe("105");
+    expect(result.points[1].base.toString()).toBe("135");
+    // 37 Monate = November 2029; bis 2.34 zählte der Jahrestag Oktober 2030.
+    expect(result.targetYear).toBe(2029);
+    expect(result.points.find((point) => point.year === 2029)?.base.toString()).toBe(
+      "195",
+    );
+  });
+
   it("nimmt das Wachstum aus dem Depot, wenn keines gesetzt ist", () => {
     const result = projectSnowball({
       depot: { ...DEPOT, growthPercent: new MoneyDecimal("4.5") },

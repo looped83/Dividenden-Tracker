@@ -665,21 +665,6 @@ export function SnowballChart({
         </ComposedChart>
       </ChartCanvas>
 
-      <ChartLegend
-        items={[
-          ...(hasHistory ? [{ label: "Bisher", color: "var(--primary)" }] : []),
-          {
-            label: hasHistory ? "Hochrechnung" : "Basis",
-            color: "var(--primary)",
-            dashed: hasHistory,
-          },
-          { label: "Spanne der Szenarien", color: SNOWBALL_BAND_FILL },
-          ...(target !== null
-            ? [{ label: "Ziel", color: "var(--series-prior)", dashed: true }]
-            : []),
-        ]}
-      />
-
       <ChartDataTable>
         <Table>
           <caption className="sr-only">{ariaLabel}</caption>
