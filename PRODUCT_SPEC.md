@@ -372,6 +372,10 @@ Zieltypen: Nettodividenden pro Kalenderjahr, Bruttodividenden pro Kalenderjahr, 
 Zwölfmonatssumme, durchschnittliche monatliche Nettodividende, langfristiges Ziel mit Zieljahr.
 Ziele sind reine Vergleichswerte; sie erzeugen keine prognostizierten Einzelzahlungen und werden
 vollständig getrennt von den Ist-Daten gespeichert (eigene Tabelle `goals`).
+Seit 2.34.0 zeigt der Kopf der Zielseite die Hochrechnung des laufenden Jahres gegen das
+Jahresziel (der Ø-Monat steht im Fortschritt); Monatsziele lassen sich aus dem Jahresziel ableiten
+(CALCULATION_RULES.md §13.2), und ein knappes Ziel nennt seine Lücke samt Zukauf für den Nachkauf
+(§13.3).
 
 ### 5.7a Fortschritt (seit 2.12.0)
 
@@ -388,6 +392,10 @@ Beträge der Fixkosten mit Cent und eine Pflegeseite „Alle Fixkosten“ (`/for
 verlinkt unter der Liste). Seit 2.16.0 aufgebaut wie Bestand › Assets: Filterleiste (Name, Status
 gedeckt/offen, Sortierung nach Name oder Betrag), Kennzahlkopf, Abschnitt mit „Neue Position“, ab md
 eine Tabelle mit Stift und Papierkorb je Zeile, auf dem Telefon eine Liste zur Detailseite.
+Seit 2.34.0 haben Fixkosten einen Rhythmus (monatlich bis jährlich, auf den Monat umgerechnet),
+nächste Meilensteine und offene Fixkosten einen voraussichtlichen Monat aus dem Schneeball
+(§15.4), und ein neu erreichter Meilenstein steht 30 Tage lang über dem Kopf der Übersicht
+(ausblendbar).
 
 ### 5.8 Datensicherung
 

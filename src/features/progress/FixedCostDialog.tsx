@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import {
   EUR,
   Money,
@@ -17,7 +18,12 @@ import {
   normalizeGermanDecimalInput,
   toGermanAmountInput,
 } from "@/lib/money";
-import type { FixedCost } from "@/lib/progress";
+import {
+  FIXED_COST_INTERVALS,
+  fixedCost,
+  type FixedCost,
+  type FixedCostInterval,
+} from "@/lib/progress";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import {
   FIXED_COST_AMOUNT_MAX,
@@ -26,6 +32,7 @@ import {
   newFixedCostId,
   useSaveFixedCosts,
 } from "./hooks";
+import { intervalLabel } from "./format";
 
 /**
  * Eine Fixkostenposition anlegen oder bearbeiten (seit 2.14.0) — wie eine
@@ -86,7 +93,10 @@ function FixedCostForm({
   const save = useSaveFixedCosts();
   const [name, setName] = React.useState(cost?.name ?? "");
   const [amount, setAmount] = React.useState(() =>
-    cost ? toGermanAmountInput(cost.amount.toStringValue().replace(/\.00$/, "")) : "",
+    cost ? toGermanAmountInput(cost.payment.toStringValue().replace(/\.00$/, "")) : "",
+  );
+  const [interval, setCostInterval] = React.useState<FixedCostInterval>(
+    cost?.interval ?? 1,
   );
   const [error, setError] = React.useState<string | null>(null);
   const full = !cost && costs.length >= FIXED_COSTS_MAX;
@@ -100,19 +110,20 @@ function FixedCostForm({
       return;
     }
     if (!/^\d+(\.\d{1,2})?$/.test(canonical)) {
-      setError("Gib einen Monatsbetrag ein.");
+      setError("Gib einen Betrag ein.");
       return;
     }
     const value = new MoneyDecimal(canonical);
     if (value.lte(0) || value.gt(FIXED_COST_AMOUNT_MAX)) {
-      setError("Der Monatsbetrag muss größer als 0 sein.");
+      setError("Der Betrag muss größer als 0 sein.");
       return;
     }
-    const entry: FixedCost = {
-      id: cost?.id ?? newFixedCostId(),
-      name: trimmed,
-      amount: Money.fromDecimal(value, EUR),
-    };
+    const entry = fixedCost(
+      cost?.id ?? newFixedCostId(),
+      trimmed,
+      Money.fromDecimal(value, EUR),
+      interval,
+    );
     setError(null);
     try {
       await save.mutateAsync(
@@ -140,16 +151,38 @@ function FixedCostForm({
           }}
         />
       </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="fixed-cost-amount">Monatsbetrag (€)</Label>
-        <AmountInput
-          id="fixed-cost-amount"
-          placeholder="z. B. 45,00"
-          value={amount}
-          onChange={(event) => {
-            setAmount(event.currentTarget.value);
-          }}
-        />
+      {/* Nebeneinander wie Jahr und Monat im Zieldialog: Der Betrag gilt je
+          Fälligkeit, die Deckung rechnet ihn auf den Monat um (seit 2.34.0). */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="fixed-cost-amount">Betrag (€)</Label>
+          <AmountInput
+            id="fixed-cost-amount"
+            placeholder="z. B. 45,00"
+            value={amount}
+            onChange={(event) => {
+              setAmount(event.currentTarget.value);
+            }}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="fixed-cost-interval">Rhythmus</Label>
+          <Select
+            id="fixed-cost-interval"
+            value={String(interval)}
+            onChange={(event) => {
+              setCostInterval(
+                Number.parseInt(event.target.value, 10) as FixedCostInterval,
+              );
+            }}
+          >
+            {FIXED_COST_INTERVALS.map((value) => (
+              <option key={value} value={value}>
+                {intervalLabel(value)}
+              </option>
+            ))}
+          </Select>
+        </div>
       </div>
 
       {full && (

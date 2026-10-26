@@ -26,6 +26,7 @@ export function ConfirmDialog({
   confirmLabel,
   pendingLabel,
   onConfirm,
+  confirmVariant = "destructive",
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -41,6 +42,8 @@ export function ConfirmDialog({
   confirmLabel: string;
   pendingLabel: string;
   onConfirm: () => void;
+  /** Gefüllt statt rot, wenn die Aktion etwas anlegt statt entfernt. */
+  confirmVariant?: "destructive" | "default";
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -65,7 +68,7 @@ export function ConfirmDialog({
           >
             Abbrechen
           </Button>
-          <Button variant="destructive" disabled={isPending} onClick={onConfirm}>
+          <Button variant={confirmVariant} disabled={isPending} onClick={onConfirm}>
             {isPending ? pendingLabel : confirmLabel}
           </Button>
         </DialogFooter>

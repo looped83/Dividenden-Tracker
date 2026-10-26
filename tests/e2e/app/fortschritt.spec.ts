@@ -20,13 +20,13 @@ test("trägt Fixkosten ein, bearbeitet und löscht sie", async ({ page }, testIn
 
   await page.getByRole("button", { name: "Fixkosten eintragen" }).click();
   await dialog.getByLabel("Name").fill("Handy");
-  await dialog.getByLabel("Monatsbetrag (€)").fill("29,95");
+  await dialog.getByLabel("Betrag (€)").fill("29,95");
   await dialog.getByRole("button", { name: "Anlegen" }).click();
   await expect(dialog).toBeHidden();
 
   await page.getByRole("button", { name: "Neu", exact: true }).click();
   await dialog.getByLabel("Name").fill("Miete");
-  await dialog.getByLabel("Monatsbetrag (€)").fill("900");
+  await dialog.getByLabel("Betrag (€)").fill("900");
   await dialog.getByRole("button", { name: "Anlegen" }).click();
   await expect(dialog).toBeHidden();
 
@@ -42,7 +42,7 @@ test("trägt Fixkosten ein, bearbeitet und löscht sie", async ({ page }, testIn
   await liste.getByRole("link", { name: /Miete/ }).click();
   await expect(page.getByRole("heading", { name: "Miete" })).toBeVisible();
   await page.getByRole("button", { name: "Bearbeiten" }).click();
-  await dialog.getByLabel("Monatsbetrag (€)").fill("800");
+  await dialog.getByLabel("Betrag (€)").fill("800");
   await dialog.getByRole("button", { name: "Speichern" }).click();
   await expect(dialog).toBeHidden();
   await expect(page.getByText("noch 729,95 €")).toBeVisible();
@@ -75,7 +75,7 @@ test("trägt Fixkosten ein, bearbeitet und löscht sie", async ({ page }, testIn
 
   if (testInfo.project.name === "Desktop") {
     await page.getByRole("button", { name: "Handy bearbeiten" }).click();
-    await dialog.getByLabel("Monatsbetrag (€)").fill("25,50");
+    await dialog.getByLabel("Betrag (€)").fill("25,50");
     await dialog.getByRole("button", { name: "Speichern" }).click();
     await expect(positionen.getByRole("cell", { name: "25,50 €" })).toBeVisible();
     await page.getByRole("button", { name: "Handy löschen" }).click();
@@ -131,4 +131,39 @@ test("zeigt, wie viel vom Kaufpreis zurückverdient ist", async ({ page, konto }
   await expect(page.getByRole("heading", { name: "Allianz" })).toBeVisible();
   await page.getByRole("link", { name: "Zum Fortschritt" }).click();
   await expect(bereich).toBeVisible();
+});
+
+/**
+ * Fixkosten mit Rhythmus (seit 2.34.0): Eine jährliche Position zählt mit
+ * einem Zwölftel, die Pflegeseite nennt den Jahresbetrag.
+ */
+test("rechnet jährliche Fixkosten auf den Monat um", async ({ page }, testInfo) => {
+  await page.goto("/#/fortschritt");
+  const dialog = page.getByRole("dialog");
+
+  await page.getByRole("button", { name: "Fixkosten eintragen" }).click();
+  await dialog.getByLabel("Name").fill("Kfz-Versicherung");
+  await dialog.getByLabel("Betrag (€)").fill("1.320");
+  await dialog.getByLabel("Rhythmus").selectOption("12");
+  await dialog.getByRole("button", { name: "Anlegen" }).click();
+  await expect(dialog).toBeHidden();
+
+  await page.reload();
+  const liste = page.getByRole("region", { name: "Was Dividenden decken" });
+  // 110 € im Monat gegen Ø 100 €: als Nächstes, noch 10 €.
+  await expect(liste.getByRole("listitem")).toContainText("noch 10,00 €");
+  await expect(liste.getByRole("listitem")).toContainText("110,00 €");
+
+  await liste.getByRole("link", { name: "Alle Fixkosten" }).click();
+  const positionen = page.getByRole("region", { name: "Positionen" });
+  if (testInfo.project.name === "Desktop") {
+    await expect(positionen.getByRole("cell", { name: "1.320,00 €" })).toBeVisible();
+  } else {
+    await expect(positionen.getByText("1.320,00 € jährlich")).toBeVisible();
+  }
+
+  await positionen.getByRole("link", { name: "Kfz-Versicherung" }).click();
+  await page.getByRole("button", { name: "Bearbeiten" }).click();
+  await expect(dialog.getByLabel("Betrag (€)")).toHaveValue("1.320");
+  await expect(dialog.getByLabel("Rhythmus")).toHaveValue("12");
 });

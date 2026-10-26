@@ -74,6 +74,19 @@ export async function createGoal(input: GoalInsert): Promise<GoalRow> {
 }
 
 /**
+ * Mehrere Ziele in einer Anfrage (seit 2.34.0, Monatsziele aus einem
+ * Jahresziel). Alle oder keines: Ein schon vorhandener Zeitraum bricht die
+ * ganze Einfügung ab.
+ */
+export async function createGoals(inputs: readonly GoalInsert[]): Promise<void> {
+  const { error } = await supabase.from("goals").insert([...inputs]);
+  if (error) {
+    if (isUniqueViolation(error)) throw new GoalDuplicateError();
+    throw error;
+  }
+}
+
+/**
  * Aktualisiert ein Ziel. `expectedUpdatedAt` aktiviert Optimistic Concurrency:
  * das UPDATE trifft nur bei unveraendertem `updated_at`; sonst (0 Zeilen →
  * PGRST116 bei `.single()`) ein {@link GoalConflictError} statt stillem

@@ -1,9 +1,13 @@
 export {
   coverFixedCosts,
+  FIXED_COST_INTERVALS,
+  fixedCost,
+  yearlyCost,
   type CostCoverage,
   type CoverageResult,
   type CoverageStatus,
   type FixedCost,
+  type FixedCostInterval,
 } from "./coverage";
 export {
   milestoneOverview,
@@ -19,3 +23,4 @@ export {
   type PaybackResult,
   type PaybackStatus,
 } from "./payback";
+export { NO_ETAS, progressEtas, type MonthRef, type ProgressEtas } from "./eta";

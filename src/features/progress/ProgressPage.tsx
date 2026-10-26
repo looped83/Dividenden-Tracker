@@ -33,7 +33,9 @@ import {
   type CostCoverage,
   type CoverageResult,
   type Milestone,
+  type MonthRef,
   type NextMilestone,
+  type ProgressEtas,
 } from "@/lib/progress";
 import { cn } from "@/lib/utils/cn";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
@@ -43,10 +45,8 @@ import { FixedCostDialog } from "./FixedCostDialog";
 import { PaybackSection } from "./PaybackSection";
 import { paybackHoldings } from "./paybackHoldings";
 import { ProgressBar } from "./ProgressBar";
-import { useFixedCosts } from "./hooks";
-
-const euro = (value: number) =>
-  formatMoneyWhole(Money.fromDecimal(new MoneyDecimal(value), EUR));
+import { useFixedCosts, useProgressEtas } from "./hooks";
+import { monthLabel, reachedText } from "./format";
 
 /**
  * Fortschritt (seit 2.12.0): **Wofür das Ganze, und komme ich voran?**
@@ -77,6 +77,13 @@ export function ProgressPage() {
       ),
     };
   }, [payments, costs, today, snapshotsQuery.data, securitiesQuery.data]);
+
+  const etas = useProgressEtas({
+    payments,
+    today,
+    milestones: data.milestones.next,
+    coverage: data.coverage,
+  });
 
   const add = () => {
     setAdding(true);
@@ -122,12 +129,15 @@ export function ProgressPage() {
             langer Asset-Name die Spalte über den Bildschirm hinaus. */}
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:items-start lg:gap-12">
           <div className="space-y-10 lg:space-y-12">
-            <CoverageSection coverage={data.coverage} onAdd={add} />
+            <CoverageSection coverage={data.coverage} etas={etas.costs} onAdd={add} />
             <Section title="Nächste Meilensteine">
               <ul className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-1 xl:grid-cols-2">
                 {data.milestones.next.map((milestone) => (
                   <li key={milestone.kind}>
-                    <NextTile milestone={milestone} />
+                    <NextTile
+                      milestone={milestone}
+                      eta={etas.milestones.get(milestone.kind)}
+                    />
                   </li>
                 ))}
               </ul>
@@ -225,9 +235,11 @@ function ProgressHero({
  */
 function CoverageSection({
   coverage,
+  etas,
   onAdd,
 }: {
   coverage: CoverageResult;
+  etas: ProgressEtas["costs"];
   onAdd: () => void;
 }) {
   const { isOpen, toggle } = useOpenKeys("fixkosten");
@@ -272,7 +284,7 @@ function CoverageSection({
       <div className="space-y-2">
         {coverage.next && (
           <ListGroup aria-label="Als Nächstes">
-            <CoverageRow item={coverage.next} />
+            <CoverageRow item={coverage.next} eta={etas.get(coverage.next.cost.id)} />
           </ListGroup>
         )}
         <MonthSections>
@@ -294,7 +306,11 @@ function CoverageSection({
             >
               <ListGroup>
                 {group.items.map((item) => (
-                  <CoverageRow key={item.cost.id} item={item} />
+                  <CoverageRow
+                    key={item.cost.id}
+                    item={item}
+                    eta={etas.get(item.cost.id)}
+                  />
                 ))}
               </ListGroup>
             </CollapsibleMonth>
@@ -311,7 +327,7 @@ function CoverageSection({
   );
 }
 
-function CoverageRow({ item }: { item: CostCoverage }) {
+function CoverageRow({ item, eta }: { item: CostCoverage; eta: MonthRef | undefined }) {
   const { status } = item;
   const backState = useBackState();
   const percent = formatPercent(item.percent, 0);
@@ -340,13 +356,22 @@ function CoverageRow({ item }: { item: CostCoverage }) {
             meta={
               status === "covered" ? (
                 <span>gedeckt</span>
-              ) : status === "next" ? (
-                <span>
-                  <span className="sr-only">Als Nächstes, </span>
-                  {percent} gedeckt · noch {formatMoney(item.missing)}
-                </span>
               ) : (
-                <span>noch {formatMoney(item.missing)}</span>
+                // Den gedeckten Anteil nennt die Kachel links; daneben der
+                // voraussichtliche Monat (§15.4), sonst der Anteil.
+                <span>
+                  {status === "next" && <span className="sr-only">Als Nächstes, </span>}
+                  noch {formatMoney(item.missing)}
+                  {eta ? (
+                    <>
+                      {" "}
+                      · <span className="sr-only">voraussichtlich gedeckt </span>ab{" "}
+                      {monthLabel(eta)}
+                    </>
+                  ) : (
+                    status === "next" && ` · ${percent} gedeckt`
+                  )}
+                </span>
               )
             }
             trailing={
@@ -373,7 +398,13 @@ function isMoney(kind: Milestone["kind"]): boolean {
   return kind === "total" || kind === "year" || kind === "month";
 }
 
-function NextTile({ milestone }: { milestone: NextMilestone }) {
+function NextTile({
+  milestone,
+  eta,
+}: {
+  milestone: NextMilestone;
+  eta: MonthRef | undefined;
+}) {
   const money = isMoney(milestone.kind);
   const format = (value: DecimalInstance | number) =>
     money
@@ -400,29 +431,22 @@ function NextTile({ milestone }: { milestone: NextMilestone }) {
           percent={milestone.percent.toNumber()}
           label={`${label}: Weg zum nächsten Meilenstein`}
         />
-        <p className="text-xs text-muted-foreground tabular-amount">
-          noch {format(missing)}
-          {milestone.kind === "streak" ? " Monate" : ""}
+        <p className="flex justify-between gap-3 text-xs text-muted-foreground tabular-amount">
+          <span>
+            noch {format(missing)}
+            {milestone.kind === "streak" ? " Monate" : ""}
+          </span>
+          {eta && (
+            <span>
+              <span className="sr-only">voraussichtlich </span>
+              <span aria-hidden>≈ </span>
+              {monthLabel(eta)}
+            </span>
+          )}
         </p>
       </div>
     </div>
   );
-}
-
-function reachedText(milestone: Milestone): string {
-  const n = formatCountNumber(milestone.threshold);
-  switch (milestone.kind) {
-    case "first":
-      return "Erste Dividende";
-    case "total":
-      return `${euro(milestone.threshold)} insgesamt erhalten`;
-    case "year":
-      return `Erstmals ${euro(milestone.threshold)} in einem Jahr`;
-    case "month":
-      return `Erstmals ${euro(milestone.threshold)} in einem Monat`;
-    case "streak":
-      return `${n} Monate in Folge mit Dividende`;
-  }
 }
 
 /**

@@ -1,12 +1,47 @@
 import { EUR, Money, MoneyDecimal, sumMoney, type DecimalInstance } from "@/lib/money";
 
-/** Eine monatliche Fixkostenposition (profiles.fixed_costs). */
+/** Alle wie viele Monate eine Position fällig wird (seit 2.34.0). */
+export type FixedCostInterval = 1 | 3 | 6 | 12;
+
+export const FIXED_COST_INTERVALS: readonly FixedCostInterval[] = [1, 3, 6, 12];
+
+/** Eine Fixkostenposition (profiles.fixed_costs). */
 export interface FixedCost {
   /** Kennung für Detailseite und Liste; kurz, weil die Liste 4 KB nicht überschreiten darf. */
   id: string;
   name: string;
-  /** Monatsbetrag, > 0. */
+  /** Betrag je Fälligkeit, > 0. */
+  payment: Money;
+  interval: FixedCostInterval;
+  /** Auf den Monat umgerechnet (`payment ÷ interval`); damit rechnet die Deckung. */
   amount: Money;
+}
+
+/** Eine Position aus Betrag je Fälligkeit und Rhythmus (CALCULATION_RULES.md §15.1). */
+export function fixedCost(
+  id: string,
+  name: string,
+  payment: Money,
+  interval: FixedCostInterval = 1,
+): FixedCost {
+  return {
+    id,
+    name,
+    payment,
+    interval,
+    amount:
+      interval === 1
+        ? payment
+        : Money.fromDecimal(payment.toDecimal().div(interval), payment.currency),
+  };
+}
+
+/** Im Jahr: aus dem Betrag je Fälligkeit, nicht aus dem gerundeten Monatsbetrag. */
+export function yearlyCost(cost: FixedCost): Money {
+  return Money.fromDecimal(
+    cost.payment.toDecimal().times(12 / cost.interval),
+    cost.payment.currency,
+  );
 }
 
 export type CoverageStatus = "covered" | "next" | "open";

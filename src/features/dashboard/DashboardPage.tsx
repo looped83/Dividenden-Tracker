@@ -18,6 +18,7 @@ import { UpcomingPayments } from "./UpcomingPayments";
 import { Distribution } from "./Distributions";
 import { RecentPayments } from "./RecentPayments";
 import { HistoricalOverview } from "./HistoricalOverview";
+import { MilestoneCard } from "./MilestoneCard";
 import { MonthRecapCard } from "./MonthRecapCard";
 import { buildEntityMap, describeSelection } from "./format";
 import { usePaymentComposer } from "@/features/payments/PaymentComposer";
@@ -158,6 +159,12 @@ export function DashboardPage() {
           {(selection === "all" || selection === today.year) && (
             <div className="order-first empty:hidden">
               <MonthRecapCard payments={payments} securities={securities} today={today} />
+            </div>
+          )}
+          {/* Ein neuer Meilenstein gehört ebenso zum Jetzt (seit 2.34.0). */}
+          {(selection === "all" || selection === today.year) && (
+            <div className="order-first empty:hidden">
+              <MilestoneCard payments={payments} today={today} />
             </div>
           )}
           <div className="order-1">

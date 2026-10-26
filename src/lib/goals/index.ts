@@ -29,3 +29,4 @@ export {
   type GoalCourse,
   type GoalCourseKind,
 } from "./course";
+export { deriveMonthlyGoals, type DerivedMonthlyGoal } from "./derive";

@@ -7,6 +7,7 @@ import {
   depotAssumptions,
   monthsEarlier,
   monthsToTarget,
+  projectMonthlyNet,
   projectSnowball,
   snowballChartEndYear,
   snowballHistory,
@@ -422,5 +423,23 @@ describe("snowballChartEndYear", () => {
     expect(
       snowballChartEndYear(project({ reinvest: false, targetMonthly: 5000 }), 2026),
     ).toBe(2056);
+  });
+});
+
+describe("projectMonthlyNet", () => {
+  it("rechnet Monat für Monat in Nennwerten, auch bei Inflation", () => {
+    const series = projectMonthlyNet({
+      depot: DEPOT,
+      settings: settings({ monthlySavings: 1000, reinvest: false, inflationPercent: 5 }),
+      netRatio: new MoneyDecimal("0.75"),
+      months: 2,
+    });
+
+    // Heute 1.200 € brutto × 0,75 ÷ 12; + 1.000 € × 3 % = 1.230 €; dann 1.260 €.
+    expect(series.map((value) => value.toFixed(4))).toEqual([
+      "75.0000",
+      "76.8750",
+      "78.7500",
+    ]);
   });
 });

@@ -386,6 +386,49 @@ export function monthsToTarget({
 }
 
 /**
+ * Nettodividende je Monat im Basisszenario für die nächsten `months` Monate,
+ * in **Nennwerten** (seit 2.34.0, für die Termine im Fortschritt, §15.4):
+ * dieselben Schritte wie {@link monthsToTarget}, aber ohne Inflation, weil
+ * Meilensteine und Fixkosten in Euro von damals zählen. Index 0 ist heute,
+ * Index 1 der nächste Monat.
+ */
+export function projectMonthlyNet({
+  depot,
+  settings,
+  netRatio,
+  months,
+}: {
+  depot: DepotAssumptions;
+  settings: SnowballSettings;
+  netRatio: DecimalInstance | null;
+  months: number;
+}): DecimalInstance[] {
+  const ratio = netRatio?.greaterThan(0) ? netRatio : ONE;
+  const growth =
+    settings.growthPercent === null
+      ? depot.growthPercent
+      : new MoneyDecimal(settings.growthPercent);
+  const yieldRate =
+    settings.yieldPercent === null
+      ? depot.yieldPercent
+      : new MoneyDecimal(settings.yieldPercent);
+  const growthFactor = ONE.plus(growth.dividedBy(HUNDRED));
+  const yieldShare = yieldRate.dividedBy(HUNDRED);
+  const savings = new MoneyDecimal(Math.max(settings.monthlySavings, 0));
+  const monthlyNet = (annual: DecimalInstance) => annual.times(ratio).dividedBy(TWELVE);
+
+  let annual = depot.annualGross;
+  const series: DecimalInstance[] = [monthlyNet(annual)];
+  for (let month = 1; month <= months; month += 1) {
+    const invested = settings.reinvest ? savings.plus(monthlyNet(annual)) : savings;
+    annual = annual.plus(invested.times(yieldShare));
+    if (month % 12 === 0) annual = annual.times(growthFactor);
+    series.push(monthlyNet(annual));
+  }
+  return series;
+}
+
+/**
  * Wie viele Monate ein Kauf oder eine Sparrate das Ziel vorzieht (seit
  * 2.32.0, seit 2.33.1 mit Monatsbruchteilen). Ohne den Zusatz wird bis zum doppelten Horizont gerechnet: Ohne
  * Sparpläne liegt das Ziel oft jenseits von 30 Jahren, und gerade dann ist

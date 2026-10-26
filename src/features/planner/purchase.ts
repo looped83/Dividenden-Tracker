@@ -3,6 +3,7 @@ import type { SecuritySnapshot } from "@/lib/supabase/repositories/securitySnaps
 import type { ForecastFacets, TwelveMonthForecast } from "@/features/securities/forecast";
 import { latestAsOf, snapshotsAt } from "@/features/securities/snapshots";
 import { countryLabel } from "@/lib/utils/countryLabel";
+import type { RefDate } from "@/lib/statistics";
 
 /**
  * Nachkauf-Planer (CALCULATION_RULES.md §16): verteilt einen Betrag auf
@@ -429,4 +430,85 @@ export function concentrationAfter({
       country: country && { ...country, name: countryLabel(country.key) },
     }
   );
+}
+
+export interface GapPurchase {
+  securityId: string;
+  name: string;
+  /** Zukauf, auf volle 100 € aufgerundet. */
+  amount: number;
+  /** Letzter Monat (1–12), in dem die Zahlungen zählen. */
+  until: number;
+}
+
+/** So viele Monate Vorlauf: Den Ex-Tag des nächsten Monats verpasst ein Kauf heute oft. */
+const GAP_LEAD_MONTHS = 2;
+
+/**
+ * Welcher Zukauf eine Ziellücke im laufenden Jahr schließt (CALCULATION_RULES.md
+ * §13.3, seit 2.34.0): Je Asset zählen nur die Zahlungen der Prognose (§14.1)
+ * im Zeitraum des Ziels, frühestens im übernächsten Monat. Gewählt wird das
+ * Asset, das mit dem kleinsten Betrag hinkommt. `null`, wenn im Zeitraum
+ * keine Position mehr zahlt oder der Betrag über `max` läge.
+ */
+export function purchaseForGap({
+  forecast,
+  excluded,
+  year,
+  month,
+  gap,
+  today,
+  max,
+}: {
+  forecast: TwelveMonthForecast;
+  excluded: ReadonlySet<string>;
+  year: number;
+  /** Monatsziel: sein Monat; Jahresziel: `null`. */
+  month: number | null;
+  gap: DecimalInstance;
+  today: RefDate;
+  max: number;
+}): GapPurchase | null {
+  if (!gap.greaterThan(0) || year !== today.year) return null;
+  const from = today.month + GAP_LEAD_MONTHS;
+  const rates = new Map<
+    string,
+    { name: string; perEuro: DecimalInstance; until: number }
+  >();
+  for (const item of forecast.months) {
+    if (item.year !== year || item.month < from) continue;
+    if (month !== null && item.month !== month) continue;
+    for (const contribution of item.contributions) {
+      if (excluded.has(contribution.securityId)) continue;
+      if (!contribution.marketValue?.isPositive() || !contribution.amount.isPositive())
+        continue;
+      const perEuro = contribution.amount
+        .toDecimal()
+        .dividedBy(contribution.marketValue.toDecimal());
+      const known = rates.get(contribution.securityId);
+      rates.set(contribution.securityId, {
+        name: contribution.name,
+        perEuro: known ? known.perEuro.plus(perEuro) : perEuro,
+        until: item.month,
+      });
+    }
+  }
+  let best: GapPurchase | null = null;
+  for (const [securityId, rate] of rates) {
+    const amount = gap
+      .dividedBy(rate.perEuro)
+      .dividedBy(100)
+      .ceil()
+      .times(100)
+      .toNumber();
+    if (amount > max) continue;
+    if (
+      best === null ||
+      amount < best.amount ||
+      (amount === best.amount && rate.name.localeCompare(best.name, "de") < 0)
+    ) {
+      best = { securityId, name: rate.name, amount, until: rate.until };
+    }
+  }
+  return best;
 }

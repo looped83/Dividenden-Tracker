@@ -28,6 +28,7 @@ import {
   trailingYearRange,
   type RefDate,
 } from "@/lib/statistics/dates";
+import { normalizePayoutMonths } from "@/lib/statistics/effectiveMonth";
 import type { AnalyticsPayment } from "@/lib/statistics/types";
 import type { SecuritySnapshot } from "@/lib/supabase/repositories/securitySnapshots";
 import type { DividendFrequency } from "@/lib/supabase/database.types";
@@ -43,6 +44,28 @@ export interface ForecastFacets {
   country?: string | null | undefined;
   /** Branche, nur fuer die Streuung im Planer. */
   sector?: string | null | undefined;
+}
+
+/** Stammdaten je Asset für {@link forecastTwelveMonths}. */
+export function forecastFacets(
+  securities: readonly {
+    id: string;
+    name: string;
+    payout_months: readonly number[] | null;
+    country: string | null;
+    sector: string | null;
+  }[],
+): Map<string, ForecastFacets> {
+  const facets = new Map<string, ForecastFacets>();
+  for (const security of securities) {
+    facets.set(security.id, {
+      name: security.name,
+      payoutMonths: normalizePayoutMonths(security.payout_months),
+      country: security.country,
+      sector: security.sector,
+    });
+  }
+  return facets;
 }
 
 /** Ein Beitrag zu einem Monat. */

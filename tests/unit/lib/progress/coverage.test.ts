@@ -1,13 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { EUR, Money } from "@/lib/money";
-import { coverFixedCosts, type FixedCost } from "@/lib/progress";
+import { coverFixedCosts, fixedCost, yearlyCost, type FixedCost } from "@/lib/progress";
 
 const eur = (value: string) => Money.fromString(value, EUR);
-const cost = (name: string, amount: string): FixedCost => ({
-  id: name,
-  name,
-  amount: eur(amount),
-});
+const cost = (name: string, amount: string): FixedCost =>
+  fixedCost(name, name, eur(amount));
 
 const KOSTEN = [cost("Miete", "900"), cost("Handy", "30"), cost("Strom", "80")];
 
@@ -46,5 +43,21 @@ describe("coverFixedCosts", () => {
     expect(leer.covered).toBe(0);
     expect(leer.next?.cost.name).toBe("Handy");
     expect(leer.share?.toFixed(0)).toBe("0");
+  });
+});
+
+describe("fixedCost", () => {
+  it("rechnet vierteljährliche und jährliche Beträge auf den Monat um", () => {
+    expect(fixedCost("k", "Kfz", eur("120"), 12).amount.toStringValue()).toBe("10.00");
+    expect(fixedCost("v", "Versicherung", eur("100"), 3).amount.toStringValue()).toBe(
+      "33.33",
+    );
+  });
+
+  it("rechnet das Jahr aus dem Betrag je Fälligkeit, nicht aus dem gerundeten Monat", () => {
+    expect(
+      yearlyCost(fixedCost("v", "Versicherung", eur("100"), 3)).toStringValue(),
+    ).toBe("400.00");
+    expect(yearlyCost(cost("Handy", "30")).toStringValue()).toBe("360.00");
   });
 });
