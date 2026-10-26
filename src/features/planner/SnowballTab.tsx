@@ -89,9 +89,8 @@ function SnowballSection({
     },
     [save, stored],
   );
-  // Leere Sparrate mit Platzhalter steht für die Sparpläne — wie leere
-  // Prozentfelder für die Werte aus dem Depot.
-  const { settings, fromPlans } = React.useMemo(
+  // Die Sparpläne kommen zu den Einmalkäufen hinzu (seit 2.33.0).
+  const settings = React.useMemo(
     () => withPlanSavings(stored, planSavings),
     [stored, planSavings],
   );
@@ -115,11 +114,10 @@ function SnowballSection({
         <NumberField
           id="snowball-savings"
           max={AMOUNT_MAX}
-          label="Sparrate"
-          fullLabel="Sparrate pro Monat"
+          label="Einmalkäufe"
+          fullLabel="Einmalkäufe pro Monat, zusätzlich zu den Sparplänen"
           suffix="€"
-          value={fromPlans ? null : stored.monthlySavings}
-          placeholder={planSavings > 0 ? formatDecimal(planSavings) : undefined}
+          value={stored.monthlySavings}
           onCommit={(value) => {
             update({ monthlySavings: value ?? 0 });
           }}
@@ -185,6 +183,16 @@ function SnowballSection({
           </Select>
         </SettingCell>
       </SettingsList>
+
+      {planSavings > 0 && (
+        <p className="px-1 text-sm text-muted-foreground">
+          Dazu {formatEuro(planSavings)} Sparpläne im Monat, zusammen{" "}
+          <span className="font-medium text-foreground">
+            {formatEuro(settings.monthlySavings)}
+          </span>
+          .
+        </p>
+      )}
 
       <SnowballChart
         data={chartData}
@@ -296,6 +304,10 @@ function Milestones({
  * `actual`, die Hochrechnung nur `base`/`band`. Heute trägt beides, damit die
  * Linie des Wegs in die Hochrechnung übergeht.
  */
+function formatEuro(value: number): string {
+  return formatMoneyWhole(Money.fromDecimal(new MoneyDecimal(value), EUR));
+}
+
 function toSnowballData(
   history: readonly SnowballHistoryPoint[],
   result: SnowballResult,

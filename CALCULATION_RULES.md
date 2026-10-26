@@ -772,15 +772,13 @@ gespeichert sind nur die Annahmen des Schneeballs (`profiles.forecast_settings`,
   geprüft (Inflation je Monat `(1 + Inflation)^(1/12)`, Wachstum weiter am Jahresende); 0 = schon
   erreicht, ohne Ziel oder nach 30 Jahren nicht erreicht = unbekannt.
 - **Früher am Ziel** = Monate ohne − Monate mit dem Zusatz; „ohne“ wird bis 60 Jahre gerechnet
-  (ohne Sparpläne liegt das Ziel oft hinter dem Horizont, gerade dann zählt der Abstand). Annahmen wie im Schneeball, ohne
-  eigene Sparrate also die Summe der Sparpläne (§17).
-  - **Nachkauf, Einmalkauf:** Zusatz = Mehr im Jahr netto des Plans ab heute (über die
-    Netto-Quote in brutto zurückgerechnet).
-  - **Nachkauf, Sparpläne:** Zusatz = Rate im Monat, zusätzlich zur Sparrate des Schneeballs.
-  - **Sparpläne:** mit gegen ohne die aktiven Pläne (Sparrate des Schneeballs abzüglich ihrer
-    Summe, nie unter 0).
-- Gezeigt ab einem Monat, unter der Hauptzahl („bringt dich 4 Monate früher an dein Ziel von
-  1.000 € im Monat“, führt zum Schneeball). Nicht gezeigt, wenn das Ziel schon erreicht ist, mit dem
+  (ohne Sparpläne liegt das Ziel oft hinter dem Horizont, gerade dann zählt der Abstand). Annahmen wie im Schneeball:
+  Einmalkäufe plus Summe der Sparpläne (§17).
+  - **Nachkauf:** Zusatz = Mehr im Jahr netto des Plans ab heute (über die Netto-Quote in brutto
+    zurückgerechnet).
+  - **Sparpläne:** mit gegen ohne die aktiven Pläne (nur die Einmalkäufe des Schneeballs).
+- Gezeigt ab einem Monat, unter der Hauptzahl in einer Zeile („4 Monate früher am Ziel“, seit
+  2.33.0; das Ziel nennt der Link für Screenreader, er führt zum Schneeball). Nicht gezeigt, wenn das Ziel schon erreicht ist, mit dem
   Zusatz nicht in 30 oder ohne ihn nicht in 60 Jahren.
 
 ---
@@ -847,11 +845,9 @@ die Eingaben stehen in der Adresse (`?modus=sparplan&betrag=1000&fokus=monate&an
   Betrag > 0, ohne ausgeschlossene Assets. Ertrag je Zahlung und Euro = Betrag je Zahlung der
   Prognose (netto) ÷ Marktwert; Zahlmonate wie in der Prognose. Neue Assets außerhalb des Bestands
   gehen nicht (dafür fehlen Kurs und Dividende).
-- **Modi:** Einmalkauf in Schritten zu 50 €, mindestens 100 € je Kauf, 1–5 Käufe (Standard 3,
-  vorbelegt 3.000 €); Sparpläne in Schritten zu 25 €, mindestens 25 € je Plan, bis zu 10
-  (Standard 5, vorbelegt 1.000 € im Monat, seit 2.20.1; mit gepflegten Sparplänen deren
-  Monatssumme, §17). Beim Sparplan
-  ist der Betrag die Monatsrate, die Wirkung zählt zwölf Raten. Höchstens 200 Schritte: Größere
+- **Betrag:** Schritte zu 50 €, mindestens 100 € je Kauf, 1–5 Käufe (Standard 3, vorbelegt
+  3.000 €). Bis 2.32 gab es daneben einen Modus Sparpläne (Monatsrate, zwölf Raten); seit 2.33.0
+  stehen Sparpläne nur unter §17. Höchstens 200 Schritte: Größere
   Beträge verteilen in einem Vielfachen der Schrittweite. Weniger Käufe, wenn der Betrag für den
   Mindestbetrag je Kauf nicht reicht; der Rest unter einem Schritt geht an den größten Kauf.
 - **Mehr Dividende:** die Kandidaten mit dem höchsten Ertrag je Euro im Jahr, zu gleichen Teilen.
@@ -867,7 +863,7 @@ die Eingaben stehen in der Adresse (`?modus=sparplan&betrag=1000&fokus=monate&an
   `profiles.forecast_settings.excluded` (nicht in der Datensicherung). Sie zählen weiter in der
   Prognose, werden aber weder im Nachkauf noch als Füller der Monatslücken vorgeschlagen.
 - **Gewichtung** (seit 2.22.0 als „Positionsgrenze“, seit 2.24.0 so benannt): Keine Position wächst über diesen Anteil am Depot nach dem
-  Kauf (Marktwert aller Positionen + investiert; beim Sparplan zwölf Raten). Die Grenze
+  Kauf (Marktwert aller Positionen + investiert). Die Grenze
   wählst du **je Asset** auf seiner Seite (0,5–50 % auf eine Nachkommastelle, seit 2.24.0; zuvor ganze
   Werte 2–50 %; `profiles.position_caps`, Migration 0043, nicht
   in der Datensicherung); ohne eigene gilt 0 %: Das Asset wird nicht vorgeschlagen (seit 2.25.0; 2.24.0 fest 1 %, 2.23.1 fest 8 %, zuvor ein einstellbarer Standard
@@ -876,10 +872,6 @@ die Eingaben stehen in der Adresse (`?modus=sparplan&betrag=1000&fokus=monate&an
   gewählte Zahl der Käufe bleibt; was darin keinen Platz findet, nennt der Plan.
 - **Streuung nach dem Kauf:** größte Position, Branche und Land nach Marktwert plus Kauf; eine
   Position über der Grenze ist hervorgehoben. Assets ohne Branche oder Land bilden keine Gruppe.
-- **Hochlauf beim Sparplan** (seit 2.22.0): Das Diagramm der nächsten zwölf Monate zählt im
-  k-ten Monat k Raten; „mehr im Jahr nach 12 Monaten" zählt alle zwölf.
-- **Vergleich:** Im Modus Sparpläne nennt die Zusammenfassung zusätzlich, was die gepflegten
-  Sparpläne (§17) nach zwölf Raten bringen.
 
 ## 17. Sparpläne (Planer › Sparpläne und Seite des Assets, seit 2.21.0)
 
@@ -897,10 +889,11 @@ Bestand noch Prognose.
   Zahlmonate des Kandidaten aus §16 (ohne Ausschlüsse). Ein Asset ohne Kandidat (nicht im
   Depotstand, ohne Dividende) zählt in der Summe der Raten, aber nicht in der Dividende. Ertrag =
   mehr netto im Jahr ÷ zwölf Monatssummen. Pausierte Pläne zählen nirgends. Das Diagramm zählt
-  im k-ten Monat k Raten (Hochlauf wie §16). Die Liste steht alphabetisch
+  im k-ten Monat k Raten (Hochlauf). Die Liste steht alphabetisch
   nach Name des Assets (seit 2.21.1).
-- **Schneeball:** Ist keine eigene Sparrate eingetragen (0), rechnet er mit der gerundeten
-  Monatssumme der aktiven Pläne; das Feld zeigt sie als Platzhalter.
+- **Schneeball:** rechnet mit den Einmalkäufen (Feld im Schneeball) **plus** der gerundeten
+  Monatssumme der aktiven Pläne und nennt beides unter den Annahmen (seit 2.33.0; bis 2.32 galten
+  die Pläne nur bei leerem Feld).
 - **Tipps** (seit 2.26.0, `savingsPlanTips`): Abgleich mit den Gewichtungen (§16) beim
   Depotstand, Kurse unverändert. Erstens aktive Pläne, deren Asset schon über seiner Gewichtung
   liegt oder sie in höchstens 24 Monaten erreicht: n = ⌈(g·D − W) ÷ (r − g·R)⌉ mit Gewichtung g,

@@ -1,7 +1,6 @@
 import { MoneyDecimal, type DecimalInstance } from "@/lib/money";
 import type { SecuritySnapshot } from "@/lib/supabase/repositories/securitySnapshots";
 import { latestAsOf, snapshotsAt } from "@/features/securities/snapshots";
-import { MODE_RULES } from "./purchase";
 import { monthlyAmount, type SavingsPlan } from "./savingsPlans";
 
 /**
@@ -14,8 +13,8 @@ import { monthlyAmount, type SavingsPlan } from "./savingsPlans";
 const TIP_HORIZON_MONTHS = 24;
 /** Höchstens so viele Assets mit Platz, aber ohne Sparplan. */
 const TIP_ROOM_MAX = 3;
-/** Platz unter Mindestrate × 12 lohnt keinen Plan. */
-const ROOM_MIN = MODE_RULES.sparplan.minimum * 12;
+/** Platz unter 300 € (25-€-Rate × 12) lohnt keinen Plan. */
+const ROOM_MIN = 300;
 
 export type SavingsPlanTip =
   | {

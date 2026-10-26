@@ -2,19 +2,19 @@ import { formatCountNoun } from "@/lib/utils/formatNumber";
 import type { ForecastSettings } from "@/features/securities/forecastSettings";
 
 /**
- * Die Annahmen des Schneeballs, wie er selbst rechnet: Ohne eigene Sparrate
- * gilt die Summe der gepflegten Sparpläne (§17). Eine Stelle für Schneeball,
- * Nachkauf und Sparpläne, damit „früher am Ziel" überall dasselbe Ziel meint.
+ * Die Annahmen des Schneeballs, wie er selbst rechnet: Die gepflegten
+ * Sparpläne (§17) kommen zur Sparrate hinzu — sie steht seit 2.33.0 für das,
+ * was du **zusätzlich** im Monat anlegst, etwa Einmalkäufe (bis 2.32 galten
+ * die Pläne nur bei leerer Sparrate). Eine Stelle für Schneeball, Nachkauf
+ * und Sparpläne, damit „früher am Ziel" überall dasselbe Ziel meint.
  */
 export function withPlanSavings(
   stored: ForecastSettings,
   planSavings: number,
-): { settings: ForecastSettings; fromPlans: boolean } {
-  const fromPlans = stored.monthlySavings === 0 && planSavings > 0;
-  return {
-    settings: fromPlans ? { ...stored, monthlySavings: planSavings } : stored,
-    fromPlans,
-  };
+): ForecastSettings {
+  return planSavings > 0
+    ? { ...stored, monthlySavings: stored.monthlySavings + planSavings }
+    : stored;
 }
 
 /** „4 Monate", „1 Jahr", „2 Jahre 3 Monate". */

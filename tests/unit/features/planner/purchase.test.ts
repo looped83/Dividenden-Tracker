@@ -99,7 +99,6 @@ function plan(
     candidates,
     amount: 1000,
     focus: "dividende",
-    mode: "einmal",
     buys: 3,
     ...input,
   });
@@ -167,14 +166,6 @@ describe("planPurchase", () => {
     for (const buy of result?.buys ?? []) {
       expect(buy.invest.toDecimal().greaterThanOrEqualTo(100)).toBe(true);
     }
-  });
-
-  it("Sparplaene: Wirkung nach zwoelf Raten", () => {
-    const result = plan({ mode: "sparplan", amount: 100, buys: 1 });
-    expect(result?.buys[0].invest.toStringValue()).toBe("100.00");
-    expect(result?.invested.toStringValue()).toBe("1200.00");
-    // 1.200 € in Beta zu 6 %
-    expect(result?.annual.toStringValue()).toBe("72.00");
   });
 
   it("gibt nichts zurueck unter dem Mindestbetrag oder ohne Kandidaten", () => {
@@ -266,18 +257,6 @@ describe("Positionsgrenze", () => {
   });
 });
 
-describe("Sparplan im Hochlauf", () => {
-  it("zählt im ersten Monat eine Rate, im zwölften alle", () => {
-    const result = plan({ mode: "sparplan", amount: 100, buys: 1, focus: "dividende" });
-    if (!result) throw new Error("Plan erwartet");
-    const delta = (index: number) =>
-      result.after[index].subtract(result.before[index]).toDecimal();
-    // Beta zahlt im Mai (Index 6) 6 % auf 7 Raten, als Jahreswert 1.200 € × 6 % = 72 €.
-    expect(result.annual.toStringValue()).toBe("72.00");
-    expect(delta(6).toFixed(2)).toBe("42.00");
-  });
-});
-
 describe("Positionsgrenze je Asset", () => {
   it("lässt eine eigene Grenze dem Standard vorgehen", () => {
     // Standard 30 % (500 € Platz), Beta mit eigener Grenze 40 % (1.000 € Platz).
@@ -300,7 +279,6 @@ describe("concentrationAfter", () => {
       facets,
       names: new Map([["sec-a", "Alpha"]]),
       plan: { buys: [] } as unknown as Parameters<typeof concentrationAfter>[0]["plan"],
-      mode: "einmal",
     });
     expect(spread?.country).toMatchObject({ key: "US", name: "Vereinigte Staaten" });
     expect(spread?.country?.percent.toFixed(2)).toBe("66.67");
