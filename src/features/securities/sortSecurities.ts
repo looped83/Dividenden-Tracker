@@ -14,7 +14,8 @@ import { compareGermanLoose } from "@/lib/utils/compareText";
  */
 export type SecurityTextSortField = "name" | "ticker" | "sector" | "country" | "depot";
 /** Felder aus dem juengsten Depotstand — nur waehlbar, wenn einer vorliegt. */
-export type SecurityPositionSortField = "value" | "expected" | "yield" | "gain";
+export type SecurityPositionSortField =
+  "value" | "weight" | "expected" | "yield" | "gain";
 export type SecuritySortField = SecurityTextSortField | SecurityPositionSortField;
 export type SortDirection = "asc" | "desc";
 
@@ -47,6 +48,7 @@ const SECURITY_SORT_FIELDS: readonly SecuritySortOption[] = [
  */
 const SECURITY_POSITION_SORT_FIELDS: readonly SecuritySortOption[] = [
   { value: "value", label: "Nach Wert" },
+  { value: "weight", label: "Nach Zielgewichtung" },
   { value: "expected", label: "Nach Erwartet p. a." },
   { value: "yield", label: "Nach Rendite" },
   { value: "gain", label: "Nach Gewinn" },
@@ -139,6 +141,8 @@ function textValue(row: AssetRow, field: SecurityTextSortField): string | null {
  * gar nicht ordnen.
  */
 function numberValue(row: AssetRow, field: SecurityPositionSortField): number | null {
+  // Die Zielgewichtung ist ein Ziel aus den Stammdaten, kein Wert des Depotstands.
+  if (field === "weight") return row.targetWeight;
   const position = row.position;
   if (position === null) return null;
   switch (field) {

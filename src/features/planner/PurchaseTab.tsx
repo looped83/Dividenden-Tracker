@@ -269,8 +269,8 @@ function Purchase({
               : plan === null
                 ? `Mindestens ${String(rules.minimum)} € je Kauf.`
                 : caps.size === 0
-                  ? "Gib Assets auf ihrer Seite eine Gewichtung, dann schlägt der Nachkauf sie vor."
-                  : "Kein Asset hat unter seiner Gewichtung noch Platz."}
+                  ? "Gib Assets auf ihrer Seite eine Zielgewichtung, dann schlägt der Nachkauf sie vor."
+                  : "Kein Asset hat unter seiner Zielgewichtung noch Platz."}
           </p>
         ) : (
           <SpreadLine
@@ -350,8 +350,8 @@ function SpreadLine({
       </p>
       {plan.unplaced.isPositive() && (
         <p>
-          {formatMoneyWhole(plan.unplaced)} finden unter den Gewichtungen keinen Platz.
-          Mehr Käufe oder höhere Gewichtungen verteilen sie.
+          {formatMoneyWhole(plan.unplaced)} finden unter den Zielgewichtungen keinen
+          Platz. Mehr Käufe oder höhere Zielgewichtungen verteilen sie.
         </p>
       )}
     </div>

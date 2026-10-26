@@ -1,0 +1,52 @@
+import { seedPortfolio } from "../support/portfolio";
+import { asUser } from "../support/db";
+import { expect, test } from "../support/appTest";
+
+/**
+ * Bestand › Assets (seit 2.35.0): Spaltenkoepfe sortieren die Tabelle, erneutes
+ * Antippen dreht die Richtung. Kopf und Auswahl der Filterleiste schreiben
+ * dieselben Adressparameter und zeigen deshalb immer dieselbe Sortierung.
+ */
+test("sortiert die Assettabelle per Spaltenkopf", async ({ page, konto }) => {
+  await seedPortfolio(konto.userId);
+  await asUser(konto.userId, async (client) => {
+    await client.query(
+      `update profiles set position_caps = (
+         select jsonb_object_agg(id, case name when 'Allianz' then 8 else 3 end)
+           from securities where name in ('Allianz', 'BASF'))`,
+    );
+  });
+  // Die Tabelle steht ab md; darunter traegt eine Liste die Assets.
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/#/depot");
+
+  const tabelle = page.getByRole("table");
+  const ersteZeile = tabelle.locator("tbody tr").first();
+  const wert = page.getByRole("columnheader", { name: "Nach Wert sortieren" });
+  await expect(
+    page.getByRole("columnheader", { name: "Nach Asset sortieren" }),
+  ).toHaveAttribute("aria-sort", "ascending");
+
+  // Zahlen beginnen mit dem groessten Wert …
+  await wert.getByRole("button").click();
+  await expect(wert).toHaveAttribute("aria-sort", "descending");
+  await expect(ersteZeile).toContainText("iShares MSCI World");
+  await expect(page.getByLabel("Sortierung")).toHaveValue("value");
+
+  // … erneutes Antippen dreht die Richtung.
+  await wert.getByRole("button").click();
+  await expect(wert).toHaveAttribute("aria-sort", "ascending");
+  await expect(ersteZeile).toContainText("Toyota");
+
+  // Zielgewichtung steht neben der Gewichtung; ohne eigene stehen Assets am Ende.
+  await page.getByRole("button", { name: "Nach Zielgewichtung sortieren" }).click();
+  await expect(ersteZeile).toContainText("Allianz");
+  await expect(ersteZeile).toContainText("8,0 %");
+  await expect(tabelle.locator("tbody tr").nth(1)).toContainText("BASF");
+
+  // Die Auswahl der Filterleiste setzt den Kopf mit.
+  await page.getByLabel("Sortierung").selectOption("gain");
+  await expect(
+    page.getByRole("columnheader", { name: "Nach Gewinn sortieren" }),
+  ).toHaveAttribute("aria-sort", "descending");
+});

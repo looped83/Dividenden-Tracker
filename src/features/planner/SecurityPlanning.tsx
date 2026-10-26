@@ -207,7 +207,7 @@ function WeightingRow({ securityId }: { securityId: string }) {
   return (
     <div className={`${ROW} items-start`}>
       <label htmlFor="weighting" className="pt-2 text-muted-foreground">
-        Gewichtung
+        Zielgewichtung
       </label>
       <div className="flex flex-col items-end gap-1 text-right">
         <div className="relative w-24">
@@ -239,7 +239,7 @@ function WeightingRow({ securityId }: { securityId: string }) {
             "nicht im aktuellen Depotstand"
           ) : (
             <>
-              heute{" "}
+              Gewichtung{" "}
               <span
                 className={
                   over && ownCap !== undefined
@@ -252,7 +252,7 @@ function WeightingRow({ securityId }: { securityId: string }) {
             </>
           )}
           {ownCap === undefined
-            ? " · ohne Gewichtung kein Nachkauf"
+            ? " · ohne Zielgewichtung kein Nachkauf"
             : over && " · kein Nachkauf"}
         </span>
       </div>

@@ -241,10 +241,10 @@ describe("SecurityDetailPage", () => {
   it("bietet die Gewichtung leer an: ohne sie kein Nachkauf", () => {
     renderPage();
     const section = within(screen.getByRole("region", { name: "Planung" }));
-    const field = section.getByRole("textbox", { name: "Gewichtung" });
+    const field = section.getByRole("textbox", { name: "Zielgewichtung" });
     expect(field).toHaveValue("");
     expect(field).toHaveAttribute("placeholder", "0");
-    expect(section.getByText(/ohne Gewichtung kein Nachkauf/)).toBeInTheDocument();
+    expect(section.getByText(/ohne Zielgewichtung kein Nachkauf/)).toBeInTheDocument();
   });
 
   it("nennt den Rhythmus am Ausschuettungsplan", () => {

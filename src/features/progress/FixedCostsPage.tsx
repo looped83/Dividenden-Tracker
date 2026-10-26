@@ -25,6 +25,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  SortableTableHead,
   TableHead,
   TableHeader,
   TableRow,
@@ -105,6 +106,16 @@ export function FixedCostsPage() {
             : a.cost.name.localeCompare(b.cost.name, "de")),
       );
   }, [coverage, search, status, sort, direction]);
+
+  const sortBy = (field: SortField) => {
+    if (field === sort) {
+      setDirection(direction === "asc" ? "desc" : "asc");
+      return;
+    }
+    setSort(field);
+    // Beträge zuerst die großen, Namen von A an.
+    setDirection(field === "amount" ? "desc" : "asc");
+  };
 
   const resetFilters = () => {
     setSearch("");
@@ -248,10 +259,7 @@ export function FixedCostsPage() {
               direction={direction}
               options={SORT_OPTIONS}
               onValueChange={(value) => {
-                const field = value as SortField;
-                setSort(field);
-                // Beträge zuerst die großen, Namen von A an.
-                setDirection(field === "amount" ? "desc" : "asc");
+                sortBy(value as SortField);
               }}
               onDirectionChange={setDirection}
             />
@@ -310,9 +318,28 @@ export function FixedCostsPage() {
                   <caption className="sr-only">Fixkosten</caption>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Name</TableHead>
+                      {/* Antippen sortiert wie die Auswahl der Filterleiste;
+                      erneut antippen dreht die Richtung. */}
+                      <SortableTableHead
+                        sorted={sort === "name" ? direction : null}
+                        onSort={() => {
+                          sortBy("name");
+                        }}
+                        label="Name"
+                      >
+                        Name
+                      </SortableTableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Im Monat</TableHead>
+                      <SortableTableHead
+                        sorted={sort === "amount" ? direction : null}
+                        onSort={() => {
+                          sortBy("amount");
+                        }}
+                        label="Betrag"
+                        align="right"
+                      >
+                        Im Monat
+                      </SortableTableHead>
                       <TableHead className="text-right">Im Jahr</TableHead>
                       <TableHead className="text-right">Anteil</TableHead>
                       <TableHead className="w-0">

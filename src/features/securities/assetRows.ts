@@ -33,6 +33,11 @@ export interface AssetRow {
   depotName: string | null;
   /** `null`, solange kein Depotstand vorliegt oder die Position verkauft ist. */
   position: AssetPosition | null;
+  /**
+   * Eigene Gewichtung in Prozent (Zielanteil fuer den Nachkauf,
+   * `planner/positionCaps.ts`); `null` ohne eigene — dann gilt 0 %.
+   */
+  targetWeight: number | null;
 }
 
 function positionOf(snapshot: SecuritySnapshot): AssetPosition {
@@ -61,11 +66,13 @@ function positionOf(snapshot: SecuritySnapshot): AssetPosition {
  *
  * @param depotNameOf Name des Standard-Depotkontos; `null`, wenn keines gesetzt
  *                    ist oder das Konto nicht (mehr) existiert.
+ * @param weights     Eigene Gewichtungen je Asset (Prozent).
  */
 export function buildAssetRows(
   securities: readonly Security[],
   snapshots: readonly SecuritySnapshot[],
   depotNameOf: (depotId: string) => string | null,
+  weights: ReadonlyMap<string, number> = new Map(),
 ): AssetRow[] {
   const current = snapshotsAt(snapshots, latestAsOf(snapshots));
   const positionBySecurity = new Map<string, AssetPosition>();
@@ -77,6 +84,7 @@ export function buildAssetRows(
     security,
     depotName: security.default_depot_id ? depotNameOf(security.default_depot_id) : null,
     position: positionBySecurity.get(security.id) ?? null,
+    targetWeight: weights.get(security.id) ?? null,
   }));
 }
 

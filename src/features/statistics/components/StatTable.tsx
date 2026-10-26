@@ -1,10 +1,11 @@
 import * as React from "react";
-import { ArrowDown, ArrowUp, ArrowUpDown, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { FilterSort } from "@/components/ui/filter-bar";
 import { LoadMore } from "@/components/ui/load-more";
 import { ListGroup, ListRow } from "@/components/ui/list";
 import { Section } from "@/components/ui/section";
+import { SortableTableHead } from "@/components/ui/table";
 import { MD_BREAKPOINT_QUERY, useMediaQuery } from "@/lib/hooks/useMediaQuery";
 import { cn } from "@/lib/utils/cn";
 
@@ -351,52 +352,36 @@ export function StatTable<T>({
             <thead>
               <tr className="border-b border-border">
                 {columns.map((column) => {
-                  const isSorted = activeSort?.key === column.key;
-                  const ariaSort: React.AriaAttributes["aria-sort"] = isSorted
-                    ? activeSort.direction === "asc"
-                      ? "ascending"
-                      : "descending"
-                    : column.compare
-                      ? "none"
-                      : undefined;
+                  const className = cn(column.width, column.className);
+                  if (column.compare) {
+                    return (
+                      <SortableTableHead
+                        key={column.key}
+                        sorted={
+                          activeSort?.key === column.key ? activeSort.direction : null
+                        }
+                        onSort={() => {
+                          toggleSort(column.key);
+                        }}
+                        label={column.headerLabel ?? column.key}
+                        align={column.align ?? "left"}
+                        className={className}
+                      >
+                        {column.header}
+                      </SortableTableHead>
+                    );
+                  }
                   return (
                     <th
                       key={column.key}
                       scope="col"
-                      aria-sort={ariaSort}
                       className={cn(
                         "h-11 px-3 align-middle text-[0.8125rem] font-medium text-muted-foreground first:pl-0 last:pr-0",
                         column.align === "right" ? "text-right" : "text-left",
-                        column.width,
-                        column.className,
+                        className,
                       )}
                     >
-                      {column.compare ? (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            toggleSort(column.key);
-                          }}
-                          className={cn(
-                            "inline-flex h-full min-h-11 items-center gap-1 rounded-sm outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring",
-                            column.align === "right" && "flex-row-reverse",
-                          )}
-                          aria-label={`Nach ${column.headerLabel ?? column.key} sortieren`}
-                        >
-                          {column.header}
-                          {isSorted ? (
-                            activeSort.direction === "asc" ? (
-                              <ArrowUp className="size-3.5" aria-hidden />
-                            ) : (
-                              <ArrowDown className="size-3.5" aria-hidden />
-                            )
-                          ) : (
-                            <ArrowUpDown className="size-3.5 opacity-50" aria-hidden />
-                          )}
-                        </button>
-                      ) : (
-                        column.header
-                      )}
+                      {column.header}
                     </th>
                   );
                 })}

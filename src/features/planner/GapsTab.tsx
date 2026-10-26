@@ -131,7 +131,7 @@ function GapRow({ gap }: { gap: MonthGap }) {
         meta={
           count > 0
             ? formatCountNoun(count, "Asset zum Auffüllen", "Assets zum Auffüllen")
-            : "Kein passendes Asset mit Gewichtung"
+            : "Kein passendes Asset mit Zielgewichtung"
         }
         trailing={
           <>
@@ -181,7 +181,7 @@ function GapRow({ gap }: { gap: MonthGap }) {
                 <span className="tabular-amount">
                   +{formatMoney(filler.perThousand)} je 1.000 € ·{" "}
                   {filler.partial
-                    ? `${formatMoneyWhole(filler.invest)} bis zur Gewichtung schließen ${formatMoneyWhole(filler.closes)}`
+                    ? `${formatMoneyWhole(filler.invest)} bis zur Zielgewichtung schließen ${formatMoneyWhole(filler.closes)}`
                     : `bis Ø ${formatMoneyWhole(filler.invest)}`}
                 </span>
               </Link>

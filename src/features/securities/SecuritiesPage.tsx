@@ -21,7 +21,7 @@ import { SecurityFormDialog } from "@/features/securities/SecurityFormDialog";
 import { DepotHeaderActions } from "@/features/securities/DepotHeaderActions";
 import { DeleteSecurityDialog } from "@/features/securities/DeleteSecurityDialog";
 import { AmountText } from "@/components/money/AmountText";
-import { formatPercent, type DecimalInstance } from "@/lib/money";
+import { formatPercent, MoneyDecimal, type DecimalInstance } from "@/lib/money";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { EntitySelect, type EntityOption } from "@/components/domain/EntitySelect";
@@ -49,10 +49,12 @@ import {
   Table,
   TableBody,
   TableCell,
+  SortableTableHead,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { usePositionCaps } from "@/features/planner/positionCaps";
 import {
   useArchiveSecurity,
   useSecurities,
@@ -72,6 +74,7 @@ import {
   sortAssetRows,
   type SecuritySort,
   type SecuritySortField,
+  type SortDirection,
 } from "@/features/securities/sortSecurities";
 import type { Security } from "@/lib/supabase/repositories/securities";
 
@@ -176,14 +179,16 @@ export function SecuritiesPage() {
   // einer Zeile. Bewusst **ein** Aufbau fuer Tabelle und Liste: Beide zeigen
   // dieselben Zahlen, und zwei Ableitungen liefen frueher oder spaeter
   // auseinander.
+  const { data: weights } = usePositionCaps();
   const rows = React.useMemo(
     () =>
       buildAssetRows(
         securities,
         snapshots,
         (depotId) => depotById.get(depotId)?.name ?? null,
+        weights,
       ),
-    [securities, snapshots, depotById],
+    [securities, snapshots, depotById, weights],
   );
 
   const withPositions = React.useMemo(() => hasPositions(rows), [rows]);
@@ -202,6 +207,41 @@ export function SecuritiesPage() {
         ? sort
         : DEFAULT_SECURITY_SORT,
     [sortOptions, sort],
+  );
+
+  // Spaltenkoepfe sortieren wie die Auswahl der Filterleiste — beide schreiben
+  // dieselben Adressparameter und bleiben so von selbst gleich. Erneutes
+  // Antippen derselben Spalte dreht die Richtung.
+  const sortedBy = (field: SecuritySortField): SortDirection | null =>
+    effectiveSort.field === field ? effectiveSort.direction : null;
+  const sortBy = (field: SecuritySortField) => {
+    setParams({
+      sort: field,
+      direction:
+        effectiveSort.field === field
+          ? effectiveSort.direction === "asc"
+            ? "desc"
+            : "asc"
+          : defaultDirectionFor(field),
+    });
+  };
+  const sortHead = (
+    field: SecuritySortField,
+    label: string,
+    align: "left" | "right" = "left",
+    className?: string,
+  ) => (
+    <SortableTableHead
+      sorted={sortedBy(field)}
+      onSort={() => {
+        sortBy(field);
+      }}
+      label={label}
+      align={align}
+      className={cn(align === "right" && "whitespace-nowrap", className)}
+    >
+      {label}
+    </SortableTableHead>
   );
 
   const visible = React.useMemo(() => {
@@ -441,22 +481,23 @@ export function SecuritiesPage() {
               </caption>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Asset</TableHead>
+                  {sortHead("name", "Asset")}
                   {withPositions && (
                     <>
-                      <TableHead className="whitespace-nowrap text-right">Wert</TableHead>
-                      <TableHead className="whitespace-nowrap text-right">
-                        Anteil
-                      </TableHead>
-                      <TableHead className="whitespace-nowrap text-right">
-                        Erwartet p. a.
-                      </TableHead>
-                      <TableHead className="whitespace-nowrap text-right">
-                        Rendite
-                      </TableHead>
-                      <TableHead className="whitespace-nowrap text-right">
-                        Gewinn
-                      </TableHead>
+                      {sortHead("value", "Wert", "right")}
+                      {/* Gewichtung (Ist, Anteil am Depot) folgt dem Wert —
+                      dieselbe Reihenfolge. Daneben die Zielgewichtung des
+                      Nachkaufs (ab lg). */}
+                      {sortHead("value", "Gewichtung", "right")}
+                      {sortHead(
+                        "weight",
+                        "Zielgewichtung",
+                        "right",
+                        "hidden lg:table-cell",
+                      )}
+                      {sortHead("expected", "Erwartet p. a.", "right")}
+                      {sortHead("yield", "Rendite", "right")}
+                      {sortHead("gain", "Gewinn", "right")}
                     </>
                   )}
                   {/* Ohne Positionen tragen Branche, Ausschuettungsplan und
@@ -466,9 +507,9 @@ export function SecuritiesPage() {
                   Depotkonto bleibt als Filter. */}
                   {!withPositions && (
                     <>
-                      <TableHead className="hidden lg:table-cell">Branche</TableHead>
+                      {sortHead("sector", "Branche", "left", "hidden lg:table-cell")}
                       <TableHead>Ausschüttung</TableHead>
-                      <TableHead className="hidden lg:table-cell">Depot</TableHead>
+                      {sortHead("depot", "Depot", "left", "hidden lg:table-cell")}
                     </>
                   )}
                   <TableHead className="w-0">
@@ -499,7 +540,30 @@ export function SecuritiesPage() {
                             />
                           </TableCell>
                           <TableCell className="text-right">
-                            <PercentCell value={position?.allocationPercent} digits={1} />
+                            <PercentCell
+                              value={position?.allocationPercent}
+                              digits={1}
+                              // Ueber der Zielgewichtung rot — wie auf der
+                              // Asset-Seite: dort endet der Nachkauf.
+                              over={
+                                row.targetWeight !== null &&
+                                (position?.allocationPercent?.greaterThan(
+                                  row.targetWeight,
+                                ) ??
+                                  false)
+                              }
+                            />
+                          </TableCell>
+                          {/* Erst ab lg: Auf dem Tablet hoch reicht der Platz
+                          nicht fuer eine achte Spalte. */}
+                          <TableCell className="hidden text-right lg:table-cell">
+                            {row.targetWeight === null ? (
+                              <span className="text-muted-foreground">—</span>
+                            ) : (
+                              <span className="whitespace-nowrap tabular-nums">
+                                {formatPercent(new MoneyDecimal(row.targetWeight), 1)}
+                              </span>
+                            )}
                           </TableCell>
                           <TableCell className="text-right">
                             <Metric
@@ -625,13 +689,24 @@ function percentDetail(
 function PercentCell({
   value,
   digits,
+  over = false,
 }: {
   value: DecimalInstance | null | undefined;
   digits: number;
+  over?: boolean;
 }) {
   const formatted = percentDetail(value, digits);
   if (!formatted) return <span className="text-muted-foreground">—</span>;
-  return <span className="whitespace-nowrap tabular-nums">{formatted}</span>;
+  return (
+    <span
+      className={cn(
+        "whitespace-nowrap tabular-nums",
+        over && "font-medium text-negative",
+      )}
+    >
+      {formatted}
+    </span>
+  );
 }
 
 /**
