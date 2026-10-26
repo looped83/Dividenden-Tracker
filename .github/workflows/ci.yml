@@ -198,7 +198,20 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install $PW_BROWSERS
 
-      # Die Systembibliotheken gehoeren dem Runner und nicht dem Cache. Fuer
+      # Die WebKit-Systembibliotheken (rund 60 Pakete, u. a. GStreamer und
+      # ffmpeg) kamen bei jedem main-Lauf frisch vom Ubuntu-Spiegel. Am
+      # 26.10.2026 lieferte der so langsam, dass zwei von vier main-Laeufen an
+      # beiden 3-Minuten-Versuchen scheiterten. Der Cache haelt die .deb-Dateien;
+      # der Schluessel haengt an der Playwright-Version, die die Paketliste
+      # bestimmt. Neuere Paketversionen laedt `apt` trotzdem nach.
+      - name: Systempakete aus dem Cache
+        if: env.E2E_WEBKIT == 'true'
+        uses: actions/cache@v6
+        with:
+          path: ~/apt-debs
+          key: apt-debs-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}-${{ env.PW_BROWSERS }}
+
+      # Die Systembibliotheken installiert `apt` auf dem Runner. Fuer
       # WebKit (u. a. GStreamer) laedt `apt` sie bei jedem Lauf vom
       # Ubuntu-Spiegel — meist in 20–30 s, am 23.10.2026 aber zweimal ueber
       # 12 Minuten haengend, bis das Job-Limit griff. Deshalb pro Versuch
@@ -213,10 +226,19 @@ jobs:
         # `timeout` beendet nur npx, nicht das apt-get darunter: Es hielt die
         # dpkg-Sperre, und der zweite Versuch scheiterte sofort daran. Mit
         # Lock::Timeout wartet er stattdessen, bis die Sperre frei ist.
+        # Die .deb-Pakete kommen aus dem Cache (Schritt davor), `apt` laedt
+        # dann nur noch die Paketlisten und neuere Versionen vom Spiegel.
         run: |
-          echo 'DPkg::Lock::Timeout "150";' | sudo tee /etc/apt/apt.conf.d/99-lock-timeout >/dev/null
+          printf '%s\n' 'DPkg::Lock::Timeout "150";' 'APT::Keep-Downloaded-Packages "true";' \
+            | sudo tee /etc/apt/apt.conf.d/99-ci >/dev/null
+          mkdir -p ~/apt-debs
+          echo "$(ls ~/apt-debs | wc -l) Pakete aus dem Cache"
+          sudo cp ~/apt-debs/*.deb /var/cache/apt/archives/ 2>/dev/null || true
           for versuch in 1 2; do
-            timeout 180 npx playwright install-deps $PW_BROWSERS && exit 0
+            if timeout 180 npx playwright install-deps $PW_BROWSERS; then
+              cp /var/cache/apt/archives/*.deb ~/apt-debs/ 2>/dev/null || true
+              exit 0
+            fi
             echo "::warning::install-deps Versuch $versuch abgebrochen oder fehlgeschlagen"
           done
           exit 1
@@ -281,6 +303,14 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install $PW_BROWSERS
 
+      # Wie in e2e-smoke.
+      - name: Systempakete aus dem Cache
+        if: env.E2E_WEBKIT == 'true'
+        uses: actions/cache@v6
+        with:
+          path: ~/apt-debs
+          key: apt-debs-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}-${{ env.PW_BROWSERS }}
+
       # Zeitlimit und zweiter Anlauf wie in e2e-smoke.
       # Nur auf main (WebKit): Chromium laeuft auf dem Ubuntu-Runner ohne
       # Nachinstallation, dessen Bibliotheken bringt der vorinstallierte Chrome
@@ -291,10 +321,19 @@ jobs:
         # `timeout` beendet nur npx, nicht das apt-get darunter: Es hielt die
         # dpkg-Sperre, und der zweite Versuch scheiterte sofort daran. Mit
         # Lock::Timeout wartet er stattdessen, bis die Sperre frei ist.
+        # Die .deb-Pakete kommen aus dem Cache (Schritt davor), `apt` laedt
+        # dann nur noch die Paketlisten und neuere Versionen vom Spiegel.
         run: |
-          echo 'DPkg::Lock::Timeout "150";' | sudo tee /etc/apt/apt.conf.d/99-lock-timeout >/dev/null
+          printf '%s\n' 'DPkg::Lock::Timeout "150";' 'APT::Keep-Downloaded-Packages "true";' \
+            | sudo tee /etc/apt/apt.conf.d/99-ci >/dev/null
+          mkdir -p ~/apt-debs
+          echo "$(ls ~/apt-debs | wc -l) Pakete aus dem Cache"
+          sudo cp ~/apt-debs/*.deb /var/cache/apt/archives/ 2>/dev/null || true
           for versuch in 1 2; do
-            timeout 180 npx playwright install-deps $PW_BROWSERS && exit 0
+            if timeout 180 npx playwright install-deps $PW_BROWSERS; then
+              cp /var/cache/apt/archives/*.deb ~/apt-debs/ 2>/dev/null || true
+              exit 0
+            fi
             echo "::warning::install-deps Versuch $versuch abgebrochen oder fehlgeschlagen"
           done
           exit 1
