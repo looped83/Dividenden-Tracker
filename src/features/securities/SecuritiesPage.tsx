@@ -1,15 +1,7 @@
 import * as React from "react";
 import { Link, useSearchParams } from "react-router";
 import { useBackState } from "@/lib/hooks/useBackState";
-import {
-  Briefcase,
-  Pencil,
-  Plus,
-  Repeat,
-  RotateCcw,
-  Trash2,
-  Archive as ArchiveIcon,
-} from "lucide-react";
+import { Briefcase, Plus, Repeat } from "lucide-react";
 import { MD_BREAKPOINT_QUERY, useMediaQuery } from "@/lib/hooks/useMediaQuery";
 import { monthNameDeShort, normalizePayoutMonths } from "@/lib/statistics";
 import { SecurityImportButton } from "@/features/securities/SecurityImportDialog";
@@ -20,7 +12,6 @@ import {
 import { PortfolioSummary } from "@/features/securities/PortfolioSummary";
 import { SecurityFormDialog } from "@/features/securities/SecurityFormDialog";
 import { DepotHeaderActions } from "@/features/securities/DepotHeaderActions";
-import { DeleteSecurityDialog } from "@/features/securities/DeleteSecurityDialog";
 import { AmountText } from "@/components/money/AmountText";
 import { formatPercent, MoneyDecimal, type DecimalInstance } from "@/lib/money";
 import { Button } from "@/components/ui/button";
@@ -45,7 +36,6 @@ import { ListGroup, ListRow } from "@/components/ui/list";
 import { cn } from "@/lib/utils/cn";
 import { useDepots } from "@/features/depots/hooks";
 import { useSecuritiesByDepot } from "@/features/payments/hooks";
-import { useArchiveToggle } from "@/components/domain/useArchiveToggle";
 import {
   Table,
   TableBody,
@@ -57,11 +47,7 @@ import {
 } from "@/components/ui/table";
 import { usePositionCaps } from "@/features/planner/positionCaps";
 import { useSavingsPlans } from "@/features/planner/savingsPlanHooks";
-import {
-  useArchiveSecurity,
-  useSecurities,
-  useSecuritySnapshots,
-} from "@/features/securities/hooks";
+import { useSecurities, useSecuritySnapshots } from "@/features/securities/hooks";
 import {
   buildAssetRows,
   hasPositions,
@@ -122,7 +108,6 @@ export function SecuritiesPage() {
       ),
     [savingsPlans],
   );
-  const toggleArchive = useArchiveToggle(useArchiveSecurity());
   // Filter und Sortierung stehen in der Adresse — wie in der Dividendenliste.
   // Als lokaler Zustand waren sie weg, sobald man ein Asset oeffnete und
   // zurueckkam.
@@ -151,14 +136,9 @@ export function SecuritiesPage() {
   // Wo Dividenden eines Assets gebucht sind — nur geladen, solange nach Depot
   // gefiltert wird (meist liegt die Historie ohnehin schon im Cache).
   const { data: bookedByDepot } = useSecuritiesByDepot(depotFilter !== "");
-  const [dialog, setDialog] = React.useState<{
-    open: boolean;
-    security: Security | null;
-  }>({
-    open: false,
-    security: null,
-  });
-  const [deleteTarget, setDeleteTarget] = React.useState<Security | null>(null);
+  // Nur noch fuers Anlegen: Bearbeiten, Archivieren und Loeschen stehen im
+  // Kopf der Detailseite.
+  const [createOpen, setCreateOpen] = React.useState(false);
   // Ein Dialog fuer beide Ausloeser des Depotstand-Imports (Kennzahlkopf und
   // Seitenende), siehe `PortfolioImportButton`.
   const [portfolioImportOpen, setPortfolioImportOpen] = React.useState(false);
@@ -300,24 +280,6 @@ export function SecuritiesPage() {
     setParams({ sector: null, currency: null, depot: null, status: null });
   };
 
-  // Die Zeilenaktionen der Tabelle (bearbeiten, archivieren/reaktivieren,
-  // endgueltig loeschen). Auf dem Telefon stehen dieselben im Kopf der
-  // Detailseite; die Zeile ist dort eine Tippflaeche.
-  const actionsFor = (security: Security) => (
-    <AssetActions
-      security={security}
-      onEdit={() => {
-        setDialog({ open: true, security });
-      }}
-      onArchive={() => {
-        toggleArchive(security, `„${security.name}"`);
-      }}
-      onDelete={() => {
-        setDeleteTarget(security);
-      }}
-    />
-  );
-
   return (
     <div className="space-y-10">
       {/* Kennzahlen des Depotstands, sofern einer importiert ist. Sie stehen
@@ -435,7 +397,7 @@ export function SecuritiesPage() {
           <Button
             variant="outline"
             onClick={() => {
-              setDialog({ open: true, security: null });
+              setCreateOpen(true);
             }}
           >
             <Plus /> Neues Asset
@@ -476,7 +438,7 @@ export function SecuritiesPage() {
               action={
                 <Button
                   onClick={() => {
-                    setDialog({ open: true, security: null });
+                    setCreateOpen(true);
                   }}
                 >
                   Erstes Asset anlegen
@@ -525,16 +487,13 @@ export function SecuritiesPage() {
                       {sortHead("depot", "Depot", "left", "hidden lg:table-cell")}
                     </>
                   )}
-                  <TableHead className="w-0">
-                    <span className="sr-only">Aktionen</span>
-                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {visible.map((row) => {
                   const { security, position } = row;
                   return (
-                    <TableRow key={security.id}>
+                    <TableRow key={security.id} className="relative">
                       <TableCell>
                         <AssetName
                           row={row}
@@ -620,11 +579,6 @@ export function SecuritiesPage() {
                           </TableCell>
                         </>
                       )}
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          {actionsFor(security)}
-                        </div>
-                      </TableCell>
                     </TableRow>
                   );
                 })}
@@ -661,18 +615,9 @@ export function SecuritiesPage() {
       />
 
       <SecurityFormDialog
-        security={dialog.security}
-        open={dialog.open}
-        onOpenChange={(open) => {
-          setDialog((current) => ({ ...current, open }));
-        }}
-      />
-
-      <DeleteSecurityDialog
-        security={deleteTarget}
-        onOpenChange={(open) => {
-          if (!open) setDeleteTarget(null);
-        }}
+        security={null}
+        open={createOpen}
+        onOpenChange={setCreateOpen}
       />
     </div>
   );
@@ -745,7 +690,9 @@ function AssetName({ row, savingsPlan }: { row: AssetRow; savingsPlan: boolean }
       <Link
         to={`/depot/${security.id}`}
         state={backState}
-        className="rounded-sm font-medium outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+        // Spannt sich ueber die ganze Tabellenzeile (`relative` am `tr`): Die
+        // Zeile fuehrt zur Detailseite, die Aktionen dort tragen.
+        className="rounded-sm font-medium outline-none after:absolute after:inset-0 hover:underline focus-visible:ring-2 focus-visible:ring-ring"
       >
         {security.name}
       </Link>
@@ -887,57 +834,5 @@ function AssetItem({ row, savingsPlan }: { row: AssetRow; savingsPlan: boolean }
         </Link>
       </ListRow>
     </li>
-  );
-}
-
-/**
- * Zeilenaktionen der Tabelle: bearbeiten, archivieren bzw. reaktivieren und —
- * nur bei archivierten Assets — endgueltig loeschen. Dieselben Aktionen traegt
- * der Kopf der Detailseite.
- */
-function AssetActions({
-  security,
-  onEdit,
-  onArchive,
-  onDelete,
-}: {
-  security: Security;
-  onEdit: () => void;
-  onArchive: () => void;
-  onDelete: () => void;
-}) {
-  return (
-    <>
-      <Button
-        variant="ghost"
-        size="icon"
-        aria-label={`${security.name} bearbeiten`}
-        onClick={onEdit}
-      >
-        <Pencil />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon"
-        aria-label={
-          security.archived_at
-            ? `${security.name} reaktivieren`
-            : `${security.name} archivieren`
-        }
-        onClick={onArchive}
-      >
-        {security.archived_at ? <RotateCcw /> : <ArchiveIcon />}
-      </Button>
-      {security.archived_at && (
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label={`${security.name} endgültig löschen`}
-          onClick={onDelete}
-        >
-          <Trash2 />
-        </Button>
-      )}
-    </>
   );
 }

@@ -230,8 +230,9 @@ Die Zahlen stammen ausschließlich aus dem **jüngsten** Stand: Ein Papier, das 
 verkauft und zeigt keine Position mehr. Kein Wert daraus fließt in Statistik oder Ziele
 (Grundsatz 8).
 
-Der Name führt auf die Detailseite mit Verlauf, Stammdaten und Zahlungshistorie; rechts stehen
-unverändert die Zeilenaktionen (bearbeiten, archivieren, endgültig löschen). Auf dem iPhone
+Die ganze Zeile führt auf die Detailseite mit Verlauf, Stammdaten und Zahlungshistorie; dort
+stehen Bearbeiten, Archivieren und endgültiges Löschen, die Tabelle trägt keine Zeilenaktionen
+(seit 2.48.0). Auf dem iPhone
 tritt an die Stelle der Tabelle eine **Kartenansicht** mit denselben Zahlen — wie in der
 Dividendenliste.
 
@@ -486,12 +487,10 @@ erkannt.
 
 **Keine Mehrfachauswahl.** Die Liste kennt keine Auswahlkästchen und keine
 Massenaktionen. Bearbeiten, Stornieren/Reaktivieren und dauerhaftes Löschen
-stehen auf breiten Schirmen je Eingang in seiner Tabellenzeile — für einen
-persönlichen Bestand ist das der kürzere Weg, und die Liste bleibt frei von
-einer Spalte und einem Modus, die sonst dauerhaft mitliefen. Auf dem iPhone
-ist jede Karte eine einzige Tippfläche zur Detailseite, die alle Aktionen
-trägt: drei Symbole je Karte ergaben 75 Schaltflächen pro Seite, das Löschen
-einen Daumen breit neben dem Bearbeiten. Die Detailseite führt samt Filter und
+stehen nur auf der Detailseite. Auf dem iPhone ist jede Karte, auf breiten
+Schirmen jede Tabellenzeile eine einzige Fläche zur Detailseite (seit 2.48.0
+auch dort ohne Symbole): drei Symbole je Zeile ergaben 75 Schaltflächen pro
+Seite, das Löschen einen Daumen breit neben dem Bearbeiten. Die Detailseite führt samt Filter und
 Seite zur Liste zurück, ebenso nach dem Bearbeiten und Löschen.
 
 **Datenqualität** (`/eingaenge/datenqualitaet`). Mögliche Dubletten (gewichtet:

@@ -358,26 +358,21 @@ describe("PaymentsPage", () => {
     expect(screen.queryByRole("button", { name: /löschen/ })).not.toBeInTheDocument();
   });
 
-  it("bietet auf breiten Schirmen je Zeile Bearbeiten, Stornieren und Löschen", () => {
+  it("fuehrt auf breiten Schirmen von der Zeile zur Detailseite, ohne Zeilenaktionen", () => {
     setViewportWide(true);
     renderList([zahlung({ id: "a" })]);
 
     // Die Liste kennt keine Mehrfachauswahl mehr: Was zu tun ist, steht an
     // der Zeile selbst.
     expect(screen.queryByLabelText(/auswählen/)).not.toBeInTheDocument();
-    // Die Namen nennen den Eingang: 25 gleichlautende „Bearbeiten" liessen
-    // sich per Screenreader nicht auseinanderhalten.
-    expect(
-      screen.getByRole("button", { name: "Apple Inc. vom 10.03.2026 bearbeiten" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Apple Inc. vom 10.03.2026 stornieren" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", {
-        name: "Apple Inc. vom 10.03.2026 dauerhaft löschen",
-      }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Apple Inc." })).toHaveAttribute(
+      "href",
+      "/eingaenge/a",
+    );
+    // Bearbeiten, Stornieren und Löschen stehen auf der Detailseite.
+    for (const name of [/bearbeiten/, /stornieren/, /löschen/]) {
+      expect(screen.queryByRole("button", { name })).not.toBeInTheDocument();
+    }
   });
 
   it("zaehlt nur stornierte Eingaenge nicht als Bestand", () => {

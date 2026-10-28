@@ -185,23 +185,16 @@ describe("SecuritiesPage", () => {
     expect(screen.queryByText("Dividenden werden reinvestiert")).not.toBeInTheDocument();
   });
 
-  it("führt vom Namen auf die Detailseite und behält die Zeilenaktionen", () => {
+  it("führt vom Namen auf die Detailseite, Aktionen stehen nur dort", () => {
     renderPage([snapshot()]);
 
     expect(screen.getByRole("link", { name: "Alpha AG" })).toHaveAttribute(
       "href",
       "/depot/sec-a",
     );
-    expect(
-      screen.getByRole("button", { name: "Alpha AG bearbeiten" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Alpha AG archivieren" }),
-    ).toBeInTheDocument();
-    // Endgültig löschen gibt es weiterhin nur für archivierte Assets.
-    expect(
-      screen.queryByRole("button", { name: "Alpha AG endgültig löschen" }),
-    ).not.toBeInTheDocument();
+    for (const name of [/bearbeiten/, /archivieren/, /löschen/]) {
+      expect(screen.queryByRole("button", { name })).not.toBeInTheDocument();
+    }
   });
 
   it("zeigt auf dem Telefon dieselben Zahlen als Zeile, die zur Detailseite fuehrt", () => {
