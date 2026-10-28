@@ -108,11 +108,11 @@ export function PaymentKpiHero({
 
 type HistoryView = "monthly" | "yearly" | "cumulative";
 
-// Die einzelnen Dividenden zuerst und vorausgewaehlt, dann je Jahr, die Summe
-// zuletzt.
+// Je Jahr zuerst und vorausgewaehlt (seit 2.48.1): Der Jahrestrend sagt
+// ueber ein Asset mehr als die einzelnen Zahlungen. Die Summe zuletzt.
 const VIEW_OPTIONS: readonly SegmentOption<HistoryView>[] = [
-  { value: "monthly", label: "Je Zahlung" },
   { value: "yearly", label: "Je Jahr" },
+  { value: "monthly", label: "Je Zahlung" },
   { value: "cumulative", label: "Kumuliert" },
 ];
 
@@ -172,7 +172,10 @@ export function PaymentInsightsView({
   const { data: depots = [] } = useDepots();
   const todayYear = useToday().year;
 
-  const [view, setView] = React.useState<HistoryView>("monthly");
+  // Mit nur einem Jahr waere die Jahresansicht ein einzelner Balken.
+  const [view, setView] = React.useState<HistoryView>(
+    years.length > 1 ? "yearly" : "monthly",
+  );
 
   const chartData = React.useMemo<CategoryDatum[]>(
     () =>
@@ -238,7 +241,7 @@ export function PaymentInsightsView({
           hoeher als die Kennzahlleiste und ragte unter ihr weit heraus. */}
       <div className="grid grid-cols-1 gap-10 pt-4 lg:grid-cols-2 lg:gap-x-16">
         <div className="space-y-10">
-          {chartData.length > 1 && (
+          {(history.length > 1 || years.length > 1) && (
             <Section
               title="Verlauf"
               action={
