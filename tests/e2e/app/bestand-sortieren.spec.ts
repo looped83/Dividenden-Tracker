@@ -50,3 +50,20 @@ test("sortiert die Assettabelle per Spaltenkopf", async ({ page, konto }) => {
     page.getByRole("columnheader", { name: "Nach Gewinn sortieren" }),
   ).toHaveAttribute("aria-sort", "descending");
 });
+
+test("öffnet das Asset per Klick irgendwo in der Tabellenzeile", async ({
+  page,
+  konto,
+}) => {
+  await seedPortfolio(konto.userId);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/#/depot");
+  // Seit 2.48.0 traegt die Zeile keine Aktionen mehr; sie fuehrt zur
+  // Detailseite. Geklickt wird auf den Wert, nicht auf den Namen.
+  await page
+    .getByRole("row", { name: /Allianz/ })
+    .getByRole("cell")
+    .nth(1)
+    .click();
+  await expect(page).toHaveURL(/#\/depot\/[0-9a-f-]+$/);
+});

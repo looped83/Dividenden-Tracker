@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Link, useSearchParams } from "react-router";
 import { useBackState } from "@/lib/hooks/useBackState";
+import { useRowLink } from "@/lib/hooks/useRowLink";
 import { Briefcase, Plus, Repeat } from "lucide-react";
 import { MD_BREAKPOINT_QUERY, useMediaQuery } from "@/lib/hooks/useMediaQuery";
 import { monthNameDeShort, normalizePayoutMonths } from "@/lib/statistics";
@@ -139,6 +140,9 @@ export function SecuritiesPage() {
   // Nur noch fuers Anlegen: Bearbeiten, Archivieren und Loeschen stehen im
   // Kopf der Detailseite.
   const [createOpen, setCreateOpen] = React.useState(false);
+  // Die ganze Tabellenzeile fuehrt zur Detailseite (`useRowLink`).
+  const openRow = useRowLink();
+  const backState = useBackState();
   // Ein Dialog fuer beide Ausloeser des Depotstand-Imports (Kennzahlkopf und
   // Seitenende), siehe `PortfolioImportButton`.
   const [portfolioImportOpen, setPortfolioImportOpen] = React.useState(false);
@@ -493,7 +497,11 @@ export function SecuritiesPage() {
                 {visible.map((row) => {
                   const { security, position } = row;
                   return (
-                    <TableRow key={security.id} className="relative">
+                    <TableRow
+                      key={security.id}
+                      className="cursor-pointer"
+                      onClick={openRow(`/depot/${security.id}`, backState)}
+                    >
                       <TableCell>
                         <AssetName
                           row={row}
@@ -690,9 +698,7 @@ function AssetName({ row, savingsPlan }: { row: AssetRow; savingsPlan: boolean }
       <Link
         to={`/depot/${security.id}`}
         state={backState}
-        // Spannt sich ueber die ganze Tabellenzeile (`relative` am `tr`): Die
-        // Zeile fuehrt zur Detailseite, die Aktionen dort tragen.
-        className="rounded-sm font-medium outline-none after:absolute after:inset-0 hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+        className="rounded-sm font-medium outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
       >
         {security.name}
       </Link>
