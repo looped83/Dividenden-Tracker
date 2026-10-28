@@ -538,6 +538,18 @@ Jede Zahlung in `/eingaenge` trägt einen Indikator, wie sie zur Zahlung desselb
 - Der Indikator nennt in Titel und Screenreader-Text Differenz, Betrag **und Datum** der
   Vergleichszahlung; damit bleibt nachprüfbar, worauf er sich stützt.
 
+### 11.11.1 Dividenden-Detailseite · Je Jahr (`derivePaymentInsights`, seit 2.47.0)
+
+- **Balken:** Nettosumme des Assets je Kalenderjahr (effektives Datum, §10), depotübergreifend;
+  Jahre ohne Dividende zwischen der ersten und der letzten stehen mit 0 darin. Höchstens zwölf
+  Jahre, das Fenster endet möglichst beim Jahr der geöffneten Dividende (wie die Monate). Das
+  Jahr der geöffneten Dividende steht in der Akzentfarbe, das laufende Jahr heißt im Tooltip
+  „bis heute".
+- **Ø-Wachstum:** CAGR der Jahressummen über die letzten höchstens drei **vollen** Jahre: Das
+  erste Jahr mit Dividende (meist angebrochen) und das laufende Jahr zählen nicht. Ohne zwei
+  solche Jahre oder bei 0 im Startjahr keine Angabe. Zukäufe stecken mit darin — ohne
+  Stückzahl je Zahlung gibt es keine Erhöhung je Aktie (§11.11).
+
 ## 11.12 Breakdown — Jahre × Monate (`breakdownMatrix`)
 
 Alle Jahre und Monate in **einer** Matrix (Statistik-Übersicht `/statistiken`; die frühere

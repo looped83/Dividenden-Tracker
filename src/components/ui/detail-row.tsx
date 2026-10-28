@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 /**
  * Eine Zeile „Beschriftung — Wert" einer Detailseite, mit Trennlinie darunter.
- * Gemeinsam fuer Dividende (Brutto zu Netto) und Asset (Position, Stammdaten),
+ * Gemeinsam fuer Dividende (Storno) und Asset (Position, Stammdaten),
  * damit beide Seiten dieselbe Zeilenhoehe und Schrift tragen.
  */
 export function DetailRow({ label, children }: { label: string; children: ReactNode }) {
