@@ -265,8 +265,8 @@ jobs:
     timeout-minutes: 15
     # WebKit nur auf main, wie in e2e-smoke.
     env:
-      E2E_WEBKIT: true
-      PW_BROWSERS: chromium webkit
+      E2E_WEBKIT: ${{ github.event_name == 'push' }}
+      PW_BROWSERS: ${{ github.event_name == 'push' && 'chromium webkit' || 'chromium' }}
     services:
       postgres:
         image: postgres:16
