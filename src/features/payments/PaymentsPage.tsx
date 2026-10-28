@@ -1,14 +1,6 @@
 import * as React from "react";
 import { Link, useSearchParams } from "react-router";
-import {
-  Ban,
-  ChevronDown,
-  Pencil,
-  RotateCcw,
-  ShieldCheck,
-  Trash2,
-  Wallet,
-} from "lucide-react";
+import { ChevronDown, ShieldCheck, Wallet } from "lucide-react";
 import {
   effectivePayDate,
   monthNameDe,
@@ -47,19 +39,12 @@ import {
 import { AmountText } from "@/components/money/AmountText";
 import { formatCountNoun } from "@/lib/utils/formatNumber";
 import { MD_BREAKPOINT_QUERY, useMediaQuery } from "@/lib/hooks/useMediaQuery";
-import { useToast } from "@/components/ui/toast";
 import { useToday } from "@/lib/hooks/useToday";
 import { cn } from "@/lib/utils/cn";
 import { Money, toCurrencyCode } from "@/lib/money";
-import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { useDepots } from "@/features/depots/hooks";
 import { useSecurities } from "@/features/securities/hooks";
-import {
-  useAllPayments,
-  useArchivePayment,
-  useDeletePayment,
-  useUnarchivePayment,
-} from "@/features/payments/hooks";
+import { useAllPayments } from "@/features/payments/hooks";
 import type { PaymentListRow } from "@/lib/supabase/repositories/payments";
 import {
   parsePage,
@@ -68,14 +53,8 @@ import {
   statusNeedsArchived,
 } from "@/features/payments/listParams";
 import { sortRows, type SortableRow } from "@/features/payments/sortRows";
-import { sourceLabel } from "@/features/payments/paymentDisplay";
 import { formatCalendarDate } from "@/lib/utils/formatDate";
 import { formatMonthYear } from "@/features/dashboard/format";
-import {
-  DeleteDialog,
-  StornoDialog,
-  type PaymentSummaryData,
-} from "@/features/payments/dialogs";
 import {
   compareToPreviousYear,
   type YearOverYearComparison,
@@ -109,7 +88,6 @@ const SORT_OPTIONS: readonly FilterSortOption[] = [
 ];
 
 export function PaymentsPage() {
-  const { notify } = useToast();
   const newPayment = usePaymentComposer();
   const { data: depots = [] } = useDepots();
   const { data: securities = [], isLoading: securitiesLoading } = useSecurities();
@@ -355,70 +333,6 @@ export function PaymentsPage() {
   );
   const remainingMonths = allMonths ? allMonths.length - groups.length : 0;
 
-  // --- Einzelaktionen: Storno / Reaktivieren / Löschen. ---
-  const archivePayment = useArchivePayment();
-  const unarchivePayment = useUnarchivePayment();
-  const deletePayment = useDeletePayment();
-  // Reaktivieren laeuft ohne Bestaetigungsdialog — ohne Rueckmeldung bliebe
-  // offen, ob es geklappt hat; ein Fehler ginge sogar voellig unter.
-  const reactivate = async (id: string) => {
-    try {
-      await unarchivePayment.mutateAsync(id);
-      notify("Dividende reaktiviert.");
-    } catch (error) {
-      notify(
-        getErrorMessage(error, "Die Dividende konnte nicht reaktiviert werden."),
-        "negative",
-      );
-    }
-  };
-  const [stornoTarget, setStornoTarget] = React.useState<Row | null>(null);
-  const [stornoError, setStornoError] = React.useState<string | null>(null);
-  const [deleteTarget, setDeleteTarget] = React.useState<Row | null>(null);
-  const [deleteError, setDeleteError] = React.useState<string | null>(null);
-
-  const summaryOf = (row: Row): PaymentSummaryData => ({
-    company: row.companyName || "—",
-    depot: row.depotName || "—",
-    payDate: row.payment.pay_date,
-    amount: <AmountText amount={row.amount} />,
-    source: sourceLabel(row.payment.source),
-  });
-
-  const handleStorno = async (stornoReason: string) => {
-    if (!stornoTarget) return;
-    setStornoError(null);
-    try {
-      await archivePayment.mutateAsync({
-        id: stornoTarget.payment.id,
-        reason: stornoReason || undefined,
-      });
-      setStornoTarget(null);
-      notify("Dividende storniert.");
-    } catch (error) {
-      setStornoError(
-        getErrorMessage(error, "Die Dividende konnte nicht storniert werden."),
-      );
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!deleteTarget) return;
-    setDeleteError(null);
-    try {
-      await deletePayment.mutateAsync(deleteTarget.payment.id);
-      setDeleteTarget(null);
-      notify("Dividende dauerhaft gelöscht.");
-    } catch (error) {
-      setDeleteError(
-        getErrorMessage(
-          error,
-          "Die Dividende konnte nicht gelöscht werden. Die Daten wurden nicht verändert.",
-        ),
-      );
-    }
-  };
-
   const listSearch = searchParams.toString();
   const listUrl = listSearch ? `/eingaenge?${listSearch}` : "/eingaenge";
 
@@ -596,9 +510,6 @@ export function PaymentsPage() {
                   <TableHead>Asset</TableHead>
                   <TableHead>Depot</TableHead>
                   <TableHead className="text-right">Netto</TableHead>
-                  <TableHead className="w-0">
-                    <span className="sr-only">Aktionen</span>
-                  </TableHead>
                 </TableRow>
               </TableHeader>
               {/* Keine Linie unter der letzten Zeile eines Monats — wie in den
@@ -648,16 +559,18 @@ export function PaymentsPage() {
                               afterOpen && "pt-8",
                             )}
                           >
-                            {monthTotal && <AmountText amount={monthTotal} />}
-                          </td>
-                          <td className={cn("px-3 py-3", afterOpen && "pt-8")}>
-                            <ChevronDown
-                              aria-hidden
-                              className={cn(
-                                "ml-auto size-4 text-muted-foreground transition-transform motion-reduce:transition-none",
-                                open && "rotate-180",
-                              )}
-                            />
+                            {/* Summe links des Pfeils — wie im Monatskopf auf
+                                dem Telefon. */}
+                            <span className="inline-flex items-center justify-end gap-2">
+                              {monthTotal && <AmountText amount={monthTotal} />}
+                              <ChevronDown
+                                aria-hidden
+                                className={cn(
+                                  "size-4 text-muted-foreground transition-transform motion-reduce:transition-none",
+                                  open && "rotate-180",
+                                )}
+                              />
+                            </span>
                           </td>
                         </TableRow>
                       ) : (
@@ -676,7 +589,6 @@ export function PaymentsPage() {
                             <td className="px-3 pb-2 pt-10 text-right text-[0.9375rem] font-medium text-muted-foreground tabular-amount group-first/month:pt-2">
                               {monthTotal && <AmountText amount={monthTotal} />}
                             </td>
-                            <td aria-hidden />
                           </TableRow>
                         )
                       )}
@@ -687,15 +599,6 @@ export function PaymentsPage() {
                             row={row}
                             comparison={yearOverYear.get(row.id)}
                             listUrl={listUrl}
-                            onStorno={() => {
-                              setStornoError(null);
-                              setStornoTarget(row);
-                            }}
-                            onReactivate={() => void reactivate(row.payment.id)}
-                            onDelete={() => {
-                              setDeleteError(null);
-                              setDeleteTarget(row);
-                            }}
                           />
                         ))}
                     </React.Fragment>
@@ -784,66 +687,27 @@ export function PaymentsPage() {
           Weitere anzeigen
         </LoadMore>
       )}
-
-      <StornoDialog
-        open={stornoTarget !== null}
-        onOpenChange={(open) => {
-          if (!open) setStornoTarget(null);
-        }}
-        summary={stornoTarget ? summaryOf(stornoTarget) : null}
-        error={stornoError}
-        isPending={archivePayment.isPending}
-        onConfirm={(reason) => void handleStorno(reason)}
-      />
-
-      <DeleteDialog
-        open={deleteTarget !== null}
-        onOpenChange={(open) => {
-          if (!open) setDeleteTarget(null);
-        }}
-        summary={deleteTarget ? summaryOf(deleteTarget) : null}
-        error={deleteError}
-        isPending={deletePayment.isPending}
-        onConfirm={() => void handleDelete()}
-      />
     </div>
   );
 }
 
-interface RowActionProps {
+interface PaymentRowProps {
   row: Row;
   comparison: YearOverYearComparison | undefined;
   listUrl: string;
-  onStorno: () => void;
-  onReactivate: () => void;
-  onDelete: () => void;
 }
 
 /**
- * Wen eine Zeilenaktion betrifft — fuer die Namen der Symbolschaltflaechen.
- * Nur „Bearbeiten" hiesse auf jeder Zeile gleich: Wer die Liste per
- * Screenreader oder Sprachsteuerung durchgeht, koennte die 25 Schaltflaechen
- * einer Seite nicht auseinanderhalten.
+ * Eine Zeile der Tabelle ab `md`. Aktionen (bearbeiten, stornieren, löschen)
+ * stehen nur auf der Detailseite — wie in der Liste auf dem Telefon. Die ganze
+ * Zeile führt dorthin: Der Link am Unternehmen spannt sich über sie.
  */
-function actionSubject({ companyName, effectiveDate }: Row): string {
-  return `${companyName || "Dividende"} vom ${formatCalendarDate(effectiveDate)}`;
-}
-
-function PaymentRow({
-  row,
-  comparison,
-  listUrl,
-  onStorno,
-  onReactivate,
-  onDelete,
-}: RowActionProps) {
+function PaymentRow({ row, comparison, listUrl }: PaymentRowProps) {
   const { payment, effectiveDate, companyName, depotName, amount } = row;
   const shifted = effectiveDate !== payment.pay_date;
   const cancelled = Boolean(payment.archived_at);
-  const subject = actionSubject(row);
-  const edit = usePaymentComposer({ paymentId: payment.id });
   return (
-    <TableRow>
+    <TableRow className="relative">
       <TableCell className="whitespace-nowrap text-muted-foreground tabular-amount">
         {formatCalendarDate(effectiveDate)}
         {shifted && (
@@ -861,7 +725,7 @@ function PaymentRow({
         <Link
           to={`/eingaenge/${payment.id}`}
           state={{ from: listUrl }}
-          className="rounded-sm outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+          className="rounded-sm outline-none after:absolute after:inset-0 hover:underline focus-visible:ring-2 focus-visible:ring-ring"
         >
           {companyName || "—"}
         </Link>
@@ -881,51 +745,6 @@ function PaymentRow({
           {comparison && <YearOverYearIndicator comparison={comparison} />}
           <AmountText amount={amount} />
         </span>
-      </TableCell>
-      <TableCell className="py-1 text-right">
-        {/* Ohne Rahmen: Drei umrandete Knoepfe je Zeile machten aus der Liste
-            ein Raster aus Kaesten. Die Symbole bleiben sichtbar (keine
-            Hover-Abhaengigkeit), die Flaeche erscheint beim Zeigen. */}
-        <div className="flex justify-end gap-0.5 text-muted-foreground">
-          {cancelled ? (
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label={`${subject} reaktivieren`}
-              onClick={onReactivate}
-            >
-              <RotateCcw />
-            </Button>
-          ) : (
-            <>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label={`${subject} bearbeiten`}
-                aria-haspopup="dialog"
-                {...edit}
-              >
-                <Pencil />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label={`${subject} stornieren`}
-                onClick={onStorno}
-              >
-                <Ban />
-              </Button>
-            </>
-          )}
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label={`${subject} dauerhaft löschen`}
-            onClick={onDelete}
-          >
-            <Trash2 />
-          </Button>
-        </div>
       </TableCell>
     </TableRow>
   );
