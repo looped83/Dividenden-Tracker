@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { parsePositionCaps, toStoredPositionCaps } from "@/features/planner/positionCaps";
+import {
+  isPositionCap,
+  parsePositionCaps,
+  toStoredPositionCaps,
+} from "@/features/planner/positionCaps";
 
 const ID = "6f1c2b8e-3d4a-4c5b-9e7f-0a1b2c3d4e5f";
 
@@ -8,7 +12,7 @@ describe("parsePositionCaps", () => {
     const caps = parsePositionCaps({
       [ID]: 12,
       "kein-uuid": 5,
-      [ID.replace("6f", "7f")]: 0,
+      [ID.replace("6f", "7f")]: -1,
     });
     expect([...caps]).toEqual([[ID, 12]]);
   });
@@ -23,9 +27,22 @@ describe("parsePositionCaps", () => {
     expect(parsePositionCaps({ [ID]: 0.4 }).size).toBe(0);
   });
 
+  it("behält eine bewusst eingegebene 0 (seit 2.42.0)", () => {
+    const stored = toStoredPositionCaps(new Map([[ID, 0]]));
+    expect(stored).toEqual({ [ID]: 0 });
+    expect(parsePositionCaps(stored).get(ID)).toBe(0);
+  });
+
   it("speichert leer als null und übersteht den Rundweg", () => {
     expect(toStoredPositionCaps(new Map())).toBeNull();
     const stored = toStoredPositionCaps(new Map([[ID, 20]]));
     expect(parsePositionCaps(stored).get(ID)).toBe(20);
+  });
+});
+
+describe("isPositionCap", () => {
+  it("erlaubt 0 und 0,5–50", () => {
+    expect([0, 0.5, 12.5, 50].every(isPositionCap)).toBe(true);
+    expect([0.4, 50.1, -1].some(isPositionCap)).toBe(false);
   });
 });
