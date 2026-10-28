@@ -269,7 +269,7 @@ function Purchase({
               : plan === null
                 ? `Mindestens ${String(rules.minimum)} € je Kauf.`
                 : ![...caps.values()].some((cap) => cap > 0)
-                  ? "Gib Assets auf ihrer Seite eine Zielgewichtung, dann schlägt der Nachkauf sie vor."
+                  ? "Gib Assets beim Bearbeiten eine Zielgewichtung, dann schlägt der Nachkauf sie vor."
                   : "Kein Asset hat unter seiner Zielgewichtung noch Platz."}
           </p>
         ) : (

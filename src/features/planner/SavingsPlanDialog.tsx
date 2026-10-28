@@ -1,7 +1,5 @@
 import * as React from "react";
-import { AmountInput } from "@/components/ui/amount-input";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -9,32 +7,24 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
-import {
-  EUR,
-  Money,
-  MoneyDecimal,
-  normalizeGermanDecimalInput,
-  toGermanAmountInput,
-} from "@/lib/money";
 import { compareGerman } from "@/lib/utils/compareText";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
-import { useDepots } from "@/features/depots/hooks";
 import { useSecurities } from "@/features/securities/hooks";
-import { newSavingsPlanId, useSaveSavingsPlans } from "./savingsPlanHooks";
+import { useSaveSavingsPlans } from "./savingsPlanHooks";
+import { SAVINGS_PLANS_MAX, type SavingsPlan } from "./savingsPlans";
+import { SavingsPlanFields } from "./SavingsPlanFields";
 import {
-  INTERVAL_LABEL,
-  SAVINGS_PLAN_AMOUNT_MAX,
-  SAVINGS_PLANS_MAX,
-  type SavingsInterval,
-  type SavingsPlan,
-} from "./savingsPlans";
+  draftFromPlan,
+  emptyDraft,
+  planFromDraft,
+  type SavingsPlanDraft,
+} from "./savingsPlanDraft";
 
 /**
  * Einen Sparplan anlegen, ändern oder löschen (seit 2.21.0) — aus Planer ›
- * Sparpläne oder von der Seite des Assets. Gespeichert wird die ganze Liste
+ * Sparpläne; am Asset selbst seit 2.44.0 im Formular „Asset bearbeiten". Gespeichert wird die ganze Liste
  * mit dem geänderten Plan (wie die Fixkosten).
  */
 export function SavingsPlanDialog({
@@ -42,7 +32,6 @@ export function SavingsPlanDialog({
   onOpenChange,
   plans,
   plan,
-  securityId,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -50,8 +39,6 @@ export function SavingsPlanDialog({
   plans: readonly SavingsPlan[];
   /** Der bearbeitete Plan; fehlt er, entsteht ein neuer. */
   plan?: SavingsPlan | undefined;
-  /** Fest vorgegebenes Asset (Asset-Seite); sonst wählbar. */
-  securityId?: string | undefined;
 }) {
   const contentRef = React.useRef<HTMLDivElement>(null);
   const close = () => {
@@ -72,12 +59,7 @@ export function SavingsPlanDialog({
         <DialogHeader>
           <DialogTitle>{plan ? "Sparplan bearbeiten" : "Neuer Sparplan"}</DialogTitle>
         </DialogHeader>
-        <SavingsPlanForm
-          plans={plans}
-          plan={plan}
-          securityId={securityId}
-          onDone={close}
-        />
+        <SavingsPlanForm plans={plans} plan={plan} onDone={close} />
       </DialogContent>
     </Dialog>
   );
@@ -86,29 +68,21 @@ export function SavingsPlanDialog({
 function SavingsPlanForm({
   plans,
   plan,
-  securityId: fixedSecurityId,
   onDone,
 }: {
   plans: readonly SavingsPlan[];
   plan: SavingsPlan | undefined;
-  securityId: string | undefined;
   onDone: () => void;
 }) {
   const save = useSaveSavingsPlans();
   const { data: securities = [] } = useSecurities();
-  const { data: depots = [] } = useDepots();
-  const fixed = fixedSecurityId ?? plan?.securityId;
+  const fixed = plan?.securityId;
   const [securityId, setSecurityId] = React.useState(fixed ?? "");
-  const [amount, setAmount] = React.useState(() =>
-    plan ? toGermanAmountInput(plan.amount.toStringValue().replace(/\.00$/, "")) : "",
+  const [draft, setDraft] = React.useState<SavingsPlanDraft>(() =>
+    plan
+      ? draftFromPlan(plan)
+      : emptyDraft(securities.find((entry) => entry.id === fixed)?.default_depot_id),
   );
-  const [interval, setInterval] = React.useState<SavingsInterval>(
-    plan?.interval ?? "monthly",
-  );
-  const [nextDate, setNextDate] = React.useState(plan?.nextDate ?? "");
-  const defaultDepot = securities.find((entry) => entry.id === fixed)?.default_depot_id;
-  const [depotId, setDepotId] = React.useState(plan?.depotId ?? defaultDepot ?? "");
-  const [paused, setPaused] = React.useState(plan?.paused ?? false);
   const [error, setError] = React.useState<string | null>(null);
   const full = !plan && plans.length >= SAVINGS_PLANS_MAX;
 
@@ -133,33 +107,15 @@ function SavingsPlanForm({
 
   const onSubmit = async (event: React.SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const canonical = normalizeGermanDecimalInput(amount);
     if (securityId === "") {
       setError("Wähle ein Asset.");
       return;
     }
-    if (!/^\d+(\.\d{1,2})?$/.test(canonical)) {
-      setError("Gib eine Rate ein.");
+    const entry = planFromDraft(draft, securityId);
+    if (typeof entry === "string") {
+      setError(entry);
       return;
     }
-    const value = new MoneyDecimal(canonical);
-    if (value.lte(0)) {
-      setError("Die Rate muss größer als 0 sein.");
-      return;
-    }
-    if (value.gt(SAVINGS_PLAN_AMOUNT_MAX)) {
-      setError("Die Rate darf höchstens 100.000 € betragen.");
-      return;
-    }
-    const entry: SavingsPlan = {
-      id: plan?.id ?? newSavingsPlanId(),
-      securityId,
-      depotId: depotId === "" ? null : depotId,
-      amount: Money.fromDecimal(value, EUR),
-      interval,
-      nextDate: nextDate === "" ? null : nextDate,
-      paused,
-    };
     await persist(
       plan
         ? plans.map((other) => (other.id === plan.id ? entry : other))
@@ -182,8 +138,8 @@ function SavingsPlanForm({
             onChange={(event) => {
               setSecurityId(event.target.value);
               const chosen = securities.find((entry) => entry.id === event.target.value);
-              if (depotId === "" && chosen?.default_depot_id)
-                setDepotId(chosen.default_depot_id);
+              if (draft.depotId === "" && chosen?.default_depot_id)
+                setDraft({ ...draft, depotId: chosen.default_depot_id });
             }}
           >
             <option value="">Asset wählen</option>
@@ -196,76 +152,7 @@ function SavingsPlanForm({
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
-          <Label htmlFor="savings-plan-amount">Rate (€)</Label>
-          <AmountInput
-            id="savings-plan-amount"
-            placeholder="z. B. 100"
-            value={amount}
-            onChange={(event) => {
-              setAmount(event.currentTarget.value);
-            }}
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="savings-plan-interval">Rhythmus</Label>
-          <Select
-            id="savings-plan-interval"
-            value={interval}
-            onChange={(event) => {
-              setInterval(event.target.value as SavingsInterval);
-            }}
-          >
-            {(Object.keys(INTERVAL_LABEL) as SavingsInterval[]).map((key) => (
-              <option key={key} value={key}>
-                {INTERVAL_LABEL[key][0].toUpperCase() + INTERVAL_LABEL[key].slice(1)}
-              </option>
-            ))}
-          </Select>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2">
-        <div className="space-y-1.5">
-          <Label htmlFor="savings-plan-date">Nächste Ausführung</Label>
-          <Input
-            id="savings-plan-date"
-            type="date"
-            value={nextDate}
-            onChange={(event) => {
-              setNextDate(event.currentTarget.value);
-            }}
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="savings-plan-depot">Depot</Label>
-          <Select
-            id="savings-plan-depot"
-            value={depotId}
-            onChange={(event) => {
-              setDepotId(event.target.value);
-            }}
-          >
-            <option value="">Kein Depot</option>
-            {depots.map((depot) => (
-              <option key={depot.id} value={depot.id}>
-                {depot.name}
-              </option>
-            ))}
-          </Select>
-        </div>
-      </div>
-
-      <label className="flex min-h-11 items-center gap-3 text-sm">
-        <Checkbox
-          checked={paused}
-          onCheckedChange={(checked) => {
-            setPaused(checked === true);
-          }}
-        />
-        Pausiert
-      </label>
+      <SavingsPlanFields idPrefix="savings-plan" draft={draft} onChange={setDraft} />
 
       {full && (
         <p role="alert" className="text-sm text-negative">

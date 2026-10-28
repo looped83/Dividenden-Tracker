@@ -941,7 +941,7 @@ die Eingaben stehen in der Adresse (`?modus=sparplan&betrag=1000&fokus=monate&an
   Prognose, werden aber weder im Nachkauf noch als Füller der Monatslücken vorgeschlagen.
 - **Gewichtung** (seit 2.22.0 als „Positionsgrenze“, seit 2.24.0 so benannt): Keine Position wächst über diesen Anteil am Depot nach dem
   Kauf (Marktwert aller Positionen + investiert). Die Grenze
-  wählst du **je Asset** auf seiner Seite (0,5–50 % auf eine Nachkommastelle, seit 2.24.0; zuvor ganze
+  wählst du **je Asset** unter „Bearbeiten" (seit 2.44.0; zuvor auf seiner Seite; 0,5–50 % auf eine Nachkommastelle, seit 2.24.0; zuvor ganze
   Werte 2–50 %; `profiles.position_caps`, Migration 0043, nicht
   in der Datensicherung); ohne eigene gilt 0 %: Das Asset wird nicht vorgeschlagen (seit 2.25.0; 2.24.0 fest 1 %, 2.23.1 fest 8 %, zuvor ein einstellbarer Standard
   im Nachkauf). Eine eingegebene 0 wird seit 2.42.0 als eigene Gewichtung gespeichert („bewusst
@@ -954,7 +954,7 @@ die Eingaben stehen in der Adresse (`?modus=sparplan&betrag=1000&fokus=monate&an
 - **Streuung nach dem Kauf:** größte Position, Branche und Land nach Marktwert plus Kauf; eine
   Position über der Grenze ist hervorgehoben. Assets ohne Branche oder Land bilden keine Gruppe.
 
-## 17. Sparpläne (Planer › Sparpläne und Seite des Assets, seit 2.21.0)
+## 17. Sparpläne (Planer › Sparpläne und „Asset bearbeiten", seit 2.21.0)
 
 Von Hand gepflegte Stammdaten, keine Buchungen: Sparpläne erzeugen keine Eingänge und ändern weder
 Bestand noch Prognose.
