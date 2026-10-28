@@ -8,12 +8,18 @@ import { useSearchParams } from "react-router";
  * findet der Weg zurueck von einem Eintrag sie wieder.
  *
  * `keys` ist `null`, wenn die Liste gerade nicht einklappt: Dann ist alles
- * offen.
+ * offen. Ohne `currentMonth` beginnt alles eingeklappt (Ziele).
  */
-export function useOpenMonths(keys: readonly string[] | null, currentMonth: string) {
+export function useOpenMonths(
+  keys: readonly string[] | null,
+  currentMonth: string | null,
+) {
   const [searchParams, setSearchParams] = useSearchParams();
   const openParam = searchParams.get("offen");
-  const defaultOpen = keys?.find((key) => key <= currentMonth) ?? keys?.[0];
+  const defaultOpen =
+    currentMonth === null
+      ? undefined
+      : (keys?.find((key) => key <= currentMonth) ?? keys?.[0]);
   const openMonths = new Set<string>(
     openParam !== null ? openParam.split(",") : defaultOpen ? [defaultOpen] : [],
   );

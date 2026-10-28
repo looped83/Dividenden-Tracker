@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Link } from "react-router";
-import { CalendarRange, Plus, Target } from "lucide-react";
+import { CalendarRange, ChevronDown, Plus, Target } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,6 +13,7 @@ import { DeriveMonthlyGoalsDialog } from "./DeriveMonthlyGoalsDialog";
 import { GapPurchaseBox } from "./GapPurchaseBox";
 import { GoalBarChart, type GoalBarDatum } from "@/features/statistics/components/charts";
 import { useForecastSettings } from "@/features/securities/forecastSettings";
+import { useOpenMonths } from "@/lib/hooks/useOpenMonths";
 import { useToday } from "@/lib/hooks/useToday";
 import {
   annualGoalHistory,
@@ -42,6 +43,7 @@ import {
   type RefDate,
 } from "@/lib/statistics";
 import { cn } from "@/lib/utils/cn";
+import { formatCountNoun } from "@/lib/utils/formatNumber";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import {
   useGoalProgressPayments,
@@ -222,7 +224,7 @@ function GoalsOverview({
       courses,
       average: trailingMonthlyAverage(payments, today),
       suggestion: suggestAnnualGoal(goals, payments, today, forecast.forecast),
-      list: sortForList(progress),
+      list: groupForList(progress, today.year),
       years: toYearData(history, forecast, courses, today),
       months: toMonthData(goals, payments, forecast, courses, today),
     };
@@ -339,16 +341,7 @@ function GoalsOverview({
         )}
 
         <Section title="Alle Ziele">
-          <ListGroup>
-            {data.list.map((progress) => (
-              <li key={progress.goal.id}>
-                <GoalRow
-                  progress={progress}
-                  course={data.courses.get(progress.goal.id) ?? null}
-                />
-              </li>
-            ))}
-          </ListGroup>
+          <GoalList list={data.list} courses={data.courses} />
         </Section>
       </div>
     </div>
@@ -576,11 +569,191 @@ function GoalRow({
   );
 }
 
-/** Neueste Jahre zuerst, im Jahr das Jahresziel vor seinen Monatszielen. */
-function sortForList(items: GoalProgress[]): GoalProgress[] {
-  const rank = (goal: Goal) => (goal.goalType === "annual" ? 13 : (goal.month ?? 0));
-  return items.toSorted(
-    (a, b) => b.goal.year - a.goal.year || rank(b.goal) - rank(a.goal),
+interface GoalYear {
+  year: number;
+  /** Das Jahresziel (höchstens eins je Jahr) vor den Monatszielen. */
+  annual: GoalProgress[];
+  /** Neuester Monat zuerst. */
+  months: GoalProgress[];
+}
+
+/**
+ * Neueste Jahre zuerst. `recent` sind das Vorjahr und alles danach, `older`
+ * die Jahre davor — sie klappen unter „Ältere Ziele“ zusammen.
+ */
+function groupForList(
+  items: readonly GoalProgress[],
+  currentYear: number,
+): { recent: GoalYear[]; older: GoalYear[] } {
+  const byYear = new Map<number, GoalYear>();
+  for (const item of items) {
+    const { year } = item.goal;
+    let entry = byYear.get(year);
+    if (!entry) {
+      entry = { year, annual: [], months: [] };
+      byYear.set(year, entry);
+    }
+    if (item.goal.goalType === "annual") entry.annual.push(item);
+    else entry.months.push(item);
+  }
+  const years = [...byYear.values()].toSorted((a, b) => b.year - a.year);
+  for (const entry of years) {
+    entry.months.sort((a, b) => (b.goal.month ?? 0) - (a.goal.month ?? 0));
+  }
+  return {
+    recent: years.filter((entry) => entry.year >= currentYear - 1),
+    older: years.filter((entry) => entry.year < currentYear - 1),
+  };
+}
+
+/** Eine Klappzeile lohnt erst ab zwei Zeilen, die sie verbirgt. */
+const MIN_FOLDED = 2;
+const OLDER_KEY = "aelter";
+const monthsKey = (year: number) => `monate-${String(year)}`;
+
+/**
+ * „Alle Ziele“ (seit 2.38.0): je Jahr das Jahresziel, die Monatsziele
+ * hinter einer Zeile, Jahre vor dem Vorjahr unter „Ältere Ziele“. Zuvor stand
+ * jedes Ziel als eigene Zeile — mit zwölf Monatszielen war die Liste rechts
+ * doppelt so lang wie die Diagramme daneben, die die Monate ohnehin zeigen.
+ * Alles beginnt eingeklappt; was aufgeklappt ist, steht in der Adresse
+ * (`offen`), damit der Weg zurück von einem Ziel es wiederfindet.
+ */
+function GoalList({
+  list,
+  courses,
+}: {
+  list: { recent: GoalYear[]; older: GoalYear[] };
+  courses: Courses;
+}) {
+  const olderRows = list.older.reduce(
+    (sum, entry) => sum + entry.annual.length + Math.min(entry.months.length, 1),
+    0,
+  );
+  const foldOlder = olderRows >= MIN_FOLDED;
+  const keys = [...list.recent, ...list.older]
+    .filter((entry) => entry.months.length >= MIN_FOLDED)
+    .map((entry) => monthsKey(entry.year));
+  if (foldOlder) keys.push(OLDER_KEY);
+  const { isOpen, toggle } = useOpenMonths(keys, null);
+
+  const goalRow = (progress: GoalProgress) => (
+    <li key={progress.goal.id}>
+      <GoalRow progress={progress} course={courses.get(progress.goal.id) ?? null} />
+    </li>
+  );
+
+  const yearRows = (entry: GoalYear) => {
+    const rows = entry.annual.map(goalRow);
+    if (entry.months.length < MIN_FOLDED) return [...rows, ...entry.months.map(goalRow)];
+    const key = monthsKey(entry.year);
+    const open = isOpen(key);
+    rows.push(
+      <li key={key}>
+        <FoldRow
+          count={entry.months.length}
+          unit="Ziele"
+          title="Monatsziele"
+          label={`Monatsziele ${String(entry.year)}`}
+          srCount={formatCountNoun(entry.months.length, "Ziel", "Ziele")}
+          meta={resultSummary(entry.months)}
+          open={open}
+          onToggle={() => {
+            toggle(key);
+          }}
+        />
+      </li>,
+    );
+    return open ? [...rows, ...entry.months.map(goalRow)] : rows;
+  };
+
+  const olderOpen = !foldOlder || isOpen(OLDER_KEY);
+  const first = list.older.at(-1)?.year;
+  const last = list.older.at(0)?.year;
+  return (
+    <ListGroup>
+      {list.recent.flatMap(yearRows)}
+      {foldOlder && first !== undefined && last !== undefined && (
+        <li key={OLDER_KEY}>
+          <FoldRow
+            count={list.older.length}
+            unit={list.older.length === 1 ? "Jahr" : "Jahre"}
+            title="Ältere Ziele"
+            label="Ältere Ziele"
+            srCount={formatCountNoun(list.older.length, "Jahr", "Jahre")}
+            meta={`${first === last ? String(first) : `${String(first)}–${String(last)}`} · ${resultSummary(
+              list.older.flatMap((entry) => [...entry.annual, ...entry.months]),
+            )}`}
+            open={olderOpen}
+            onToggle={() => {
+              toggle(OLDER_KEY);
+            }}
+          />
+        </li>
+      )}
+      {olderOpen && list.older.flatMap(yearRows)}
+    </ListGroup>
+  );
+}
+
+/** „9 von 10 erreicht“ über die abgeschlossenen Ziele. */
+function resultSummary(items: readonly GoalProgress[]): string {
+  let hit = 0;
+  let ended = 0;
+  for (const { status } of items) {
+    if (status === "reached" || status === "exceeded") hit += 1;
+    if (status === "reached" || status === "exceeded" || status === "missed") ended += 1;
+  }
+  return ended > 0 ? `${String(hit)} von ${String(ended)} erreicht` : "noch offen";
+}
+
+/**
+ * Klappzeile in der Form einer Zielzeile: Kachel mit der Anzahl, darunter die
+ * Bilanz, rechts der Pfeil.
+ */
+function FoldRow({
+  count,
+  unit,
+  title,
+  label,
+  srCount,
+  meta,
+  open,
+  onToggle,
+}: {
+  count: number;
+  unit: string;
+  title: string;
+  /** Vollständiger Name für Sprachausgaben. */
+  label: string;
+  /** Anzahl für Sprachausgaben, etwa „12 Ziele“. */
+  srCount: string;
+  meta: string;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <ListRow asChild>
+      <button type="button" aria-expanded={open} onClick={onToggle}>
+        <ListItemBody
+          leading={<ListTile primary={String(count)} secondary={unit} muted />}
+          title={
+            <>
+              <span aria-hidden>{title}</span>
+              <span className="sr-only">{`${label}, ${srCount}`}</span>
+            </>
+          }
+          meta={meta}
+        />
+        <ChevronDown
+          aria-hidden
+          className={cn(
+            "size-4 shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none",
+            open && "rotate-180",
+          )}
+        />
+      </button>
+    </ListRow>
   );
 }
 

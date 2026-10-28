@@ -34,7 +34,7 @@ test("leitet Monatsziele ab und zeigt die Lücke", async ({ page, konto }) => {
   await expect(page.getByText("Es fehlen ≈ 280 €")).toBeVisible();
 
   // Fehlen 2.400 − 1.260 (bis September) = 1.140 €, verteilt 160 : 300 : 400.
-  await page.getByRole("button", { name: "Monatsziele" }).click();
+  await page.getByRole("button", { name: "Monatsziele", exact: true }).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByText("Oktober")).toBeVisible();
   await expect(dialog.getByText("1.140 €")).toBeVisible();
@@ -42,11 +42,15 @@ test("leitet Monatsziele ab und zeigt die Lücke", async ({ page, konto }) => {
   await expect(dialog).toBeHidden();
 
   const row = (name: string) => page.getByRole("link", { name: new RegExp(name) });
+  // Die Monatsziele stehen eingeklappt hinter einer Zeile (seit 2.38.0).
+  await page.getByRole("button", { name: /^Monatsziele 2026/ }).click();
   await expect(row("Dividendenziel Oktober 2026")).toContainText("212,00 €");
   await expect(row("Dividendenziel November 2026")).toContainText("398,00 €");
   await expect(row("Dividendenziel Dezember 2026")).toContainText("530,00 €");
   // Alle Monate haben ein Ziel: nichts mehr abzuleiten.
-  await expect(page.getByRole("button", { name: "Monatsziele" })).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Monatsziele", exact: true }),
+  ).toHaveCount(0);
 });
 
 test("schlägt mit Depotstand einen Zukauf vor", async ({ page, konto }) => {
