@@ -1,5 +1,6 @@
 import * as React from "react";
 import { useBackState } from "@/lib/hooks/useBackState";
+import { useToday } from "@/lib/hooks/useToday";
 import { KpiHero, KpiStats, type KpiStat } from "@/components/domain/KpiHero";
 import { ListGroup } from "@/components/ui/list";
 import { Section, SectionLink } from "@/components/ui/section";
@@ -19,6 +20,7 @@ import { useDepots } from "@/features/depots/hooks";
 import { PaymentListItem } from "@/features/payments/PaymentListItem";
 import {
   deltaOf as delta,
+  type AnnualGrowth,
   type Delta,
   type PaymentInsights,
 } from "@/features/payments/paymentInsights";
@@ -104,13 +106,40 @@ export function PaymentKpiHero({
   return <KpiHero value={value} trend={trend} stats={stats} />;
 }
 
-type HistoryView = "monthly" | "cumulative";
+type HistoryView = "monthly" | "yearly" | "cumulative";
 
-// Die einzelnen Dividenden zuerst und vorausgewaehlt, die Summe danach.
+// Die einzelnen Dividenden zuerst und vorausgewaehlt, dann je Jahr, die Summe
+// zuletzt.
 const VIEW_OPTIONS: readonly SegmentOption<HistoryView>[] = [
   { value: "monthly", label: "Je Zahlung" },
+  { value: "yearly", label: "Je Jahr" },
   { value: "cumulative", label: "Kumuliert" },
 ];
+
+/** „Ø ▲ 6,6 % pro Jahr · 2022–2025" unter der Jahresansicht. */
+function GrowthLine({ growth }: { growth: AnnualGrowth }) {
+  const direction = growth.percent.isPositive()
+    ? "up"
+    : growth.percent.isNegative()
+      ? "down"
+      : null;
+  return (
+    <p className="pb-3 text-sm text-muted-foreground">
+      Ø{" "}
+      <span
+        className={cn(
+          "inline-flex items-baseline gap-1 font-medium tabular-amount",
+          direction === "up" && "text-positive",
+          direction === "down" && "text-negative",
+        )}
+      >
+        {direction ? <TrendTriangle direction={direction} announce /> : "±"}
+        {formatPercent(growth.percent.abs())}
+      </span>{" "}
+      pro Jahr · {String(growth.from)}–{String(growth.to)}
+    </p>
+  );
+}
 
 /**
  * Die Einordnung einer Dividende: Vergleich, Verlauf, Summen.
@@ -138,32 +167,45 @@ export function PaymentInsightsView({
   securityId: string;
   securityName: string;
 }) {
-  const { history, nearby } = insights;
+  const { history, years, growth, nearby } = insights;
   const backState = useBackState();
   const { data: depots = [] } = useDepots();
+  const todayYear = useToday().year;
 
   const [view, setView] = React.useState<HistoryView>("monthly");
 
   const chartData = React.useMemo<CategoryDatum[]>(
     () =>
-      history.map((entry) => {
-        // Kumuliert: insgesamt erhalten bis einschliesslich dieses Monats.
-        const money = view === "cumulative" ? entry.total : entry.net;
-        const count = entry.payments.length;
-        return {
-          key: entry.month,
-          label: monthNameDeShort(monthOf(entry.month)),
-          detail:
-            count === 1
-              ? formatCalendarDate(entry.payments[0].actualPayDate)
-              : `${monthNameDe(monthOf(entry.month))} ${String(yearOf(entry.month))} · ${formatCountNoun(count, "Dividende", "Dividenden")}`,
-          value: money.toChartNumber(),
-          money,
-          count,
-          highlight: entry.payments.some((payment) => payment.id === paymentId),
-        };
-      }),
-    [history, paymentId, view],
+      view === "yearly"
+        ? years.map((entry) => ({
+            key: String(entry.year),
+            label: String(entry.year),
+            // Das laufende Jahr ist noch offen — sonst laese sich der kurze
+            // Balken als Kuerzung.
+            detail: `${String(entry.year)}${entry.year === todayYear ? " bis heute" : ""} · ${formatCountNoun(entry.count, "Dividende", "Dividenden")}`,
+            value: entry.net.toChartNumber(),
+            money: entry.net,
+            count: entry.count,
+            highlight: entry.year === insights.year.year,
+          }))
+        : history.map((entry) => {
+            // Kumuliert: insgesamt erhalten bis einschliesslich dieses Monats.
+            const money = view === "cumulative" ? entry.total : entry.net;
+            const count = entry.payments.length;
+            return {
+              key: entry.month,
+              label: monthNameDeShort(monthOf(entry.month)),
+              detail:
+                count === 1
+                  ? formatCalendarDate(entry.payments[0].actualPayDate)
+                  : `${monthNameDe(monthOf(entry.month))} ${String(yearOf(entry.month))} · ${formatCountNoun(count, "Dividende", "Dividenden")}`,
+              value: money.toChartNumber(),
+              money,
+              count,
+              highlight: entry.payments.some((payment) => payment.id === paymentId),
+            };
+          }),
+    [history, years, paymentId, view, todayYear, insights.year.year],
   );
 
   const summary: KpiStat[] = [
@@ -210,14 +252,17 @@ export function PaymentInsightsView({
               }
             >
               <div>
+                {view === "yearly" && growth && <GrowthLine growth={growth} />}
                 <CategoryBarChart
                   data={chartData}
                   ariaLabel={
                     view === "cumulative"
                       ? `Kumulierte Dividenden von ${securityName}`
-                      : `Dividenden von ${securityName}`
+                      : view === "yearly"
+                        ? `Dividenden von ${securityName} je Jahr`
+                        : `Dividenden von ${securityName}`
                   }
-                  categoryHeader="Datum"
+                  categoryHeader={view === "yearly" ? "Jahr" : "Datum"}
                   showCount={false}
                   tableOrder="desc"
                 />
