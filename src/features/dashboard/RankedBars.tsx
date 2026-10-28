@@ -36,7 +36,8 @@ interface RankedBarsProps {
  * Schmale Balken in Vordergrundfarbe — auf der Uebersicht und in der Statistik
  * dieselbe Form (seit 1.9.0; vorher trug die Statistik breite Balken in
  * Diagrammblau). Ohne Trennlinien (seit 2.40.0): Der Balken trennt die Zeilen
- * schon, eine Linie darunter war ein Element zu viel.
+ * schon, eine Linie darunter war ein Element zu viel — Rangbalken und
+ * Ranglisten bleiben überall ohne Linien (Regel siehe `ListGroup`).
  */
 export function RankedBars({
   items,
