@@ -197,6 +197,8 @@ const securityBackupSchema = z.object({
   data_quality: z.enum(["ok", "incomplete", "needs_review"]),
   default_depot_id: uuidString.optional(),
   payout_months: z.array(z.number().int().min(1).max(12)).optional(),
+  // Seit 2.38.0; fehlt es (ältere Sicherung), gilt „aus".
+  reinvest_dividends: z.boolean().optional(),
   created_at: isoTimestamp,
   updated_at: isoTimestamp,
   archived_at: isoTimestamp.optional(),

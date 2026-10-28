@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
@@ -47,7 +48,7 @@ export function SecurityFormDialog({
   const { data: depots = [] } = useDepots();
   const activeDepots = depots.filter((depot) => !depot.archived_at);
   const [submitError, setSubmitError] = React.useState<string | null>(null);
-  // Ausschuettungsmonate ausserhalb des Zod-Formulars als einfache Auswahl.
+  // Ausschuettungsmonate und Reinvestition ausserhalb des Zod-Formulars als einfache Auswahl.
   // Wechselt das bearbeitete Asset, wird die Auswahl waehrend des Renderns
   // zurueckgesetzt (React-Muster fuer aus Props abgeleiteten Zustand).
   const [payoutMonths, setPayoutMonths] = React.useState<number[]>(
@@ -56,10 +57,12 @@ export function SecurityFormDialog({
   // Pflichtfeld (seit 2.23.0): Der Hinweis erscheint erst nach dem ersten
   // Speicherversuch und verschwindet, sobald ein Monat gewaehlt ist.
   const [submitAttempted, setSubmitAttempted] = React.useState(false);
+  const [reinvest, setReinvest] = React.useState(security?.reinvest_dividends ?? false);
   const [payoutSource, setPayoutSource] = React.useState(security);
   if (payoutSource !== security) {
     setPayoutSource(security);
     setPayoutMonths(security?.payout_months ?? []);
+    setReinvest(security?.reinvest_dividends ?? false);
     setSubmitAttempted(false);
   }
   const monthsMissing = payoutMonths.length === 0;
@@ -102,6 +105,7 @@ export function SecurityFormDialog({
       note: emptyToNull(values.note),
       default_depot_id: emptyToNull(values.defaultDepotId),
       payout_months: normalizePayoutMonths(payoutMonths),
+      reinvest_dividends: reinvest,
       // Datenqualitaet spiegelt beim Speichern die Vollstaendigkeit der
       // Stammdaten wider (z. B. ergaenzte ISIN bei einem importierten,
       // archivierten Asset -> „OK"). „needs_review" aus dem Import bleibt
@@ -259,6 +263,14 @@ export function SecurityFormDialog({
                 Wähle mindestens einen Monat.
               </p>
             )}
+          </div>
+          <div className="flex items-center justify-between gap-4">
+            <Label id="security-reinvest-label">Dividenden reinvestieren</Label>
+            <Switch
+              aria-labelledby="security-reinvest-label"
+              checked={reinvest}
+              onCheckedChange={setReinvest}
+            />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="security-note">Notiz</Label>

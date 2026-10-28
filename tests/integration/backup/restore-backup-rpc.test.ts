@@ -1041,3 +1041,40 @@ describe("restore_backup — Depotstände (Formatversion 2)", () => {
     expect(owner).toBe(user);
   });
 });
+
+describe("restore_backup — Reinvestition (0044)", () => {
+  it("übernimmt reinvest_dividends und setzt es ohne Feld auf „aus“", async () => {
+    const user = await createTestUser("restore-reinvest@example.test");
+    const [withId, withoutId] = await asUser(user, async (client) => [
+      await seedSecurity(client, { name: "Nachkauf AG" }),
+      await seedSecurity(client, { name: "Auszahl AG" }),
+    ]);
+    await asUser(user, (client) =>
+      client.query("update securities set reinvest_dividends = true where id = $1", [
+        withoutId,
+      ]),
+    );
+
+    await restore(
+      user,
+      backupPayload(user, {
+        securities: [
+          { id: withId, name: "Nachkauf AG", reinvest_dividends: true },
+          // Ältere Sicherung: Das Feld fehlt.
+          { id: withoutId, name: "Auszahl AG" },
+        ],
+      }),
+      "replace",
+    );
+
+    const rows = await asUser(user, (client) =>
+      client.query<{ name: string; reinvest_dividends: boolean }>(
+        "select name, reinvest_dividends from securities order by name",
+      ),
+    );
+    expect(rows.rows).toEqual([
+      { name: "Auszahl AG", reinvest_dividends: false },
+      { name: "Nachkauf AG", reinvest_dividends: true },
+    ]);
+  });
+});

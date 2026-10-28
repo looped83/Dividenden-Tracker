@@ -1,5 +1,5 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { ToastProvider } from "@/components/ui/toast";
 import { PaymentComposerProvider } from "@/features/payments/PaymentComposer";
 import { MemoryRouter, Route, Routes } from "react-router";
@@ -61,9 +61,12 @@ const securities = [
     data_quality: "incomplete",
     default_depot_id: null,
     payout_months: [3, 9],
+    reinvest_dividends: false,
     archived_at: null,
   },
 ];
+
+const updateSecurity = vi.hoisted(() => vi.fn());
 
 vi.mock("@/features/dashboard/hooks", () => ({
   useEffectivePayments: () => ({ payments, paymentsQuery: { isLoading: false } }),
@@ -78,7 +81,11 @@ vi.mock("@/features/securities/hooks", () => ({
   useArchiveSecurity: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useDeleteSecurity: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useCreateSecurity: () => ({ mutateAsync: vi.fn(), isPending: false }),
-  useUpdateSecurity: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useUpdateSecurity: () => ({
+    mutateAsync: vi.fn(),
+    mutate: updateSecurity,
+    isPending: false,
+  }),
 }));
 // Termine des Dividendenkalenders; einzelne Tests setzen einen Zahltag.
 let calendarEvents: CalendarEvent[] = [];
@@ -252,6 +259,17 @@ describe("SecurityDetailPage", () => {
     expect(
       screen.getByRole("region", { name: "Ausschüttungsplan halbjährlich" }),
     ).toBeInTheDocument();
+  });
+
+  it("schaltet die Reinvestition direkt am Ausschuettungsplan", () => {
+    renderPage();
+    const toggle = screen.getByRole("switch", { name: "Dividenden reinvestieren" });
+    expect(toggle).toHaveAttribute("aria-checked", "false");
+    fireEvent.click(toggle);
+    expect(updateSecurity).toHaveBeenCalledWith(
+      { id: SECURITY_ID, input: { reinvest_dividends: true } },
+      expect.anything(),
+    );
   });
 
   it("weist auf unvollstaendige Stammdaten hin", () => {

@@ -31,6 +31,7 @@ vi.mock("@/features/securities/hooks", async (importOriginal) => {
           country: "DE",
           currency: "EUR",
           payout_months: [3, 9],
+          reinvest_dividends: true,
           default_depot_id: "dep-1",
           archived_at: null,
         },
@@ -43,6 +44,7 @@ vi.mock("@/features/securities/hooks", async (importOriginal) => {
           country: null,
           currency: "EUR",
           payout_months: [],
+          reinvest_dividends: false,
           default_depot_id: null,
           archived_at: null,
         },
@@ -162,6 +164,12 @@ describe("SecuritiesPage", () => {
     // als Einzige etwas ueber die Streuung.
     expect(screen.getByRole("columnheader", { name: "Branche" })).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "Depot" })).toBeInTheDocument();
+  });
+
+  it("kennzeichnet Assets, deren Dividenden reinvestiert werden", () => {
+    renderPage([]);
+    // Nur Alpha AG reinvestiert.
+    expect(screen.getAllByText("Dividenden werden reinvestiert")).toHaveLength(1);
   });
 
   it("führt vom Namen auf die Detailseite und behält die Zeilenaktionen", () => {

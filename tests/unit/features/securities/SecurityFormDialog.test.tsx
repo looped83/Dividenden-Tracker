@@ -46,4 +46,18 @@ describe("SecurityFormDialog", () => {
       );
     });
   });
+
+  it("speichert die Reinvestition mit", async () => {
+    renderDialog();
+    fireEvent.click(screen.getByRole("button", { name: "Jun" }));
+    const toggle = screen.getByRole("switch", { name: "Dividenden reinvestieren" });
+    expect(toggle).toHaveAttribute("aria-checked", "false");
+    fireEvent.click(toggle);
+    fireEvent.click(screen.getByRole("button", { name: "Anlegen" }));
+    await waitFor(() => {
+      expect(createSecurity).toHaveBeenCalledWith(
+        expect.objectContaining({ reinvest_dividends: true }),
+      );
+    });
+  });
 });

@@ -123,6 +123,8 @@ create table securities (
   note          text check (length(note) <= 5000),
   data_quality  data_quality not null default 'ok',
   default_depot_id uuid references depots(id),                -- unverbindlicher Vorschlag, siehe unten
+  payout_months smallint[] not null default '{}',              -- Ausschüttungsmonate (0017)
+  reinvest_dividends boolean not null default false,          -- automatische Reinvestition (0044)
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now(),
   archived_at   timestamptz
@@ -141,6 +143,11 @@ Excel-Import) — **keine** 1:1-Bindung. Die tatsächliche Depot-Zuordnung bleib
 `dividend_payments`-Zeile unabhängig wählbar (weiterhin n:m über die Zahlung, siehe §1); dasselbe
 Unternehmen kann weiterhin Zahlungen in mehreren Depots haben, ohne dass das im Widerspruch zu
 diesem Feld steht (D-006, D-035).
+
+`reinvest_dividends` (0044) hält fest, ob der Broker die Dividenden des Assets automatisch
+reinvestiert (z. B. Trade Republic, Scalable Capital). Die Einstellung gilt
+je Asset, nicht je Asset und Depot — ein Papier liegt in der Praxis in einem Depot. Sie ist Teil der
+Datensicherung; ältere Sicherungen ohne das Feld spielen „aus" ein.
 
 ### 3.5 `dividend_payments` — Kerntabelle
 
