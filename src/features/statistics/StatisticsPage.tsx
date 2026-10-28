@@ -56,13 +56,7 @@ export function StatisticsPage() {
       depots: data.depots,
       filter,
     }),
-    [
-      filteredPayments,
-      data.payments,
-      data.securities,
-      data.depots,
-      filter,
-    ],
+    [filteredPayments, data.payments, data.securities, data.depots, filter],
   );
 
   const heading = <PageHeader title="Statistiken" />;
