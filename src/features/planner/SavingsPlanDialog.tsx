@@ -24,7 +24,7 @@ import {
 
 /**
  * Einen Sparplan anlegen, ändern oder löschen (seit 2.21.0) — aus Planer ›
- * Sparpläne; am Asset selbst seit 2.44.0 im Formular „Asset bearbeiten". Gespeichert wird die ganze Liste
+ * Sparpläne; am Asset selbst seit 2.45.0 im Formular „Asset bearbeiten". Gespeichert wird die ganze Liste
  * mit dem geänderten Plan (wie die Fixkosten).
  */
 export function SavingsPlanDialog({

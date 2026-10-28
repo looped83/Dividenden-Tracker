@@ -528,7 +528,7 @@ export function SecurityDetailPage() {
                 </ul>
               )}
               {/* Gehoert zur Ausschuettung: was mit ihr passiert. Nur Anzeige
-                  (seit 2.44.0); geschaltet wird unter „Bearbeiten". */}
+                  (seit 2.45.0); geschaltet wird unter „Bearbeiten". */}
               <DetailRow label="Reinvestition">
                 {security.reinvest_since ? (
                   `seit ${formatCalendarDate(security.reinvest_since)}`

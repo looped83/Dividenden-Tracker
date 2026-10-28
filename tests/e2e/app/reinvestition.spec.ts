@@ -3,18 +3,14 @@ import { asUser } from "../support/db";
 import { expect, test } from "../support/appTest";
 
 /**
- * Reinvestition (seit 2.38.0): Der Schalter steht seit 2.44.0 im Formular
- * „Asset bearbeiten"; die Seite des Assets nennt den Stand, die Bestandsliste
- * kennzeichnet das Asset — auch nach dem Neuladen, also aus der Datenbank.
+ * Reinvestition (seit 2.38.0): Der Schalter steht seit 2.45.0 im Formular
+ * „Asset bearbeiten"; die Seite des Assets nennt den Stand — auch nach dem
+ * Neuladen, also aus der Datenbank. Die Bestandsliste kennzeichnet seit 2.44.0
+ * Sparpläne statt Reinvestition.
  */
-test("schaltet die Reinvestition am Asset und zeigt sie im Bestand", async ({
-  page,
-  konto,
-}) => {
+test("schaltet die Reinvestition am Asset und speichert sie", async ({ page, konto }) => {
   await seedPortfolio(konto.userId);
   await page.goto("/#/depot");
-  await expect(page.getByText("Dividenden werden reinvestiert")).toHaveCount(0);
-
   await page.getByRole("link", { name: "Microsoft" }).first().click();
   await page.getByRole("button", { name: "Bearbeiten", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Asset bearbeiten" });
@@ -28,9 +24,8 @@ test("schaltet die Reinvestition am Asset und zeigt sie im Bestand", async ({
   await expect(dialog).toHaveCount(0);
   await expect(page.getByText(/^seit \d{2}\.\d{2}\.\d{4}$/)).toBeVisible();
 
-  await page.goto("/#/depot");
   await page.reload();
-  await expect(page.getByText("Dividenden werden reinvestiert")).toHaveCount(1);
+  await expect(page.getByText(/^seit \d{2}\.\d{2}\.\d{4}$/)).toBeVisible();
 });
 
 test.describe("Monatsabschluss und Rückblick", () => {

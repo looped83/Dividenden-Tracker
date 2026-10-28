@@ -16,7 +16,7 @@ vi.mock("@/features/securities/hooks", () => ({
   useSecuritySnapshots: () => ({ data: [] }),
 }));
 
-// Seit 2.44.0 gehoeren Zielgewichtung und Sparplan zum Formular.
+// Seit 2.45.0 gehoeren Zielgewichtung und Sparplan zum Formular.
 vi.mock("@/features/planner/positionCaps", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/features/planner/positionCaps")>()),
   usePositionCaps: () => ({ data: new Map() }),

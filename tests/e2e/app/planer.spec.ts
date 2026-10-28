@@ -157,7 +157,9 @@ test("pflegt Sparpläne und zeigt sie am Asset", async ({ page, konto }) => {
   await expect(tipps.getByText(/Reinvestition einschalten/)).toHaveCount(3);
   await expect(tipps.getByText("Allianz", { exact: true })).toHaveCount(0);
 
+  // Die Bestandsliste kennzeichnet nur Allianz (seit 2.44.0).
   await page.goto("/#/depot");
+  await expect(page.getByText("Sparplan läuft")).toHaveCount(1);
   await page
     .getByRole("link", { name: /Allianz/ })
     .first()
@@ -181,7 +183,7 @@ test("merkt sich Zielgewichtung und Sparplan aus dem Bearbeiten-Formular", async
     .first()
     .click();
 
-  // Seit 2.44.0 zeigt die Seite nur an; geaendert wird im Formular.
+  // Seit 2.45.0 zeigt die Seite nur an; geaendert wird im Formular.
   await expect(page.getByRole("textbox", { name: "Zielgewichtung" })).toHaveCount(0);
   await page.getByRole("button", { name: "Bearbeiten", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Asset bearbeiten" });

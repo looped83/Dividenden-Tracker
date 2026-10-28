@@ -238,7 +238,7 @@ describe("SecurityDetailPage", () => {
     expect(screen.getAllByText("Nicht geplant:")).toHaveLength(10);
   });
 
-  // Seit 2.44.0 zeigt die Seite die Planung nur an; geaendert wird im
+  // Seit 2.45.0 zeigt die Seite die Planung nur an; geaendert wird im
   // Formular „Asset bearbeiten".
   it("zeigt ohne Sparplan nur den Hinweis, kein Bedienelement", () => {
     renderPage();

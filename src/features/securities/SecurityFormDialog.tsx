@@ -54,7 +54,7 @@ import type { Security } from "@/lib/supabase/repositories/securities";
 
 /**
  * Alles an einem Asset anlegen oder bearbeiten: Stammdaten, Ausschuettung,
- * Planung (Zielgewichtung, Sparplan) und Notiz. Seit 2.44.0 der einzige Ort
+ * Planung (Zielgewichtung, Sparplan) und Notiz. Seit 2.45.0 der einzige Ort
  * dafuer — die Seite des Assets zeigt nur noch an. Zuvor liessen sich
  * Reinvestition, Sparplan und Zielgewichtung dort direkt aendern, der Rest hier.
  *

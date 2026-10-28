@@ -6,9 +6,26 @@ import { cn } from "@/lib/utils/cn";
  * Einklappbare Monate untereinander, durch Linien getrennt — die Form der
  * Dividendenliste auf dem Telefon und der Kalenderliste.
  */
-export function MonthSections({ children }: { children: React.ReactNode }) {
+export function MonthSections({
+  lineAfterOpen = true,
+  children,
+}: {
+  /**
+   * `false`: keine Linie unter einem offenen Bereich (Ziele, seit 2.43.1). Dort
+   * endet jeder offene Bereich mit „Weniger anzeigen" samt eigener Linie
+   * darüber — eine zweite Linie darunter war doppelt. Zwischen eingeklappten
+   * Köpfen bleibt die Linie.
+   */
+  lineAfterOpen?: boolean;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="[&>section+section]:border-t [&>section+section]:border-border">
+    <div
+      className={cn(
+        "[&>section+section]:border-t [&>section+section]:border-border",
+        !lineAfterOpen && "[&>section[data-open]+section]:border-t-transparent",
+      )}
+    >
       {children}
     </div>
   );
@@ -35,7 +52,7 @@ export function CollapsibleMonth({
   children: React.ReactNode;
 }) {
   return (
-    <section className={cn(open && "pb-4")}>
+    <section data-open={open || undefined} className={cn(open && "pb-4")}>
       <h2>
         <button
           type="button"

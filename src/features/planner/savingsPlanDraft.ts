@@ -13,7 +13,7 @@ import {
 } from "./savingsPlans";
 
 /**
- * Entwurf eines Sparplans (seit 2.44.0) für `SavingsPlanFields`: Die
+ * Entwurf eines Sparplans (seit 2.45.0) für `SavingsPlanFields`: Die
  * Eingaben bleiben Text, bis `planFromDraft` sie beim Speichern prüft und
  * wandelt.
  */

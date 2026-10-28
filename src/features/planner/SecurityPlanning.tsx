@@ -12,7 +12,7 @@ import { POSITION_CAP_DEFAULT, useDepotShare, usePositionCaps } from "./position
 /**
  * Abschnitt „Planung" auf der Seite eines Assets (seit 2.24.0): was mit dem
  * Asset vorgesehen ist — Sparpläne (CALCULATION_RULES.md §17) und die
- * Zielgewichtung fuer den Nachkauf (§16). Seit 2.44.0 nur Anzeige: Geaendert
+ * Zielgewichtung fuer den Nachkauf (§16). Seit 2.45.0 nur Anzeige: Geaendert
  * wird beides im Formular „Asset bearbeiten", wie alles andere am Asset.
  */
 export function SecurityPlanning({

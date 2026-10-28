@@ -8,7 +8,7 @@ import { INTERVAL_LABEL, type SavingsInterval } from "./savingsPlans";
 import type { SavingsPlanDraft } from "./savingsPlanDraft";
 
 /**
- * Felder eines Sparplans (seit 2.44.0 geteilt): im Dialog unter Planer ›
+ * Felder eines Sparplans (seit 2.45.0 geteilt): im Dialog unter Planer ›
  * Sparpläne und im Formular „Asset bearbeiten".
  */
 export function SavingsPlanFields({
