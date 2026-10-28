@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { useBackFrom, useBackState } from "@/lib/hooks/useBackState";
+import { useToday } from "@/lib/hooks/useToday";
 import { Ban, Pencil, RotateCcw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageSkeleton } from "@/components/layout/PageSkeleton";
@@ -12,7 +13,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { AmountText } from "@/components/money/AmountText";
 import { TrendPill } from "@/components/domain/KpiHero";
 import { SecurityIdentifiers } from "@/components/domain/SecurityIdentifiers";
-import { Money, currencySymbol, formatPercent, toCurrencyCode } from "@/lib/money";
+import { Money, toCurrencyCode } from "@/lib/money";
 import { normalizePayoutMonths } from "@/lib/statistics";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { useToast } from "@/components/ui/toast";
@@ -41,16 +42,6 @@ import {
   PaymentInsightsView,
   PaymentKpiHero,
 } from "@/features/payments/PaymentInsightsView";
-
-/**
- * Dezimalwert ohne bedeutungslose Nullen, mit mindestens `minDigits`
- * Nachkommastellen: „0.30660000" → „0,3066", „300.000000" → „300".
- */
-function formatDecimal(value: string, minDigits = 0): string {
-  const [whole = "0", fraction = ""] = value.split(".");
-  const digits = fraction.replace(/0+$/, "").padEnd(minDigits, "0");
-  return digits ? `${whole},${digits}` : whole;
-}
 
 export function PaymentDetailPage() {
   const { id } = useParams();
@@ -83,6 +74,7 @@ export function PaymentDetailPage() {
   const { payments: effectivePayments } = useEffectivePayments();
   const securityId = payment?.security_id;
   const payoutMonths = securities.find((s) => s.id === securityId)?.payout_months;
+  const todayYear = useToday().year;
   const insights = React.useMemo(
     () =>
       id && securityId
@@ -90,9 +82,10 @@ export function PaymentDetailPage() {
             id,
             effectivePayments.filter((entry) => entry.securityId === securityId),
             normalizePayoutMonths(payoutMonths),
+            todayYear,
           )
         : null,
-    [id, securityId, effectivePayments, payoutMonths],
+    [id, securityId, effectivePayments, payoutMonths, todayYear],
   );
 
   // Der Rueckweg steht oben, nicht am Seitenende: Auf einer langen Detailseite
@@ -145,33 +138,6 @@ export function PaymentDetailPage() {
     source: sourceLabel(payment.source),
   };
 
-  // Abzuege, soweit erfasst (in der Regel nur bei importierten Dividenden).
-  const deductions = (
-    [
-      ["Quellensteuer", payment.withholding_tax],
-      ["Kapitalertragsteuer", payment.domestic_tax],
-      ["Solidaritätszuschlag", payment.solidarity_surcharge],
-      ["Kirchensteuer", payment.church_tax],
-      ["Gebühren", payment.fees],
-    ] satisfies [string, string | null][]
-  ).flatMap(([label, value]) =>
-    value !== null && Money.fromString(value, currency).isPositive()
-      ? [{ label, value }]
-      : [],
-  );
-  const gross = Money.fromString(payment.gross_amount, currency);
-  const taxRate =
-    deductions.length > 0 && gross.isPositive()
-      ? gross
-          .subtract(Money.fromString(payment.net_amount, currency))
-          .toDecimal()
-          .div(gross.toDecimal())
-          .times(100)
-      : null;
-  const perShare =
-    payment.amount_per_share !== null && payment.quantity !== null
-      ? `${formatDecimal(payment.amount_per_share, 2)} ${currencySymbol(payment.original_currency)} · ${formatDecimal(payment.quantity)} Stück`
-      : null;
   const yearAgo = insights?.yearAgo ?? null;
 
   const handleStorno = async (stornoReason: string) => {
@@ -360,48 +326,14 @@ export function PaymentDetailPage() {
         />
       )}
 
-      {(deductions.length > 0 || perShare !== null || payment.note) && (
-        <div className="grid grid-cols-1 gap-10 pt-4 lg:grid-cols-2 lg:gap-x-16">
-          {(deductions.length > 0 || perShare !== null) && (
-            // Nur wenn es etwas abzuziehen gibt: Manuell erfasste Dividenden
-            // tragen allein den Nettobetrag, eine Zeile „Brutto = Netto"
-            // sagte nichts.
-            <Section title="Brutto zu Netto">
-              <div>
-                {deductions.length > 0 && (
-                  <>
-                    <DetailRow label="Brutto">
-                      <AmountText
-                        amount={Money.fromString(payment.gross_amount, currency)}
-                      />
-                    </DetailRow>
-                    {deductions.map((row) => (
-                      <DetailRow key={row.label} label={row.label}>
-                        −&#8239;
-                        <AmountText amount={Money.fromString(row.value, currency)} />
-                      </DetailRow>
-                    ))}
-                    <DetailRow label="Netto">
-                      <span className="font-semibold">
-                        <AmountText
-                          amount={Money.fromString(payment.net_amount, currency)}
-                        />
-                      </span>
-                    </DetailRow>
-                    {taxRate !== null && (
-                      <DetailRow label="Abzugsquote">{formatPercent(taxRate)}</DetailRow>
-                    )}
-                  </>
-                )}
-                {perShare !== null && <DetailRow label="Je Aktie">{perShare}</DetailRow>}
-              </div>
-            </Section>
-          )}
-          {payment.note && (
-            <Section title="Notiz">
-              <p className="whitespace-pre-line pt-1 text-[0.9375rem]">{payment.note}</p>
-            </Section>
-          )}
+      {/* Halbe Breite wie die Abschnitte darueber. „Brutto zu Netto" ist seit
+          2.47.0 weg: Keine Dividende traegt Steuern, Stueckzahl oder Betrag je
+          Aktie, der Abschnitt blieb also immer leer. */}
+      {payment.note && (
+        <div className="grid grid-cols-1 pt-4 lg:grid-cols-2 lg:gap-x-16">
+          <Section title="Notiz">
+            <p className="whitespace-pre-line pt-1 text-[0.9375rem]">{payment.note}</p>
+          </Section>
         </div>
       )}
 

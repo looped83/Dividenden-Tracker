@@ -1,4 +1,10 @@
-import { Money, formatPercent, sumMoney, type DecimalInstance } from "@/lib/money";
+import {
+  Money,
+  MoneyDecimal,
+  formatPercent,
+  sumMoney,
+  type DecimalInstance,
+} from "@/lib/money";
 import { monthOf, yearOf, type AnalyticsPayment } from "@/lib/statistics";
 import {
   compareToPreviousYear,
@@ -7,6 +13,9 @@ import {
 
 /** Wie viele Monate mit Dividenden der Verlauf der Detailseite zeigt. */
 const HISTORY_SIZE = 12;
+
+/** Hoechstens so viele vergangene volle Jahre traegt das Ø-Wachstum — wie bei den Zielen. */
+const GROWTH_YEARS = 3;
 
 /** Wie viele Dividenden die Liste unter der Einordnung zeigt — wie die Assetseite. */
 const NEARBY_SIZE = 5;
@@ -24,6 +33,20 @@ export interface HistoryMonth {
   net: Money;
   /** Bis einschliesslich dieses Monats insgesamt erhalten (kumulierte Sicht). */
   total: Money;
+}
+
+/** Ein Balken der Jahresansicht: alle Dividenden des Assets in einem Kalenderjahr. */
+export interface HistoryYear {
+  year: number;
+  net: Money;
+  count: number;
+}
+
+/** Mittleres jaehrliches Wachstum (CAGR) der Jahressummen, in Prozent. */
+export interface AnnualGrowth {
+  percent: DecimalInstance;
+  from: number;
+  to: number;
 }
 
 /** Vergleich mit einem Bezugsbetrag; `percent` fehlt, wenn der Bezug null ist. */
@@ -54,6 +77,13 @@ export interface PaymentInsights {
   count: number;
   /** Bis zu {@link HISTORY_SIZE} Monate um diese Dividende herum, chronologisch. */
   history: HistoryMonth[];
+  /**
+   * Bis zu {@link HISTORY_SIZE} Kalenderjahre um das Jahr dieser Dividende,
+   * chronologisch; Jahre ohne Dividende dazwischen stehen mit 0 darin.
+   */
+  years: HistoryYear[];
+  /** Ø-Wachstum der Jahressummen ueber volle Jahre; `null` ohne zwei solche Jahre. */
+  growth: AnnualGrowth | null;
   /**
    * Bis zu {@link NEARBY_SIZE} Dividenden um diese herum, juengste zuerst —
    * bei einer aelteren Dividende sagen ihre Nachbarn mehr als die juengsten.
@@ -117,6 +147,7 @@ export function derivePaymentInsights(
   paymentId: string,
   own: readonly AnalyticsPayment[],
   payoutMonths: readonly number[],
+  todayYear: number,
 ): PaymentInsights | null {
   const current = own.find((payment) => payment.id === paymentId);
   if (!current) return null;
@@ -192,6 +223,31 @@ export function derivePaymentInsights(
     return { ...bucket, net, total: running };
   });
 
+  // Ein Balken je Kalenderjahr, wie in Statistik › Verlauf › Jahre; dasselbe
+  // Fenster wie bei den Monaten.
+  const firstYear = yearOf(sorted[0].payDate);
+  const lastYear = yearOf(sorted[sorted.length - 1].payDate);
+  const allYears: HistoryYear[] = [];
+  for (let y = firstYear; y <= lastYear; y += 1) {
+    const inThisYear = sorted.filter((payment) => yearOf(payment.payDate) === y);
+    allYears.push({
+      year: y,
+      net: sumMoney(
+        inThisYear.map((payment) => payment.netAmount),
+        currency,
+      ),
+      count: inThisYear.length,
+    });
+  }
+  const yearStart = Math.max(
+    0,
+    Math.min(
+      yearOf(current.payDate) - firstYear - HISTORY_SIZE + 1,
+      allYears.length - HISTORY_SIZE,
+    ),
+  );
+  const years = allYears.slice(yearStart, yearStart + HISTORY_SIZE);
+
   const nearbyStart = Math.max(
     0,
     Math.min(index - Math.floor(NEARBY_SIZE / 2), sorted.length - NEARBY_SIZE),
@@ -223,6 +279,8 @@ export function derivePaymentInsights(
     ordinal: index + 1,
     count: sorted.length,
     history,
+    years,
+    growth: annualGrowth(allYears, todayYear),
     nearby,
     year: {
       year,
@@ -239,4 +297,31 @@ export function derivePaymentInsights(
     firstDate: sorted[0]?.payDate ?? current.payDate,
     nextExpected,
   };
+}
+
+/**
+ * Ø-Wachstum der Jahressummen ueber die letzten (hoechstens drei) **vollen**
+ * Jahre: Das erste Jahr mit Dividende zaehlt nicht, die Position kam meist im
+ * Lauf des Jahres dazu; das laufende Jahr ist noch offen. Zukaeufe stecken mit
+ * darin — ohne Stueckzahl je Zahlung laesst sich keine Erhoehung je Aktie
+ * herausrechnen (§11.11).
+ */
+function annualGrowth(
+  years: readonly HistoryYear[],
+  todayYear: number,
+): AnnualGrowth | null {
+  if (years.length === 0) return null;
+  const first = years[0].year;
+  const to = Math.min(first + years.length - 1, todayYear - 1);
+  const from = Math.max(first + 1, to - GROWTH_YEARS);
+  if (to <= from) return null;
+  const start = years[from - first].net.toDecimal();
+  const end = years[to - first].net.toDecimal();
+  if (start.lte(0)) return null;
+  const percent = end
+    .div(start)
+    .pow(new MoneyDecimal(1).div(to - from))
+    .minus(1)
+    .times(100);
+  return { percent, from, to };
 }
