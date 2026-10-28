@@ -4,26 +4,22 @@ import { expect, test } from "../support/appTest";
 
 /**
  * Reinvestition (seit 2.38.0): Der Schalter auf der Seite des Assets speichert
- * sofort; die Bestandsliste kennzeichnet das Asset danach — auch nach dem
- * Neuladen, also aus der Datenbank.
+ * sofort — auch nach dem Neuladen steht er, also aus der Datenbank. Die
+ * Bestandsliste kennzeichnet seit 2.44.0 Sparpläne statt Reinvestition.
  */
-test("schaltet die Reinvestition am Asset und zeigt sie im Bestand", async ({
-  page,
-  konto,
-}) => {
+test("schaltet die Reinvestition am Asset und speichert sie", async ({ page, konto }) => {
   await seedPortfolio(konto.userId);
   await page.goto("/#/depot");
-  await expect(page.getByText("Dividenden werden reinvestiert")).toHaveCount(0);
-
   await page.getByRole("link", { name: "Microsoft" }).first().click();
   const schalter = page.getByRole("switch", { name: "Dividenden reinvestieren" });
   await expect(schalter).toHaveAttribute("aria-checked", "false");
   await schalter.click();
   await expect(schalter).toHaveAttribute("aria-checked", "true");
 
-  await page.goto("/#/depot");
   await page.reload();
-  await expect(page.getByText("Dividenden werden reinvestiert")).toHaveCount(1);
+  await expect(
+    page.getByRole("switch", { name: "Dividenden reinvestieren" }),
+  ).toHaveAttribute("aria-checked", "true");
 });
 
 test.describe("Monatsabschluss und Rückblick", () => {
