@@ -677,7 +677,7 @@ function GoalList({ list, courses }: { list: GoalLists; courses: Courses }) {
   };
 
   return (
-    <MonthSections>
+    <MonthSections lineAfterOpen={false}>
       {list.annual.length > 0 &&
         section(YEARS_KEY, "Jahresziele", list.annual, VISIBLE, true)}
       {list.months.map(({ year, items }, index) =>
