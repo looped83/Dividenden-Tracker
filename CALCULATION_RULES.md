@@ -753,8 +753,14 @@ gespeichert sind nur die Annahmen des Schneeballs (`profiles.forecast_settings`,
   Angabe 5 %); Rendite neuer Käufe = Jahresdividende ÷ Depotwert, begrenzt auf 0,5–10 % (ohne
   Angabe 3 %).
 - **Monatsschritt:** Nettodividende = Jahresdividende × Netto-Quote ÷ 12; investiert wird die
-  Sparrate, bei Reinvestition zuzüglich dieser Nettodividende; jeder investierte Euro erhöht die
-  Jahresdividende um die Rendite neuer Käufe. **Jahresende:** Jahresdividende × (1 + Wachstum).
+  Sparrate zuzüglich des reinvestierten Anteils dieser Nettodividende; jeder investierte Euro
+  erhöht die Jahresdividende um die Rendite neuer Käufe.
+- **Reinvestierter Anteil** (seit 2.38.0, `reinvestShare`): *Laut Assets* (Vorbelegung) = Anteil
+  der Jahresdividende des jüngsten Stands aus Assets mit automatischer Reinvestition
+  (`securities.reinvest_dividends`); dazu *Alle* (100 %) und *Keine* (0 %). Der Anteil gilt über
+  den ganzen Horizont, auch für Dividenden aus späteren Käufen. Das frühere „Ja“ liest sich als
+  *Laut Assets*, „Nein“ als *Keine*. Dieselbe Rechnung tragen die Termine im Fortschritt (§15.4)
+  und die Ziel-Zeit des Planers. **Jahresende:** Jahresdividende × (1 + Wachstum).
 - **Inflation:** Werte des Jahres *n* geteilt durch (1 + Inflation)^n (heutige Kaufkraft).
 - **Szenarien:** vorsichtig und optimistisch mit 2 Prozentpunkten weniger (nie unter 0 %) bzw.
   mehr Wachstum; im Diagramm als Band, im Kopf mit der jeweils gerechneten CAGR beschriftet.
@@ -958,4 +964,9 @@ Bestand noch Prognose.
   Depotwert D, Marktwert W, Monatsrate r des Assets und Summe R aller aktiven Raten (das Depot
   wächst mit). Zweitens aktive Pläne auf Assets ohne Gewichtung. Drittens höchstens drei gehaltene
   Assets mit Gewichtung, ohne Plan (auch keinen pausierten) und nicht ausgeschlossen, mit dem
-  meisten Platz bis zur Gewichtung (mindestens 12 × 25 €). Ohne Befund fehlt der Abschnitt.
+  meisten Platz bis zur Gewichtung (mindestens 12 × 25 €). **Reinvestition** (seit 2.38.0), nur
+  für gehaltene Assets mit Gewichtung und ohne aktiven Plan: reinvestiert und auf oder über der
+  Gewichtung → „Reinvestition ausschalten“ (nach den Plan-Tipps); nicht reinvestiert, mit
+  Jahresdividende, nicht ausgeschlossen und mindestens 12 × 25 € Platz → „Reinvestition
+  einschalten“ (höchstens drei, der meiste Platz zuerst, am Ende). Ein Plan-Tipp „über der
+  Gewichtung“ nennt eine Reinvestition dazu. Ohne Befund fehlt der Abschnitt.

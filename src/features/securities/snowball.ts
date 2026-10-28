@@ -10,9 +10,10 @@
  * Gerechnet wird in Monatsschritten mit Decimal:
  *
  * 1. Monatliche Nettodividende = Jahresdividende (brutto) × Netto-Quote ÷ 12.
- * 2. Investiert wird die Sparrate, bei Reinvestition zuzueglich dieser
- *    Nettodividende. Jeder investierte Euro erhoeht die Jahresdividende um die
- *    angenommene Rendite neuer Kaeufe.
+ * 2. Investiert wird die Sparrate zuzueglich des reinvestierten Anteils dieser
+ *    Nettodividende (seit 2.38.0 standardmaessig laut Assets, siehe
+ *    {@link reinvestShare}). Jeder investierte Euro erhoeht die
+ *    Jahresdividende um die angenommene Rendite neuer Kaeufe.
  * 3. Am Ende jedes Jahres waechst die gesamte Jahresdividende um das
  *    angenommene Dividendenwachstum.
  * 4. Mit Inflation steht jeder Wert in heutiger Kaufkraft: geteilt durch
@@ -28,11 +29,17 @@ const SNOWBALL_YEARS = 30;
 /** Abstand der Szenarien zum angenommenen Wachstum, in Prozentpunkten. */
 const SCENARIO_SPREAD = 2;
 
+/**
+ * Was von den Dividenden reinvestiert wird: so viel, wie die Assets mit
+ * automatischer Reinvestition bringen (`assets`), alles oder nichts.
+ */
+export type ReinvestMode = "assets" | "all" | "none";
+
 /** Gespeicherte Annahmen (profiles.forecast_settings). */
 export interface SnowballSettings {
   /** Sparrate pro Monat in Euro. */
   monthlySavings: number;
-  reinvest: boolean;
+  reinvest: ReinvestMode;
   /** Dividendenwachstum p. a. in Prozent; `null` = aus dem Depot. */
   growthPercent: number | null;
   /** Dividendenrendite neuer Kaeufe in Prozent; `null` = aus dem Depot. */
@@ -45,7 +52,7 @@ export interface SnowballSettings {
 
 export const DEFAULT_SNOWBALL_SETTINGS: SnowballSettings = {
   monthlySavings: 0,
-  reinvest: true,
+  reinvest: "assets",
   growthPercent: null,
   yieldPercent: null,
   targetMonthly: 1000,
@@ -70,6 +77,28 @@ export interface DepotAssumptions {
   growthPercent: DecimalInstance;
   /** Jahresdividende ÷ Depotwert, gedeckelt (Prozent). */
   yieldPercent: DecimalInstance;
+  /**
+   * Anteil (0–1) der erwarteten Jahresdividende aus Assets, deren Dividenden
+   * der Broker automatisch reinvestiert (`securities.reinvest_dividends`).
+   */
+  reinvestShare: DecimalInstance;
+}
+
+/** Kennungen der Assets, deren Dividenden automatisch reinvestiert werden. */
+export function reinvestedIds(
+  securities: readonly { id: string; reinvest_dividends: boolean }[],
+): Set<string> {
+  return new Set(securities.filter((s) => s.reinvest_dividends).map((s) => s.id));
+}
+
+/** Reinvestierter Anteil (0–1) der Nettodividende fuer die Rechnung. */
+export function reinvestShare(
+  settings: Pick<SnowballSettings, "reinvest">,
+  depot: Pick<DepotAssumptions, "reinvestShare">,
+): DecimalInstance {
+  if (settings.reinvest === "all") return ONE;
+  if (settings.reinvest === "none") return new MoneyDecimal(0);
+  return depot.reinvestShare;
 }
 
 function clamp(value: DecimalInstance, min: number, max: number): DecimalInstance {
@@ -81,10 +110,13 @@ function clamp(value: DecimalInstance, min: number, max: number): DecimalInstanc
  *
  * Das Wachstum ist mit der erwarteten Jahresdividende gewichtet: Eine kleine
  * Position mit 30 % CAGR soll nicht die Erwartung des ganzen Depots tragen.
- * Positionen ohne CAGR zaehlen nicht mit.
+ * Positionen ohne CAGR zaehlen nicht mit. Der reinvestierte Anteil ist
+ * ebenso mit der Jahresdividende gewichtet: Er sagt, welcher Teil der
+ * Ausschuettungen heute automatisch nachkauft.
  */
 export function depotAssumptions(
   snapshots: readonly SecuritySnapshot[],
+  reinvested: ReadonlySet<string> = new Set(),
 ): DepotAssumptions | null {
   const rows = snapshotsAt(snapshots, latestAsOf(snapshots));
   if (rows.length === 0) return null;
@@ -93,12 +125,16 @@ export function depotAssumptions(
   let market = new MoneyDecimal(0);
   let weighted = new MoneyDecimal(0);
   let weight = new MoneyDecimal(0);
+  let reinvestedAnnual = new MoneyDecimal(0);
   for (const row of rows) {
     const dividend =
       row.annual_dividend_total === null
         ? null
         : new MoneyDecimal(row.annual_dividend_total);
     if (dividend) annual = annual.plus(dividend);
+    if (dividend && reinvested.has(row.security_id)) {
+      reinvestedAnnual = reinvestedAnnual.plus(dividend);
+    }
     if (row.market_value !== null) market = market.plus(row.market_value);
     if (dividend?.greaterThan(0) && row.dividend_cagr !== null) {
       weighted = weighted.plus(new MoneyDecimal(row.dividend_cagr).times(dividend));
@@ -113,7 +149,16 @@ export function depotAssumptions(
     ? clamp(annual.dividedBy(market).times(HUNDRED), YIELD_MIN, YIELD_MAX)
     : new MoneyDecimal(YIELD_FALLBACK);
 
-  return { annualGross: annual, growthPercent: growth, yieldPercent };
+  const share = annual.greaterThan(0)
+    ? reinvestedAnnual.dividedBy(annual)
+    : new MoneyDecimal(0);
+
+  return {
+    annualGross: annual,
+    growthPercent: growth,
+    yieldPercent,
+    reinvestShare: share,
+  };
 }
 
 export interface SnowballPoint {
@@ -173,7 +218,8 @@ function simulate({
   annualGross: DecimalInstance;
   ratio: DecimalInstance;
   savings: DecimalInstance;
-  reinvest: boolean;
+  /** Reinvestierter Anteil der Nettodividende (0–1). */
+  reinvest: DecimalInstance;
   growth: DecimalInstance;
   yieldRate: DecimalInstance;
   /** `1 + Inflation p. a.` */
@@ -189,7 +235,7 @@ function simulate({
   let deflator = ONE;
   const series = [monthlyNet(annual)];
   for (let month = 1; month <= months; month += 1) {
-    const invested = reinvest ? savings.plus(monthlyNet(annual)) : savings;
+    const invested = savings.plus(monthlyNet(annual).times(reinvest));
     annual = annual.plus(invested.times(yieldShare));
     if (month % 12 === 0) {
       annual = annual.times(growthFactor);
@@ -256,7 +302,7 @@ export function projectSnowball({
     annualGross: depot.annualGross,
     ratio: netRatio ?? ONE,
     savings: new MoneyDecimal(Math.max(settings.monthlySavings, 0)),
-    reinvest: settings.reinvest,
+    reinvest: reinvestShare(settings, depot),
     yieldRate,
     inflation: ONE.plus(
       new MoneyDecimal(Math.max(settings.inflationPercent, 0)).dividedBy(HUNDRED),
@@ -389,6 +435,7 @@ export function monthsToTarget({
     new MoneyDecimal(Math.max(settings.inflationPercent, 0)).dividedBy(HUNDRED),
   ).pow(ONE.dividedBy(TWELVE));
   const monthlyNet = (annual: DecimalInstance) => annual.times(ratio).dividedBy(TWELVE);
+  const reinvested = reinvestShare(settings, depot);
 
   let annual = depot.annualGross.plus(
     (extraAnnualNet ?? new MoneyDecimal(0)).dividedBy(ratio),
@@ -397,7 +444,7 @@ export function monthsToTarget({
   let previous = monthlyNet(annual);
   if (previous.greaterThanOrEqualTo(target)) return 0;
   for (let month = 1; month <= years * 12; month += 1) {
-    const invested = settings.reinvest ? savings.plus(monthlyNet(annual)) : savings;
+    const invested = savings.plus(monthlyNet(annual).times(reinvested));
     annual = annual.plus(invested.times(yieldShare));
     if (month % 12 === 0) annual = annual.times(growthFactor);
     deflator = deflator.times(monthlyInflation);
@@ -444,11 +491,12 @@ export function projectMonthlyNet({
   const yieldShare = yieldRate.dividedBy(HUNDRED);
   const savings = new MoneyDecimal(Math.max(settings.monthlySavings, 0));
   const monthlyNet = (annual: DecimalInstance) => annual.times(ratio).dividedBy(TWELVE);
+  const reinvested = reinvestShare(settings, depot);
 
   let annual = depot.annualGross;
   const series: DecimalInstance[] = [monthlyNet(annual)];
   for (let month = 1; month <= months; month += 1) {
-    const invested = settings.reinvest ? savings.plus(monthlyNet(annual)) : savings;
+    const invested = savings.plus(monthlyNet(annual).times(reinvested));
     annual = annual.plus(invested.times(yieldShare));
     if (month % 12 === 0) annual = annual.times(growthFactor);
     series.push(monthlyNet(annual));

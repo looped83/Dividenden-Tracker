@@ -156,3 +156,48 @@ describe("savingsPlanTips", () => {
     ).toEqual([]);
   });
 });
+
+describe("savingsPlanTips — Reinvestition", () => {
+  // Depot 10.000 €; alle zahlen Dividende.
+  const paying = SNAPSHOTS.map((row) => ({ ...row, annual_dividend_total: "30.00" }));
+  const run = (
+    reinvested: string[],
+    caps: [string, number][],
+    plans: SavingsPlan[] = [],
+  ) =>
+    savingsPlanTips({
+      plans,
+      snapshots: paying,
+      caps: new Map(caps),
+      excluded: NONE,
+      names: NAMES,
+      reinvested: new Set(reinvested),
+    });
+
+  it("rät, die Reinvestition über der Gewichtung auszuschalten", () => {
+    // Gamma: 75 % bei 10 % Gewichtung.
+    expect(run(["sec-c"], [["sec-c", 10]])).toMatchObject([
+      { kind: "reinvestOver", securityId: "sec-c", cap: 10 },
+    ]);
+  });
+
+  it("rät, sie unter der Gewichtung einzuschalten", () => {
+    // Delta: 500 € bei 20 % = 2.000 € → 1.500 € frei.
+    const [tip] = run([], [["sec-d", 20]]).filter((t) => t.kind === "reinvestRoom");
+    expect(tip).toMatchObject({ kind: "reinvestRoom", securityId: "sec-d" });
+    expect(tip?.kind === "reinvestRoom" && tip.room.toString()).toBe("1500");
+  });
+
+  it("überlässt Assets mit Sparplan dem Tipp zum Plan", () => {
+    const result = run(["sec-c"], [["sec-c", 10]], [plan("sec-c")]);
+    expect(result).toMatchObject([
+      { kind: "over", securityId: "sec-c", reinvested: true },
+    ]);
+  });
+
+  it("schweigt ohne Dividende oder ohne Platz", () => {
+    expect(run([], [["sec-a", 10]])).toEqual(
+      expect.not.arrayContaining([expect.objectContaining({ kind: "reinvestRoom" })]),
+    );
+  });
+});

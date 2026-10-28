@@ -30,6 +30,7 @@ import {
   snowballChartEndYear,
   snowballHistory,
   type DepotAssumptions,
+  type ReinvestMode,
   type SnowballHistoryPoint,
   type SnowballResult,
   type SnowballSettings,
@@ -186,13 +187,18 @@ function SnowballSection({
             id="snowball-reinvest"
             aria-label="Dividenden reinvestieren"
             className="h-9 py-0"
-            value={settings.reinvest ? "yes" : "no"}
+            value={settings.reinvest}
             onChange={(event) => {
-              update({ reinvest: event.target.value === "yes" });
+              update({ reinvest: event.target.value as ReinvestMode });
             }}
           >
-            <option value="yes">Ja</option>
-            <option value="no">Nein</option>
+            {/* Vorbelegung seit 2.38.0: der Anteil der Assets, deren
+                Dividenden der Broker automatisch reinvestiert. */}
+            <option value="assets">
+              Laut Assets ({formatPercent(depot.reinvestShare.times(100), 0)})
+            </option>
+            <option value="all">Alle</option>
+            <option value="none">Keine</option>
           </Select>
         </SettingCell>
       </SettingsList>

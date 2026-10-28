@@ -31,7 +31,14 @@ const settingsSchema = z.object({
     .min(0)
     .max(AMOUNT_MAX)
     .catch(DEFAULT_SNOWBALL_SETTINGS.monthlySavings),
-  reinvest: z.boolean().catch(DEFAULT_SNOWBALL_SETTINGS.reinvest),
+  // Bis 2.37 Ja/Nein fuer alle Dividenden. „Ja" war die Vorbelegung und meint
+  // seither „laut Assets" (automatische Reinvestition je Asset).
+  reinvest: z
+    .union([
+      z.enum(["assets", "all", "none"]),
+      z.boolean().transform((yes) => (yes ? "assets" : "none")),
+    ])
+    .catch(DEFAULT_SNOWBALL_SETTINGS.reinvest),
   growthPercent: percent.nullable().catch(DEFAULT_SNOWBALL_SETTINGS.growthPercent),
   yieldPercent: percent.nullable().catch(DEFAULT_SNOWBALL_SETTINGS.yieldPercent),
   targetMonthly: z
