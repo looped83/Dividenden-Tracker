@@ -61,7 +61,11 @@ export function CollapsibleMonth({
           />
         </button>
       </h2>
-      {open && <div id={id}>{children}</div>}
+      {open && (
+        <div id={id} className="reveal">
+          {children}
+        </div>
+      )}
     </section>
   );
 }

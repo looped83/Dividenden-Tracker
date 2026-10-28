@@ -604,7 +604,7 @@ function ExcludedList({
         />
       </button>
       {open && (
-        <ListGroup id={listId}>
+        <ListGroup id={listId} className="reveal">
           {excluded.map((id) => {
             const name = names.get(id) ?? "Unbekanntes Asset";
             return (

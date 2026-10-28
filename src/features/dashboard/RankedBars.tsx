@@ -2,6 +2,7 @@ import { Link } from "react-router";
 import { Badge } from "@/components/ui/badge";
 import { formatMoney, formatPercent, type Money } from "@/lib/money";
 import { shareOfTotal } from "@/lib/statistics";
+import { barIndex } from "@/lib/utils/barIndex";
 import { cn } from "@/lib/utils/cn";
 import { barLength } from "./format";
 
@@ -56,11 +57,11 @@ export function RankedBars({
       className={cn(columns && "lg:columns-2 lg:gap-x-12 lg:[&>li]:break-inside-avoid")}
       aria-label={ariaLabel}
     >
-      {items.map((item) => {
+      {items.map((item, index) => {
         const share = shareOfTotal(item.net, total);
         const widthPercent = barLength(item.net, maxNumber);
         return (
-          <li key={item.key} className="py-3">
+          <li key={item.key} className="py-3" style={barIndex(index)}>
             <Link
               to={item.href}
               className="group block rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -86,7 +87,7 @@ export function RankedBars({
               <div className="mt-2 flex items-center gap-2">
                 <div className="h-[3px] flex-1 overflow-hidden rounded-full bg-border">
                   <div
-                    className="h-full rounded-full bg-foreground"
+                    className="bar-grow h-full rounded-full bg-foreground"
                     style={{ width: `${String(widthPercent)}%` }}
                   />
                 </div>

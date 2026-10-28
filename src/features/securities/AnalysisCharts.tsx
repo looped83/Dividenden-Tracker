@@ -12,6 +12,7 @@ import {
   type AnalysisHolding,
   type AnalysisSlice,
 } from "./analysis";
+import { barIndex } from "@/lib/utils/barIndex";
 
 function hasKnown(slices: readonly AnalysisSlice[]): boolean {
   return slices.some((slice) => slice.key !== UNKNOWN_KEY);
@@ -77,8 +78,8 @@ function BarRow({
         <div
           className={
             slice.key === UNKNOWN_KEY
-              ? "h-full rounded-full bg-series-prior"
-              : "h-full rounded-full bg-foreground"
+              ? "bar-grow h-full rounded-full bg-series-prior"
+              : "bar-grow h-full rounded-full bg-foreground"
           }
           style={{ width: `${String(Math.max(1, slice.share.toNumber()))}%` }}
         />
@@ -144,10 +145,10 @@ export function AllocationBars({
 
   return (
     <ul aria-label={ariaLabel}>
-      {slices.map((slice) => {
+      {slices.map((slice, index) => {
         const key = slice.key || "unknown";
         return (
-          <li key={key} className="py-3">
+          <li key={key} className="py-3" style={barIndex(index)}>
             <details
               className="group"
               open={isOpen(key)}

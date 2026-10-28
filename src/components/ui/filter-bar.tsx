@@ -105,6 +105,8 @@ export function FilterBar({
         // Felder (`half`) fassen so auch „Alle Währungen" bei 390px.
         "[&_select]:rounded-full [&_select]:pl-4 [&_select]:pr-8",
         (disclosure?.open ?? true) ? "flex" : "hidden",
+        // Nur aufgeklappt gleitet sie ein — ohne Schalter steht sie einfach da.
+        disclosure?.open && "reveal",
         className,
       )}
     >

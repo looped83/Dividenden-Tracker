@@ -7,6 +7,7 @@ import { ListGroup, ListRow } from "@/components/ui/list";
 import { Section } from "@/components/ui/section";
 import { SortableTableHead } from "@/components/ui/table";
 import { MD_BREAKPOINT_QUERY, useMediaQuery } from "@/lib/hooks/useMediaQuery";
+import { barIndex } from "@/lib/utils/barIndex";
 import { cn } from "@/lib/utils/cn";
 
 export type SortDirection = "asc" | "desc";
@@ -520,10 +521,10 @@ function StatList<T>({
   if (summary) {
     return (
       <ListGroup aria-label={caption}>
-        {rows.map((row) => {
+        {rows.map((row, index) => {
           const bar = summary.bar?.(row);
           return (
-            <li key={getRowKey(row)}>
+            <li key={getRowKey(row)} style={bar ? barIndex(index) : undefined}>
               <ListRow interactive={clickable} {...rowInteraction(row)}>
                 {summary.leading?.(row)}
                 <div className="min-w-0 flex-1 space-y-1">
@@ -554,7 +555,7 @@ function StatList<T>({
                         aria-hidden
                       >
                         <div
-                          className="h-full rounded-full bg-foreground"
+                          className="bar-grow h-full rounded-full bg-foreground"
                           style={{ width: `${String(bar.length)}%` }}
                         />
                       </div>
