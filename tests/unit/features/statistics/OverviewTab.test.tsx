@@ -7,7 +7,6 @@ import { filterPayments } from "@/lib/statistics";
 import type { EntityInfo } from "@/features/dashboard/format";
 import { OverviewTab } from "@/features/statistics/OverviewTab";
 import { EMPTY_STATISTICS_FILTER } from "@/features/statistics/filterParams";
-import { EMPTY_PORTFOLIO_SERIES } from "@/features/securities/snapshots";
 import type { StatisticsContext } from "@/features/statistics/context";
 
 let seq = 0;
@@ -41,7 +40,6 @@ function renderOverview(payments: AnalyticsPayment[]) {
     securities,
     depots,
     filter: EMPTY_STATISTICS_FILTER,
-    portfolio: EMPTY_PORTFOLIO_SERIES,
   };
   return render(
     <MemoryRouter>

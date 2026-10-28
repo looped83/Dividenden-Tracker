@@ -55,14 +55,12 @@ export function StatisticsPage() {
       securities: data.securities,
       depots: data.depots,
       filter,
-      portfolio: data.portfolio,
     }),
     [
       filteredPayments,
       data.payments,
       data.securities,
       data.depots,
-      data.portfolio,
       filter,
     ],
   );

@@ -8,7 +8,6 @@ import type { EntityInfo } from "@/features/dashboard/format";
 import { YearMonthMatrix } from "@/features/statistics/YearMonthMatrix";
 import { setViewportWide } from "../../support/viewport";
 import { EMPTY_STATISTICS_FILTER } from "@/features/statistics/filterParams";
-import { EMPTY_PORTFOLIO_SERIES } from "@/features/securities/snapshots";
 import type { StatisticsContext } from "@/features/statistics/context";
 
 let seq = 0;
@@ -50,7 +49,6 @@ function renderMatrix(
   filter = EMPTY_STATISTICS_FILTER,
 ) {
   const context: StatisticsContext = {
-    portfolio: EMPTY_PORTFOLIO_SERIES,
     payments: filterPayments(payments, filter),
     allPayments: payments,
     securities: new Map<string, EntityInfo>([
