@@ -232,7 +232,7 @@ verkauft und zeigt keine Position mehr. Kein Wert daraus fließt in Statistik od
 
 Die ganze Zeile führt auf die Detailseite mit Verlauf, Stammdaten und Zahlungshistorie; dort
 stehen Bearbeiten, Archivieren und endgültiges Löschen, die Tabelle trägt keine Zeilenaktionen
-(seit 2.47.0). Auf dem iPhone
+(seit 2.48.0). Auf dem iPhone
 tritt an die Stelle der Tabelle eine **Kartenansicht** mit denselben Zahlen — wie in der
 Dividendenliste.
 
@@ -488,7 +488,7 @@ erkannt.
 **Keine Mehrfachauswahl.** Die Liste kennt keine Auswahlkästchen und keine
 Massenaktionen. Bearbeiten, Stornieren/Reaktivieren und dauerhaftes Löschen
 stehen nur auf der Detailseite. Auf dem iPhone ist jede Karte, auf breiten
-Schirmen jede Tabellenzeile eine einzige Fläche zur Detailseite (seit 2.47.0
+Schirmen jede Tabellenzeile eine einzige Fläche zur Detailseite (seit 2.48.0
 auch dort ohne Symbole): drei Symbole je Zeile ergaben 75 Schaltflächen pro
 Seite, das Löschen einen Daumen breit neben dem Bearbeiten. Die Detailseite führt samt Filter und
 Seite zur Liste zurück, ebenso nach dem Bearbeiten und Löschen.
