@@ -94,7 +94,7 @@ export function SortableTableHead({
         onClick={onSort}
         aria-label={`Nach ${label} sortieren`}
         className={cn(
-          "inline-flex h-full min-h-11 items-center gap-1 rounded-sm outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring",
+          "inline-flex h-full min-h-11 items-center gap-1 whitespace-nowrap rounded-sm outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring",
           align === "right" && "flex-row-reverse",
           sorted && "text-foreground",
         )}
