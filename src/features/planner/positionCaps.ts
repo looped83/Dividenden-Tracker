@@ -22,12 +22,22 @@ export const POSITION_CAP_DEFAULT = 0;
 
 /**
  * Eigene Gewichtung je Asset in Prozent, auf eine Nachkommastelle (seit
- * 2.24.0; zuvor eine Auswahl ganzer Werte von 2 bis 50).
+ * 2.24.0; zuvor eine Auswahl ganzer Werte von 2 bis 50). Dazu 0 als bewusste
+ * Angabe „nicht aufstocken" (seit 2.41.0): Sie bleibt gespeichert und ist so
+ * von „nicht gesetzt" zu unterscheiden, wirkt im Nachkauf aber wie der Standard.
  */
 export const POSITION_CAP_MIN = 0.5;
 export const POSITION_CAP_MAX = 50;
 
-const capSchema = z.number().min(POSITION_CAP_MIN).max(100);
+/** Gültige eigene Gewichtung: 0 oder 0,5–50 (gelesen wird großzügig bis 100). */
+export function isPositionCap(value: number): boolean {
+  return value === 0 || (value >= POSITION_CAP_MIN && value <= POSITION_CAP_MAX);
+}
+
+const capSchema = z
+  .number()
+  .max(100)
+  .refine((value) => value === 0 || value >= POSITION_CAP_MIN);
 
 /** Liest die gespeicherten Grenzen; ungültige Einträge fallen weg. */
 export function parsePositionCaps(raw: unknown): Map<string, number> {

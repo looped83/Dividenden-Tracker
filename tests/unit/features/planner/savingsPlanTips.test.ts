@@ -113,6 +113,11 @@ describe("savingsPlanTips", () => {
     expect(over.kind === "over" && over.percent.toNumber()).toBe(10);
   });
 
+  it("nennt einen Plan auf einer bewussten 0 % als über der Gewichtung", () => {
+    const result = tips([plan("sec-a")], [["sec-a", 0]]);
+    expect(result.map((tip) => [tip.kind, tip.name])).toEqual([["over", "Alpha"]]);
+  });
+
   it("schlägt Assets mit Platz ohne Plan vor, nicht ausgeschlossene, ab 300 €", () => {
     // Delta: 10 % × 10.000 − 500 = 500 € frei; Beta: 12 % → 200 € (zu wenig).
     const caps: [string, number][] = [

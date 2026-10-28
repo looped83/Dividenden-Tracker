@@ -35,7 +35,8 @@ export interface AssetRow {
   position: AssetPosition | null;
   /**
    * Eigene Gewichtung in Prozent (Zielanteil fuer den Nachkauf,
-   * `planner/positionCaps.ts`); `null` ohne eigene — dann gilt 0 %.
+   * `planner/positionCaps.ts`); `null` ohne eigene — dann gilt 0 %. Eine
+   * eingegebene 0 bleibt 0 (seit 2.41.0).
    */
   targetWeight: number | null;
 }

@@ -268,7 +268,7 @@ function Purchase({
               ? "Im Bestand ist kein Asset mit Kurs und Dividende, das sich nachkaufen ließe."
               : plan === null
                 ? `Mindestens ${String(rules.minimum)} € je Kauf.`
-                : caps.size === 0
+                : ![...caps.values()].some((cap) => cap > 0)
                   ? "Gib Assets auf ihrer Seite eine Zielgewichtung, dann schlägt der Nachkauf sie vor."
                   : "Kein Asset hat unter seiner Zielgewichtung noch Platz."}
           </p>

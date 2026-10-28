@@ -104,10 +104,12 @@ vi.mock("@/features/planner/savingsPlanHooks", () => ({
 }));
 
 // Gewichtung: keine eigene, Standard 0 % (seit 2.25.0).
+const positionCaps = { current: new Map<string, number>() };
+const saveCaps = vi.fn();
 vi.mock("@/features/planner/positionCaps", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/features/planner/positionCaps")>()),
-  usePositionCaps: () => ({ data: new Map(), isLoading: false }),
-  useSavePositionCap: () => ({ mutate: vi.fn(), isPending: false }),
+  usePositionCaps: () => ({ data: positionCaps.current, isLoading: false }),
+  useSavePositionCap: () => ({ mutate: saveCaps, isPending: false }),
 }));
 const { SecurityDetailPage } = await import("@/features/securities/SecurityDetailPage");
 
@@ -252,6 +254,27 @@ describe("SecurityDetailPage", () => {
     expect(field).toHaveValue("");
     expect(field).toHaveAttribute("placeholder", "0");
     expect(section.getByText(/ohne Zielgewichtung kein Nachkauf/)).toBeInTheDocument();
+  });
+
+  it("speichert eine eingegebene 0 als eigene Zielgewichtung", () => {
+    renderPage();
+    const section = within(screen.getByRole("region", { name: "Planung" }));
+    const field = section.getByRole("textbox", { name: "Zielgewichtung" });
+    fireEvent.change(field, { target: { value: "0" } });
+    fireEvent.blur(field);
+    expect(saveCaps).toHaveBeenCalledWith({ caps: new Map([[SECURITY_ID, 0]]) });
+  });
+
+  it("zeigt eine gespeicherte 0 im Feld statt leer", () => {
+    positionCaps.current = new Map([[SECURITY_ID, 0]]);
+    try {
+      renderPage();
+      const section = within(screen.getByRole("region", { name: "Planung" }));
+      expect(section.getByRole("textbox", { name: "Zielgewichtung" })).toHaveValue("0");
+      expect(section.queryByText(/ohne Zielgewichtung/)).not.toBeInTheDocument();
+    } finally {
+      positionCaps.current = new Map();
+    }
   });
 
   it("nennt den Rhythmus am Ausschuettungsplan", () => {

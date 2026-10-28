@@ -545,9 +545,11 @@ export function SecuritiesPage() {
                               value={position?.allocationPercent}
                               digits={1}
                               // Ueber der Zielgewichtung rot — wie auf der
-                              // Asset-Seite: dort endet der Nachkauf.
+                              // Asset-Seite: dort endet der Nachkauf. Eine
+                              // bewusste 0 ist kein Ueberschreiten.
                               over={
                                 row.targetWeight !== null &&
+                                row.targetWeight > 0 &&
                                 (position?.allocationPercent?.greaterThan(
                                   row.targetWeight,
                                 ) ??

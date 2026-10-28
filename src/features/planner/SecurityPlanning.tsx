@@ -26,8 +26,7 @@ import {
 import { formatDecimal } from "./format";
 import {
   POSITION_CAP_DEFAULT,
-  POSITION_CAP_MAX,
-  POSITION_CAP_MIN,
+  isPositionCap,
   usePositionCaps,
   useSavePositionCap,
 } from "./positionCaps";
@@ -146,7 +145,7 @@ export function SecurityPlanning({
  * Gewichtung (seit 2.24.0, zuvor „Positionsgrenze"): Anteil am Depot heute und
  * der Anteil, bis zu dem der Nachkauf das Asset aufstockt — der Standard oder
  * ein eigener, auf eine Nachkommastelle (CALCULATION_RULES.md §16). Ein leeres
- * Feld folgt dem Standard; gespeichert wird nur eine Abweichung davon.
+ * Feld folgt dem Standard; eine eingegebene 0 bleibt gespeichert (seit 2.41.0).
  * Gespeichert wird erst beim Verlassen des Felds, nicht bei jedem Tastendruck.
  */
 function WeightingRow({ securityId }: { securityId: string }) {
@@ -179,21 +178,19 @@ function WeightingRow({ securityId }: { securityId: string }) {
   if (isLoading || caps === undefined) return null;
   const cap = ownCap ?? POSITION_CAP_DEFAULT;
   const over = share?.greaterThan(cap) ?? false;
+  // Rot nur über einer echten Zielgewichtung: 0 ist eine Entscheidung, kein
+  // Überschreiten.
+  const warn = over && ownCap !== undefined && ownCap > 0;
 
   const commit = () => {
     const parsed = parseGermanNumber(draft);
     // Unsinn oder ausserhalb des Bereichs stellt den gespeicherten Wert wieder
-    // her. 0 ist wie leer: keine Gewichtung, kein Nachkauf.
-    if (
-      parsed === undefined ||
-      (parsed !== null &&
-        parsed !== 0 &&
-        (parsed < POSITION_CAP_MIN || parsed > POSITION_CAP_MAX))
-    ) {
+    // her. Leer folgt dem Standard; 0 bleibt als bewusste Angabe gespeichert.
+    if (parsed === undefined || (parsed !== null && !isPositionCap(parsed))) {
       setDraft(shown);
       return;
     }
-    const value = parsed === null || parsed === 0 ? undefined : parsed;
+    const value = parsed ?? undefined;
     if (value === ownCap) {
       setDraft(shown);
       return;
@@ -240,13 +237,7 @@ function WeightingRow({ securityId }: { securityId: string }) {
           ) : (
             <>
               Gewichtung{" "}
-              <span
-                className={
-                  over && ownCap !== undefined
-                    ? "font-medium text-negative"
-                    : "text-foreground"
-                }
-              >
+              <span className={warn ? "font-medium text-negative" : "text-foreground"}>
                 {formatPercent(share, 1)}
               </span>
             </>
