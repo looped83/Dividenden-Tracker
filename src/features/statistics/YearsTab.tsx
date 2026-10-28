@@ -8,6 +8,7 @@ import { BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import {
   monthNameDe,
+  monthNameDeShort,
   yearlyBuckets,
   yearStatistics,
   type ComparisonResult,
@@ -27,11 +28,13 @@ import {
 import { CategoryBarChart } from "./components/charts";
 import { StatTable, type StatColumn } from "./components/StatTable";
 
+// Kurzer Monatsname wie in den Diagrammen: Mit „September (491,40 €)" brach die
+// Zelle um, und jede Zeile wurde anders hoch.
 function monthCell(value: MonthValue | null): React.ReactNode {
   if (!value) return <span className="text-muted-foreground">—</span>;
   return (
-    <span>
-      {monthNameDe(value.month)}{" "}
+    <span className="whitespace-nowrap">
+      {monthNameDeShort(value.month)}{" "}
       <span className="text-muted-foreground tabular-nums">
         ({formatMoney(value.net)})
       </span>
@@ -39,16 +42,44 @@ function monthCell(value: MonthValue | null): React.ReactNode {
   );
 }
 
-function changeCell(change: ComparisonResult, context: string): React.ReactNode {
-  const described = describeComparison(change, context);
+/**
+ * Veränderung als Prozentzahl — wie in der Liste des Telefons. Den Betrag
+ * liefert der Tooltip; den Bezug nennt der Spaltenkopf („Δ Vorjahr"). Das
+ * laufende Jahr steht gegen denselben Ausschnitt des Vorjahres (§11.3) und
+ * trägt dafür ein leises „bis heute" statt „ggü. Vorjahreszeitraum", das als
+ * einzige Zeile umbrach.
+ */
+function changeCell(change: ComparisonResult, isCurrentYear: boolean): React.ReactNode {
+  if (change.kind === "both-zero" || change.kind === "no-comparison") {
+    return <span className="text-muted-foreground">—</span>;
+  }
+  const described = describeComparison(change, "");
   const toneClass =
     described.tone === "positive"
       ? "text-positive"
       : described.tone === "negative"
         ? "text-negative"
         : "text-muted-foreground";
-  return <span className={cn("text-sm", toneClass)}>{described.text}</span>;
+  return (
+    <span className="whitespace-nowrap" title={described.text.trim()}>
+      <span className={cn("font-medium", toneClass)}>
+        {change.kind === "new"
+          ? "Neu"
+          : `${change.percent.isPositive() ? "+" : ""}${formatPercent(change.percent)}`}
+      </span>
+      {isCurrentYear && <span className="text-muted-foreground"> bis heute</span>}
+    </span>
+  );
 }
+
+/**
+ * Nebenkennzahlen erst, wenn Platz ist: Einzeilig brauchen alle neun Spalten
+ * rund 1.000 px — die volle Inhaltsbreite. Darunter treten erst Assets und
+ * Depots zurück, im Tablet-Format auch Anzahl und Ø. Jahr, Summe, Monate und
+ * Veränderung bleiben immer.
+ */
+const FROM_XL = "hidden xl:table-cell";
+const FROM_FULL_WIDTH = "hidden min-[1400px]:table-cell";
 
 export function YearsTab({
   switcher,
@@ -93,6 +124,7 @@ export function YearsTab({
       },
       {
         key: "count",
+        className: FROM_XL,
         header: "Anzahl",
         headerLabel: "Anzahl Dividenden",
         align: "right",
@@ -101,6 +133,7 @@ export function YearsTab({
       },
       {
         key: "securities",
+        className: FROM_FULL_WIDTH,
         listHidden: true,
         header: "Assets",
         headerLabel: "Anzahl Assets",
@@ -110,6 +143,7 @@ export function YearsTab({
       },
       {
         key: "depots",
+        className: FROM_FULL_WIDTH,
         listHidden: true,
         header: "Depots",
         headerLabel: "Anzahl Depots",
@@ -119,6 +153,7 @@ export function YearsTab({
       },
       {
         key: "average",
+        className: FROM_XL,
         header: "Ø Dividende",
         headerLabel: "Durchschnittszahlung",
         align: "right",
@@ -138,13 +173,7 @@ export function YearsTab({
       {
         key: "change",
         header: "Δ Vorjahr",
-        // Das laufende Jahr steht gegen denselben Ausschnitt des Vorjahres
-        // (§11.3) — die Beschriftung sagt es.
-        render: (row) =>
-          changeCell(
-            row.change,
-            row.year === today.year ? "ggü. Vorjahreszeitraum" : "ggü. Vorjahr",
-          ),
+        render: (row) => changeCell(row.change, row.year === today.year),
       },
     ],
     [today.year],
