@@ -35,7 +35,7 @@ export function RecentPayments({ payments, securities, depots }: RecentPaymentsP
           Noch keine Dividenden vorhanden.
         </p>
       ) : (
-        <ListGroup>
+        <ListGroup plain>
           {recent.map((payment) => {
             const security = securities.get(payment.securityId);
             const shifted = payment.payDate !== payment.actualPayDate;
