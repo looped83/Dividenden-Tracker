@@ -157,7 +157,9 @@ test("pflegt Sparpläne und zeigt sie am Asset", async ({ page, konto }) => {
   await expect(tipps.getByText(/Reinvestition einschalten/)).toHaveCount(3);
   await expect(tipps.getByText("Allianz", { exact: true })).toHaveCount(0);
 
+  // Die Bestandsliste kennzeichnet nur Allianz (seit 2.44.0).
   await page.goto("/#/depot");
+  await expect(page.getByText("Sparplan läuft")).toHaveCount(1);
   await page
     .getByRole("link", { name: /Allianz/ })
     .first()

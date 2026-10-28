@@ -73,6 +73,16 @@ vi.mock("@/features/payments/hooks", () => ({
   }),
 }));
 
+// Ein laufender Plan auf Beta SE, ein pausierter auf Alpha AG.
+vi.mock("@/features/planner/savingsPlanHooks", () => ({
+  useSavingsPlans: () => ({
+    data: [
+      { id: "p1", securityId: "sec-b", paused: false },
+      { id: "p2", securityId: "sec-a", paused: true },
+    ],
+  }),
+}));
+
 const { SecuritiesPage } = await import("@/features/securities/SecuritiesPage");
 
 function snapshot(partial: Partial<SecuritySnapshot> = {}): SecuritySnapshot {
@@ -166,10 +176,13 @@ describe("SecuritiesPage", () => {
     expect(screen.getByRole("columnheader", { name: "Depot" })).toBeInTheDocument();
   });
 
-  it("kennzeichnet Assets, deren Dividenden reinvestiert werden", () => {
+  it("kennzeichnet nur Assets mit laufendem Sparplan", () => {
     renderPage([]);
-    // Nur Alpha AG reinvestiert.
-    expect(screen.getAllByText("Dividenden werden reinvestiert")).toHaveLength(1);
+    // Beta SE spart, Alpha AG ist pausiert und reinvestiert nur — kein Zeichen.
+    const zeichen = screen.getAllByText("Sparplan läuft");
+    expect(zeichen).toHaveLength(1);
+    expect(screen.getByRole("row", { name: /Beta SE/ })).toContainElement(zeichen[0]);
+    expect(screen.queryByText("Dividenden werden reinvestiert")).not.toBeInTheDocument();
   });
 
   it("führt vom Namen auf die Detailseite und behält die Zeilenaktionen", () => {
