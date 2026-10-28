@@ -66,8 +66,6 @@ const securities = [
   },
 ];
 
-const updateSecurity = vi.hoisted(() => vi.fn());
-
 vi.mock("@/features/dashboard/hooks", () => ({
   useEffectivePayments: () => ({ payments, paymentsQuery: { isLoading: false } }),
 }));
@@ -83,7 +81,6 @@ vi.mock("@/features/securities/hooks", () => ({
   useCreateSecurity: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useUpdateSecurity: () => ({
     mutateAsync: vi.fn(),
-    mutate: updateSecurity,
     isPending: false,
   }),
 }));
@@ -109,7 +106,7 @@ const saveCaps = vi.fn();
 vi.mock("@/features/planner/positionCaps", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/features/planner/positionCaps")>()),
   usePositionCaps: () => ({ data: positionCaps.current, isLoading: false }),
-  useSavePositionCap: () => ({ mutate: saveCaps, isPending: false }),
+  useSavePositionCap: () => ({ mutateAsync: saveCaps, isPending: false }),
 }));
 const { SecurityDetailPage } = await import("@/features/securities/SecurityDetailPage");
 
@@ -241,40 +238,43 @@ describe("SecurityDetailPage", () => {
     expect(screen.getAllByText("Nicht geplant:")).toHaveLength(10);
   });
 
-  it("bietet ohne Sparplan an, einen anzulegen", () => {
+  // Seit 2.45.0 zeigt die Seite die Planung nur an; geaendert wird im
+  // Formular „Asset bearbeiten".
+  it("zeigt ohne Sparplan nur den Hinweis, kein Bedienelement", () => {
     renderPage();
     const section = within(screen.getByRole("region", { name: "Planung" }));
-    expect(section.getByRole("button", { name: "Sparplan" })).toBeInTheDocument();
+    expect(section.getByText("Kein Sparplan")).toBeInTheDocument();
+    expect(section.queryByRole("button")).not.toBeInTheDocument();
+    expect(section.queryByRole("textbox")).not.toBeInTheDocument();
   });
 
-  it("bietet die Gewichtung leer an: ohne sie kein Nachkauf", () => {
+  it("nennt ohne Zielgewichtung, dass der Nachkauf das Asset auslaesst", () => {
     renderPage();
     const section = within(screen.getByRole("region", { name: "Planung" }));
-    const field = section.getByRole("textbox", { name: "Zielgewichtung" });
-    expect(field).toHaveValue("");
-    expect(field).toHaveAttribute("placeholder", "0");
     expect(section.getByText(/ohne Zielgewichtung kein Nachkauf/)).toBeInTheDocument();
   });
 
-  it("speichert eine eingegebene 0 als eigene Zielgewichtung", () => {
-    renderPage();
-    const section = within(screen.getByRole("region", { name: "Planung" }));
-    const field = section.getByRole("textbox", { name: "Zielgewichtung" });
-    fireEvent.change(field, { target: { value: "0" } });
-    fireEvent.blur(field);
-    expect(saveCaps).toHaveBeenCalledWith({ caps: new Map([[SECURITY_ID, 0]]) });
-  });
-
-  it("zeigt eine gespeicherte 0 im Feld statt leer", () => {
+  it("zeigt eine gespeicherte 0 als Zielgewichtung", () => {
     positionCaps.current = new Map([[SECURITY_ID, 0]]);
     try {
       renderPage();
       const section = within(screen.getByRole("region", { name: "Planung" }));
-      expect(section.getByRole("textbox", { name: "Zielgewichtung" })).toHaveValue("0");
+      expect(section.getByText(/^0\s%$/)).toBeInTheDocument();
       expect(section.queryByText(/ohne Zielgewichtung/)).not.toBeInTheDocument();
     } finally {
       positionCaps.current = new Map();
     }
+  });
+
+  it("bearbeitet Zielgewichtung und Sparplan im Formular", () => {
+    renderPage();
+    fireEvent.click(screen.getByRole("button", { name: "Bearbeiten" }));
+    const dialog = within(screen.getByRole("dialog", { name: "Asset bearbeiten" }));
+    expect(dialog.getByRole("textbox", { name: "Zielgewichtung" })).toHaveValue("");
+    expect(dialog.getByRole("button", { name: "Sparplan" })).toBeInTheDocument();
+    expect(
+      dialog.getByRole("switch", { name: "Dividenden reinvestieren" }),
+    ).toBeInTheDocument();
   });
 
   it("nennt den Rhythmus am Ausschuettungsplan", () => {
@@ -284,15 +284,14 @@ describe("SecurityDetailPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("schaltet die Reinvestition direkt am Ausschuettungsplan", () => {
+  it("zeigt die Reinvestition nur an", () => {
     renderPage();
-    const toggle = screen.getByRole("switch", { name: "Dividenden reinvestieren" });
-    expect(toggle).toHaveAttribute("aria-checked", "false");
-    fireEvent.click(toggle);
-    expect(updateSecurity).toHaveBeenCalledWith(
-      { id: SECURITY_ID, input: { reinvest_since: "2026-10-17" } },
-      expect.anything(),
-    );
+    expect(
+      screen.queryByRole("switch", { name: "Dividenden reinvestieren" }),
+    ).not.toBeInTheDocument();
+    const plan = within(screen.getByRole("region", { name: /^Ausschüttungsplan/ }));
+    expect(plan.getByText("Reinvestition")).toBeInTheDocument();
+    expect(plan.getByText("aus")).toBeInTheDocument();
   });
 
   it("weist auf unvollstaendige Stammdaten hin", () => {

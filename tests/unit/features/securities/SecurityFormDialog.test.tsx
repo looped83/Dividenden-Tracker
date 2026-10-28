@@ -4,13 +4,28 @@ import { SecurityFormDialog } from "@/features/securities/SecurityFormDialog";
 
 /**
  * Ausschuettungsmonate sind Pflicht (seit 2.23.0): Ohne Monat speichert das
- * Formular nicht und nennt den Grund; die Notiz gibt es nicht mehr.
+ * Formular nicht und nennt den Grund.
  */
 const createSecurity = vi.hoisted(() => vi.fn());
+const saveCaps = vi.hoisted(() => vi.fn());
+const savePlans = vi.hoisted(() => vi.fn());
 
 vi.mock("@/features/securities/hooks", () => ({
   useCreateSecurity: () => ({ mutateAsync: createSecurity }),
   useUpdateSecurity: () => ({ mutateAsync: vi.fn() }),
+  useSecuritySnapshots: () => ({ data: [] }),
+}));
+
+// Seit 2.45.0 gehoeren Zielgewichtung und Sparplan zum Formular.
+vi.mock("@/features/planner/positionCaps", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/features/planner/positionCaps")>()),
+  usePositionCaps: () => ({ data: new Map() }),
+  useSavePositionCap: () => ({ mutateAsync: saveCaps }),
+}));
+vi.mock("@/features/planner/savingsPlanHooks", () => ({
+  useSavingsPlans: () => ({ data: [] }),
+  useSaveSavingsPlans: () => ({ mutateAsync: savePlans }),
+  newSavingsPlanId: () => "plan1",
 }));
 
 vi.mock("@/features/depots/hooks", () => ({
@@ -25,6 +40,9 @@ function renderDialog() {
 describe("SecurityFormDialog", () => {
   beforeEach(() => {
     createSecurity.mockReset();
+    createSecurity.mockResolvedValue({ id: "new-id" });
+    saveCaps.mockReset();
+    savePlans.mockReset();
   });
 
   it("verlangt mindestens einen Ausschüttungsmonat", async () => {
@@ -61,5 +79,35 @@ describe("SecurityFormDialog", () => {
         }),
       );
     });
+  });
+
+  it("speichert Zielgewichtung und Sparplan zum neuen Asset", async () => {
+    renderDialog();
+    fireEvent.click(screen.getByRole("button", { name: "Jun" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Zielgewichtung" }), {
+      target: { value: "2,5" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Sparplan" }));
+    fireEvent.change(screen.getByLabelText("Rate (€)"), { target: { value: "50" } });
+    fireEvent.click(screen.getByRole("button", { name: "Anlegen" }));
+    await waitFor(() => {
+      expect(savePlans).toHaveBeenCalled();
+    });
+    expect(saveCaps).toHaveBeenCalledWith({ caps: new Map([["new-id", 2.5]]) });
+    const [saved] = savePlans.mock.calls[0] as [
+      { securityId: string; interval: string }[],
+    ];
+    expect(saved).toEqual([
+      expect.objectContaining({ securityId: "new-id", interval: "monthly" }),
+    ]);
+  });
+
+  it("speichert nichts, solange der Sparplan keine Rate hat", async () => {
+    renderDialog();
+    fireEvent.click(screen.getByRole("button", { name: "Jun" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sparplan" }));
+    fireEvent.click(screen.getByRole("button", { name: "Anlegen" }));
+    expect(await screen.findByText("Sparplan: Gib eine Rate ein.")).toBeInTheDocument();
+    expect(createSecurity).not.toHaveBeenCalled();
   });
 });

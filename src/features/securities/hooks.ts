@@ -51,9 +51,8 @@ export function useUpdateSecurity() {
   return useMutation({
     mutationFn: ({ id, input }: { id: string; input: SecurityUpdate }) =>
       updateSecurity(id, input),
-    // Die gespeicherte Zeile sofort in die Liste: Ohne sie zeigte ein
-    // Schalter (`ReinvestSwitch`) zwischen Antwort und Neuladen kurz den alten
-    // Stand.
+    // Die gespeicherte Zeile sofort in die Liste: Ohne sie zeigte die Seite
+    // des Assets zwischen Antwort und Neuladen kurz den alten Stand.
     onSuccess: (saved) => {
       queryClient.setQueryData<Security[]>(SECURITIES_KEY, (list) =>
         list?.map((security) => (security.id === saved.id ? saved : security)),

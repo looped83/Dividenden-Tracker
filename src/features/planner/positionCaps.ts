@@ -1,5 +1,9 @@
+import * as React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
+import { MoneyDecimal, type DecimalInstance } from "@/lib/money";
+import { useSecuritySnapshots } from "@/features/securities/hooks";
+import { latestAsOf, snapshotsAt } from "@/features/securities/snapshots";
 import {
   fetchPositionCaps,
   updatePositionCaps,
@@ -16,7 +20,7 @@ export type PositionCaps = ReadonlyMap<string, number>;
 /**
  * Gewichtung für Assets ohne eigene: 0 % (seit 2.25.0; 2.24.0 1 %, zuvor
  * 8 %). Nachkauf und Lücken-Füller schlagen nur Assets vor, denen eine
- * Gewichtung gegeben ist — sie wird je Asset auf seiner Seite festgelegt.
+ * Gewichtung gegeben ist — sie wird je Asset unter „Bearbeiten" festgelegt.
  */
 export const POSITION_CAP_DEFAULT = 0;
 
@@ -77,4 +81,25 @@ export function useSavePositionCap() {
     },
     onError: () => void queryClient.invalidateQueries({ queryKey: POSITION_CAPS_KEY }),
   });
+}
+
+/**
+ * Anteil des Assets am Marktwert des jüngsten Depotstands in Prozent; `null`,
+ * wenn es darin nicht vorkommt. Neben der Zielgewichtung auf der Asset-Seite
+ * und im Formular „Asset bearbeiten".
+ */
+export function useDepotShare(securityId: string | undefined): DecimalInstance | null {
+  const { data: snapshots = [] } = useSecuritySnapshots();
+  return React.useMemo(() => {
+    if (securityId === undefined) return null;
+    let total = new MoneyDecimal(0);
+    let own: DecimalInstance | null = null;
+    for (const row of snapshotsAt(snapshots, latestAsOf(snapshots))) {
+      if (row.market_value === null) continue;
+      const value = new MoneyDecimal(row.market_value);
+      total = total.plus(value);
+      if (row.security_id === securityId) own = value;
+    }
+    return own && total.greaterThan(0) ? own.dividedBy(total).times(100) : null;
+  }, [snapshots, securityId]);
 }

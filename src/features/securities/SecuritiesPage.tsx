@@ -56,6 +56,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { usePositionCaps } from "@/features/planner/positionCaps";
+import { useSavingsPlans } from "@/features/planner/savingsPlanHooks";
 import {
   useArchiveSecurity,
   useSecurities,
@@ -109,6 +110,17 @@ export function SecuritiesPage() {
   const depotById = React.useMemo(
     () => new Map(depots.map((depot) => [depot.id, depot])),
     [depots],
+  );
+  const { data: savingsPlans } = useSavingsPlans();
+  // Assets mit laufendem Sparplan tragen ein Zeichen; pausierte zaehlen nicht.
+  const withSavingsPlan = React.useMemo(
+    () =>
+      new Set(
+        (savingsPlans ?? [])
+          .filter((plan) => !plan.paused)
+          .map((plan) => plan.securityId),
+      ),
+    [savingsPlans],
   );
   const toggleArchive = useArchiveToggle(useArchiveSecurity());
   // Filter und Sortierung stehen in der Adresse — wie in der Dividendenliste.
@@ -524,7 +536,10 @@ export function SecuritiesPage() {
                   return (
                     <TableRow key={security.id}>
                       <TableCell>
-                        <AssetName row={row} />
+                        <AssetName
+                          row={row}
+                          savingsPlan={withSavingsPlan.has(row.security.id)}
+                        />
                       </TableCell>
                       {withPositions && (
                         <>
@@ -618,7 +633,11 @@ export function SecuritiesPage() {
           ) : (
             <ListGroup>
               {visible.map((row) => (
-                <AssetItem key={row.security.id} row={row} />
+                <AssetItem
+                  key={row.security.id}
+                  row={row}
+                  savingsPlan={withSavingsPlan.has(row.security.id)}
+                />
               ))}
             </ListGroup>
           )}
@@ -718,7 +737,7 @@ function PercentCell({
  * und ISIN stehen dort; in der Liste machten sie jede Zeile zweizeilig, ohne
  * beim Vergleichen zu helfen.
  */
-function AssetName({ row }: { row: AssetRow }) {
+function AssetName({ row, savingsPlan }: { row: AssetRow; savingsPlan: boolean }) {
   const { security } = row;
   const backState = useBackState();
   return (
@@ -730,7 +749,7 @@ function AssetName({ row }: { row: AssetRow }) {
       >
         {security.name}
       </Link>
-      {security.reinvest_since && <ReinvestMark />}
+      {savingsPlan && <SavingsPlanMark />}
       {/* Nur der Sonderfall traegt ein Etikett. „Aktiv" stand zuvor an fast
           jeder Zeile und sagte damit nichts. */}
       {security.archived_at && (
@@ -743,17 +762,18 @@ function AssetName({ row }: { row: AssetRow }) {
 }
 
 /**
- * Kleines Zeichen fuer „Dividenden werden reinvestiert" (am Asset
- * eingestellt). Nur das Ja traegt ein Zeichen — wie „Archiviert".
+ * Kleines Zeichen fuer „Sparplan laeuft" (Planer › Sparplaene). Nur das Ja
+ * traegt ein Zeichen — wie „Archiviert". Die Reinvestition zeigt die
+ * Detailseite.
  */
-function ReinvestMark({ className }: { className?: string }) {
+function SavingsPlanMark({ className }: { className?: string }) {
   return (
     <span
-      title="Dividenden werden reinvestiert"
+      title="Sparplan läuft"
       className={cn("inline-flex shrink-0 text-muted-foreground", className)}
     >
       <Repeat className="size-3.5" aria-hidden />
-      <span className="sr-only">Dividenden werden reinvestiert</span>
+      <span className="sr-only">Sparplan läuft</span>
     </span>
   );
 }
@@ -790,7 +810,7 @@ function Metric({ value, detail }: { value: React.ReactNode; detail?: string | n
  * Anteil am Depot steht in der Tabelle; auf dem Telefon traegt die Zeile nur,
  * was man beim Durchsehen vergleicht.
  */
-function AssetItem({ row }: { row: AssetRow }) {
+function AssetItem({ row, savingsPlan }: { row: AssetRow; savingsPlan: boolean }) {
   const backState = useBackState();
   const { security, position } = row;
   const payout = payoutLabel(security);
@@ -803,8 +823,8 @@ function AssetItem({ row }: { row: AssetRow }) {
   );
   // Vor der Ausschuettung, um die es geht — neben dem Namen liefe es mit ihm
   // aus (`truncate-fade`).
-  const reinvestMark = security.reinvest_since && (
-    <ReinvestMark className="mr-1.5 align-[-0.125em]" />
+  const savingsPlanMark = savingsPlan && (
+    <SavingsPlanMark className="mr-1.5 align-[-0.125em]" />
   );
 
   return (
@@ -829,7 +849,7 @@ function AssetItem({ row }: { row: AssetRow }) {
                 <>
                   <span className="min-w-0 truncate">
                     {archivedBadge}
-                    {reinvestMark}
+                    {savingsPlanMark}
                     {position.annualDividend ? (
                       <>
                         <AmountText amount={position.annualDividend} /> p. a.
@@ -856,7 +876,7 @@ function AssetItem({ row }: { row: AssetRow }) {
               ) : (
                 <span className="min-w-0 truncate">
                   {archivedBadge}
-                  {reinvestMark}
+                  {savingsPlanMark}
                   {[row.depotName, payout === "—" ? null : payout]
                     .filter(Boolean)
                     .join(" · ") || "—"}
