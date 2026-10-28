@@ -40,6 +40,7 @@ import { AmountText } from "@/components/money/AmountText";
 import { formatCountNoun } from "@/lib/utils/formatNumber";
 import { MD_BREAKPOINT_QUERY, useMediaQuery } from "@/lib/hooks/useMediaQuery";
 import { useToday } from "@/lib/hooks/useToday";
+import { useRowLink } from "@/lib/hooks/useRowLink";
 import { cn } from "@/lib/utils/cn";
 import { Money, toCurrencyCode } from "@/lib/money";
 import { useDepots } from "@/features/depots/hooks";
@@ -700,14 +701,16 @@ interface PaymentRowProps {
 /**
  * Eine Zeile der Tabelle ab `md`. Aktionen (bearbeiten, stornieren, löschen)
  * stehen nur auf der Detailseite — wie in der Liste auf dem Telefon. Die ganze
- * Zeile führt dorthin: Der Link am Unternehmen spannt sich über sie.
+ * Zeile führt dorthin (`useRowLink`).
  */
 function PaymentRow({ row, comparison, listUrl }: PaymentRowProps) {
   const { payment, effectiveDate, companyName, depotName, amount } = row;
   const shifted = effectiveDate !== payment.pay_date;
   const cancelled = Boolean(payment.archived_at);
+  const to = `/eingaenge/${payment.id}`;
+  const openRow = useRowLink();
   return (
-    <TableRow className="relative">
+    <TableRow className="cursor-pointer" onClick={openRow(to, { from: listUrl })}>
       <TableCell className="whitespace-nowrap text-muted-foreground tabular-amount">
         {formatCalendarDate(effectiveDate)}
         {shifted && (
@@ -723,9 +726,9 @@ function PaymentRow({ row, comparison, listUrl }: PaymentRowProps) {
         {/* Das Unternehmen fuehrt zur Detailansicht — es benennt den Eingang,
             das Datum tut das nicht. */}
         <Link
-          to={`/eingaenge/${payment.id}`}
+          to={to}
           state={{ from: listUrl }}
-          className="rounded-sm outline-none after:absolute after:inset-0 hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+          className="rounded-sm outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
         >
           {companyName || "—"}
         </Link>
