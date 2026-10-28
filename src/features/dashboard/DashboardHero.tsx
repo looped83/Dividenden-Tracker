@@ -4,12 +4,15 @@ import { Target } from "lucide-react";
 import { KpiStats, type KpiStat } from "@/components/domain/KpiHero";
 import { AmountText } from "@/components/money/AmountText";
 import { SegmentedControl, type SegmentOption } from "@/components/ui/segmented";
+import { GoalCheck } from "@/components/ui/goal-check";
+import { useCelebration } from "@/lib/hooks/useCelebration";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TrendTriangle } from "@/components/ui/trend-triangle";
 import { formatMoney, formatPercent, type Money } from "@/lib/money";
 import { computeGoalProgress, type GoalProgress } from "@/lib/goals";
 import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
 import { cn } from "@/lib/utils/cn";
+import { useCountUp } from "@/lib/hooks/useCountUp";
 import { useGoals } from "@/features/goals/hooks";
 import { ReviewTeaser } from "@/features/statistics/review/ReviewTeaser";
 import { useCalendarEvents } from "@/features/calendar/hooks";
@@ -135,6 +138,7 @@ export function DashboardHero({ payments, selection, today }: DashboardHeroProps
   const goals = useGoals().data;
   const calendarEvents = useCalendarEvents().data;
   const navigate = useNavigate();
+  const countUp = useCountUp<HTMLAnchorElement>({ trigger: selection });
   const [kind, setKindState] = React.useState<HeroChartKind>(readStoredKind);
   const setKind = (next: HeroChartKind) => {
     setKindState(next);
@@ -265,6 +269,7 @@ export function DashboardHero({ payments, selection, today }: DashboardHeroProps
           eigene Zeile darunter sparte das nicht auf. */}
       <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <Link
+          ref={countUp}
           to={head.to}
           aria-label={head.drillLabel}
           className="w-fit rounded-sm text-[2.5rem] font-bold leading-[1.05] tracking-[-0.035em] tabular-amount outline-none focus-visible:ring-2 focus-visible:ring-ring sm:text-[3.25rem]"
@@ -478,6 +483,8 @@ function AnnualGoal({
       )
     : reached;
   const tone = statusTone(progress.status);
+  const done = progress.status === "reached" || progress.status === "exceeded";
+  const celebrate = useCelebration(done ? `goal-${progress.goal.id}` : null);
   const outcome =
     progress.status === "active" || progress.status === "upcoming"
       ? `noch ${formatMoney(progress.remaining)}`
@@ -502,11 +509,14 @@ function AnnualGoal({
         aria-valuemax={100}
         aria-valuenow={Math.round(reached)}
         aria-valuetext={label}
-        className="flex h-1 w-full overflow-hidden rounded-full bg-border"
+        className={cn(
+          "flex h-1 w-full overflow-hidden rounded-full bg-border",
+          celebrate && "celebrate-glow",
+        )}
       >
         <span
           className={cn(
-            "h-full",
+            "bar-grow h-full",
             tone === "positive" && "bg-positive",
             tone === "negative" && "bg-negative",
             tone === "neutral" && "bg-foreground",
@@ -515,13 +525,14 @@ function AnnualGoal({
         />
         {projected > reached && (
           <span
-            className="h-full bg-[repeating-linear-gradient(90deg,var(--series-prior)_0_3px,transparent_3px_5px)]"
+            className="bar-grow h-full bg-[repeating-linear-gradient(90deg,var(--series-prior)_0_3px,transparent_3px_5px)]"
             style={{ width: `${String(projected - reached)}%` }}
           />
         )}
       </span>
       <span className="flex items-baseline justify-between gap-3 text-[0.8125rem] text-muted-foreground">
         <span className="min-w-0 truncate">
+          {done && <GoalCheck draw={celebrate} className="mr-1 align-[-0.125em]" />}
           <span className="font-semibold text-foreground tabular-amount">
             {formatPercent(progress.percent, 1)}
           </span>{" "}

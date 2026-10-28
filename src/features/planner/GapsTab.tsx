@@ -166,7 +166,7 @@ function GapRow({ gap }: { gap: MonthGap }) {
       </ListRow>
       {open && (
         // Eingerückt auf die Textspalte der Zeile: Kachel (44px) + Abstand.
-        <ul id={fillersId} className="space-y-0.5 pb-2 pl-[4.25rem] pr-3">
+        <ul id={fillersId} className="reveal space-y-0.5 pb-2 pl-[4.25rem] pr-3">
           {gap.fillers.map((filler) => (
             <li key={filler.securityId}>
               <Link

@@ -11,7 +11,7 @@ export function ProgressBar({ percent, label }: { percent: number; label: string
       className="flex h-1 w-full overflow-hidden rounded-full bg-border"
     >
       <span
-        className="h-full rounded-full bg-primary"
+        className="bar-grow h-full rounded-full bg-primary"
         style={{ width: `${String(width)}%` }}
       />
     </span>

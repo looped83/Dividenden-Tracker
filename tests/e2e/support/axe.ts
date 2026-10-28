@@ -24,17 +24,28 @@ export async function pruefeAxe(page: Page, kontext: string): Promise<void> {
   // Erst messen, wenn Einblendungen fertig sind: Mitten im Einblenden eines
   // Toasts ist dessen Text noch halb durchsichtig, und axe meldete einen
   // Kontrastfehler, den es im fertigen Bild nicht gibt. Endlose Animationen
-  // (Ladeanzeigen) enden nie und bleiben aussen vor.
-  await page.evaluate(() =>
-    Promise.allSettled(
+  // (Ladeanzeigen) enden nie und bleiben aussen vor. Seit 2.44.0 blenden auch
+  // nachgeladene Abschnitte ein — deshalb erst warten, bis nichts mehr laedt,
+  // und dann so lange, bis zwei Bilder lang keine Animation mehr laeuft.
+  await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+  await page.evaluate(async () => {
+    const laufend = () =>
       document
         .getAnimations()
         .filter(
-          (animation) => animation.effect?.getComputedTiming().iterations !== Infinity,
-        )
-        .map((animation) => animation.finished),
-    ),
-  );
+          (animation) =>
+            animation.playState !== "finished" &&
+            animation.effect?.getComputedTiming().iterations !== Infinity,
+        );
+    for (let runde = 0; runde < 10; runde += 1) {
+      await new Promise((fertig) =>
+        requestAnimationFrame(() => requestAnimationFrame(fertig)),
+      );
+      const offen = laufend();
+      if (offen.length === 0) return;
+      await Promise.allSettled(offen.map((animation) => animation.finished));
+    }
+  });
   const ergebnis = await new AxeBuilder({ page }).withTags(STUFEN).analyze();
 
   expect(

@@ -105,10 +105,24 @@ als Serienfarbe benutzt — auch dann nicht, wenn ein Farbton ähnlich aussieht.
   Filterleisten, Seiten- und Abschnittsköpfen (dieselbe Form wie die Jahresauswahl der
   Übersicht). Schatten nur eine dezente Stufe für schwebende
   Elemente (Dialoge, Popover) — Karten trennen sich per Haarlinie, nicht per Schatten.
-- Animationen: nur funktionale Übergänge ≤ 200 ms (Panel auf/zu, Fokus); Diagramme ohne
-  Intro-Animation — für alle, nicht nur bei `prefers-reduced-motion` (`CHART_SERIES_PROPS` in
-  `chartTheme.ts`): Die Reihen wuchsen rund 1,5 s aus der Nulllinie, so lange stand ein leeres
-  Diagramm auf der Seite. `prefers-reduced-motion` schaltet die übrigen Übergänge ab.
+- Animationen: funktionale Übergänge ≤ 200 ms (Panel auf/zu, Fokus). Seit 2.44.0 dazu
+  dezente Bewegung, die Zahlen lebendig macht, ohne zu warten (`index.css`, Abschnitt
+  „Bewegung"), nur über Deckkraft und `transform`:
+  - **Erster Aufruf eines Bereichs je Sitzung** (`data-intro`, AppShell, 2,5 s): Abschnitte
+    blenden in 200 ms ein, die Hauptzahl zählt in 600 ms hoch (`useCountUp`), Balken wachsen
+    in 600 ms von links (`.bar-grow`, Ranglisten je 40 ms versetzt, höchstens 8 Stufen),
+    Diagramme heben sich in 400 ms an (`.chart-rise`). Beim nächsten Aufruf steht alles still.
+  - **Wertwechsel** (Jahr, Filter): Die Hauptzahl zählt vom alten zum neuen Wert; beim Tippen
+    durch die Monate des Übersichtsdiagramms folgt sie ohne Zählen.
+  - **Aufklappen**: Inhalt gleitet in 200 ms ein (`.reveal`, offene `<details>`); Zuklappen
+    ist sofort.
+  - **Erfolg**: Ein erreichtes Ziel leuchtet einmal orange auf und sein Haken zeichnet sich,
+    ein neuer Meilenstein springt kurz hervor — je Erfolg einmal auf diesem Gerät
+    (`useCelebration`).
+  Diagramme wachsen weiterhin nicht aus der Nulllinie (`CHART_SERIES_PROPS` in
+  `chartTheme.ts`): Die Reihen brauchten rund 1,5 s, so lange stand ein leeres Diagramm auf
+  der Seite. Keine Bewegung in Tabellen und Kennzahlenleisten, keine Seitenübergänge.
+  `prefers-reduced-motion` schaltet alles ab, die Endwerte stehen sofort da.
 
 ## 2. Komponentenbibliothek (shadcn/ui-Basis)
 

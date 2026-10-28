@@ -496,7 +496,7 @@ export function DonutChart({
   return (
     <div className="flex items-center gap-5 md:gap-4 2xl:gap-5">
       <div
-        className="size-32 shrink-0 md:size-24 2xl:size-32"
+        className="chart-rise size-32 shrink-0 md:size-24 2xl:size-32"
         role="img"
         aria-label={ariaLabel}
       >

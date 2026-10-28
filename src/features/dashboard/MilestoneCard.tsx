@@ -6,6 +6,8 @@ import { isoDate, type AnalyticsPayment, type RefDate } from "@/lib/statistics";
 import { formatCalendarDate } from "@/lib/utils/formatDate";
 import { formatCountNoun } from "@/lib/utils/formatNumber";
 import { reachedText } from "@/features/progress/format";
+import { useCelebration } from "@/lib/hooks/useCelebration";
+import { cn } from "@/lib/utils/cn";
 
 /**
  * Welcher Meilenstein zuletzt weggeklickt wurde. Eine Ansichtsvorliebe dieses
@@ -65,6 +67,7 @@ export function MilestoneCard({
   }, [payments, today]);
 
   const latest = fresh.at(0);
+  const celebrate = useCelebration(latest ? `milestone-${keyOf(latest)}` : null);
   if (!latest || dismissed === keyOf(latest)) return null;
   const others = fresh.length - 1;
   const text = reachedText(latest);
@@ -80,7 +83,10 @@ export function MilestoneCard({
       >
         <span
           aria-hidden
-          className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary"
+          className={cn(
+            "flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary",
+            celebrate && "celebrate-pop",
+          )}
         >
           <Trophy className="size-[1.125rem]" />
         </span>

@@ -474,7 +474,7 @@ function GoalBar({ percent, label }: { percent: number; label: string }) {
       className="flex h-1 w-full overflow-hidden rounded-full bg-border"
     >
       <span
-        className="h-full rounded-full bg-primary"
+        className="bar-grow h-full rounded-full bg-primary"
         style={{ width: `${String(width)}%` }}
       />
     </span>
@@ -626,8 +626,9 @@ function GoalList({ list, courses }: { list: GoalLists; courses: Courses }) {
   const expanded = useOpenKeys("alle");
   const backState = useBackState();
 
-  const goalRow = (progress: GoalProgress) => (
-    <li key={progress.goal.id}>
+  // Was „Weitere anzeigen" dazuholt, gleitet ein wie aufgeklappter Inhalt.
+  const goalRow = (progress: GoalProgress, added: boolean) => (
+    <li key={progress.goal.id} className={cn(added && "reveal")}>
       <GoalRow
         progress={progress}
         course={courses.get(progress.goal.id) ?? null}
@@ -659,7 +660,9 @@ function GoalList({ list, courses }: { list: GoalLists; courses: Courses }) {
         }}
       >
         <ListGroup>
-          {(all ? items : items.slice(0, visible)).map(goalRow)}
+          {(all ? items : items.slice(0, visible)).map((progress, index) =>
+            goalRow(progress, index >= visible),
+          )}
           {limited && (
             <li>
               <MoreRow

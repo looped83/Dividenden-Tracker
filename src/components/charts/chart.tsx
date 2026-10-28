@@ -12,7 +12,8 @@ import { ResponsiveContainer } from "recharts";
  * Zeichenflaeche eines Diagramms: feste Hoehe (sonst kollabiert der
  * `ResponsiveContainer`) und die Beschreibung fuer Hilfsmittel. Das Diagramm
  * selbst ist fuer Screenreader ein Bild; die Zahlen stehen in der Datentabelle
- * darunter (§17).
+ * darunter (§17). Beim ersten Aufruf des Bereichs hebt sie sich kurz an
+ * (`.chart-rise`), die Reihen selbst stehen sofort fertig da.
  */
 export function ChartCanvas({
   ariaLabel,
@@ -22,7 +23,7 @@ export function ChartCanvas({
   children: React.ReactElement;
 }) {
   return (
-    <div className="h-64 w-full sm:h-72" role="img" aria-label={ariaLabel}>
+    <div className="chart-rise h-64 w-full sm:h-72" role="img" aria-label={ariaLabel}>
       <ResponsiveContainer width="100%" height="100%">
         {children}
       </ResponsiveContainer>

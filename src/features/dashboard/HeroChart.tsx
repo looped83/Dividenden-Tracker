@@ -116,7 +116,7 @@ export function HeroChart({
       aria-valuemax={Math.max(0, points.length - 1)}
       aria-valuenow={shown}
       aria-valuetext={points[shown] ? describe(points[shown]) : undefined}
-      className="relative touch-pan-y select-none rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4 ring-offset-background"
+      className="chart-rise relative touch-pan-y select-none rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4 ring-offset-background"
       style={{ height: height + LABELS }}
       onPointerMove={(event) => {
         // Mit dem Finger nur beim Ziehen; ein Antippen wählt per pointerdown.

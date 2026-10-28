@@ -1,3 +1,5 @@
+import { GoalCheck } from "@/components/ui/goal-check";
+import { useCelebration } from "@/lib/hooks/useCelebration";
 import type { GoalProgress } from "@/lib/goals";
 import { cn } from "@/lib/utils/cn";
 import {
@@ -41,6 +43,8 @@ export function GoalProgressBar({
   const barValue = cappedBarPercent(progress.percent);
   const tone = statusTone(progress.status);
   const label = accessibleProgressLabel(progress);
+  const done = progress.status === "reached" || progress.status === "exceeded";
+  const celebrate = useCelebration(done ? `goal-${progress.goal.id}` : null);
 
   return (
     <div className={cn("space-y-1", className)}>
@@ -50,11 +54,14 @@ export function GoalProgressBar({
         aria-valuemax={100}
         aria-valuenow={Math.round(barValue)}
         aria-valuetext={label}
-        className="h-1 w-full overflow-hidden rounded-full bg-border"
+        className={cn(
+          "h-1 w-full overflow-hidden rounded-full bg-border",
+          celebrate && "celebrate-glow",
+        )}
       >
         <div
           className={cn(
-            "h-full rounded-full transition-[width] motion-reduce:transition-none",
+            "bar-grow h-full rounded-full transition-[width] motion-reduce:transition-none",
             trackToneClass[tone],
           )}
           style={{ width: `${String(barValue)}%` }}
@@ -64,6 +71,7 @@ export function GoalProgressBar({
           jedem Balken und sagte immer dasselbe. */}
       {showPercent && (
         <p className="text-xs tabular-nums text-muted-foreground">
+          {done && <GoalCheck draw={celebrate} className="mr-1 align-[-0.125em]" />}
           {achievementText(progress.percent)}
         </p>
       )}

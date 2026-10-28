@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TrendTriangle } from "@/components/ui/trend-triangle";
+import { useCountUp } from "@/lib/hooks/useCountUp";
 import { cn } from "@/lib/utils/cn";
 
 export interface KpiStat {
@@ -89,6 +90,7 @@ export function KpiHero({
     "text-[2.5rem] font-bold leading-[1.05] tracking-[-0.035em] tabular-amount";
 
   const hasStats = stats !== undefined && stats.length > 0;
+  const countUp = useCountUp<HTMLElement>();
 
   return (
     <section className={cn("@container", className)}>
@@ -100,6 +102,7 @@ export function KpiHero({
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-2">
             {to !== undefined ? (
               <Link
+                ref={countUp as React.RefObject<HTMLAnchorElement | null>}
                 to={to}
                 aria-label={drillLabel}
                 className={cn(valueClass, stretched, "after:rounded-sm")}
@@ -107,7 +110,9 @@ export function KpiHero({
                 {value}
               </Link>
             ) : (
-              <span className={valueClass}>{value}</span>
+              <span ref={countUp} className={valueClass}>
+                {value}
+              </span>
             )}
             {trend}
           </div>

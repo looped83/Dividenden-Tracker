@@ -46,20 +46,57 @@ function ScrollToTopOnNavigate() {
  * - iPad (md..lg): kompakte Icon-Sidebar
  * - iPhone (< md): Bottom Navigation, Sidebar ausgeblendet
  */
+/** Bereiche, deren Auftritt in dieser Sitzung schon gespielt hat. */
+const introduced = new Set<string>();
+
+/**
+ * So lange nach dem Aufruf darf Erscheinendes sich bewegen: Reicht fuer
+ * nachgeladene Daten, endet aber, bevor jemand mit der Seite arbeitet.
+ */
+const INTRO_MS = 2500;
+
+/**
+ * Markiert den ersten Aufruf eines Bereichs in der Sitzung mit `data-intro`
+ * (Bewegung in index.css, seit 2.44.0). Als erledigt zaehlt er erst nach
+ * Ablauf der Zeit — wer sofort weiterwechselt, sieht ihn beim naechsten Mal.
+ * Ohne Zustand, damit der Wechsel nichts neu zeichnet.
+ */
+function useIntro(pathname: string) {
+  const ref = React.useRef<HTMLDivElement>(null);
+  React.useLayoutEffect(() => {
+    const element = ref.current;
+    if (!element || introduced.has(pathname)) return;
+    element.setAttribute("data-intro", "");
+    const timer = window.setTimeout(() => {
+      element.removeAttribute("data-intro");
+      introduced.add(pathname);
+    }, INTRO_MS);
+    return () => {
+      window.clearTimeout(timer);
+      element.removeAttribute("data-intro");
+    };
+  }, [pathname]);
+  return ref;
+}
+
 /**
  * Inhalt des Bereichs mit eigener Fehlergrenze. Liest den Pfad selbst, damit
  * nicht die ganze Huelle bei jedem Wechsel neu zeichnet.
  */
 function AreaContent() {
   const { pathname } = useLocation();
+  const intro = useIntro(pathname);
   return (
-    <AreaErrorBoundary resetKey={pathname}>
-      <React.Suspense fallback={<PageSkeleton />}>
-        <RequireAuth>
-          <Outlet />
-        </RequireAuth>
-      </React.Suspense>
-    </AreaErrorBoundary>
+    // `contents`: traegt nur die Markierung, das Layout sieht ihn nicht.
+    <div ref={intro} className="contents">
+      <AreaErrorBoundary resetKey={pathname}>
+        <React.Suspense fallback={<PageSkeleton />}>
+          <RequireAuth>
+            <Outlet />
+          </RequireAuth>
+        </React.Suspense>
+      </AreaErrorBoundary>
+    </div>
   );
 }
 
