@@ -38,8 +38,6 @@ test("zeigt den Kurs je offenem Ziel und die Hochrechnung", async ({ page, konto
 
   await expect(page.getByText("Hochrechnung 2.140 € von 2.200 € · Knapp")).toBeVisible();
   const row = (name: string) => page.getByRole("link", { name: new RegExp(name) });
-  // Die Monatsziele stehen eingeklappt hinter einer Zeile (seit 2.38.0).
-  await page.getByRole("button", { name: /^Monatsziele 2026/ }).click();
   await expect(row("Dividendenziel 2026")).toContainText("Knapp");
   await expect(row("Dividendenziel Oktober 2026")).toContainText("Unter Plan");
   await expect(row("Dividendenziel November 2026")).toContainText("Im Plan");

@@ -225,7 +225,7 @@ function GoalsOverview({
       courses,
       average: trailingMonthlyAverage(payments, today),
       suggestion: suggestAnnualGoal(goals, payments, today, forecast.forecast),
-      list: groupForList(progress, today.year),
+      list: groupForList(progress),
       years: toYearData(history, forecast, courses, today),
       months: toMonthData(goals, payments, forecast, courses, today),
     };
@@ -573,15 +573,13 @@ function GoalRow({
 }
 
 interface GoalLists {
-  /** Jahresziele ab dem Vorjahr, neuestes zuerst. */
+  /** Jahresziele, neuestes zuerst. */
   annual: GoalProgress[];
-  /** Jahresziele davor — sie klappen unter „Ältere Ziele“ zusammen. */
-  older: GoalProgress[];
   /** Monatsziele je Jahr, neuestes Jahr und neuester Monat zuerst. */
   months: { year: number; items: GoalProgress[] }[];
 }
 
-function groupForList(items: readonly GoalProgress[], currentYear: number): GoalLists {
+function groupForList(items: readonly GoalProgress[]): GoalLists {
   const annual = items
     .filter((item) => item.goal.goalType === "annual")
     .toSorted((a, b) => b.goal.year - a.goal.year);
@@ -593,8 +591,7 @@ function groupForList(items: readonly GoalProgress[], currentYear: number): Goal
     else byYear.set(item.goal.year, [item]);
   }
   return {
-    annual: annual.filter((item) => item.goal.year >= currentYear - 1),
-    older: annual.filter((item) => item.goal.year < currentYear - 1),
+    annual,
     months: [...byYear]
       .toSorted(([a], [b]) => b - a)
       .map(([year, list]) => ({
@@ -604,30 +601,30 @@ function groupForList(items: readonly GoalProgress[], currentYear: number): Goal
   };
 }
 
-/** „Ältere Ziele“ lohnt erst ab zwei Zeilen, die die Klappzeile verbirgt. */
-const MIN_FOLDED = 2;
+/** Ziele je Bereich vor „Weitere anzeigen“. */
+const VISIBLE = 5;
 const YEARS_KEY = "jahre";
-const OLDER_KEY = "aelter";
 const monthsKey = (year: number) => `monate-${String(year)}`;
 
 /**
  * „Alle Ziele“ (seit 2.38.0) in Bereichen wie Fortschritt › Erreicht: oben
- * die Jahresziele, aufgeklappt, mit den Jahren vor dem Vorjahr unter „Ältere
- * Ziele“; darunter die Monatsziele je Jahr, eingeklappt. Zuvor stand jedes
- * Ziel als eigene Zeile — mit zwölf Monatszielen war die Liste doppelt so
- * lang wie die Diagramme daneben, die die Monate ohnehin zeigen.
+ * die Jahresziele, darunter die Monatsziele je Jahr. Offen sind die
+ * Jahresziele und das neueste Jahr der Monatsziele; ältere Monatsjahre sind
+ * eingeklappt. In einem Bereich stehen die fünf neuesten Ziele, der Rest
+ * hinter „Weitere anzeigen“.
+ * Zuvor stand jedes Ziel als eigene Zeile — mit zwölf Monatszielen war die
+ * Liste doppelt so lang wie die Diagramme daneben, die die Monate ohnehin
+ * zeigen.
  *
- * Ohne Jahresziele ist der neueste Monatsbereich offen, sonst stünde nur eine
- * Kopfzeile da. Was vom Anfangszustand abweicht, steht in der Adresse
- * (`offen` bzw. `zu`), damit der Weg zurück von einem Ziel es wiederfindet.
+ * Was vom Anfangszustand abweicht, steht in der Adresse (`zu` für
+ * eingeklappte, `offen` für aufgeklappte Bereiche, `alle` für ganz gezeigte),
+ * damit der Weg zurück von einem Ziel es wiederfindet.
  */
 function GoalList({ list, courses }: { list: GoalLists; courses: Courses }) {
   const opened = useOpenKeys("offen");
   const closed = useOpenKeys("zu");
+  const expanded = useOpenKeys("alle");
   const backState = useBackState();
-  const hasAnnual = list.annual.length + list.older.length > 0;
-  const foldOlder = list.older.length >= MIN_FOLDED;
-  const olderOpen = !foldOlder || opened.isOpen(OLDER_KEY);
 
   const goalRow = (progress: GoalProgress) => (
     <li key={progress.goal.id}>
@@ -639,60 +636,59 @@ function GoalList({ list, courses }: { list: GoalLists; courses: Courses }) {
     </li>
   );
 
-  const first = list.older.at(-1)?.goal.year;
-  const last = list.older.at(0)?.goal.year;
+  const section = (
+    key: string,
+    title: string,
+    items: readonly GoalProgress[],
+    visible: number,
+    startsOpen: boolean,
+  ) => {
+    const open = startsOpen ? !closed.isOpen(key) : opened.isOpen(key);
+    // „1 weitere“ spart keine Zeile: dann gleich alle.
+    const limited = items.length > visible + 1;
+    const all = !limited || expanded.isOpen(key);
+    return (
+      <CollapsibleMonth
+        key={key}
+        id={`ziele-${key}`}
+        title={title}
+        aside={resultSummary(items)}
+        open={open}
+        onToggle={() => {
+          (startsOpen ? closed : opened).toggle(key);
+        }}
+      >
+        <ListGroup>
+          {(all ? items : items.slice(0, visible)).map(goalRow)}
+          {limited && (
+            <li>
+              <MoreRow
+                more={items.length - visible}
+                all={all}
+                onToggle={() => {
+                  expanded.toggle(key);
+                }}
+              />
+            </li>
+          )}
+        </ListGroup>
+      </CollapsibleMonth>
+    );
+  };
+
   return (
     <MonthSections>
-      {hasAnnual && (
-        <CollapsibleMonth
-          id="ziele-jahre"
-          title="Jahresziele"
-          aside={resultSummary([...list.annual, ...list.older])}
-          open={!closed.isOpen(YEARS_KEY)}
-          onToggle={() => {
-            closed.toggle(YEARS_KEY);
-          }}
-        >
-          <ListGroup>
-            {list.annual.map(goalRow)}
-            {foldOlder && first !== undefined && last !== undefined && (
-              <li key={OLDER_KEY}>
-                <FoldRow
-                  count={list.older.length}
-                  unit="Jahre"
-                  title="Ältere Ziele"
-                  srLabel={`Ältere Ziele, ${String(list.older.length)} Jahre`}
-                  meta={`${String(first)}–${String(last)}`}
-                  open={olderOpen}
-                  onToggle={() => {
-                    opened.toggle(OLDER_KEY);
-                  }}
-                />
-              </li>
-            )}
-            {olderOpen && list.older.map(goalRow)}
-          </ListGroup>
-        </CollapsibleMonth>
+      {list.annual.length > 0 &&
+        section(YEARS_KEY, "Jahresziele", list.annual, VISIBLE, true)}
+      {list.months.map(({ year, items }, index) =>
+        section(
+          monthsKey(year),
+          `Monatsziele ${String(year)}`,
+          items,
+          VISIBLE,
+          index === 0,
+        ),
       )}
-      {list.months.map(({ year, items }, index) => {
-        const key = monthsKey(year);
-        const startsOpen = !hasAnnual && index === 0;
-        const open = startsOpen ? !closed.isOpen(key) : opened.isOpen(key);
-        return (
-          <CollapsibleMonth
-            key={key}
-            id={`ziele-${key}`}
-            title={`Monatsziele ${String(year)}`}
-            aside={resultSummary(items)}
-            open={open}
-            onToggle={() => {
-              (startsOpen ? closed : opened).toggle(key);
-            }}
-          >
-            <ListGroup>{items.map(goalRow)}</ListGroup>
-          </CollapsibleMonth>
-        );
-      })}
     </MonthSections>
   );
 }
@@ -709,45 +705,30 @@ function resultSummary(items: readonly GoalProgress[]): string {
 }
 
 /**
- * Klappzeile in der Form einer Zielzeile: Kachel mit der Anzahl, darunter der
- * Zeitraum, rechts der Pfeil.
+ * Letzte Zeile eines Bereichs: zeigt die übrigen Ziele oder blendet sie wieder
+ * aus. Der Text steht auf der Linie der Zieltitel, unter den Kacheln.
  */
-function FoldRow({
-  count,
-  unit,
-  title,
-  srLabel,
-  meta,
-  open,
+function MoreRow({
+  more,
+  all,
   onToggle,
 }: {
-  count: number;
-  unit: string;
-  title: string;
-  /** Name samt Anzahl für Sprachausgaben. */
-  srLabel: string;
-  meta: string;
-  open: boolean;
+  more: number;
+  all: boolean;
   onToggle: () => void;
 }) {
   return (
     <ListRow asChild>
-      <button type="button" aria-expanded={open} onClick={onToggle}>
-        <ListItemBody
-          leading={<ListTile primary={String(count)} secondary={unit} muted />}
-          title={
-            <>
-              <span aria-hidden>{title}</span>
-              <span className="sr-only">{srLabel}</span>
-            </>
-          }
-          meta={meta}
-        />
+      <button type="button" aria-expanded={all} onClick={onToggle}>
+        <span aria-hidden className="w-11 shrink-0" />
+        <span className="min-w-0 flex-1 text-sm font-medium text-muted-foreground">
+          {all ? "Weniger anzeigen" : `${String(more)} weitere anzeigen`}
+        </span>
         <ChevronDown
           aria-hidden
           className={cn(
             "size-4 shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none",
-            open && "rotate-180",
+            all && "rotate-180",
           )}
         />
       </button>

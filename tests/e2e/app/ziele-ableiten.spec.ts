@@ -42,8 +42,6 @@ test("leitet Monatsziele ab und zeigt die Lücke", async ({ page, konto }) => {
   await expect(dialog).toBeHidden();
 
   const row = (name: string) => page.getByRole("link", { name: new RegExp(name) });
-  // Die Monatsziele stehen eingeklappt hinter einer Zeile (seit 2.38.0).
-  await page.getByRole("button", { name: /^Monatsziele 2026/ }).click();
   await expect(row("Dividendenziel Oktober 2026")).toContainText("212,00 €");
   await expect(row("Dividendenziel November 2026")).toContainText("398,00 €");
   await expect(row("Dividendenziel Dezember 2026")).toContainText("530,00 €");
