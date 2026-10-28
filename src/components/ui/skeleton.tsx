@@ -52,10 +52,7 @@ export function SkeletonRows({
         <Skeleton className="ml-auto h-3 w-16" />
       </div>
       {Array.from({ length: rows }).map((_, index) => (
-        <div
-          key={index}
-          className="flex items-center gap-4 py-3"
-        >
+        <div key={index} className="flex items-center gap-4 py-3">
           <Skeleton className="h-4 w-2/5" />
           <Skeleton className="ml-auto h-4 w-16" />
         </div>
