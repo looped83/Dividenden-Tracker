@@ -54,7 +54,7 @@ export function SkeletonRows({
       {Array.from({ length: rows }).map((_, index) => (
         <div
           key={index}
-          className="flex items-center gap-4 border-b border-border py-3 last:border-0"
+          className="flex items-center gap-4 py-3"
         >
           <Skeleton className="h-4 w-2/5" />
           <Skeleton className="ml-auto h-4 w-16" />

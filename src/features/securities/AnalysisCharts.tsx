@@ -143,7 +143,7 @@ export function AllocationBars({
   if (!hasKnown(slices)) return <NoData />;
 
   return (
-    <ul className="divide-y divide-border" aria-label={ariaLabel}>
+    <ul aria-label={ariaLabel}>
       {slices.map((slice) => {
         const key = slice.key || "unknown";
         return (

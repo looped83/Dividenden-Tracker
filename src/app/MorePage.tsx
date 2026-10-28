@@ -41,7 +41,7 @@ export function MorePage() {
       <nav aria-label="Weitere Bereiche" className="max-w-xl space-y-4">
         {GROUPS.map((group) => (
           // Die Listenform der App (ListGroup/ListRow) auf gedaempfter Flaeche:
-          // gleiche Trennlinien, Tippflaeche und Schrift wie in jeder Liste.
+          // gleiche Tippflaeche und Schrift wie in jeder Liste.
           <ListGroup
             key={group[0]?.to}
             className="mx-0 overflow-hidden rounded-2xl bg-muted"

@@ -297,7 +297,7 @@ function Milestones({ result }: { result: SnowballResult }) {
   if (result.milestones.length === 0) return null;
   return (
     <ul
-      className="divide-y divide-border border-y border-border text-sm"
+      className="text-sm"
       aria-label="Meilensteine"
     >
       {result.milestones.map((milestone) => (

@@ -537,7 +537,7 @@ export function buildReviewSlides(
             <p className="mt-8 text-sm font-medium text-muted-foreground">
               {reached.length === 1 ? "Dein Meilenstein" : "Deine Meilensteine"} {year}
             </p>
-            <ul className="mt-2 divide-y divide-border border-y border-border">
+            <ul className="mt-2">
               {highlights.map((milestone) => (
                 <li
                   key={`${milestone.kind}-${String(milestone.threshold)}`}

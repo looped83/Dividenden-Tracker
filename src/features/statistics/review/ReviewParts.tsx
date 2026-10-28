@@ -41,7 +41,7 @@ export function RankedList({
   start: number;
 }) {
   return (
-    <ol className="mt-6 divide-y divide-border border-y border-border">
+    <ol className="mt-6">
       {rows.map((row, position) => (
         <li key={row.key} className="flex items-center gap-3 py-2.5">
           <span className="w-4 shrink-0 text-sm font-semibold text-muted-foreground tabular-amount">
