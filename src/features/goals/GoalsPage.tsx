@@ -1,18 +1,21 @@
 import * as React from "react";
 import { Link } from "react-router";
-import { CalendarRange, Plus, Target } from "lucide-react";
+import { CalendarRange, ChevronDown, Plus, Target } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Section, SectionButton } from "@/components/ui/section";
 import { ListGroup, ListItemBody, ListRow, ListTile } from "@/components/ui/list";
+import { CollapsibleMonth, MonthSections } from "@/components/ui/month-section";
 import { KpiHero, KpiHeroSkeleton, type KpiStat } from "@/components/domain/KpiHero";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { DeriveMonthlyGoalsDialog } from "./DeriveMonthlyGoalsDialog";
 import { GapPurchaseBox } from "./GapPurchaseBox";
 import { GoalBarChart, type GoalBarDatum } from "@/features/statistics/components/charts";
 import { useForecastSettings } from "@/features/securities/forecastSettings";
+import { useBackState, type BackState } from "@/lib/hooks/useBackState";
+import { useOpenKeys } from "@/lib/hooks/useOpenKeys";
 import { useToday } from "@/lib/hooks/useToday";
 import {
   annualGoalHistory,
@@ -222,7 +225,7 @@ function GoalsOverview({
       courses,
       average: trailingMonthlyAverage(payments, today),
       suggestion: suggestAnnualGoal(goals, payments, today, forecast.forecast),
-      list: sortForList(progress),
+      list: groupForList(progress),
       years: toYearData(history, forecast, courses, today),
       months: toMonthData(goals, payments, forecast, courses, today),
     };
@@ -339,16 +342,7 @@ function GoalsOverview({
         )}
 
         <Section title="Alle Ziele">
-          <ListGroup>
-            {data.list.map((progress) => (
-              <li key={progress.goal.id}>
-                <GoalRow
-                  progress={progress}
-                  course={data.courses.get(progress.goal.id) ?? null}
-                />
-              </li>
-            ))}
-          </ListGroup>
+          <GoalList list={data.list} courses={data.courses} />
         </Section>
       </div>
     </div>
@@ -518,16 +512,18 @@ function SuggestionBox({
 function GoalRow({
   progress,
   course,
+  backState,
 }: {
   progress: GoalProgress;
   course: GoalCourse | null;
+  backState: BackState;
 }) {
   const { goal, status } = progress;
   const isMonthly = goal.goalType === "monthly" && goal.month !== null;
   const upcoming = status === "upcoming";
   return (
     <ListRow asChild>
-      <Link to={`/ziele/${goal.id}`}>
+      <Link to={`/ziele/${goal.id}`} state={backState}>
         <ListItemBody
           leading={
             <ListTile
@@ -576,11 +572,167 @@ function GoalRow({
   );
 }
 
-/** Neueste Jahre zuerst, im Jahr das Jahresziel vor seinen Monatszielen. */
-function sortForList(items: GoalProgress[]): GoalProgress[] {
-  const rank = (goal: Goal) => (goal.goalType === "annual" ? 13 : (goal.month ?? 0));
-  return items.toSorted(
-    (a, b) => b.goal.year - a.goal.year || rank(b.goal) - rank(a.goal),
+interface GoalLists {
+  /** Jahresziele, neuestes zuerst. */
+  annual: GoalProgress[];
+  /** Monatsziele je Jahr, neuestes Jahr und neuester Monat zuerst. */
+  months: { year: number; items: GoalProgress[] }[];
+}
+
+function groupForList(items: readonly GoalProgress[]): GoalLists {
+  const annual = items
+    .filter((item) => item.goal.goalType === "annual")
+    .toSorted((a, b) => b.goal.year - a.goal.year);
+  const byYear = new Map<number, GoalProgress[]>();
+  for (const item of items) {
+    if (item.goal.goalType === "annual") continue;
+    const list = byYear.get(item.goal.year);
+    if (list) list.push(item);
+    else byYear.set(item.goal.year, [item]);
+  }
+  return {
+    annual,
+    months: [...byYear]
+      .toSorted(([a], [b]) => b - a)
+      .map(([year, list]) => ({
+        year,
+        items: list.toSorted((a, b) => (b.goal.month ?? 0) - (a.goal.month ?? 0)),
+      })),
+  };
+}
+
+/** Ziele je Bereich vor „Weitere anzeigen“. */
+const VISIBLE = 5;
+const YEARS_KEY = "jahre";
+const monthsKey = (year: number) => `monate-${String(year)}`;
+
+/**
+ * „Alle Ziele“ (seit 2.41.0) in Bereichen wie Fortschritt › Erreicht: oben
+ * die Jahresziele, darunter die Monatsziele je Jahr. Offen sind die
+ * Jahresziele und das neueste Jahr der Monatsziele; ältere Monatsjahre sind
+ * eingeklappt. In einem Bereich stehen die fünf neuesten Ziele, der Rest
+ * hinter „Weitere anzeigen“.
+ * Zuvor stand jedes Ziel als eigene Zeile — mit zwölf Monatszielen war die
+ * Liste doppelt so lang wie die Diagramme daneben, die die Monate ohnehin
+ * zeigen.
+ *
+ * Was vom Anfangszustand abweicht, steht in der Adresse (`zu` für
+ * eingeklappte, `offen` für aufgeklappte Bereiche, `alle` für ganz gezeigte),
+ * damit der Weg zurück von einem Ziel es wiederfindet.
+ */
+function GoalList({ list, courses }: { list: GoalLists; courses: Courses }) {
+  const opened = useOpenKeys("offen");
+  const closed = useOpenKeys("zu");
+  const expanded = useOpenKeys("alle");
+  const backState = useBackState();
+
+  const goalRow = (progress: GoalProgress) => (
+    <li key={progress.goal.id}>
+      <GoalRow
+        progress={progress}
+        course={courses.get(progress.goal.id) ?? null}
+        backState={backState}
+      />
+    </li>
+  );
+
+  const section = (
+    key: string,
+    title: string,
+    items: readonly GoalProgress[],
+    visible: number,
+    startsOpen: boolean,
+  ) => {
+    const open = startsOpen ? !closed.isOpen(key) : opened.isOpen(key);
+    // „1 weitere“ spart keine Zeile: dann gleich alle.
+    const limited = items.length > visible + 1;
+    const all = !limited || expanded.isOpen(key);
+    return (
+      <CollapsibleMonth
+        key={key}
+        id={`ziele-${key}`}
+        title={title}
+        aside={resultSummary(items)}
+        open={open}
+        onToggle={() => {
+          (startsOpen ? closed : opened).toggle(key);
+        }}
+      >
+        <ListGroup>
+          {(all ? items : items.slice(0, visible)).map(goalRow)}
+          {limited && (
+            <li>
+              <MoreRow
+                more={items.length - visible}
+                all={all}
+                onToggle={() => {
+                  expanded.toggle(key);
+                }}
+              />
+            </li>
+          )}
+        </ListGroup>
+      </CollapsibleMonth>
+    );
+  };
+
+  return (
+    <MonthSections>
+      {list.annual.length > 0 &&
+        section(YEARS_KEY, "Jahresziele", list.annual, VISIBLE, true)}
+      {list.months.map(({ year, items }, index) =>
+        section(
+          monthsKey(year),
+          `Monatsziele ${String(year)}`,
+          items,
+          VISIBLE,
+          index === 0,
+        ),
+      )}
+    </MonthSections>
+  );
+}
+
+/** „9 von 10 erreicht“ über die abgeschlossenen Ziele. */
+function resultSummary(items: readonly GoalProgress[]): string {
+  let hit = 0;
+  let ended = 0;
+  for (const { status } of items) {
+    if (status === "reached" || status === "exceeded") hit += 1;
+    if (status === "reached" || status === "exceeded" || status === "missed") ended += 1;
+  }
+  return ended > 0 ? `${String(hit)} von ${String(ended)} erreicht` : "noch offen";
+}
+
+/**
+ * Letzte Zeile eines Bereichs: zeigt die übrigen Ziele oder blendet sie wieder
+ * aus. Der Text steht auf der Linie der Zieltitel, unter den Kacheln.
+ */
+function MoreRow({
+  more,
+  all,
+  onToggle,
+}: {
+  more: number;
+  all: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <ListRow asChild>
+      <button type="button" aria-expanded={all} onClick={onToggle}>
+        <span aria-hidden className="w-11 shrink-0" />
+        <span className="min-w-0 flex-1 text-sm font-medium text-muted-foreground">
+          {all ? "Weniger anzeigen" : `${String(more)} weitere anzeigen`}
+        </span>
+        <ChevronDown
+          aria-hidden
+          className={cn(
+            "size-4 shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none",
+            all && "rotate-180",
+          )}
+        />
+      </button>
+    </ListRow>
   );
 }
 
