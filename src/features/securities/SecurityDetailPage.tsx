@@ -46,6 +46,7 @@ import { PaymentListItem } from "@/features/payments/PaymentListItem";
 import { DeltaText } from "@/features/payments/PaymentInsightsView";
 import { deltaOf } from "@/features/payments/paymentInsights";
 import { PositionCard } from "@/features/securities/PositionCard";
+import { ReinvestSwitch } from "@/features/securities/ReinvestSwitch";
 import { latestAsOf, ratioToPercent, statusOf } from "@/features/securities/snapshots";
 import { useDepots } from "@/features/depots/hooks";
 import { useArchiveToggle } from "@/components/domain/useArchiveToggle";
@@ -495,7 +496,7 @@ export function SecurityDetailPage() {
               </span>
             }
           >
-            <div>
+            <div className="space-y-4">
               {payoutMonths.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   Kein Plan hinterlegt. Dividenden zählen dann für den Monat, in dem sie
@@ -527,6 +528,9 @@ export function SecurityDetailPage() {
                   })}
                 </ul>
               )}
+              {/* Gehoert zur Ausschuettung: was mit ihr passiert. Archiviert
+                  gibt es keine Position mehr, die nachkaufen koennte. */}
+              <ReinvestSwitch security={security} disabled={archived} />
             </div>
           </Section>
 

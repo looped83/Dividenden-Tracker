@@ -13,6 +13,7 @@ import {
   type DateRange,
   type RefDate,
 } from "./dates";
+import { reinvestedSummary, type ReinvestedSummary } from "./reinvested";
 import type { AnalyticsPayment } from "./types";
 
 /**
@@ -36,6 +37,8 @@ export interface MonthRecap {
   priorNet: Money;
   /** Staerkster Zahler des Monats (§9-Rangfolge); null ohne Zahlungen. */
   top: { securityId: string; net: Money } | null;
+  /** Davon automatisch reinvestiert (§11.14); null ohne solche Zahlung. */
+  reinvested: ReinvestedSummary | null;
 }
 
 /** Der abgeschlossene Monat, dessen Abschluss gerade dran ist, oder null. */
@@ -55,12 +58,14 @@ function wholeMonth(year: number, month: number): DateRange {
 
 /**
  * Kennzahlen des Vormonats, wenn er gerade dran ist (siehe {@link recapMonth}).
- * `labelOf` entscheidet Gleichstaende beim staerksten Zahler nach Namen.
+ * `labelOf` entscheidet Gleichstaende beim staerksten Zahler nach Namen,
+ * `reinvestSinceOf` nennt je Asset den Tag, seit dem es reinvestiert.
  */
 export function monthRecap(
   payments: readonly AnalyticsPayment[],
   ref: RefDate,
   labelOf?: (securityId: string) => string,
+  reinvestSinceOf: (securityId: string) => string | null | undefined = () => null,
 ): MonthRecap | null {
   const target = recapMonth(ref);
   if (target === null) return null;
@@ -77,5 +82,6 @@ export function monthRecap(
     assets: distinctSecurities(inMonth),
     priorNet: aggregateInRange(payments, wholeMonth(year - 1, month)).net,
     top: best ? { securityId: best.key, net: best.net } : null,
+    reinvested: reinvestedSummary(inMonth, reinvestSinceOf),
   };
 }

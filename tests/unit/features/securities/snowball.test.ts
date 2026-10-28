@@ -9,6 +9,8 @@ import {
   monthsToTarget,
   projectMonthlyNet,
   projectSnowball,
+  reinvestShare,
+  reinvestedIds,
   snowballChartEndYear,
   snowballHistory,
   type DepotAssumptions,
@@ -54,6 +56,8 @@ const DEPOT: DepotAssumptions = {
   annualGross: new MoneyDecimal(1200),
   growthPercent: new MoneyDecimal(0),
   yieldPercent: new MoneyDecimal(3),
+  // Wie bis 2.37 „Ja": alles reinvestiert, sofern ein Test nichts anderes setzt.
+  reinvestShare: new MoneyDecimal(1),
 };
 
 function settings(partial: Partial<SnowballSettings>): SnowballSettings {
@@ -105,6 +109,15 @@ describe("depotAssumptions", () => {
   it("ist ohne Stand unbekannt", () => {
     expect(depotAssumptions([])).toBeNull();
   });
+
+  it("nimmt den reinvestierten Anteil nach Jahresdividende", () => {
+    const rows = [
+      snapshot({ security_id: "a", annual_dividend_total: "75.00" }),
+      snapshot({ security_id: "b", annual_dividend_total: "25.00" }),
+    ];
+    expect(depotAssumptions(rows, new Set(["a"]))?.reinvestShare.toString()).toBe("0.75");
+    expect(depotAssumptions(rows)?.reinvestShare.toString()).toBe("0");
+  });
 });
 
 describe("projectSnowball", () => {
@@ -124,7 +137,7 @@ describe("projectSnowball", () => {
   it("bleibt ohne Sparrate, Reinvestition und Wachstum stehen", () => {
     const result = projectSnowball({
       depot: DEPOT,
-      settings: settings({ reinvest: false }),
+      settings: settings({ reinvestPercent: 0 }),
       netRatio: null,
       startYear: 2026,
     });
@@ -135,7 +148,7 @@ describe("projectSnowball", () => {
   it("baut mit der Sparrate Dividende auf", () => {
     const result = projectSnowball({
       depot: DEPOT,
-      settings: settings({ reinvest: false, monthlySavings: 100 }),
+      settings: settings({ reinvestPercent: 0, monthlySavings: 100 }),
       netRatio: null,
       startYear: 2026,
     });
@@ -146,7 +159,7 @@ describe("projectSnowball", () => {
   it("waechst mit Dividendenwachstum am Jahresende", () => {
     const result = projectSnowball({
       depot: DEPOT,
-      settings: settings({ reinvest: false, growthPercent: 10 }),
+      settings: settings({ reinvestPercent: 0, growthPercent: 10 }),
       netRatio: null,
       startYear: 2026,
     });
@@ -157,7 +170,7 @@ describe("projectSnowball", () => {
   it("rechnet mit Inflation in heutige Kaufkraft um", () => {
     const result = projectSnowball({
       depot: DEPOT,
-      settings: settings({ reinvest: false, growthPercent: 10, inflationPercent: 10 }),
+      settings: settings({ reinvestPercent: 0, growthPercent: 10, inflationPercent: 10 }),
       netRatio: null,
       startYear: 2026,
     });
@@ -202,7 +215,11 @@ describe("projectSnowball", () => {
     // Heute Oktober 2026, 100 € im Monat, +2,50 € je Monat Sparrate.
     const result = projectSnowball({
       depot: DEPOT,
-      settings: settings({ reinvest: false, monthlySavings: 1000, targetMonthly: 192.5 }),
+      settings: settings({
+        reinvestPercent: 0,
+        monthlySavings: 1000,
+        targetMonthly: 192.5,
+      }),
       netRatio: null,
       startYear: 2026,
       startMonth: 10,
@@ -239,6 +256,41 @@ describe("projectSnowball", () => {
   });
 });
 
+describe("reinvestShare", () => {
+  const depot = { reinvestShare: new MoneyDecimal("0.4") };
+
+  it("nimmt ohne eigene Angabe den Anteil laut Assets", () => {
+    expect(reinvestShare({ reinvestPercent: null }, depot).toString()).toBe("0.4");
+    expect(reinvestShare({ reinvestPercent: 100 }, depot).toString()).toBe("1");
+    expect(reinvestShare({ reinvestPercent: 25 }, depot).toString()).toBe("0.25");
+  });
+
+  it("sammelt die Assets mit automatischer Reinvestition", () => {
+    expect(
+      reinvestedIds([
+        { id: "a", reinvest_since: "2026-10-28" },
+        { id: "b", reinvest_since: null },
+      ]),
+    ).toEqual(new Set(["a"]));
+  });
+
+  it("reinvestiert anteilig: zwischen keiner und voller Reinvestition", () => {
+    const end = (share: string) =>
+      projectSnowball({
+        depot: { ...DEPOT, reinvestShare: new MoneyDecimal(share) },
+        settings: settings({ reinvestPercent: null }),
+        netRatio: null,
+        startYear: 2026,
+      }).points[30].base;
+    const none = end("0");
+    const half = end("0.5");
+    const all = end("1");
+    expect(none.toString()).toBe("100");
+    expect(half.greaterThan(none)).toBe(true);
+    expect(all.greaterThan(half)).toBe(true);
+  });
+});
+
 describe("parseSnowballSettings", () => {
   it("faellt je Feld auf die Vorbelegung zurueck", () => {
     expect(
@@ -250,6 +302,14 @@ describe("parseSnowballSettings", () => {
       ...DEFAULT_SNOWBALL_SETTINGS,
       monthlySavings: 250,
     });
+  });
+
+  it("liest das frühere Ja/Nein als „laut Assets“ bzw. 0 %", () => {
+    expect(parseSnowballSettings({ reinvest: true }).reinvestPercent).toBeNull();
+    expect(parseSnowballSettings({ reinvest: false }).reinvestPercent).toBe(0);
+    expect(parseSnowballSettings({ reinvestPercent: 40 }).reinvestPercent).toBe(40);
+    expect(parseSnowballSettings({ reinvestPercent: 140 }).reinvestPercent).toBeNull();
+    expect(parseSnowballSettings({ reinvest: true })).not.toHaveProperty("reinvest");
   });
 
   it("nimmt ohne gespeicherte Annahmen die Vorbelegung", () => {
@@ -312,7 +372,11 @@ describe("snowballHistory", () => {
 describe("monthsToTarget / monthsEarlier", () => {
   // 1.200 € brutto, netto = brutto: heute 100 € im Monat. 1.000 € Sparrate
   // zu 3 % heben die Jahresdividende je Monat um 30 €, den Monat um 2,50 €.
-  const plain = settings({ reinvest: false, monthlySavings: 1000, targetMonthly: 200 });
+  const plain = settings({
+    reinvestPercent: 0,
+    monthlySavings: 1000,
+    targetMonthly: 200,
+  });
 
   it("zählt die Monate bis zum Ziel", () => {
     expect(monthsToTarget({ depot: DEPOT, settings: plain, netRatio: null })).toBe(40);
@@ -361,7 +425,7 @@ describe("monthsToTarget / monthsEarlier", () => {
     expect(
       monthsToTarget({
         depot: DEPOT,
-        settings: settings({ reinvest: false, targetMonthly: 100 }),
+        settings: settings({ reinvestPercent: 0, targetMonthly: 100 }),
         netRatio: new MoneyDecimal("0.5"),
         extraAnnualNet: new MoneyDecimal(600),
       }),
@@ -382,7 +446,11 @@ describe("monthsToTarget / monthsEarlier", () => {
 
   it("rechnet ohne den Zusatz über den Horizont hinaus", () => {
     // Ohne Sparrate 0,25 € mehr je Monat: 400 Monate (> 30 Jahre) bis 200 €.
-    const slow = settings({ reinvest: false, monthlySavings: 100, targetMonthly: 200 });
+    const slow = settings({
+      reinvestPercent: 0,
+      monthlySavings: 100,
+      targetMonthly: 200,
+    });
     expect(monthsToTarget({ depot: DEPOT, settings: slow, netRatio: null })).toBeNull();
     expect(
       monthsEarlier({ depot: DEPOT, settings: slow, netRatio: null, extraSavings: 900 }),
@@ -400,7 +468,7 @@ describe("monthsToTarget / monthsEarlier", () => {
         extraSavings: 100,
       }),
     ).toBeNull();
-    const never = settings({ reinvest: false, targetMonthly: 1000 });
+    const never = settings({ reinvestPercent: 0, targetMonthly: 1000 });
     expect(monthsToTarget({ depot: DEPOT, settings: never, netRatio: null })).toBeNull();
     expect(
       monthsEarlier({ depot: DEPOT, settings: never, netRatio: null, extraSavings: 10 }),
@@ -441,7 +509,7 @@ describe("snowballChartEndYear", () => {
 
   it("zeigt ohne erreichtes Ziel den ganzen Horizont", () => {
     expect(
-      snowballChartEndYear(project({ reinvest: false, targetMonthly: 5000 }), 2026),
+      snowballChartEndYear(project({ reinvestPercent: 0, targetMonthly: 5000 }), 2026),
     ).toBe(2056);
   });
 });
@@ -450,7 +518,11 @@ describe("projectMonthlyNet", () => {
   it("rechnet Monat für Monat in Nennwerten, auch bei Inflation", () => {
     const series = projectMonthlyNet({
       depot: DEPOT,
-      settings: settings({ monthlySavings: 1000, reinvest: false, inflationPercent: 5 }),
+      settings: settings({
+        monthlySavings: 1000,
+        reinvestPercent: 0,
+        inflationPercent: 5,
+      }),
       netRatio: new MoneyDecimal("0.75"),
       months: 2,
     });

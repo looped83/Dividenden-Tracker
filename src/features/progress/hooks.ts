@@ -18,8 +18,12 @@ import { useSavingsPlans } from "@/features/planner/savingsPlanHooks";
 import { withPlanSavings } from "@/features/planner/targetTime";
 import { netRatio } from "@/features/securities/forecast";
 import { useForecastSettings } from "@/features/securities/forecastSettings";
-import { useSecuritySnapshots } from "@/features/securities/hooks";
-import { depotAssumptions, projectMonthlyNet } from "@/features/securities/snowball";
+import { useSecurities, useSecuritySnapshots } from "@/features/securities/hooks";
+import {
+  depotAssumptions,
+  projectMonthlyNet,
+  reinvestedIds,
+} from "@/features/securities/snowball";
 import { fetchFixedCosts, updateFixedCosts } from "@/lib/supabase/repositories/profiles";
 
 const FIXED_COSTS_KEY = ["fixed-costs"] as const;
@@ -139,10 +143,14 @@ export function useProgressEtas({
   coverage: CoverageResult;
 }): ProgressEtas {
   const snapshots = useSecuritySnapshots().data;
+  const securities = useSecurities().data;
   const settings = useForecastSettings().data;
   const plans = useSavingsPlans().data;
   const growth = React.useMemo(() => {
-    const depot = snapshots ? depotAssumptions(snapshots) : null;
+    const depot =
+      snapshots && securities
+        ? depotAssumptions(snapshots, reinvestedIds(securities))
+        : null;
     if (!depot || !settings) return null;
     const [now, ...future] = projectMonthlyNet({
       depot,
@@ -157,7 +165,7 @@ export function useProgressEtas({
     // Termine setzen auf dem Erhaltenen auf.
     if (!now.greaterThan(0)) return null;
     return future.map((value) => value.dividedBy(now));
-  }, [snapshots, settings, plans, payments, today]);
+  }, [snapshots, securities, settings, plans, payments, today]);
   return React.useMemo(
     () =>
       growth ? progressEtas({ payments, today, growth, milestones, coverage }) : NO_ETAS,

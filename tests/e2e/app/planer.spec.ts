@@ -88,7 +88,8 @@ test.describe("Reise und Ziel-Zeit (seit 2.32.0)", () => {
     await seedWeights(konto.userId);
     await asUser(konto.userId, (client) =>
       client.query(
-        `update profiles set forecast_settings = '{"monthlySavings": 500, "targetMonthly": 1000}'`,
+        // Alles reinvestiert (seit 2.38.0 sonst laut Assets — hier keines).
+        `update profiles set forecast_settings = '{"monthlySavings": 500, "targetMonthly": 1000, "reinvestPercent": 100}'`,
       ),
     );
 
@@ -149,9 +150,11 @@ test("pflegt Sparpläne und zeigt sie am Asset", async ({ page, konto }) => {
   await expect(page.getByText("Sparpläne im Monat")).toBeVisible();
   await expect(plaene.getByText("≈ 130 €")).toBeVisible();
   // Alle Assets mit 30 % Gewichtung, nur Allianz mit Plan: Tipps nennen die
-  // mit dem meisten Platz, Allianz nicht.
+  // mit dem meisten Platz, Allianz nicht — seit 2.38.0 dazu drei weitere, die
+  // ihre Dividende nicht reinvestieren.
   const tipps = page.getByRole("region", { name: "Tipps" });
-  await expect(tipps.locator("li, tbody tr")).toHaveCount(3);
+  await expect(tipps.locator("li, tbody tr")).toHaveCount(6);
+  await expect(tipps.getByText(/Reinvestition einschalten/)).toHaveCount(3);
   await expect(tipps.getByText("Allianz", { exact: true })).toHaveCount(0);
 
   await page.goto("/#/depot");

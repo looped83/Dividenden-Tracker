@@ -6,6 +6,7 @@ import {
   fetchSecurities,
   unarchiveSecurity,
   updateSecurity,
+  type Security,
   type SecurityInsert,
   type SecurityUpdate,
 } from "@/lib/supabase/repositories/securities";
@@ -50,7 +51,15 @@ export function useUpdateSecurity() {
   return useMutation({
     mutationFn: ({ id, input }: { id: string; input: SecurityUpdate }) =>
       updateSecurity(id, input),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: SECURITIES_KEY }),
+    // Die gespeicherte Zeile sofort in die Liste: Ohne sie zeigte ein
+    // Schalter (`ReinvestSwitch`) zwischen Antwort und Neuladen kurz den alten
+    // Stand.
+    onSuccess: (saved) => {
+      queryClient.setQueryData<Security[]>(SECURITIES_KEY, (list) =>
+        list?.map((security) => (security.id === saved.id ? saved : security)),
+      );
+      void queryClient.invalidateQueries({ queryKey: SECURITIES_KEY });
+    },
   });
 }
 

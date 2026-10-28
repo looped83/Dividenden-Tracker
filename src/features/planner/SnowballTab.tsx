@@ -1,7 +1,6 @@
 import * as React from "react";
 import { KpiHero } from "@/components/domain/KpiHero";
 import { Section } from "@/components/ui/section";
-import { Select } from "@/components/ui/select";
 import { SegmentedControl, type SegmentOption } from "@/components/ui/segmented";
 import {
   EUR,
@@ -34,7 +33,7 @@ import {
   type SnowballResult,
   type SnowballSettings,
 } from "@/features/securities/snowball";
-import { NumberField, SettingCell, SettingsList } from "./fields";
+import { NumberField, SettingsList } from "./fields";
 import { formatDecimal } from "./format";
 import { useSavingsPlans } from "./savingsPlanHooks";
 import { activeMonthlyTotal } from "./savingsPlans";
@@ -181,20 +180,20 @@ function SnowballSection({
             update({ inflationPercent: value ?? 0 });
           }}
         />
-        <SettingCell label="Reinvestieren" htmlFor="snowball-reinvest">
-          <Select
-            id="snowball-reinvest"
-            aria-label="Dividenden reinvestieren"
-            className="h-9 py-0"
-            value={settings.reinvest ? "yes" : "no"}
-            onChange={(event) => {
-              update({ reinvest: event.target.value === "yes" });
-            }}
-          >
-            <option value="yes">Ja</option>
-            <option value="no">Nein</option>
-          </Select>
-        </SettingCell>
+        {/* Wie CAGR und Rendite: leer = aus dem Depot, hier der Anteil der
+            Dividende aus Assets mit automatischer Reinvestition (seit 2.38.0). */}
+        <NumberField
+          id="snowball-reinvest"
+          max={100}
+          label="Reinvestiert"
+          fullLabel="Reinvestierter Anteil der Dividenden"
+          suffix="%"
+          value={settings.reinvestPercent}
+          placeholder={formatDecimal(depot.reinvestShare.times(100).toDecimalPlaces(0))}
+          onCommit={(value) => {
+            update({ reinvestPercent: value });
+          }}
+        />
       </SettingsList>
 
       {planSavings > 0 && (

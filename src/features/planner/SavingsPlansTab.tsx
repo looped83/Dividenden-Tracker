@@ -80,7 +80,7 @@ function SavingsPlans({
   basis: ForecastBasis;
   plans: readonly SavingsPlan[];
 }) {
-  const { forecast, snapshots, names, depot } = basis;
+  const { forecast, snapshots, names, depot, reinvested } = basis;
   const [adding, setAdding] = React.useState(false);
   const [editing, setEditing] = React.useState<SavingsPlan | null>(null);
   const overview = React.useMemo(
@@ -113,8 +113,15 @@ function SavingsPlans({
     () =>
       caps === undefined
         ? []
-        : savingsPlanTips({ plans, snapshots, caps, excluded: new Set(excluded), names }),
-    [plans, snapshots, caps, excluded, names],
+        : savingsPlanTips({
+            plans,
+            snapshots,
+            caps,
+            excluded: new Set(excluded),
+            names,
+            reinvested,
+          }),
+    [plans, snapshots, caps, excluded, names, reinvested],
   );
   const full = plans.length >= SAVINGS_PLANS_MAX;
   const add = () => {
@@ -456,8 +463,18 @@ function tipText(tip: SavingsPlanTip): { meta: string; trailing?: string } {
   switch (tip.kind) {
     case "over":
       return {
-        meta: `Über der Zielgewichtung von ${formatDecimal(tip.cap)}\u00A0%`,
+        meta: `Über der Zielgewichtung von ${formatDecimal(tip.cap)}\u00A0%${tip.reinvested ? " · Dividenden reinvestiert" : ""}`,
         trailing: formatPercent(tip.percent, 1),
+      };
+    case "reinvestOver":
+      return {
+        meta: `Über der Zielgewichtung von ${formatDecimal(tip.cap)}\u00A0% · Reinvestition ausschalten`,
+        trailing: formatPercent(tip.percent, 1),
+      };
+    case "reinvestRoom":
+      return {
+        meta: `Zielgewichtung ${formatDecimal(tip.cap)}\u00A0% · Reinvestition einschalten`,
+        trailing: `${formatMoneyWhole(Money.fromDecimal(tip.room, EUR))} frei`,
       };
     case "reaching":
       return {
@@ -468,7 +485,7 @@ function tipText(tip: SavingsPlanTip): { meta: string; trailing?: string } {
       return { meta: "Sparplan ohne Zielgewichtung" };
     case "room":
       return {
-        meta: `Zielgewichtung ${formatDecimal(tip.cap)}\u00A0% · kein Sparplan`,
+        meta: `Zielgewichtung ${formatDecimal(tip.cap)}\u00A0% · kein Sparplan${tip.reinvestOff ? ", Reinvestition aus" : ""}`,
         trailing: `${formatMoneyWhole(Money.fromDecimal(tip.room, EUR))} frei`,
       };
   }

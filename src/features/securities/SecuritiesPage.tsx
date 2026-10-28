@@ -5,6 +5,7 @@ import {
   Briefcase,
   Pencil,
   Plus,
+  Repeat,
   RotateCcw,
   Trash2,
   Archive as ArchiveIcon,
@@ -727,6 +728,7 @@ function AssetName({ row }: { row: AssetRow }) {
       >
         {security.name}
       </Link>
+      {security.reinvest_since && <ReinvestMark />}
       {/* Nur der Sonderfall traegt ein Etikett. „Aktiv" stand zuvor an fast
           jeder Zeile und sagte damit nichts. */}
       {security.archived_at && (
@@ -734,6 +736,22 @@ function AssetName({ row }: { row: AssetRow }) {
           Archiviert
         </Badge>
       )}
+    </span>
+  );
+}
+
+/**
+ * Kleines Zeichen fuer „Dividenden werden reinvestiert" (am Asset
+ * eingestellt). Nur das Ja traegt ein Zeichen — wie „Archiviert".
+ */
+function ReinvestMark({ className }: { className?: string }) {
+  return (
+    <span
+      title="Dividenden werden reinvestiert"
+      className={cn("inline-flex shrink-0 text-muted-foreground", className)}
+    >
+      <Repeat className="size-3.5" aria-hidden />
+      <span className="sr-only">Dividenden werden reinvestiert</span>
     </span>
   );
 }
@@ -781,6 +799,11 @@ function AssetItem({ row }: { row: AssetRow }) {
       Archiviert
     </Badge>
   );
+  // Vor der Ausschuettung, um die es geht — neben dem Namen liefe es mit ihm
+  // aus (`truncate-fade`).
+  const reinvestMark = security.reinvest_since && (
+    <ReinvestMark className="mr-1.5 align-[-0.125em]" />
+  );
 
   return (
     <li>
@@ -804,6 +827,7 @@ function AssetItem({ row }: { row: AssetRow }) {
                 <>
                   <span className="min-w-0 truncate">
                     {archivedBadge}
+                    {reinvestMark}
                     {position.annualDividend ? (
                       <>
                         <AmountText amount={position.annualDividend} /> p. a.
@@ -830,6 +854,7 @@ function AssetItem({ row }: { row: AssetRow }) {
               ) : (
                 <span className="min-w-0 truncate">
                   {archivedBadge}
+                  {reinvestMark}
                   {[row.depotName, payout === "—" ? null : payout]
                     .filter(Boolean)
                     .join(" · ") || "—"}
