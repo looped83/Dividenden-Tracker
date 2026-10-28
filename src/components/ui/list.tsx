@@ -8,7 +8,7 @@ import { Section } from "@/components/ui/section";
 /**
  * Listen (UX_AND_DESIGN_SYSTEM.md §2 `ListGroup`/`ListRow`).
  *
- * **Eine Fläche mit Trennlinien statt einzelner Karten.** Zahlungen, Termine
+ * **Eine Fläche statt einzelner Karten.** Zahlungen, Termine
  * und Tabellenzeilen standen zuvor an vier Stellen in vier Formen: als
  * einzelne Karten mit 12px Abstand, als geteilte Liste, mit dem Datum als
  * Titel. Einzelne Karten kosten je Eintrag zwei Rahmen und eine Lücke — auf
@@ -16,22 +16,17 @@ import { Section } from "@/components/ui/section";
  *
  * **Ohne Rahmen** (seit 1.9.0, wie die Übersicht): Die Liste rückt um den
  * Innenabstand ihrer Zeilen nach außen, damit Namen und Beträge auf der Linie
- * der Überschrift stehen — auf der Seite wie in einer Karte. Die Trennlinien
- * laufen auf der Linie des Textes, nicht über den Innenabstand hinaus. Früher
+ * der Überschrift stehen — auf der Seite wie in einer Karte. Früher
  * trug eine Liste auf der Seite einen eigenen Kartenrahmen; zusammen mit den
  * Abschnitten der Übersicht standen damit zwei Formen derselben Sache
  * nebeneinander.
+ *
+ * **Ohne Trennlinien** (seit 2.40.0): Datumskachel und Zeilenabstand gliedern
+ * die Einträge schon. Linie, Kachel und Balken zusammen machten die Seiten
+ * unruhig. Haarlinien bleiben echten Tabellen mit mehreren Spalten vorbehalten.
  */
 export function ListGroup({ className, ...props }: React.ComponentProps<"ul">) {
-  return (
-    <ul
-      className={cn(
-        "-mx-3 [&>li+li]:relative [&>li+li]:before:absolute [&>li+li]:before:inset-x-3 [&>li+li]:before:top-0 [&>li+li]:before:h-px [&>li+li]:before:bg-border",
-        className,
-      )}
-      {...props}
-    />
-  );
+  return <ul className={cn("-mx-3", className)} {...props} />;
 }
 
 /**

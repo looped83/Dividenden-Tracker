@@ -296,10 +296,7 @@ function SnowballHeadline({
 function Milestones({ result }: { result: SnowballResult }) {
   if (result.milestones.length === 0) return null;
   return (
-    <ul
-      className="divide-y divide-border border-y border-border text-sm"
-      aria-label="Meilensteine"
-    >
+    <ul className="text-sm" aria-label="Meilensteine">
       {result.milestones.map((milestone) => (
         <li
           key={`${String(milestone.amount)}-${String(milestone.isTarget)}`}
