@@ -108,13 +108,15 @@ export function PaymentKpiHero({
 
 type HistoryView = "monthly" | "yearly" | "cumulative";
 
-// Die einzelnen Dividenden zuerst und vorausgewaehlt, dann je Jahr, die Summe
-// zuletzt.
+// Je Jahr zuerst und vorausgewaehlt (seit 2.48.1): Der Jahrestrend sagt
+// ueber ein Asset mehr als die einzelnen Zahlungen. Die Summe zuletzt.
 const VIEW_OPTIONS: readonly SegmentOption<HistoryView>[] = [
-  { value: "monthly", label: "Je Zahlung" },
   { value: "yearly", label: "Je Jahr" },
+  { value: "monthly", label: "Je Zahlung" },
   { value: "cumulative", label: "Kumuliert" },
 ];
+
+const MONTH_OPTIONS = VIEW_OPTIONS.filter((option) => option.value !== "yearly");
 
 /** „Ø ▲ 6,6 % pro Jahr · 2022–2025" unter der Jahresansicht. */
 function GrowthLine({ growth }: { growth: AnnualGrowth }) {
@@ -172,7 +174,10 @@ export function PaymentInsightsView({
   const { data: depots = [] } = useDepots();
   const todayYear = useToday().year;
 
-  const [view, setView] = React.useState<HistoryView>("monthly");
+  // Mit nur einem Jahr waere die Jahresansicht ein einzelner Balken — dann
+  // gibt es sie nicht (zuvor verschwand dabei der ganze Verlauf).
+  const multiYear = years.length > 1;
+  const [view, setView] = React.useState<HistoryView>(multiYear ? "yearly" : "monthly");
 
   const chartData = React.useMemo<CategoryDatum[]>(
     () =>
@@ -238,14 +243,14 @@ export function PaymentInsightsView({
           hoeher als die Kennzahlleiste und ragte unter ihr weit heraus. */}
       <div className="grid grid-cols-1 gap-10 pt-4 lg:grid-cols-2 lg:gap-x-16">
         <div className="space-y-10">
-          {chartData.length > 1 && (
+          {(history.length > 1 || years.length > 1) && (
             <Section
               title="Verlauf"
               action={
                 <SegmentedControl
                   variant="pill"
                   label="Verlauf als"
-                  options={VIEW_OPTIONS}
+                  options={multiYear ? VIEW_OPTIONS : MONTH_OPTIONS}
                   value={view}
                   onChange={setView}
                 />
