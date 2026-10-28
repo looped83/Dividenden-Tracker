@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { EUR, Money } from "@/lib/money";
-import { monthRecap, recapMonth, type AnalyticsPayment } from "@/lib/statistics";
+import {
+  monthRecap,
+  recapMonth,
+  reinvestedSummary,
+  type AnalyticsPayment,
+} from "@/lib/statistics";
 
 let seq = 0;
 function p(payDate: string, net: string, security = "sec-a"): AnalyticsPayment {
@@ -75,5 +80,38 @@ describe("monthRecap", () => {
     expect(
       monthRecap([p("2026-09-02", "1")], { year: 2026, month: 10, day: 8 }),
     ).toBeNull();
+  });
+});
+
+describe("reinvestedSummary", () => {
+  const since = new Map([["sec-a", "2026-09-15"]]);
+  const sinceOf = (id: string) => since.get(id);
+
+  it("zählt nur Zahlungen ab dem Tag des Einschaltens", () => {
+    const result = reinvestedSummary(
+      [
+        p("2026-09-10", "5.00"),
+        p("2026-09-15", "7.00"),
+        p("2026-09-20", "3.00"),
+        p("2026-09-20", "9.00", "sec-b"),
+      ],
+      sinceOf,
+    );
+    expect(result?.net.toDecimal().toString()).toBe("10");
+    expect(result?.securities).toBe(1);
+  });
+
+  it("ist ohne reinvestierte Zahlung leer", () => {
+    expect(reinvestedSummary([p("2026-09-10", "5.00")], sinceOf)).toBeNull();
+  });
+
+  it("steht im Monatsabschluss", () => {
+    const recap = monthRecap(
+      [p("2026-09-20", "4.00"), p("2026-09-21", "6.00", "sec-b")],
+      { year: 2026, month: 10, day: 2 },
+      undefined,
+      sinceOf,
+    );
+    expect(recap?.reinvested?.net.toDecimal().toString()).toBe("4");
   });
 });

@@ -728,7 +728,7 @@ function AssetName({ row }: { row: AssetRow }) {
       >
         {security.name}
       </Link>
-      {security.reinvest_dividends && <ReinvestMark />}
+      {security.reinvest_since && <ReinvestMark />}
       {/* Nur der Sonderfall traegt ein Etikett. „Aktiv" stand zuvor an fast
           jeder Zeile und sagte damit nichts. */}
       {security.archived_at && (
@@ -801,7 +801,7 @@ function AssetItem({ row }: { row: AssetRow }) {
   );
   // Vor der Ausschuettung, um die es geht — neben dem Namen liefe es mit ihm
   // aus (`truncate-fade`).
-  const reinvestMark = security.reinvest_dividends && (
+  const reinvestMark = security.reinvest_since && (
     <ReinvestMark className="mr-1.5 align-[-0.125em]" />
   );
 

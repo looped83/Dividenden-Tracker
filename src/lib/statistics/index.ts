@@ -16,3 +16,4 @@ export * from "./comparison";
 export * from "./breakdown";
 export * from "./annualReview";
 export * from "./monthRecap";
+export * from "./reinvested";

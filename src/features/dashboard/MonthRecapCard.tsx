@@ -1,5 +1,5 @@
 import * as React from "react";
-import { X } from "lucide-react";
+import { Repeat, X } from "lucide-react";
 import { KpiStats, type KpiStat } from "@/components/domain/KpiHero";
 import { AmountText } from "@/components/money/AmountText";
 import { formatPercent } from "@/lib/money";
@@ -49,18 +49,27 @@ function storeDismissed(key: string): void {
 export function MonthRecapCard({
   payments,
   securities,
+  reinvestSince,
   today,
 }: {
   payments: AnalyticsPayment[];
   securities: ReadonlyMap<string, EntityInfo>;
+  /** Seit wann je Asset automatisch reinvestiert wird (§11.14). */
+  reinvestSince: ReadonlyMap<string, string | null>;
   today: RefDate;
 }) {
   const goals = useGoals().data;
   const [dismissed, setDismissed] = React.useState(readDismissed);
 
   const recap = React.useMemo(
-    () => monthRecap(payments, today, (id) => securities.get(id)?.name ?? id),
-    [payments, today, securities],
+    () =>
+      monthRecap(
+        payments,
+        today,
+        (id) => securities.get(id)?.name ?? id,
+        (id) => reinvestSince.get(id),
+      ),
+    [payments, today, securities, reinvestSince],
   );
 
   const goal = React.useMemo(() => {
@@ -150,6 +159,16 @@ export function MonthRecapCard({
         </button>
       </div>
       <KpiStats className="rounded-none bg-transparent p-0" stats={stats} />
+      {/* Unter den drei Zahlen, nicht als vierte: Es ist ein Teil von
+          „Erhalten", kein eigenes Ergebnis. */}
+      {recap.reinvested && (
+        <p className="flex items-center gap-1.5 px-2 pb-2 text-sm text-muted-foreground sm:px-4">
+          <Repeat className="size-3.5 shrink-0" aria-hidden />
+          <span>
+            Davon <AmountText amount={recap.reinvested.net} /> automatisch reinvestiert
+          </span>
+        </p>
+      )}
     </section>
   );
 }

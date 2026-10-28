@@ -56,7 +56,9 @@ describe("SecurityFormDialog", () => {
     fireEvent.click(screen.getByRole("button", { name: "Anlegen" }));
     await waitFor(() => {
       expect(createSecurity).toHaveBeenCalledWith(
-        expect.objectContaining({ reinvest_dividends: true }),
+        expect.objectContaining({
+          reinvest_since: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/) as unknown,
+        }),
       );
     });
   });

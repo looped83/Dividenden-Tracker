@@ -61,7 +61,7 @@ const securities = [
     data_quality: "incomplete",
     default_depot_id: null,
     payout_months: [3, 9],
-    reinvest_dividends: false,
+    reinvest_since: null,
     archived_at: null,
   },
 ];
@@ -267,7 +267,7 @@ describe("SecurityDetailPage", () => {
     expect(toggle).toHaveAttribute("aria-checked", "false");
     fireEvent.click(toggle);
     expect(updateSecurity).toHaveBeenCalledWith(
-      { id: SECURITY_ID, input: { reinvest_dividends: true } },
+      { id: SECURITY_ID, input: { reinvest_since: "2026-10-17" } },
       expect.anything(),
     );
   });

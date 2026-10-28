@@ -51,7 +51,11 @@ export function AnnualReviewPage() {
   const facets = React.useMemo(() => {
     const map = new Map<string, ReviewFacets>();
     for (const security of securitiesQuery.data ?? []) {
-      map.set(security.id, { sector: security.sector, country: security.country });
+      map.set(security.id, {
+        sector: security.sector,
+        country: security.country,
+        reinvestSince: security.reinvest_since,
+      });
     }
     return map;
   }, [securitiesQuery.data]);

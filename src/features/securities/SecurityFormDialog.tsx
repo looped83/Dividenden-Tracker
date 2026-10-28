@@ -4,7 +4,8 @@ import { useForm } from "react-hook-form";
 import { emptyToNull } from "@/lib/utils/emptyToNull";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { cn } from "@/lib/utils/cn";
-import { monthNameDeShort, normalizePayoutMonths } from "@/lib/statistics";
+import { isoFromRef, monthNameDeShort, normalizePayoutMonths } from "@/lib/statistics";
+import { useToday } from "@/lib/hooks/useToday";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,6 +45,7 @@ export function SecurityFormDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const createSecurity = useCreateSecurity();
+  const today = useToday();
   const updateSecurity = useUpdateSecurity();
   const { data: depots = [] } = useDepots();
   const activeDepots = depots.filter((depot) => !depot.archived_at);
@@ -57,12 +59,12 @@ export function SecurityFormDialog({
   // Pflichtfeld (seit 2.23.0): Der Hinweis erscheint erst nach dem ersten
   // Speicherversuch und verschwindet, sobald ein Monat gewaehlt ist.
   const [submitAttempted, setSubmitAttempted] = React.useState(false);
-  const [reinvest, setReinvest] = React.useState(security?.reinvest_dividends ?? false);
+  const [reinvest, setReinvest] = React.useState(Boolean(security?.reinvest_since));
   const [payoutSource, setPayoutSource] = React.useState(security);
   if (payoutSource !== security) {
     setPayoutSource(security);
     setPayoutMonths(security?.payout_months ?? []);
-    setReinvest(security?.reinvest_dividends ?? false);
+    setReinvest(Boolean(security?.reinvest_since));
     setSubmitAttempted(false);
   }
   const monthsMissing = payoutMonths.length === 0;
@@ -105,7 +107,8 @@ export function SecurityFormDialog({
       note: emptyToNull(values.note),
       default_depot_id: emptyToNull(values.defaultDepotId),
       payout_months: normalizePayoutMonths(payoutMonths),
-      reinvest_dividends: reinvest,
+      // Ein bestehendes Datum bleibt; neu eingeschaltet gilt ab heute.
+      reinvest_since: reinvest ? (security?.reinvest_since ?? isoFromRef(today)) : null,
       // Datenqualitaet spiegelt beim Speichern die Vollstaendigkeit der
       // Stammdaten wider (z. B. ergaenzte ISIN bei einem importierten,
       // archivierten Asset -> „OK"). „needs_review" aus dem Import bleibt

@@ -29,17 +29,15 @@ const SNOWBALL_YEARS = 30;
 /** Abstand der Szenarien zum angenommenen Wachstum, in Prozentpunkten. */
 const SCENARIO_SPREAD = 2;
 
-/**
- * Was von den Dividenden reinvestiert wird: so viel, wie die Assets mit
- * automatischer Reinvestition bringen (`assets`), alles oder nichts.
- */
-export type ReinvestMode = "assets" | "all" | "none";
-
 /** Gespeicherte Annahmen (profiles.forecast_settings). */
 export interface SnowballSettings {
   /** Sparrate pro Monat in Euro. */
   monthlySavings: number;
-  reinvest: ReinvestMode;
+  /**
+   * Reinvestierter Anteil der Nettodividende in Prozent; `null` = laut Assets
+   * (Anteil der Dividende aus Assets mit automatischer Reinvestition).
+   */
+  reinvestPercent: number | null;
   /** Dividendenwachstum p. a. in Prozent; `null` = aus dem Depot. */
   growthPercent: number | null;
   /** Dividendenrendite neuer Kaeufe in Prozent; `null` = aus dem Depot. */
@@ -52,7 +50,7 @@ export interface SnowballSettings {
 
 export const DEFAULT_SNOWBALL_SETTINGS: SnowballSettings = {
   monthlySavings: 0,
-  reinvest: "assets",
+  reinvestPercent: null,
   growthPercent: null,
   yieldPercent: null,
   targetMonthly: 1000,
@@ -79,26 +77,26 @@ export interface DepotAssumptions {
   yieldPercent: DecimalInstance;
   /**
    * Anteil (0–1) der erwarteten Jahresdividende aus Assets, deren Dividenden
-   * der Broker automatisch reinvestiert (`securities.reinvest_dividends`).
+   * der Broker automatisch reinvestiert (`securities.reinvest_since`).
    */
   reinvestShare: DecimalInstance;
 }
 
 /** Kennungen der Assets, deren Dividenden automatisch reinvestiert werden. */
 export function reinvestedIds(
-  securities: readonly { id: string; reinvest_dividends: boolean }[],
+  securities: readonly { id: string; reinvest_since: string | null }[],
 ): Set<string> {
-  return new Set(securities.filter((s) => s.reinvest_dividends).map((s) => s.id));
+  return new Set(securities.filter((s) => s.reinvest_since).map((s) => s.id));
 }
 
 /** Reinvestierter Anteil (0–1) der Nettodividende fuer die Rechnung. */
 export function reinvestShare(
-  settings: Pick<SnowballSettings, "reinvest">,
+  settings: Pick<SnowballSettings, "reinvestPercent">,
   depot: Pick<DepotAssumptions, "reinvestShare">,
 ): DecimalInstance {
-  if (settings.reinvest === "all") return ONE;
-  if (settings.reinvest === "none") return new MoneyDecimal(0);
-  return depot.reinvestShare;
+  return settings.reinvestPercent === null
+    ? depot.reinvestShare
+    : new MoneyDecimal(settings.reinvestPercent).dividedBy(HUNDRED);
 }
 
 function clamp(value: DecimalInstance, min: number, max: number): DecimalInstance {

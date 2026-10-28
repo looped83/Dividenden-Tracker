@@ -485,7 +485,7 @@ function tipText(tip: SavingsPlanTip): { meta: string; trailing?: string } {
       return { meta: "Sparplan ohne Zielgewichtung" };
     case "room":
       return {
-        meta: `Zielgewichtung ${formatDecimal(tip.cap)}\u00A0% · kein Sparplan`,
+        meta: `Zielgewichtung ${formatDecimal(tip.cap)}\u00A0% · kein Sparplan${tip.reinvestOff ? ", Reinvestition aus" : ""}`,
         trailing: `${formatMoneyWhole(Money.fromDecimal(tip.room, EUR))} frei`,
       };
   }

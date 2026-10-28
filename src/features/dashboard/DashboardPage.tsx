@@ -49,6 +49,11 @@ export function DashboardPage() {
     () => buildEntityMap(securitiesQuery.data ?? []),
     [securitiesQuery.data],
   );
+  const reinvestSince = React.useMemo(
+    () =>
+      new Map((securitiesQuery.data ?? []).map((s) => [s.id, s.reinvest_since] as const)),
+    [securitiesQuery.data],
+  );
   const depots = React.useMemo(
     () => buildEntityMap(depotsQuery.data ?? []),
     [depotsQuery.data],
@@ -158,7 +163,12 @@ export function DashboardPage() {
               er das Erste, was man zum Monatsanfang sieht. */}
           {(selection === "all" || selection === today.year) && (
             <div className="order-first empty:hidden">
-              <MonthRecapCard payments={payments} securities={securities} today={today} />
+              <MonthRecapCard
+                payments={payments}
+                securities={securities}
+                reinvestSince={reinvestSince}
+                today={today}
+              />
             </div>
           )}
           {/* Ein neuer Meilenstein gehört ebenso zum Jetzt (seit 2.34.0). */}

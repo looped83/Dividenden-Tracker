@@ -9,14 +9,18 @@
 -- Spalte an `securities` (nicht am Profil wie 0043) und mit in der
 -- Datensicherung.
 --
+-- Ein Datum statt Ja/Nein: Ab wann reinvestiert wird, entscheidet, welche
+-- Zahlungen Monatsabschluss und Jahresrückblick als reinvestiert zählen —
+-- eine Zahlung vor dem Einschalten ging aufs Konto. `null` = aus.
+--
 -- Rechte: `grant select, insert, update on securities to authenticated`
 -- (0007) und die RLS-Policies auf die eigenen Zeilen gelten für die neue
 -- Spalte unverändert.
 
 alter table securities
-  add column reinvest_dividends boolean not null default false;
+  add column reinvest_since date;
 
--- `restore_backup` unverändert aus 0040, nur mit `reinvest_dividends`.
+-- `restore_backup` unverändert aus 0040, nur mit `reinvest_since`.
 -- Ältere Sicherungen ohne das Feld spielen „aus" ein.
 create or replace function restore_backup(
   p_backup_payload jsonb,
@@ -90,7 +94,7 @@ begin
 
   insert into securities (id, user_id, name, ticker, isin, wkn, country, sector,
                           currency, note, data_quality, default_depot_id, payout_months,
-                          reinvest_dividends, created_at, updated_at, archived_at)
+                          reinvest_since, created_at, updated_at, archived_at)
   select
     (obj->>'id')::uuid, v_user_id, obj->>'name', obj->>'ticker', obj->>'isin',
     obj->>'wkn', obj->>'country', obj->>'sector', obj->>'currency', obj->>'note',
@@ -104,7 +108,7 @@ begin
          from jsonb_array_elements_text(coalesce(obj->'payout_months', '[]'::jsonb)) as t(x)),
       '{}'::smallint[]
     ),
-    coalesce((obj->>'reinvest_dividends')::boolean, false),
+    (obj->>'reinvest_since')::date,
     coalesce((obj->>'created_at')::timestamptz, now()),
     coalesce((obj->>'updated_at')::timestamptz, now()),
     (obj->>'archived_at')::timestamptz
@@ -121,7 +125,7 @@ begin
         data_quality = excluded.data_quality,
         default_depot_id = excluded.default_depot_id,
         payout_months = excluded.payout_months,
-        reinvest_dividends = excluded.reinvest_dividends,
+        reinvest_since = excluded.reinvest_since,
         archived_at = excluded.archived_at
     where p_mode = 'replace';
   get diagnostics v_n = row_count;

@@ -53,6 +53,8 @@ export type SavingsPlanTip =
       /** Euro bis zur Gewichtung beim heutigen Depotwert. */
       room: DecimalInstance;
       cap: number;
+      /** Zahlt Dividende, reinvestiert sie aber nicht (seit 2.38.0). */
+      reinvestOff: boolean;
     };
 
 const ZERO = new MoneyDecimal(0);
@@ -93,7 +95,10 @@ export function savingsPlanTips({
   for (const row of snapshotsAt(snapshots, latestAsOf(snapshots))) {
     if (row.market_value === null) continue;
     values.set(row.security_id, new MoneyDecimal(row.market_value));
-    if (row.annual_dividend_total !== null && Number(row.annual_dividend_total) > 0)
+    if (
+      row.annual_dividend_total !== null &&
+      new MoneyDecimal(row.annual_dividend_total).greaterThan(0)
+    )
       paying.add(row.security_id);
   }
   const depot = [...values.values()].reduce((sum, value) => sum.plus(value), ZERO);
@@ -149,7 +154,16 @@ export function savingsPlanTips({
       if (planned.has(securityId) || excluded.has(securityId)) return [];
       const free = depot.times(cap).dividedBy(100).minus(value);
       return free.greaterThanOrEqualTo(ROOM_MIN)
-        ? [{ kind: "room", securityId, name, room: free, cap }]
+        ? [
+            {
+              kind: "room",
+              securityId,
+              name,
+              room: free,
+              cap,
+              reinvestOff: paying.has(securityId) && !reinvested.has(securityId),
+            },
+          ]
         : [];
     })
     .sort(
@@ -198,11 +212,14 @@ export function savingsPlanTips({
     tip.kind === "over" ? -1 : tip.kind === "reaching" ? tip.months : 0;
   weighting.sort((a, b) => urgency(a) - urgency(b) || a.name.localeCompare(b.name, "de"));
   unweighted.sort((a, b) => a.name.localeCompare(b.name, "de"));
+  // Steht ein Asset schon unter „Platz ohne Sparplan", sagt jener Tipp die
+  // ausgeschaltete Reinvestition mit — eine Zeile je Asset.
+  const inRoom = new Set(room.map((tip) => tip.securityId));
   return [
     ...weighting,
     ...reinvestTips,
     ...unweighted,
     ...room,
-    ...reinvestRoom.slice(0, TIP_ROOM_MAX),
+    ...reinvestRoom.filter((tip) => !inRoom.has(tip.securityId)).slice(0, TIP_ROOM_MAX),
   ];
 }
