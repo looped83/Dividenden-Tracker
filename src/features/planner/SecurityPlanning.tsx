@@ -145,7 +145,7 @@ export function SecurityPlanning({
  * Gewichtung (seit 2.24.0, zuvor „Positionsgrenze"): Anteil am Depot heute und
  * der Anteil, bis zu dem der Nachkauf das Asset aufstockt — der Standard oder
  * ein eigener, auf eine Nachkommastelle (CALCULATION_RULES.md §16). Ein leeres
- * Feld folgt dem Standard; eine eingegebene 0 bleibt gespeichert (seit 2.41.0).
+ * Feld folgt dem Standard; eine eingegebene 0 bleibt gespeichert (seit 2.42.0).
  * Gespeichert wird erst beim Verlassen des Felds, nicht bei jedem Tastendruck.
  */
 function WeightingRow({ securityId }: { securityId: string }) {

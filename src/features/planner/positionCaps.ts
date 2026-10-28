@@ -23,7 +23,7 @@ export const POSITION_CAP_DEFAULT = 0;
 /**
  * Eigene Gewichtung je Asset in Prozent, auf eine Nachkommastelle (seit
  * 2.24.0; zuvor eine Auswahl ganzer Werte von 2 bis 50). Dazu 0 als bewusste
- * Angabe „nicht aufstocken" (seit 2.41.0): Sie bleibt gespeichert und ist so
+ * Angabe „nicht aufstocken" (seit 2.42.0): Sie bleibt gespeichert und ist so
  * von „nicht gesetzt" zu unterscheiden, wirkt im Nachkauf aber wie der Standard.
  */
 const POSITION_CAP_MIN = 0.5;

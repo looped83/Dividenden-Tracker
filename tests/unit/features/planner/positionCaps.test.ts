@@ -27,7 +27,7 @@ describe("parsePositionCaps", () => {
     expect(parsePositionCaps({ [ID]: 0.4 }).size).toBe(0);
   });
 
-  it("behält eine bewusst eingegebene 0 (seit 2.41.0)", () => {
+  it("behält eine bewusst eingegebene 0 (seit 2.42.0)", () => {
     const stored = toStoredPositionCaps(new Map([[ID, 0]]));
     expect(stored).toEqual({ [ID]: 0 });
     expect(parsePositionCaps(stored).get(ID)).toBe(0);

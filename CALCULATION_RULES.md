@@ -944,7 +944,7 @@ die Eingaben stehen in der Adresse (`?modus=sparplan&betrag=1000&fokus=monate&an
   wählst du **je Asset** auf seiner Seite (0,5–50 % auf eine Nachkommastelle, seit 2.24.0; zuvor ganze
   Werte 2–50 %; `profiles.position_caps`, Migration 0043, nicht
   in der Datensicherung); ohne eigene gilt 0 %: Das Asset wird nicht vorgeschlagen (seit 2.25.0; 2.24.0 fest 1 %, 2.23.1 fest 8 %, zuvor ein einstellbarer Standard
-  im Nachkauf). Eine eingegebene 0 wird seit 2.41.0 als eigene Gewichtung gespeichert („bewusst
+  im Nachkauf). Eine eingegebene 0 wird seit 2.42.0 als eigene Gewichtung gespeichert („bewusst
   nicht aufstocken“): Im Nachkauf und bei den Monatslücken wirkt sie wie leer, in Liste und Feld
   steht „0 %“ statt „—“, rot hervorgehoben wird sie nicht. In den Sparplan-Tipps zählt sie als
   Gewichtung: Ein aktiver Plan darauf steht als „über der Zielgewichtung“, eine Reinvestition als
