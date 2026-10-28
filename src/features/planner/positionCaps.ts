@@ -26,8 +26,8 @@ export const POSITION_CAP_DEFAULT = 0;
  * Angabe „nicht aufstocken" (seit 2.41.0): Sie bleibt gespeichert und ist so
  * von „nicht gesetzt" zu unterscheiden, wirkt im Nachkauf aber wie der Standard.
  */
-export const POSITION_CAP_MIN = 0.5;
-export const POSITION_CAP_MAX = 50;
+const POSITION_CAP_MIN = 0.5;
+const POSITION_CAP_MAX = 50;
 
 /** Gültige eigene Gewichtung: 0 oder 0,5–50 (gelesen wird großzügig bis 100). */
 export function isPositionCap(value: number): boolean {
