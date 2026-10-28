@@ -46,7 +46,6 @@ import { PaymentListItem } from "@/features/payments/PaymentListItem";
 import { DeltaText } from "@/features/payments/PaymentInsightsView";
 import { deltaOf } from "@/features/payments/paymentInsights";
 import { PositionCard } from "@/features/securities/PositionCard";
-import { ReinvestSwitch } from "@/features/securities/ReinvestSwitch";
 import { latestAsOf, ratioToPercent, statusOf } from "@/features/securities/snapshots";
 import { useDepots } from "@/features/depots/hooks";
 import { useArchiveToggle } from "@/components/domain/useArchiveToggle";
@@ -528,9 +527,15 @@ export function SecurityDetailPage() {
                   })}
                 </ul>
               )}
-              {/* Gehoert zur Ausschuettung: was mit ihr passiert. Archiviert
-                  gibt es keine Position mehr, die nachkaufen koennte. */}
-              <ReinvestSwitch security={security} disabled={archived} />
+              {/* Gehoert zur Ausschuettung: was mit ihr passiert. Nur Anzeige
+                  (seit 2.45.0); geschaltet wird unter „Bearbeiten". */}
+              <DetailRow label="Reinvestition">
+                {security.reinvest_since ? (
+                  `seit ${formatCalendarDate(security.reinvest_since)}`
+                ) : (
+                  <span className="text-muted-foreground">aus</span>
+                )}
+              </DetailRow>
             </div>
           </Section>
 

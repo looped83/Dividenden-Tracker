@@ -3,23 +3,29 @@ import { asUser } from "../support/db";
 import { expect, test } from "../support/appTest";
 
 /**
- * Reinvestition (seit 2.38.0): Der Schalter auf der Seite des Assets speichert
- * sofort — auch nach dem Neuladen steht er, also aus der Datenbank. Die
- * Bestandsliste kennzeichnet seit 2.44.0 Sparpläne statt Reinvestition.
+ * Reinvestition (seit 2.38.0): Der Schalter steht seit 2.45.0 im Formular
+ * „Asset bearbeiten"; die Seite des Assets nennt den Stand — auch nach dem
+ * Neuladen, also aus der Datenbank. Die Bestandsliste kennzeichnet seit 2.44.0
+ * Sparpläne statt Reinvestition.
  */
 test("schaltet die Reinvestition am Asset und speichert sie", async ({ page, konto }) => {
   await seedPortfolio(konto.userId);
   await page.goto("/#/depot");
   await page.getByRole("link", { name: "Microsoft" }).first().click();
-  const schalter = page.getByRole("switch", { name: "Dividenden reinvestieren" });
+  await page.getByRole("button", { name: "Bearbeiten", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Asset bearbeiten" });
+  const schalter = dialog.getByRole("switch", { name: "Dividenden reinvestieren" });
   await expect(schalter).toHaveAttribute("aria-checked", "false");
   await schalter.click();
+  // Die Testdaten haben keine Ausschüttungsmonate; sie sind Pflicht.
+  await dialog.getByRole("button", { name: "Mär" }).click();
   await expect(schalter).toHaveAttribute("aria-checked", "true");
+  await dialog.getByRole("button", { name: "Speichern" }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByText(/^seit \d{2}\.\d{2}\.\d{4}$/)).toBeVisible();
 
   await page.reload();
-  await expect(
-    page.getByRole("switch", { name: "Dividenden reinvestieren" }),
-  ).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByText(/^seit \d{2}\.\d{2}\.\d{4}$/)).toBeVisible();
 });
 
 test.describe("Monatsabschluss und Rückblick", () => {

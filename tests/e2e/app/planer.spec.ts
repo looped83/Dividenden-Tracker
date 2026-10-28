@@ -172,7 +172,10 @@ test("pflegt Sparpläne und zeigt sie am Asset", async ({ page, konto }) => {
   await expect(page.getByText("Dazu 130 € Sparpläne im Monat")).toBeVisible();
 });
 
-test("merkt sich eine eigene Gewichtung am Asset", async ({ page, konto }) => {
+test("merkt sich Zielgewichtung und Sparplan aus dem Bearbeiten-Formular", async ({
+  page,
+  konto,
+}) => {
   await seedPortfolio(konto.userId);
   await page.goto("/#/depot");
   await page
@@ -180,13 +183,30 @@ test("merkt sich eine eigene Gewichtung am Asset", async ({ page, konto }) => {
     .first()
     .click();
 
-  const gewichtung = page.getByRole("textbox", { name: "Zielgewichtung" });
+  // Seit 2.45.0 zeigt die Seite nur an; geaendert wird im Formular.
+  await expect(page.getByRole("textbox", { name: "Zielgewichtung" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Bearbeiten", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Asset bearbeiten" });
+  const gewichtung = dialog.getByRole("textbox", { name: "Zielgewichtung" });
   await expect(gewichtung).toHaveValue("");
-  // Auf eine Nachkommastelle genau; gespeichert wird beim Verlassen.
+  // Auf eine Nachkommastelle genau.
   await gewichtung.fill("1,5");
-  await gewichtung.press("Enter");
-  await expect(page.getByText("kein Nachkauf")).toBeVisible();
+  // Die Testdaten haben keine Ausschüttungsmonate; sie sind Pflicht.
+  await dialog.getByRole("button", { name: "Mär" }).click();
+  await dialog.getByRole("button", { name: "Sparplan" }).click();
+  await dialog.getByLabel("Rate (€)").fill("25");
+  await dialog.getByRole("button", { name: "Speichern" }).click();
+  await expect(dialog).toHaveCount(0);
 
   await page.reload();
-  await expect(page.getByRole("textbox", { name: "Zielgewichtung" })).toHaveValue("1,5");
+  const abschnitt = page.getByRole("region", { name: "Planung" });
+  await expect(abschnitt.getByText("1,5 %")).toBeVisible();
+  await expect(abschnitt.getByText("kein Nachkauf", { exact: false })).toBeVisible();
+  await expect(abschnitt.getByText("25 € monatlich")).toBeVisible();
+
+  await page.getByRole("button", { name: "Bearbeiten", exact: true }).click();
+  await expect(dialog.getByRole("textbox", { name: "Zielgewichtung" })).toHaveValue(
+    "1,5",
+  );
+  await expect(dialog.getByLabel("Rate (€)")).toHaveValue("25");
 });
