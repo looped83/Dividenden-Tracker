@@ -118,6 +118,7 @@ export interface Database {
           data_quality: DataQuality;
           default_depot_id: string | null;
           payout_months: number[];
+          reinvest_since: string | null;
           created_by_import_id: string | null;
           created_at: string;
           updated_at: string;
@@ -137,6 +138,7 @@ export interface Database {
           data_quality?: DataQuality;
           default_depot_id?: string | null;
           payout_months?: number[];
+          reinvest_since?: string | null;
           created_by_import_id?: string | null;
           archived_at?: string | null;
         };
@@ -152,6 +154,7 @@ export interface Database {
           data_quality: DataQuality;
           default_depot_id: string | null;
           payout_months: number[];
+          reinvest_since: string | null;
           archived_at: string | null;
         }>;
         Relationships: [

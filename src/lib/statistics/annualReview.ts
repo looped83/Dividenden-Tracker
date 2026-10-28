@@ -13,6 +13,7 @@ import {
   yearlyBuckets,
 } from "./analytics";
 import { dayOfYear, daysInYear, yearOf, type RefDate } from "./dates";
+import { reinvestedSummary, type ReinvestedSummary } from "./reinvested";
 import type {
   AnalyticsPayment,
   ComparisonResult,
@@ -37,6 +38,8 @@ import type {
 export interface ReviewFacets {
   sector: string | null;
   country: string | null;
+  /** Seit wann der Broker die Dividenden reinvestiert (§11.14). */
+  reinvestSince?: string | null;
 }
 
 export interface ReviewRankedSecurity {
@@ -103,6 +106,8 @@ export interface AnnualReview {
   growthFactor: DecimalInstance | null;
   /** Durchschnitt der Jahre vor diesem; null ohne Vorjahre. */
   priorAverage: Money | null;
+  /** Davon automatisch reinvestiert (§11.14); null ohne solche Zahlung. */
+  reinvested: ReinvestedSummary | null;
 }
 
 const ZERO = Money.zero(EUR);
@@ -304,6 +309,7 @@ export function annualReview(
     years,
     growthFactor,
     priorAverage,
+    reinvested: reinvestedSummary(rows, (id) => facets.get(id)?.reinvestSince),
   };
 }
 

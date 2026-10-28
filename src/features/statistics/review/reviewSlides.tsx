@@ -286,6 +286,34 @@ export function buildReviewSlides(
     });
   }
 
+  // Seit 2.38.0: was der Broker automatisch nachgekauft hat (§11.14).
+  const reinvested = review.reinvested;
+  if (reinvested?.net.isPositive()) {
+    slides.push({
+      id: "reinvestiert",
+      label: "Reinvestiert",
+      content: (
+        <>
+          <Eyebrow>Der Schneeball rollt</Eyebrow>
+          <Hero>{formatMoney(reinvested.net)}</Hero>
+          <Lead>
+            flossen automatisch zurück ins Depot und kauften neue Anteile von{" "}
+            {formatCountNoun(reinvested.securities, "Asset", "Assets")} — die Dividenden
+            von morgen.
+          </Lead>
+          {review.net.isPositive() && (
+            <p className="mt-6 text-base text-muted-foreground">
+              Das ist{" "}
+              {percent(reinvested.net.toDecimal().div(review.net.toDecimal()).times(100))}{" "}
+              deiner Dividenden{" "}
+              {review.isPartial ? "bis heute" : `im Jahr ${String(year)}`}.
+            </p>
+          )}
+        </>
+      ),
+    });
+  }
+
   const coverage = extras.coverage;
   if (coverage && coverage.items.length > 0) {
     const covered = coverage.items.filter((item) => item.status === "covered");
@@ -509,7 +537,7 @@ export function buildReviewSlides(
             <p className="mt-8 text-sm font-medium text-muted-foreground">
               {reached.length === 1 ? "Dein Meilenstein" : "Deine Meilensteine"} {year}
             </p>
-            <ul className="mt-2 divide-y divide-border border-y border-border">
+            <ul className="mt-2">
               {highlights.map((milestone) => (
                 <li
                   key={`${milestone.kind}-${String(milestone.threshold)}`}

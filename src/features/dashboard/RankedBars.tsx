@@ -33,9 +33,10 @@ interface RankedBarsProps {
  * keine Anlagebewertung. Die Balkenbreite ist rein visuell; alle angezeigten
  * Betraege und Anteile stammen aus lib/money bzw. lib/statistics.
  *
- * Schmale Balken in Vordergrundfarbe, Zeilen durch Haarlinien getrennt — auf
- * der Uebersicht und in der Statistik dieselbe Form (seit 1.9.0; vorher trug
- * die Statistik breite Balken in Diagrammblau).
+ * Schmale Balken in Vordergrundfarbe — auf der Uebersicht und in der Statistik
+ * dieselbe Form (seit 1.9.0; vorher trug die Statistik breite Balken in
+ * Diagrammblau). Ohne Trennlinien (seit 2.40.0): Der Balken trennt die Zeilen
+ * schon, eine Linie darunter war ein Element zu viel.
  */
 export function RankedBars({
   items,
@@ -51,12 +52,7 @@ export function RankedBars({
 
   return (
     <ul
-      className={cn(
-        "divide-y divide-border",
-        // Jede Zeile endet mit einer Linie, damit beide Spalten gleich enden.
-        columns &&
-          "lg:columns-2 lg:gap-x-12 lg:[&>li]:break-inside-avoid lg:[&>li]:border-b",
-      )}
+      className={cn(columns && "lg:columns-2 lg:gap-x-12 lg:[&>li]:break-inside-avoid")}
       aria-label={ariaLabel}
     >
       {items.map((item) => {

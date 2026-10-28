@@ -31,7 +31,12 @@ const settingsSchema = z.object({
     .min(0)
     .max(AMOUNT_MAX)
     .catch(DEFAULT_SNOWBALL_SETTINGS.monthlySavings),
-  reinvest: z.boolean().catch(DEFAULT_SNOWBALL_SETTINGS.reinvest),
+  reinvestPercent: z
+    .number()
+    .min(0)
+    .max(100)
+    .nullable()
+    .catch(DEFAULT_SNOWBALL_SETTINGS.reinvestPercent),
   growthPercent: percent.nullable().catch(DEFAULT_SNOWBALL_SETTINGS.growthPercent),
   yieldPercent: percent.nullable().catch(DEFAULT_SNOWBALL_SETTINGS.yieldPercent),
   targetMonthly: z
@@ -44,7 +49,12 @@ const settingsSchema = z.object({
 
 export function parseSnowballSettings(raw: unknown): SnowballSettings {
   if (raw === null || typeof raw !== "object") return DEFAULT_SNOWBALL_SETTINGS;
-  return settingsSchema.parse({ ...DEFAULT_SNOWBALL_SETTINGS, ...raw });
+  // Bis 2.37 `reinvest: true/false` für alle Dividenden. „Ja" war die
+  // Vorbelegung und heißt seither „laut Assets" (leer), „Nein" 0 %.
+  const fields: Record<string, unknown> = { ...raw };
+  if (fields["reinvest"] === false && !("reinvestPercent" in fields))
+    fields["reinvestPercent"] = 0;
+  return settingsSchema.parse({ ...DEFAULT_SNOWBALL_SETTINGS, ...fields });
 }
 
 /**

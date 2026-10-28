@@ -592,6 +592,19 @@ unten — in die Richtung, in der ein Bildschirm nachgibt.
   ohne Ziel stattdessen Zahl der Dividenden und Assets.
 - Ein Monat ohne Zahlungen und ohne Ziel zeigt keinen Abschluss. Ausgeblendet bleibt er auf dem
   Gerät für diesen Monat weg.
+- **Davon reinvestiert** (seit 2.38.0): Zeile unter den Zahlen, wenn im Monat reinvestiert wurde
+  (§11.14).
+
+## 11.14 Automatisch reinvestiert (`reinvestedSummary`, seit 2.38.0)
+
+- Eine Zahlung gilt als reinvestiert, wenn ihr Asset `reinvest_since` hat und das **tatsächliche**
+  Zahlungsdatum an oder nach diesem Tag liegt. Das effektive Datum (§10) kann davor liegen, obwohl
+  die Zahlung danach einging und nachkaufte.
+- Ergebnis: Nettosumme dieser Zahlungen und Zahl der Assets; ohne solche Zahlung nichts.
+- Verwendet im Monatsabschluss (§11.13, Zahlungen des Vormonats) und im Jahresrückblick (Folie
+  „Der Schneeball rollt“ mit Anteil an der Jahressumme, Zahlungen des Jahres).
+- Abschalten löscht das Datum: Frühere Zahlungen zählen danach nicht mehr als reinvestiert. Wer
+  nur kurz pausiert, verliert damit die Vergangenheit — bewusst einfach, ohne Verlauf.
 
 ## Phase 6 – Validierung und Datenqualität
 
@@ -753,8 +766,14 @@ gespeichert sind nur die Annahmen des Schneeballs (`profiles.forecast_settings`,
   Angabe 5 %); Rendite neuer Käufe = Jahresdividende ÷ Depotwert, begrenzt auf 0,5–10 % (ohne
   Angabe 3 %).
 - **Monatsschritt:** Nettodividende = Jahresdividende × Netto-Quote ÷ 12; investiert wird die
-  Sparrate, bei Reinvestition zuzüglich dieser Nettodividende; jeder investierte Euro erhöht die
-  Jahresdividende um die Rendite neuer Käufe. **Jahresende:** Jahresdividende × (1 + Wachstum).
+  Sparrate zuzüglich des reinvestierten Anteils dieser Nettodividende; jeder investierte Euro
+  erhöht die Jahresdividende um die Rendite neuer Käufe.
+- **Reinvestierter Anteil** (seit 2.38.0, `reinvestShare`): Feld „Reinvestiert“ in Prozent; leer
+  (Vorbelegung) = Anteil der Jahresdividende des jüngsten Stands aus Assets mit automatischer
+  Reinvestition (`securities.reinvest_since` gesetzt), wie CAGR und Rendite aus dem Depot. Der
+  Anteil gilt über den ganzen Horizont, auch für Dividenden aus späteren Käufen. Das frühere „Ja“
+  liest sich als leer, „Nein“ als 0 %. Dieselbe Rechnung tragen die Termine im Fortschritt (§15.4)
+  und die Ziel-Zeit des Planers. **Jahresende:** Jahresdividende × (1 + Wachstum).
 - **Inflation:** Werte des Jahres *n* geteilt durch (1 + Inflation)^n (heutige Kaufkraft).
 - **Szenarien:** vorsichtig und optimistisch mit 2 Prozentpunkten weniger (nie unter 0 %) bzw.
   mehr Wachstum; im Diagramm als Band, im Kopf mit der jeweils gerechneten CAGR beschriftet.
@@ -958,4 +977,10 @@ Bestand noch Prognose.
   Depotwert D, Marktwert W, Monatsrate r des Assets und Summe R aller aktiven Raten (das Depot
   wächst mit). Zweitens aktive Pläne auf Assets ohne Gewichtung. Drittens höchstens drei gehaltene
   Assets mit Gewichtung, ohne Plan (auch keinen pausierten) und nicht ausgeschlossen, mit dem
-  meisten Platz bis zur Gewichtung (mindestens 12 × 25 €). Ohne Befund fehlt der Abschnitt.
+  meisten Platz bis zur Gewichtung (mindestens 12 × 25 €). **Reinvestition** (seit 2.38.0), nur
+  für gehaltene Assets mit Gewichtung und ohne aktiven Plan: reinvestiert und auf oder über der
+  Gewichtung → „Reinvestition ausschalten“ (nach den Plan-Tipps); nicht reinvestiert, mit
+  Jahresdividende, nicht ausgeschlossen und mindestens 12 × 25 € Platz → „Reinvestition
+  einschalten“ (höchstens drei, der meiste Platz zuerst, am Ende; steht das Asset schon unter
+  „Platz ohne Sparplan“, nennt jener Tipp „Reinvestition aus“ statt einer zweiten Zeile). Ein
+  Plan-Tipp „über der Gewichtung“ nennt eine Reinvestition dazu. Ohne Befund fehlt der Abschnitt.

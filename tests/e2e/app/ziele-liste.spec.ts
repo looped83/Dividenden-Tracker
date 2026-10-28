@@ -2,7 +2,7 @@ import { asUser } from "../support/db";
 import { expect, test } from "../support/appTest";
 
 /**
- * „Alle Ziele“ (seit 2.38.0): Jahresziele und das neueste Jahr der
+ * „Alle Ziele“ (seit 2.41.0): Jahresziele und das neueste Jahr der
  * Monatsziele offen, je Bereich die fünf neuesten Ziele, der Rest hinter
  * „Weitere anzeigen“. Aufgeklapptes bleibt beim Rückweg von einem Ziel.
  */

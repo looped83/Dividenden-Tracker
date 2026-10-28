@@ -376,7 +376,7 @@ export function StatTable<T>({
                       key={column.key}
                       scope="col"
                       className={cn(
-                        "h-11 px-3 align-middle text-[0.8125rem] font-medium text-muted-foreground first:pl-0 last:pr-0",
+                        "h-11 whitespace-nowrap px-3 align-middle text-[0.8125rem] font-medium text-muted-foreground first:pl-0 last:pr-0",
                         column.align === "right" ? "text-right" : "text-left",
                         className,
                       )}

@@ -123,6 +123,7 @@ Company shares/ETFs (required for restoration).
   "data_quality": "ok",
   "default_depot_id": "550e8400-e29b-41d4-a716-446655440002",
   "payout_months": [3, 9],
+  "reinvest_since": "2026-10-28",
   "created_at": "2026-01-01T00:00:00Z",
   "updated_at": "2026-07-27T12:00:00Z",
   "archived_at": null

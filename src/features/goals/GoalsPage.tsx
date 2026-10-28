@@ -607,7 +607,7 @@ const YEARS_KEY = "jahre";
 const monthsKey = (year: number) => `monate-${String(year)}`;
 
 /**
- * „Alle Ziele“ (seit 2.38.0) in Bereichen wie Fortschritt › Erreicht: oben
+ * „Alle Ziele“ (seit 2.41.0) in Bereichen wie Fortschritt › Erreicht: oben
  * die Jahresziele, darunter die Monatsziele je Jahr. Offen sind die
  * Jahresziele und das neueste Jahr der Monatsziele; ältere Monatsjahre sind
  * eingeklappt. In einem Bereich stehen die fünf neuesten Ziele, der Rest

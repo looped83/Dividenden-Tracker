@@ -15,13 +15,15 @@ import {
   type TwelveMonthForecast,
 } from "./forecast";
 import { useSecurities, useSecuritySnapshots } from "./hooks";
-import { depotAssumptions, type DepotAssumptions } from "./snowball";
+import { depotAssumptions, reinvestedIds, type DepotAssumptions } from "./snowball";
 
 export interface ForecastBasis {
   forecast: TwelveMonthForecast;
   depot: DepotAssumptions;
   snapshots: readonly SecuritySnapshot[];
   names: ReadonlyMap<string, string>;
+  /** Assets mit automatischer Reinvestition (seit 2.38.0). */
+  reinvested: ReadonlySet<string>;
   /** Stammdaten je Asset (Land, Branche) fuer die Streuung im Planer. */
   facets: ReadonlyMap<string, ForecastFacets>;
   /** Aktive Zahlungen mit effektivem Datum (§10), für den bisherigen Weg im Schneeball. */
@@ -50,17 +52,24 @@ export function ForecastGate({
   const { payments, paymentsQuery } = useEffectivePayments();
   const [importOpen, setImportOpen] = React.useState(false);
 
-  const { facets, names } = React.useMemo(() => {
+  const { facets, names, reinvested } = React.useMemo(() => {
     const nameMap = new Map<string, string>();
     for (const security of securities) nameMap.set(security.id, security.name);
-    return { facets: forecastFacets(securities), names: nameMap };
+    return {
+      facets: forecastFacets(securities),
+      names: nameMap,
+      reinvested: reinvestedIds(securities),
+    };
   }, [securities]);
 
   const result = React.useMemo(
     () => forecastTwelveMonths({ snapshots, facets, payments, today }),
     [snapshots, facets, payments, today],
   );
-  const depot = React.useMemo(() => depotAssumptions(snapshots), [snapshots]);
+  const depot = React.useMemo(
+    () => depotAssumptions(snapshots, reinvested),
+    [snapshots, reinvested],
+  );
 
   if (securitiesLoading || snapshotsLoading || paymentsQuery.isLoading) {
     return (
@@ -106,6 +115,7 @@ export function ForecastGate({
     depot,
     snapshots,
     names,
+    reinvested,
     facets,
     payments,
     startYear: today.year,
