@@ -5,8 +5,8 @@ import { expect, test } from "../support/appTest";
 /**
  * Reinvestition (seit 2.38.0): Der Schalter steht seit 2.45.0 im Formular
  * „Asset bearbeiten"; die Seite des Assets nennt den Stand — auch nach dem
- * Neuladen, also aus der Datenbank. Die Bestandsliste kennzeichnet seit 2.44.0
- * Sparpläne statt Reinvestition.
+ * Neuladen, also aus der Datenbank. Die Bestandsliste kennzeichnet seit 2.56.0
+ * beides: Sparplan und Reinvestition in einer Kapsel.
  */
 test("schaltet die Reinvestition am Asset und speichert sie", async ({ page, konto }) => {
   await seedPortfolio(konto.userId);
@@ -26,6 +26,9 @@ test("schaltet die Reinvestition am Asset und speichert sie", async ({ page, kon
 
   await page.reload();
   await expect(page.getByText(/^seit \d{2}\.\d{2}\.\d{4}$/)).toBeVisible();
+
+  await page.goto("/#/depot");
+  await expect(page.getByRole("main").getByText("Wird reinvestiert")).toHaveCount(1);
 });
 
 test.describe("Monatsabschluss und Rückblick", () => {
