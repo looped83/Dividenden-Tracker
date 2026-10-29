@@ -325,11 +325,22 @@ export function DevelopmentView({
           </Link>
         ),
       },
+      // Vergangenheit zuerst, dann die Erwartung: So liest sich die Veraenderung
+      // von links nach rechts, statt wie ein Soll-Ist-Vergleich.
+      {
+        key: "received",
+        width: "w-40",
+        header: "Letzte 12 Monate",
+        headerLabel: "Erhalten in den letzten zwölf Monaten",
+        align: "right",
+        compare: (a, b) => a.received.compareTo(b.received),
+        render: (row) => <AmountText amount={row.received} />,
+      },
       {
         key: "expected",
-        width: "w-36",
-        header: "Erwartet p. a.",
-        headerLabel: "Erwartete Jahresdividende laut Depotstand",
+        width: "w-40",
+        header: "Nächste 12 Monate",
+        headerLabel: "Erwartet in den nächsten zwölf Monaten laut Depotstand",
         align: "right",
         compare: (a, b) =>
           (a.expected?.toChartNumber() ?? 0) - (b.expected?.toChartNumber() ?? 0),
@@ -342,19 +353,10 @@ export function DevelopmentView({
           ),
       },
       {
-        key: "received",
-        width: "w-32",
-        header: "Erhalten",
-        headerLabel: "Erhalten in den letzten zwölf Monaten",
-        align: "right",
-        compare: (a, b) => a.received.compareTo(b.received),
-        render: (row) => <AmountText amount={row.received} />,
-      },
-      {
         key: "growth",
         width: "w-32",
-        header: "Zuwachs",
-        headerLabel: "Erwartet abzüglich erhalten",
+        header: "Veränderung",
+        headerLabel: "Nächste abzüglich letzte zwölf Monate",
         align: "right",
         compare: (a, b) =>
           (a.growth?.toChartNumber() ?? 0) - (b.growth?.toChartNumber() ?? 0),
@@ -516,7 +518,7 @@ export function DevelopmentView({
           in einer Zeile mit der Sortierung (wie in der Unternehmensstatistik)
           — darueber in eigener Zeile kostete sie eine ganze Zeilenhoehe. */}
       <Section
-        title="Erwartet gegen erhalten je Asset"
+        title="Entwicklung je Asset"
         actionClassName="-my-3 w-64"
         {...(isWide && { action: search })}
       >
@@ -540,14 +542,15 @@ export function DevelopmentView({
             listSummary={{
               value: (row) => (
                 <>
-                  <span className="sr-only">Zuwachs </span>
+                  <span className="sr-only">Veränderung </span>
                   <GrowthValue row={row} />
                 </>
               ),
               meta: (row) => (
                 <>
-                  erwartet {row.expected ? <AmountText amount={row.expected} /> : "—"}
-                  {" · "}erhalten <AmountText amount={row.received} />
+                  letzte 12 M. <AmountText amount={row.received} />
+                  {" · "}nächste{" "}
+                  {row.expected ? <AmountText amount={row.expected} /> : "—"}
                 </>
               ),
             }}

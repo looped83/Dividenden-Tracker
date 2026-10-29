@@ -201,7 +201,7 @@ describe("DevelopmentView", () => {
         .slice(1)
         .map((row) => row.textContent);
     expect(reihen().at(-1)).toMatch(/Beta SE/);
-    fireEvent.click(screen.getByRole("button", { name: /Erwartet abzüglich erhalten/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Nächste abzüglich letzte/ }));
     expect(reihen().at(-1)).toMatch(/Beta SE/);
   });
 
