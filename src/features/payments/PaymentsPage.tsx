@@ -314,20 +314,22 @@ export function PaymentsPage() {
 
   // Nach Datum sortiert gruppiert die Liste nach Monat, mit der Monatssumme im
   // Kopf — ueber alle Eingaenge des Monats, nicht nur die bereits geladenen.
-  const groupedByMonth = sort.field === "payment_date";
+  // Mit Assetfilter nicht (seit 2.53.2): Ein Asset zahlt meist einmal im
+  // Monat, jeder Kopf trug dann nur eine Zeile und wiederholte ihren Betrag.
+  // Die Zahlungen stehen durchgehend untereinander, das Datum mit Jahr vorn.
+  const groupedByMonth = sort.field === "payment_date" && !securityId;
   const totalsByMonth = React.useMemo(
     () => (groupedByMonth ? monthTotals(rows, effectiveDateOf, amountOf) : null),
     [groupedByMonth, rows],
   );
 
-  // Veraenderung je Monat gegenueber dem Vorjahresmonat (seit 2.53.0), nicht
-  // mit Assetfilter (`MonthAside`). Bezug sind alle aktiven Eingaenge unter
-  // dem Depotfilter — nicht die
-  // angezeigten Zeilen: Ein Jahres- oder Monatsfilter blendete den
+  // Veraenderung je Monat gegenueber dem Vorjahresmonat (seit 2.53.0). Bezug
+  // sind alle aktiven Eingaenge unter dem Depotfilter — nicht die angezeigten
+  // Zeilen: Ein Jahres- oder Monatsfilter blendete den
   // Vorjahresmonat sonst aus, Stornierte zaehlen in keiner Summe mit.
   const today = useToday();
   const changesByMonth = React.useMemo(() => {
-    if (!groupedByMonth || securityId) return null;
+    if (!groupedByMonth) return null;
     const base: { date: string; amount: Money }[] = [];
     for (const payment of allPayments) {
       if (payment.archived_at) continue;
@@ -346,7 +348,7 @@ export function PaymentsPage() {
       (item) => item.amount,
       today,
     );
-  }, [groupedByMonth, allPayments, depotId, securityId, effectiveOf, depotById, today]);
+  }, [groupedByMonth, allPayments, depotId, effectiveOf, depotById, today]);
 
   // Ohne Filter, neueste zuerst, klappen die Monate ein (seit 2.2.0): Offen
   // ist nur der aktuelle Monat — oder, solange er noch leer ist, der juengste
@@ -761,8 +763,7 @@ export function PaymentsPage() {
 
 /**
  * Kopf eines Monats: Veraenderung zum Vorjahresmonat links der Summe. Mit
- * Assetfilter steht sie nicht (seit 2.53.1): Ein Monat hat dann meist eine
- * Zahlung, der Kopf wiederholte nur ihren Vergleich.
+ * Assetfilter gibt es keine Monatskoepfe (siehe `groupedByMonth`).
  */
 function MonthAside({
   total,
