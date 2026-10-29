@@ -2,7 +2,7 @@ import * as React from "react";
 import { Link, useSearchParams } from "react-router";
 import { useBackState } from "@/lib/hooks/useBackState";
 import { useRowLink } from "@/lib/hooks/useRowLink";
-import { Briefcase, Plus, Repeat } from "lucide-react";
+import { Briefcase, Plus, Repeat, Undo2 } from "lucide-react";
 import { MD_BREAKPOINT_QUERY, useMediaQuery } from "@/lib/hooks/useMediaQuery";
 import { monthNameDeShort, normalizePayoutMonths } from "@/lib/statistics";
 import { SecurityImportButton } from "@/features/securities/SecurityImportDialog";
@@ -702,7 +702,7 @@ function AssetName({ row, savingsPlan }: { row: AssetRow; savingsPlan: boolean }
       >
         {security.name}
       </Link>
-      {savingsPlan && <SavingsPlanMark />}
+      <AssetMarks savingsPlan={savingsPlan} reinvest={Boolean(security.reinvest_since)} />
       {/* Nur der Sonderfall traegt ein Etikett. „Aktiv" stand zuvor an fast
           jeder Zeile und sagte damit nichts. */}
       {security.archived_at && (
@@ -715,18 +715,30 @@ function AssetName({ row, savingsPlan }: { row: AssetRow; savingsPlan: boolean }
 }
 
 /**
- * Kleines Zeichen fuer „Sparplan laeuft" (Planer › Sparplaene). Nur das Ja
- * traegt ein Zeichen — wie „Archiviert". Die Reinvestition zeigt die
- * Detailseite.
+ * Eine Kapsel fuer „Sparplan laeuft" (↻, Planer › Sparplaene) und „Wird
+ * reinvestiert" (↶, seit 2.56.0) — dieselben Zeichen wie im Kalender. Zwei lose
+ * Pfeile nebeneinander liessen sich kaum auseinanderhalten; in einer Kapsel
+ * mit Trennstrich lesen sie sich als ein Zustand des Assets. Nur das Ja traegt
+ * ein Zeichen — wie „Archiviert".
  */
-function SavingsPlanMark({ className }: { className?: string }) {
+function AssetMarks({ savingsPlan, reinvest }: { savingsPlan: boolean; reinvest: boolean }) {
+  if (!savingsPlan && !reinvest) return null;
   return (
-    <span
-      title="Sparplan läuft"
-      className={cn("inline-flex shrink-0 text-muted-foreground", className)}
-    >
-      <Repeat className="size-3.5" aria-hidden />
-      <span className="sr-only">Sparplan läuft</span>
+    <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-muted px-1.5 py-0.5 text-muted-foreground">
+      {savingsPlan && <AssetMark icon={Repeat} label="Sparplan läuft" />}
+      {savingsPlan && reinvest && (
+        <span className="h-3 w-px bg-muted-foreground/40" aria-hidden />
+      )}
+      {reinvest && <AssetMark icon={Undo2} label="Wird reinvestiert" />}
+    </span>
+  );
+}
+
+function AssetMark({ icon: Icon, label }: { icon: typeof Repeat; label: string }) {
+  return (
+    <span title={label} className="inline-flex">
+      <Icon className="size-3.5" aria-hidden />
+      <span className="sr-only">{label}</span>
     </span>
   );
 }
@@ -774,11 +786,6 @@ function AssetItem({ row, savingsPlan }: { row: AssetRow; savingsPlan: boolean }
       Archiviert
     </Badge>
   );
-  // Vor der Ausschuettung, um die es geht — neben dem Namen liefe es mit ihm
-  // aus (`truncate-fade`).
-  const savingsPlanMark = savingsPlan && (
-    <SavingsPlanMark className="mr-1.5 align-[-0.125em]" />
-  );
 
   return (
     <li>
@@ -786,9 +793,16 @@ function AssetItem({ row, savingsPlan }: { row: AssetRow; savingsPlan: boolean }
         <Link to={`/depot/${security.id}`} state={backState}>
           <span className="min-w-0 flex-1 space-y-0.5">
             <span className="flex items-baseline justify-between gap-3">
-              {/* Eine Zeile, lange Namen laufen aus (`ListItemBody`). */}
-              <span className="min-w-0 flex-1 truncate-fade font-medium">
-                {security.name}
+              {/* Eine Zeile, lange Namen laufen vor der Kapsel aus
+              (`truncate-fade-aside`, wie `ListItemBody`). */}
+              <span className="@container flex min-w-0 flex-1 items-center gap-1.5">
+                <span className="min-w-0 truncate-fade-aside font-medium">
+                  {security.name}
+                </span>
+                <AssetMarks
+                  savingsPlan={savingsPlan}
+                  reinvest={Boolean(security.reinvest_since)}
+                />
               </span>
               {position?.marketValue && (
                 <AmountText
@@ -802,7 +816,6 @@ function AssetItem({ row, savingsPlan }: { row: AssetRow; savingsPlan: boolean }
                 <>
                   <span className="min-w-0 truncate">
                     {archivedBadge}
-                    {savingsPlanMark}
                     {position.annualDividend ? (
                       <>
                         <AmountText amount={position.annualDividend} /> p. a.
@@ -829,7 +842,6 @@ function AssetItem({ row, savingsPlan }: { row: AssetRow; savingsPlan: boolean }
               ) : (
                 <span className="min-w-0 truncate">
                   {archivedBadge}
-                  {savingsPlanMark}
                   {[row.depotName, payout === "—" ? null : payout]
                     .filter(Boolean)
                     .join(" · ") || "—"}
