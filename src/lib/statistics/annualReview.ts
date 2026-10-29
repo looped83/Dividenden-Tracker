@@ -26,7 +26,7 @@ import type {
  * Jahresrueckblick (Statistik › Rueckblick): die Kennzahlen eines einzelnen
  * Kalenderjahres in der Form, die die Story erzaehlt. Reine Funktion ueber
  * denselben {@link AnalyticsPayment}-Datensaetzen wie alle uebrigen
- * Kennzahlen (Zahltag, §10) — sie setzt sich aus den Bausteinen der
+ * Kennzahlen (effektives Datum, §10) — sie setzt sich aus den Bausteinen der
  * Analytics-Schicht zusammen und rechnet nichts doppelt.
  *
  * Der Rueckblick gilt immer dem **ganzen** Bestand: Ein Unternehmens- oder
@@ -242,7 +242,7 @@ export function annualReview(
       largestPayment = {
         securityId: payment.securityId,
         net: payment.netAmount,
-        payDate: payment.payDate,
+        payDate: payment.actualPayDate,
       };
     }
   }

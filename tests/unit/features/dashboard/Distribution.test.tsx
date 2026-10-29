@@ -12,6 +12,7 @@ function payment(security: string, depot: string, net: string): AnalyticsPayment
   return {
     id: `id-${String(seq)}`,
     payDate: "2026-03-10",
+    actualPayDate: "2026-03-10",
     netAmount: Money.fromString(net, EUR),
     grossAmount: Money.fromString(net, EUR),
     securityId: security,

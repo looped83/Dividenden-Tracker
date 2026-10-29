@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { ListGroup } from "@/components/ui/list";
 import { PaymentListItem } from "@/features/payments/PaymentListItem";
 import { recentPayments, type AnalyticsPayment } from "@/lib/statistics";
+import { formatDayMonth } from "@/lib/utils/formatDate";
 import type { EntityInfo } from "./format";
 
 interface RecentPaymentsProps {
@@ -37,6 +38,7 @@ export function RecentPayments({ payments, securities, depots }: RecentPaymentsP
         <ListGroup plain>
           {recent.map((payment) => {
             const security = securities.get(payment.securityId);
+            const shifted = payment.payDate !== payment.actualPayDate;
             return (
               <PaymentListItem
                 key={payment.id}
@@ -50,6 +52,11 @@ export function RecentPayments({ payments, securities, depots }: RecentPaymentsP
                   ) : undefined
                 }
                 date={payment.payDate}
+                note={
+                  shifted
+                    ? `tatsächlich ${formatDayMonth(payment.actualPayDate)}`
+                    : undefined
+                }
                 depot={depots.get(payment.depotId)?.name ?? "Unbekannt"}
                 amount={payment.netAmount}
               />

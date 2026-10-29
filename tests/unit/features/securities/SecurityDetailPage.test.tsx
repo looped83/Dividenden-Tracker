@@ -28,6 +28,7 @@ function payment(
   return {
     id: `pay-${String(seq)}`,
     payDate,
+    actualPayDate: payDate,
     netAmount: Money.fromString(net, EUR),
     grossAmount: Money.fromString(net, EUR),
     securityId,
@@ -66,7 +67,7 @@ const securities = [
 ];
 
 vi.mock("@/features/dashboard/hooks", () => ({
-  useAnalyticsPayments: () => ({ payments, paymentsQuery: { isLoading: false } }),
+  useEffectivePayments: () => ({ payments, paymentsQuery: { isLoading: false } }),
 }));
 vi.mock("@/features/securities/hooks", () => ({
   useSecurities: () => ({ data: securities, isLoading: false }),

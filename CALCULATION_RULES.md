@@ -187,9 +187,10 @@ ausschließlich diese Schicht auf; keine Aggregation in React-Komponenten.
 - Ein Jahr gilt als **abgeschlossen**, wenn es nicht das aktuelle Kalenderjahr ist.
 - Entsprechender Kalendertag im Vorjahr: gleicher Monat/Tag, `29.02.` → `28.02.` im
   Nicht-Schaltjahr (Kappung auf den letzten gültigen Monatstag).
-- „Bis heute" bzw. „bis zum entsprechenden Kalendertag" grenzt nach dem Zahltag (§10) ab. Der
-  Vergleichswert des laufenden Jahres ist damit genau die angezeigte Jahressumme, und das Vorjahr
-  zählt nach derselben Regel.
+- Mit Ausschüttungsplan (§10) gehört eine Zahlung zum Jahr ihres **effektiven** Datums;
+  „bis heute" bzw. „bis zum entsprechenden Kalendertag" grenzt im laufenden Jahr dagegen nach
+  dem **tatsächlichen** Zahlungsdatum ab. Der Vergleichswert des laufenden Jahres ist damit
+  genau die angezeigte Jahressumme, und das Vorjahr zählt nach derselben Regel.
 
 ### 9.3 Aktueller Monat (§5.2/§6.3)
 
@@ -223,7 +224,7 @@ Differenz stammt aus `Money.subtract` (exakt, R-3).
 
 - **Durchschnitt pro Monat (§5.4):** laufendes Jahr `YTD ÷ begonnene Monate` (inkl. aktuellem);
   abgeschlossenes Jahr `Jahressumme ÷ 12`; bei „Alle Jahre" nicht ausgewiesen. Als begonnen zählt
-  außerdem jeder Monat, dem bereits eine Zahlung zugeordnet ist (künftiger Zahltag, §10).
+  außerdem jeder Monat, dem bereits eine Zahlung zugeordnet ist (künftiger Zahltag, §10.3).
 - **Bester Monat (§5.5):** Kalendermonat mit maximaler Nettosumme im Zeitraum; bei Gleichstand
   gewinnt der **aktuellere** Monat.
 - **Top-Unternehmen / Depotverteilung (§9/§10):** `Σ net` je Wertpapier/Depot; Anteil
@@ -231,7 +232,7 @@ Differenz stammt aus `Money.subtract` (exakt, R-3).
   dann Anzahl ↓, dann Name alphabetisch (de).
 - **Monatszeitreihe (§7):** zwölf Monate; zukünftige **zahlungsfreie** Monate des laufenden Jahres
   werden **nicht** als 0 dargestellt, sondern als Lücke „noch nicht begonnen" (keine Prognose).
-  Enthält ein künftiger Monat bereits Zahlungen (künftiger Zahltag, §10), wird er normal
+  Enthält ein künftiger Monat bereits Zahlungen (künftiger Zahltag, §10.3), wird er normal
   dargestellt. In abgeschlossenen Jahren dürfen zahlungsfreie Monate 0 € sein.
 - **Historische Gesamtsumme (§5.3/§12):** immer über die gesamte aktive Historie, unabhängig von
   der Jahresauswahl; als historischer Gesamtwert gekennzeichnet.
@@ -258,7 +259,7 @@ Jahre" ist keiner.
 Beide stehen im Kennzahlkopf bei der Zahl, auf die sie sich beziehen: das Jahresziel als Balken
 unter der Jahressumme (erreichter Anteil, Zielbetrag, Restbetrag bzw. Ergebnis), das Monatsziel als
 „19 % vom Ziel" im Feld des laufenden Monats. Alle Werte stammen aus `computeGoalProgress` — es ist
-dieselbe Rechnung wie auf der Zielseite (Ist nach Zahltag, §10).
+dieselbe Rechnung wie auf der Zielseite (Ist = effektive Monatszuordnung, §10).
 
 ### 9.7 Prognose zum Jahresende (`yearEndForecast`, seit 1.7.0)
 
@@ -267,13 +268,13 @@ Im **laufenden Jahr** steht neben einem aktiven Jahresziel eine Prognose:
 `Prognose = eingegangen bis heute + angekündigt (bis T) + Vorjahreszahlungen nach T im Vorjahr`
 
 - *Eingegangen bis heute* ist genau die Jahressumme im Kopf (`selectedYearComparison`,
-  §9.2): nach Zahltag (§10) bis heute.
+  §9.2): effektives Jahr (§10), abgegrenzt nach dem tatsächlichen Eingang.
 - *Angekündigt:* Zahltage des Dividendenkalenders **nach heute** und höchstens 30 Tage voraus
   (`announcedForForecast`), nur im laufenden Jahr, nicht abgesagt, mit Betrag in Euro. Die
   Beträge der Quelle sind Nettobeträge (bestätigt für DivvyDiary) und werden unverändert
   übernommen; andere Währungen bleiben außen vor statt zu einem erfundenen Kurs umgerechnet zu
   werden. `T` ist der **letzte angekündigte Tag**; gibt es keine Ankündigung, ist `T` heute.
-- *Rest des Vorjahres:* Zahlungen des Vorjahres, deren Zahltag
+- *Rest des Vorjahres:* Zahlungen mit effektivem Jahr = Vorjahr, deren tatsächlicher Eingang
   **nach** dem gleichen Kalendertag wie `T` im Vorjahr liegt (`priorYearSameDay`, 29.02. →
   28.02.). Ohne Ankündigungen ergibt Vorjahr bis heute plus Rest genau das volle Vorjahr.
 - Grenzen: Zahlungen zwischen heute und `T`, die die Quelle (noch) nicht ankündigt, fehlen;
@@ -285,29 +286,54 @@ Im **laufenden Jahr** steht neben einem aktiven Jahresziel eine Prognose:
 
 ---
 
-## 10. Zahltag als Datumsdimension (seit 2.54.0)
+## 10. Effektiver Ausschüttungsmonat (Nachzügler-Regel, seit 2.55.0)
 
-Jede Zahlung zählt in **allen** Auswertungen und in der Eingangsliste an ihrem echten
-Zahlungsdatum (`pay_date`): Monat, Jahr, Filter, Sortierung und Monatssummen folgen dem
-Kontoauszug. Eine Quartalsdividende, die erst am 2. April eintrifft, zählt im April.
+Hintergrund: Dividenden treffen manchmal ein paar Tage später ein als geplant (eine für März
+erwartete Quartalsdividende landet am 2. April). Damit die Monate gleichmäßig bleiben, zählt
+eine solche Zahlung zu ihrem fälligen Monat. Aus dem Ausschüttungsplan
+(`securities.payout_months`, Werte 1..12) und dem echten Zahlungsdatum wird dafür ein
+**effektives Datum** berechnet, das die Datumsdimension **aller** Auswertungen bildet.
 
-Die gepflegten Ausschüttungsmonate (`securities.payout_months`) beschreiben nur den Rhythmus
-eines Assets — für Prognose, „Nächste Dividende", Kalender, Analyse und Planer. Sie verschieben
-keine erhaltene Zahlung.
+### 10.1 Zuordnungsregel (implementiert in `lib/statistics/effectiveMonth.ts`)
 
-Bis 2.53.x ordnete die App eine Zahlung dem geplanten Monat zu („effektiver Monat", auch über
-den Jahreswechsel). Der Abgleich mit der Excel-Historie (2012–2026) zeigte, dass das die
-Monatssummen und sogar Jahressummen verfälschte: Der heutige Plan galt rückwirkend für Jahre,
-in denen ein Unternehmen anders zahlte. Nach Zahltag stimmten 86 von 175 Monaten exakt, mit
-Plan-Zuordnung nur 60. Begründung: DECISIONS.md ADR-012.
+- **Ohne Plan** (`payout_months` leer): das echte `pay_date` bleibt maßgeblich.
+- **Nachzügler:** Eine Zahlung in den **ersten 7 Tagen** eines Monats zählt zum **Vormonat**,
+  wenn dieser laut Plan geplant ist und der Zahlungsmonat nicht. Beispiele Quartalsplan
+  Mär/Jun/Sep/Dez: Zahlung 2. April → März; Zahlung 3. Januar bei Plan Dezember → Dezember des
+  Vorjahres.
+- **Monatszahler** (Zahlungsmonat und Vormonat geplant): Die frühe Zahlung zählt nur dann zum
+  Vormonat, wenn das Asset im Vormonat **keine** Zahlung hatte und im Zahlungsmonat
+  **mehrere** — dann ist sie erkennbar die verspätete des Vormonats.
+- **Sonst** bleibt der echte Zahltag: nach dem 7., wenn der Vormonat nicht geplant ist, bei
+  Zahlungen im geplanten Monat. Es wird **nie nach vorne** gezogen und **nie weiter als einen
+  Monat** verschoben. So sortiert ein heute gepflegter Plan frühere Jahre mit anderem Rhythmus
+  nicht um.
+- Der Tag des effektiven Datums ist der **Monatsletzte** des Vormonats (z. B. 02.10. → 30.09.,
+  Februar → 28./29.02.): Das Geld kam erst nach Monatsende, also steht die Zahlung als letzte
+  Buchung ihres Monats. Der Tag dient nur der Darstellung und Sortierung.
 
-Randfälle:
+Die 7-Tage-Grenze stammt aus dem Abgleich mit der von Hand geführten Excel-Historie 2020–Jul
+2026 (79 Monate): Sie traf 27 Monate centgenau bei 2.167 € Gesamtabweichung — gegenüber 22
+Monaten / 4.998 € nach reinem Zahltag und 9 Monaten / 4.294 € mit der früheren Plan-Logik
+(DECISIONS.md ADR-013).
 
-- Mehrere Zahlungen eines Assets können in denselben Monat fallen (Nachzahlung, verschobener
-  Termin) — sie summieren sich dort.
+### 10.2 Geltungsbereich
+
+Der effektive Monat ersetzt das echte Datum in **allen** Auswertungen und in der Eingangsliste
+(Filter nach Jahr/Monat, Sortierung, angezeigter Monat). Das echte Zahlungsdatum bleibt
+gespeichert (`pay_date`) und wird dort, wo es abweicht, zusätzlich ausgewiesen
+(„tatsächlich TT.MM.JJJJ"). Gezählt werden für die Monatszahler-Regel nur aktive Eingänge.
+Die Berechnung ist rein clientseitig; es findet keine Gleitkomma-Geldarithmetik statt.
+
+### 10.3 Randfälle
+
+- Mehrere Zahlungen können auf denselben effektiven Monat fallen (Nachzahlung, Korrektur) —
+  sie summieren sich dort erwartungsgemäß.
 - Eine vorab erfasste Zahlung mit künftigem Zahltag macht ihren Monat zu einem begonnenen: Im
   Monatsdiagramm (§7) gilt ein künftiger Monat nur ohne Zahlungen als Lücke, und der Ø pro Monat
   (§5.4) teilt mindestens bis zum letzten Monat mit Zahlungen.
+- „Bis heute" im Jahresvergleich des laufenden Jahres grenzt nach dem tatsächlichen Eingang ab
+  (§9.2), damit Jahressumme und Veränderung zueinander passen.
 
 ---
 
@@ -320,14 +346,14 @@ Aggregation, Rundung oder Sortierung nach Betrag/Datum in React-Komponenten oder
 
 Datenbasis und Storno-/Archivregeln entsprechen §9.1: aktive Eingänge (`archived_at is null`);
 archivierte Unternehmen/Depots bleiben über ihre aktiven Zahlungen enthalten. Datumsdimension
-ist durchgängig der **Zahltag** (§10). Der Statistikbereich zeigt ausschließlich
+ist durchgängig der **effektive Monat** (§10). Der Statistikbereich zeigt ausschließlich
 **historische** Auswertungen — keine Prognosen, erwarteten Dividenden, Kurse oder Depotwerte
 (PRODUCT_SPEC.md Grundsatz 8).
 
 ### 11.1 Übersicht (`overviewStatistics`)
 
 Über die gefilterte Historie: historische Gesamtsumme (`Σ net`), Anzahl Zahlungen, Anzahl
-Unternehmen und Depots (distinct), erstes/letztes Zahlungsdatum, bester Monat (§5.5),
+Unternehmen und Depots (distinct), erstes/letztes effektives Zahlungsdatum, bester Monat (§5.5),
 bestes Jahr (Kalenderjahr mit maximaler Nettosumme; bei Gleichstand das aktuellere), sowie die
 beiden Durchschnitte aus §11.2.
 
@@ -364,8 +390,8 @@ Anzahl Zahlungen, Durchschnittszahlung (§11.2) und die Entwicklung über die Ja
 
 ### 11.5 Unternehmensstatistik (`securityStatistics` + `sortSecurityStatistics`)
 
-Je Unternehmen (auch archivierte): Gesamtsumme, Anzahl Zahlungen, erstes/letztes
-Zahlungsdatum, Durchschnittszahlung, größte Einzelzahlung (`max net`), Summe je Jahr und Entwicklung über
+Je Unternehmen (auch archivierte): Gesamtsumme, Anzahl Zahlungen, erstes/letztes effektives
+Datum, Durchschnittszahlung, größte Einzelzahlung (`max net`), Summe je Jahr und Entwicklung über
 die Jahre. Sortierbar nach **Summe** (↓, Tiebreak Anzahl ↓, dann Name), **Anzahl Zahlungen**
 (↓, Tiebreak Summe ↓, dann Name), **Alphabet** (Name, de) und **letzter Zahlung** (Datum ↓,
 fehlende zuletzt, Tiebreak Name).
@@ -390,7 +416,7 @@ Entwicklung je Jahr (`yearlyBuckets`) und je Kalendermonat über alle Jahre
 
 ### 11.8 Filter (`filterPayments`)
 
-Kombinierbarer Filter über **Jahr** (Kalenderjahr des Zahltags), **Unternehmen** und **Depot** —
+Kombinierbarer Filter über **Jahr** (effektives Kalenderjahr), **Unternehmen** und **Depot** —
 genau die drei Kriterien, die auch die Zahlungsliste kennt. Reine UND-Verknüpfung als Vorstufe
 der Aggregation; `null` bedeutet je Kriterium „keine Einschränkung". Der Filter ist
 URL-serialisiert (`?year=&security=&depot=`) und bleibt nach Reload sowie über
@@ -438,7 +464,7 @@ Gegenüberstellung zweier Zeiträume im Unterbereich `/statistiken/vergleich`.
   zerlegen): alle Unternehmen mit Zahlungen auf einer der beiden Seiten, absteigend nach
   aktuellem Betrag. Wer nur im Vergleichsmonat vorkommt, bleibt sichtbar — ein Ausfall ist der
   wichtigste Teil der Antwort.
-- **Kennzahlen.** Je Seite Nettosumme (§9.1, Zahltag §10) und Anzahl Zahlungen; die
+- **Kennzahlen.** Je Seite Nettosumme (§9.1, effektiver Monat §10) und Anzahl Zahlungen; die
   Veränderung über `comparePeriods` (§6.4). Je Monat beide Monatswerte, ihre Differenz und die
   laufende Summe seit Beginn des Zeitraums. Die letzte laufende Summe entspricht per Konstruktion
   der Periodensumme, und die Summe der Monatswerte ebenfalls — die Kurve kann der Kennzahl
@@ -468,11 +494,14 @@ Gegenüberstellung zweier Zeiträume im Unterbereich `/statistiken/vergleich`.
 ## 11.11 Vorjahresvergleich je Zahlung (Dividendenliste)
 
 Jede Zahlung in `/eingaenge` trägt einen Indikator, wie sie zur Zahlung desselben
-**Zahlungsmonats** im Vorjahr steht (implementiert in
+**effektiven Ausschüttungsmonats** im Vorjahr steht (implementiert in
 `features/payments/yearOverYear.ts`):
 
 - **Bezug:** je Unternehmen, **depotübergreifend**. Verglichen wird die Zahlung im Monat
-  `(Jahr − 1, gleicher Monat)` des Zahltags (§10).
+  `(Jahr − 1, gleicher Monat)` des effektiven Zahlungsdatums (§10). Der effektive Monat ist
+  kein bloßer Kalendermonat: Bei hinterlegtem Ausschüttungsplan zählt die Zahlung zu ihrem
+  *geplanten* Monat, auch über den Jahreswechsel — der Monat ist damit der Ausschüttungs-Slot
+  und über Jahre stabil.
 - **Warum nicht die Reihenfolge im Jahr:** Fällt eine Zahlung aus, verschöbe sie jeden
   folgenden Vergleich des Jahres (aus einem ausgesetzten Märzquartal würden drei falsche
   Vergleiche). Über den Monat bleibt der Fehler an der einen Zahlung.
@@ -483,9 +512,9 @@ Jede Zahlung in `/eingaenge` trägt einen Indikator, wie sie zur Zahlung desselb
   Keine Toleranzschwelle.
 - **Kein Indikator**, wenn keine eindeutige Zuordnung möglich ist:
   - im Vorjahresmonat steht keine Zahlung (erstes Jahr, neue Position, ausgesetzte Dividende,
-    oder in einen Nachbarmonat verschobener Termin),
+    oder verschobener Termin ohne gepflegten Ausschüttungsplan),
   - auf einer der beiden Seiten fallen mehrere Zahlungen in denselben Monat (Nachzahlung,
-    Sonderdividende — §10),
+    Sonderdividende — §10.3),
   - die Währungen der beteiligten Depots unterscheiden sich (ohne Kurs zum Zahlungszeitpunkt
     wäre jeder Vergleich geraten, R-2).
 - **Stornierte Zahlungen** (§9.1) zählen weder als Bezug noch erhalten sie einen Indikator;
@@ -497,7 +526,7 @@ Jede Zahlung in `/eingaenge` trägt einen Indikator, wie sie zur Zahlung desselb
 
 ### 11.11.1 Dividenden-Detailseite · Je Jahr (`derivePaymentInsights`, seit 2.47.0)
 
-- **Balken:** Nettosumme des Assets je Kalenderjahr (Zahltag, §10), depotübergreifend;
+- **Balken:** Nettosumme des Assets je Kalenderjahr (effektives Datum, §10), depotübergreifend;
   Jahre ohne Dividende zwischen der ersten und der letzten stehen mit 0 darin. Höchstens zwölf
   Jahre, das Fenster endet möglichst beim Jahr der geöffneten Dividende (wie die Monate). Das
   Jahr der geöffneten Dividende steht in der Akzentfarbe, das laufende Jahr heißt im Tooltip
@@ -558,7 +587,7 @@ unten — in die Richtung, in der ein Bildschirm nachgibt.
 
 - **Zeitraum:** vom 1. bis 7. eines Monats der ganze Vormonat; nicht im Januar, dort steht der
   Jahresrückblick (bis 10.1.). Nur bei Auswahl des laufenden Jahres oder „Alle Jahre".
-- **Erhalten:** Nettosumme des Vormonats (Zahltag, §10), verglichen mit dem **ganzen**
+- **Erhalten:** Nettosumme des Vormonats (effektives Datum, §10), verglichen mit dem **ganzen**
   Vorjahresmonat über `comparePeriods` (§6.4).
 - **Top-Zahler:** stärkstes Asset des Monats nach §9-Rangfolge (Summe aller Zahlungen des Assets).
 - **Monatsziel:** Status und Erreichung aus der Zielschicht (§13), Anzeige mit einer Nachkommastelle;
@@ -570,8 +599,9 @@ unten — in die Richtung, in der ein Bildschirm nachgibt.
 
 ## 11.14 Automatisch reinvestiert (`reinvestedSummary`, seit 2.38.0)
 
-- Eine Zahlung gilt als reinvestiert, wenn ihr Asset `reinvest_since` hat und ihr Zahltag an
-  oder nach diesem Tag liegt.
+- Eine Zahlung gilt als reinvestiert, wenn ihr Asset `reinvest_since` hat und das **tatsächliche**
+  Zahlungsdatum an oder nach diesem Tag liegt. Das effektive Datum (§10) kann davor liegen, obwohl
+  die Zahlung danach einging und nachkaufte.
 - Ergebnis: Nettosumme dieser Zahlungen und Zahl der Assets; ohne solche Zahlung nichts.
 - Verwendet im Monatsabschluss (§11.13, Zahlungen des Vormonats) und im Jahresrückblick (Folie
   „Der Schneeball rollt“ mit Anteil an der Jahressumme, Zahlungen des Jahres).
@@ -619,7 +649,7 @@ wird ausschließlich für die Anzeige (R-4/R-5).
 
 **Datenbasis (§7).** Fortschritt zählt ausschließlich gültige, aktive
 Dividendeneingänge (`archived_at is null`) des angemeldeten Nutzers — dieselbe
-Datenbasis wie Dashboard und Statistik, nach **Zahltag**
+Datenbasis wie Dashboard und Statistik, inkl. **effektivem** Zahlungsdatum
 (§10). Stornierte und dauerhaft gelöschte Zahlungen sind ausgeschlossen;
 archivierte Unternehmen und Depots bleiben über ihre aktiven Zahlungen
 enthalten. Keine erwarteten, geschätzten oder prognostizierten Beträge.
@@ -629,8 +659,8 @@ enthalten. Keine erwarteten, geschätzten oder prognostizierten Beträge.
 - Monatsziel `monthly`: 1. – letzter Tag von `year`/`month` (Schaltjahr über
   `lastDayOfMonth`).
 
-**Ist-Summe.** `aggregateInRange(payments, period).net` über den
-Zahltag — deckungsgleich mit dem Drill-down `/eingaenge?year=…[&month=…]`.
+**Ist-Summe.** `aggregateInRange(payments, period).net` über das effektive
+Zahlungsdatum — deckungsgleich mit dem Drill-down `/eingaenge?year=…[&month=…]`.
 
 **Zielerreichung.** `Fortschritt = Ist / Ziel × 100` (Ziel > 0 garantiert durch
 DB-Constraint). Der Balken ist visuell auf 0–100 % begrenzt; der textliche
@@ -724,7 +754,7 @@ gespeichert sind nur die Annahmen des Schneeballs (`profiles.forecast_settings`,
 - **Geschätzt:** je gehaltener Position des jüngsten Depotstands die erwartete Jahresdividende
   (brutto) × Netto-Quote ÷ Anzahl Zahlmonate, in jedem Zahlmonat. Zahlmonate in dieser
   Rangfolge (`payoutMonthsOf`): gepflegte Ausschüttungsmonate, Monate der Zahlungen der letzten
-  zwölf Monate (Zahltag §10), Rhythmus des Exports ab `next_pay_date`, sonst
+  zwölf Monate (effektiver Monat §10), Rhythmus des Exports ab `next_pay_date`, sonst
   gleichmäßig über zwölf Monate. „Keine Ausschüttung" und Positionen ohne oder mit 0 €
   Jahresdividende tragen nichts bei.
 - **Kein Kalenderabgleich:** Der Dividendenkalender reicht nur ein, zwei Monate voraus und
@@ -757,7 +787,7 @@ gespeichert sind nur die Annahmen des Schneeballs (`profiles.forecast_settings`,
   laufenden Monats. Ein Ziel im Jahr J heißt: Punkt J liegt darüber, Punkt J − 1 darunter. Kursgewinne fließen nicht ein. Gerechnet wird mit Decimal, angezeigt in
   vollen Euro.
 - **Bisheriger Weg** (`snowballHistory`, seit 2.32.0): je abgeschlossenem Kalenderjahr vor dem
-  laufenden die erhaltene Nettodividende (aktive Eingänge, Zahltag §10) ÷ 12, vom ersten
+  laufenden die erhaltene Nettodividende (aktive Eingänge, effektives Datum §10) ÷ 12, vom ersten
   Jahr mit einer Zahlung an; Jahre ohne Zahlung dazwischen zählen 0. In **Nennwerten** (keine
   Inflationsbereinigung: es ist, was ankam). Im Diagramm durchgezogen bis heute, die Hochrechnung
   ab heute gestrichelt; unter „Heute“ steht das erste Jahr mit seinem Wert („2019: 12 €“).
@@ -813,7 +843,7 @@ gespeichert sind nur die Annahmen des Schneeballs (`profiles.forecast_settings`,
 
 ## 15. Fortschritt (seit 2.12.0)
 
-Abgeleitet aus derselben Datenbasis wie die Ziele (§13, Zahltag, netto). Nichts
+Abgeleitet aus derselben Datenbasis wie die Ziele (§13, effektives Zahlungsdatum, netto). Nichts
 davon wird gespeichert außer den Fixkosten selbst (`profiles.fixed_costs`, Migration 0041).
 
 ### 15.1 Was deine Dividenden bezahlen (`coverFixedCosts`)
@@ -832,7 +862,7 @@ davon wird gespeichert außer den Fixkosten selbst (`profiles.fixed_costs`, Migr
 
 ### 15.2 Meilensteine (`milestoneOverview`)
 
-Zahlungen chronologisch (Zahltag, dann `created_at`). Jede Schwelle gilt als erreicht am
+Zahlungen chronologisch (effektives Datum, dann `created_at`). Jede Schwelle gilt als erreicht am
 Datum der Zahlung, mit der der Stand sie erstmals erreicht; danach nie wieder aberkannt.
 
 | Art | Stand | Schwellen |

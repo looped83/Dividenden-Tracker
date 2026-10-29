@@ -1,7 +1,13 @@
 import * as React from "react";
 import { Link, useSearchParams } from "react-router";
 import { ChevronDown, ShieldCheck, Wallet } from "lucide-react";
-import { monthNameDe, monthOf, yearOf } from "@/lib/statistics";
+import {
+  effectiveDateResolver,
+  monthNameDe,
+  monthOf,
+  payoutMonthsBySecurity,
+  yearOf,
+} from "@/lib/statistics";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { EntitySelect, type EntityOption } from "@/components/domain/EntitySelect";
@@ -70,7 +76,7 @@ import { usePaymentComposer } from "@/features/payments/PaymentComposer";
 
 type Row = {
   payment: PaymentListRow;
-  payDate: string;
+  effectiveDate: string;
   /** Floss die Dividende zurueck ins Asset (`reinvest_since`, seit 2.53.0)? */
   reinvested: boolean;
 } & SortableRow;
@@ -82,7 +88,7 @@ const MONTHS_PER_STEP = 12;
 // Auf Modulebene, damit die Referenzen stabil bleiben (Abhaengigkeiten der
 // Memos unten).
 const amountOf = (row: Row): Money => row.amount;
-const payDateOf = (row: Row): string => row.payDate;
+const effectiveDateOf = (row: Row): string => row.effectiveDate;
 
 /** Sortierkriterien der Liste — dieselbe Benennung wie in der Unternehmensliste. */
 const SORT_OPTIONS: readonly FilterSortOption[] = [
@@ -180,6 +186,27 @@ export function PaymentsPage() {
     [allPayments, status],
   );
 
+  // Nachzügler-Regel je Asset → effektiver Monat je Zahlung (§10). Gezählt
+  // werden wie in den Auswertungen nur aktive Eingänge.
+  const resolveEffective = React.useMemo(
+    () =>
+      effectiveDateResolver(
+        allPayments
+          .filter((payment) => !payment.archived_at)
+          .map((payment) => ({
+            securityId: payment.security_id,
+            payDate: payment.pay_date,
+          })),
+        payoutMonthsBySecurity(securities),
+      ),
+    [allPayments, securities],
+  );
+  const effectiveOf = React.useCallback(
+    (payment: { pay_date: string; security_id: string }) =>
+      resolveEffective(payment.security_id, payment.pay_date),
+    [resolveEffective],
+  );
+
   const securityById = React.useMemo(
     () => new Map(securities.map((s) => [s.id, s])),
     [securities],
@@ -216,7 +243,7 @@ export function PaymentsPage() {
         allPayments.map((payment) => ({
           id: payment.id,
           securityId: payment.security_id,
-          payDate: payment.pay_date,
+          effectiveDate: effectiveOf(payment),
           amount: Money.fromString(
             payment.net_amount,
             toCurrencyCode(depotById.get(payment.depot_id)?.base_currency ?? "EUR"),
@@ -224,14 +251,14 @@ export function PaymentsPage() {
           cancelled: Boolean(payment.archived_at),
         })),
       ),
-    [allPayments, depotById],
+    [allPayments, effectiveOf, depotById],
   );
 
   const years = React.useMemo(() => {
     const set = new Set<number>();
-    for (const payment of statusPayments) set.add(yearOf(payment.pay_date));
+    for (const payment of statusPayments) set.add(yearOf(effectiveOf(payment)));
     return [...set].sort((a, b) => b - a);
-  }, [statusPayments]);
+  }, [statusPayments, effectiveOf]);
 
   // --- Filtern → in sortierbare Zeilen abbilden → sortieren (§2/§3/§4). ---
   const rows = React.useMemo<Row[]>(() => {
@@ -244,9 +271,9 @@ export function PaymentsPage() {
       if (depotId && payment.depot_id !== depotId) continue;
       if (securityId && payment.security_id !== securityId) continue;
 
-      const payDate = payment.pay_date;
-      if (filterYear && yearOf(payDate) !== filterYear) continue;
-      if (filterMonth && monthOf(payDate) !== filterMonth) continue;
+      const effectiveDate = effectiveOf(payment);
+      if (filterYear && yearOf(effectiveDate) !== filterYear) continue;
+      if (filterMonth && monthOf(effectiveDate) !== filterMonth) continue;
 
       const security = securityById.get(payment.security_id);
       const companyName = security?.name ?? "";
@@ -258,7 +285,7 @@ export function PaymentsPage() {
 
       mapped.push({
         payment,
-        payDate,
+        effectiveDate,
         reinvested:
           !isCancelled &&
           typeof reinvestSince === "string" &&
@@ -283,6 +310,7 @@ export function PaymentsPage() {
     securityId,
     filterYear,
     filterMonth,
+    effectiveOf,
     securityById,
     depotById,
     sort,
@@ -301,7 +329,7 @@ export function PaymentsPage() {
   // Die Zahlungen stehen durchgehend untereinander, das Datum mit Jahr vorn.
   const groupedByMonth = sort.field === "payment_date" && !securityId;
   const totalsByMonth = React.useMemo(
-    () => (groupedByMonth ? monthTotals(rows, payDateOf, amountOf) : null),
+    () => (groupedByMonth ? monthTotals(rows, effectiveDateOf, amountOf) : null),
     [groupedByMonth, rows],
   );
 
@@ -317,7 +345,7 @@ export function PaymentsPage() {
       if (payment.archived_at) continue;
       if (depotId && payment.depot_id !== depotId) continue;
       base.push({
-        date: payment.pay_date,
+        date: effectiveOf(payment),
         amount: Money.fromString(
           payment.net_amount,
           toCurrencyCode(depotById.get(payment.depot_id)?.base_currency ?? "EUR"),
@@ -330,7 +358,7 @@ export function PaymentsPage() {
       (item) => item.amount,
       today,
     );
-  }, [groupedByMonth, allPayments, depotId, depotById, today]);
+  }, [groupedByMonth, allPayments, depotId, effectiveOf, depotById, today]);
 
   // Ohne Filter, neueste zuerst, klappen die Monate ein (seit 2.2.0): Offen
   // ist nur der aktuelle Monat — oder, solange er noch leer ist, der juengste
@@ -342,7 +370,7 @@ export function PaymentsPage() {
   // geladene Menge findet der Weg zurueck von einem Eingang sie wieder.
   const collapsible = groupedByMonth && sort.direction === "desc" && !hasActiveFilters;
   const allMonths = React.useMemo(
-    () => (collapsible ? groupByMonth(rows, payDateOf) : null),
+    () => (collapsible ? groupByMonth(rows, effectiveDateOf) : null),
     [collapsible, rows],
   );
   const currentMonth = `${String(today.year)}-${String(today.month).padStart(2, "0")}`;
@@ -358,7 +386,7 @@ export function PaymentsPage() {
       allMonths
         ? allMonths.slice(0, page * MONTHS_PER_STEP)
         : groupedByMonth
-          ? groupByMonth(visibleRows, payDateOf)
+          ? groupByMonth(visibleRows, effectiveDateOf)
           : [{ key: "", year: 0, month: 0, rows: visibleRows }],
     [allMonths, groupedByMonth, page, visibleRows],
   );
@@ -781,14 +809,23 @@ interface PaymentRowProps {
  * Zeile führt dorthin (`useRowLink`).
  */
 function PaymentRow({ row, comparison, listUrl }: PaymentRowProps) {
-  const { payment, payDate, companyName, depotName, amount } = row;
+  const { payment, effectiveDate, companyName, depotName, amount } = row;
+  const shifted = effectiveDate !== payment.pay_date;
   const cancelled = Boolean(payment.archived_at);
   const to = `/eingaenge/${payment.id}`;
   const openRow = useRowLink();
   return (
     <TableRow className="cursor-pointer" onClick={openRow(to, { from: listUrl })}>
       <TableCell className="whitespace-nowrap text-muted-foreground tabular-amount">
-        {formatCalendarDate(payDate)}
+        {formatCalendarDate(effectiveDate)}
+        {shifted && (
+          <span
+            className="block text-xs text-muted-foreground"
+            title="Tatsächliches Zahlungsdatum"
+          >
+            tatsächlich {formatCalendarDate(payment.pay_date)}
+          </span>
+        )}
       </TableCell>
       <TableCell className="font-medium">
         {/* Das Unternehmen fuehrt zur Detailansicht — es benennt den Eingang,
@@ -839,14 +876,14 @@ function PaymentItem({
   /** In Monatsgruppen: Monat und Jahr stehen schon in der Überschrift. */
   dayOnly?: boolean;
 }) {
-  const { payment, payDate, companyName, depotName, amount } = row;
+  const { payment, effectiveDate, companyName, depotName, amount } = row;
   return (
     <PaymentListItem
       to={`/eingaenge/${payment.id}`}
       state={{ from: listUrl }}
       title={companyName || "—"}
       titleAside={row.reinvested ? <ReinvestMark /> : undefined}
-      date={payDate}
+      date={effectiveDate}
       // Ohne Monatsgruppen steht das Jahr sonst nirgends.
       showYear={!dayOnly}
       depot={depotName}

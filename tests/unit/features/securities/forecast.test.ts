@@ -58,6 +58,7 @@ function payment(
   return {
     id: `pay-${String(counter)}`,
     payDate: date,
+    actualPayDate: date,
     netAmount: Money.fromString(net, EUR),
     grossAmount: Money.fromString(gross, EUR),
     securityId,

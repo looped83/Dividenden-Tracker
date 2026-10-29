@@ -5,7 +5,7 @@ import type { Goal, GoalCourse } from "@/lib/goals";
 import { EUR, Money, MoneyDecimal, formatMoneyWhole } from "@/lib/money";
 import { monthNameDe, type RefDate } from "@/lib/statistics";
 import { purchaseForGap } from "@/features/planner/purchase";
-import { useAnalyticsPayments } from "@/features/dashboard/hooks";
+import { useEffectivePayments } from "@/features/dashboard/hooks";
 import { forecastFacets, forecastTwelveMonths } from "@/features/securities/forecast";
 import { AMOUNT_MAX, useForecastSettings } from "@/features/securities/forecastSettings";
 import { useSecurities, useSecuritySnapshots } from "@/features/securities/hooks";
@@ -56,7 +56,7 @@ function useGapPurchase(goal: Goal, gap: Money | null, today: RefDate) {
   const securities = useSecurities().data;
   const snapshots = useSecuritySnapshots().data;
   const settings = useForecastSettings().data;
-  const { payments } = useAnalyticsPayments();
+  const { payments } = useEffectivePayments();
   const forecast = React.useMemo(() => {
     if (!securities || !snapshots) return null;
     const result = forecastTwelveMonths({

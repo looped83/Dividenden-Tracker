@@ -142,8 +142,8 @@ function shiftMonth(iso: string, months: number): string {
  * vorherigen, dem Vorjahr und dem Schnitt der letzten zwoelf Monate, Rang,
  * Jahres- und Gesamtsumme.
  *
- * `own` sind die **aktiven** Dividenden des Assets nach Zahltag
- * (`useAnalyticsPayments`), dieselbe Grundlage wie Statistik und Assetseite.
+ * `own` sind die **aktiven** Dividenden des Assets mit effektivem Datum
+ * (`useEffectivePayments`), dieselbe Grundlage wie Statistik und Assetseite.
  * Eine stornierte Dividende steht nicht darin und erhaelt `null`: Sie zaehlt
  * nirgends mit, also auch nicht in ihrem eigenen Vergleich.
  */
@@ -193,7 +193,7 @@ export function derivePaymentInsights(
       sorted.map((payment) => ({
         id: payment.id,
         securityId: payment.securityId,
-        payDate: payment.payDate,
+        effectiveDate: payment.payDate,
         amount: payment.netAmount,
         cancelled: false,
       })),

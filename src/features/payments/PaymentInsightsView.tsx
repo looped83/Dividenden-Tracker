@@ -10,7 +10,7 @@ import { AmountText } from "@/components/money/AmountText";
 import { formatPercent } from "@/lib/money";
 import { monthNameDe, monthNameDeShort, monthOf, yearOf } from "@/lib/statistics";
 import { cn } from "@/lib/utils/cn";
-import { formatCalendarDate } from "@/lib/utils/formatDate";
+import { formatCalendarDate, formatDayMonth } from "@/lib/utils/formatDate";
 import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
 import {
   CategoryBarChart,
@@ -218,7 +218,7 @@ export function PaymentInsightsView({
               label: monthNameDeShort(monthOf(entry.month)),
               detail:
                 count === 1
-                  ? formatCalendarDate(entry.payments[0].payDate)
+                  ? formatCalendarDate(entry.payments[0].actualPayDate)
                   : `${monthNameDe(monthOf(entry.month))} ${String(yearOf(entry.month))} · ${formatCountNoun(count, "Dividende", "Dividenden")}`,
               value: money.toChartNumber(),
               money,
@@ -333,6 +333,11 @@ export function PaymentInsightsView({
                     title={depots.find((d) => d.id === payment.depotId)?.name ?? "—"}
                     date={payment.payDate}
                     showYear
+                    note={
+                      payment.payDate !== payment.actualPayDate
+                        ? `tatsächlich ${formatDayMonth(payment.actualPayDate)}`
+                        : undefined
+                    }
                     amount={payment.netAmount}
                   />
                 ))}
