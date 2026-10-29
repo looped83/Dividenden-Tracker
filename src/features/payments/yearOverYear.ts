@@ -1,4 +1,4 @@
-import { Money } from "@/lib/money";
+import type { DecimalInstance, Money } from "@/lib/money";
 import { monthOf, yearOf } from "@/lib/statistics";
 
 /** Richtung gegenueber der Vergleichszahlung des Vorjahres. */
@@ -22,6 +22,11 @@ export interface YearOverYearComparison {
   previousDate: string;
   /** Vorzeichenbehaftete Differenz (aktuell − Vorjahr). */
   difference: Money;
+  /**
+   * Veraenderung in Prozentpunkten (seit 2.53.0), noch ungerundet — `null`,
+   * wenn die Vergleichszahlung 0 war (R-6.6: nie unendlich).
+   */
+  percent: DecimalInstance | null;
 }
 
 function bucketKey(securityId: string, year: number, month: number): string {
@@ -87,11 +92,15 @@ export function compareToPreviousYear(
     if (reference.amount.currency !== entry.amount.currency) continue;
 
     const comparison = entry.amount.compareTo(reference.amount);
+    const difference = entry.amount.subtract(reference.amount);
     result.set(entry.id, {
       direction: comparison > 0 ? "up" : comparison < 0 ? "down" : "same",
       previousAmount: reference.amount,
       previousDate: reference.effectiveDate,
-      difference: entry.amount.subtract(reference.amount),
+      difference,
+      percent: reference.amount.isPositive()
+        ? difference.toDecimal().div(reference.amount.toDecimal()).times(100)
+        : null,
     });
   }
 

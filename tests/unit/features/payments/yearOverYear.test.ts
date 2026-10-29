@@ -160,3 +160,16 @@ describe("compareToPreviousYear", () => {
     expect(result.has("p2")).toBe(false);
   });
 });
+
+describe("compareToPreviousYear – Prozent", () => {
+  it("liefert die Veraenderung in Prozent und keine bei Vorjahr 0", () => {
+    const result = compareToPreviousYear([
+      entry("p1", "2025-03-10", "50.00"),
+      entry("p2", "2026-03-12", "60.00"),
+      entry("p3", "2025-06-10", "0.00"),
+      entry("p4", "2026-06-12", "5.00"),
+    ]);
+    expect(result.get("p2")?.percent?.toString()).toBe("20");
+    expect(result.get("p4")?.percent).toBeNull();
+  });
+});
