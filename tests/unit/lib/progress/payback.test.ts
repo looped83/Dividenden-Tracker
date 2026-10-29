@@ -11,7 +11,6 @@ function payment(securityId: string, net: string): AnalyticsPayment {
   return {
     id: `p${String(seq)}`,
     payDate: "2026-01-15",
-    actualPayDate: "2026-01-15",
     netAmount: eur(net),
     grossAmount: eur(net),
     securityId,

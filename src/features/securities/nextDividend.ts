@@ -72,7 +72,7 @@ export function nextDividend({
   securityName: string;
   /** Termine mit angeglichenen Namen (`useResolvedCalendarEvents`). */
   events: readonly CalendarEvent[];
-  /** Aktive Dividenden dieses Assets mit effektivem Datum. */
+  /** Aktive Dividenden dieses Assets. */
   own: readonly AnalyticsPayment[];
   payoutMonths: readonly number[];
   today: RefDate;

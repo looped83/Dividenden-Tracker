@@ -64,9 +64,8 @@ function monthBars(
   const current = monthlyBuckets(payments, year);
   const prior = monthlyBuckets(payments, year - 1);
   return current.map((bucket, index) => {
-    // „Noch nicht begonnen" gilt nur für Monate ohne Zahlungen: Durch den
-    // Ausschüttungsplan (§10) kann eine früh eingetroffene Zahlung bereits im
-    // kommenden Monat stehen — dieses Geld darf nicht als Lücke verschwinden.
+    // „Noch nicht begonnen" gilt nur für Monate ohne Zahlungen: Eine vorab
+    // erfasste Zahlung mit künftigem Zahltag darf nicht als Lücke verschwinden.
     const notStarted =
       (year > today.year || (year === today.year && bucket.month > today.month)) &&
       bucket.count === 0;

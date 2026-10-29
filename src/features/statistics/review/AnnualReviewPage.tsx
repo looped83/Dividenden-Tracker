@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { buildEntityMap } from "@/features/dashboard/format";
-import { useEffectivePayments } from "@/features/dashboard/hooks";
+import { useAnalyticsPayments } from "@/features/dashboard/hooks";
 import { useGoals, useYearEndForecast } from "@/features/goals/hooks";
 import { useFixedCosts } from "@/features/progress/hooks";
 import { computeGoalCourse, yearGoals } from "@/lib/goals";
@@ -36,7 +36,7 @@ export function AnnualReviewPage() {
   const { jahr } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { payments, paymentsQuery, securitiesQuery } = useEffectivePayments();
+  const { payments, paymentsQuery, securitiesQuery } = useAnalyticsPayments();
   const goalsQuery = useGoals();
   const fixedCostsQuery = useFixedCosts();
 

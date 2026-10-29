@@ -319,8 +319,8 @@ Repository, auch nicht in ein privates.
 ## 11. Was bewusst offen bleibt
 
 - **`payout_months` wird nicht abgeleitet.** Aus Rhythmus und nächstem Zahltag ließen sich
-  die Ausschüttungsmonate rechnerisch bestimmen. Sie steuern aber die Monatszuordnung nach
-  CALCULATION_RULES.md §10 — ein falscher Wert verschiebt still Zahlungen in falsche Monate.
+  die Ausschüttungsmonate rechnerisch bestimmen. Sie steuern aber Prognose und Rhythmus —
+  ein falscher Wert verschiebt still erwartete Zahlungen in falsche Monate.
   Die bessere Quelle liegt ohnehin im Haus: die eigene Zahlungshistorie.
 - **Keine Performance-Kennzahl** (TWR/IRR). Dafür bräuchte es einzelne Transaktionen mit
   Datum und Betrag; die CSV nennt nur deren Anzahl.

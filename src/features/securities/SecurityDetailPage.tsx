@@ -15,7 +15,7 @@ import { KpiHero, type KpiStat } from "@/components/domain/KpiHero";
 import { SecurityIdentifiers } from "@/components/domain/SecurityIdentifiers";
 import { AmountText } from "@/components/money/AmountText";
 import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
-import { formatCalendarDate, formatDayMonth } from "@/lib/utils/formatDate";
+import { formatCalendarDate } from "@/lib/utils/formatDate";
 import { formatPercent, toCurrencyCode, Money } from "@/lib/money";
 import {
   aggregate,
@@ -30,7 +30,7 @@ import {
   yearOf,
   yearlyBuckets,
 } from "@/lib/statistics";
-import { useEffectivePayments } from "@/features/dashboard/hooks";
+import { useAnalyticsPayments } from "@/features/dashboard/hooks";
 import {
   CategoryBarChart,
   type CategoryDatum,
@@ -80,12 +80,12 @@ const VIEW_OPTIONS: readonly SegmentOption<HistoryView>[] = [
  * Verwaltungsliste, die Entwicklung im Statistikbereich, die Zahlungen in der
  * Eingangsliste — drei Bereiche fuer eine Frage.
  *
- * **Datenquelle ist bewusst `useEffectivePayments`**, dieselbe Grundlage wie
+ * **Datenquelle ist bewusst `useAnalyticsPayments`**, dieselbe Grundlage wie
  * Uebersicht, Statistik und Ziele. Damit stimmen die Jahressummen hier
  * zwangslaeufig mit dem Statistikbereich ueberein, statt nur zufaellig: Es gibt
  * keine zweite Aggregation, die auseinanderlaufen koennte (ARCHITECTURE.md
  * §4.5). Wie dort zaehlen ausschliesslich aktive Eingaenge, und die Zuordnung
- * folgt dem effektiven Datum (CALCULATION_RULES.md §10). Nicht
+ * folgt dem Zahltag (CALCULATION_RULES.md §10). Nicht
  * `useStatisticsData`: Das baute zusaetzlich die Zeitreihe aller Depotstaende
  * und die Namenstabellen auf, die diese Seite nicht braucht.
  *
@@ -102,7 +102,7 @@ export function SecurityDetailPage() {
   const toggleArchive = useArchiveToggle(archiveSecurity);
   const [editOpen, setEditOpen] = React.useState(false);
   const [deleteOpen, setDeleteOpen] = React.useState(false);
-  const { payments, paymentsQuery } = useEffectivePayments();
+  const { payments, paymentsQuery } = useAnalyticsPayments();
   const isLoading = paymentsQuery.isLoading;
   const { data: securities = [], isLoading: securitiesLoading } = useSecurities();
   const { data: snapshots = [] } = useSecuritySnapshots();
@@ -460,11 +460,6 @@ export function SecurityDetailPage() {
                       title={depotName(payment.depotId)}
                       date={payment.payDate}
                       showYear
-                      note={
-                        payment.payDate !== payment.actualPayDate
-                          ? `tatsächlich ${formatDayMonth(payment.actualPayDate)}`
-                          : undefined
-                      }
                       amount={payment.netAmount}
                     />
                   ))}

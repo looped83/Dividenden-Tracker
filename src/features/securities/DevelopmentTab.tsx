@@ -186,7 +186,7 @@ export function DevelopmentView({
   filter,
   portfolio,
 }: {
-  /** Alle aktiven Zahlungen mit effektivem Datum, ungefiltert. */
+  /** Alle aktiven Zahlungen, ungefiltert. */
   allPayments: readonly AnalyticsPayment[];
   securities: Map<string, EntityInfo>;
   filter: StatisticsFilter;

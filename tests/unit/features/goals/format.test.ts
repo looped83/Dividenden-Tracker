@@ -32,7 +32,6 @@ function payment(payDate: string, net: string): AnalyticsPayment {
   return {
     id: payDate,
     payDate,
-    actualPayDate: payDate,
     netAmount: Money.fromString(net, EUR),
     grossAmount: Money.fromString(net, EUR),
     securityId: "s",

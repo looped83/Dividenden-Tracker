@@ -42,7 +42,7 @@ function deriveStatus(
 
 /**
  * Vollstaendiger, decimal-sicherer Zielfortschritt (Auftrag §9/§10). Erwartet
- * bereits geparste Analytics-Zahlungen mit **effektivem** Zahlungsdatum
+ * bereits geparste Analytics-Zahlungen nach Zahltag
  * (CALCULATION_RULES.md §10) — genau die Datenbasis, die Dashboard und Statistik
  * verwenden. Damit sind Zielstand, Dashboard, Statistik und der gefilterte
  * Drill-down (§24) zwangslaeufig konsistent.

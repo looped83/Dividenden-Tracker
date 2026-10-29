@@ -532,7 +532,7 @@ rechenbar, also wird er gerechnet.
 
 ## D-8-1: Der Ausschüttungsplan zieht auch vorgezogene Zahlungen — höchstens einen Monat
 
-**Status:** Accepted · **Scope:** Fachlogik / Vertrauen in die Zahlen
+**Status:** Superseded by ADR-012 (2.54.0) · **Scope:** Fachlogik / Vertrauen in die Zahlen
 
 Bei hinterlegtem Ausschüttungsplan zählt eine Zahlung zu dem geplanten Monat,
 für den sie bestimmt ist — bisher nur **rückwärts** (verspätete Zahlung → letzter
@@ -1079,3 +1079,37 @@ Trigger erlauben; das wird nicht gebraucht.
 ### Revisit When
 
 - Nachvollziehbarkeit einzelner Änderungen doch gebraucht wird.
+
+---
+
+## ADR-012: Zahlungen zählen am Zahltag, nicht im Planmonat
+
+**Status:** Accepted  
+**Scope:** Fachlogik (CALCULATION_RULES.md §10)  
+**Supersedes:** D-8-1 und die Zuordnung nach Ausschüttungsplan
+
+### Decision
+
+Seit 2.54.0 ist der echte Zahltag (`pay_date`) die Datumsdimension aller Auswertungen und der
+Eingangsliste. `effectivePayDate`/`withEffectiveDates` und der Hinweis „tatsächlich TT.MM."
+sind entfernt; `payout_months` beschreibt nur noch den Rhythmus (Prognose, Kalender, Planer).
+
+### Why
+
+Der Abgleich mit der gepflegten Excel-Historie (Monatssummen 2012–Jul 2026, 175 Monate)
+zeigte: Nach Zahltag stimmten 86 Monate centgenau, mit Planmonat nur 60. Der heutige Plan galt
+rückwirkend auch für Jahre, in denen ein Unternehmen anders zahlte (jährliche November-Zahlung
+bei heutigem Dezember-Plan), und Januar-Zahlungen wanderten ins Vorjahr — 2025 zeigte die App
+224,87 € weniger als tatsächlich eingegangen. Eine Regel, die Zahlen erklärungsbedürftig
+macht, kostet mehr Vertrauen, als ein ruhigerer Monatsrhythmus bringt.
+
+### Trade-offs
+
+- Eine Quartalsdividende, die ein paar Tage zu spät kommt, steht im Folgemonat; der Monat davor
+  wirkt dünner, der Vorjahresvergleich je Zahlung (§11.11) fehlt dann für diese Zahlung.
+- Monate und Jahre entsprechen dem Kontoauszug und der Steuer-Jahressumme.
+
+### Revisit When
+
+- Eine Zuordnung je Zahlung gebraucht wird; dann als ausdrücklich gepflegtes Feld je Zahlung,
+  nicht als Regel über den Plan.
