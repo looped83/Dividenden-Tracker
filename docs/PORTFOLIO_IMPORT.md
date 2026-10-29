@@ -279,18 +279,18 @@ die erhaltenen Zahlungen und ließe die erwarteten unberührt. Die Filterleiste 
 deshalb aus, und der Bereich verwirft ihn auch dann, wenn er noch als Suchparameter in der
 Adresse steht.
 
-Die Daten kommen als **Domänentyp** `PortfolioSeries` über den Statistik-Kontext, nicht als
-Snapshot-Zeilen — so bleibt der Kontext frei von Datenbanktypen und die Unterbereiche
-weiterhin ohne Datenzugriffsschicht testbar. Die Aufteilung nutzt für alle Stichtage die
+Die Daten kommen als **Domänentyp** `PortfolioSeries` aus `useStatisticsData`, nicht als
+Snapshot-Zeilen — so bleibt die Ansicht frei von Datenbanktypen und ohne
+Datenzugriffsschicht testbar. Die Aufteilung nutzt für alle Stichtage die
 **heutige** Branche und das heutige Land: Eine mitwandernde Einordnung machte den Vergleich
 zweier Zeitpunkte unmöglich. Fehlt beides — bei ETFs, weil „mixed" beim Import verworfen
 wird —, sammelt sie ein sichtbarer Eimer „ohne Angabe"; ohne ihn addierten sich die Anteile
 nicht zu hundert Prozent.
 
-**`/#/statistiken/unternehmen`** — die Spalte „Erwartet p. a." neben den erhaltenen Summen.
-Sie erscheint nur, wenn ein Depotstand importiert ist; eine Spalte voller Gedankenstriche
-wäre nichts als verbrauchte Breite. Die Zahl kommt über den Statistik-Kontext, damit die
-Unterbereiche wie bisher ohne Datenzugriffsschicht gerendert (und getestet) werden können.
+**`/#/statistiken/unternehmen`** (Aufteilung) zeigt **keine** Erwartung mehr. Der Bereich
+wertet erhaltene Dividenden im Filterzeitraum aus; „Erwartet p. a." ist ein Blick nach vorn,
+folgt dem Zeitfilter nicht und steht schon im Bestand. Neben der Summe las es sich wie ein
+Teil davon.
 
 ## 9. Verhalten bei Störungen
 
