@@ -249,12 +249,6 @@ describe("SecurityDetailPage", () => {
     expect(section.queryByRole("textbox")).not.toBeInTheDocument();
   });
 
-  it("nennt ohne Zielgewichtung, dass der Nachkauf das Asset auslaesst", () => {
-    renderPage();
-    const section = within(screen.getByRole("region", { name: "Planung" }));
-    expect(section.getByText(/ohne Zielgewichtung kein Nachkauf/)).toBeInTheDocument();
-  });
-
   it("zeigt die Gewichtung als eigene Zeile vor der Zielgewichtung", () => {
     renderPage();
     const section = screen.getByRole("region", { name: "Planung" });

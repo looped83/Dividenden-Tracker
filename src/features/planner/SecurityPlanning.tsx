@@ -91,19 +91,10 @@ export function SecurityPlanning({
               )}
             </DetailRow>
             <DetailRow label="Zielgewichtung">
-              <span className="block">
-                {ownCap === undefined ? (
-                  <span className="text-muted-foreground">—</span>
-                ) : (
-                  `${formatDecimal(ownCap)}\u00A0%`
-                )}
-              </span>
-              {(ownCap === undefined || over) && (
-                <span className="block text-[0.8125rem] text-muted-foreground">
-                  {ownCap === undefined
-                    ? "ohne Zielgewichtung kein Nachkauf"
-                    : "kein Nachkauf"}
-                </span>
+              {ownCap === undefined ? (
+                <span className="text-muted-foreground">—</span>
+              ) : (
+                `${formatDecimal(ownCap)}\u00A0%`
               )}
             </DetailRow>
           </>
