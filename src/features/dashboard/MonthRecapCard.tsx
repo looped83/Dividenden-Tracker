@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Repeat, X } from "lucide-react";
+import { Undo2, X } from "lucide-react";
 import { KpiStats, type KpiStat } from "@/components/domain/KpiHero";
 import { AmountText } from "@/components/money/AmountText";
 import { formatPercent } from "@/lib/money";
@@ -163,7 +163,7 @@ export function MonthRecapCard({
           „Erhalten", kein eigenes Ergebnis. */}
       {recap.reinvested && (
         <p className="flex items-center gap-1.5 px-2 pb-2 text-sm text-muted-foreground sm:px-4">
-          <Repeat className="size-3.5 shrink-0" aria-hidden />
+          <Undo2 className="size-3.5 shrink-0" aria-hidden />
           <span>
             Davon <AmountText amount={recap.reinvested.net} /> automatisch reinvestiert
           </span>

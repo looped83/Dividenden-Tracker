@@ -23,7 +23,12 @@ const zustand = vi.hoisted(() => ({
   syncError: null as Error | null,
   mutate: vi.fn(),
   /** Angelegte Unternehmen — Grundlage der Namensangleichung. */
-  securities: [] as { id: string; name: string; archived_at: string | null }[],
+  securities: [] as {
+    id: string;
+    name: string;
+    archived_at: string | null;
+    reinvest_since?: string | null;
+  }[],
   aliases: [] as { aliasNormalized: string; securityId: string }[],
 }));
 
@@ -80,6 +85,7 @@ function event(overrides: Partial<CalendarEvent> & { id: string }): CalendarEven
     endsAt: null,
     isAllDay: true,
     matchedCompanyName: null,
+    reinvestSince: null,
     ...overrides,
     title,
     // Der Feed liefert den Namen in der SUMMARY; die App loest ihn beim
@@ -657,6 +663,31 @@ describe("Aktualisierung", () => {
       "Die Kalenderquelle hat nicht rechtzeitig geantwortet.",
     );
     expect(screen.getByRole("button", { name: /Apple Inc\./ })).toBeInTheDocument();
+  });
+});
+
+describe("Reinvestition", () => {
+  it("kennzeichnet Zahltage reinvestierter Assets ab dem Einschalten", () => {
+    zustand.securities = [
+      {
+        id: "s1",
+        name: "Realty Income",
+        archived_at: null,
+        reinvest_since: "2026-08-01",
+      },
+    ];
+    zustand.events = [
+      event({ id: "1", date: "2026-07-15", companyName: "Realty Income" }),
+      event({ id: "2", date: "2026-08-13", companyName: "Realty Income" }),
+    ];
+    renderPage("agenda");
+
+    const rows = screen.getAllByRole("button", { name: /^Realty Income,/ });
+    const labels = rows.map((row) => row.getAttribute("aria-label") ?? "");
+    expect(labels.filter((label) => label.includes("wird reinvestiert"))).toHaveLength(1);
+    expect(labels.find((label) => label.includes("13. August"))).toMatch(
+      /wird reinvestiert/,
+    );
   });
 });
 

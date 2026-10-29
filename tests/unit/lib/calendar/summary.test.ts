@@ -29,6 +29,7 @@ function event(
     title,
     companyName: title,
     matchedCompanyName: null,
+    reinvestSince: null,
     expectedAmount: null,
     sourcePortfolio: null,
     description: null,

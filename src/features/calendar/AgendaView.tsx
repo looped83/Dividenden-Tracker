@@ -1,5 +1,6 @@
 import * as React from "react";
 import { AmountText } from "@/components/money/AmountText";
+import { ReinvestMark } from "@/components/domain/ReinvestMark";
 import { Badge } from "@/components/ui/badge";
 import { ListDateTile, ListGroup, ListItemBody, ListRow } from "@/components/ui/list";
 import { CollapsibleMonth, MonthSections } from "@/components/ui/month-section";
@@ -11,6 +12,7 @@ import {
   eventTime,
   eventTitle,
   eventTypeLabel,
+  isReinvested,
   spokenDate,
   weekdayShort,
 } from "@/lib/calendar/format";
@@ -119,6 +121,7 @@ export function EventTile({
 }) {
   const time = eventTime(event);
   const cancelled = event.eventState === "cancelled";
+  const reinvested = !cancelled && isReinvested(event);
   const amountLabel = event.expectedAmount
     ? `, erwartet ${formatMoney(event.expectedAmount)}`
     : "";
@@ -133,7 +136,7 @@ export function EventTile({
         onClick={() => {
           onSelect(event);
         }}
-        aria-label={`${eventTitle(event)}, ${eventTypeLabel(event)} am ${spokenDate(event.date)}${amountLabel}${time ? `, ${time}` : ""}${cancelled ? ", abgesagt" : ""}. Details anzeigen`}
+        aria-label={`${eventTitle(event)}, ${eventTypeLabel(event)} am ${spokenDate(event.date)}${amountLabel}${time ? `, ${time}` : ""}${cancelled ? ", abgesagt" : ""}${reinvested ? ", wird reinvestiert" : ""}. Details anzeigen`}
       >
         <ListItemBody
           // Abgesagt bleibt durch blasse Ziffern und den durchgestrichenen
@@ -144,6 +147,7 @@ export function EventTile({
               {eventTitle(event)}
             </span>
           }
+          titleAside={reinvested ? <ReinvestMark /> : undefined}
           meta={
             <>
               {/* Ohne Etikett der Ereignisart: Zahltage und Ex-Tage stehen in

@@ -33,6 +33,8 @@ export interface KnownCompany {
   id: string;
   name: string;
   archived: boolean;
+  /** Seit wann der Broker die Dividenden reinvestiert (`securities.reinvest_since`). */
+  reinvestSince?: string | null;
 }
 
 export interface KnownCompanyAlias {
@@ -41,8 +43,8 @@ export interface KnownCompanyAlias {
   securityId: string;
 }
 
-/** Liefert den Namen des eigenen Unternehmens oder `null`, wenn keiner passt. */
-export type CompanyNameResolver = (feedName: string | null) => string | null;
+/** Liefert das eigene Unternehmen oder `null`, wenn keines eindeutig passt. */
+export type CompanyNameResolver = (feedName: string | null) => KnownCompany | null;
 
 /**
  * Rechtsformen am Namensende. Nur eindeutige Rechtsform-Kuerzel — „Group",
@@ -218,21 +220,20 @@ export function buildCompanyNameResolver(
     const normalized = normalizeCompareName(feedName);
     if (normalized.length === 0) return null;
 
-    const exact = byName.get(normalized);
-    if (exact) return exact.name;
-
-    const alias = byAlias.get(normalized);
-    if (alias) return alias.name;
-
-    const canonical = byCanonical.get(canonicalCompanyKey(feedName));
-    return canonical ? canonical.name : null;
+    return (
+      byName.get(normalized) ??
+      byAlias.get(normalized) ??
+      byCanonical.get(canonicalCompanyKey(feedName)) ??
+      null
+    );
   };
 }
 
 /**
- * Ergaenzt die Termine um den angeglichenen Namen. Termine ohne Treffer bleiben
- * unveraendert — auch als Objekt, damit React nur neu zeichnet, was sich
- * tatsaechlich geaendert hat.
+ * Ergaenzt die Termine um den angeglichenen Namen und den Beginn der
+ * Reinvestition des Unternehmens (seit 2.50.0, Kennzeichen im Kalender).
+ * Termine, an denen sich nichts aendert, bleiben unveraendert — auch als
+ * Objekt, damit React nur neu zeichnet, was sich tatsaechlich geaendert hat.
  */
 export function resolveCompanyNames(
   events: readonly CalendarEvent[],
@@ -240,7 +241,10 @@ export function resolveCompanyNames(
 ): CalendarEvent[] {
   return events.map((event) => {
     const matched = resolve(event.companyName);
-    if (matched === null || matched === event.companyName) return event;
-    return { ...event, matchedCompanyName: matched };
+    if (matched === null) return event;
+    const name = matched.name === event.companyName ? null : matched.name;
+    const reinvestSince = matched.reinvestSince ?? null;
+    if (name === null && reinvestSince === null) return event;
+    return { ...event, matchedCompanyName: name, reinvestSince };
   });
 }

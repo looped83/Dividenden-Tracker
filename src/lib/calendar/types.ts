@@ -66,6 +66,12 @@ export interface CalendarEvent {
    */
   matchedCompanyName: string | null;
   /**
+   * Seit wann der Broker die Dividenden des angelegten Unternehmens
+   * reinvestiert — wie `matchedCompanyName` erst beim Anzeigen ergaenzt
+   * (siehe {@link isReinvested}).
+   */
+  reinvestSince: string | null;
+  /**
    * **Erwarteter** Betrag laut Kalenderquelle — keine erhaltene Zahlung und
    * keine Schaetzung dieser App. Fehlt er im Feed, bleibt er leer.
    */
@@ -115,6 +121,7 @@ export function mapCalendarEvent(row: CalendarEventRow): CalendarEvent {
     // Der Abgleich mit den eigenen Unternehmen braucht deren Bestand und
     // geschieht deshalb erst in der Kalenderseite, nicht hier an der Zeile.
     matchedCompanyName: null,
+    reinvestSince: null,
     expectedAmount: readExpectedAmount(row),
     sourcePortfolio: row.source_portfolio,
     description: row.description,

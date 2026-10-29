@@ -3,9 +3,10 @@ import { Link } from "react-router";
 import { Section, SectionLink } from "@/components/ui/section";
 import { ListDateTile, ListGroup, ListItemBody, ListRow } from "@/components/ui/list";
 import { AmountText } from "@/components/money/AmountText";
+import { ReinvestMark } from "@/components/domain/ReinvestMark";
 import { formatMoney } from "@/lib/money";
 import { buildCalendarSummary, daysBetween } from "@/lib/calendar/summary";
-import { eventTitle, relativeDayLabel } from "@/lib/calendar/format";
+import { eventTitle, isReinvested, relativeDayLabel } from "@/lib/calendar/format";
 import { useResolvedCalendarEvents } from "@/features/calendar/resolvedEvents";
 
 /** Drei Termine: genug für „was kommt als Nächstes", ohne den Kalender zu ersetzen. */
@@ -63,17 +64,19 @@ export function UpcomingPayments({ today }: { today: string }) {
         {next.map((event) => {
           const when = relativeDayLabel(daysBetween(today, event.date));
           const amount = event.expectedAmount;
+          const reinvested = isReinvested(event);
           return (
             <li key={event.id}>
               <ListRow asChild>
                 <Link
                   to="/kalender"
-                  aria-label={`${eventTitle(event)}, ${when}${amount ? `, erwartet ${formatMoney(amount)}` : ""}`}
+                  aria-label={`${eventTitle(event)}, ${when}${amount ? `, erwartet ${formatMoney(amount)}` : ""}${reinvested ? ", wird reinvestiert" : ""}`}
                 >
                   <ListItemBody
                     // Dasselbe Datumsfeld wie im Kalender.
                     leading={<ListDateTile iso={event.date} />}
                     title={eventTitle(event)}
+                    titleAside={reinvested ? <ReinvestMark /> : undefined}
                     meta={<span>{when}</span>}
                     trailing={amount ? <AmountText amount={amount} /> : undefined}
                   />

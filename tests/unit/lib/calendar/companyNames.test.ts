@@ -5,6 +5,7 @@ import {
   resolveCompanyNames,
   type KnownCompany,
 } from "@/lib/calendar/companyNames";
+import { isReinvested } from "@/lib/calendar/format";
 import type { CalendarEvent } from "@/lib/calendar/types";
 
 /**
@@ -59,15 +60,21 @@ describe("canonicalCompanyKey", () => {
   });
 });
 
+/** Der Aufloeser liefert das Unternehmen; diese Tests pruefen dessen Namen. */
+function nameResolver(...args: Parameters<typeof buildCompanyNameResolver>) {
+  const resolve = buildCompanyNameResolver(...args);
+  return (feedName: string | null) => resolve(feedName)?.name ?? null;
+}
+
 describe("buildCompanyNameResolver", () => {
   it("loest den gleichen Namen auf die eigene Schreibweise auf", () => {
-    const resolve = buildCompanyNameResolver([company("Apple Inc.")]);
+    const resolve = nameResolver([company("Apple Inc.")]);
 
     expect(resolve("apple inc.")).toBe("Apple Inc.");
   });
 
   it("loest ueber die Rechtsform hinweg auf", () => {
-    const resolve = buildCompanyNameResolver([company("Realty Income")]);
+    const resolve = nameResolver([company("Realty Income")]);
 
     expect(resolve("Realty Income Corporation")).toBe("Realty Income");
     expect(resolve("Realty Income Corp.")).toBe("Realty Income");
@@ -76,7 +83,7 @@ describe("buildCompanyNameResolver", () => {
   it("loest den langen ETF-Namen der Quelle auf den eigenen auf", () => {
     // Schreibweisen aus dem echten Feed (DivvyDiary/Trade Republic) gegen die
     // Namen, unter denen dieselben Fonds im Bestand stehen.
-    const resolve = buildCompanyNameResolver(
+    const resolve = nameResolver(
       [
         "JPM Europe Equity Premium Income Active",
         "JPM Global Equity Premium Income Active",
@@ -100,7 +107,7 @@ describe("buildCompanyNameResolver", () => {
   });
 
   it("nutzt beim Import bestaetigte Schreibweisen", () => {
-    const resolve = buildCompanyNameResolver(
+    const resolve = nameResolver(
       [company("Coca-Cola", { id: "s1" })],
       [{ aliasNormalized: "the coca-cola company", securityId: "s1" }],
     );
@@ -109,7 +116,7 @@ describe("buildCompanyNameResolver", () => {
   });
 
   it("laesst unbekannte Namen unangetastet", () => {
-    const resolve = buildCompanyNameResolver([company("Allianz SE")]);
+    const resolve = nameResolver([company("Allianz SE")]);
 
     expect(resolve("Apple Inc.")).toBeNull();
     expect(resolve(null)).toBeNull();
@@ -117,7 +124,7 @@ describe("buildCompanyNameResolver", () => {
   });
 
   it("gleicht nicht an, wenn zwei Unternehmen in Frage kommen", () => {
-    const resolve = buildCompanyNameResolver([
+    const resolve = nameResolver([
       company("Vonovia", { id: "s1" }),
       company("Vonovia SE", { id: "s2" }),
     ]);
@@ -130,7 +137,7 @@ describe("buildCompanyNameResolver", () => {
   });
 
   it("zieht das aktive Unternehmen dem archivierten vor", () => {
-    const resolve = buildCompanyNameResolver([
+    const resolve = nameResolver([
       company("Apple", { id: "alt", archived: true }),
       company("Apple Inc.", { id: "neu" }),
     ]);
@@ -139,9 +146,7 @@ describe("buildCompanyNameResolver", () => {
   });
 
   it("nutzt auch archivierte Unternehmen, wenn es kein aktives gibt", () => {
-    const resolve = buildCompanyNameResolver([
-      company("Apple", { id: "alt", archived: true }),
-    ]);
+    const resolve = nameResolver([company("Apple", { id: "alt", archived: true })]);
 
     expect(resolve("Apple Inc.")).toBe("Apple");
   });
@@ -156,6 +161,7 @@ describe("resolveCompanyNames", () => {
     title: `${companyName ?? ""} 10,00 € Zahltag (Trade Republic)`,
     companyName,
     matchedCompanyName: null,
+    reinvestSince: null,
     expectedAmount: null,
     sourcePortfolio: null,
     description: null,
@@ -193,5 +199,56 @@ describe("resolveCompanyNames", () => {
     const original = event(null);
 
     expect(resolveCompanyNames([original], resolve)[0]).toBe(original);
+  });
+
+  it("uebernimmt den Beginn der Reinvestition, auch bei gleichem Namen", () => {
+    const resolve = buildCompanyNameResolver([
+      company("Realty Income", { reinvestSince: "2026-07-10" }),
+    ]);
+
+    const [ergebnis] = resolveCompanyNames([event("Realty Income")], resolve);
+
+    expect(ergebnis.matchedCompanyName).toBeNull();
+    expect(ergebnis.reinvestSince).toBe("2026-07-10");
+  });
+});
+
+describe("isReinvested", () => {
+  const base = resolveCompanyNames(
+    [
+      {
+        id: "1",
+        externalUid: "uid-1",
+        eventType: "payment",
+        eventState: "active",
+        title: null,
+        companyName: "Realty Income",
+        matchedCompanyName: null,
+        reinvestSince: null,
+        expectedAmount: null,
+        sourcePortfolio: null,
+        description: null,
+        location: null,
+        externalUrl: null,
+        categories: [],
+        date: "2026-08-13",
+        endDate: null,
+        startsAt: null,
+        endsAt: null,
+        isAllDay: true,
+      },
+    ],
+    buildCompanyNameResolver([company("Realty Income", { reinvestSince: "2026-07-10" })]),
+  )[0];
+
+  it("kennzeichnet Zahltage ab dem Einschalten", () => {
+    expect(isReinvested(base)).toBe(true);
+    expect(isReinvested({ ...base, date: "2026-07-10" })).toBe(true);
+  });
+
+  it("kennzeichnet keine Zahltage davor, keine Ex-Tage und keine ohne Reinvestition", () => {
+    expect(isReinvested({ ...base, date: "2026-07-09" })).toBe(false);
+    expect(isReinvested({ ...base, eventType: "ex_date" })).toBe(false);
+    expect(isReinvested({ ...base, reinvestSince: null })).toBe(false);
   });
 });

@@ -197,6 +197,7 @@ describe("SecurityDetailPage", () => {
         title: "Alpha AG",
         companyName: "Alpha AG",
         matchedCompanyName: "Alpha AG",
+        reinvestSince: null,
         expectedAmount: Money.fromString("160.00", EUR),
         sourcePortfolio: null,
         description: null,
