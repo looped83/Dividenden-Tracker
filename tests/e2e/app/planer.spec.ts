@@ -201,7 +201,6 @@ test("merkt sich Zielgewichtung und Sparplan aus dem Bearbeiten-Formular", async
   await page.reload();
   const abschnitt = page.getByRole("region", { name: "Planung" });
   await expect(abschnitt.getByText("1,5 %")).toBeVisible();
-  await expect(abschnitt.getByText("kein Nachkauf", { exact: false })).toBeVisible();
   await expect(abschnitt.getByText("25 € monatlich")).toBeVisible();
 
   await page.getByRole("button", { name: "Bearbeiten", exact: true }).click();

@@ -502,30 +502,32 @@ export function SecurityDetailPage() {
                   tatsächlich eingegangen sind.
                 </p>
               ) : (
-                // Zwei Reihen zu je sechs Monaten in gleich breiten Spalten
-                // (seit 1.30.1): Zuvor brach die Reihe je nach Breite nach
-                // sieben, neun oder elf Monaten um.
-                <ul className="grid w-fit grid-cols-6 gap-1.5">
-                  {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => {
-                    const planned = payoutMonths.includes(month);
-                    return (
-                      <li key={month}>
-                        <span
-                          className={
-                            planned
-                              ? "flex min-w-11 justify-center rounded-full bg-accent px-2 py-1 text-sm font-semibold text-foreground"
-                              : "flex min-w-11 justify-center rounded-full px-2 py-1 text-sm text-muted-foreground"
-                          }
-                        >
-                          <span className="sr-only">
-                            {planned ? "Geplant: " : "Nicht geplant: "}
+                // Gleich breite Spalten ueber die volle Breite (seit 2.52.0):
+                // schmal (iPhone) zwei Reihen zu je sechs, ab 27rem eine Reihe
+                // mit zwoelf. Der Container misst die Spalte, nicht den Bildschirm.
+                <div className="@container">
+                  <ul className="grid grid-cols-6 gap-1.5 @[27rem]:grid-cols-12 @[27rem]:gap-1">
+                    {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => {
+                      const planned = payoutMonths.includes(month);
+                      return (
+                        <li key={month}>
+                          <span
+                            className={
+                              planned
+                                ? "flex justify-center rounded-full bg-accent py-1 text-sm font-semibold text-foreground"
+                                : "flex justify-center rounded-full py-1 text-sm text-muted-foreground"
+                            }
+                          >
+                            <span className="sr-only">
+                              {planned ? "Geplant: " : "Nicht geplant: "}
+                            </span>
+                            {monthNameDeShort(month)}
                           </span>
-                          {monthNameDeShort(month)}
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ul>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
               )}
               {/* Gehoert zur Ausschuettung: was mit ihr passiert. Nur Anzeige
                   (seit 2.45.0); geschaltet wird unter „Bearbeiten". */}

@@ -75,33 +75,29 @@ export function SecurityPlanning({
             <span className="text-muted-foreground">Kein Sparplan</span>
           </DetailRow>
         )}
+        {/* Seit 2.52.0 zwei Zeilen: erst was ist (Gewichtung), dann was sein
+            soll (Zielgewichtung) — zuvor stand die Gewichtung klein darunter. */}
         {!archived && (
-          <DetailRow label="Zielgewichtung">
-            <span className="block">
+          <>
+            <DetailRow label="Gewichtung">
+              {share === null ? (
+                <span className="text-muted-foreground">
+                  nicht im aktuellen Depotstand
+                </span>
+              ) : (
+                <span className={warn ? "font-medium text-negative" : undefined}>
+                  {formatPercent(share, 1)}
+                </span>
+              )}
+            </DetailRow>
+            <DetailRow label="Zielgewichtung">
               {ownCap === undefined ? (
                 <span className="text-muted-foreground">—</span>
               ) : (
                 `${formatDecimal(ownCap)}\u00A0%`
               )}
-            </span>
-            <span className="block text-[0.8125rem] text-muted-foreground">
-              {share === null ? (
-                "nicht im aktuellen Depotstand"
-              ) : (
-                <>
-                  Gewichtung{" "}
-                  <span
-                    className={warn ? "font-medium text-negative" : "text-foreground"}
-                  >
-                    {formatPercent(share, 1)}
-                  </span>
-                </>
-              )}
-              {ownCap === undefined
-                ? " · ohne Zielgewichtung kein Nachkauf"
-                : over && " · kein Nachkauf"}
-            </span>
-          </DetailRow>
+            </DetailRow>
+          </>
         )}
       </div>
     </Section>

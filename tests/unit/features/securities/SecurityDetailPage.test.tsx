@@ -249,10 +249,14 @@ describe("SecurityDetailPage", () => {
     expect(section.queryByRole("textbox")).not.toBeInTheDocument();
   });
 
-  it("nennt ohne Zielgewichtung, dass der Nachkauf das Asset auslaesst", () => {
+  it("zeigt die Gewichtung als eigene Zeile vor der Zielgewichtung", () => {
     renderPage();
-    const section = within(screen.getByRole("region", { name: "Planung" }));
-    expect(section.getByText(/ohne Zielgewichtung kein Nachkauf/)).toBeInTheDocument();
+    const section = screen.getByRole("region", { name: "Planung" });
+    const text = section.textContent;
+    expect(text.indexOf("Gewichtung")).toBeLessThan(text.indexOf("Zielgewichtung"));
+    expect(
+      within(section).getByText("nicht im aktuellen Depotstand"),
+    ).toBeInTheDocument();
   });
 
   it("zeigt eine gespeicherte 0 als Zielgewichtung", () => {
