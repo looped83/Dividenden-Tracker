@@ -255,6 +255,16 @@ describe("SecurityDetailPage", () => {
     expect(section.getByText(/ohne Zielgewichtung kein Nachkauf/)).toBeInTheDocument();
   });
 
+  it("zeigt die Gewichtung als eigene Zeile vor der Zielgewichtung", () => {
+    renderPage();
+    const section = screen.getByRole("region", { name: "Planung" });
+    const text = section.textContent;
+    expect(text.indexOf("Gewichtung")).toBeLessThan(text.indexOf("Zielgewichtung"));
+    expect(
+      within(section).getByText("nicht im aktuellen Depotstand"),
+    ).toBeInTheDocument();
+  });
+
   it("zeigt eine gespeicherte 0 als Zielgewichtung", () => {
     positionCaps.current = new Map([[SECURITY_ID, 0]]);
     try {

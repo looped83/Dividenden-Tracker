@@ -502,25 +502,30 @@ export function SecurityDetailPage() {
                   tatsächlich eingegangen sind.
                 </p>
               ) : (
-                // Zwei Reihen zu je sechs Monaten in gleich breiten Spalten
-                // (seit 1.30.1): Zuvor brach die Reihe je nach Breite nach
-                // sieben, neun oder elf Monaten um.
-                <ul className="grid w-fit grid-cols-6 gap-1.5">
+                // Eine Reihe mit zwoelf gleich breiten Spalten (seit 2.52.0,
+                // zuvor zwei Reihen zu je sechs). Jede Zelle ist ein Container:
+                // Ist sie schmaler als 2rem (iPhone), steht nur der
+                // Anfangsbuchstabe — Lage und Hervorhebung machen ihn eindeutig.
+                <ul className="grid grid-cols-12 gap-1">
                   {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => {
                     const planned = payoutMonths.includes(month);
+                    const short = monthNameDeShort(month);
                     return (
-                      <li key={month}>
+                      <li key={month} className="@container">
                         <span
                           className={
                             planned
-                              ? "flex min-w-11 justify-center rounded-full bg-accent px-2 py-1 text-sm font-semibold text-foreground"
-                              : "flex min-w-11 justify-center rounded-full px-2 py-1 text-sm text-muted-foreground"
+                              ? "flex h-7 items-center justify-center rounded-full bg-accent text-sm font-semibold text-foreground"
+                              : "flex h-7 items-center justify-center rounded-full text-sm text-muted-foreground"
                           }
                         >
                           <span className="sr-only">
                             {planned ? "Geplant: " : "Nicht geplant: "}
                           </span>
-                          {monthNameDeShort(month)}
+                          <span aria-hidden className="@[2rem]:hidden">
+                            {short.charAt(0)}
+                          </span>
+                          <span className="sr-only @[2rem]:not-sr-only">{short}</span>
                         </span>
                       </li>
                     );
