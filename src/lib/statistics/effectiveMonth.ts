@@ -7,7 +7,7 @@ import type { AnalyticsPayment } from "./types";
  * Excel-Historie 2020–2026 traf diese Grenze die von Hand gefuehrten
  * Monatssummen am besten; spaetere Zahlungen gehoeren zu ihrem eigenen Monat.
  */
-export const LATE_PAYMENT_MAX_DAY = 7;
+const LATE_PAYMENT_MAX_DAY = 7;
 
 /** Wie viele Zahlungen ein Asset in einem Monat hatte (Monat 1..12). */
 export type PaymentsInMonth = (year: number, month: number) => number;
