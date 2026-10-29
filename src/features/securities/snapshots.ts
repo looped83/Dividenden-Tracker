@@ -234,8 +234,6 @@ export interface PortfolioSeries {
    * gerechnet werden, aus dem anderen nicht.
    */
   heldSecurityIds: Set<string>;
-  /** Rendite auf den Einstand je Unternehmen, in Prozentpunkten. */
-  yieldOnBuyinBySecurity: Map<string, DecimalInstance>;
 }
 
 export const EMPTY_PORTFOLIO_SERIES: PortfolioSeries = {
@@ -243,7 +241,6 @@ export const EMPTY_PORTFOLIO_SERIES: PortfolioSeries = {
   latest: null,
   expectedBySecurity: new Map(),
   heldSecurityIds: new Set(),
-  yieldOnBuyinBySecurity: new Map(),
 };
 
 /** Der Betrag einer Summe — `null`, wenn es keinen ehrlichen gibt. */
@@ -277,7 +274,6 @@ export function buildPortfolioSeries(
 
   const expectedBySecurity = new Map<string, Money>();
   const heldSecurityIds = new Set<string>();
-  const yieldOnBuyinBySecurity = new Map<string, DecimalInstance>();
   for (const row of current) {
     heldSecurityIds.add(row.security_id);
     if (row.annual_dividend_total !== null) {
@@ -286,8 +282,6 @@ export function buildPortfolioSeries(
         Money.fromString(row.annual_dividend_total, toCurrencyCode(row.currency)),
       );
     }
-    const onBuyin = ratioToPercent(row.dividend_yield_on_buyin);
-    if (onBuyin !== null) yieldOnBuyinBySecurity.set(row.security_id, onBuyin);
   }
 
   return {
@@ -295,6 +289,5 @@ export function buildPortfolioSeries(
     latest: points.at(-1) ?? null,
     expectedBySecurity,
     heldSecurityIds,
-    yieldOnBuyinBySecurity,
   };
 }

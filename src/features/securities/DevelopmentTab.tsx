@@ -59,7 +59,11 @@ interface AssetRow {
    * Zeilen standen ganz oben, ohne etwas ueber Wachstum zu sagen.
    */
   growth: Money | null;
-  yieldOnBuyin: DecimalInstance | null;
+  /**
+   * Die Veraenderung in Prozent, gemessen an den letzten zwoelf Monaten — wie
+   * die Marke im Kennzahlkopf. `null` ohne Veraenderung oder ohne Erhaltenes.
+   */
+  growthPercent: DecimalInstance | null;
 }
 
 const HUNDRED = new MoneyDecimal(100);
@@ -299,7 +303,10 @@ export function DevelopmentView({
         received,
         isNew,
         growth,
-        yieldOnBuyin: portfolio.yieldOnBuyinBySecurity.get(securityId) ?? null,
+        growthPercent:
+          growth && !received.isZero()
+            ? growth.toDecimal().dividedBy(received.toDecimal()).times(HUNDRED)
+            : null,
       };
     });
   }, [latest, portfolio, payments, securities]);
@@ -364,22 +371,31 @@ export function DevelopmentView({
         render: (row) => <GrowthValue row={row} />,
       },
       {
-        key: "yieldOnBuyin",
-        width: "w-32",
+        key: "growthPercent",
+        width: "w-24",
         listHidden: true,
-        header: "Auf Einstand",
-        headerLabel: "Rendite auf den Einstand",
+        header: "in %",
+        headerLabel: "Veränderung in Prozent der letzten zwölf Monate",
         align: "right",
-        // Nebenkennzahl: tritt zurueck, wo der Platz nicht fuer alle Spalten
-        // reicht — dieselbe Regel wie bei der groessten Zahlung im
-        // Assetbereich.
-        className: "hidden xl:table-cell",
+        // Tritt zurueck, wo der Platz nicht fuer alle Spalten reicht.
+        className: "hidden lg:table-cell",
         compare: (a, b) =>
-          (a.yieldOnBuyin?.toNumber() ?? 0) - (b.yieldOnBuyin?.toNumber() ?? 0),
-        isMissing: (row) => row.yieldOnBuyin === null,
+          (a.growthPercent?.toNumber() ?? 0) - (b.growthPercent?.toNumber() ?? 0),
+        isMissing: (row) => row.growthPercent === null,
         render: (row) =>
-          row.yieldOnBuyin ? (
-            formatPercent(row.yieldOnBuyin, 2)
+          row.growthPercent ? (
+            <span
+              className={
+                row.growthPercent.isNegative()
+                  ? "text-negative"
+                  : row.growthPercent.isZero()
+                    ? undefined
+                    : "text-positive"
+              }
+            >
+              {row.growthPercent.isPositive() && !row.growthPercent.isZero() ? "+" : ""}
+              {formatPercent(row.growthPercent, 1)}
+            </span>
           ) : (
             <span className="text-muted-foreground">—</span>
           ),

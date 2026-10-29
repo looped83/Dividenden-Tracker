@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatMoney, formatPercent } from "@/lib/money";
+import { formatMoney } from "@/lib/money";
 import {
   buildPortfolioSeries,
   EMPTY_PORTFOLIO_SERIES,
@@ -114,11 +114,5 @@ describe("buildPortfolioSeries", () => {
     // sec-etf ist gehalten, hat aber keine Erwartung — der Unterschied zaehlt.
     expect(series.expectedBySecurity.has("sec-etf")).toBe(false);
     expect(series.heldSecurityIds.has("sec-a")).toBe(false);
-  });
-
-  it("rechnet die Rendite auf den Einstand in Prozentpunkte um", () => {
-    const series = buildPortfolioSeries([snapshot()]);
-    const onBuyin = series.yieldOnBuyinBySecurity.get("sec-a");
-    expect(onBuyin && formatPercent(onBuyin, 2)).toBe("4,38\u00A0%");
   });
 });

@@ -75,7 +75,6 @@ const SERIES: PortfolioSeries = {
     ["sec-b", money("10.00")],
   ]),
   heldSecurityIds: new Set(["sec-a", "sec-b"]),
-  yieldOnBuyinBySecurity: new Map(),
 };
 
 function renderTab(
@@ -203,6 +202,13 @@ describe("DevelopmentView", () => {
     expect(reihen().at(-1)).toMatch(/Beta SE/);
     fireEvent.click(screen.getByRole("button", { name: /Nächste abzüglich letzte/ }));
     expect(reihen().at(-1)).toMatch(/Beta SE/);
+  });
+
+  it("nennt die Veränderung je Asset in Prozent des Erhaltenen", () => {
+    // Alpha: 40 € erwartet gegen 42 € erhalten, also -2 € oder -4,8 %.
+    renderTab();
+    const zeile = screen.getByRole("row", { name: /Alpha AG/ });
+    expect(within(zeile).getByText(/^-4,8\s%/)).toBeInTheDocument();
   });
 
   it("führt ein verkauftes Papier gar nicht mehr auf", () => {
