@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { EUR, Money, toCurrencyCode } from "@/lib/money";
-import { groupByMonth, monthTotals, totalOrNull } from "@/features/payments/monthGroups";
+import {
+  groupByMonth,
+  monthChanges,
+  monthTotals,
+  totalOrNull,
+} from "@/features/payments/monthGroups";
 
 const USD = toCurrencyCode("USD");
 
@@ -52,5 +57,54 @@ describe("monthTotals", () => {
     );
     expect(totals.get("2026-05")?.toStringValue()).toBe("50.00");
     expect(totals.get("2026-03")?.toStringValue()).toBe("50.00");
+  });
+});
+
+describe("monthChanges", () => {
+  const today = { year: 2026, month: 10, day: 15 };
+  const rows = (items: [string, string][]) =>
+    items.map(([date, amount]) => ({ date, amount: Money.fromString(amount, EUR) }));
+  const run = (items: [string, string][]) =>
+    monthChanges(
+      rows(items),
+      (row) => row.date,
+      (row) => row.amount,
+      today,
+    );
+
+  it("vergleicht die Monatssumme mit demselben Monat im Vorjahr", () => {
+    const result = run([
+      ["2025-09-03", "40.00"],
+      ["2025-09-20", "60.00"],
+      ["2026-09-10", "120.00"],
+    ]);
+    expect(result.get("2026-09")).toMatchObject({ direction: "up", cutoffDay: null });
+    expect(result.get("2026-09")?.percent.toString()).toBe("20");
+    expect(result.get("2026-09")?.reference.toStringValue()).toBe("100.00");
+    expect(result.has("2025-09")).toBe(false);
+  });
+
+  it("kappt den laufenden Monat auf beiden Seiten an heute", () => {
+    const result = run([
+      ["2025-10-05", "50.00"],
+      ["2025-10-28", "500.00"],
+      ["2026-10-09", "40.00"],
+    ]);
+    expect(result.get("2026-10")).toMatchObject({ direction: "down", cutoffDay: 15 });
+    expect(result.get("2026-10")?.reference.toStringValue()).toBe("50.00");
+  });
+
+  it("liefert nichts ohne Vorjahressumme oder bei gemischten Waehrungen", () => {
+    const mixed = monthChanges(
+      [
+        { date: "2025-03-01", amount: Money.fromString("10.00", EUR) },
+        { date: "2026-03-01", amount: Money.fromString("10.00", USD) },
+      ],
+      (row) => row.date,
+      (row) => row.amount,
+      today,
+    );
+    expect(mixed.size).toBe(0);
+    expect(run([["2026-04-01", "10.00"]]).size).toBe(0);
   });
 });

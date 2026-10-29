@@ -28,6 +28,7 @@ export function PaymentListItem({
   to,
   state,
   title,
+  titleAside,
   date,
   showYear = false,
   note,
@@ -40,6 +41,8 @@ export function PaymentListItem({
   to: string;
   state?: unknown;
   title: React.ReactNode;
+  /** Kleines Zeichen hinter dem Namen, etwa `ReinvestMark` (seit 2.53.0). */
+  titleAside?: React.ReactNode;
   /** Datum des Eingangs (ISO). */
   date: string;
   /** Jahr statt Wochentag neben dem Datumsfeld, wenn es nirgends sonst steht. */
@@ -64,6 +67,7 @@ export function PaymentListItem({
           <ListItemBody
             leading={<ListDateTile iso={date} muted={cancelled} />}
             title={title}
+            titleAside={titleAside}
             // Eine Zeile: Reicht die Breite neben dem Betrag nicht, wird das
             // Depot gekuerzt — die Zeile wird nicht hoeher als ihre Nachbarn.
             // Abzeichen stehen vorn wie „Ex-Tag" im Kalender.

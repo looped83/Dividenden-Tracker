@@ -60,14 +60,25 @@ import {
   compareToPreviousYear,
   type YearOverYearComparison,
 } from "@/features/payments/yearOverYear";
-import { YearOverYearIndicator } from "@/features/payments/YearOverYearIndicator";
+import {
+  MonthChangeIndicator,
+  YearOverYearIndicator,
+} from "@/features/payments/YearOverYearIndicator";
+import { ReinvestMark } from "@/components/domain/ReinvestMark";
 import { PaymentListItem } from "@/features/payments/PaymentListItem";
-import { groupByMonth, monthTotals } from "@/features/payments/monthGroups";
+import {
+  groupByMonth,
+  monthChanges,
+  monthTotals,
+  type MonthChange,
+} from "@/features/payments/monthGroups";
 import { usePaymentComposer } from "@/features/payments/PaymentComposer";
 
 type Row = {
   payment: PaymentListRow;
   effectiveDate: string;
+  /** Floss die Dividende zurueck ins Asset (`reinvest_since`, seit 2.53.0)? */
+  reinvested: boolean;
 } & SortableRow;
 
 const PAGE_SIZE = 25;
@@ -254,13 +265,21 @@ export function PaymentsPage() {
       if (filterYear && yearOf(effectiveDate) !== filterYear) continue;
       if (filterMonth && monthOf(effectiveDate) !== filterMonth) continue;
 
-      const companyName = securityById.get(payment.security_id)?.name ?? "";
+      const security = securityById.get(payment.security_id);
+      const companyName = security?.name ?? "";
       const depot = depotById.get(payment.depot_id);
+      // Wie im Kalender zaehlt das Zahlungsdatum: Ein Eingang vor dem
+      // Einschalten kaufte nicht nach.
+      const reinvestSince = security?.reinvest_since;
       const depotName = depot?.name ?? "";
 
       mapped.push({
         payment,
         effectiveDate,
+        reinvested:
+          !isCancelled &&
+          typeof reinvestSince === "string" &&
+          payment.pay_date >= reinvestSince,
         id: payment.id,
         // Einmal geparst, fuer Sortierung, Summen und alle Darstellungen.
         amount: Money.fromString(
@@ -301,6 +320,34 @@ export function PaymentsPage() {
     [groupedByMonth, rows],
   );
 
+  // Veraenderung je Monat gegenueber dem Vorjahresmonat (seit 2.53.0). Bezug
+  // sind alle aktiven Eingaenge unter Depot- und Assetfilter — nicht die
+  // angezeigten Zeilen: Ein Jahres- oder Monatsfilter blendete den
+  // Vorjahresmonat sonst aus, Stornierte zaehlen in keiner Summe mit.
+  const today = useToday();
+  const changesByMonth = React.useMemo(() => {
+    if (!groupedByMonth) return null;
+    const base: { date: string; amount: Money }[] = [];
+    for (const payment of allPayments) {
+      if (payment.archived_at) continue;
+      if (depotId && payment.depot_id !== depotId) continue;
+      if (securityId && payment.security_id !== securityId) continue;
+      base.push({
+        date: effectiveOf(payment),
+        amount: Money.fromString(
+          payment.net_amount,
+          toCurrencyCode(depotById.get(payment.depot_id)?.base_currency ?? "EUR"),
+        ),
+      });
+    }
+    return monthChanges(
+      base,
+      (item) => item.date,
+      (item) => item.amount,
+      today,
+    );
+  }, [groupedByMonth, allPayments, depotId, securityId, effectiveOf, depotById, today]);
+
   // Ohne Filter, neueste zuerst, klappen die Monate ein (seit 2.2.0): Offen
   // ist nur der aktuelle Monat — oder, solange er noch leer ist, der juengste
   // mit Zahlungen. Statt 25 Zahlungen kommen je Schritt zwoelf Monatskoepfe
@@ -314,7 +361,6 @@ export function PaymentsPage() {
     () => (collapsible ? groupByMonth(rows, effectiveDateOf) : null),
     [collapsible, rows],
   );
-  const today = useToday();
   const currentMonth = `${String(today.year)}-${String(today.month).padStart(2, "0")}`;
   const { isOpen, toggle: toggleMonth } = useOpenMonths(
     allMonths ? allMonths.map((group) => group.key) : null,
@@ -510,6 +556,7 @@ export function PaymentsPage() {
                   <TableHead>Zahlungsdatum</TableHead>
                   <TableHead>Asset</TableHead>
                   <TableHead>Depot</TableHead>
+                  <TableHead className="text-right">Gegenüber Vorjahr</TableHead>
                   <TableHead className="text-right">Netto</TableHead>
                 </TableRow>
               </TableHeader>
@@ -522,6 +569,7 @@ export function PaymentsPage() {
                     auf dem Telefon. */}
                 {groups.map((group, index) => {
                   const monthTotal = totalsByMonth?.get(group.key);
+                  const change = changesByMonth?.get(group.key);
                   const open = isOpen(group.key);
                   // Nach einem offenen Monat Abstand wie zwischen Abschnitten.
                   const afterOpen = index > 0 && isOpen(groups[index - 1].key);
@@ -554,6 +602,11 @@ export function PaymentsPage() {
                               {monthNameDe(group.month)} {group.year}
                             </button>
                           </th>
+                          <MonthChangeCell
+                            change={change}
+                            group={group}
+                            className={cn("py-3", afterOpen && "pt-8")}
+                          />
                           <td
                             className={cn(
                               "px-3 py-3 text-right text-[0.9375rem] font-medium text-muted-foreground tabular-amount",
@@ -587,6 +640,11 @@ export function PaymentsPage() {
                             >
                               {monthNameDe(group.month)} {group.year}
                             </th>
+                            <MonthChangeCell
+                              change={change}
+                              group={group}
+                              className="pb-2 pt-10 group-first/month:pt-2"
+                            />
                             <td className="px-3 pb-2 pt-10 text-right text-[0.9375rem] font-medium text-muted-foreground tabular-amount group-first/month:pt-2">
                               {monthTotal && <AmountText amount={monthTotal} />}
                             </td>
@@ -616,7 +674,13 @@ export function PaymentsPage() {
                     key={group.key}
                     id={`monat-${group.key}`}
                     title={formatMonthYear(group.year, group.month)}
-                    aside={monthTotal ? <AmountText amount={monthTotal} /> : undefined}
+                    aside={
+                      <MonthAside
+                        total={monthTotal}
+                        change={changesByMonth?.get(group.key)}
+                        group={group}
+                      />
+                    }
                     open={isOpen(group.key)}
                     onToggle={() => {
                       toggleMonth(group.key);
@@ -645,7 +709,13 @@ export function PaymentsPage() {
                   <ListSection
                     key={group.key}
                     title={formatMonthYear(group.year, group.month)}
-                    aside={monthTotal ? <AmountText amount={monthTotal} /> : undefined}
+                    aside={
+                      <MonthAside
+                        total={monthTotal}
+                        change={changesByMonth?.get(group.key)}
+                        group={group}
+                      />
+                    }
                   >
                     <ListGroup>
                       {group.rows.map((row) => (
@@ -692,6 +762,53 @@ export function PaymentsPage() {
   );
 }
 
+/**
+ * Veraenderung des Monats in der Tabelle — in der Spalte der Vergleiche je
+ * Zahlung, damit die Dreiecke untereinanderstehen.
+ */
+function MonthChangeCell({
+  change,
+  group,
+  className,
+}: {
+  change: MonthChange | undefined;
+  group: { year: number; month: number };
+  className?: string;
+}) {
+  return (
+    <td
+      className={cn("whitespace-nowrap px-3 text-right text-sm font-medium", className)}
+    >
+      {change && (
+        <MonthChangeIndicator change={change} year={group.year} month={group.month} />
+      )}
+    </td>
+  );
+}
+
+/** Kopf eines Monats auf dem Telefon: Veraenderung links der Summe. */
+function MonthAside({
+  total,
+  change,
+  group,
+}: {
+  total: Money | null | undefined;
+  change: MonthChange | undefined;
+  group: { year: number; month: number };
+}) {
+  if (!total && !change) return undefined;
+  return (
+    <span className="inline-flex items-baseline gap-2">
+      {change && (
+        <span className="text-xs">
+          <MonthChangeIndicator change={change} year={group.year} month={group.month} />
+        </span>
+      )}
+      {total && <AmountText amount={total} />}
+    </span>
+  );
+}
+
 interface PaymentRowProps {
   row: Row;
   comparison: YearOverYearComparison | undefined;
@@ -734,6 +851,7 @@ function PaymentRow({ row, comparison, listUrl }: PaymentRowProps) {
         </Link>
         {/* Ohne die Statusspalte waeren stornierte Zeilen sonst nicht mehr von
             aktiven zu unterscheiden, sobald „Stornierte anzeigen" aktiv ist. */}
+        {row.reinvested && <ReinvestMark className="ml-1.5 align-[-0.125em]" />}
         {cancelled && (
           <Badge variant="warning" className="ml-2 align-middle">
             Storniert
@@ -741,13 +859,15 @@ function PaymentRow({ row, comparison, listUrl }: PaymentRowProps) {
         )}
       </TableCell>
       <TableCell className="text-muted-foreground">{depotName || "—"}</TableCell>
-      <TableCell className="text-right font-semibold">
-        {/* Der Indikator steht links des Betrags, damit die Ziffern der Spalte
-            buendig bleiben. */}
-        <span className="inline-flex items-baseline justify-end gap-1.5">
-          {comparison && <YearOverYearIndicator comparison={comparison} />}
-          <AmountText amount={amount} />
-        </span>
+      {/* Eigene Spalte seit 2.53.0: Mit der Prozentzahl stuenden Dreiecke und
+          Betraege sonst gegeneinander versetzt. */}
+      <TableCell className="w-28 whitespace-nowrap text-right">
+        {comparison && (
+          <YearOverYearIndicator comparison={comparison} className="text-sm" />
+        )}
+      </TableCell>
+      <TableCell className="w-32 text-right font-semibold">
+        <AmountText amount={amount} />
       </TableCell>
     </TableRow>
   );
@@ -776,6 +896,7 @@ function PaymentItem({
       to={`/eingaenge/${payment.id}`}
       state={{ from: listUrl }}
       title={companyName || "—"}
+      titleAside={row.reinvested ? <ReinvestMark /> : undefined}
       date={effectiveDate}
       // Ohne Monatsgruppen steht das Jahr sonst nirgends.
       showYear={!dayOnly}
