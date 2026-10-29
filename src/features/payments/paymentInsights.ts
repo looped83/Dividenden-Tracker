@@ -31,8 +31,6 @@ export interface HistoryMonth {
   /** Die Dividenden des Monats, chronologisch. */
   payments: AnalyticsPayment[];
   net: Money;
-  /** Bis einschliesslich dieses Monats insgesamt erhalten (kumulierte Sicht). */
-  total: Money;
 }
 
 /** Ein Balken der Jahresansicht: alle Dividenden des Assets in einem Kalenderjahr. */
@@ -40,6 +38,12 @@ export interface HistoryYear {
   year: number;
   net: Money;
   count: number;
+  /**
+   * Bis einschliesslich dieses Jahres insgesamt erhalten (kumulierte Sicht,
+   * seit 2.51.0 je Jahr statt je Monat: so steht die ganze Kurve seit der
+   * ersten Dividende im Bild, nicht nur die letzten zwoelf Monate).
+   */
+  total: Money;
 }
 
 /** Mittleres jaehrliches Wachstum (CAGR) der Jahressummen, in Prozent. */
@@ -210,34 +214,28 @@ export function derivePaymentInsights(
     0,
     Math.min(currentMonth - HISTORY_SIZE + 1, byMonth.length - HISTORY_SIZE),
   );
-  let running = sumMoney(
-    byMonth.slice(0, start).flatMap((bucket) => bucket.payments.map((p) => p.netAmount)),
-    currency,
-  );
-  const history = byMonth.slice(start, start + HISTORY_SIZE).map((bucket) => {
-    const net = sumMoney(
+  const history = byMonth.slice(start, start + HISTORY_SIZE).map((bucket) => ({
+    ...bucket,
+    net: sumMoney(
       bucket.payments.map((payment) => payment.netAmount),
       currency,
-    );
-    running = running.add(net);
-    return { ...bucket, net, total: running };
-  });
+    ),
+  }));
 
   // Ein Balken je Kalenderjahr, wie in Statistik › Verlauf › Jahre; dasselbe
   // Fenster wie bei den Monaten.
   const firstYear = yearOf(sorted[0].payDate);
   const lastYear = yearOf(sorted[sorted.length - 1].payDate);
   const allYears: HistoryYear[] = [];
+  let running = Money.zero(currency);
   for (let y = firstYear; y <= lastYear; y += 1) {
     const inThisYear = sorted.filter((payment) => yearOf(payment.payDate) === y);
-    allYears.push({
-      year: y,
-      net: sumMoney(
-        inThisYear.map((payment) => payment.netAmount),
-        currency,
-      ),
-      count: inThisYear.length,
-    });
+    const net = sumMoney(
+      inThisYear.map((payment) => payment.netAmount),
+      currency,
+    );
+    running = running.add(net);
+    allYears.push({ year: y, net, count: inThisYear.length, total: running });
   }
   const yearStart = Math.max(
     0,
