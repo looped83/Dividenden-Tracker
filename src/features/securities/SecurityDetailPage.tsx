@@ -569,20 +569,30 @@ export function SecurityDetailPage() {
               </div>
             )}
 
-            {/* Sieben Felder: links drei, rechts vier; die dritte Zeile endet die linke Spalte ohne Linie. */}
-            <div className="lg:columns-2 lg:gap-x-16 [&>*]:break-inside-avoid lg:[&>*:nth-child(3)]:border-b-0">
-              <Field label="ISIN" value={security.isin} copyable />
-              <Field label="WKN" value={security.wkn} copyable />
-              <Field label="Ticker" value={security.ticker} copyable />
-              <Field label="Land" value={security.country} />
-              <Field label="Branche" value={security.sector} />
-              <Field label="Währung" value={security.currency} />
-              <Field
-                label="Depot"
-                value={
-                  security.default_depot_id ? depotName(security.default_depot_id) : null
-                }
-              />
+            {/* Sieben Felder: links vier, rechts drei, je Spalte eine eigene
+                Liste, damit jede Spalte ohne Linie endet (seit 2.52.1; zuvor
+                CSS-Spalten, deren Umbruch die Linie an die falsche Zeile
+                setzte). Mobil stehen beide untereinander: Dort braucht das
+                letzte Feld links seine Linie zum ersten rechts. */}
+            <div className="lg:grid lg:grid-cols-2 lg:gap-x-16">
+              <div className="max-lg:[&>*:last-child]:border-b!">
+                <Field label="ISIN" value={security.isin} copyable />
+                <Field label="WKN" value={security.wkn} copyable />
+                <Field label="Ticker" value={security.ticker} copyable />
+                <Field label="Land" value={security.country} />
+              </div>
+              <div>
+                <Field label="Branche" value={security.sector} />
+                <Field label="Währung" value={security.currency} />
+                <Field
+                  label="Depot"
+                  value={
+                    security.default_depot_id
+                      ? depotName(security.default_depot_id)
+                      : null
+                  }
+                />
+              </div>
             </div>
 
             {quality === "incomplete" && (
