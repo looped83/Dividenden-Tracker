@@ -257,8 +257,8 @@ Die Tabelle „Entwicklung je Asset" nennt ihre Spalten nach dem Zeitraum statt 
 erwartet/erhalten: **Letzte 12 Monate | Nächste 12 Monate | Veränderung**, die Vergangenheit
 zuerst. „Erwartet gegen erhalten" las sich wie ein Soll-Ist-Vergleich, in dem ein Plus ein
 Fehlbetrag wäre. Daneben steht die Veränderung in Prozent der letzten zwölf Monate (wie die
-Marke im Kennzahlkopf); die Rendite auf den Einstand je Asset stand dort früher und wurde
-als Prozentwert der Veränderung gelesen.
+Marke im Kennzahlkopf) und, ab breiten Bildschirmen, die Rendite auf den Einstand — mit
+vollem Namen, weil „Auf Einstand" neben der Veränderung als deren Prozentwert gelesen wurde.
 
 Die Tabelle listet **nur, was im jüngsten Stand liegt** (`heldSecurityIds`). Verkaufte
 Papiere standen früher mit dem Wegfall ihres Erhaltenen darin — das beantwortet aber eine

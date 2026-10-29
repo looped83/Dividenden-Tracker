@@ -64,6 +64,7 @@ interface AssetRow {
    * die Marke im Kennzahlkopf. `null` ohne Veraenderung oder ohne Erhaltenes.
    */
   growthPercent: DecimalInstance | null;
+  yieldOnBuyin: DecimalInstance | null;
 }
 
 const HUNDRED = new MoneyDecimal(100);
@@ -307,6 +308,7 @@ export function DevelopmentView({
           growth && !received.isZero()
             ? growth.toDecimal().dividedBy(received.toDecimal()).times(HUNDRED)
             : null,
+        yieldOnBuyin: portfolio.yieldOnBuyinBySecurity.get(securityId) ?? null,
       };
     });
   }, [latest, portfolio, payments, securities]);
@@ -396,6 +398,25 @@ export function DevelopmentView({
               {row.growthPercent.isPositive() && !row.growthPercent.isZero() ? "+" : ""}
               {formatPercent(row.growthPercent, 1)}
             </span>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          ),
+      },
+      {
+        key: "yieldOnBuyin",
+        width: "w-40",
+        listHidden: true,
+        header: "Rendite auf Einstand",
+        headerLabel: "Erwartete Jahresdividende in Prozent des Einstands",
+        align: "right",
+        // Nebenkennzahl: tritt zuerst zurueck, wo der Platz nicht reicht.
+        className: "hidden xl:table-cell",
+        compare: (a, b) =>
+          (a.yieldOnBuyin?.toNumber() ?? 0) - (b.yieldOnBuyin?.toNumber() ?? 0),
+        isMissing: (row) => row.yieldOnBuyin === null,
+        render: (row) =>
+          row.yieldOnBuyin ? (
+            formatPercent(row.yieldOnBuyin, 2)
           ) : (
             <span className="text-muted-foreground">—</span>
           ),

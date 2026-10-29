@@ -75,6 +75,7 @@ const SERIES: PortfolioSeries = {
     ["sec-b", money("10.00")],
   ]),
   heldSecurityIds: new Set(["sec-a", "sec-b"]),
+  yieldOnBuyinBySecurity: new Map(),
 };
 
 function renderTab(
