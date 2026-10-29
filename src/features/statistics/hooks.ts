@@ -2,7 +2,7 @@ import * as React from "react";
 import { useSearchParams } from "react-router";
 import type { AnalyticsPayment, StatisticsFilter } from "@/lib/statistics";
 import { buildEntityMap, type EntityInfo } from "@/features/dashboard/format";
-import { useEffectivePayments } from "@/features/dashboard/hooks";
+import { useAnalyticsPayments } from "@/features/dashboard/hooks";
 import { useSecuritySnapshots } from "@/features/securities/hooks";
 import {
   buildPortfolioSeries,
@@ -17,7 +17,7 @@ import {
 } from "./filterParams";
 
 export interface StatisticsData {
-  /** Alle aktiven Eingaenge mit effektivem Datum (§10), ungefiltert. */
+  /** Alle aktiven Eingaenge nach Zahltag (§10), ungefiltert. */
   payments: AnalyticsPayment[];
   securities: Map<string, EntityInfo>;
   depots: Map<string, EntityInfo>;
@@ -33,15 +33,13 @@ export interface StatisticsData {
  * Zentrale Datenbasis des Statistikbereichs. Sie nutzt dieselbe Query wie das
  * Dashboard (`useDashboardPayments`, Schluessel `PAYMENT_HISTORY_KEY`) —
  * dadurch teilen sich Dashboard und Statistik **einen** Cache-Eintrag, es
- * entsteht keine zweite Uebertragung und keine parallele Aggregation. Der
- * Ausschuettungsplan je Unternehmen wird einmal auf das effektive Datum
- * angewandt (§10); alle Kennzahlen laufen anschliessend ueber die Analytics-
- * Schicht.
+ * entsteht keine zweite Uebertragung und keine parallele Aggregation. Alle
+ * Kennzahlen laufen nach Zahltag (§10) ueber die Analytics-Schicht.
  */
 export function useStatisticsData(
   filter: StatisticsFilter = EMPTY_STATISTICS_FILTER,
 ): StatisticsData {
-  const { payments, paymentsQuery, securitiesQuery } = useEffectivePayments();
+  const { payments, paymentsQuery, securitiesQuery } = useAnalyticsPayments();
   const depotsQuery = useDepots();
   const snapshotsQuery = useSecuritySnapshots();
 

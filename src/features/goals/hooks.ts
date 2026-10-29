@@ -26,7 +26,7 @@ import {
   type RefDate,
 } from "@/lib/statistics";
 import { announcedForForecast } from "@/lib/calendar/summary";
-import { useEffectivePayments } from "@/features/dashboard/hooks";
+import { useAnalyticsPayments } from "@/features/dashboard/hooks";
 import { useCalendarEvents } from "@/features/calendar/hooks";
 
 /**
@@ -125,8 +125,8 @@ export function useDeleteGoal() {
 
 /**
  * Datenbasis der Zielfortschritte: dieselbe aktive Dividendenhistorie wie das
- * Dashboard (`useDashboardPayments`, geteilter Cache), angereichert um den
- * effektiven Monat je Ausschuettungsplan (§10). Dadurch stimmen Zielstand,
+ * Dashboard (`useDashboardPayments`, geteilter Cache), nach Zahltag (§10).
+ * Dadurch stimmen Zielstand,
  * Dashboard, Statistik und der gefilterte Drill-down exakt überein. Es zaehlen
  * ausschliesslich gueltige, aktive Eingaenge — stornierte/geloeschte
  * Zahlungen sind ausgeschlossen, archivierte Unternehmen/Depots enthalten.
@@ -137,7 +137,7 @@ export function useGoalProgressPayments(): {
   isError: boolean;
   error: Error | null;
 } {
-  const { payments, paymentsQuery, securitiesQuery } = useEffectivePayments();
+  const { payments, paymentsQuery, securitiesQuery } = useAnalyticsPayments();
 
   return {
     payments,

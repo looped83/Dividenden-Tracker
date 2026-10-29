@@ -7,8 +7,8 @@ export type YearOverYearDirection = "up" | "down" | "same";
 export interface YearOverYearEntry {
   id: string;
   securityId: string;
-  /** Effektives Zahlungsdatum (Ausschuettungsplan bereits beruecksichtigt, §10). */
-  effectiveDate: string;
+  /** Zahltag (§10). */
+  payDate: string;
   amount: Money;
   /** Stornierte Eingaenge zaehlen weder als Bezug noch erhalten sie einen. */
   cancelled: boolean;
@@ -18,7 +18,7 @@ export interface YearOverYearComparison {
   direction: YearOverYearDirection;
   /** Betrag der Vergleichszahlung. */
   previousAmount: Money;
-  /** Effektives Datum der Vergleichszahlung. */
+  /** Zahltag der Vergleichszahlung. */
   previousDate: string;
   /** Vorzeichenbehaftete Differenz (aktuell − Vorjahr). */
   difference: Money;
@@ -34,13 +34,8 @@ function bucketKey(securityId: string, year: number, month: number): string {
 }
 
 /**
- * Stellt jede Zahlung der Zahlung desselben **effektiven Ausschuettungsmonats**
- * im Vorjahr gegenueber — je Unternehmen, depotuebergreifend.
- *
- * Der effektive Monat ist kein blosser Kalendermonat: Bei hinterlegtem
- * Ausschuettungsplan ordnet §10 jede Zahlung ihrem geplanten Monat zu, auch
- * ueber den Jahreswechsel (Zahlung am 2. April bei Plan Maerz -> Maerz). Der
- * Monat ist damit der Ausschuettungs-Slot und ueber Jahre stabil.
+ * Stellt jede Zahlung der Zahlung desselben **Zahlungsmonats** im Vorjahr
+ * gegenueber — je Unternehmen, depotuebergreifend.
  *
  * Warum nicht die Reihenfolge im Jahr: Faellt eine Zahlung aus, verschoebe sie
  * jeden folgenden Vergleich des Jahres — aus einem ausgesetzten Maerzquartal
@@ -50,8 +45,7 @@ function bucketKey(securityId: string, year: number, month: number): string {
  *
  * Kein Vergleich (und damit kein Indikator) entsteht, wenn
  * - im Vorjahresmonat keine Zahlung steht (erstes Jahr, neue Position,
- *   ausgesetzte Dividende, ungepflegter Ausschuettungsplan bei verschobenem
- *   Termin),
+ *   ausgesetzte Dividende, in einen Nachbarmonat verschobener Termin),
  * - auf einer der beiden Seiten mehrere Zahlungen in denselben Monat fallen
  *   (Nachzahlung, Sonderdividende) — welche zu welcher gehoert, ist dann nicht
  *   entscheidbar,
@@ -70,8 +64,8 @@ export function compareToPreviousYear(
     if (entry.cancelled) continue;
     const key = bucketKey(
       entry.securityId,
-      yearOf(entry.effectiveDate),
-      monthOf(entry.effectiveDate),
+      yearOf(entry.payDate),
+      monthOf(entry.payDate),
     );
     const bucket = buckets.get(key);
     if (bucket) bucket.push(entry);
@@ -82,9 +76,9 @@ export function compareToPreviousYear(
   for (const bucket of buckets.values()) {
     if (bucket.length !== 1) continue;
     const entry = bucket[0];
-    const month = monthOf(entry.effectiveDate);
+    const month = monthOf(entry.payDate);
     const previousBucket = buckets.get(
-      bucketKey(entry.securityId, yearOf(entry.effectiveDate) - 1, month),
+      bucketKey(entry.securityId, yearOf(entry.payDate) - 1, month),
     );
     if (previousBucket?.length !== 1) continue;
 
@@ -96,7 +90,7 @@ export function compareToPreviousYear(
     result.set(entry.id, {
       direction: comparison > 0 ? "up" : comparison < 0 ? "down" : "same",
       previousAmount: reference.amount,
-      previousDate: reference.effectiveDate,
+      previousDate: reference.payDate,
       difference,
       percent: reference.amount.isPositive()
         ? difference.toDecimal().div(reference.amount.toDecimal()).times(100)

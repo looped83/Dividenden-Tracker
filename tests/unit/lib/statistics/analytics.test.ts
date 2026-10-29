@@ -34,15 +34,12 @@ function p(
     depot?: string;
     created?: string;
     id?: string;
-    /** Tatsaechliches Datum, wenn der Ausschuettungsplan verschiebt (§10). */
-    actual?: string;
   } = {},
 ): AnalyticsPayment {
   seq += 1;
   return {
     id: options.id ?? `id-${String(seq)}`,
     payDate,
-    actualPayDate: options.actual ?? payDate,
     netAmount: Money.fromString(net, EUR),
     grossAmount: Money.fromString(net, EUR),
     securityId: options.security ?? "sec-a",
@@ -325,26 +322,6 @@ describe("selectedYearComparison (§6.1/§6.2)", () => {
     const { prior } = selectedYearComparison(payments, "all", REF_2026_JUL20);
     expect(prior).toBeNull();
   });
-
-  it("zaehlt eine vorgezogene Zahlung wie die Jahressumme und im Vorjahr gleich", () => {
-    const withEarly = [
-      ...payments,
-      // Am 15.07. eingegangen, laut Plan fuer August: effektiv 01.08.2026.
-      p("2026-08-01", "40", { actual: "2026-07-15" }),
-      // Vorjahr, gleiche Lage: bis zum 20.07.2025 eingegangen — zaehlt.
-      p("2025-08-01", "30", { actual: "2025-07-15" }),
-      // Vorjahr, erst am 25.07.2025 eingegangen — zaehlt nicht.
-      p("2025-08-01", "20", { actual: "2025-07-25" }),
-    ];
-
-    const { current, prior } = selectedYearComparison(withEarly, 2026, REF_2026_JUL20);
-    // Genau die Jahressumme, die die Kachel daneben zeigt.
-    expect(current.toStringValue()).toBe(
-      selectedPeriodAggregate(withEarly, 2026).net.toStringValue(),
-    );
-    expect(current.toStringValue()).toBe("190.00");
-    expect(prior?.toStringValue()).toBe("130.00");
-  });
 });
 
 describe("yearEndForecast (§9.7)", () => {
@@ -369,10 +346,10 @@ describe("yearEndForecast (§9.7)", () => {
   it("teilt das Vorjahr genau: Vorjahr bis heute plus Rest ergibt das volle Vorjahr", () => {
     const payments = [
       p("2025-02-01", "40"),
-      // Effektiv August, schon am 15.07. eingegangen: zaehlt zum Vorjahr bis heute.
-      p("2025-08-01", "30", { actual: "2025-07-15" }),
-      // Effektiv August, erst am 25.07. eingegangen: zaehlt zum Rest.
-      p("2025-08-01", "20", { actual: "2025-07-25" }),
+      // Am 15.07. eingegangen: zaehlt zum Vorjahr bis heute.
+      p("2025-07-15", "30"),
+      // Erst am 25.07. eingegangen: zaehlt zum Rest.
+      p("2025-07-25", "20"),
     ];
     const { remainingPrior } = yearEndForecast(payments, REF_2026_JUL20);
     const { prior } = selectedYearComparison(payments, 2026, REF_2026_JUL20);

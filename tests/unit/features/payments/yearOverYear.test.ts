@@ -7,14 +7,14 @@ import {
 
 function entry(
   id: string,
-  effectiveDate: string,
+  payDate: string,
   amount: string,
   overrides: Partial<YearOverYearEntry> = {},
 ): YearOverYearEntry {
   return {
     id,
     securityId: "s1",
-    effectiveDate,
+    payDate,
     amount: Money.fromString(amount, EUR),
     cancelled: false,
     ...overrides,

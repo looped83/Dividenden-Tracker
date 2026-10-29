@@ -19,7 +19,7 @@ import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { useToast } from "@/components/ui/toast";
 import { useDepots } from "@/features/depots/hooks";
 import { useSecurities } from "@/features/securities/hooks";
-import { useEffectivePayments } from "@/features/dashboard/hooks";
+import { useAnalyticsPayments } from "@/features/dashboard/hooks";
 import {
   useArchivePayment,
   useDeletePayment,
@@ -71,7 +71,7 @@ export function PaymentDetailPage() {
   // Die Frage beim Antippen ist „war das viel?", nicht „wann wurde das
   // gespeichert?". Grundlage ist die bereits geladene Historie — derselbe
   // Cache wie Liste und Statistik, also keine zusaetzliche Abfrage.
-  const { payments: effectivePayments } = useEffectivePayments();
+  const { payments: analyticsPayments } = useAnalyticsPayments();
   const securityId = payment?.security_id;
   const payoutMonths = securities.find((s) => s.id === securityId)?.payout_months;
   const todayYear = useToday().year;
@@ -80,12 +80,12 @@ export function PaymentDetailPage() {
       id && securityId
         ? derivePaymentInsights(
             id,
-            effectivePayments.filter((entry) => entry.securityId === securityId),
+            analyticsPayments.filter((entry) => entry.securityId === securityId),
             normalizePayoutMonths(payoutMonths),
             todayYear,
           )
         : null,
-    [id, securityId, effectivePayments, payoutMonths, todayYear],
+    [id, securityId, analyticsPayments, payoutMonths, todayYear],
   );
 
   // Der Rueckweg steht oben, nicht am Seitenende: Auf einer langen Detailseite

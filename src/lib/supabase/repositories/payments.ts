@@ -89,8 +89,7 @@ export function toListRow(row: DividendPayment): PaymentListRow {
  * Unterschied.
  *
  * Die fachliche Filterung nach Zeitraum erfolgt clientseitig ueber den
- * effektiven Monat (Ausschuettungsplan je Unternehmen, CALCULATION_RULES.md
- * §10), daher kein serverseitiger Datumsfilter. Paginiert wird ueber das
+ * Zahltag (CALCULATION_RULES.md §10), daher kein serverseitiger Datumsfilter. Paginiert wird ueber das
  * PostgREST-1000er-Limit hinweg, mit eindeutiger Sortierung: `pay_date` ist
  * nicht eindeutig, daher `id` als Tiebreaker (keine doppelten/fehlenden
  * Zeilen an Seitengrenzen).

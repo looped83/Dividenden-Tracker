@@ -240,15 +240,10 @@ Das Dashboard folgt bewusst dem Prinzip aus §4.1 Punkt 3:
   Inline-Funktion ist bei jedem Rendern eine neue Referenz, React Query führte sie dann jedes
   Mal erneut aus — und weil `Money`-Instanzen sich dem strukturellen Teilen entziehen,
   entstand jedes Mal eine neue Liste, die sämtliche memoisierten Aggregate verwarf.
-- **Effektiver Ausschüttungsmonat:** Vor der Aggregation wird über `withEffectiveDates` je
-  Zahlung ein effektives Datum aus dem Unternehmensplan (`securities.payout_months`) gesetzt
-  (fälliger geplanter Monat, ein Monat Vorlauf für vorgezogene Zahlungen, inkl.
-  Jahresverschiebung — CALCULATION_RULES.md §10). Alle
-  Auswertungen und die Eingangsliste rechnen auf diesem effektiven Datum; das echte `pay_date`
-  bleibt erhalten. Übersicht, Statistik und Ziele beziehen die so angereicherte Historie aus
-  **einem** Hook (`useEffectivePayments`), die Eingangsliste nutzt dieselbe Nachschlagetabelle
-  (`payoutMonthsBySecurity`). Die Eingangsliste lädt dafür alle Zahlungen paginiert und filtert/sortiert
-  clientseitig (kein serverseitiger Datumsfilter, da der Plan clientseitige Stammdaten sind).
+- **Zahltag als Datumsdimension:** Alle Auswertungen und die Eingangsliste rechnen auf dem
+  echten `pay_date` (CALCULATION_RULES.md §10, seit 2.54.0). Übersicht, Statistik und Ziele
+  beziehen die Historie aus **einem** Hook (`useAnalyticsPayments`). Die Eingangsliste lädt
+  alle Zahlungen paginiert und filtert/sortiert clientseitig (kein serverseitiger Datumsfilter).
 - **Jahresauswahl clientseitig.** Der ausgewählte Zeitraum (`?year=…`) wird auf den bereits
   geladenen Datensatz angewandt — ein Jahreswechsel löst **keine** neue Abfrage und keine
   Seitenneuladung aus (schnelle Umschaltung, memoisierte Aggregate).
@@ -272,7 +267,7 @@ eigene Query oder Berechnung ein:
 - **Geteilter Cache, keine zweite Ladung.** `useStatisticsData()` nutzt denselben Query-Key
   `['payments','list']` wie das Dashboard (`useDashboardPayments`). Dashboard und Statistik
   teilen sich damit einen Cache-Eintrag; es entsteht keine zusätzliche Übertragung und keine
-  parallele Aggregation. Der effektive Ausschüttungsmonat (§4.4) wird einmal angewandt.
+  parallele Aggregation.
 - **Analytics-Schicht als einzige Quelle.** Sämtliche Statistik-Kennzahlen (`overviewStatistics`,
   `yearStatistics`, `monthAcrossYearsStatistics`, `securityStatistics`, `depotStatistics`,
   `calendarMonthBuckets`, `heatmapByYearMonth`, `breakdownMatrix`, `filterPayments`,

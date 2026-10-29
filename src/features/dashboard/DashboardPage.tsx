@@ -9,7 +9,7 @@ import { useDepots } from "@/features/depots/hooks";
 import { availableYears, isoFromRef, yearOf } from "@/lib/statistics";
 import { useToday } from "@/lib/hooks/useToday";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
-import { useDashboardYear, useEffectivePayments } from "./hooks";
+import { useDashboardYear, useAnalyticsPayments } from "./hooks";
 import { YearSelector } from "./YearSelector";
 // Das Diagramm steht im Kopf und ist ein eigenes kleines SVG — die Uebersicht
 // laedt Recharts damit gar nicht mehr.
@@ -41,8 +41,8 @@ export function DashboardPage() {
   const today = useToday();
   const newPayment = usePaymentComposer();
   const { selection, setSelection } = useDashboardYear();
-  // Alle Auswertungen laufen auf `payments` mit effektivem Datum (§10).
-  const { payments, paymentsQuery, securitiesQuery } = useEffectivePayments();
+  // Alle Auswertungen laufen auf `payments` nach Zahltag (§10).
+  const { payments, paymentsQuery, securitiesQuery } = useAnalyticsPayments();
   const depotsQuery = useDepots();
 
   const securities = React.useMemo(

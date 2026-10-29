@@ -3,11 +3,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { EUR, Money } from "@/lib/money";
-import {
-  withEffectiveDates,
-  type AnalyticsPayment,
-  type YearSelection,
-} from "@/lib/statistics";
+import type { AnalyticsPayment, YearSelection } from "@/lib/statistics";
 import type { RefDate } from "@/lib/statistics/dates";
 import type { Goal } from "@/lib/goals";
 
@@ -35,7 +31,6 @@ function payment(payDate: string, net: string, security = "sec-a"): AnalyticsPay
   return {
     id: `id-${String(seq)}`,
     payDate,
-    actualPayDate: payDate,
     netAmount: Money.fromString(net, EUR),
     grossAmount: Money.fromString(net, EUR),
     securityId: security,
@@ -133,14 +128,10 @@ describe("DashboardHero — eine Hauptzahl statt Kachelraster", () => {
     expect(labels).toEqual(["Juli", "Ø pro Monat", "Bester Monat"]);
   });
 
-  it("zählt eine vorgezogene Zahlung zum aktuellen Ausschüttungsmonat (§10)", () => {
-    // Plan Juli, Zahlung bereits am 25. Juni eingetroffen -> zählt zum Juli.
-    const payments = withEffectiveDates(
-      [payment("2026-06-25", "80.00", "sec-plan")],
-      new Map([["sec-plan", [7]]]),
-    );
-    renderHero(2026, payments);
-    expect(screen.getByRole("link", MONATSLINK)).toHaveTextContent(/80,00\s?€/);
+  it("zählt eine Zahlung im Monat ihres Zahltags, auch bei anderem Plan (§10)", () => {
+    // Zahlung am 25. Juni gehört zum Juni, nicht zum laufenden Juli.
+    renderHero(2026, [payment("2026-06-25", "80.00", "sec-plan")]);
+    expect(screen.getByRole("link", MONATSLINK)).not.toHaveTextContent(/80,00\s?€/);
   });
 
   it("lässt den aktuellen Monat in einem anderen Jahr weg und nennt die Zahlungen", () => {

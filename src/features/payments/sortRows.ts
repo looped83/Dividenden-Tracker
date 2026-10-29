@@ -11,7 +11,7 @@ import type { ListSort } from "./listParams";
 export interface SortableRow {
   id: string;
   /** Effektives (angezeigtes) Zahlungsdatum, ISO. */
-  effectiveDate: string;
+  payDate: string;
   /** Nettobetrag — einmal beim Aufbau der Zeile geparst, nicht je Vergleich. */
   amount: Money;
   createdAt: string;
@@ -26,9 +26,9 @@ function compareStrings(a: string, b: string): number {
 
 /** Fallback-Vergleich für stabile, eindeutige Reihenfolge (§2). */
 function tieBreak(a: SortableRow, b: SortableRow): number {
-  if (a.effectiveDate !== b.effectiveDate) {
+  if (a.payDate !== b.payDate) {
     // Immer Zahlungsdatum absteigend als sekundäres Kriterium.
-    return a.effectiveDate < b.effectiveDate ? 1 : -1;
+    return a.payDate < b.payDate ? 1 : -1;
   }
   if (a.createdAt !== b.createdAt) return a.createdAt < b.createdAt ? 1 : -1;
   return compareStrings(a.id, b.id);
@@ -41,7 +41,7 @@ export function sortRows<T extends SortableRow>(rows: readonly T[], sort: ListSo
     let primary = 0;
     switch (sort.field) {
       case "payment_date":
-        primary = compareStrings(a.effectiveDate, b.effectiveDate) * factor;
+        primary = compareStrings(a.payDate, b.payDate) * factor;
         break;
       case "amount":
         // Ueber den Zahlenwert, nicht `compareTo`: Die Liste fuehrt Depots

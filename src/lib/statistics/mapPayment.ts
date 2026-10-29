@@ -66,10 +66,7 @@ export function activeAnalyticsPayments(
 export function mapAnalyticsPayment(row: RawAnalyticsRow): AnalyticsPayment {
   return {
     id: row.id,
-    // Effektives Datum entspricht zunaechst dem echten Datum; ein evtl.
-    // Ausschuettungsplan wird spaeter ueber withEffectiveDates angewandt.
     payDate: row.pay_date,
-    actualPayDate: row.pay_date,
     netAmount: Money.fromString(toDecimalString(row.net_amount), EUR),
     grossAmount: Money.fromString(toDecimalString(row.gross_amount), EUR),
     securityId: row.security_id,

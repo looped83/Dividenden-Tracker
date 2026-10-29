@@ -4,8 +4,7 @@ import { useSearchParams } from "react-router";
 import { fetchAllPayments } from "@/lib/supabase/repositories/payments";
 import {
   activeAnalyticsPayments,
-  payoutMonthsBySecurity,
-  withEffectiveDates,
+  type AnalyticsPayment,
   type YearSelection,
 } from "@/lib/statistics";
 import { useSecurities } from "@/features/securities/hooks";
@@ -38,27 +37,21 @@ export function useDashboardPayments() {
   });
 }
 
+const NO_PAYMENTS: AnalyticsPayment[] = [];
+
 /**
- * Die aktive Historie mit effektivem Datum je Ausschuettungsplan (§10) — die
- * gemeinsame Datenbasis von Uebersicht, Statistik und Zielen. Eine Stelle
- * statt mehrerer gleichlautender Kopien: Wendete eine davon den Plan anders
- * an, zeigten Uebersicht und Ziel fuer denselben Monat verschiedene Summen.
+ * Die aktive Historie nach Zahltag (§10) — die gemeinsame Datenbasis von
+ * Uebersicht, Statistik und Zielen. Seit 2.54.0 verschiebt kein
+ * Ausschuettungsplan mehr eine Zahlung: Die Monate folgen dem Kontoauszug.
  *
  * Die beiden Abfragen werden mitgeliefert, weil die Aufrufer deren Lade- und
  * Fehlerzustand bzw. die Stammdaten der Unternehmen selbst brauchen.
  */
-export function useEffectivePayments() {
+export function useAnalyticsPayments() {
   const paymentsQuery = useDashboardPayments();
   const securitiesQuery = useSecurities();
 
-  const payoutBySecurity = React.useMemo(
-    () => payoutMonthsBySecurity(securitiesQuery.data ?? []),
-    [securitiesQuery.data],
-  );
-  const payments = React.useMemo(
-    () => withEffectiveDates(paymentsQuery.data ?? [], payoutBySecurity),
-    [paymentsQuery.data, payoutBySecurity],
-  );
+  const payments = paymentsQuery.data ?? NO_PAYMENTS;
 
   return { payments, paymentsQuery, securitiesQuery };
 }

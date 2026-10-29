@@ -1,12 +1,7 @@
 export * from "./types";
 export * from "./dates";
 export * from "./analytics";
-export {
-  effectivePayDate,
-  withEffectiveDates,
-  normalizePayoutMonths,
-  payoutMonthsBySecurity,
-} from "./effectiveMonth";
+export { normalizePayoutMonths } from "./payoutMonths";
 export {
   activeAnalyticsPayments,
   mapAnalyticsPayment,
