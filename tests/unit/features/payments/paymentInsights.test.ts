@@ -51,9 +51,12 @@ describe("derivePaymentInsights", () => {
     expect(result?.year.net.toStringValue()).toBe("685.00");
     expect(result?.total.toStringValue()).toBe("1476.00");
     expect(result?.firstDate).toBe("2024-11-15");
-    // Kumuliert ab der ersten Dividende: p0..p11 vor dem Fenster (50..61 = 666 €)
-    expect(result?.history[0]?.total.toStringValue()).toBe("728.00");
-    expect(result?.history.at(-1)?.total.toStringValue()).toBe("1476.00");
+    // Kumuliert je Jahr ab der ersten Dividende: 2024 = 50 + 51, 2025 = 52..63
+    expect(result?.years.map((entry) => entry.total.toStringValue())).toEqual([
+      "101.00",
+      "791.00",
+      "1476.00",
+    ]);
   });
 
   it("füllt den Verlauf einer frühen Dividende mit späteren auf", () => {
@@ -81,7 +84,6 @@ describe("derivePaymentInsights", () => {
     // Zwoelf Monate, nicht zwoelf Zahlungen; das Fenster endet im Oktober.
     expect(result?.history).toHaveLength(12);
     expect(result?.history.at(-1)?.month).toBe("2026-10-01");
-    expect(result?.history.at(-1)?.total.toStringValue()).toBe("1506.00");
     // Kopf bleibt je Zahlung: vorherige ist die Zahlung am 2. Oktober.
     expect(result?.previous?.id).toBe("extra");
     expect(result?.count).toBe(26);

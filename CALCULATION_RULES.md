@@ -549,6 +549,10 @@ Jede Zahlung in `/eingaenge` trägt einen Indikator, wie sie zur Zahlung desselb
   erste Jahr mit Dividende (meist angebrochen) und das laufende Jahr zählen nicht. Ohne zwei
   solche Jahre oder bei 0 im Startjahr keine Angabe. Zukäufe stecken mit darin — ohne
   Stückzahl je Zahlung gibt es keine Erhöhung je Aktie (§11.11).
+- **Kumuliert** (seit 2.51.0 je Jahr statt je Monat): je Jahr die Nettosumme aller Dividenden
+  des Assets seit der ersten bis zum Jahresende (laufendes Jahr: bis heute), auch über Jahre vor
+  dem Fenster. Je Jahr und Kumuliert gibt es erst ab Dividenden aus zwei Jahren; davor zeigt der
+  Verlauf nur „Je Zahlung" ohne Umschalter, auch bei nur einer Dividende.
 
 ## 11.12 Breakdown — Jahre × Monate (`breakdownMatrix`)
 

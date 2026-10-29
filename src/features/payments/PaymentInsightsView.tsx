@@ -116,8 +116,6 @@ const VIEW_OPTIONS: readonly SegmentOption<HistoryView>[] = [
   { value: "cumulative", label: "Kumuliert" },
 ];
 
-const MONTH_OPTIONS = VIEW_OPTIONS.filter((option) => option.value !== "yearly");
-
 /** „Ø ▲ 6,6 % pro Jahr · 2022–2025" unter der Jahresansicht. */
 function GrowthLine({ growth }: { growth: AnnualGrowth }) {
   const direction = growth.percent.isPositive()
@@ -150,8 +148,8 @@ function GrowthLine({ growth }: { growth: AnnualGrowth }) {
  * Assetseite (seit 1.26.0; zuvor eigene CSS-Balken) — gleiche Achsen, gleicher
  * Tooltip, gleiche Datentabelle. Die geoeffnete Dividende steht in der
  * Akzentfarbe; die Balken fuehren bewusst nirgendwohin, der Tooltip zeigt
- * Datum und Betrag. Der Umschalter zeigt dieselben Dividenden kumuliert —
- * insgesamt erhalten bis zur jeweiligen Zahlung (seit 1.27.0).
+ * Datum und Betrag. Kumuliert zeigt seit 2.51.0 je Jahr, was bis zu dessen
+ * Ende insgesamt eingegangen ist — die ganze Kurve seit der ersten Dividende.
  *
  * Ein Balken je Monat (seit 2.1.0): Mehrere Dividenden eines Monats stehen
  * summiert in einem Balken, der Tooltip nennt dann Monat und Anzahl. Kopf
@@ -174,8 +172,9 @@ export function PaymentInsightsView({
   const { data: depots = [] } = useDepots();
   const todayYear = useToday().year;
 
-  // Mit nur einem Jahr waere die Jahresansicht ein einzelner Balken — dann
-  // gibt es sie nicht (zuvor verschwand dabei der ganze Verlauf).
+  // Je Jahr und Kumuliert (beide je Jahr) erst ab zwei Jahren — mit einem
+  // waeren sie ein einzelner Balken. Dann bleibt nur „Je Zahlung", ohne
+  // Umschalter.
   const multiYear = years.length > 1;
   // Nur die eigene Wahl ist Zustand, der Standard folgt den Daten: Als
   // Anfangswert von useState blieb „Je Zahlung" stehen, wenn die Seite beim
@@ -183,7 +182,7 @@ export function PaymentInsightsView({
   // nur einem Jahr kam.
   const [chosen, setView] = React.useState<HistoryView | null>(null);
   const view: HistoryView =
-    chosen && (chosen !== "yearly" || multiYear)
+    chosen && (chosen === "monthly" || multiYear)
       ? chosen
       : multiYear
         ? "yearly"
@@ -191,21 +190,28 @@ export function PaymentInsightsView({
 
   const chartData = React.useMemo<CategoryDatum[]>(
     () =>
-      view === "yearly"
-        ? years.map((entry) => ({
-            key: String(entry.year),
-            label: String(entry.year),
+      view !== "monthly"
+        ? years.map((entry) => {
+            // Kumuliert: insgesamt erhalten bis einschliesslich dieses Jahres.
+            const money = view === "cumulative" ? entry.total : entry.net;
             // Das laufende Jahr ist noch offen — sonst laese sich der kurze
             // Balken als Kuerzung.
-            detail: `${String(entry.year)}${entry.year === todayYear ? " bis heute" : ""} · ${formatCountNoun(entry.count, "Dividende", "Dividenden")}`,
-            value: entry.net.toChartNumber(),
-            money: entry.net,
-            count: entry.count,
-            highlight: entry.year === insights.year.year,
-          }))
+            const year = `${String(entry.year)}${entry.year === todayYear ? " bis heute" : ""}`;
+            return {
+              key: String(entry.year),
+              label: String(entry.year),
+              detail:
+                view === "cumulative"
+                  ? `${year} · insgesamt`
+                  : `${year} · ${formatCountNoun(entry.count, "Dividende", "Dividenden")}`,
+              value: money.toChartNumber(),
+              money,
+              count: entry.count,
+              highlight: entry.year === insights.year.year,
+            };
+          })
         : history.map((entry) => {
-            // Kumuliert: insgesamt erhalten bis einschliesslich dieses Monats.
-            const money = view === "cumulative" ? entry.total : entry.net;
+            const money = entry.net;
             const count = entry.payments.length;
             return {
               key: entry.month,
@@ -255,16 +261,16 @@ export function PaymentInsightsView({
         <div className="space-y-10">
           {/* Auch mit nur einer Dividende — wie auf der Asset-Seite; zuvor
               fehlte der Verlauf dann ganz. Der Umschalter erst ab zwei
-              Monaten: Bei einem Balken zeigten alle Ansichten dasselbe. */}
+              Jahren, siehe `multiYear`. */}
           {history.length > 0 && (
             <Section
               title="Verlauf"
               action={
-                history.length > 1 ? (
+                multiYear ? (
                   <SegmentedControl
                     variant="pill"
                     label="Verlauf als"
-                    options={multiYear ? VIEW_OPTIONS : MONTH_OPTIONS}
+                    options={VIEW_OPTIONS}
                     value={view}
                     onChange={setView}
                   />
@@ -282,7 +288,7 @@ export function PaymentInsightsView({
                         ? `Dividenden von ${securityName} je Jahr`
                         : `Dividenden von ${securityName}`
                   }
-                  categoryHeader={view === "yearly" ? "Jahr" : "Datum"}
+                  categoryHeader={view === "monthly" ? "Datum" : "Jahr"}
                   showCount={false}
                   tableOrder="desc"
                 />
