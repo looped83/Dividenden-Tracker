@@ -30,3 +30,15 @@ test("startet je Jahr, Tooltip passt zum Balken", async ({ page, konto }) => {
   await expect(tooltip).toContainText("05.02.2026");
   await expect(tooltip).toContainText("20,62");
 });
+
+test.describe("eine Dividende", () => {
+  test.use({ seed: { payments: [{ payDate: "2026-09-25", netAmount: "8.49" }] } });
+
+  test("zeigt den Verlauf mit einem Balken, ohne Umschalter", async ({ page, konto }) => {
+    await page.clock.setFixedTime(new Date("2026-10-28T12:00:00"));
+    await page.goto(`/#/eingaenge/${konto.paymentIds[0] ?? ""}`);
+    await expect(page.getByRole("heading", { name: "Verlauf" })).toBeVisible();
+    await expect(page.locator(".recharts-bar-rectangle")).toHaveCount(1);
+    await expect(page.getByRole("radiogroup", { name: "Verlauf als" })).toHaveCount(0);
+  });
+});

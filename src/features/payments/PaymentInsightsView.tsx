@@ -253,17 +253,22 @@ export function PaymentInsightsView({
           hoeher als die Kennzahlleiste und ragte unter ihr weit heraus. */}
       <div className="grid grid-cols-1 gap-10 pt-4 lg:grid-cols-2 lg:gap-x-16">
         <div className="space-y-10">
-          {(history.length > 1 || years.length > 1) && (
+          {/* Auch mit nur einer Dividende — wie auf der Asset-Seite; zuvor
+              fehlte der Verlauf dann ganz. Der Umschalter erst ab zwei
+              Monaten: Bei einem Balken zeigten alle Ansichten dasselbe. */}
+          {history.length > 0 && (
             <Section
               title="Verlauf"
               action={
-                <SegmentedControl
-                  variant="pill"
-                  label="Verlauf als"
-                  options={multiYear ? VIEW_OPTIONS : MONTH_OPTIONS}
-                  value={view}
-                  onChange={setView}
-                />
+                history.length > 1 ? (
+                  <SegmentedControl
+                    variant="pill"
+                    label="Verlauf als"
+                    options={multiYear ? VIEW_OPTIONS : MONTH_OPTIONS}
+                    value={view}
+                    onChange={setView}
+                  />
+                ) : undefined
               }
             >
               <div>
