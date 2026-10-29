@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { EUR, Money } from "@/lib/money";
 import type { AnalyticsPayment, StatisticsFilter } from "@/lib/statistics";
@@ -175,13 +175,31 @@ describe("DevelopmentView", () => {
     expect(within(zeile).getByText(/^-2,00/)).toBeInTheDocument();
   });
 
-  it("führt auch Assets ohne Zahlung im Zeitraum auf", () => {
-    // Beta ist neu im Depot: 10 € Erwartung, noch nichts gezahlt. Der volle
-    // Betrag ist Zuwachs — genau das soll auffallen.
+  it("führt auch Assets ohne Zahlung im Zeitraum auf, als neu statt als Zuwachs", () => {
+    // Beta ist neu im Depot: 10 € Erwartung, noch nichts gezahlt. Gegen ein
+    // angebrochenes Jahr waere die ganze Erwartung „Zuwachs" — eine Zahl, die
+    // nichts ueber Wachstum sagt und die Sortierung anfuehrte.
     renderTab();
     const zeile = screen.getByRole("row", { name: /Beta SE/ });
     expect(within(zeile).getByText(/^10,00/)).toBeInTheDocument();
-    expect(within(zeile).getByText(/^\+10,00/)).toBeInTheDocument();
+    expect(within(zeile).getByText("neu")).toBeInTheDocument();
+    expect(within(zeile).queryByText(/^\+10,00/)).not.toBeInTheDocument();
+  });
+
+  it("nennt ein Asset neu, solange es vor dem Fenster nie gezahlt hat", () => {
+    // Erste Zahlung im Fenster (15.09.2025): kein volles Vergleichsjahr.
+    renderTab(SERIES, [payment("2025-09-15", "30.00"), payment("2026-07-15", "12.00")]);
+    const zeile = screen.getByRole("row", { name: /Alpha AG/ });
+    expect(within(zeile).getByText("neu")).toBeInTheDocument();
+  });
+
+  it("sortiert neue Assets in beiden Richtungen ans Ende", () => {
+    renderTab();
+    const reihen = () =>
+      screen.getAllByRole("row").slice(1).map((row) => row.textContent);
+    expect(reihen().at(-1)).toMatch(/Beta SE/);
+    fireEvent.click(screen.getByRole("button", { name: /Erwartet abzüglich erhalten/ }));
+    expect(reihen().at(-1)).toMatch(/Beta SE/);
   });
 
   it("führt ein verkauftes Papier gar nicht mehr auf", () => {

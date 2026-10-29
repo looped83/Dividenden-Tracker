@@ -45,11 +45,18 @@ interface AssetRow {
   expected: Money | null;
   received: Money;
   /**
+   * Erst innerhalb der zwoelf Monate dazugekommen: keine Zahlung vor Beginn des
+   * Fensters. Dann fehlt ein volles Vergleichsjahr — siehe `growth`.
+   */
+  isNew: boolean;
+  /**
    * **erwartet − erhalten**: um wie viel die kuenftige Jahresausschuettung ueber
    * dem liegt, was in den letzten zwoelf Monaten tatsaechlich kam.
    *
    * `null`, wenn die Quelle fuer das Papier keinen Betrag nennt — dann ist der
-   * Zuwachs unbekannt, nicht null.
+   * Zuwachs unbekannt, nicht null — und bei neuen Papieren (`isNew`): Gegen ein
+   * angebrochenes Jahr waere fast die ganze Erwartung „Zuwachs", und solche
+   * Zeilen standen ganz oben, ohne etwas ueber Wachstum zu sagen.
    */
   growth: Money | null;
   yieldOnBuyin: DecimalInstance | null;
@@ -267,22 +274,30 @@ export function DevelopmentView({
   const assetRows = React.useMemo<AssetRow[]>(() => {
     if (latest === null) return [];
     const range = trailingYearRange(latest.asOf);
+    // Ein Durchlauf statt eines Filters je Asset.
+    const bySecurity = new Map<string, AnalyticsPayment[]>();
+    for (const payment of payments) {
+      const list = bySecurity.get(payment.securityId);
+      if (list) list.push(payment);
+      else bySecurity.set(payment.securityId, [payment]);
+    }
 
     return [...portfolio.heldSecurityIds].map((securityId) => {
+      const own = bySecurity.get(securityId) ?? [];
       const expected = portfolio.expectedBySecurity.get(securityId) ?? null;
-      const received = aggregateInRange(
-        payments.filter((payment) => payment.securityId === securityId),
-        range,
-      ).net;
+      const received = aggregateInRange(own, range).net;
+      const isNew = !own.some((payment) => payment.payDate < range.start);
       // Ohne Betrag der Quelle bleibt der Zuwachs **unbekannt**, nicht null:
       // Daraus zu rechnen hiesse, das Schweigen der Quelle als Zahl zu lesen.
-      const growth = expected ? expected.subtract(received) : null;
+      // Ohne volles Vergleichsjahr gibt es ihn ebenso wenig (siehe AssetRow).
+      const growth = expected && !isNew ? expected.subtract(received) : null;
       return {
         securityId,
         name: entityName(securities, securityId),
         archived: entityArchived(securities, securityId),
         expected,
         received,
+        isNew,
         growth,
         yieldOnBuyin: portfolio.yieldOnBuyinBySecurity.get(securityId) ?? null,
       };
@@ -318,6 +333,7 @@ export function DevelopmentView({
         align: "right",
         compare: (a, b) =>
           (a.expected?.toChartNumber() ?? 0) - (b.expected?.toChartNumber() ?? 0),
+        isMissing: (row) => row.expected === null,
         render: (row) =>
           row.expected ? (
             <AmountText amount={row.expected} />
@@ -342,12 +358,8 @@ export function DevelopmentView({
         align: "right",
         compare: (a, b) =>
           (a.growth?.toChartNumber() ?? 0) - (b.growth?.toChartNumber() ?? 0),
-        render: (row) =>
-          row.growth ? (
-            <AmountText amount={row.growth} showSign />
-          ) : (
-            <span className="text-muted-foreground">—</span>
-          ),
+        isMissing: (row) => row.growth === null,
+        render: (row) => <GrowthValue row={row} />,
       },
       {
         key: "yieldOnBuyin",
@@ -362,6 +374,7 @@ export function DevelopmentView({
         className: "hidden xl:table-cell",
         compare: (a, b) =>
           (a.yieldOnBuyin?.toNumber() ?? 0) - (b.yieldOnBuyin?.toNumber() ?? 0),
+        isMissing: (row) => row.yieldOnBuyin === null,
         render: (row) =>
           row.yieldOnBuyin ? (
             formatPercent(row.yieldOnBuyin, 2)
@@ -525,15 +538,12 @@ export function DevelopmentView({
             // nackte Zahl hinter „erhalten" — was welche Zahl war, musste man
             // raten.
             listSummary={{
-              value: (row) =>
-                row.growth ? (
-                  <>
-                    <span className="sr-only">Zuwachs </span>
-                    <AmountText amount={row.growth} showSign />
-                  </>
-                ) : (
-                  <span className="text-muted-foreground">—</span>
-                ),
+              value: (row) => (
+                <>
+                  <span className="sr-only">Zuwachs </span>
+                  <GrowthValue row={row} />
+                </>
+              ),
               meta: (row) => (
                 <>
                   erwartet {row.expected ? <AmountText amount={row.expected} /> : "—"}
@@ -546,4 +556,23 @@ export function DevelopmentView({
       </Section>
     </div>
   );
+}
+
+/**
+ * Der Zuwachs einer Zeile — oder **„neu"**, wenn das Papier erst innerhalb der
+ * zwoelf Monate dazukam und es kein volles Vergleichsjahr gibt.
+ */
+function GrowthValue({ row }: { row: AssetRow }) {
+  if (row.growth) return <AmountText amount={row.growth} showSign />;
+  if (row.isNew && row.expected) {
+    return (
+      <span
+        className="text-muted-foreground"
+        title="Erst seit weniger als zwölf Monaten im Depot – noch kein volles Vergleichsjahr"
+      >
+        neu
+      </span>
+    );
+  }
+  return <span className="text-muted-foreground">—</span>;
 }

@@ -261,9 +261,12 @@ Detailseite). Der Kennzahlkopf darüber bleibt davon unberührt; sein „Erhalte
 Summe der letzten zwölf Monate, sonst verglichen sie zwei verschieden zusammengesetzte
 Grundgesamtheiten.
 
-Bleiben zwei Fälle je Zeile: **mit Betrag der Quelle** (Zuwachs = erwartet − erhalten) und
+Bleiben drei Fälle je Zeile: **mit Betrag der Quelle** (Zuwachs = erwartet − erhalten),
 **ohne** (unbekannt, kein Wert) — daraus zu rechnen hieße, das Schweigen der Quelle als
-Null zu lesen.
+Null zu lesen — und **neu**: Hat das Papier vor Beginn des Zwölfmonatsfensters nie gezahlt,
+fehlt ein volles Vergleichsjahr. Gegen ein angebrochenes Jahr wäre fast die ganze Erwartung
+„Zuwachs"; solche Zeilen führten die Liste an, ohne etwas über Wachstum zu sagen. Sie
+zeigen deshalb „neu" und stehen wie Zeilen ohne Wert in beiden Sortierrichtungen am Ende.
 
 Verglichen werden **zwei Zwölfmonatszeiträume** (`trailingYearRange`). Die Erwartung gilt
 für zwölf Monate nach vorn; ihr Gegenstück sind die zwölf Monate, die am Stichtag enden.
