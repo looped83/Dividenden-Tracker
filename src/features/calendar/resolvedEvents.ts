@@ -25,6 +25,7 @@ export function useResolvedCalendarEvents() {
           id: security.id,
           name: security.name,
           archived: security.archived_at !== null,
+          reinvestSince: security.reinvest_since,
         })),
         aliasesQuery.data ?? [],
       ),

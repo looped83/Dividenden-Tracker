@@ -188,16 +188,22 @@ export function ListDateTile({ iso, muted = false }: { iso: string; muted?: bool
  * Tippfläche nicht schon sagt, und kostete die Breite, in der sonst der Name
  * des Depots stand. `chevron` bleibt einzelnen Navigationszeilen vorbehalten
  * („Gesamt seit März 2019"), die ohne ihn wie bloßer Text aussähen.
+ *
+ * `titleAside` ist ein kleines Zeichen direkt hinter dem Namen (Reinvestition
+ * im Kalender, seit 2.50.0). Ein langer Name läuft davor aus
+ * (`truncate-fade-aside`), statt das Zeichen mitzunehmen.
  */
 export function ListItemBody({
   leading,
   title,
+  titleAside,
   meta,
   trailing,
   chevron = false,
 }: {
   leading?: React.ReactNode;
   title: React.ReactNode;
+  titleAside?: React.ReactNode;
   meta?: React.ReactNode;
   trailing?: React.ReactNode;
   chevron?: boolean;
@@ -206,7 +212,14 @@ export function ListItemBody({
     <>
       {leading}
       <span className="min-w-0 flex-1">
-        <span className="block truncate-fade font-medium">{title}</span>
+        {titleAside ? (
+          <span className="@container flex items-center gap-1.5">
+            <span className="min-w-0 truncate-fade-aside font-medium">{title}</span>
+            {titleAside}
+          </span>
+        ) : (
+          <span className="block truncate-fade font-medium">{title}</span>
+        )}
         {(meta !== undefined || trailing !== undefined) && (
           <span className="mt-0.5 flex items-baseline justify-between gap-3">
             <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-muted-foreground">

@@ -42,6 +42,7 @@ function event(
     endsAt: null,
     isAllDay: true,
     matchedCompanyName: null,
+    reinvestSince: null,
     ...overrides,
     title,
     companyName: overrides.companyName ?? title,

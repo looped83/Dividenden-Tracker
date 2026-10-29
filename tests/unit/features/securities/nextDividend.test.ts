@@ -28,6 +28,7 @@ function event(overrides: Partial<CalendarEvent>): CalendarEvent {
     title: null,
     companyName: "Alpha",
     matchedCompanyName: "Alpha",
+    reinvestSince: null,
     expectedAmount: null,
     sourcePortfolio: null,
     description: null,

@@ -19,6 +19,7 @@ function event(id: string, date: string, title: string): CalendarEvent {
     title,
     companyName: title,
     matchedCompanyName: null,
+    reinvestSince: null,
     expectedAmount: null,
     sourcePortfolio: null,
     description: null,

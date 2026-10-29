@@ -71,6 +71,19 @@ export function eventTitle(event: CalendarEvent): string {
   return event.matchedCompanyName ?? event.companyName ?? event.title ?? "Ohne Titel";
 }
 
+/**
+ * Wird die Dividende dieses Zahltags automatisch reinvestiert (seit 2.50.0)?
+ * Massgeblich ist wie bei `reinvestedSummary` das Zahlungsdatum: Ein Zahltag
+ * vor dem Einschalten kaufte nicht nach. Ex-Tage zahlen nichts aus.
+ */
+export function isReinvested(event: CalendarEvent): boolean {
+  return (
+    event.eventType === "payment" &&
+    event.reinvestSince !== null &&
+    event.date >= event.reinvestSince
+  );
+}
+
 /** „Montag, 13.08.2026". */
 export function longDate(iso: string): string {
   return `${WEEKDAYS_DE[weekdayIndex(iso)]}, ${formatCalendarDate(iso)}`;

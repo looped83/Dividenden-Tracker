@@ -157,6 +157,26 @@
   mask-image: linear-gradient(to right, #000 calc(100% - 2rem), transparent);
 }
 
+/* Dasselbe Auslaufen für einen inhaltsbreiten Titel, hinter dem ein kleines
+   Zeichen steht (`ListItemBody` mit `titleAside`, seit 2.50.0). Die Blende
+   misst vom Rand des umgebenden `@container` aus (`cqw`), nicht von der
+   eigenen Breite: Ein kurzer Name bleibt so unberührt, ein langer läuft vor
+   dem Zeichen aus. 1.25rem = Zeichen (0.875rem) plus Abstand (0.375rem). */
+@utility truncate-fade-aside {
+  overflow: hidden;
+  white-space: nowrap;
+  -webkit-mask-image: linear-gradient(
+    to right,
+    #000 calc(100cqw - 3.25rem),
+    transparent calc(100cqw - 1.25rem)
+  );
+  mask-image: linear-gradient(
+    to right,
+    #000 calc(100cqw - 3.25rem),
+    transparent calc(100cqw - 1.25rem)
+  );
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
