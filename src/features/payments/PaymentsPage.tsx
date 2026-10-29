@@ -320,18 +320,18 @@ export function PaymentsPage() {
     [groupedByMonth, rows],
   );
 
-  // Veraenderung je Monat gegenueber dem Vorjahresmonat (seit 2.53.0). Bezug
-  // sind alle aktiven Eingaenge unter Depot- und Assetfilter — nicht die
+  // Veraenderung je Monat gegenueber dem Vorjahresmonat (seit 2.53.0), nicht
+  // mit Assetfilter (`MonthAside`). Bezug sind alle aktiven Eingaenge unter
+  // dem Depotfilter — nicht die
   // angezeigten Zeilen: Ein Jahres- oder Monatsfilter blendete den
   // Vorjahresmonat sonst aus, Stornierte zaehlen in keiner Summe mit.
   const today = useToday();
   const changesByMonth = React.useMemo(() => {
-    if (!groupedByMonth) return null;
+    if (!groupedByMonth || securityId) return null;
     const base: { date: string; amount: Money }[] = [];
     for (const payment of allPayments) {
       if (payment.archived_at) continue;
       if (depotId && payment.depot_id !== depotId) continue;
-      if (securityId && payment.security_id !== securityId) continue;
       base.push({
         date: effectiveOf(payment),
         amount: Money.fromString(
@@ -556,7 +556,6 @@ export function PaymentsPage() {
                   <TableHead>Zahlungsdatum</TableHead>
                   <TableHead>Asset</TableHead>
                   <TableHead>Depot</TableHead>
-                  <TableHead className="text-right">Gegenüber Vorjahr</TableHead>
                   <TableHead className="text-right">Netto</TableHead>
                 </TableRow>
               </TableHeader>
@@ -602,11 +601,6 @@ export function PaymentsPage() {
                               {monthNameDe(group.month)} {group.year}
                             </button>
                           </th>
-                          <MonthChangeCell
-                            change={change}
-                            group={group}
-                            className={cn("py-3", afterOpen && "pt-8")}
-                          />
                           <td
                             className={cn(
                               "px-3 py-3 text-right text-[0.9375rem] font-medium text-muted-foreground tabular-amount",
@@ -616,7 +610,11 @@ export function PaymentsPage() {
                             {/* Summe links des Pfeils — wie im Monatskopf auf
                                 dem Telefon. */}
                             <span className="inline-flex items-center justify-end gap-2">
-                              {monthTotal && <AmountText amount={monthTotal} />}
+                              <MonthAside
+                                total={monthTotal}
+                                change={change}
+                                group={group}
+                              />
                               <ChevronDown
                                 aria-hidden
                                 className={cn(
@@ -640,13 +638,12 @@ export function PaymentsPage() {
                             >
                               {monthNameDe(group.month)} {group.year}
                             </th>
-                            <MonthChangeCell
-                              change={change}
-                              group={group}
-                              className="pb-2 pt-10 group-first/month:pt-2"
-                            />
                             <td className="px-3 pb-2 pt-10 text-right text-[0.9375rem] font-medium text-muted-foreground tabular-amount group-first/month:pt-2">
-                              {monthTotal && <AmountText amount={monthTotal} />}
+                              <MonthAside
+                                total={monthTotal}
+                                change={change}
+                                group={group}
+                              />
                             </td>
                           </TableRow>
                         )
@@ -763,30 +760,10 @@ export function PaymentsPage() {
 }
 
 /**
- * Veraenderung des Monats in der Tabelle — in der Spalte der Vergleiche je
- * Zahlung, damit die Dreiecke untereinanderstehen.
+ * Kopf eines Monats: Veraenderung zum Vorjahresmonat links der Summe. Mit
+ * Assetfilter steht sie nicht (seit 2.53.1): Ein Monat hat dann meist eine
+ * Zahlung, der Kopf wiederholte nur ihren Vergleich.
  */
-function MonthChangeCell({
-  change,
-  group,
-  className,
-}: {
-  change: MonthChange | undefined;
-  group: { year: number; month: number };
-  className?: string;
-}) {
-  return (
-    <td
-      className={cn("whitespace-nowrap px-3 text-right text-sm font-medium", className)}
-    >
-      {change && (
-        <MonthChangeIndicator change={change} year={group.year} month={group.month} />
-      )}
-    </td>
-  );
-}
-
-/** Kopf eines Monats auf dem Telefon: Veraenderung links der Summe. */
 function MonthAside({
   total,
   change,
@@ -859,15 +836,13 @@ function PaymentRow({ row, comparison, listUrl }: PaymentRowProps) {
         )}
       </TableCell>
       <TableCell className="text-muted-foreground">{depotName || "—"}</TableCell>
-      {/* Eigene Spalte seit 2.53.0: Mit der Prozentzahl stuenden Dreiecke und
-          Betraege sonst gegeneinander versetzt. */}
-      <TableCell className="w-28 whitespace-nowrap text-right">
-        {comparison && (
-          <YearOverYearIndicator comparison={comparison} className="text-sm" />
-        )}
-      </TableCell>
-      <TableCell className="w-32 text-right font-semibold">
-        <AmountText amount={amount} />
+      <TableCell className="text-right font-semibold">
+        {/* Der Indikator steht links des Betrags, damit die Ziffern der Spalte
+            buendig bleiben. */}
+        <span className="inline-flex items-baseline justify-end gap-1.5">
+          {comparison && <YearOverYearIndicator comparison={comparison} />}
+          <AmountText amount={amount} />
+        </span>
       </TableCell>
     </TableRow>
   );

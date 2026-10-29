@@ -2,8 +2,8 @@ import { asUser } from "../support/db";
 import { expect, test } from "../support/appTest";
 
 /**
- * Dividendenliste seit 2.53.0: Veränderung zum Vorjahr in Prozent je Zahlung
- * und je Monat, dazu das Reinvestitions-Zeichen hinter dem Namen — wie im
+ * Dividendenliste seit 2.53.0: Veränderung zum Vorjahr je Zahlung (Prozent
+ * seit 2.53.1 nur im Titel) und in Prozent je Monat, dazu das Reinvestitions-Zeichen hinter dem Namen — wie im
  * Kalender ab dem Zahltag, an dem die Reinvestition eingeschaltet war.
  */
 test.use({
@@ -33,6 +33,13 @@ test("zeigt Vorjahresvergleich in Prozent und Reinvestition", async ({ page, kon
   ).toBeAttached();
   await expect(main.getByText(/^\+20,0\s% gegenüber September 2025/)).toBeAttached();
   await expect(main.getByText("Wird reinvestiert")).toHaveCount(1);
+
+  // Mit Assetfilter wiederholte der Monatskopf nur den Vergleich der Zahlung.
+  await page.goto(`/#/eingaenge?security=${konto.securityId}`);
+  await expect(
+    main.getByText(/10,00\s€ \(\+20,0\s%\) gegenüber dem Vorjahr/),
+  ).toBeAttached();
+  await expect(main.getByText(/gegenüber September 2025/)).toHaveCount(0);
 
   // Der August lag vor dem Einschalten und ging zurück.
   await page.goto("/#/eingaenge?year=2026&month=8");

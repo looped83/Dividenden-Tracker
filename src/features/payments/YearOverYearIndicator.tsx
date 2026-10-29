@@ -9,10 +9,10 @@ import type { YearOverYearComparison } from "@/features/payments/yearOverYear";
 
 /**
  * Zeigt, wie die Zahlung zur Zahlung desselben Monats im Vorjahr steht:
- * ▲ (mehr), ▼ (weniger), Punkt (gleich). Seit 2.53.0 steht die Veraenderung
- * in Prozent daneben — ob +2 % oder +40 %, sagte das Dreieck allein nicht.
+ * ▲ (mehr), ▼ (weniger), Punkt (gleich). Die Prozentzahl steht nur im Titel:
  * Verglichen werden Betraege, nicht Dividenden je Aktie (siehe
- * `compareToPreviousYear`); der Titel nennt deshalb die Vergleichszahlung.
+ * `compareToPreviousYear`). Sichtbar neben jeder Zahlung (2.53.0) las sich ein
+ * Zukauf als „+548 %" — wie eine Dividendenerhoehung (seit 2.53.1 wieder raus).
  *
  * Die Richtung steckt in der Form, nicht nur in der Farbe
  * (UX_AND_DESIGN_SYSTEM.md #1). Dasselbe Dreieck wie die Veraenderung
@@ -40,7 +40,7 @@ export function YearOverYearIndicator({
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 items-baseline gap-1 text-xs font-medium tabular-amount",
+        "inline-flex shrink-0 items-center",
         direction === "up" && "text-positive",
         direction === "down" && "text-negative",
         // Das Dreieck steht auf der Grundlinie des Betrags wie im Kopf der
@@ -57,7 +57,6 @@ export function YearOverYearIndicator({
       {direction === "same" && (
         <Circle className="size-1.5 fill-current text-muted-foreground" aria-hidden />
       )}
-      {percentText && <span aria-hidden>{percentText}</span>}
       <span className="sr-only">{label}</span>
     </span>
   );
