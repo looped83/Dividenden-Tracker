@@ -196,7 +196,10 @@ describe("DevelopmentView", () => {
   it("sortiert neue Assets in beiden Richtungen ans Ende", () => {
     renderTab();
     const reihen = () =>
-      screen.getAllByRole("row").slice(1).map((row) => row.textContent);
+      screen
+        .getAllByRole("row")
+        .slice(1)
+        .map((row) => row.textContent);
     expect(reihen().at(-1)).toMatch(/Beta SE/);
     fireEvent.click(screen.getByRole("button", { name: /Erwartet abzüglich erhalten/ }));
     expect(reihen().at(-1)).toMatch(/Beta SE/);
