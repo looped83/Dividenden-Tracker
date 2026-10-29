@@ -34,12 +34,13 @@ test("zeigt Vorjahresvergleich in Prozent und Reinvestition", async ({ page, kon
   await expect(main.getByText(/^\+20,0\s% gegenüber September 2025/)).toBeAttached();
   await expect(main.getByText("Wird reinvestiert")).toHaveCount(1);
 
-  // Mit Assetfilter wiederholte der Monatskopf nur den Vergleich der Zahlung.
+  // Mit Assetfilter stehen die Zahlungen ohne Monatskoepfe untereinander.
   await page.goto(`/#/eingaenge?security=${konto.securityId}`);
   await expect(
     main.getByText(/10,00\s€ \(\+20,0\s%\) gegenüber dem Vorjahr/),
   ).toBeAttached();
   await expect(main.getByText(/gegenüber September 2025/)).toHaveCount(0);
+  await expect(main.getByText("September 2026", { exact: true })).toHaveCount(0);
 
   // Der August lag vor dem Einschalten und ging zurück.
   await page.goto("/#/eingaenge?year=2026&month=8");
