@@ -721,7 +721,13 @@ function AssetName({ row, savingsPlan }: { row: AssetRow; savingsPlan: boolean }
  * mit Trennstrich lesen sie sich als ein Zustand des Assets. Nur das Ja traegt
  * ein Zeichen — wie „Archiviert".
  */
-function AssetMarks({ savingsPlan, reinvest }: { savingsPlan: boolean; reinvest: boolean }) {
+function AssetMarks({
+  savingsPlan,
+  reinvest,
+}: {
+  savingsPlan: boolean;
+  reinvest: boolean;
+}) {
   if (!savingsPlan && !reinvest) return null;
   return (
     <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-muted px-1.5 py-0.5 text-muted-foreground">
