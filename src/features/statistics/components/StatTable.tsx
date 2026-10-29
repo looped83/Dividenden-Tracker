@@ -23,6 +23,12 @@ export interface StatColumn<T> {
    * (keine Float-Arithmetik), Text ueber `localeCompare`.
    */
   compare?: (a: T, b: T) => number;
+  /**
+   * Zeilen ohne Wert in dieser Spalte (Strich, „neu"). Sie stehen in **beiden**
+   * Richtungen am Ende: Als Null einsortiert landeten sie mitten zwischen
+   * echten Werten, und die Umkehr der Sortierung holte sie nach oben.
+   */
+  isMissing?: (row: T) => boolean;
   render: (row: T) => React.ReactNode;
   /** Klartext fuer den sortierbaren Spaltenkopf (Screenreader). */
   headerLabel?: string;
@@ -259,10 +265,18 @@ export function StatTable<T>({
   const sortKey = activeSort?.key;
   const sortDirection = activeSort?.direction;
   const sorted = React.useMemo(() => {
-    const compare = sortKey ? columnByKey.get(sortKey)?.compare : undefined;
+    const column = sortKey ? columnByKey.get(sortKey) : undefined;
+    const compare = column?.compare;
     if (!compare) return filtered;
     const factor = sortDirection === "asc" ? 1 : -1;
-    return [...filtered].sort((a, b) => compare(a, b) * factor);
+    const isMissing = column.isMissing;
+    return [...filtered].sort((a, b) => {
+      if (isMissing) {
+        const aMissing = isMissing(a);
+        if (aMissing !== isMissing(b)) return aMissing ? 1 : -1;
+      }
+      return compare(a, b) * factor;
+    });
   }, [filtered, sortKey, sortDirection, columnByKey]);
 
   // Kein Blaettern mehr (seit 2.3.0): Die Tabelle waechst beim Scrollen um

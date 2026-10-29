@@ -253,6 +253,13 @@ eine rote Zahl für genau den Vorgang, der gut läuft. Die Wachstumsrate misst s
 der Zuwachs negativ aus — Verkäufe, gekürzte Dividenden, eine Sonderausschüttung im
 Vorjahr —, ist das ein echter Rückgang und bleibt rot.
 
+Die Tabelle „Entwicklung je Asset" nennt ihre Spalten nach dem Zeitraum statt nach
+erwartet/erhalten: **Letzte 12 Monate | Nächste 12 Monate | Veränderung**, die Vergangenheit
+zuerst. „Erwartet gegen erhalten" las sich wie ein Soll-Ist-Vergleich, in dem ein Plus ein
+Fehlbetrag wäre. Daneben steht die Veränderung in Prozent der letzten zwölf Monate (wie die
+Marke im Kennzahlkopf) und, ab breiten Bildschirmen, die Rendite auf den Einstand — mit
+vollem Namen, weil „Auf Einstand" neben der Veränderung als deren Prozentwert gelesen wurde.
+
 Die Tabelle listet **nur, was im jüngsten Stand liegt** (`heldSecurityIds`). Verkaufte
 Papiere standen früher mit dem Wegfall ihres Erhaltenen darin — das beantwortet aber eine
 andere Frage als dieser Bereich: Er sagt, ob die Ertragskraft des *heutigen* Depots wächst.
@@ -261,9 +268,12 @@ Detailseite). Der Kennzahlkopf darüber bleibt davon unberührt; sein „Erhalte
 Summe der letzten zwölf Monate, sonst verglichen sie zwei verschieden zusammengesetzte
 Grundgesamtheiten.
 
-Bleiben zwei Fälle je Zeile: **mit Betrag der Quelle** (Zuwachs = erwartet − erhalten) und
+Bleiben drei Fälle je Zeile: **mit Betrag der Quelle** (Zuwachs = erwartet − erhalten),
 **ohne** (unbekannt, kein Wert) — daraus zu rechnen hieße, das Schweigen der Quelle als
-Null zu lesen.
+Null zu lesen — und **neu**: Hat das Papier vor Beginn des Zwölfmonatsfensters nie gezahlt,
+fehlt ein volles Vergleichsjahr. Gegen ein angebrochenes Jahr wäre fast die ganze Erwartung
+„Zuwachs"; solche Zeilen führten die Liste an, ohne etwas über Wachstum zu sagen. Sie
+zeigen deshalb „neu" und stehen wie Zeilen ohne Wert in beiden Sortierrichtungen am Ende.
 
 Verglichen werden **zwei Zwölfmonatszeiträume** (`trailingYearRange`). Die Erwartung gilt
 für zwölf Monate nach vorn; ihr Gegenstück sind die zwölf Monate, die am Stichtag enden.

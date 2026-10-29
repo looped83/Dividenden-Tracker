@@ -45,13 +45,25 @@ interface AssetRow {
   expected: Money | null;
   received: Money;
   /**
+   * Erst innerhalb der zwoelf Monate dazugekommen: keine Zahlung vor Beginn des
+   * Fensters. Dann fehlt ein volles Vergleichsjahr — siehe `growth`.
+   */
+  isNew: boolean;
+  /**
    * **erwartet − erhalten**: um wie viel die kuenftige Jahresausschuettung ueber
    * dem liegt, was in den letzten zwoelf Monaten tatsaechlich kam.
    *
    * `null`, wenn die Quelle fuer das Papier keinen Betrag nennt — dann ist der
-   * Zuwachs unbekannt, nicht null.
+   * Zuwachs unbekannt, nicht null — und bei neuen Papieren (`isNew`): Gegen ein
+   * angebrochenes Jahr waere fast die ganze Erwartung „Zuwachs", und solche
+   * Zeilen standen ganz oben, ohne etwas ueber Wachstum zu sagen.
    */
   growth: Money | null;
+  /**
+   * Die Veraenderung in Prozent, gemessen an den letzten zwoelf Monaten — wie
+   * die Marke im Kennzahlkopf. `null` ohne Veraenderung oder ohne Erhaltenes.
+   */
+  growthPercent: DecimalInstance | null;
   yieldOnBuyin: DecimalInstance | null;
 }
 
@@ -267,23 +279,35 @@ export function DevelopmentView({
   const assetRows = React.useMemo<AssetRow[]>(() => {
     if (latest === null) return [];
     const range = trailingYearRange(latest.asOf);
+    // Ein Durchlauf statt eines Filters je Asset.
+    const bySecurity = new Map<string, AnalyticsPayment[]>();
+    for (const payment of payments) {
+      const list = bySecurity.get(payment.securityId);
+      if (list) list.push(payment);
+      else bySecurity.set(payment.securityId, [payment]);
+    }
 
     return [...portfolio.heldSecurityIds].map((securityId) => {
+      const own = bySecurity.get(securityId) ?? [];
       const expected = portfolio.expectedBySecurity.get(securityId) ?? null;
-      const received = aggregateInRange(
-        payments.filter((payment) => payment.securityId === securityId),
-        range,
-      ).net;
+      const received = aggregateInRange(own, range).net;
+      const isNew = !own.some((payment) => payment.payDate < range.start);
       // Ohne Betrag der Quelle bleibt der Zuwachs **unbekannt**, nicht null:
       // Daraus zu rechnen hiesse, das Schweigen der Quelle als Zahl zu lesen.
-      const growth = expected ? expected.subtract(received) : null;
+      // Ohne volles Vergleichsjahr gibt es ihn ebenso wenig (siehe AssetRow).
+      const growth = expected && !isNew ? expected.subtract(received) : null;
       return {
         securityId,
         name: entityName(securities, securityId),
         archived: entityArchived(securities, securityId),
         expected,
         received,
+        isNew,
         growth,
+        growthPercent:
+          growth && !received.isZero()
+            ? growth.toDecimal().dividedBy(received.toDecimal()).times(HUNDRED)
+            : null,
         yieldOnBuyin: portfolio.yieldOnBuyinBySecurity.get(securityId) ?? null,
       };
     });
@@ -310,14 +334,26 @@ export function DevelopmentView({
           </Link>
         ),
       },
+      // Vergangenheit zuerst, dann die Erwartung: So liest sich die Veraenderung
+      // von links nach rechts, statt wie ein Soll-Ist-Vergleich.
+      {
+        key: "received",
+        width: "w-40",
+        header: "Letzte 12 Monate",
+        headerLabel: "Erhalten in den letzten zwölf Monaten",
+        align: "right",
+        compare: (a, b) => a.received.compareTo(b.received),
+        render: (row) => <AmountText amount={row.received} />,
+      },
       {
         key: "expected",
-        width: "w-36",
-        header: "Erwartet p. a.",
-        headerLabel: "Erwartete Jahresdividende laut Depotstand",
+        width: "w-40",
+        header: "Nächste 12 Monate",
+        headerLabel: "Erwartet in den nächsten zwölf Monaten laut Depotstand",
         align: "right",
         compare: (a, b) =>
           (a.expected?.toChartNumber() ?? 0) - (b.expected?.toChartNumber() ?? 0),
+        isMissing: (row) => row.expected === null,
         render: (row) =>
           row.expected ? (
             <AmountText amount={row.expected} />
@@ -326,42 +362,58 @@ export function DevelopmentView({
           ),
       },
       {
-        key: "received",
-        width: "w-32",
-        header: "Erhalten",
-        headerLabel: "Erhalten in den letzten zwölf Monaten",
-        align: "right",
-        compare: (a, b) => a.received.compareTo(b.received),
-        render: (row) => <AmountText amount={row.received} />,
-      },
-      {
         key: "growth",
         width: "w-32",
-        header: "Zuwachs",
-        headerLabel: "Erwartet abzüglich erhalten",
+        header: "Veränderung",
+        headerLabel: "Nächste abzüglich letzte zwölf Monate",
         align: "right",
         compare: (a, b) =>
           (a.growth?.toChartNumber() ?? 0) - (b.growth?.toChartNumber() ?? 0),
+        isMissing: (row) => row.growth === null,
+        render: (row) => <GrowthValue row={row} />,
+      },
+      {
+        key: "growthPercent",
+        width: "w-24",
+        listHidden: true,
+        header: "in %",
+        headerLabel: "Veränderung in Prozent der letzten zwölf Monate",
+        align: "right",
+        // Tritt zurueck, wo der Platz nicht fuer alle Spalten reicht.
+        className: "hidden lg:table-cell",
+        compare: (a, b) =>
+          (a.growthPercent?.toNumber() ?? 0) - (b.growthPercent?.toNumber() ?? 0),
+        isMissing: (row) => row.growthPercent === null,
         render: (row) =>
-          row.growth ? (
-            <AmountText amount={row.growth} showSign />
+          row.growthPercent ? (
+            <span
+              className={
+                row.growthPercent.isNegative()
+                  ? "text-negative"
+                  : row.growthPercent.isZero()
+                    ? undefined
+                    : "text-positive"
+              }
+            >
+              {row.growthPercent.isPositive() && !row.growthPercent.isZero() ? "+" : ""}
+              {formatPercent(row.growthPercent, 1)}
+            </span>
           ) : (
             <span className="text-muted-foreground">—</span>
           ),
       },
       {
         key: "yieldOnBuyin",
-        width: "w-32",
+        width: "w-40",
         listHidden: true,
-        header: "Auf Einstand",
-        headerLabel: "Rendite auf den Einstand",
+        header: "Rendite auf Einstand",
+        headerLabel: "Erwartete Jahresdividende in Prozent des Einstands",
         align: "right",
-        // Nebenkennzahl: tritt zurueck, wo der Platz nicht fuer alle Spalten
-        // reicht — dieselbe Regel wie bei der groessten Zahlung im
-        // Assetbereich.
+        // Nebenkennzahl: tritt zuerst zurueck, wo der Platz nicht reicht.
         className: "hidden xl:table-cell",
         compare: (a, b) =>
           (a.yieldOnBuyin?.toNumber() ?? 0) - (b.yieldOnBuyin?.toNumber() ?? 0),
+        isMissing: (row) => row.yieldOnBuyin === null,
         render: (row) =>
           row.yieldOnBuyin ? (
             formatPercent(row.yieldOnBuyin, 2)
@@ -503,7 +555,7 @@ export function DevelopmentView({
           in einer Zeile mit der Sortierung (wie in der Unternehmensstatistik)
           — darueber in eigener Zeile kostete sie eine ganze Zeilenhoehe. */}
       <Section
-        title="Erwartet gegen erhalten je Asset"
+        title="Entwicklung je Asset"
         actionClassName="-my-3 w-64"
         {...(isWide && { action: search })}
       >
@@ -525,19 +577,17 @@ export function DevelopmentView({
             // nackte Zahl hinter „erhalten" — was welche Zahl war, musste man
             // raten.
             listSummary={{
-              value: (row) =>
-                row.growth ? (
-                  <>
-                    <span className="sr-only">Zuwachs </span>
-                    <AmountText amount={row.growth} showSign />
-                  </>
-                ) : (
-                  <span className="text-muted-foreground">—</span>
-                ),
+              value: (row) => (
+                <>
+                  <span className="sr-only">Veränderung </span>
+                  <GrowthValue row={row} />
+                </>
+              ),
               meta: (row) => (
                 <>
-                  erwartet {row.expected ? <AmountText amount={row.expected} /> : "—"}
-                  {" · "}erhalten <AmountText amount={row.received} />
+                  letzte 12 M. <AmountText amount={row.received} />
+                  {" · "}nächste{" "}
+                  {row.expected ? <AmountText amount={row.expected} /> : "—"}
                 </>
               ),
             }}
@@ -546,4 +596,23 @@ export function DevelopmentView({
       </Section>
     </div>
   );
+}
+
+/**
+ * Der Zuwachs einer Zeile — oder **„neu"**, wenn das Papier erst innerhalb der
+ * zwoelf Monate dazukam und es kein volles Vergleichsjahr gibt.
+ */
+function GrowthValue({ row }: { row: AssetRow }) {
+  if (row.growth) return <AmountText amount={row.growth} showSign />;
+  if (row.isNew && row.expected) {
+    return (
+      <span
+        className="text-muted-foreground"
+        title="Erst seit weniger als zwölf Monaten im Depot – noch kein volles Vergleichsjahr"
+      >
+        neu
+      </span>
+    );
+  }
+  return <span className="text-muted-foreground">—</span>;
 }
