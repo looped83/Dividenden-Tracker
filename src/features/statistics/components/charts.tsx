@@ -142,6 +142,7 @@ export function CategoryBarChart({
 
   const hasDrillDown = data.some((row) => row.href !== undefined);
   const hasHighlight = data.some((row) => row.highlight);
+  const labelByKey = new Map(data.map((row) => [row.key, row.label]));
 
   if (data.length === 0 || data.every((row) => row.value === 0)) {
     return <ChartEmpty>{emptyMessage}</ChartEmpty>;
@@ -152,7 +153,15 @@ export function CategoryBarChart({
       <ChartCanvas ariaLabel={ariaLabel}>
         <BarChart data={data} margin={CHART_MARGIN}>
           <CartesianGrid {...CHART_GRID_PROPS} />
-          <XAxis dataKey="label" {...CHART_X_AXIS_PROPS} />
+          {/* Achse ueber den eindeutigen Schluessel, beschriftet mit dem
+              Label: Monatsnamen wiederholen sich ueber Jahre („Feb" 2024 und
+              2026), und mit `label` als Kategorie zeigte der Tooltip beim
+              juengeren Balken die Werte des aelteren. */}
+          <XAxis
+            dataKey="key"
+            {...CHART_X_AXIS_PROPS}
+            tickFormatter={(key: string) => labelByKey.get(key) ?? key}
+          />
           <YAxis {...CHART_Y_AXIS_PROPS} />
           <Tooltip
             content={<CategoryTooltip showCount={showCount} />}

@@ -177,7 +177,17 @@ export function PaymentInsightsView({
   // Mit nur einem Jahr waere die Jahresansicht ein einzelner Balken — dann
   // gibt es sie nicht (zuvor verschwand dabei der ganze Verlauf).
   const multiYear = years.length > 1;
-  const [view, setView] = React.useState<HistoryView>(multiYear ? "yearly" : "monthly");
+  // Nur die eigene Wahl ist Zustand, der Standard folgt den Daten: Als
+  // Anfangswert von useState blieb „Je Zahlung" stehen, wenn die Seite beim
+  // ersten Zeichnen erst wenige Dividenden kannte oder von einem Asset mit
+  // nur einem Jahr kam.
+  const [chosen, setView] = React.useState<HistoryView | null>(null);
+  const view: HistoryView =
+    chosen && (chosen !== "yearly" || multiYear)
+      ? chosen
+      : multiYear
+        ? "yearly"
+        : "monthly";
 
   const chartData = React.useMemo<CategoryDatum[]>(
     () =>

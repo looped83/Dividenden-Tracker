@@ -319,6 +319,8 @@ export function PaymentDetailPage() {
 
       {insights && (
         <PaymentInsightsView
+          // Die gewaehlte Ansicht gilt je Asset, nicht ueber Assets hinweg.
+          key={payment.security_id}
           insights={insights}
           paymentId={payment.id}
           securityId={payment.security_id}
