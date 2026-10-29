@@ -15,6 +15,7 @@ function payment(payDate: string, net: string): AnalyticsPayment {
   return {
     id: `p-${payDate}`,
     payDate,
+    actualPayDate: payDate,
     netAmount: eur(net),
     grossAmount: eur(net),
     securityId: "sec",

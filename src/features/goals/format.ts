@@ -118,7 +118,7 @@ export function timeProgressText(progress: GoalProgress): string {
 /**
  * Drill-down zu den Dividendeneingängen des Zielzeitraums (Auftrag §24). Der
  * Zielzeitraum wird über die bereits vorhandenen Jahres-/Monatsfilter der
- * Eingangsliste abgebildet; deren Summe (aktive Eingänge, Zahltag)
+ * Eingangsliste abgebildet; deren Summe (aktive Eingänge, effektives Datum)
  * stimmt exakt mit dem Ziel-Fortschritt überein.
  */
 export function drillDownHref(goal: Pick<Goal, "goalType" | "year" | "month">): string {

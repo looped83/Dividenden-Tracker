@@ -19,8 +19,8 @@ import type { AnalyticsPayment } from "./types";
 /**
  * Monatsabschluss auf der Startseite (CALCULATION_RULES.md §11.13): das
  * Ergebnis des Vormonats in einer Karte, nur in den ersten Tagen eines Monats.
- * Reine Funktion ueber denselben Eingaengen wie alle Kennzahlen (Zahltag,
- * §10); das Monatsziel bewertet der Aufrufer ueber die Zielschicht.
+ * Reine Funktion ueber denselben Eingaengen wie alle Kennzahlen (effektives
+ * Datum, §10); das Monatsziel bewertet der Aufrufer ueber die Zielschicht.
  */
 
 /** Bis zu diesem Monatstag steht der Abschluss des Vormonats auf der Startseite. */

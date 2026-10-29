@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToday } from "@/lib/hooks/useToday";
 import type { AnalyticsPayment } from "@/lib/statistics";
 import type { SecuritySnapshot } from "@/lib/supabase/repositories/securitySnapshots";
-import { useAnalyticsPayments } from "@/features/dashboard/hooks";
+import { useEffectivePayments } from "@/features/dashboard/hooks";
 import { PortfolioImportButton, PortfolioImportDialog } from "./PortfolioImportDialog";
 import {
   forecastFacets,
@@ -26,7 +26,7 @@ export interface ForecastBasis {
   reinvested: ReadonlySet<string>;
   /** Stammdaten je Asset (Land, Branche) fuer die Streuung im Planer. */
   facets: ReadonlyMap<string, ForecastFacets>;
-  /** Aktive Zahlungen (§10), für den bisherigen Weg im Schneeball. */
+  /** Aktive Zahlungen mit effektivem Datum (§10), für den bisherigen Weg im Schneeball. */
   payments: readonly AnalyticsPayment[];
   startYear: number;
   /** Kalendermonat von heute (1–12), für die Jahresenden im Schneeball. */
@@ -49,7 +49,7 @@ export function ForecastGate({
   const today = useToday();
   const { data: securities = [], isLoading: securitiesLoading } = useSecurities();
   const { data: snapshots = [], isLoading: snapshotsLoading } = useSecuritySnapshots();
-  const { payments, paymentsQuery } = useAnalyticsPayments();
+  const { payments, paymentsQuery } = useEffectivePayments();
   const [importOpen, setImportOpen] = React.useState(false);
 
   const { facets, names, reinvested } = React.useMemo(() => {

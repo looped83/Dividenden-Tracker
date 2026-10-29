@@ -14,10 +14,14 @@ export type { PaymentSource, PaymentType };
 export interface AnalyticsPayment {
   id: string;
   /**
-   * Zahltag "YYYY-MM-DD" — Datumsdimension **aller** Kennzahlen
-   * (CALCULATION_RULES.md §10).
+   * Effektives Kalenderdatum "YYYY-MM-DD" — Datumsdimension **aller** Kennzahlen.
+   * Standardmaessig identisch mit {@link actualPayDate}; ist fuer das Unternehmen
+   * ein Ausschuettungsplan hinterlegt, ist dies das dem naechstliegenden geplanten
+   * Monat zugeordnete Datum (CALCULATION_RULES.md §10).
    */
   payDate: string;
+  /** Tatsaechliches Zahlungsdatum aus der Datenbank (unveraendert, fuer Anzeige). */
+  actualPayDate: string;
   netAmount: Money;
   grossAmount: Money;
   securityId: string;
@@ -108,7 +112,7 @@ export type ComparisonResult =
  * in der Analytics-Schicht statt ({@link filterPayments}) — nie in Komponenten.
  */
 export interface StatisticsFilter {
-  /** Kalenderjahr des Zahltags (§10) oder null. */
+  /** Kalenderjahr des effektiven Zahlungsdatums (§10) oder null. */
   year: number | null;
   securityId: string | null;
   depotId: string | null;

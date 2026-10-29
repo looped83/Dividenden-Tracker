@@ -28,7 +28,7 @@ import {
   trailingYearRange,
   type RefDate,
 } from "@/lib/statistics/dates";
-import { normalizePayoutMonths } from "@/lib/statistics/payoutMonths";
+import { normalizePayoutMonths } from "@/lib/statistics/effectiveMonth";
 import type { AnalyticsPayment } from "@/lib/statistics/types";
 import type { SecuritySnapshot } from "@/lib/supabase/repositories/securitySnapshots";
 import type { DividendFrequency } from "@/lib/supabase/database.types";
@@ -133,7 +133,7 @@ export function netRatio(
   let net = new MoneyDecimal(0);
   let gross = new MoneyDecimal(0);
   for (const payment of payments) {
-    if (!isInRange(payment.payDate, range)) continue;
+    if (!isInRange(payment.actualPayDate, range)) continue;
     if (payment.grossAmount.currency !== EUR || payment.netAmount.currency !== EUR)
       continue;
     net = net.plus(payment.netAmount.toDecimal());
@@ -165,7 +165,7 @@ export function netRatioByCountry(
     { net: DecimalInstance; gross: DecimalInstance; count: number }
   >();
   for (const payment of payments) {
-    if (!isInRange(payment.payDate, range)) continue;
+    if (!isInRange(payment.actualPayDate, range)) continue;
     if (payment.grossAmount.currency !== EUR || payment.netAmount.currency !== EUR)
       continue;
     const country = facets.get(payment.securityId)?.country;
@@ -259,7 +259,7 @@ export function forecastTwelveMonths({
   const recentMonthsBySecurity = new Map<string, Set<number>>();
   let receivedLast12 = Money.zero(EUR);
   for (const payment of payments) {
-    if (!isInRange(payment.payDate, recentRange)) continue;
+    if (!isInRange(payment.actualPayDate, recentRange)) continue;
     if (payment.netAmount.currency === EUR)
       receivedLast12 = receivedLast12.add(payment.netAmount);
     const months = recentMonthsBySecurity.get(payment.securityId);

@@ -77,7 +77,7 @@ function removePayment(queryClient: QueryClient, id: string) {
 /**
  * Vollstaendige Historie, stornierte eingeschlossen — derselbe Cache-Eintrag
  * wie die Auswertungen. Status-, Zeitraumfilter und Sortierung erfolgen
- * clientseitig ueber den Zahltag.
+ * clientseitig ueber den effektiven Monat.
  */
 export function useAllPayments() {
   return useQuery({

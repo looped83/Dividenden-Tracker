@@ -6,7 +6,7 @@ const eur = (value: string) => Money.fromString(value, EUR);
 
 function row(partial: Partial<SortableRow> & { id: string }): SortableRow {
   return {
-    payDate: "2026-01-15",
+    effectiveDate: "2026-01-15",
     amount: eur("10.00"),
     createdAt: "2026-01-15T10:00:00Z",
     updatedAt: "2026-01-15T10:00:00Z",
@@ -19,9 +19,9 @@ function row(partial: Partial<SortableRow> & { id: string }): SortableRow {
 describe("sortRows (§2)", () => {
   it("sortiert Zahlungsdatum absteigend als Standard", () => {
     const rows = [
-      row({ id: "a", payDate: "2026-01-01" }),
-      row({ id: "b", payDate: "2026-03-01" }),
-      row({ id: "c", payDate: "2026-02-01" }),
+      row({ id: "a", effectiveDate: "2026-01-01" }),
+      row({ id: "b", effectiveDate: "2026-03-01" }),
+      row({ id: "c", effectiveDate: "2026-02-01" }),
     ];
     const sorted = sortRows(rows, { field: "payment_date", direction: "desc" });
     expect(sorted.map((r) => r.id)).toEqual(["b", "c", "a"]);
@@ -29,8 +29,8 @@ describe("sortRows (§2)", () => {
 
   it("sortiert Zahlungsdatum aufsteigend", () => {
     const rows = [
-      row({ id: "a", payDate: "2026-01-01" }),
-      row({ id: "b", payDate: "2026-03-01" }),
+      row({ id: "a", effectiveDate: "2026-01-01" }),
+      row({ id: "b", effectiveDate: "2026-03-01" }),
     ];
     const sorted = sortRows(rows, { field: "payment_date", direction: "asc" });
     expect(sorted.map((r) => r.id)).toEqual(["a", "b"]);
@@ -67,9 +67,9 @@ describe("sortRows (§2)", () => {
 
   it("ist stabil: Gleichstände brechen deterministisch über created_at und id auf", () => {
     const rows = [
-      row({ id: "b", payDate: "2026-01-01", createdAt: "2026-01-01T09:00:00Z" }),
-      row({ id: "a", payDate: "2026-01-01", createdAt: "2026-01-01T09:00:00Z" }),
-      row({ id: "c", payDate: "2026-01-01", createdAt: "2026-01-01T12:00:00Z" }),
+      row({ id: "b", effectiveDate: "2026-01-01", createdAt: "2026-01-01T09:00:00Z" }),
+      row({ id: "a", effectiveDate: "2026-01-01", createdAt: "2026-01-01T09:00:00Z" }),
+      row({ id: "c", effectiveDate: "2026-01-01", createdAt: "2026-01-01T12:00:00Z" }),
     ];
     const first = sortRows(rows, { field: "payment_date", direction: "desc" });
     const second = sortRows([...rows].reverse(), {

@@ -1084,7 +1084,7 @@ Trigger erlauben; das wird nicht gebraucht.
 
 ## ADR-012: Zahlungen zählen am Zahltag, nicht im Planmonat
 
-**Status:** Accepted  
+**Status:** Superseded by ADR-013 (2.55.0)  
 **Scope:** Fachlogik (CALCULATION_RULES.md §10)  
 **Supersedes:** D-8-1 und die Zuordnung nach Ausschüttungsplan
 
@@ -1113,3 +1113,40 @@ macht, kostet mehr Vertrauen, als ein ruhigerer Monatsrhythmus bringt.
 
 - Eine Zuordnung je Zahlung gebraucht wird; dann als ausdrücklich gepflegtes Feld je Zahlung,
   nicht als Regel über den Plan.
+
+---
+
+## ADR-013: Nachzügler-Regel statt Zahltag oder voller Plan-Zuordnung
+
+**Status:** Accepted  
+**Scope:** Fachlogik (CALCULATION_RULES.md §10)  
+**Supersedes:** ADR-012
+
+### Decision
+
+Eine Zahlung in den ersten 7 Tagen eines Monats zählt zum Vormonat, wenn dieser laut
+Ausschüttungsplan fällig war (Monatszahler nur, wenn der Vormonat leer und der Zahlungsmonat
+doppelt belegt ist). Nichts wird nach vorne gezogen, nichts weiter als einen Monat verschoben.
+
+### Why
+
+Nach ADR-012 (reiner Zahltag) wirkten die Monate deutlich unruhiger: Eine Quartalsdividende,
+die zwei Tage zu spät kommt, fehlte im fälligen Monat und verdoppelte den nächsten. Die frühere
+Plan-Logik (D-8-1) glättete zwar, sortierte aber auch ältere Jahre nach dem heutigen Plan um und
+zog Zahlungen nach vorne. Gegen die von Hand geführte Excel-Historie 2020–Jul 2026 (79 Monate):
+
+| Regel | Monate centgenau | Gesamtabweichung |
+|---|--:|--:|
+| Frühere Plan-Logik | 9 | 4.294 € |
+| Reiner Zahltag | 22 | 4.998 € |
+| Nachzügler-Regel, 7 Tage | 27 | 2.167 € |
+
+### Trade-offs
+
+- Jahressummen können über den Jahreswechsel vom Kontoauszug abweichen (Zahlung am 3. Januar
+  zählt zum Dezember) — wie in der Excel.
+- Eine Zahlung, die mehr als eine Woche zu spät kommt, steht im eigenen Monat.
+
+### Revisit When
+
+- Eine Zuordnung je Zahlung gebraucht wird; dann als gepflegtes Feld je Zahlung.

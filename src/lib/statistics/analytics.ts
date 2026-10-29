@@ -338,9 +338,12 @@ export function selectedPeriodAggregate(
  * Laufendes Jahr: gleicher YTD-Zeitraum. Abgeschlossenes Jahr: volles Vorjahr.
  * `prior === null` bei „Alle Jahre" (kein Vorjahresvergleich, §5.1).
  *
- * Im laufenden Jahr zaehlt, was bis heute bzw. bis zum gleichen Kalendertag
- * des Vorjahres eingegangen war (Zahltag, §10). Das Vorjahr wird nach
- * derselben Regel gezaehlt.
+ * Im laufenden Jahr gehoert eine Zahlung zum **effektiven** Jahr (§10), und
+ * „bis heute" grenzt nach dem **tatsaechlichen** Eingang ab: was bis heute
+ * bzw. bis zum gleichen Kalendertag des Vorjahres eingegangen war. So zaehlt
+ * im Vorjahr ein Nachzuegler (effektiv Monatsletzter, eingegangen erst im
+ * Folgemonat) erst ab seinem Eingang, und `current` ist genau die
+ * Jahressumme.
  */
 export function selectedYearComparison(
   payments: readonly AnalyticsPayment[],
@@ -353,7 +356,7 @@ export function selectedYearComparison(
   if (selection === ref.year) {
     const receivedBy = (year: number, lastDay: string): Money =>
       aggregate(
-        payments.filter((p) => yearOf(p.payDate) === year && p.payDate <= lastDay),
+        payments.filter((p) => yearOf(p.payDate) === year && p.actualPayDate <= lastDay),
       ).net;
     return {
       current: receivedBy(selection, isoFromRef(ref)),
@@ -377,7 +380,8 @@ export interface AnnouncedPayment {
  * der nächsten Wochen, plus was im Vorjahr danach noch kam.
  *
  * - `received` folgt der Abgrenzung von {@link selectedYearComparison}
- *   (Zahltag bis heute) und ist genau die Jahressumme im Kopf.
+ *   (effektives Jahr, tatsächlicher Eingang) und ist genau die Jahressumme im
+ *   Kopf.
  * - `announced` sind die übergebenen Ankündigungen nach heute im laufenden Jahr
  *   (der Aufrufer begrenzt sie auf 30 Tage). Sie ersetzen das Vorjahr bis zum
  *   letzten angekündigten Tag (`announcedUntil`).
@@ -429,7 +433,7 @@ export function yearEndForecast(
     : ref;
   const cutoff = priorYearSameDay(until);
   const prior = payments.filter(
-    (p) => yearOf(p.payDate) === ref.year - 1 && p.payDate > cutoff,
+    (p) => yearOf(p.payDate) === ref.year - 1 && p.actualPayDate > cutoff,
   );
   const restByMonth = Array.from({ length: 12 }, () => ZERO);
   for (const a of inYear) {
@@ -479,7 +483,8 @@ export function availableYears(payments: readonly AnalyticsPayment[]): number[] 
 // Phase 5B — Statistikbereich (CALCULATION_RULES.md §11)
 //
 // Alle folgenden Funktionen sind reine, decimal-sichere Aggregationen ueber
-// bereits geparsten {@link AnalyticsPayment}-Datensaetzen nach Zahltag (§10). Sie bauen konsequent auf den Basis-Aggregaten oben auf und sind die
+// bereits geparsten {@link AnalyticsPayment}-Datensaetzen mit effektivem Datum
+// (§10). Sie bauen konsequent auf den Basis-Aggregaten oben auf und sind die
 // einzige Quelle der Statistik-Kennzahlen — es entstehen keine parallelen
 // Berechnungen und keine Logik in React-Komponenten.
 // =============================================================================
@@ -487,8 +492,8 @@ export function availableYears(payments: readonly AnalyticsPayment[]): number[] 
 /**
  * Wendet den kombinierbaren Statistikfilter (§11) an. Reine Vorstufe der
  * Aggregation: `null`-Kriterien schraenken nicht ein, gesetzte Kriterien wirken
- * als UND-Verknuepfung. Der Jahresfilter bezieht sich auf das Kalenderjahr des
- * Zahltags (§10), konsistent zu allen uebrigen Kennzahlen.
+ * als UND-Verknuepfung. Der Jahresfilter bezieht sich auf das **effektive**
+ * Kalenderjahr (§10), konsistent zu allen uebrigen Kennzahlen.
  */
 export function filterPayments(
   payments: readonly AnalyticsPayment[],
@@ -607,7 +612,7 @@ export function calendarMonthBuckets(
   return buckets;
 }
 
-/** Partitioniert Zahlungen nach Kalenderjahr (einmaliger Durchlauf). */
+/** Partitioniert Zahlungen nach effektivem Kalenderjahr (einmaliger Durchlauf). */
 function partitionByYear(
   payments: readonly AnalyticsPayment[],
 ): Map<number, AnalyticsPayment[]> {
