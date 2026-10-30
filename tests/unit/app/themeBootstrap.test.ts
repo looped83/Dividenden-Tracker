@@ -57,4 +57,19 @@ describe("Theme vor dem ersten Zeichnen (index.html)", () => {
     expect(runScript("system", true)).toBe(true);
     expect(runScript(null, false)).toBe(false);
   });
+
+  it("laesst die Seite im dunklen Design unter die iOS-Statusleiste laufen", () => {
+    const meta = document.createElement("meta");
+    meta.name = "apple-mobile-web-app-status-bar-style";
+    meta.content = "default";
+    document.head.append(meta);
+    try {
+      runScript("light", true);
+      expect(meta.content).toBe("default");
+      runScript("dark", false);
+      expect(meta.content).toBe("black-translucent");
+    } finally {
+      meta.remove();
+    }
+  });
 });
