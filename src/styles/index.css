@@ -304,6 +304,29 @@
   }
 }
 
+/* Jahresrückblick (seit 2.58.0): Jede Karte baut sich auf wie eine Folie —
+   Kennzeile, Zahl, Satz und Zusatz gleiten nacheinander ein, Listen und
+   Kacheln folgen Zeile für Zeile, Balken wachsen von der Grundlinie. Anders
+   als im übrigen Tracker spielt das bei jeder Karte: Die Story ist ein
+   Ereignis, kein Arbeitsbereich. */
+@keyframes story-rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+}
+@keyframes story-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+}
+@keyframes column-grow {
+  from {
+    transform: scaleY(0);
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   /* Die Abschnitte der Seite blenden ein, statt hart auf das Ladegerüst zu
      folgen. */
@@ -340,5 +363,92 @@
     stroke-dasharray: 1;
     stroke-dashoffset: 1;
     animation: draw-stroke 450ms ease-out 600ms forwards;
+  }
+
+  /* Jahresrückblick: Bausteine der Karte im Abstand von 90ms, Zeilen von
+     Listen und Kacheln ab 300ms im Abstand von 60ms. Höchstens sechs bzw.
+     acht Stufen — danach steht der Rest gemeinsam da. */
+  .story-slide > *,
+  .story-slide :is(ol, ul, dl) > * {
+    animation: story-rise 500ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: calc(min(var(--story-step, 0), 5) * 90ms);
+  }
+  .story-slide :is(ol, ul, dl) > * {
+    animation-duration: 400ms;
+    animation-delay: calc(300ms + min(var(--story-step, 0), 7) * 60ms);
+  }
+  .story-slide > :nth-child(2),
+  .story-slide :is(ol, ul, dl) > :nth-child(2) {
+    --story-step: 1;
+  }
+  .story-slide > :nth-child(3),
+  .story-slide :is(ol, ul, dl) > :nth-child(3) {
+    --story-step: 2;
+  }
+  .story-slide > :nth-child(4),
+  .story-slide :is(ol, ul, dl) > :nth-child(4) {
+    --story-step: 3;
+  }
+  .story-slide > :nth-child(5),
+  .story-slide :is(ol, ul, dl) > :nth-child(5) {
+    --story-step: 4;
+  }
+  .story-slide > :nth-child(n + 6),
+  .story-slide :is(ol, ul, dl) > :nth-child(6) {
+    --story-step: 5;
+  }
+  .story-slide :is(ol, ul, dl) > :nth-child(7) {
+    --story-step: 6;
+  }
+  .story-slide :is(ol, ul, dl) > :nth-child(n + 8) {
+    --story-step: 7;
+  }
+  /* Die Jahreszahl der ersten Karte und die Pokale springen hervor. */
+  .story-slide .story-pop {
+    animation: story-pop 700ms cubic-bezier(0.34, 1.56, 0.64, 1) 100ms both;
+  }
+  .story-slide li .story-pop {
+    animation-delay: calc(450ms + min(var(--story-step, 0), 7) * 60ms);
+  }
+  /* Säulen wachsen nacheinander aus der Grundlinie, sobald das Diagramm
+     eingeglitten ist; Recharts selbst animiert weiterhin nicht. */
+  .story-slide .recharts-bar-rectangle {
+    transform-box: fill-box;
+    transform-origin: bottom;
+    animation: column-grow 600ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: calc(350ms + var(--bar-index, 0) * 35ms);
+  }
+  .story-slide .recharts-bar-rectangle:nth-child(2) {
+    --bar-index: 1;
+  }
+  .story-slide .recharts-bar-rectangle:nth-child(3) {
+    --bar-index: 2;
+  }
+  .story-slide .recharts-bar-rectangle:nth-child(4) {
+    --bar-index: 3;
+  }
+  .story-slide .recharts-bar-rectangle:nth-child(5) {
+    --bar-index: 4;
+  }
+  .story-slide .recharts-bar-rectangle:nth-child(6) {
+    --bar-index: 5;
+  }
+  .story-slide .recharts-bar-rectangle:nth-child(7) {
+    --bar-index: 6;
+  }
+  .story-slide .recharts-bar-rectangle:nth-child(8) {
+    --bar-index: 7;
+  }
+  .story-slide .recharts-bar-rectangle:nth-child(9) {
+    --bar-index: 8;
+  }
+  .story-slide .recharts-bar-rectangle:nth-child(10) {
+    --bar-index: 9;
+  }
+  .story-slide .recharts-bar-rectangle:nth-child(11) {
+    --bar-index: 10;
+  }
+  .story-slide .recharts-bar-rectangle:nth-child(n + 12) {
+    --bar-index: 11;
   }
 }

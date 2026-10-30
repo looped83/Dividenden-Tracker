@@ -268,10 +268,15 @@ export function StoryViewer({
           }}
           onClick={onClick}
         >
+          {/* Jede Karte ist ein erster Auftritt (`data-intro`): Bausteine
+              gleiten nacheinander ein, Zahlen zaehlen hoch, Balken wachsen
+              (`.story-slide` in index.css). Der Schluessel baut die Karte bei
+              jedem Wechsel neu auf, auch beim Zurueckblaettern. */}
           <section
             key={slide.id}
             aria-label={slide.label}
-            className="flex min-h-full w-full flex-col justify-center px-4 pt-6 pb-[calc(env(safe-area-inset-bottom)+2rem)] sm:pb-10 animate-in fade-in slide-in-from-bottom-3 duration-500 motion-reduce:animate-none sm:px-8"
+            data-intro=""
+            className="story-slide flex min-h-full w-full flex-col justify-center px-4 pt-6 pb-[calc(env(safe-area-inset-bottom)+2rem)] sm:pb-10 sm:px-8"
           >
             {slide.content}
           </section>
