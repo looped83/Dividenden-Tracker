@@ -80,8 +80,11 @@ const REQUEST_TIMEOUT_MS = 8_000;
  */
 const GDELT_TIMEOUT_MS = 20_000;
 
-/** Gleichzeitige Anfragen an Marketaux; bei 8 antwortete es mit 429. */
-const MARKETAUX_CONCURRENCY = 3;
+/**
+ * Anfragen an Marketaux nacheinander: Bei 8 und auch bei 3 gleichzeitigen
+ * antwortete es teils mit 429 (30.10.2026).
+ */
+const MARKETAUX_CONCURRENCY = 1;
 
 /** Pause vor dem zweiten Versuch nach einem 429. */
 const MARKETAUX_RETRY_MS = 2_000;
@@ -389,6 +392,13 @@ export function parseMarketaux(
 /** GDELT verlangt mindestens fünf Sekunden zwischen zwei Anfragen. */
 const GDELT_PAUSE_MS = 5_500;
 
+/**
+ * GDELT zählt die Grenze je Absender-IP; Supabase-Server teilen sich IPs mit
+ * anderen Projekten. Nach „zu viele Anfragen“ (429 oder Klartext statt JSON)
+ * deshalb einmal nach längerer Pause erneut.
+ */
+const GDELT_RETRY_MS = 10_000;
+
 /** Namen je Sammelanfrage — kurz genug für die Längengrenze der Suche. */
 const GDELT_NAMES_PER_QUERY = 12;
 
@@ -523,6 +533,8 @@ export interface CollectNewsOptions {
   marketauxRetryMs?: number;
   /** Pause zwischen zwei GDELT-Anfragen; nur Tests setzen sie herab. */
   gdeltPauseMs?: number;
+  /** Pause vor dem zweiten GDELT-Versuch; nur Tests setzen sie herab. */
+  gdeltRetryMs?: number;
 }
 
 export interface CollectNewsResult {
@@ -640,13 +652,24 @@ export async function collectNews(
       result.skipped += 1;
       continue;
     }
-    await attempt("gdelt", async () =>
-      parseGdelt(
-        await fetchText(doFetch, url, "application/json", GDELT_TIMEOUT_MS),
-        chunk,
-        options.since,
-      ),
-    );
+    await attempt("gdelt", async () => {
+      const load = async () =>
+        parseGdelt(
+          await fetchText(doFetch, url, "application/json", GDELT_TIMEOUT_MS),
+          chunk,
+          options.since,
+        );
+      try {
+        return await load();
+      } catch (error) {
+        const limited =
+          error instanceof NewsSourceError &&
+          (error.status === 429 || error.code === "format");
+        if (!limited || Date.now() >= gdeltStopAt) throw error;
+      }
+      await pause(options.gdeltRetryMs ?? GDELT_RETRY_MS);
+      return load();
+    });
   }
   return result;
 }

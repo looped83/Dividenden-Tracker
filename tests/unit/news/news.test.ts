@@ -344,6 +344,33 @@ describe("collectNews", () => {
     expect(gdeltQuery).toBe('("Beispiel Immobilien" OR "Zweite Muster")');
   });
 
+  it("versucht GDELT nach „zu viele Anfragen“ einmal erneut", async () => {
+    let calls = 0;
+    const fetchImpl = vi.fn(() => {
+      calls += 1;
+      return Promise.resolve(
+        calls === 1
+          ? new Response("Please limit requests to one every 5 seconds")
+          : new Response(
+              gdelt([
+                article("Muster Global Dividend legt zu", "20261030T070000Z", "German"),
+              ]),
+            ),
+      );
+    });
+    const result = await collectNews({
+      securities: [ETF],
+      since: SINCE,
+      now: NOW,
+      marketauxKey: API_KEY,
+      fetchImpl,
+      gdeltRetryMs: 0,
+    });
+    expect(calls).toBe(2);
+    expect(result).toMatchObject({ requests: 1, failed: 0 });
+    expect(result.items).toHaveLength(1);
+  });
+
   it("startet nach Ablauf der Zeit keine Marketaux-Anfragen mehr", async () => {
     const fetchImpl = vi.fn(() => Promise.resolve(new Response(gdelt([]))));
     const result = await collectNews({
