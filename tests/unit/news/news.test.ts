@@ -3,10 +3,10 @@ import {
   NewsSourceError,
   collectNews,
   decodeEntities,
-  googleNewsUrl,
+  gdeltUrl,
   marketauxSymbol,
   marketauxUrl,
-  parseGoogleNews,
+  parseGdelt,
   parseMarketaux,
   searchName,
   titleMentions,
@@ -42,12 +42,18 @@ function href(request: RequestInfo | URL): string {
   return request instanceof URL ? request.href : request.url;
 }
 
-function rss(items: string[]): string {
-  return `<?xml version="1.0"?><rss version="2.0"><channel><title>x</title>${items.join("")}</channel></rss>`;
+function gdelt(articles: object[]): string {
+  return JSON.stringify({ articles });
 }
 
-function item(title: string, source: string, date: string, guid = title): string {
-  return `<item><title>${title} - ${source}</title><link>https://news.google.com/rss/articles/${encodeURIComponent(guid)}</link><guid isPermaLink="false">${guid}</guid><pubDate>${date}</pubDate><description>&lt;a&gt;x&lt;/a&gt;</description><source url="https://example.test">${source}</source></item>`;
+function article(title: string, seendate: string, language: string): object {
+  return {
+    url: `https://example.test/${encodeURIComponent(title)}`,
+    title,
+    seendate,
+    domain: "example.test",
+    language,
+  };
 }
 
 describe("searchName", () => {
@@ -149,60 +155,53 @@ describe("parseMarketaux", () => {
   });
 });
 
-describe("parseGoogleNews", () => {
-  it("trennt die Quelle ab, filtert fremde und alte Meldungen und sortiert neu zuerst", () => {
-    const body = rss([
-      item(
-        "Beispiel Immobilien: Ausschüttung steigt",
-        "Musterzeitung",
-        "Tue, 28 Oct 2026 09:00:00 GMT",
-      ),
-      item(
-        "Beispiel Immobilien &amp; Co. im Fokus",
-        "Börse Muster",
-        "Thu, 30 Oct 2026 07:00:00 GMT",
-      ),
-      item("Zinsen bewegen den Markt", "Musterzeitung", "Wed, 29 Oct 2026 09:00:00 GMT"),
-      item("Beispiel Immobilien alt", "Musterzeitung", "Mon, 01 Sep 2026 09:00:00 GMT"),
-    ]);
-    const items = parseGoogleNews(body, AKTIE, SINCE);
-    expect(items.map((entry) => entry.title)).toEqual([
-      "Beispiel Immobilien & Co. im Fokus",
-      "Beispiel Immobilien: Ausschüttung steigt",
+describe("parseGdelt", () => {
+  const body = gdelt([
+    article("Beispiel Immobilien: Ausschüttung steigt", "20261028T090000Z", "German"),
+    article("Muster Global Dividend legt zu", "20261030T070000Z", "English"),
+    article("Zinsen bewegen den Markt", "20261029T090000Z", "German"),
+    article("Beispiel Immobilien alt", "20260901T090000Z", "German"),
+    article("Beispiel Immobilien auf Spanisch", "20261029T090000Z", "Spanish"),
+  ]);
+
+  it("ordnet Treffer über den Titel zu und filtert Sprache und Alter", () => {
+    const items = parseGdelt(body, [AKTIE, ETF], SINCE);
+    expect(items.map((entry) => [entry.security_id, entry.title])).toEqual([
+      ["sec-1", "Beispiel Immobilien: Ausschüttung steigt"],
+      ["sec-2", "Muster Global Dividend legt zu"],
     ]);
     expect(items[0]).toMatchObject({
-      provider: "google_news",
-      source: "Börse Muster",
-      snippet: null,
-      sentiment: null,
-      published_at: "2026-10-30T07:00:00.000Z",
+      provider: "gdelt",
+      source: "example.test",
+      language: "de",
+      published_at: "2026-10-28T09:00:00.000Z",
     });
   });
 
-  it("begrenzt auf fünf Meldungen", () => {
-    const body = rss(
+  it("begrenzt auf fünf Meldungen je Asset", () => {
+    const many = gdelt(
       Array.from({ length: 8 }, (_, index) =>
-        item(
-          `Beispiel Immobilien Nr. ${String(index)}`,
-          "Q",
-          "Thu, 30 Oct 2026 07:00:00 GMT",
-          `g${String(index)}`,
-        ),
+        article(`Beispiel Immobilien Nr. ${String(index)}`, "20261030T070000Z", "German"),
       ),
     );
-    expect(parseGoogleNews(body, AKTIE, SINCE)).toHaveLength(5);
+    expect(parseGdelt(many, [AKTIE], SINCE)).toHaveLength(5);
   });
 
-  it("wirft, wenn kein RSS ankommt", () => {
-    expect(() => parseGoogleNews("<html></html>", AKTIE, SINCE)).toThrow(NewsSourceError);
+  it("nimmt eine leere Antwort hin und wirft bei Klartext", () => {
+    expect(parseGdelt("{}", [AKTIE], SINCE)).toEqual([]);
+    expect(() => parseGdelt("Please limit requests", [AKTIE], SINCE)).toThrow(
+      NewsSourceError,
+    );
   });
 });
 
 describe("Adressen", () => {
-  it("sucht bei Google nach dem genauen Namen im passenden Zeitraum", () => {
-    const url = new URL(googleNewsUrl(AKTIE, SINCE, NOW));
-    expect(url.searchParams.get("q")).toBe('"Beispiel Immobilien" when:7d');
-    expect(url.searchParams.get("hl")).toBe("de");
+  it("sucht bei GDELT alle Namen in einer Anfrage im passenden Zeitraum", () => {
+    const url = new URL(gdeltUrl([AKTIE, ETF], SINCE, NOW) ?? "");
+    expect(url.searchParams.get("query")).toBe(
+      '("Beispiel Immobilien" OR "Muster Global Dividend")',
+    );
+    expect(url.searchParams.get("timespan")).toBe("168h");
   });
 
   it("fragt Marketaux nach Kürzel und Zeitpunkt", () => {
@@ -224,19 +223,17 @@ describe("collectNews", () => {
       },
     ],
   });
-  const googleBody = rss([
-    item("Muster Global Dividend legt zu", "Q", "Thu, 30 Oct 2026 07:00:00 GMT"),
+  const gdeltBody = gdelt([
+    article("Muster Global Dividend legt zu", "20261030T070000Z", "German"),
   ]);
 
-  it("fragt Marketaux nur für Aktien und Google für alle", async () => {
+  it("fragt Marketaux für Aktien und GDELT nur für den Rest", async () => {
     const fetchImpl = vi.fn((request: RequestInfo | URL) =>
       Promise.resolve(
         new Response(
           href(request).startsWith("https://api.marketaux.com/")
             ? marketauxBody
-            : href(request).includes("Muster")
-              ? googleBody
-              : rss([]),
+            : gdeltBody,
         ),
       ),
     );
@@ -247,26 +244,36 @@ describe("collectNews", () => {
       marketauxKey: API_KEY,
       fetchImpl,
     });
-    expect(result.requests).toBe(3);
+    expect(result.requests).toBe(2);
     expect(result.failed).toBe(0);
+    const gdeltQuery = new URL(href(fetchImpl.mock.calls[1]?.[0] ?? "")).searchParams.get(
+      "query",
+    );
+    expect(gdeltQuery).toBe('"Muster Global Dividend"');
     expect(
       result.items.map((entry) => [entry.security_id, entry.provider]).sort(),
     ).toEqual([
       ["sec-1", "marketaux"],
-      ["sec-2", "google_news"],
+      ["sec-2", "gdelt"],
     ]);
   });
 
-  it("überspringt Marketaux ohne Key", async () => {
-    const fetchImpl = vi.fn(() => Promise.resolve(new Response(rss([]))));
+  it("teilt viele Namen auf mehrere GDELT-Anfragen auf", async () => {
+    const fetchImpl = vi.fn(() => Promise.resolve(new Response(gdelt([]))));
+    const securities = Array.from({ length: 13 }, (_, index) => ({
+      ...ETF,
+      id: `etf-${String(index)}`,
+      name: `Muster Fonds Nummer ${String(index)}`,
+    }));
     const result = await collectNews({
-      securities: [AKTIE],
+      securities,
       since: SINCE,
       now: NOW,
-      marketauxKey: null,
+      marketauxKey: API_KEY,
       fetchImpl,
+      gdeltPauseMs: 0,
     });
-    expect(result.requests).toBe(1);
+    expect(result.requests).toBe(2);
   });
 
   it("zählt Ausfälle einzeln und verrät weder Adresse noch Key", async () => {
@@ -283,10 +290,20 @@ describe("collectNews", () => {
       fetchImpl,
     });
     expect(result.failed).toBe(2);
-    expect(result.errorCodes.sort()).toEqual([
-      "google_news:network",
-      "marketaux:http:429",
-    ]);
+    expect(result.errorCodes.sort()).toEqual(["gdelt:network", "marketaux:http:429"]);
     expect(result.errorCodes.join(" ")).not.toContain(API_KEY);
+  });
+
+  it("startet nach Ablauf der Zeit keine Marketaux-Anfragen mehr", async () => {
+    const fetchImpl = vi.fn(() => Promise.resolve(new Response(gdelt([]))));
+    const result = await collectNews({
+      securities: [AKTIE],
+      since: SINCE,
+      now: NOW,
+      marketauxKey: API_KEY,
+      fetchImpl,
+      budgetMs: 0,
+    });
+    expect(result).toMatchObject({ requests: 1, skipped: 1 });
   });
 });

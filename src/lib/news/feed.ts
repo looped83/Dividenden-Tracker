@@ -92,7 +92,7 @@ export function buildNewsFeed(
     if (existing) {
       if (!existing.securityIds.includes(row.security_id))
         existing.securityIds.push(row.security_id);
-      // Marketaux bringt einen Auszug mit, Google News nicht.
+      // Marketaux bringt einen Auszug mit, GDELT nicht.
       existing.snippet ??= row.snippet;
       continue;
     }

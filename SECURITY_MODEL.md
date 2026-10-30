@@ -305,7 +305,7 @@ Sicherheitsmaßnahme.
 
 - **Secret**: `MARKETAUX_API_KEY` liegt allein als Supabase-Secret vor. Er steht in der
   Anfrageadresse von Marketaux; deshalb enthalten weder Antwort noch Log eine Adresse —
-  protokolliert werden nur Zähler und Codes (`marketaux:http:429`, `google_news:timeout`).
+  protokolliert werden nur Zähler und Codes (`marketaux:http:429`, `gdelt:timeout`).
 - **Authentifizierung**: `sync-news` läuft mit `verify_jwt = true` und bestimmt die
   Nutzerkennung über `auth.getUser()`.
 - **Rechte**: `news_items` und `news_sync_status` sind für `authenticated` **nur

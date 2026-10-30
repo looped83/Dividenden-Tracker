@@ -536,7 +536,7 @@ Synchronisationen; eine Belegung verfällt nach der übergebenen Frist.
 ## News (Migration 0045)
 
 Zwischenspeicher für Meldungen zu den Assets im Bestand, geschrieben allein von der Edge
-Function `sync-news` (Marketaux und Google News). Nicht in der Datensicherung: Die
+Function `sync-news` (Marketaux und GDELT, Migration 0046). Nicht in der Datensicherung: Die
 Meldungen kommen beim nächsten Abruf wieder, und nach 30 Tagen werden sie gelöscht.
 
 ### `news_items`
@@ -546,7 +546,7 @@ Meldungen kommen beim nächsten Abruf wieder, und nach 30 Tagen werden sie gelö
 | id | uuid PK | |
 | user_id | uuid not null | Eigentümer (RLS, `on delete cascade`) |
 | security_id | uuid not null | betroffenes Asset (`on delete cascade`) |
-| provider | news_provider | `marketaux` oder `google_news` |
+| provider | news_provider | `marketaux` oder `gdelt` |
 | external_id | text not null | Kennung beim Anbieter |
 | title | text not null | Schlagzeile (≤ 500) |
 | snippet | text | Auszug (≤ 500), nur Marketaux |

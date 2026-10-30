@@ -31,7 +31,7 @@ export type DataQuality = "ok" | "incomplete" | "needs_review";
 export type GoalType = "annual" | "monthly";
 /** Kalenderintegration (Migration 0027). */
 export type CalendarSource = "divvydiary";
-export type NewsProvider = "marketaux" | "google_news";
+export type NewsProvider = "marketaux" | "gdelt";
 export type CalendarEventType = "payment" | "ex_date";
 export type CalendarEventState = "active" | "cancelled" | "removed_from_source";
 export type CalendarSyncState = "never" | "running" | "success" | "error";

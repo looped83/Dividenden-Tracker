@@ -170,7 +170,7 @@ async function seedNews(
       await client.query(
         `insert into news_items
            (user_id, security_id, provider, external_id, title, snippet, url, source, published_at)
-         values ($1, $2, 'google_news', $3, $4, $5, $6, $7, now() - make_interval(hours => $8))`,
+         values ($1, $2, 'gdelt', $3, $4, $5, $6, $7, now() - make_interval(hours => $8))`,
         [
           userId,
           securityId,
