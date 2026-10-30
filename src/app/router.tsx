@@ -75,6 +75,9 @@ const GapsTab = React.lazy(async () => ({
 const SnowballTab = React.lazy(async () => ({
   default: (await routeChunks.plannerSnowball()).SnowballTab,
 }));
+const NewsPage = React.lazy(async () => ({
+  default: (await routeChunks.news()).NewsPage,
+}));
 const SecurityDetailPage = React.lazy(async () => ({
   default: (await import("@/features/securities/SecurityDetailPage")).SecurityDetailPage,
 }));
@@ -235,6 +238,7 @@ export const router = createHashRouter([
           { path: "schneeball", element: <SnowballTab /> },
         ],
       },
+      { path: "news", element: <NewsPage /> },
       {
         path: "statistiken",
         element: <StatisticsPage />,

@@ -34,6 +34,7 @@ const ROUTEN = [
   { pfad: "/#/depot/entwicklung", name: "Bestand Entwicklung", warten: "Bestand" },
   { pfad: "/#/depot/analyse", name: "Bestand Analyse", warten: "Bestand" },
   { pfad: "/#/planer", name: "Planer", warten: "Planer" },
+  { pfad: "/#/news", name: "News", warten: "News" },
   { pfad: "/#/statistiken", name: "Statistiken", warten: "Statistik" },
   { pfad: "/#/statistiken/verlauf", name: "Statistik Verlauf", warten: "Statistik" },
   {

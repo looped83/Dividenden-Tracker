@@ -4,6 +4,7 @@ import {
   CalendarDays,
   Compass,
   LayoutDashboard,
+  Newspaper,
   Settings,
   Target,
   Trophy,
@@ -79,6 +80,14 @@ export const PRIMARY_NAV_ITEMS: readonly NavItem[] = [
     label: "Planer",
     icon: Compass,
   },
+  // Hinter dem Planer: Meldungen zu den Assets im Bestand (seit 2.59.0). Sie
+  // gehoeren zum Depot, nicht zu den Zahlungen — und bleiben aus der
+  // Startseite heraus, damit die ruhig bleibt.
+  {
+    to: "/news",
+    label: "News",
+    icon: Newspaper,
+  },
   {
     to: "/ziele",
     label: "Ziele",
@@ -121,6 +130,7 @@ export const BOTTOM_NAV_MORE_ITEMS: readonly NavItem[] = [
   findNavItem("/kalender"),
   findNavItem("/depot"),
   findNavItem("/planer"),
+  findNavItem("/news"),
   findNavItem("/ziele"),
   findNavItem("/fortschritt"),
   findNavItem("/einstellungen"),

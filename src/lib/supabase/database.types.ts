@@ -31,6 +31,7 @@ export type DataQuality = "ok" | "incomplete" | "needs_review";
 export type GoalType = "annual" | "monthly";
 /** Kalenderintegration (Migration 0027). */
 export type CalendarSource = "divvydiary";
+export type NewsProvider = "marketaux" | "google_news";
 export type CalendarEventType = "payment" | "ex_date";
 export type CalendarEventState = "active" | "cancelled" | "removed_from_source";
 export type CalendarSyncState = "never" | "running" | "success" | "error";
@@ -415,6 +416,39 @@ export interface Database {
         Update: never;
         Relationships: [];
       };
+      /** Meldungen zu den Assets im Bestand (Migration 0045), nur lesbar. */
+      news_items: {
+        Row: {
+          id: string;
+          user_id: string;
+          security_id: string;
+          provider: NewsProvider;
+          external_id: string;
+          title: string;
+          snippet: string | null;
+          url: string;
+          source: string | null;
+          language: string | null;
+          sentiment: number | null;
+          published_at: string;
+          created_at: string;
+        };
+        Insert: never; // nur ueber die Edge Function (service_role)
+        Update: never;
+        Relationships: [];
+      };
+      news_sync_status: {
+        Row: {
+          user_id: string;
+          last_attempt_at: string | null;
+          last_success_at: string | null;
+          error_message: string | null;
+          updated_at: string;
+        };
+        Insert: never; // nur ueber die Edge Function (service_role)
+        Update: never;
+        Relationships: [];
+      };
       /**
        * Ein Upload des Portfolio-Exports (Migration 0029). Ohne diesen Satz
        * liesse sich „an diesem Tag kein Upload" nicht von „an diesem Tag keine
@@ -652,6 +686,7 @@ export interface Database {
       calendar_event_type: CalendarEventType;
       calendar_event_state: CalendarEventState;
       calendar_sync_state: CalendarSyncState;
+      news_provider: NewsProvider;
     };
   };
 }

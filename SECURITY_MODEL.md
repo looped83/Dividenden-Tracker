@@ -301,6 +301,24 @@ keine neue SECURITY-DEFINER-Funktion eingeführt — damit entfällt jede
 Umgehungsfläche über unsichere Funktionen. Clientseitige Filter sind nirgends
 Sicherheitsmaßnahme.
 
+## News (Migration 0045, Edge Function)
+
+- **Secret**: `MARKETAUX_API_KEY` liegt allein als Supabase-Secret vor. Er steht in der
+  Anfrageadresse von Marketaux; deshalb enthalten weder Antwort noch Log eine Adresse —
+  protokolliert werden nur Zähler und Codes (`marketaux:http:429`, `google_news:timeout`).
+- **Authentifizierung**: `sync-news` läuft mit `verify_jwt = true` und bestimmt die
+  Nutzerkennung über `auth.getUser()`.
+- **Rechte**: `news_items` und `news_sync_status` sind für `authenticated` **nur
+  lesbar** (eigene Zeilen, `(select auth.uid())`), mit ausdrücklichen Grants. service_role
+  schreibt (`news_items`: insert, delete für die 30-Tage-Aufbewahrung) und filtert jede
+  Anweisung auf die ermittelte `user_id`.
+- **Kontingent**: `claim_news_sync(uuid, interval)` (security definer, nur service_role)
+  lässt höchstens alle 12 Stunden einen Lauf zu; ein früherer Aufruf fragt keine Quelle an.
+- **Darstellung**: Gespeichert werden nur Titel, Auszug, Quelle und `https`-Link. Keine
+  Bilder (CSP `img-src 'self'` bleibt), Links öffnen mit `rel="noopener noreferrer"`.
+- **Geprüft** in `tests/unit/news/news.test.ts` (kein Key in Fehlercodes) und
+  `tests/e2e/app/news.spec.ts`.
+
 ## Dividendenkalender (Migration 0027, Edge Function)
 
 Der DivvyDiary-Feed ist eine persönliche Adresse **mit Token**. Er wird ausschließlich

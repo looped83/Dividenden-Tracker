@@ -54,6 +54,13 @@ export interface SeedOptions {
     /** Ereignisart; ohne Angabe ein Zahltag. */
     type?: "payment" | "ex_date";
   }[];
+  /**
+   * Meldungen zum angelegten Asset. Wie die Kalendertermine entstehen sie
+   * sonst nur serverseitig (Edge Function `sync-news`); der Superuser legt
+   * sie an und vermerkt einen frischen Abruf, damit die Seite nicht selbst
+   * abruft.
+   */
+  news?: { title: string; hoursAgo: number; source?: string; snippet?: string }[];
 }
 
 async function createAccount(options: SeedOptions = {}): Promise<Konto> {
@@ -103,6 +110,7 @@ async function createAccount(options: SeedOptions = {}): Promise<Konto> {
   });
 
   await seedCalendarEvents(userId, options.calendarEvents ?? []);
+  await seedNews(userId, securityId, options.news ?? []);
 
   return { userId, email, depotId, depotName, securityId, securityName, paymentIds };
 }
@@ -147,6 +155,38 @@ async function seedCalendarEvents(
        on conflict (user_id, source) do update
          set state = 'success', last_success_at = now()`,
       [userId, events.length],
+    );
+  });
+}
+
+async function seedNews(
+  userId: string,
+  securityId: string,
+  news: NonNullable<SeedOptions["news"]>,
+): Promise<void> {
+  if (news.length === 0) return;
+  await asSuperuser(async (client) => {
+    for (const [index, item] of news.entries()) {
+      await client.query(
+        `insert into news_items
+           (user_id, security_id, provider, external_id, title, snippet, url, source, published_at)
+         values ($1, $2, 'google_news', $3, $4, $5, $6, $7, now() - make_interval(hours => $8))`,
+        [
+          userId,
+          securityId,
+          `e2e-${String(index)}`,
+          item.title,
+          item.snippet ?? null,
+          `https://example.test/news/${String(index)}`,
+          item.source ?? "Musterzeitung",
+          item.hoursAgo,
+        ],
+      );
+    }
+    await client.query(
+      `insert into news_sync_status (user_id, last_attempt_at, last_success_at)
+       values ($1, now(), now())`,
+      [userId],
     );
   });
 }
