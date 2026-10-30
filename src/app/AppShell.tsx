@@ -142,10 +142,10 @@ export function AppShell() {
             >
               {/* Im dunklen Design laeuft die Seite in der Home-Bildschirm-App
                 unter die Statusleiste (index.html). iOS 27 legt darunter einen
-                Verlauf mit Unschaerfe, rund 44 px tief, den keine Einstellung
+                Verlauf mit Unschaerfe, rund 40 px tief, den keine Einstellung
                 abschaltet: Der Seitenkopf beginnt deshalb erst darunter. Ohne
                 sichere Flaeche (Browser, helles Design) gilt der feste Abstand. */}
-              <div className="mx-auto max-w-6xl px-4 pt-[max(1rem,calc(env(safe-area-inset-top)+2.75rem))] pb-6 sm:px-6 sm:pt-[max(1.5rem,calc(env(safe-area-inset-top)+2.75rem))] lg:px-8">
+              <div className="mx-auto max-w-6xl px-4 pt-[max(1rem,calc(env(safe-area-inset-top)+39px))] pb-6 sm:px-6 sm:pt-[max(1.5rem,calc(env(safe-area-inset-top)+39px))] lg:px-8">
                 {/* Bereiche werden erst beim Aufruf geladen (siehe router.tsx);
                   der Rahmen der App steht dabei bereits. Dasselbe gilt fuer die
                   Anmeldepruefung: Erst sie gibt den Inhalt frei, die
