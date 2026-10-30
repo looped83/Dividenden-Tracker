@@ -526,17 +526,7 @@ export function SecuritiesPage() {
                             <PercentCell
                               value={position?.allocationPercent}
                               digits={1}
-                              // Ueber der Zielgewichtung rot — wie auf der
-                              // Asset-Seite: dort endet der Nachkauf. Eine
-                              // bewusste 0 ist kein Ueberschreiten.
-                              over={
-                                row.targetWeight !== null &&
-                                row.targetWeight > 0 &&
-                                (position?.allocationPercent?.greaterThan(
-                                  row.targetWeight,
-                                ) ??
-                                  false)
-                              }
+                              over={overTarget(row)}
                             />
                           </TableCell>
                           {/* Erst ab lg: Auf dem Tablet hoch reicht der Platz
@@ -777,9 +767,11 @@ function Metric({ value, detail }: { value: React.ReactNode; detail?: string | n
  *
  * Bearbeiten und Archivieren stehen auf der Detailseite. Als Symbole in jeder
  * Karte verlaengerten sie sie um eine Zeile, und die Karte hatte drei kleine
- * Ziele statt eines grossen — dasselbe Muster wie bei den Eingaengen. Der
- * Anteil am Depot steht in der Tabelle; auf dem Telefon traegt die Zeile nur,
- * was man beim Durchsehen vergleicht.
+ * Ziele statt eines grossen — dasselbe Muster wie bei den Eingaengen.
+ *
+ * Eine dritte, kleine Zeile traegt Gewichtung und Zielgewichtung — die beiden
+ * Spalten der Tabelle. Neben Ausschuettung und Gewinn passten sie auf 390 px
+ * nicht ohne Umbruch.
  */
 function AssetItem({ row, savingsPlan }: { row: AssetRow; savingsPlan: boolean }) {
   const backState = useBackState();
@@ -854,9 +846,44 @@ function AssetItem({ row, savingsPlan }: { row: AssetRow; savingsPlan: boolean }
                 </span>
               )}
             </span>
+            <WeightLine row={row} />
           </span>
         </Link>
       </ListRow>
     </li>
+  );
+}
+
+/**
+ * Ueber der Zielgewichtung — dort endet der Nachkauf, wie auf der
+ * Asset-Seite. Eine bewusste 0 ist kein Ueberschreiten.
+ */
+function overTarget({ position, targetWeight }: AssetRow): boolean {
+  return (
+    targetWeight !== null &&
+    targetWeight > 0 &&
+    (position?.allocationPercent?.greaterThan(targetWeight) ?? false)
+  );
+}
+
+/**
+ * „Gewichtung 1,9 % · Ziel 2,5 %" unter einem Asset auf dem Telefon. Eine
+ * eingetragene 0 steht als „Ziel 0,0 %", ein fehlendes Ziel als „ohne Ziel" —
+ * so faellt auf, wo noch keins gepflegt ist.
+ */
+function WeightLine({ row }: { row: AssetRow }) {
+  const { position, targetWeight } = row;
+  if (!position?.allocationPercent) return null;
+  return (
+    <span className="block text-xs tabular-nums text-muted-foreground">
+      Gewichtung{" "}
+      <span className={cn(overTarget(row) && "text-negative")}>
+        {formatPercent(position.allocationPercent, 1)}
+      </span>
+      {" · "}
+      {targetWeight === null
+        ? "ohne Ziel"
+        : `Ziel ${formatPercent(new MoneyDecimal(targetWeight), 1)}`}
+    </span>
   );
 }
