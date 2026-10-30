@@ -111,15 +111,6 @@ export function AppShell() {
         Zum Inhalt springen
       </a>
       <RouteAnnouncer contentId="inhalt" />
-      {/* Deckt die Flaeche hinter der iOS-Statusleiste ab, wenn die Seite im
-          dunklen Design darunter laeuft (index.html). Ohne festes Element oben
-          legte iOS 27 seinen weichen Randverlauf ueber den Seitenkopf; so
-          endet der gescrollte Inhalt hart an der Leiste. Ohne sichere Flaeche
-          (Browser, helles Design) ist der Streifen 0 hoch. */}
-      <div
-        aria-hidden
-        className="pointer-events-none fixed inset-x-0 top-0 z-40 h-[env(safe-area-inset-top)] bg-background"
-      />
       {/* Ohne dies behielt die Seite ihre Bildlaufposition ueber die
           Navigation hinweg: Wer weit unten in der Unternehmensliste eines
           anklickte, landete auf der Detailseite mitten im Inhalt.
@@ -149,10 +140,12 @@ export function AppShell() {
               tabIndex={-1}
               className="min-w-0 flex-1 overflow-x-hidden pb-[calc(5rem+env(safe-area-inset-bottom))] outline-none md:pb-6"
             >
-              {/* Oben mindestens die sichere Flaeche: Im dunklen Design laeuft
-                die Seite in der Home-Bildschirm-App unter die Statusleiste
-                (index.html). Sonst ist sie 0 und es bleibt beim Abstand. */}
-              <div className="mx-auto max-w-6xl px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-6 sm:px-6 sm:pt-[max(1.5rem,env(safe-area-inset-top))] lg:px-8">
+              {/* Im dunklen Design laeuft die Seite in der Home-Bildschirm-App
+                unter die Statusleiste (index.html). iOS 27 legt darunter einen
+                Verlauf mit Unschaerfe, rund 44 px tief, den keine Einstellung
+                abschaltet: Der Seitenkopf beginnt deshalb erst darunter. Ohne
+                sichere Flaeche (Browser, helles Design) gilt der feste Abstand. */}
+              <div className="mx-auto max-w-6xl px-4 pt-[max(1rem,calc(env(safe-area-inset-top)+2.75rem))] pb-6 sm:px-6 sm:pt-[max(1.5rem,calc(env(safe-area-inset-top)+2.75rem))] lg:px-8">
                 {/* Bereiche werden erst beim Aufruf geladen (siehe router.tsx);
                   der Rahmen der App steht dabei bereits. Dasselbe gilt fuer die
                   Anmeldepruefung: Erst sie gibt den Inhalt frei, die
