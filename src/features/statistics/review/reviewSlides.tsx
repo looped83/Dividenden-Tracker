@@ -99,7 +99,9 @@ export function buildReviewSlides(
     content: (
       <>
         <Eyebrow>Dein Dividendenjahr</Eyebrow>
-        <Hero className="text-[clamp(5rem,30vw,9rem)] text-primary">{year}</Hero>
+        <Hero className="text-[clamp(5rem,30vw,9rem)] text-primary story-pop">
+          {year}
+        </Hero>
         <Lead>
           {formatCountNoun(review.count, "Dividende", "Dividenden")} von{" "}
           {formatCountNoun(review.distinctSecurities, "Asset", "Assets")}
@@ -121,7 +123,7 @@ export function buildReviewSlides(
     content: (
       <>
         <Eyebrow>Netto erhalten</Eyebrow>
-        <Hero>{formatMoney(review.net)}</Hero>
+        <Hero count>{formatMoney(review.net)}</Hero>
         {review.priorYearNet !== null && (
           <p className="mt-4">
             <TrendPill tone={comparison.tone} title={comparison.caption}>
@@ -152,7 +154,9 @@ export function buildReviewSlides(
       content: (
         <>
           <Eyebrow>Dein Weg seit {review.firstYear}</Eyebrow>
-          <Hero className="text-primary">{formatFactor(factor)}</Hero>
+          <Hero count className="text-primary">
+            {formatFactor(factor)}
+          </Hero>
           <Lead>so viel wie in deinem ersten Dividendenjahr {review.firstYear}.</Lead>
           <div className="mt-8" data-story-keep>
             <CategoryBarChart
@@ -194,7 +198,9 @@ export function buildReviewSlides(
       content: annual ? (
         <>
           <Eyebrow>Dein Jahresziel {year}</Eyebrow>
-          <Hero className="text-primary">{achievementText(annual.percent)}</Hero>
+          <Hero count className="text-primary">
+            {achievementText(annual.percent)}
+          </Hero>
           <Lead>
             {annual.status === "exceeded"
               ? `Ziel von ${formatMoney(annual.target)} übertroffen, um ${formatMoney(annual.overshoot)}.`
@@ -223,7 +229,7 @@ export function buildReviewSlides(
       ) : (
         <>
           <Eyebrow>Deine Monatsziele {year}</Eyebrow>
-          <Hero className="text-primary">
+          <Hero count className="text-primary">
             {String(goals.monthlyHit)} von {String(goals.monthlyDecided)}
           </Hero>
           <Lead>Monatszielen hast du erreicht.</Lead>
@@ -238,7 +244,7 @@ export function buildReviewSlides(
     content: (
       <>
         <Eyebrow>Passives Einkommen</Eyebrow>
-        <Hero>{formatMoney(review.perDay)}</Hero>
+        <Hero count>{formatMoney(review.perDay)}</Hero>
         <Lead>
           an jedem einzelnen Tag
           {review.isPartial ? " dieses Jahres" : ` des Jahres ${String(year)}`}, ganz ohne
@@ -267,7 +273,7 @@ export function buildReviewSlides(
       content: (
         <>
           <Eyebrow>Ganz nebenbei</Eyebrow>
-          <Hero>{formatMoney(Money.fromDecimal(perDay.div(3), EUR))}</Hero>
+          <Hero count>{formatMoney(Money.fromDecimal(perDay.div(3), EUR))}</Hero>
           <Lead>
             verdient dein Depot in jeder Nacht, während du acht Stunden schläfst.
           </Lead>
@@ -295,7 +301,7 @@ export function buildReviewSlides(
       content: (
         <>
           <Eyebrow>Der Schneeball rollt</Eyebrow>
-          <Hero>{formatMoney(reinvested.net)}</Hero>
+          <Hero count>{formatMoney(reinvested.net)}</Hero>
           <Lead>
             flossen automatisch zurück ins Depot und kauften neue Anteile von{" "}
             {formatCountNoun(reinvested.securities, "Asset", "Assets")} — die Dividenden
@@ -328,7 +334,7 @@ export function buildReviewSlides(
           <Eyebrow>Was Dividenden decken</Eyebrow>
           {covered.length > 0 || !next ? (
             <>
-              <Hero className="text-primary">
+              <Hero count className="text-primary">
                 {String(covered.length)} von {String(coverage.items.length)}
               </Hero>
               <Lead>
@@ -338,7 +344,9 @@ export function buildReviewSlides(
             </>
           ) : (
             <>
-              <Hero className="text-primary">{formatPercent(next.percent, 0)}</Hero>
+              <Hero count className="text-primary">
+                {formatPercent(next.percent, 0)}
+              </Hero>
               <Lead>
                 von {next.cost.name} hat deine Dividende {year} im Schnitt jeden Monat
                 bezahlt.
@@ -447,7 +455,7 @@ export function buildReviewSlides(
           <Eyebrow>Neu und gewachsen</Eyebrow>
           {review.newcomers.length > 0 ? (
             <>
-              <Hero>
+              <Hero count>
                 {formatCountNoun(review.newcomers.length, "neuer Zahler", "neue Zahler")}
               </Hero>
               <Lead>
@@ -460,7 +468,7 @@ export function buildReviewSlides(
               </Lead>
             </>
           ) : (
-            raise && <Hero>+{formatMoney(raise.absolute)}</Hero>
+            raise && <Hero count>+{formatMoney(raise.absolute)}</Hero>
           )}
           {raise && (
             <div className="mt-8 rounded-2xl bg-muted p-4 sm:p-5">
@@ -525,7 +533,7 @@ export function buildReviewSlides(
     content: (
       <>
         <Eyebrow>Seit {review.firstYear}</Eyebrow>
-        <Hero>{formatMoney(review.cumulativeNet)}</Hero>
+        <Hero count>{formatMoney(review.cumulativeNet)}</Hero>
         <Lead>
           Dividenden insgesamt bis {review.isPartial ? "heute" : `Ende ${String(year)}`}
           {review.yearCount > 1
@@ -543,7 +551,10 @@ export function buildReviewSlides(
                   key={`${milestone.kind}-${String(milestone.threshold)}`}
                   className="flex items-center gap-3 py-2.5"
                 >
-                  <Trophy className="size-4 shrink-0 text-primary" aria-hidden />
+                  <Trophy
+                    className="story-pop size-4 shrink-0 text-primary"
+                    aria-hidden
+                  />
                   <span className="min-w-0 flex-1 font-medium">
                     {reachedText(milestone)}
                   </span>
@@ -600,7 +611,9 @@ export function buildReviewSlides(
       content: (
         <>
           <Eyebrow>Dein nächster Meilenstein</Eyebrow>
-          <Hero className="text-primary">{formatMoneyWhole(target)}</Hero>
+          <Hero count className="text-primary">
+            {formatMoneyWhole(target)}
+          </Hero>
           <Lead>
             insgesamt erhalten. Bis dahin fehlen noch{" "}
             <span className="font-semibold text-foreground">

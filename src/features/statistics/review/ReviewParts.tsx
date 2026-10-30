@@ -1,4 +1,5 @@
 import type * as React from "react";
+import { useCountUp } from "@/lib/hooks/useCountUp";
 
 /** Satzbausteine der Rueckblick-Karten: Kennzeile, grosse Zahl, Einordnung, Rangliste. */
 
@@ -6,15 +7,24 @@ export function Eyebrow({ children }: { children: React.ReactNode }) {
   return <p className="text-sm font-semibold text-primary">{children}</p>;
 }
 
+/**
+ * Die grosse Zahl der Karte. Mit `count` zaehlt sie beim Erscheinen von null
+ * auf ihren Wert (die Karte traegt `data-intro`); Namen und Monate zaehlen
+ * nicht — „3M" soll nicht von „0M" kommen.
+ */
 export function Hero({
   children,
   className,
+  count = false,
 }: {
   children: React.ReactNode;
   className?: string;
+  count?: boolean;
 }) {
+  const countUp = useCountUp<HTMLParagraphElement>();
   return (
     <p
+      ref={count ? countUp : undefined}
       className={
         "mt-3 break-words text-[clamp(2.75rem,13vw,4.5rem)] font-bold leading-[1.02] tracking-[-0.04em] tabular-amount " +
         (className ?? "")
