@@ -111,6 +111,15 @@ export function AppShell() {
         Zum Inhalt springen
       </a>
       <RouteAnnouncer contentId="inhalt" />
+      {/* Deckt die Flaeche hinter der iOS-Statusleiste ab, wenn die Seite im
+          dunklen Design darunter laeuft (index.html). Ohne festes Element oben
+          legte iOS 27 seinen weichen Randverlauf ueber den Seitenkopf; so
+          endet der gescrollte Inhalt hart an der Leiste. Ohne sichere Flaeche
+          (Browser, helles Design) ist der Streifen 0 hoch. */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-x-0 top-0 z-40 h-[env(safe-area-inset-top)] bg-background"
+      />
       {/* Ohne dies behielt die Seite ihre Bildlaufposition ueber die
           Navigation hinweg: Wer weit unten in der Unternehmensliste eines
           anklickte, landete auf der Detailseite mitten im Inhalt.
