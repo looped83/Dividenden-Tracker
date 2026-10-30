@@ -80,6 +80,12 @@ const REQUEST_TIMEOUT_MS = 8_000;
  */
 const GDELT_TIMEOUT_MS = 20_000;
 
+/** Gleichzeitige Anfragen an Marketaux; bei 8 antwortete es mit 429. */
+const MARKETAUX_CONCURRENCY = 3;
+
+/** Pause vor dem zweiten Versuch nach einem 429. */
+const MARKETAUX_RETRY_MS = 2_000;
+
 /** Nach Marketaux starten GDELT-Anfragen höchstens so lange. */
 const GDELT_BUDGET_MS = 60_000;
 
@@ -513,6 +519,8 @@ export interface CollectNewsOptions {
   concurrency?: number;
   /** Zeit, in der Anfragen an Marketaux starten dürfen (Vorgabe 40 s). */
   budgetMs?: number;
+  /** Pause vor dem zweiten Versuch nach 429; nur Tests setzen sie herab. */
+  marketauxRetryMs?: number;
   /** Pause zwischen zwei GDELT-Anfragen; nur Tests setzen sie herab. */
   gdeltPauseMs?: number;
 }
@@ -578,33 +586,41 @@ export async function collectNews(
     : [];
   const stopAt = Date.now() + (options.budgetMs ?? DEFAULT_BUDGET_MS);
   let next = 0;
-  // 429 heißt: Tageskontingent verbraucht. Weitere Anfragen kosten nur Zeit;
+  // 402 heißt: Tageskontingent verbraucht. Weitere Anfragen kosten nur Zeit;
   // die übrigen Aktien sucht GDELT.
   let exhausted = false;
+  const fetchMarketaux = async (url: string): Promise<string> => {
+    try {
+      return await fetchText(doFetch, url, "application/json");
+    } catch (error) {
+      if (!(error instanceof NewsSourceError)) throw error;
+      if (error.status === 402) exhausted = true;
+      if (error.status !== 429) throw error;
+    }
+    // 429: zu viele Anfragen in kurzer Zeit (30.10.2026 bei 8 gleichzeitigen).
+    // Ein zweiter Versuch nach einer Pause genügt meist.
+    await pause(options.marketauxRetryMs ?? MARKETAUX_RETRY_MS);
+    return fetchText(doFetch, url, "application/json");
+  };
   const workers = Array.from(
-    { length: Math.min(Math.max(1, options.concurrency ?? 8), marketaux.length) },
+    {
+      length: Math.min(
+        Math.max(1, options.concurrency ?? MARKETAUX_CONCURRENCY),
+        marketaux.length,
+      ),
+    },
     async () => {
       while (next < marketaux.length && Date.now() < stopAt && !exhausted) {
         const task = marketaux[next];
         next += 1;
         if (!key) break;
-        await attempt("marketaux", async () => {
-          try {
-            return parseMarketaux(
-              await fetchText(
-                doFetch,
-                marketauxUrl(task.symbol, options.since, key),
-                "application/json",
-              ),
-              task.security,
-              task.symbol,
-            );
-          } catch (error) {
-            if (error instanceof NewsSourceError && error.status === 429)
-              exhausted = true;
-            throw error;
-          }
-        });
+        await attempt("marketaux", async () =>
+          parseMarketaux(
+            await fetchMarketaux(marketauxUrl(task.symbol, options.since, key)),
+            task.security,
+            task.symbol,
+          ),
+        );
       }
     },
   );

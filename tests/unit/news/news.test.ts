@@ -288,17 +288,43 @@ describe("collectNews", () => {
       now: NOW,
       marketauxKey: API_KEY,
       fetchImpl,
+      marketauxRetryMs: 0,
     });
     expect(result.failed).toBe(2);
     expect(result.errorCodes.sort()).toEqual(["gdelt:network", "marketaux:http:429"]);
     expect(result.errorCodes.join(" ")).not.toContain(API_KEY);
   });
 
-  it("hört nach 429 mit Marketaux auf und sucht den Rest bei GDELT", async () => {
+  it("versucht es nach 429 einmal erneut", async () => {
+    let calls = 0;
+    const fetchImpl = vi.fn((request: RequestInfo | URL) => {
+      if (!href(request).startsWith("https://api.marketaux.com/"))
+        return Promise.resolve(new Response(gdelt([])));
+      calls += 1;
+      return Promise.resolve(
+        calls === 1
+          ? new Response("zu schnell", { status: 429 })
+          : new Response(marketauxBody),
+      );
+    });
+    const result = await collectNews({
+      securities: [AKTIE],
+      since: SINCE,
+      now: NOW,
+      marketauxKey: API_KEY,
+      fetchImpl,
+      marketauxRetryMs: 0,
+    });
+    expect(calls).toBe(2);
+    expect(result).toMatchObject({ requests: 1, failed: 0 });
+    expect(result.items.map((entry) => entry.provider)).toEqual(["marketaux"]);
+  });
+
+  it("hört nach 402 mit Marketaux auf und sucht den Rest bei GDELT", async () => {
     const fetchImpl = vi.fn((request: RequestInfo | URL) =>
       Promise.resolve(
         href(request).startsWith("https://api.marketaux.com/")
-          ? new Response("limit", { status: 429 })
+          ? new Response("limit", { status: 402 })
           : new Response(gdelt([])),
       ),
     );
