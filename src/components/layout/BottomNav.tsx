@@ -50,7 +50,10 @@ export function BottomNav() {
       className={cn(
         "fixed inset-x-0 bottom-0 z-40 flex items-stretch justify-around",
         "border-t border-border bg-card/95 md:hidden",
-        "pb-[env(safe-area-inset-bottom)]",
+        // Der Home-Indikator braucht nicht die ganze sichere Flaeche: Wie
+        // die Tab-Leisten von iOS ragt die Leiste 12 px hinein, sonst sass sie
+        // spuerbar zu hoch. Ohne sichere Flaeche bleiben 4 px Luft.
+        "pb-[max(0.25rem,calc(env(safe-area-inset-bottom)-0.75rem))]",
       )}
     >
       {BOTTOM_NAV_PRIMARY_ITEMS.slice(0, 2).map((item) => (
