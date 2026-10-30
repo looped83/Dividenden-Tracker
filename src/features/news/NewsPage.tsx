@@ -107,7 +107,7 @@ function NewsRow({
 
 /**
  * News zu den Assets im Bestand (seit 2.59.0). Die Meldungen holt die Edge
- * Function `sync-news` aus Marketaux und Google News; die Seite liest nur die
+ * Function `sync-news` aus Marketaux und GDELT; die Seite liest nur die
  * gespeicherten. Beim Öffnen wird höchstens alle 12 Stunden neu abgerufen.
  */
 export function NewsPage() {
@@ -277,10 +277,9 @@ export function NewsPage() {
         </div>
       )}
 
-      {/* Quellenangabe: Google News verlangt sie, und sie erklärt, woher die
-          Meldungen kommen. Dazu der Stand wie beim Kalender. */}
+      {/* Quellenangabe: Sie erklärt, woher die Meldungen kommen. Dazu der Stand wie beim Kalender. */}
       <p className="text-sm text-muted-foreground">
-        Quellen: Marketaux und Google News
+        Quellen: Marketaux und GDELT
         {lastSuccessAt && <> · Aktualisiert {lastSyncLabel(lastSuccessAt, today)}</>}
       </p>
     </div>

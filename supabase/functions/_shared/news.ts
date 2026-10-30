@@ -6,8 +6,13 @@
  * - **Marketaux** ordnet Meldungen über das Börsenkürzel zu und liefert die
  *   Stimmung je Asset. Der kostenlose Plan erlaubt 100 Anfragen am Tag mit je
  *   3 Meldungen; gefragt wird deshalb nur für Aktien, eine Anfrage je Aktie.
- * - **Google News** (RSS-Suche nach dem Namen) deckt ab, was Marketaux nicht
- *   kennt: ETFs, deutsche und britische Werte, kleinere REITs und BDCs.
+ * - **GDELT** (Volltextsuche nach dem Namen, ohne Key) deckt ab, was Marketaux
+ *   nicht liefert: ETFs, deutsche und britische Werte, kleinere REITs und
+ *   BDCs. Alle diese Namen gehen in ein bis zwei Sammelanfragen; GDELT
+ *   erlaubt nur eine Anfrage alle fünf Sekunden.
+ *
+ * Google News war die erste Wahl, antwortet Servern von Supabase aber
+ * durchweg mit 503 (30.10.2026).
  *
  * Der API-Key ist ein Geheimnis: Er steht in der Anfrageadresse von Marketaux.
  * Adressen tauchen deshalb in keiner Fehlermeldung auf — `NewsSourceError`
@@ -17,7 +22,7 @@
  * Unit-Tests ohne Netz auskommen.
  */
 
-export type NewsProvider = "marketaux" | "google_news";
+export type NewsProvider = "marketaux" | "gdelt";
 
 /** Ein Asset, zu dem Meldungen gesucht werden. */
 export interface NewsSecurity {
@@ -66,7 +71,14 @@ export const NEWS_RETENTION_DAYS = 30;
 /** Beim ersten Abruf (oder nach langer Pause) so weit zurück. */
 export const NEWS_LOOKBACK_DAYS = 14;
 
-const REQUEST_TIMEOUT_MS = 10_000;
+const REQUEST_TIMEOUT_MS = 8_000;
+
+/**
+ * Höchstens so lange werden neue Anfragen gestartet. Bei rund 50 Assets sind
+ * es knapp 90 Anfragen; hängt eine Quelle, endet der Lauf trotzdem weit vor
+ * dem Zeitlimit der Edge Function und speichert, was bis dahin da ist.
+ */
+const DEFAULT_BUDGET_MS = 40_000;
 
 /** 2 MB — ein RSS-Ergebnis mit 100 Einträgen liegt bei rund 50 KB. */
 const MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
@@ -149,7 +161,7 @@ function normalize(value: string): string {
 }
 
 /**
- * Trifft der Titel einer Google-Meldung das Asset? Die Suche läuft zwar nach
+ * Trifft der Titel einer GDELT-Meldung das Asset? Die Suche läuft zwar nach
  * dem genauen Namen, findet ihn aber auch tief im Artikel („… neben Allianz
  * auch …“). Gezeigt wird eine Meldung nur, wenn der Name oder das Kürzel im
  * Titel steht.
@@ -354,89 +366,125 @@ export function parseMarketaux(
 }
 
 // ---------------------------------------------------------------------------
-// Google News (RSS)
+// GDELT
 // ---------------------------------------------------------------------------
 
-/**
- * Suche nach dem genauen Namen. `when:` begrenzt den Zeitraum serverseitig,
- * damit nicht jedes Mal 100 alte Einträge übertragen werden. Deutsche Ausgabe,
- * weil sie deutsche und englische Quellen gleichermaßen führt.
- */
-export function googleNewsUrl(
-  security: Pick<NewsSecurity, "name">,
+/** GDELT verlangt mindestens fünf Sekunden zwischen zwei Anfragen. */
+const GDELT_PAUSE_MS = 5_500;
+
+/** Namen je Sammelanfrage — kurz genug für die Längengrenze der Suche. */
+const GDELT_NAMES_PER_QUERY = 12;
+
+/** Sprachen, die GDELT ausschreibt, und ihr Kürzel. Andere fallen weg. */
+const GDELT_LANGUAGES: Record<string, string> = { English: "en", German: "de" };
+
+/** Suchbegriff eines Namens: nur Buchstaben, Ziffern und Leerzeichen. */
+function gdeltPhrase(security: Pick<NewsSecurity, "name">): string | null {
+  const phrase = searchName(security.name)
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
+  // GDELT lehnt sehr kurze Begriffe ab.
+  return phrase.length >= 4 ? phrase : null;
+}
+
+export function gdeltUrl(
+  securities: readonly Pick<NewsSecurity, "name">[],
   since: Date,
   now: Date,
-): string {
-  const days = Math.max(
+): string | null {
+  const phrases = [
+    ...new Set(securities.map(gdeltPhrase).filter((p): p is string => p !== null)),
+  ];
+  if (phrases.length === 0) return null;
+  const terms = phrases.map((phrase) => `"${phrase}"`);
+  const hours = Math.max(
     1,
     Math.min(
-      NEWS_LOOKBACK_DAYS,
-      Math.ceil((now.getTime() - since.getTime()) / 86_400_000),
+      NEWS_LOOKBACK_DAYS * 24,
+      Math.ceil((now.getTime() - since.getTime()) / 3_600_000),
     ),
   );
-  const url = new URL("https://news.google.com/rss/search");
-  url.searchParams.set("q", `"${searchName(security.name)}" when:${String(days)}d`);
-  url.searchParams.set("hl", "de");
-  url.searchParams.set("gl", "DE");
-  url.searchParams.set("ceid", "DE:de");
+  const url = new URL("https://api.gdeltproject.org/api/v2/doc/doc");
+  url.searchParams.set(
+    "query",
+    terms.length === 1 ? (terms[0] ?? "") : `(${terms.join(" OR ")})`,
+  );
+  url.searchParams.set("mode", "artlist");
+  url.searchParams.set("format", "json");
+  url.searchParams.set("maxrecords", "250");
+  url.searchParams.set("sort", "datedesc");
+  url.searchParams.set("timespan", `${String(hours)}h`);
   return url.toString();
 }
 
-function tag(block: string, name: string): string | null {
-  const match = new RegExp(`<${name}(?:\\s[^>]*)?>([\\s\\S]*?)</${name}>`, "i").exec(
-    block,
-  );
-  if (!match?.[1]) return null;
-  const inner = match[1].trim();
-  const cdata = /^<!\[CDATA\[([\s\S]*?)\]\]>$/.exec(inner);
-  return decodeEntities(cdata?.[1] ?? inner).trim();
+/** „20261030T201500Z“ → ISO. */
+function gdeltDate(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const match = /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/.exec(value);
+  if (!match) return null;
+  const [, y, mo, d, h, mi, se] = match;
+  return isoDate(`${y}-${mo}-${d}T${h}:${mi}:${se}Z`);
+}
+
+interface GdeltArticle {
+  url?: unknown;
+  title?: unknown;
+  seendate?: unknown;
+  domain?: unknown;
+  language?: unknown;
 }
 
 /**
- * Liest die Einträge eines Google-News-RSS. Bewusst ohne XML-Bibliothek: Das
- * Format ist flach und fest (item → title, link, guid, pubDate, source), und
- * die Edge Function bleibt so ohne weitere Abhängigkeit.
+ * Ordnet die Treffer einer Sammelanfrage den Assets zu: über den Namen oder
+ * das Kürzel im Titel ({@link titleMentions}). Höchstens fünf je Asset, nur
+ * Deutsch und Englisch.
  */
-export function parseGoogleNews(
+export function parseGdelt(
   body: string,
-  security: Pick<NewsSecurity, "id" | "name" | "ticker">,
+  securities: readonly Pick<NewsSecurity, "id" | "name" | "ticker">[],
   since: Date,
 ): NewsItemWrite[] {
-  if (!/<rss[\s>]/i.test(body)) throw new NewsSourceError("format");
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(body);
+  } catch {
+    // GDELT antwortet auf Fehler mit Klartext („Please limit requests …“).
+    throw new NewsSourceError("format");
+  }
+  const articles = (parsed as { articles?: unknown } | null)?.articles ?? [];
+  if (!Array.isArray(articles)) throw new NewsSourceError("format");
 
+  const perSecurity = new Map<string, number>();
   const items: NewsItemWrite[] = [];
-  for (const match of body.matchAll(/<item>([\s\S]*?)<\/item>/gi)) {
-    const block = match[1];
-    const rawTitle = tag(block, "title");
-    const url = httpsUrl(tag(block, "link"));
-    const publishedAt = isoDate(tag(block, "pubDate"));
-    if (!rawTitle || !url || !publishedAt) continue;
+  for (const raw of articles as GdeltArticle[]) {
+    const url = httpsUrl(raw.url);
+    const title =
+      typeof raw.title === "string" ? clip(decodeEntities(raw.title), TITLE_MAX) : null;
+    const publishedAt = gdeltDate(raw.seendate);
+    const lang =
+      typeof raw.language === "string" ? GDELT_LANGUAGES[raw.language] : undefined;
+    if (!url || !title || !publishedAt || !lang) continue;
     if (Date.parse(publishedAt) < since.getTime()) continue;
 
-    const source = tag(block, "source");
-    // Google hängt die Quelle an den Titel an („… - Handelsblatt“).
-    const title =
-      source && rawTitle.endsWith(` - ${source}`)
-        ? rawTitle.slice(0, -(source.length + 3)).trim()
-        : rawTitle;
-    if (!titleMentions(title, security)) continue;
-
-    items.push({
-      security_id: security.id,
-      provider: "google_news",
-      external_id: (tag(block, "guid") ?? url).slice(0, 512),
-      title: clip(title, TITLE_MAX) ?? title.slice(0, TITLE_MAX),
-      // Die Beschreibung ist bei Google nur der Titel als Link — kein Auszug.
-      snippet: null,
-      url,
-      source: clip(source, SOURCE_MAX),
-      language: null,
-      sentiment: null,
-      published_at: publishedAt,
-    });
+    for (const security of securities) {
+      const count = perSecurity.get(security.id) ?? 0;
+      if (count >= MAX_ITEMS_PER_SOURCE || !titleMentions(title, security)) continue;
+      perSecurity.set(security.id, count + 1);
+      items.push({
+        security_id: security.id,
+        provider: "gdelt",
+        external_id: url.slice(0, 512),
+        title,
+        snippet: null,
+        url,
+        source: clip(typeof raw.domain === "string" ? raw.domain : null, SOURCE_MAX),
+        language: lang,
+        sentiment: null,
+        published_at: publishedAt,
+      });
+    }
   }
-  items.sort((a, b) => b.published_at.localeCompare(a.published_at));
-  return items.slice(0, MAX_ITEMS_PER_SOURCE);
+  return items;
 }
 
 // ---------------------------------------------------------------------------
@@ -447,17 +495,23 @@ export interface CollectNewsOptions {
   securities: readonly NewsSecurity[];
   since: Date;
   now: Date;
-  /** Fehlt er, bleibt es bei Google News. */
+  /** Fehlt er, bleibt es bei GDELT. */
   marketauxKey: string | null;
   fetchImpl?: typeof fetch;
-  /** Gleichzeitige Anfragen — schont beide Quellen und hält den Lauf kurz. */
+  /** Gleichzeitige Anfragen an Marketaux. */
   concurrency?: number;
+  /** Zeit, in der Anfragen an Marketaux starten dürfen (Vorgabe 40 s). */
+  budgetMs?: number;
+  /** Pause zwischen zwei GDELT-Anfragen; nur Tests setzen sie herab. */
+  gdeltPauseMs?: number;
 }
 
 export interface CollectNewsResult {
   items: NewsItemWrite[];
   requests: number;
   failed: number;
+  /** Nicht mehr gestartet, weil die Zeit abgelaufen war. */
+  skipped: number;
   /** Kurzcodes der Fehler fürs Server-Log, ohne Adressen. */
   errorCodes: string[];
 }
@@ -469,73 +523,85 @@ function errorCode(provider: NewsProvider, error: unknown): string {
   return `${provider}:internal`;
 }
 
+function pause(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 /**
- * Fragt je Asset Google News und — bei Aktien mit Kürzel — Marketaux ab.
- * Fällt eine einzelne Anfrage aus, fehlen nur deren Meldungen; der Lauf geht
- * weiter. Ob der Lauf als Ganzes gescheitert ist, entscheidet die Aufrufstelle
- * an `failed === requests`.
+ * Erst Marketaux je Aktie (parallel, im Zeitrahmen), dann GDELT in
+ * Sammelanfragen für alle Assets ohne Marketaux-Treffer. Fällt eine einzelne
+ * Anfrage aus, fehlen nur deren Meldungen; ob der Lauf als Ganzes gescheitert
+ * ist, entscheidet die Aufrufstelle an `failed === requests`.
  */
 export async function collectNews(
   options: CollectNewsOptions,
 ): Promise<CollectNewsResult> {
   const doFetch = options.fetchImpl ?? fetch;
-  const tasks: (() => Promise<NewsItemWrite[]>)[] = [];
-  const result: CollectNewsResult = { items: [], requests: 0, failed: 0, errorCodes: [] };
-
-  const track = (provider: NewsProvider, run: () => Promise<NewsItemWrite[]>) => {
-    tasks.push(async () => {
-      try {
-        return await run();
-      } catch (error) {
-        result.failed += 1;
-        result.errorCodes.push(errorCode(provider, error));
-        return [];
-      }
-    });
+  const result: CollectNewsResult = {
+    items: [],
+    requests: 0,
+    failed: 0,
+    skipped: 0,
+    errorCodes: [],
+  };
+  const attempt = async (
+    provider: NewsProvider,
+    run: () => Promise<NewsItemWrite[]>,
+  ): Promise<void> => {
+    result.requests += 1;
+    try {
+      result.items.push(...(await run()));
+    } catch (error) {
+      result.failed += 1;
+      result.errorCodes.push(errorCode(provider, error));
+    }
   };
 
-  for (const security of options.securities) {
-    const symbol = security.isEquity ? marketauxSymbol(security) : null;
-    const key = options.marketauxKey;
-    if (symbol && key) {
-      track("marketaux", async () =>
-        parseMarketaux(
-          await fetchText(
-            doFetch,
-            marketauxUrl(symbol, options.since, key),
-            "application/json",
-          ),
-          security,
-          symbol,
-        ),
-      );
-    }
-    track("google_news", async () =>
-      parseGoogleNews(
-        await fetchText(
-          doFetch,
-          googleNewsUrl(security, options.since, options.now),
-          "application/rss+xml, application/xml;q=0.9, */*;q=0.1",
-        ),
-        security,
-        options.since,
-      ),
-    );
-  }
-
-  result.requests = tasks.length;
-  const concurrency = Math.max(1, options.concurrency ?? 4);
+  // 1) Marketaux
+  const key = options.marketauxKey;
+  const marketaux = key
+    ? options.securities.flatMap((security) => {
+        const symbol = security.isEquity ? marketauxSymbol(security) : null;
+        return symbol ? [{ security, symbol }] : [];
+      })
+    : [];
+  const stopAt = Date.now() + (options.budgetMs ?? DEFAULT_BUDGET_MS);
   let next = 0;
   const workers = Array.from(
-    { length: Math.min(concurrency, tasks.length) },
+    { length: Math.min(Math.max(1, options.concurrency ?? 8), marketaux.length) },
     async () => {
-      while (next < tasks.length) {
-        const task = tasks[next];
+      while (next < marketaux.length && Date.now() < stopAt) {
+        const task = marketaux[next];
         next += 1;
-        result.items.push(...(await task()));
+        if (!key) break;
+        await attempt("marketaux", async () =>
+          parseMarketaux(
+            await fetchText(
+              doFetch,
+              marketauxUrl(task.symbol, options.since, key),
+              "application/json",
+            ),
+            task.security,
+            task.symbol,
+          ),
+        );
       }
     },
   );
   await Promise.all(workers);
+  result.skipped = marketaux.length - next;
+
+  // 2) GDELT für den Rest
+  const covered = new Set(result.items.map((item) => item.security_id));
+  const rest = options.securities.filter((security) => !covered.has(security.id));
+  for (let start = 0; start < rest.length; start += GDELT_NAMES_PER_QUERY) {
+    const chunk = rest.slice(start, start + GDELT_NAMES_PER_QUERY);
+    const url = gdeltUrl(chunk, options.since, options.now);
+    if (!url) continue;
+    if (start > 0) await pause(options.gdeltPauseMs ?? GDELT_PAUSE_MS);
+    await attempt("gdelt", async () =>
+      parseGdelt(await fetchText(doFetch, url, "application/json"), chunk, options.since),
+    );
+  }
   return result;
 }
