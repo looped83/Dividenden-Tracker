@@ -177,7 +177,7 @@ const BERLIN_DAY = new Intl.DateTimeFormat("de-DE", {
 });
 
 /** Kalendertag, den ein Zeitpunkt in Berlin hat ("YYYY-MM-DD"). */
-function calendarDayOf(date: Date): string {
+export function calendarDayOf(date: Date): string {
   const parts = BERLIN_DAY.formatToParts(date);
   const read = (type: Intl.DateTimeFormatPartTypes): string =>
     parts.find((part) => part.type === type)?.value ?? "";

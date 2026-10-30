@@ -5,6 +5,7 @@ const AREA_NAMES: readonly { prefix: string; name: string; exact?: boolean }[] =
   { prefix: "/eingaenge", name: "Dividenden" },
   { prefix: "/depot/entwicklung", name: "Bestand, Entwicklung" },
   { prefix: "/depot", name: "Bestand" },
+  { prefix: "/news", name: "News" },
   { prefix: "/statistiken/verlauf", name: "Statistiken, Verlauf" },
   { prefix: "/statistiken/vergleich", name: "Statistiken, Vergleich" },
   {

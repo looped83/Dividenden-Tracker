@@ -533,6 +533,42 @@ Synchronisationen; eine Belegung verfällt nach der übergebenen Frist.
 
 ---
 
+## News (Migration 0045)
+
+Zwischenspeicher für Meldungen zu den Assets im Bestand, geschrieben allein von der Edge
+Function `sync-news` (Marketaux und Google News). Nicht in der Datensicherung: Die
+Meldungen kommen beim nächsten Abruf wieder, und nach 30 Tagen werden sie gelöscht.
+
+### `news_items`
+
+| Spalte | Typ | Bedeutung |
+|---|---|---|
+| id | uuid PK | |
+| user_id | uuid not null | Eigentümer (RLS, `on delete cascade`) |
+| security_id | uuid not null | betroffenes Asset (`on delete cascade`) |
+| provider | news_provider | `marketaux` oder `google_news` |
+| external_id | text not null | Kennung beim Anbieter |
+| title | text not null | Schlagzeile (≤ 500) |
+| snippet | text | Auszug (≤ 500), nur Marketaux |
+| url | text not null | Link zur Quelle, nur `https` |
+| source | text | Name der Quelle |
+| language | char(2) | Sprache laut Anbieter |
+| sentiment | numeric(4,3) | Stimmung zum Asset, −1 bis 1, nur Marketaux |
+| published_at | timestamptz not null | Veröffentlichung |
+| created_at | timestamptz | |
+
+Unique `(user_id, security_id, provider, external_id)` trägt das Einfügen ohne Dubletten.
+Indizes: `(user_id, published_at desc)` für Ansicht und Aufräumen, `(security_id)` als
+Fremdschlüssel-Index.
+
+### `news_sync_status`
+
+Primärschlüssel `user_id`: Zeitpunkt des letzten Versuchs und Erfolgs und eine bereinigte
+Fehlermeldung. `claim_news_sync(uuid, interval)` belegt einen Lauf atomar und erlaubt ihn
+höchstens alle 12 Stunden (Kontingent von Marketaux: 100 Anfragen am Tag).
+
+---
+
 ## Depotstände (Migration 0029)
 
 Bestand, Marktwert und **erwartete** Ausschüttungen je Unternehmen und Stichtag aus dem

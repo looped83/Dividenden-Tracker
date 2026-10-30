@@ -396,6 +396,12 @@ verify_jwt = true
 entrypoint = "./functions/sync-divvydiary-calendar/index.ts"
 import_map = "./functions/sync-divvydiary-calendar/deno.json"
 
+[functions.sync-news]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/sync-news/index.ts"
+import_map = "./functions/sync-news/deno.json"
+
 [analytics]
 enabled = true
 port = 54327
