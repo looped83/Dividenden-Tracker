@@ -1,7 +1,7 @@
 {
   "name": "dividend-tracker",
   "private": true,
-  "version": "2.59.1",
+  "version": "2.59.2",
   "type": "module",
   "engines": {
     "node": ">=22"

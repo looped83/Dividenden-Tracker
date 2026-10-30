@@ -74,6 +74,22 @@ export const NEWS_LOOKBACK_DAYS = 14;
 const REQUEST_TIMEOUT_MS = 8_000;
 
 /**
+ * GDELT durchsucht für eine Sammelanfrage den Volltext von zwei Wochen und
+ * braucht dafür oft deutlich länger als acht Sekunden (30.10.2026: alle
+ * Anfragen liefen in die kurze Grenze).
+ */
+const GDELT_TIMEOUT_MS = 20_000;
+
+/** Gleichzeitige Anfragen an Marketaux; bei 8 antwortete es mit 429. */
+const MARKETAUX_CONCURRENCY = 3;
+
+/** Pause vor dem zweiten Versuch nach einem 429. */
+const MARKETAUX_RETRY_MS = 2_000;
+
+/** Nach Marketaux starten GDELT-Anfragen höchstens so lange. */
+const GDELT_BUDGET_MS = 60_000;
+
+/**
  * Höchstens so lange werden neue Anfragen gestartet. Bei rund 50 Assets sind
  * es knapp 90 Anfragen; hängt eine Quelle, endet der Lauf trotzdem weit vor
  * dem Zeitlimit der Edge Function und speichert, was bis dahin da ist.
@@ -235,11 +251,12 @@ async function fetchText(
   doFetch: typeof fetch,
   url: string,
   accept: string,
+  timeoutMs = REQUEST_TIMEOUT_MS,
 ): Promise<string> {
   const controller = new AbortController();
   const timer = setTimeout(() => {
     controller.abort();
-  }, REQUEST_TIMEOUT_MS);
+  }, timeoutMs);
   try {
     let response: Response;
     try {
@@ -502,6 +519,8 @@ export interface CollectNewsOptions {
   concurrency?: number;
   /** Zeit, in der Anfragen an Marketaux starten dürfen (Vorgabe 40 s). */
   budgetMs?: number;
+  /** Pause vor dem zweiten Versuch nach 429; nur Tests setzen sie herab. */
+  marketauxRetryMs?: number;
   /** Pause zwischen zwei GDELT-Anfragen; nur Tests setzen sie herab. */
   gdeltPauseMs?: number;
 }
@@ -567,20 +586,37 @@ export async function collectNews(
     : [];
   const stopAt = Date.now() + (options.budgetMs ?? DEFAULT_BUDGET_MS);
   let next = 0;
+  // 402 heißt: Tageskontingent verbraucht. Weitere Anfragen kosten nur Zeit;
+  // die übrigen Aktien sucht GDELT.
+  let exhausted = false;
+  const fetchMarketaux = async (url: string): Promise<string> => {
+    try {
+      return await fetchText(doFetch, url, "application/json");
+    } catch (error) {
+      if (!(error instanceof NewsSourceError)) throw error;
+      if (error.status === 402) exhausted = true;
+      if (error.status !== 429) throw error;
+    }
+    // 429: zu viele Anfragen in kurzer Zeit (30.10.2026 bei 8 gleichzeitigen).
+    // Ein zweiter Versuch nach einer Pause genügt meist.
+    await pause(options.marketauxRetryMs ?? MARKETAUX_RETRY_MS);
+    return fetchText(doFetch, url, "application/json");
+  };
   const workers = Array.from(
-    { length: Math.min(Math.max(1, options.concurrency ?? 8), marketaux.length) },
+    {
+      length: Math.min(
+        Math.max(1, options.concurrency ?? MARKETAUX_CONCURRENCY),
+        marketaux.length,
+      ),
+    },
     async () => {
-      while (next < marketaux.length && Date.now() < stopAt) {
+      while (next < marketaux.length && Date.now() < stopAt && !exhausted) {
         const task = marketaux[next];
         next += 1;
         if (!key) break;
         await attempt("marketaux", async () =>
           parseMarketaux(
-            await fetchText(
-              doFetch,
-              marketauxUrl(task.symbol, options.since, key),
-              "application/json",
-            ),
+            await fetchMarketaux(marketauxUrl(task.symbol, options.since, key)),
             task.security,
             task.symbol,
           ),
@@ -594,13 +630,22 @@ export async function collectNews(
   // 2) GDELT für den Rest
   const covered = new Set(result.items.map((item) => item.security_id));
   const rest = options.securities.filter((security) => !covered.has(security.id));
+  const gdeltStopAt = Date.now() + GDELT_BUDGET_MS;
   for (let start = 0; start < rest.length; start += GDELT_NAMES_PER_QUERY) {
     const chunk = rest.slice(start, start + GDELT_NAMES_PER_QUERY);
     const url = gdeltUrl(chunk, options.since, options.now);
     if (!url) continue;
     if (start > 0) await pause(options.gdeltPauseMs ?? GDELT_PAUSE_MS);
+    if (Date.now() >= gdeltStopAt) {
+      result.skipped += 1;
+      continue;
+    }
     await attempt("gdelt", async () =>
-      parseGdelt(await fetchText(doFetch, url, "application/json"), chunk, options.since),
+      parseGdelt(
+        await fetchText(doFetch, url, "application/json", GDELT_TIMEOUT_MS),
+        chunk,
+        options.since,
+      ),
     );
   }
   return result;
