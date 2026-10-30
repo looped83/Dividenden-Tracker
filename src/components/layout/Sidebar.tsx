@@ -20,7 +20,7 @@ export function Sidebar() {
     // Fix am linken Rand: klebt in Viewport-Höhe, nur der Inhalt rechts
     // scrollt. Ohne das richtete sich der Fuß (Einstellungen) nach der Höhe
     // des Inhalts und lag auf dem iPad unterhalb des Sichtbereichs.
-    <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col overflow-y-auto border-r border-border bg-card lg:flex">
+    <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col overflow-y-auto border-r border-border bg-card pt-[env(safe-area-inset-top)] lg:flex">
       <div className="flex h-16 items-center px-6">
         <span className="text-base font-semibold">Dividenden-Tracker</span>
       </div>
@@ -85,7 +85,7 @@ export function CompactSidebar() {
   const newPayment = usePaymentComposer();
   return (
     // Fix wie die große Sidebar (siehe dort).
-    <aside className="sticky top-0 hidden h-dvh w-16 shrink-0 flex-col items-center overflow-y-auto border-r border-border bg-card pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] md:flex lg:hidden">
+    <aside className="sticky top-0 hidden h-dvh w-16 shrink-0 flex-col items-center overflow-y-auto border-r border-border bg-card pt-[max(1rem,env(safe-area-inset-top))] pb-[calc(1rem+env(safe-area-inset-bottom))] md:flex lg:hidden">
       {/* Gegenstueck zur hervorgehobenen Erfassen-Aktion der Bottom-Navigation. */}
       <Button
         size="icon"
