@@ -294,6 +294,30 @@ describe("collectNews", () => {
     expect(result.errorCodes.join(" ")).not.toContain(API_KEY);
   });
 
+  it("hört nach 429 mit Marketaux auf und sucht den Rest bei GDELT", async () => {
+    const fetchImpl = vi.fn((request: RequestInfo | URL) =>
+      Promise.resolve(
+        href(request).startsWith("https://api.marketaux.com/")
+          ? new Response("limit", { status: 429 })
+          : new Response(gdelt([])),
+      ),
+    );
+    const zweite = { ...AKTIE, id: "sec-3", name: "Zweite Muster Corp.", ticker: "ZWM" };
+    const result = await collectNews({
+      securities: [AKTIE, zweite],
+      since: SINCE,
+      now: NOW,
+      marketauxKey: API_KEY,
+      fetchImpl,
+      concurrency: 1,
+    });
+    expect(result).toMatchObject({ requests: 2, failed: 1, skipped: 1 });
+    const gdeltQuery = new URL(href(fetchImpl.mock.calls[1]?.[0] ?? "")).searchParams.get(
+      "query",
+    );
+    expect(gdeltQuery).toBe('("Beispiel Immobilien" OR "Zweite Muster")');
+  });
+
   it("startet nach Ablauf der Zeit keine Marketaux-Anfragen mehr", async () => {
     const fetchImpl = vi.fn(() => Promise.resolve(new Response(gdelt([]))));
     const result = await collectNews({

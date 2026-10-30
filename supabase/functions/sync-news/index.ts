@@ -90,6 +90,15 @@ async function loadHoldings(
     }));
 }
 
+/** „gdelt:timeout×3,marketaux:http:429“ — Anzahl je Fehlercode fürs Log. */
+function countCodes(codes: readonly string[]): string {
+  const counts = new Map<string, number>();
+  for (const code of codes) counts.set(code, (counts.get(code) ?? 0) + 1);
+  return [...counts]
+    .map(([code, n]) => (n > 1 ? `${code}×${String(n)}` : code))
+    .join(",");
+}
+
 async function finish(
   admin: SupabaseClient,
   userId: string,
@@ -205,7 +214,7 @@ async function handle(request: Request): Promise<Response> {
 
     // Nur Zähler und Fehlercodes — keine Adresse, kein Key, keine Titel.
     console.log(
-      `news-sync: ok ms=${String(Date.now() - now.getTime())} assets=${String(securities.length)} req=${String(result.requests)} failed=${String(result.failed)} skipped=${String(result.skipped)} items=${String(result.items.length)}${result.errorCodes.length > 0 ? ` codes=${[...new Set(result.errorCodes)].join(",")}` : ""}`,
+      `news-sync: ok ms=${String(Date.now() - now.getTime())} assets=${String(securities.length)} req=${String(result.requests)} failed=${String(result.failed)} skipped=${String(result.skipped)} items=${String(result.items.length)}${result.errorCodes.length > 0 ? ` codes=${countCodes(result.errorCodes)}` : ""}`,
     );
     return json(
       { status: "success", items: result.items.length, lastSuccessAt: nowIso },
