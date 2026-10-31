@@ -210,31 +210,28 @@ test("merkt sich Zielgewichtung und Sparplan aus dem Bearbeiten-Formular", async
   await expect(dialog.getByLabel("Rate (€)")).toHaveValue("25");
 });
 
-test("rechnet einen Tausch durch und schlägt andere Kaufziele vor (seit 2.61.0)", async ({
+test("verteilt den Erlös eines Verkaufs auf mehrere Titel (seit 2.62.0)", async ({
   page,
   konto,
 }) => {
   await seedPortfolio(konto.userId);
+  await seedWeights(konto.userId);
   await page.goto("/#/planer/tausch");
 
+  // Reiter steht hinter „Optimierungen".
+  const tabs = page.getByRole("navigation", { name: "Planerbereiche" }).getByRole("link");
+  await expect(tabs.nth(3)).toHaveText("Tausch");
+
   await page.getByLabel("Verkaufen").selectOption({ label: "iShares MSCI World" });
-  // Ohne Kauf: die Kaufziele nach Rendite, BASF (6,4 %) zuerst.
-  const ziele = page.getByRole("region", { name: "Kaufziele" });
-  await expect(ziele.getByRole("button").first()).toHaveAccessibleName(
-    "BASF als Kauf wählen",
-  );
-  await ziele.getByRole("button", { name: "BASF als Kauf wählen" }).click();
-
-  // Ganze Position (9.000 €) aus einem Thesaurierer in BASF: das Fünffache
-  // der BASF-Dividende laut Prognose (netto, daher knapp unter 5 × 115 €).
   await expect(page.getByText("Der Tausch ändert im Jahr")).toBeVisible();
-  await expect(page.getByText("+574,80 €", { exact: true })).toBeVisible();
-  await expect(page.getByText("Rendite 0,0 % → 6,4 % auf 9.000 €")).toBeVisible();
-  await expect(page.getByLabel("Kaufen", { exact: true })).not.toHaveValue("");
+  // Thesaurierer raus, drei Ausschütter rein: Die Dividende kann nur steigen.
+  await expect(
+    page.getByText(/^iShares MSCI World schüttet nicht aus · \+\d/),
+  ).toBeVisible();
+  const kaeufe = page.getByRole("region", { name: "Käufe" }).locator("li, tbody tr");
+  await expect(kaeufe).toHaveCount(3);
 
-  await page.getByLabel("Verkaufter Betrag, leer für die ganze Position").fill("1800");
-  await page.getByLabel("Verkaufter Betrag, leer für die ganze Position").press("Enter");
-  await expect(page.getByText("Rendite 0,0 % → 6,4 % auf 1.800 €")).toBeVisible();
-  await expect(page.getByText("+114,96 €", { exact: true })).toBeVisible();
-  await expect(page.getByRole("region", { name: "Andere Kaufziele" })).toBeVisible();
+  await page.getByLabel("Höchstens so viele Käufe").selectOption("2");
+  await expect(kaeufe).toHaveCount(2);
+  await expect(page).toHaveURL(/anzahl=2/);
 });

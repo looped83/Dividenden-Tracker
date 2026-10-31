@@ -368,17 +368,20 @@ export interface Concentration {
 /**
  * Streuung nach dem Kauf (seit 2.22.0): groesste Position, Branche und Land
  * gemessen am Marktwert des Depotstands plus der Kaeufe. Positionen ohne Branche oder Land zaehlen dort nicht als Gruppe.
+ * Beim Tausch (§16.1) geht der verkaufte Teil vorher ab (`sold`).
  */
 export function concentrationAfter({
   snapshots,
   facets,
   names,
   plan,
+  sold,
 }: {
   snapshots: readonly SecuritySnapshot[];
   facets: ReadonlyMap<string, ForecastFacets>;
   names: ReadonlyMap<string, string>;
   plan: PurchasePlan;
+  sold?: { securityId: string; amount: Money } | undefined;
 }): {
   position: Concentration;
   sector: Concentration | null;
@@ -388,6 +391,11 @@ export function concentrationAfter({
   for (const row of snapshotsAt(snapshots, latestAsOf(snapshots))) {
     if (row.market_value === null) continue;
     values.set(row.security_id, new MoneyDecimal(row.market_value));
+  }
+  if (sold) {
+    const rest = (values.get(sold.securityId) ?? ZERO).minus(sold.amount.toDecimal());
+    if (rest.greaterThan(0)) values.set(sold.securityId, rest);
+    else values.delete(sold.securityId);
   }
   for (const buy of plan.buys) {
     values.set(
