@@ -228,7 +228,7 @@ describe("Positionen je Anteil", () => {
     expect(formatPercent(health.holdings[1].share, 1)).toBe("30,0\u00A0%");
   });
 
-  it("nennt den ISIN-Präfix XS nicht als Land, sondern als International", () => {
+  it("führt den ISIN-Präfix XS (Gold) nicht als Land, sondern hinter den Ländern", () => {
     FACETS.set("sec-xs", {
       name: "Gold ETP",
       sector: null,
@@ -236,8 +236,12 @@ describe("Positionen je Anteil", () => {
       currency: "USD",
       payoutMonths: [],
     });
-    const analysis = analyze([snapshot({ security_id: "sec-xs" })]);
-    expect(labels(analysis.countries)).toEqual(["International (XS)"]);
+    const analysis = analyze([
+      snapshot({ security_id: "sec-xs", market_value: "900.00" }),
+      snapshot({ security_id: "sec-a", market_value: "100.00" }),
+    ]);
+    expect(labels(analysis.countries)[0]).not.toBe("Ohne Länderbezug");
+    expect(labels(analysis.countries).at(-1)).toBe("Ohne Länderbezug");
   });
 });
 
