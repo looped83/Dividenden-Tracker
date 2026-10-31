@@ -2,7 +2,7 @@ import { EUR, Money, MoneyDecimal, type DecimalInstance } from "@/lib/money";
 import type { SecuritySnapshot } from "@/lib/supabase/repositories/securitySnapshots";
 import type { ForecastFacets, TwelveMonthForecast } from "@/features/securities/forecast";
 import { latestAsOf, snapshotsAt } from "@/features/securities/snapshots";
-import { countryLabel } from "@/lib/utils/countryLabel";
+import { countryLabel, isCountryCode } from "@/lib/utils/countryLabel";
 import type { RefDate } from "@/lib/statistics";
 
 /**
@@ -412,6 +412,8 @@ export function concentrationAfter({
       // Wie Bestand › Analyse: „us " und „US" sind dasselbe Land.
       const raw = facets.get(id)?.[key]?.trim();
       if (!raw) continue;
+      // Gold-ETP mit „XS"-ISIN ist kein Land und kein Klumpen eines Landes.
+      if (key === "country" && !isCountryCode(raw)) continue;
       const group = key === "country" ? raw.toUpperCase() : raw;
       groups.set(group, (groups.get(group) ?? ZERO).plus(value));
     }

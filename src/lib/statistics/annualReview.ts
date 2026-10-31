@@ -14,6 +14,7 @@ import {
 } from "./analytics";
 import { dayOfYear, daysInYear, yearOf, type RefDate } from "./dates";
 import { reinvestedSummary, type ReinvestedSummary } from "./reinvested";
+import { isCountryCode } from "@/lib/utils/countryLabel";
 import type {
   AnalyticsPayment,
   ComparisonResult,
@@ -251,7 +252,8 @@ export function annualReview(
   const countries = new Set<string>();
   for (const payment of rows) {
     const facet = facets.get(payment.securityId);
-    if (facet?.country) countries.add(facet.country);
+    const country = facet?.country?.trim().toUpperCase();
+    if (country && isCountryCode(country)) countries.add(country);
     const sector = facet?.sector?.trim();
     if (!sector) continue;
     bySector.set(sector, (bySector.get(sector) ?? ZERO).add(payment.netAmount));

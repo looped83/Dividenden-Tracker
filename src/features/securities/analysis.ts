@@ -12,7 +12,7 @@
  * des Umschalters: Eine Branche kann ein Zehntel des Werts stellen und ein
  * Viertel der Dividende.
  */
-import { countryLabel } from "@/lib/utils/countryLabel";
+import { countryLabel, isCountryCode, NO_COUNTRY_LABEL } from "@/lib/utils/countryLabel";
 import {
   Money,
   MoneyDecimal,
@@ -84,6 +84,11 @@ export type AnalysisResult =
 
 export const UNKNOWN_KEY = "";
 export const OTHER_KEY = "__other";
+/**
+ * Positionen ohne Land (Gold-ETP mit „XS"-ISIN): eigene Zeile hinter den
+ * Laendern statt eines Scheinlands — Gold haengt an keiner Volkswirtschaft.
+ */
+export const NO_COUNTRY_KEY = "__no_country";
 
 /** Hoechstens so viele Ringstuecke; der Rest wird „Sonstige". */
 const RING_SLICES = 5;
@@ -132,7 +137,9 @@ export function effectiveFrequency(
 }
 
 function normalizedCountry(value: string | null | undefined): string {
-  return value?.trim().toUpperCase() ?? UNKNOWN_KEY;
+  const code = value?.trim().toUpperCase();
+  if (!code) return UNKNOWN_KEY;
+  return isCountryCode(code) ? code : NO_COUNTRY_KEY;
 }
 
 function capitalized(label: string): string {
@@ -209,12 +216,17 @@ function group(
   return sortSlices(slices);
 }
 
+/** Rang am Ende: echte Kategorien zuerst, dann „ohne Laenderbezug", zuletzt „ohne Angabe". */
+function tailRank(key: string): number {
+  if (key === UNKNOWN_KEY) return 2;
+  if (key === NO_COUNTRY_KEY) return 1;
+  return 0;
+}
+
 function sortSlices(slices: AnalysisSlice[]): AnalysisSlice[] {
-  return slices.sort((a, b) => {
-    if (a.key === UNKNOWN_KEY) return 1;
-    if (b.key === UNKNOWN_KEY) return -1;
-    return b.amount.compareTo(a.amount);
-  });
+  return slices.sort(
+    (a, b) => tailRank(a.key) - tailRank(b.key) || b.amount.compareTo(a.amount),
+  );
 }
 
 /**
@@ -333,7 +345,7 @@ export function analyzePortfolio(
         entries,
         total,
         (row) => normalizedCountry(facetOf(row)?.country),
-        countryLabel,
+        (key) => (key === NO_COUNTRY_KEY ? NO_COUNTRY_LABEL : countryLabel(key)),
         nameOf,
       ),
     },

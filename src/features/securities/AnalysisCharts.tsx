@@ -7,6 +7,7 @@ import { DonutChart } from "@/features/statistics/components/charts";
 import { formatCountNoun } from "@/lib/utils/formatNumber";
 import {
   collapseSlices,
+  NO_COUNTRY_KEY,
   OTHER_KEY,
   UNKNOWN_KEY,
   type AnalysisHolding,
@@ -77,7 +78,7 @@ function BarRow({
       <div className="mt-2 h-[3px] rounded-full bg-border" aria-hidden>
         <div
           className={
-            slice.key === UNKNOWN_KEY
+            slice.key === UNKNOWN_KEY || slice.key === NO_COUNTRY_KEY
               ? "bar-grow h-full rounded-full bg-series-prior"
               : "bar-grow h-full rounded-full bg-foreground"
           }
