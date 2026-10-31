@@ -8,7 +8,7 @@ import { formatMonths } from "./targetTime";
  * Schneeball-Ziel erreicht ist. Steht im Kopf von Nachkauf und Sparplänen und
  * führt zum Schneeball, wo die Annahmen dahinter stehen. Seit 2.33.0 eine
  * Zeile: Wer vorzieht, sagt schon die Überschrift darüber, das Ziel der Link.
- * Seit 2.60.0 auch rückwärts: Ein Tausch, der Dividende kostet, schiebt das
+ * Seit 2.61.0 auch rückwärts: Ein Tausch, der Dividende kostet, schiebt das
  * Ziel hinaus („später").
  */
 export function TargetGain({

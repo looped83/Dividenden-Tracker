@@ -956,7 +956,7 @@ die Eingaben stehen in der Adresse (`?modus=sparplan&betrag=1000&fokus=monate&an
 - **Streuung nach dem Kauf:** größte Position, Branche und Land nach Marktwert plus Kauf; eine
   Position über der Grenze ist hervorgehoben. Assets ohne Branche oder Land bilden keine Gruppe.
 
-### 16.1 Tausch (Planer › Tausch, seit 2.60.0)
+### 16.1 Tausch (Planer › Tausch, seit 2.61.0)
 
 Eine Rechnung beim Anzeigen (`planSwap`), keine Empfehlung. Eingaben in der Adresse
 (`?verkauf=<id>&kauf=<id>&betrag=2000`); ohne Betrag gilt die ganze Position (Marktwert auf

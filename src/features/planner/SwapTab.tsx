@@ -56,7 +56,7 @@ const NO_CAPS: ReadonlyMap<string, number> = new Map();
 const sharesFormat = new Intl.NumberFormat("de-DE", { maximumFractionDigits: 1 });
 
 /**
- * Planer › **Tausch** (seit 2.60.0): Was ändert sich, wenn du einen Teil von
+ * Planer › **Tausch** (seit 2.61.0): Was ändert sich, wenn du einen Teil von
  * A verkaufst und in B steckst? Dividende im Jahr, Monate, Gewichtung und
  * Ziel-Zeit vorher und nachher (CALCULATION_RULES.md §16.1). Die Eingaben
  * stehen in der Adresse (`?verkauf=…&kauf=…&betrag=2000`) wie im Nachkauf;

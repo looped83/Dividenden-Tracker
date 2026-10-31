@@ -210,7 +210,7 @@ test("merkt sich Zielgewichtung und Sparplan aus dem Bearbeiten-Formular", async
   await expect(dialog.getByLabel("Rate (€)")).toHaveValue("25");
 });
 
-test("rechnet einen Tausch durch und schlägt andere Kaufziele vor (seit 2.60.0)", async ({
+test("rechnet einen Tausch durch und schlägt andere Kaufziele vor (seit 2.61.0)", async ({
   page,
   konto,
 }) => {

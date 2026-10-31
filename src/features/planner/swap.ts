@@ -5,7 +5,7 @@ import { latestAsOf, snapshotsAt } from "@/features/securities/snapshots";
 import { purchaseCandidates } from "./purchase";
 
 /**
- * Tausch-Simulator (CALCULATION_RULES.md §16.1, seit 2.60.0): Was ändert
+ * Tausch-Simulator (CALCULATION_RULES.md §16.1, seit 2.61.0): Was ändert
  * sich, wenn du einen Teil von A verkaufst und den Erlös in B steckst? Eine
  * Rechnung beim Anzeigen wie der Nachkauf, keine Empfehlung; gespeichert wird
  * nichts.
