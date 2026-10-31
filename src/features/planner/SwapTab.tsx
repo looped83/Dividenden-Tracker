@@ -268,7 +268,9 @@ function Swap({ basis }: { basis: ForecastBasis }) {
             caps={caps}
             onChoose={(id) => {
               setParam({ kauf: id });
-              const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+              const reduce = window.matchMedia(
+                "(prefers-reduced-motion: reduce)",
+              ).matches;
               window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
             }}
           />
@@ -362,7 +364,9 @@ function AfterLine({
       <span className={cn(over && "font-medium text-negative")}>
         {leg.position.name} {formatPercent(leg.shareBefore, 1)} →{" "}
         {formatPercent(leg.shareAfter, 1)}
-        {cap !== undefined && cap > 0 && ` (Ziel ${formatPercent(new MoneyDecimal(cap), 1)})`}
+        {cap !== undefined &&
+          cap > 0 &&
+          ` (Ziel ${formatPercent(new MoneyDecimal(cap), 1)})`}
       </span>
     );
   };
@@ -414,7 +418,9 @@ function LegList({ plan }: { plan: SwapPlan }) {
             <li key={key}>
               <ListRow>
                 <ListItemBody
-                  title={<AssetLink id={leg.position.securityId} name={leg.position.name} />}
+                  title={
+                    <AssetLink id={leg.position.securityId} name={leg.position.name} />
+                  }
                   meta={
                     <>
                       <span className="font-medium text-foreground">{label}</span>
@@ -567,4 +573,3 @@ function toBarData({ forecast }: ForecastBasis, plan: SwapPlan): CategoryDatum[]
     };
   });
 }
-

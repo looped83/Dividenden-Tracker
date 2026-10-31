@@ -146,8 +146,12 @@ export function planSwap({
   const lost: Money[] = [];
   const gained: Money[] = [];
   for (const month of forecast.months) {
-    const out = sell.months.includes(month.month) ? toMoney(lostPerPayout) : toMoney(ZERO);
-    const add = buy.months.includes(month.month) ? toMoney(gainedPerPayout) : toMoney(ZERO);
+    const out = sell.months.includes(month.month)
+      ? toMoney(lostPerPayout)
+      : toMoney(ZERO);
+    const add = buy.months.includes(month.month)
+      ? toMoney(gainedPerPayout)
+      : toMoney(ZERO);
     before.push(month.total);
     lost.push(out);
     gained.push(add);
@@ -211,12 +215,12 @@ export function swapAlternatives(
 ): SwapPosition[] {
   return positions
     .filter(
-      (position) =>
-        position.months.length > 0 && !exclude.includes(position.securityId),
+      (position) => position.months.length > 0 && !exclude.includes(position.securityId),
     )
     .sort(
       (a, b) =>
-        annualPerEuro(b).comparedTo(annualPerEuro(a)) || a.name.localeCompare(b.name, "de"),
+        annualPerEuro(b).comparedTo(annualPerEuro(a)) ||
+        a.name.localeCompare(b.name, "de"),
     )
     .slice(0, limit);
 }

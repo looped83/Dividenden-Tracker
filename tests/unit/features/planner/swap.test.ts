@@ -104,7 +104,12 @@ function position(id: string) {
 }
 
 function swap(sell: string, buy: string, amount: number) {
-  return planSwap({ forecast: forecast(), sell: position(sell), buy: position(buy), amount });
+  return planSwap({
+    forecast: forecast(),
+    sell: position(sell),
+    buy: position(buy),
+    amount,
+  });
 }
 
 describe("swapPositions", () => {
@@ -153,9 +158,7 @@ describe("planSwap", () => {
 
   it("rechnet fuenf Jahre voraus nur mit bekanntem Wachstum", () => {
     // Epsilon schuettet nicht aus, Gamma waechst 10 % p. a.: 15 € × 1,1⁵.
-    expect(swap("sec-e", "sec-c", 500)?.changeInFiveYears?.toStringValue()).toBe(
-      "24.16",
-    );
+    expect(swap("sec-e", "sec-c", 500)?.changeInFiveYears?.toStringValue()).toBe("24.16");
     // Alpha nennt keinen CAGR.
     expect(swap("sec-a", "sec-c", 500)?.changeInFiveYears).toBeNull();
   });
