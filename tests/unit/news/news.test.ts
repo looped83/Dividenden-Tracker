@@ -6,11 +6,14 @@ import {
   marketauxSymbol,
   marketauxUrl,
   parseMarketaux,
+  parseYahoo,
+  yahooSymbol,
+  yahooUrl,
   type NewsSecurity,
 } from "../../../supabase/functions/_shared/news.ts";
 
 /**
- * News-Abruf der Edge Function `sync-news` (Marketaux). Alle Namen, Kürzel
+ * News-Abruf der Edge Function `sync-news` (Marketaux, Yahoo). Alle Namen, Kürzel
  * und Meldungen sind erfunden; der echte API-Key steht nur im Supabase-Secret.
  */
 const API_KEY = "geheimer-test-key";
@@ -104,6 +107,55 @@ describe("marketauxUrl", () => {
   });
 });
 
+describe("yahooSymbol", () => {
+  it("nimmt für Fonds das Xetra-Kürzel, für Aktien das von Marketaux", () => {
+    expect(yahooSymbol(ETF)).toBe("MGDV.DE");
+    expect(yahooSymbol({ ...ETF, isin: "US0000000002" })).toBe("MGDV");
+    expect(yahooSymbol(AKTIE)).toBe("BSPI");
+    expect(yahooSymbol({ ...AKTIE, isin: "GB0000000001" })).toBe("BSPI.L");
+    expect(yahooSymbol({ ...ETF, ticker: null })).toBeNull();
+  });
+
+  it("baut die Feed-Adresse", () => {
+    expect(new URL(yahooUrl("MGDV.DE")).searchParams.get("s")).toBe("MGDV.DE");
+  });
+});
+
+const RSS = `<?xml version="1.0"?><rss version="2.0"><channel><title>Yahoo</title>
+<item><title><![CDATA[Muster Global Dividend &amp; Co. legt zu]]></title>
+<link>https://finance.example.test/news/a</link><guid isPermaLink="false">y-1</guid>
+<description>Der <b>Fonds</b> steigt.</description><pubDate>Thu, 29 Oct 2026 08:00:00 +0000</pubDate></item>
+<item><title>Zu alt</title><link>https://finance.example.test/news/b</link>
+<pubDate>Mon, 05 Oct 2026 08:00:00 +0000</pubDate></item>
+<item><title>Unsicher</title><link>http://x.test/c</link>
+<pubDate>Thu, 29 Oct 2026 08:00:00 +0000</pubDate></item>
+</channel></rss>`;
+
+describe("parseYahoo", () => {
+  it("übernimmt Schlagzeilen ab dem Zeitpunkt mit https-Link", () => {
+    expect(parseYahoo(RSS, ETF, SINCE)).toEqual([
+      {
+        security_id: "sec-2",
+        provider: "yahoo",
+        external_id: "y-1",
+        title: "Muster Global Dividend & Co. legt zu",
+        snippet: "Der Fonds steigt.",
+        url: "https://finance.example.test/news/a",
+        source: "finance.example.test",
+        language: "en",
+        sentiment: null,
+        published_at: "2026-10-29T08:00:00.000Z",
+      },
+    ]);
+  });
+
+  it("wirft, wenn keine RSS-Antwort kommt", () => {
+    expect(() => parseYahoo("<html>gesperrt</html>", ETF, SINCE)).toThrow(
+      NewsSourceError,
+    );
+  });
+});
+
 describe("collectNews", () => {
   const marketauxBody = JSON.stringify({
     data: [
@@ -117,29 +169,58 @@ describe("collectNews", () => {
     ],
   });
 
-  it("fragt Marketaux nur für Aktien", async () => {
-    const fetchImpl = vi.fn(() => Promise.resolve(new Response(marketauxBody)));
+  /** Antwortet je nach Adresse wie Marketaux oder Yahoo. */
+  function byHost(marketaux: () => Response) {
+    return vi.fn((input: URL | RequestInfo) => {
+      const url = input instanceof Request ? input.url : input.toString();
+      return Promise.resolve(url.includes("marketaux") ? marketaux() : new Response(RSS));
+    });
+  }
+
+  it("fragt Marketaux für Aktien und Yahoo für ETFs", async () => {
+    const fetchImpl = byHost(() => new Response(marketauxBody));
     const result = await collectNews({
       securities: [AKTIE, ETF],
       since: SINCE,
       marketauxKey: API_KEY,
       fetchImpl,
     });
-    expect(fetchImpl).toHaveBeenCalledTimes(1);
-    expect(result).toMatchObject({ requests: 1, failed: 0 });
-    expect(result.items.map((entry) => entry.security_id)).toEqual(["sec-1"]);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(result).toMatchObject({
+      requests: 2,
+      failed: 0,
+      yahoo: { requests: 1, items: 1 },
+    });
+    expect(result.items.map((entry) => [entry.security_id, entry.provider])).toEqual([
+      ["sec-1", "marketaux"],
+      ["sec-2", "yahoo"],
+    ]);
   });
 
-  it("fragt ohne Key nichts an", async () => {
-    const fetchImpl = vi.fn(() => Promise.resolve(new Response(marketauxBody)));
+  it("fragt Yahoo für eine Aktie, bei der Marketaux scheitert", async () => {
+    const fetchImpl = byHost(() => new Response("abgelehnt", { status: 429 }));
+    const result = await collectNews({
+      securities: [AKTIE],
+      since: SINCE,
+      marketauxKey: API_KEY,
+      fetchImpl,
+      marketauxRetryMs: 0,
+    });
+    expect(result).toMatchObject({ requests: 2, failed: 1, yahoo: { requests: 1 } });
+    expect(result.errorCodes).toEqual(["marketaux:http:429"]);
+  });
+
+  it("fragt ohne Key nur Yahoo", async () => {
+    const fetchImpl = byHost(() => new Response(marketauxBody));
     const result = await collectNews({
       securities: [AKTIE],
       since: SINCE,
       marketauxKey: null,
       fetchImpl,
     });
-    expect(fetchImpl).not.toHaveBeenCalled();
-    expect(result.requests).toBe(0);
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(fetchImpl.mock.calls[0]?.[0]).toMatch(/feeds\.finance\.yahoo\.com/);
+    expect(result.yahoo).toEqual({ requests: 1, items: 1 });
   });
 
   it("zählt Ausfälle einzeln und verrät weder Adresse noch Key", async () => {
@@ -153,8 +234,8 @@ describe("collectNews", () => {
       marketauxKey: API_KEY,
       fetchImpl,
     });
-    expect(result.failed).toBe(1);
-    expect(result.errorCodes).toEqual(["marketaux:network"]);
+    expect(result.failed).toBe(2);
+    expect(result.errorCodes).toEqual(["marketaux:network", "yahoo:network"]);
     expect(result.errorCodes.join(" ")).not.toContain(API_KEY);
   });
 
@@ -190,7 +271,8 @@ describe("collectNews", () => {
       marketauxKey: API_KEY,
       fetchImpl,
     });
-    expect(result).toMatchObject({ requests: 1, failed: 1, skipped: 1 });
+    // Die gescheiterte Aktie fragt danach Yahoo, die übersprungene nicht.
+    expect(result).toMatchObject({ requests: 2, failed: 2, skipped: 1 });
   });
 
   it("startet nach Ablauf der Zeit keine Anfragen mehr", async () => {

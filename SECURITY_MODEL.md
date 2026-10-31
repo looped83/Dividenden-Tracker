@@ -316,13 +316,11 @@ Sicherheitsmaßnahme.
   lässt höchstens alle 12 Stunden einen Lauf zu; ein früherer Aufruf fragt keine Quelle an.
 - **Darstellung**: Gespeichert werden nur Titel, Auszug, Quelle und `https`-Link. Keine
   Bilder (CSP `img-src 'self'` bleibt), Links öffnen mit `rel="noopener noreferrer"`.
-- **GDELT** fragt der Browser direkt (ohne Key, CORS `*`), weil GDELT je Absender-IP
-  drosselt und die geteilten IPs der Supabase-Server abwies. Dafür steht
-  `https://api.gdeltproject.org` in `connect-src`. Die Antwort wird wie die
-  gespeicherten Meldungen gefiltert (nur `https`-Links, Titel als Text, keine Bilder) und
-  nicht gespeichert. GDELT erfährt dabei die IP und die gesuchten Asset-Namen.
-- **Geprüft** in `tests/unit/news/news.test.ts` (kein Key in Fehlercodes),
-  `tests/unit/lib/news/gdelt.test.ts` und
+- **Yahoo Finance** (RSS je Kürzel, ohne Key) fragt ebenfalls nur die Edge Function. Aus
+  dem Feed werden Tags entfernt und Entitäten aufgelöst; gespeichert wird reiner Text. Der
+  Browser spricht mit keiner News-Quelle, `connect-src` bleibt auf Supabase beschränkt
+  (GDELT im Browser gab es nur in 2.60–2.61).
+- **Geprüft** in `tests/unit/news/news.test.ts` (kein Key in Fehlercodes) und
   `tests/e2e/app/news.spec.ts`.
 
 ## Dividendenkalender (Migration 0027, Edge Function)

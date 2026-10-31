@@ -235,15 +235,6 @@ export const test = base.extend<{ seed: SeedOptions; konto: Konto }>({
   storageState: async ({ konto }, use) => {
     await use(storageStateFor(konto));
   },
-
-  // GDELT fragt im Betrieb der Browser (Bereich News). Tests gehen nie ins
-  // Netz: eine leere Antwort statt echter Meldungen.
-  context: async ({ context }, use) => {
-    await context.route("https://api.gdeltproject.org/**", (route) =>
-      route.fulfill({ json: { articles: [] } }),
-    );
-    await use(context);
-  },
 });
 
 export { expect };

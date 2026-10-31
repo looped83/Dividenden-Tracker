@@ -92,7 +92,7 @@ export function buildNewsFeed(
     if (existing) {
       if (!existing.securityIds.includes(row.security_id))
         existing.securityIds.push(row.security_id);
-      // Marketaux bringt einen Auszug mit, GDELT nicht.
+      // Nicht jede Quelle bringt einen Auszug mit.
       existing.snippet ??= row.snippet;
       continue;
     }
