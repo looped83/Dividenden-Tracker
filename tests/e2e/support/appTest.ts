@@ -170,7 +170,7 @@ async function seedNews(
       await client.query(
         `insert into news_items
            (user_id, security_id, provider, external_id, title, snippet, url, source, published_at)
-         values ($1, $2, 'gdelt', $3, $4, $5, $6, $7, now() - make_interval(hours => $8))`,
+         values ($1, $2, 'marketaux', $3, $4, $5, $6, $7, now() - make_interval(hours => $8))`,
         [
           userId,
           securityId,
@@ -234,6 +234,15 @@ export const test = base.extend<{ seed: SeedOptions; konto: Konto }>({
   // Speicher — supabase-js findet sie und die App startet angemeldet.
   storageState: async ({ konto }, use) => {
     await use(storageStateFor(konto));
+  },
+
+  // GDELT fragt im Betrieb der Browser (Bereich News). Tests gehen nie ins
+  // Netz: eine leere Antwort statt echter Meldungen.
+  context: async ({ context }, use) => {
+    await context.route("https://api.gdeltproject.org/**", (route) =>
+      route.fulfill({ json: { articles: [] } }),
+    );
+    await use(context);
   },
 });
 

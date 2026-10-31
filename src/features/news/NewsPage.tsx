@@ -31,7 +31,7 @@ import { isoFromRef } from "@/lib/statistics";
 import { useToday } from "@/lib/hooks/useToday";
 import { compareGerman } from "@/lib/utils/compareText";
 import { getErrorMessage } from "@/lib/utils/errorMessage";
-import { useAutoNewsSync, useNewsItems, useNewsSyncStatus } from "./hooks";
+import { useAutoNewsSync, useGdeltNews, useNewsItems, useNewsSyncStatus } from "./hooks";
 
 const SYNC_FAILED_HINT =
   "Die News konnten gerade nicht aktualisiert werden. Die zuletzt gespeicherten Meldungen werden weiterhin angezeigt.";
@@ -106,9 +106,9 @@ function NewsRow({
 }
 
 /**
- * News zu den Assets im Bestand (seit 2.59.0). Die Meldungen holt die Edge
- * Function `sync-news` aus Marketaux und GDELT; die Seite liest nur die
- * gespeicherten. Beim Öffnen wird höchstens alle 12 Stunden neu abgerufen.
+ * News zu den Assets im Bestand (seit 2.59.0). Marketaux-Meldungen holt die
+ * Edge Function `sync-news` höchstens alle 12 Stunden und speichert sie; für
+ * Assets ohne solche Meldungen fragt der Browser GDELT (`lib/news/gdelt.ts`).
  */
 export function NewsPage() {
   const itemsQuery = useNewsItems();
@@ -121,7 +121,13 @@ export function NewsPage() {
   const activeCount = countActiveNewsFilters(filters);
   const disclosure = useFilterDisclosure(activeCount);
 
-  const rows = itemsQuery.data;
+  const gdeltQuery = useGdeltNews(itemsQuery.data);
+  const gdeltRows = gdeltQuery.data;
+  const rows = React.useMemo(
+    () =>
+      itemsQuery.data && gdeltRows ? [...itemsQuery.data, ...gdeltRows] : itemsQuery.data,
+    [itemsQuery.data, gdeltRows],
+  );
   const names = React.useMemo(
     () =>
       new Map(
@@ -159,7 +165,9 @@ export function NewsPage() {
   const shownDays = days.slice(0, pages * DAYS_PER_PAGE);
   const hasRows = (rows?.length ?? 0) > 0;
   const isInitialLoading =
-    itemsQuery.isLoading || securitiesQuery.isLoading || (sync.isSyncing && !hasRows);
+    itemsQuery.isLoading ||
+    securitiesQuery.isLoading ||
+    ((sync.isSyncing || gdeltQuery.isFetching) && !hasRows);
 
   return (
     <div className="space-y-6">
@@ -275,6 +283,12 @@ export function NewsPage() {
             </LoadMore>
           )}
         </div>
+      )}
+
+      {gdeltQuery.isFetching && hasRows && (
+        <p className="text-sm text-muted-foreground" aria-live="polite">
+          Weitere Meldungen werden gesucht …
+        </p>
       )}
 
       {/* Quellenangabe: Sie erklärt, woher die Meldungen kommen. Dazu der Stand wie beim Kalender. */}

@@ -1,6 +1,7 @@
 /**
- * Edge Function `sync-news` — holt Meldungen zu den Assets im Bestand von
- * Marketaux und GDELT und schreibt sie nach `news_items`.
+ * Edge Function `sync-news` — holt Meldungen zu den Aktien im Bestand von
+ * Marketaux und schreibt sie nach `news_items`. GDELT fragt der Browser
+ * selbst (`src/lib/news/gdelt.ts`).
  *
  * Laufzeit: Deno (Supabase Edge Runtime). Abruf und Auswertung stehen in
  * `../_shared/news.ts` und werden von den Unit-Tests des Projekts geprüft.
@@ -90,7 +91,7 @@ async function loadHoldings(
     }));
 }
 
-/** „gdelt:timeout×3,marketaux:http:429“ — Anzahl je Fehlercode fürs Log. */
+/** „marketaux:http:429×3,marketaux:timeout“ — Anzahl je Fehlercode fürs Log. */
 function countCodes(codes: readonly string[]): string {
   const counts = new Map<string, number>();
   for (const code of codes) counts.set(code, (counts.get(code) ?? 0) + 1);
@@ -180,7 +181,6 @@ async function handle(request: Request): Promise<Response> {
     const result = await collectNews({
       securities,
       since,
-      now,
       marketauxKey: Deno.env.get("MARKETAUX_API_KEY") ?? null,
     });
 

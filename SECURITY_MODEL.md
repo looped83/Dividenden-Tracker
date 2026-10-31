@@ -305,7 +305,7 @@ Sicherheitsmaßnahme.
 
 - **Secret**: `MARKETAUX_API_KEY` liegt allein als Supabase-Secret vor. Er steht in der
   Anfrageadresse von Marketaux; deshalb enthalten weder Antwort noch Log eine Adresse —
-  protokolliert werden nur Zähler und Codes (`marketaux:http:429`, `gdelt:timeout`).
+  protokolliert werden nur Zähler und Codes (`marketaux:http:429`).
 - **Authentifizierung**: `sync-news` läuft mit `verify_jwt = true` und bestimmt die
   Nutzerkennung über `auth.getUser()`.
 - **Rechte**: `news_items` und `news_sync_status` sind für `authenticated` **nur
@@ -316,7 +316,13 @@ Sicherheitsmaßnahme.
   lässt höchstens alle 12 Stunden einen Lauf zu; ein früherer Aufruf fragt keine Quelle an.
 - **Darstellung**: Gespeichert werden nur Titel, Auszug, Quelle und `https`-Link. Keine
   Bilder (CSP `img-src 'self'` bleibt), Links öffnen mit `rel="noopener noreferrer"`.
-- **Geprüft** in `tests/unit/news/news.test.ts` (kein Key in Fehlercodes) und
+- **GDELT** fragt der Browser direkt (ohne Key, CORS `*`), weil GDELT je Absender-IP
+  drosselt und die geteilten IPs der Supabase-Server abwies. Dafür steht
+  `https://api.gdeltproject.org` in `connect-src`. Die Antwort wird wie die
+  gespeicherten Meldungen gefiltert (nur `https`-Links, Titel als Text, keine Bilder) und
+  nicht gespeichert. GDELT erfährt dabei die IP und die gesuchten Asset-Namen.
+- **Geprüft** in `tests/unit/news/news.test.ts` (kein Key in Fehlercodes),
+  `tests/unit/lib/news/gdelt.test.ts` und
   `tests/e2e/app/news.spec.ts`.
 
 ## Dividendenkalender (Migration 0027, Edge Function)

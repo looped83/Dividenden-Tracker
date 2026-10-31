@@ -1,18 +1,14 @@
 /**
  * Abruf der News zu den Assets im Bestand (Edge Function `sync-news`).
  *
- * Zwei kostenlose Quellen, weil keine allein alle Assets abdeckt:
+ * **Marketaux** ordnet Meldungen über das Börsenkürzel zu und liefert die
+ * Stimmung je Asset. Der kostenlose Plan erlaubt 100 Anfragen am Tag mit je
+ * 3 Meldungen; gefragt wird deshalb nur für Aktien, eine Anfrage je Aktie.
  *
- * - **Marketaux** ordnet Meldungen über das Börsenkürzel zu und liefert die
- *   Stimmung je Asset. Der kostenlose Plan erlaubt 100 Anfragen am Tag mit je
- *   3 Meldungen; gefragt wird deshalb nur für Aktien, eine Anfrage je Aktie.
- * - **GDELT** (Volltextsuche nach dem Namen, ohne Key) deckt ab, was Marketaux
- *   nicht liefert: ETFs, deutsche und britische Werte, kleinere REITs und
- *   BDCs. Alle diese Namen gehen in ein bis zwei Sammelanfragen; GDELT
- *   erlaubt nur eine Anfrage alle fünf Sekunden.
- *
- * Google News war die erste Wahl, antwortet Servern von Supabase aber
- * durchweg mit 503 (30.10.2026).
+ * Was Marketaux nicht kennt (ETFs, manche deutsche und britische Werte),
+ * sucht der Browser bei GDELT (`src/lib/news/gdelt.ts`): GDELT begrenzt je
+ * Absender-IP, und von den geteilten IPs der Supabase-Server kam nur „zu
+ * viele Anfragen“ (30./31.10.2026). Google News antwortete ihnen mit 503.
  *
  * Der API-Key ist ein Geheimnis: Er steht in der Anfrageadresse von Marketaux.
  * Adressen tauchen deshalb in keiner Fehlermeldung auf — `NewsSourceError`
@@ -22,7 +18,7 @@
  * Unit-Tests ohne Netz auskommen.
  */
 
-export type NewsProvider = "marketaux" | "gdelt";
+export type NewsProvider = "marketaux";
 
 /** Ein Asset, zu dem Meldungen gesucht werden. */
 export interface NewsSecurity {
@@ -74,13 +70,6 @@ export const NEWS_LOOKBACK_DAYS = 14;
 const REQUEST_TIMEOUT_MS = 8_000;
 
 /**
- * GDELT durchsucht für eine Sammelanfrage den Volltext von zwei Wochen und
- * braucht dafür oft deutlich länger als acht Sekunden (30.10.2026: alle
- * Anfragen liefen in die kurze Grenze).
- */
-const GDELT_TIMEOUT_MS = 20_000;
-
-/**
  * Anfragen an Marketaux nacheinander: Bei 8 und auch bei 3 gleichzeitigen
  * antwortete es teils mit 429 (30.10.2026).
  */
@@ -89,17 +78,14 @@ const MARKETAUX_CONCURRENCY = 1;
 /** Pause vor dem zweiten Versuch nach einem 429. */
 const MARKETAUX_RETRY_MS = 2_000;
 
-/** Nach Marketaux starten GDELT-Anfragen höchstens so lange. */
-const GDELT_BUDGET_MS = 60_000;
-
 /**
- * Höchstens so lange werden neue Anfragen gestartet. Bei rund 50 Assets sind
- * es knapp 90 Anfragen; hängt eine Quelle, endet der Lauf trotzdem weit vor
- * dem Zeitlimit der Edge Function und speichert, was bis dahin da ist.
+ * Höchstens so lange werden neue Anfragen gestartet. Hängt Marketaux, endet
+ * der Lauf trotzdem weit vor dem Zeitlimit der Edge Function und speichert,
+ * was bis dahin da ist.
  */
 const DEFAULT_BUDGET_MS = 40_000;
 
-/** 2 MB — ein RSS-Ergebnis mit 100 Einträgen liegt bei rund 50 KB. */
+/** 2 MB — eine Marketaux-Antwort liegt bei wenigen Kilobyte. */
 const MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
 
 const TITLE_MAX = 500;
@@ -107,7 +93,7 @@ const SNIPPET_MAX = 500;
 const SOURCE_MAX = 200;
 
 // ---------------------------------------------------------------------------
-// Namen und Kürzel
+// Kürzel
 // ---------------------------------------------------------------------------
 
 /**
@@ -140,65 +126,6 @@ export function marketauxSymbol(
   if (ticker.includes(".")) return ticker;
   const country = security.isin?.slice(0, 2).toUpperCase() ?? "";
   return `${ticker.replaceAll(" ", "-")}${EXCHANGE_SUFFIX[country] ?? ""}`;
-}
-
-/** Rechtsformen und Zusätze am Ende eines Namens, die keiner mitschreibt. */
-const LEGAL_SUFFIX =
-  /[\s,]+(inc|incorporated|corp|corporation|co|company|ag|se|sa|nv|n\.v|plc|ltd|limited|llc|lp|reit|kgaa|holding|holdings|group|trust|& co(\.?\s*kgaa)?|the)\.?$/i;
-
-/**
- * Kern eines Namens für die Suche: ohne Klammerzusätze, Rechtsform,
- * Aktiengattung und — bei Fonds — ohne alles ab „UCITS ETF“ bzw. „ETF“
- * („iShares STOXX Global Select Dividend 100 UCITS ETF (DE)“ →
- * „iShares STOXX Global Select Dividend 100“).
- */
-export function searchName(name: string): string {
-  let core = name
-    .replace(/\([^)]*\)/g, " ")
-    .replace(/\b(ucits\s+)?etf\b.*$/i, " ")
-    .replace(/\b(class|cl\.?)\s+[a-c]\b.*$/i, " ")
-    .replace(/\b(registered|reg\.?|namens-?aktien?|vz|stammaktien?|adr)\b.*$/i, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-  // Mehrere Zusätze hintereinander („Holdings Inc.“): so lange kürzen, wie
-  // etwas wegfällt und ein Name übrig bleibt.
-  for (;;) {
-    const shorter = core.replace(LEGAL_SUFFIX, "").trim();
-    if (shorter === core || shorter.length < 2) break;
-    core = shorter;
-  }
-  return core.replace(/[,.&\s]+$/, "").trim() || name.trim();
-}
-
-function normalize(value: string): string {
-  return value
-    .toLowerCase()
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, " ")
-    .trim();
-}
-
-/**
- * Trifft der Titel einer GDELT-Meldung das Asset? Die Suche läuft zwar nach
- * dem genauen Namen, findet ihn aber auch tief im Artikel („… neben Allianz
- * auch …“). Gezeigt wird eine Meldung nur, wenn der Name oder das Kürzel im
- * Titel steht.
- */
-export function titleMentions(
-  title: string,
-  security: Pick<NewsSecurity, "name" | "ticker">,
-): boolean {
-  const text = ` ${normalize(title)} `;
-  const core = normalize(searchName(security.name));
-  if (core.length > 0 && text.includes(` ${core} `)) return true;
-  // Lange Namen kürzen Redaktionen ab („JPMorgan Equity Premium Income“ →
-  // „JPMorgan Equity Premium“): die ersten beiden Wörter genügen dann.
-  const words = core.split(" ");
-  if (words.length >= 3 && text.includes(` ${words.slice(0, 2).join(" ")} `)) return true;
-  // Kürzel erst ab drei Zeichen, sonst trifft „O“ (Realty Income) jedes Wort.
-  const ticker = normalize(security.ticker ?? "");
-  return ticker.length >= 3 && text.includes(` ${ticker} `);
 }
 
 // ---------------------------------------------------------------------------
@@ -254,12 +181,11 @@ async function fetchText(
   doFetch: typeof fetch,
   url: string,
   accept: string,
-  timeoutMs = REQUEST_TIMEOUT_MS,
 ): Promise<string> {
   const controller = new AbortController();
   const timer = setTimeout(() => {
     controller.abort();
-  }, timeoutMs);
+  }, REQUEST_TIMEOUT_MS);
   try {
     let response: Response;
     try {
@@ -386,143 +312,13 @@ export function parseMarketaux(
 }
 
 // ---------------------------------------------------------------------------
-// GDELT
-// ---------------------------------------------------------------------------
-
-/** GDELT verlangt mindestens fünf Sekunden zwischen zwei Anfragen. */
-const GDELT_PAUSE_MS = 5_500;
-
-/**
- * GDELT zählt die Grenze je Absender-IP; Supabase-Server teilen sich IPs mit
- * anderen Projekten. Nach „zu viele Anfragen“ (429 oder Klartext statt JSON)
- * deshalb einmal nach längerer Pause erneut.
- */
-const GDELT_RETRY_MS = 10_000;
-
-/** Namen je Sammelanfrage — kurz genug für die Längengrenze der Suche. */
-const GDELT_NAMES_PER_QUERY = 12;
-
-/** Sprachen, die GDELT ausschreibt, und ihr Kürzel. Andere fallen weg. */
-const GDELT_LANGUAGES: Record<string, string> = { English: "en", German: "de" };
-
-/** Suchbegriff eines Namens: nur Buchstaben, Ziffern und Leerzeichen. */
-function gdeltPhrase(security: Pick<NewsSecurity, "name">): string | null {
-  const phrase = searchName(security.name)
-    .replace(/[^\p{L}\p{N}]+/gu, " ")
-    .trim();
-  // GDELT lehnt sehr kurze Begriffe ab.
-  return phrase.length >= 4 ? phrase : null;
-}
-
-export function gdeltUrl(
-  securities: readonly Pick<NewsSecurity, "name">[],
-  since: Date,
-  now: Date,
-): string | null {
-  const phrases = [
-    ...new Set(securities.map(gdeltPhrase).filter((p): p is string => p !== null)),
-  ];
-  if (phrases.length === 0) return null;
-  const terms = phrases.map((phrase) => `"${phrase}"`);
-  const hours = Math.max(
-    1,
-    Math.min(
-      NEWS_LOOKBACK_DAYS * 24,
-      Math.ceil((now.getTime() - since.getTime()) / 3_600_000),
-    ),
-  );
-  const url = new URL("https://api.gdeltproject.org/api/v2/doc/doc");
-  url.searchParams.set(
-    "query",
-    terms.length === 1 ? (terms[0] ?? "") : `(${terms.join(" OR ")})`,
-  );
-  url.searchParams.set("mode", "artlist");
-  url.searchParams.set("format", "json");
-  url.searchParams.set("maxrecords", "250");
-  url.searchParams.set("sort", "datedesc");
-  url.searchParams.set("timespan", `${String(hours)}h`);
-  return url.toString();
-}
-
-/** „20261030T201500Z“ → ISO. */
-function gdeltDate(value: unknown): string | null {
-  if (typeof value !== "string") return null;
-  const match = /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/.exec(value);
-  if (!match) return null;
-  const [, y, mo, d, h, mi, se] = match;
-  return isoDate(`${y}-${mo}-${d}T${h}:${mi}:${se}Z`);
-}
-
-interface GdeltArticle {
-  url?: unknown;
-  title?: unknown;
-  seendate?: unknown;
-  domain?: unknown;
-  language?: unknown;
-}
-
-/**
- * Ordnet die Treffer einer Sammelanfrage den Assets zu: über den Namen oder
- * das Kürzel im Titel ({@link titleMentions}). Höchstens fünf je Asset, nur
- * Deutsch und Englisch.
- */
-export function parseGdelt(
-  body: string,
-  securities: readonly Pick<NewsSecurity, "id" | "name" | "ticker">[],
-  since: Date,
-): NewsItemWrite[] {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(body);
-  } catch {
-    // GDELT antwortet auf Fehler mit Klartext („Please limit requests …“).
-    throw new NewsSourceError("format");
-  }
-  const articles = (parsed as { articles?: unknown } | null)?.articles ?? [];
-  if (!Array.isArray(articles)) throw new NewsSourceError("format");
-
-  const perSecurity = new Map<string, number>();
-  const items: NewsItemWrite[] = [];
-  for (const raw of articles as GdeltArticle[]) {
-    const url = httpsUrl(raw.url);
-    const title =
-      typeof raw.title === "string" ? clip(decodeEntities(raw.title), TITLE_MAX) : null;
-    const publishedAt = gdeltDate(raw.seendate);
-    const lang =
-      typeof raw.language === "string" ? GDELT_LANGUAGES[raw.language] : undefined;
-    if (!url || !title || !publishedAt || !lang) continue;
-    if (Date.parse(publishedAt) < since.getTime()) continue;
-
-    for (const security of securities) {
-      const count = perSecurity.get(security.id) ?? 0;
-      if (count >= MAX_ITEMS_PER_SOURCE || !titleMentions(title, security)) continue;
-      perSecurity.set(security.id, count + 1);
-      items.push({
-        security_id: security.id,
-        provider: "gdelt",
-        external_id: url.slice(0, 512),
-        title,
-        snippet: null,
-        url,
-        source: clip(typeof raw.domain === "string" ? raw.domain : null, SOURCE_MAX),
-        language: lang,
-        sentiment: null,
-        published_at: publishedAt,
-      });
-    }
-  }
-  return items;
-}
-
-// ---------------------------------------------------------------------------
 // Ablauf
 // ---------------------------------------------------------------------------
 
 export interface CollectNewsOptions {
   securities: readonly NewsSecurity[];
   since: Date;
-  now: Date;
-  /** Fehlt er, bleibt es bei GDELT. */
+  /** Fehlt er, wird nichts abgerufen. */
   marketauxKey: string | null;
   fetchImpl?: typeof fetch;
   /** Gleichzeitige Anfragen an Marketaux. */
@@ -531,10 +327,6 @@ export interface CollectNewsOptions {
   budgetMs?: number;
   /** Pause vor dem zweiten Versuch nach 429; nur Tests setzen sie herab. */
   marketauxRetryMs?: number;
-  /** Pause zwischen zwei GDELT-Anfragen; nur Tests setzen sie herab. */
-  gdeltPauseMs?: number;
-  /** Pause vor dem zweiten GDELT-Versuch; nur Tests setzen sie herab. */
-  gdeltRetryMs?: number;
 }
 
 export interface CollectNewsResult {
@@ -547,11 +339,11 @@ export interface CollectNewsResult {
   errorCodes: string[];
 }
 
-function errorCode(provider: NewsProvider, error: unknown): string {
+function errorCode(error: unknown): string {
   if (error instanceof NewsSourceError) {
-    return `${provider}:${error.code}${error.status === null ? "" : `:${String(error.status)}`}`;
+    return `marketaux:${error.code}${error.status === null ? "" : `:${String(error.status)}`}`;
   }
-  return `${provider}:internal`;
+  return "marketaux:internal";
 }
 
 function pause(ms: number): Promise<void> {
@@ -559,8 +351,7 @@ function pause(ms: number): Promise<void> {
 }
 
 /**
- * Erst Marketaux je Aktie (parallel, im Zeitrahmen), dann GDELT in
- * Sammelanfragen für alle Assets ohne Marketaux-Treffer. Fällt eine einzelne
+ * Marketaux je Aktie, nacheinander und im Zeitrahmen. Fällt eine einzelne
  * Anfrage aus, fehlen nur deren Meldungen; ob der Lauf als Ganzes gescheitert
  * ist, entscheidet die Aufrufstelle an `failed === requests`.
  */
@@ -575,20 +366,16 @@ export async function collectNews(
     skipped: 0,
     errorCodes: [],
   };
-  const attempt = async (
-    provider: NewsProvider,
-    run: () => Promise<NewsItemWrite[]>,
-  ): Promise<void> => {
+  const attempt = async (run: () => Promise<NewsItemWrite[]>): Promise<void> => {
     result.requests += 1;
     try {
       result.items.push(...(await run()));
     } catch (error) {
       result.failed += 1;
-      result.errorCodes.push(errorCode(provider, error));
+      result.errorCodes.push(errorCode(error));
     }
   };
 
-  // 1) Marketaux
   const key = options.marketauxKey;
   const marketaux = key
     ? options.securities.flatMap((security) => {
@@ -598,8 +385,7 @@ export async function collectNews(
     : [];
   const stopAt = Date.now() + (options.budgetMs ?? DEFAULT_BUDGET_MS);
   let next = 0;
-  // 402 heißt: Tageskontingent verbraucht. Weitere Anfragen kosten nur Zeit;
-  // die übrigen Aktien sucht GDELT.
+  // 402 heißt: Tageskontingent verbraucht. Weitere Anfragen kosten nur Zeit.
   let exhausted = false;
   const fetchMarketaux = async (url: string): Promise<string> => {
     try {
@@ -626,7 +412,7 @@ export async function collectNews(
         const task = marketaux[next];
         next += 1;
         if (!key) break;
-        await attempt("marketaux", async () =>
+        await attempt(async () =>
           parseMarketaux(
             await fetchMarketaux(marketauxUrl(task.symbol, options.since, key)),
             task.security,
@@ -638,38 +424,5 @@ export async function collectNews(
   );
   await Promise.all(workers);
   result.skipped = marketaux.length - next;
-
-  // 2) GDELT für den Rest
-  const covered = new Set(result.items.map((item) => item.security_id));
-  const rest = options.securities.filter((security) => !covered.has(security.id));
-  const gdeltStopAt = Date.now() + GDELT_BUDGET_MS;
-  for (let start = 0; start < rest.length; start += GDELT_NAMES_PER_QUERY) {
-    const chunk = rest.slice(start, start + GDELT_NAMES_PER_QUERY);
-    const url = gdeltUrl(chunk, options.since, options.now);
-    if (!url) continue;
-    if (start > 0) await pause(options.gdeltPauseMs ?? GDELT_PAUSE_MS);
-    if (Date.now() >= gdeltStopAt) {
-      result.skipped += 1;
-      continue;
-    }
-    await attempt("gdelt", async () => {
-      const load = async () =>
-        parseGdelt(
-          await fetchText(doFetch, url, "application/json", GDELT_TIMEOUT_MS),
-          chunk,
-          options.since,
-        );
-      try {
-        return await load();
-      } catch (error) {
-        const limited =
-          error instanceof NewsSourceError &&
-          (error.status === 429 || error.code === "format");
-        if (!limited || Date.now() >= gdeltStopAt) throw error;
-      }
-      await pause(options.gdeltRetryMs ?? GDELT_RETRY_MS);
-      return load();
-    });
-  }
   return result;
 }
