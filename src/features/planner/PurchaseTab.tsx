@@ -16,8 +16,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  EUR,
-  Money,
   formatMoney,
   formatMoneyWhole,
   formatPercent,
@@ -45,7 +43,7 @@ import {
 } from "@/features/securities/forecastSettings";
 import { AssetLink } from "./AssetLink";
 import { NumberField, SettingCell, SettingsList } from "./fields";
-import { rhythm } from "./format";
+import { monthlyAverage, payoutText, weakestMonth } from "./format";
 import {
   PURCHASE_RULES,
   concentrationAfter,
@@ -366,16 +364,6 @@ function PlanSummary({
   /** Ziel-Zeit unter der Hauptzahl ({@link TargetGain}). */
   gain: React.ReactNode;
 }) {
-  const average = (values: PurchasePlan["before"]) =>
-    Money.fromDecimal(
-      values
-        .reduce((sum, value) => sum.add(value))
-        .toDecimal()
-        .dividedBy(12),
-      EUR,
-    );
-  const weakest = (values: PurchasePlan["before"]) =>
-    values.reduce((low, value) => (value.compareTo(low) < 0 ? value : low));
   return (
     <KpiHero
       // Netto wie überall im Planer; „netto" stand bis 2.32 im Etikett.
@@ -390,29 +378,17 @@ function PlanSummary({
       stats={[
         {
           label: "Ø im Monat",
-          value: formatMoneyWhole(average(plan.after)),
-          caption: `vorher ${formatMoneyWhole(average(plan.before))}`,
+          value: formatMoneyWhole(monthlyAverage(plan.after)),
+          caption: `vorher ${formatMoneyWhole(monthlyAverage(plan.before))}`,
         },
         {
           label: "Schwächster Monat",
-          value: formatMoneyWhole(weakest(plan.after)),
-          caption: `vorher ${formatMoneyWhole(weakest(plan.before))}`,
+          value: formatMoneyWhole(weakestMonth(plan.after)),
+          caption: `vorher ${formatMoneyWhole(weakestMonth(plan.before))}`,
         },
       ]}
     />
   );
-}
-
-/** „monatlich" oder „quartalsweise · Mär, Jun, Sep, Dez". */
-function payoutText(months: readonly number[]): {
-  rhythm: string;
-  months: string | null;
-} {
-  return {
-    rhythm: rhythm(months.length),
-    // Ein Monatszahler braucht keine Monatsliste: „monatlich" sagt alles.
-    months: months.length === 12 ? null : months.map(monthNameDeShort).join(", "),
-  };
 }
 
 function sharesText(buy: PlannedBuy): string | null {

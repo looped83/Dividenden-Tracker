@@ -8,12 +8,14 @@ import { formatMonths } from "./targetTime";
  * Schneeball-Ziel erreicht ist. Steht im Kopf von Nachkauf und Sparplänen und
  * führt zum Schneeball, wo die Annahmen dahinter stehen. Seit 2.33.0 eine
  * Zeile: Wer vorzieht, sagt schon die Überschrift darüber, das Ziel der Link.
+ * Seit 2.61.0 auch rückwärts: Ein Tausch, der Dividende kostet, schiebt das
+ * Ziel hinaus („später").
  */
 export function TargetGain({
   months,
   target,
 }: {
-  /** Vorgezogene Monate, mindestens einer. */
+  /** Vorgezogene Monate (negativ: hinausgeschoben), mindestens ein Tag. */
   months: number;
   /** Ziel pro Monat in Euro. */
   target: number;
@@ -27,7 +29,10 @@ export function TargetGain({
     >
       <Flag aria-hidden className="size-4 shrink-0 text-primary" />
       <span className="truncate">
-        <span className="font-semibold">{formatMonths(months)} früher</span> am Ziel
+        <span className="font-semibold">
+          {formatMonths(Math.abs(months))} {months < 0 ? "später" : "früher"}
+        </span>{" "}
+        am Ziel
         <span className="sr-only"> von {goal} im Monat</span>
       </span>
     </Link>

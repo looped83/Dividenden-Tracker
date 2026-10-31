@@ -956,6 +956,26 @@ die Eingaben stehen in der Adresse (`?modus=sparplan&betrag=1000&fokus=monate&an
 - **Streuung nach dem Kauf:** größte Position, Branche und Land nach Marktwert plus Kauf; eine
   Position über der Grenze ist hervorgehoben. Assets ohne Branche oder Land bilden keine Gruppe.
 
+### 16.1 Tausch (Planer › Tausch, seit 2.61.0)
+
+Eine Rechnung beim Anzeigen (`planSwap`), keine Empfehlung. Eingaben in der Adresse
+(`?verkauf=<id>&kauf=<id>&betrag=2000`); ohne Betrag gilt die ganze Position (Marktwert auf
+volle Euro abgerundet), mehr als der Marktwert geht nicht.
+
+- **Positionen** (`swapPositions`): alle Positionen des jüngsten Depotstands mit Marktwert > 0,
+  auch ohne Ausschüttung (Ertrag 0). Ertrag je Zahlung und Euro und Zahlmonate wie bei den
+  Nachkauf-Kandidaten (§16), ausgeschlossene Assets zählen mit.
+- **Je Monat:** Verkauf fällt mit Betrag × Ertrag je Zahlung und Euro in seinen Zahlmonaten weg,
+  der Kauf kommt in seinen dazu. Der Depotwert bleibt gleich.
+- **Ergebnis:** Veränderung netto im Jahr (auch in % der Prognose), Rendite beider Seiten,
+  Ø-Monat und schwächster Monat vorher und nachher, Gewichtung beider Seiten vorher und nachher
+  (Anteil am Depotwert, rot über einer eigenen Zielgewichtung > 0), ungefähre Stückzahl zum
+  letzten Kurs, Ziel-Zeit (§14.4) früher oder später.
+- **In 5 Jahren:** Ertrag × (1 + CAGR)⁵ je Seite (CAGR auf 0–15 % begrenzt); nur, wenn jede
+  ausschüttende Seite einen CAGR nennt.
+- **Kaufziele** (`swapAlternatives`): bis zu fünf ausschüttende Positionen mit dem höchsten
+  Ertrag je Euro, ohne Verkauf und gewählten Kauf, je mit der Veränderung im Jahr.
+
 ## 17. Sparpläne (Planer › Sparpläne und „Asset bearbeiten", seit 2.21.0)
 
 Von Hand gepflegte Stammdaten, keine Buchungen: Sparpläne erzeugen keine Eingänge und ändern weder

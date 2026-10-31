@@ -108,7 +108,7 @@ Feldnamen wie „Zahlungsdatum" und „Zahlungsart" bleiben, ebenso die Adresse 
 | **Dividendeneingänge** | Vollständige Zahlungshistorie, Erfassung, Bearbeitung, Detailansicht |
 | **Kalender** | Angekündigte Zahltage aus dem persönlichen DivvyDiary-iCal-Feed |
 | **Depot** | Assets (Aktien, ETFs, Fonds, Anleihen): Stammdaten, Bestände, Entwicklung |
-| **Planer** | Nachkauf-Planer (Einmalkauf, Sparpläne), eigene Sparpläne (seit 2.21.0), Optimierungen (Monatslücken, seit 2.27.0 so benannt), Schneeball (seit 2.20.0) |
+| **Planer** | Nachkauf-Planer (Einmalkauf, Sparpläne), Tausch (seit 2.61.0), eigene Sparpläne (seit 2.21.0), Optimierungen (Monatslücken, seit 2.27.0 so benannt), Schneeball (seit 2.20.0) |
 | **News** | Meldungen zu den Assets im Bestand aus Marketaux (gespeichert) und GDELT (vom Browser abgerufen), filterbar nach Asset, Zeitraum und Thema „Dividende“ (seit 2.59.0) |
 | **Depotkonten** | Verwaltung der Konten bei den Brokern und Auswertung je Konto |
 | **Statistiken** | Vertiefte Auswertungen, Vergleiche, Aufteilungen |

@@ -66,6 +66,9 @@ const PlannerPage = React.lazy(async () => ({
 const PurchaseTab = React.lazy(async () => ({
   default: (await routeChunks.plannerPurchase()).PurchaseTab,
 }));
+const SwapTab = React.lazy(async () => ({
+  default: (await routeChunks.plannerSwap()).SwapTab,
+}));
 const SavingsPlansTab = React.lazy(async () => ({
   default: (await routeChunks.plannerSavings()).SavingsPlansTab,
 }));
@@ -233,6 +236,7 @@ export const router = createHashRouter([
         element: <PlannerPage />,
         children: [
           { index: true, element: <PurchaseTab /> },
+          { path: "tausch", element: <SwapTab /> },
           { path: "sparplaene", element: <SavingsPlansTab /> },
           { path: "luecken", element: <GapsTab /> },
           { path: "schneeball", element: <SnowballTab /> },
