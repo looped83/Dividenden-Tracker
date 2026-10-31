@@ -5,10 +5,11 @@
  * Stimmung je Asset. Der kostenlose Plan erlaubt 100 Anfragen am Tag mit je
  * 3 Meldungen; gefragt wird deshalb nur für Aktien, eine Anfrage je Aktie.
  *
- * Was Marketaux nicht kennt (ETFs, manche deutsche und britische Werte),
- * sucht der Browser bei GDELT (`src/lib/news/gdelt.ts`): GDELT begrenzt je
- * Absender-IP, und von den geteilten IPs der Supabase-Server kam nur „zu
- * viele Anfragen“ (30./31.10.2026). Google News antwortete ihnen mit 503.
+ * **Yahoo Finance** (RSS-Schlagzeilen je Kürzel, ohne Key) übernimmt, was
+ * Marketaux nicht liefert: ETFs und die Aktien, die Marketaux Free ablehnt.
+ * Der Feed ist inoffiziell und kann wegfallen; dann fehlen nur diese
+ * Meldungen. Google News (503) und GDELT (Drosselung je IP, auch im Browser)
+ * scheiterten am 30./31.10.2026.
  *
  * Der API-Key ist ein Geheimnis: Er steht in der Anfrageadresse von Marketaux.
  * Adressen tauchen deshalb in keiner Fehlermeldung auf — `NewsSourceError`
@@ -18,7 +19,7 @@
  * Unit-Tests ohne Netz auskommen.
  */
 
-export type NewsProvider = "marketaux";
+export type NewsProvider = "marketaux" | "yahoo";
 
 /** Ein Asset, zu dem Meldungen gesucht werden. */
 export interface NewsSecurity {
@@ -181,6 +182,7 @@ async function fetchText(
   doFetch: typeof fetch,
   url: string,
   accept: string,
+  headers: Record<string, string> = {},
 ): Promise<string> {
   const controller = new AbortController();
   const timer = setTimeout(() => {
@@ -191,7 +193,7 @@ async function fetchText(
     try {
       response = await doFetch(url, {
         method: "GET",
-        headers: { accept },
+        headers: { ...headers, accept },
         redirect: "follow",
         signal: controller.signal,
       });
@@ -312,6 +314,89 @@ export function parseMarketaux(
 }
 
 // ---------------------------------------------------------------------------
+// Yahoo Finance
+// ---------------------------------------------------------------------------
+
+/** Nach Marketaux höchstens so lange neue Yahoo-Anfragen starten. */
+const YAHOO_BUDGET_MS = 20_000;
+
+/** Yahoo verträgt einige Anfragen gleichzeitig; mehr bringt kaum Zeit. */
+const YAHOO_CONCURRENCY = 3;
+
+/** Ohne Kennung lehnt Yahoo Anfragen teils ab. */
+const YAHOO_HEADERS = { "user-agent": "Mozilla/5.0 (compatible; Dividenden-Tracker)" };
+
+/**
+ * Kürzel für Yahoo. Aktien wie bei Marketaux; Fonds und ETPs (irische,
+ * luxemburgische ISINs, XS) stehen bei Yahoo unter ihrem Xetra-Kürzel mit
+ * „.DE“ — ohne Endung träfe „TDIV“ einen fremden US-Fonds.
+ */
+export function yahooSymbol(
+  security: Pick<NewsSecurity, "ticker" | "isin" | "isEquity">,
+): string | null {
+  const symbol = marketauxSymbol(security);
+  if (!symbol || symbol.includes(".") || security.isEquity) return symbol;
+  const country = security.isin?.slice(0, 2).toUpperCase() ?? "";
+  return country === "US" || country === "CA" ? symbol : `${symbol}.DE`;
+}
+
+export function yahooUrl(symbol: string): string {
+  const url = new URL("https://feeds.finance.yahoo.com/rss/2.0/headline");
+  url.searchParams.set("s", symbol);
+  url.searchParams.set("region", "US");
+  url.searchParams.set("lang", "en-US");
+  return url.toString();
+}
+
+/** Inhalt des ersten Elements `name` eines RSS-Eintrags, ohne CDATA und Tags. */
+function rssField(item: string, name: string): string | null {
+  const match = new RegExp(`<${name}\\b[^>]*>([\\s\\S]*?)</${name}>`, "i").exec(item);
+  if (!match) return null;
+  const raw = match[1].replace(/^\s*<!\[CDATA\[([\s\S]*?)\]\]>\s*$/, "$1");
+  return decodeEntities(raw.replace(/<[^>]*>/g, " ")).trim() || null;
+}
+
+function hostname(url: string): string | null {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return null;
+  }
+}
+
+/** RSS-Schlagzeilen ab `since`, höchstens fünf. */
+export function parseYahoo(
+  body: string,
+  security: Pick<NewsSecurity, "id">,
+  since: Date,
+): NewsItemWrite[] {
+  if (!/<rss\b/i.test(body)) throw new NewsSourceError("format");
+  const items: NewsItemWrite[] = [];
+  for (const item of body.match(/<item\b[\s\S]*?<\/item>/gi) ?? []) {
+    const title = clip(rssField(item, "title"), TITLE_MAX);
+    const url = httpsUrl(rssField(item, "link"));
+    const publishedAt = isoDate(rssField(item, "pubDate"));
+    if (!title || !url || !publishedAt || Date.parse(publishedAt) < since.getTime()) {
+      continue;
+    }
+    items.push({
+      security_id: security.id,
+      provider: "yahoo",
+      external_id: (rssField(item, "guid") ?? url).slice(0, 512),
+      title,
+      snippet: clip(rssField(item, "description"), SNIPPET_MAX),
+      url,
+      source: clip(hostname(url), SOURCE_MAX),
+      language: "en",
+      sentiment: null,
+      published_at: publishedAt,
+    });
+    if (items.length >= MAX_ITEMS_PER_SOURCE) break;
+  }
+  return items;
+}
+
+// ---------------------------------------------------------------------------
 // Ablauf
 // ---------------------------------------------------------------------------
 
@@ -327,6 +412,8 @@ export interface CollectNewsOptions {
   budgetMs?: number;
   /** Pause vor dem zweiten Versuch nach 429; nur Tests setzen sie herab. */
   marketauxRetryMs?: number;
+  /** Zeit, in der Anfragen an Yahoo starten dürfen (Vorgabe 20 s). */
+  yahooBudgetMs?: number;
 }
 
 export interface CollectNewsResult {
@@ -337,13 +424,15 @@ export interface CollectNewsResult {
   skipped: number;
   /** Kurzcodes der Fehler fürs Server-Log, ohne Adressen. */
   errorCodes: string[];
+  /** Anfragen und Treffer bei Yahoo, fürs Server-Log. */
+  yahoo: { requests: number; items: number };
 }
 
-function errorCode(error: unknown): string {
+function errorCode(provider: NewsProvider, error: unknown): string {
   if (error instanceof NewsSourceError) {
-    return `marketaux:${error.code}${error.status === null ? "" : `:${String(error.status)}`}`;
+    return `${provider}:${error.code}${error.status === null ? "" : `:${String(error.status)}`}`;
   }
-  return "marketaux:internal";
+  return `${provider}:internal`;
 }
 
 function pause(ms: number): Promise<void> {
@@ -351,7 +440,8 @@ function pause(ms: number): Promise<void> {
 }
 
 /**
- * Marketaux je Aktie, nacheinander und im Zeitrahmen. Fällt eine einzelne
+ * Marketaux je Aktie, nacheinander und im Zeitrahmen, danach Yahoo für ETFs
+ * und die Aktien, bei denen Marketaux scheiterte. Fällt eine einzelne
  * Anfrage aus, fehlen nur deren Meldungen; ob der Lauf als Ganzes gescheitert
  * ist, entscheidet die Aufrufstelle an `failed === requests`.
  */
@@ -365,14 +455,25 @@ export async function collectNews(
     failed: 0,
     skipped: 0,
     errorCodes: [],
+    yahoo: { requests: 0, items: 0 },
   };
-  const attempt = async (run: () => Promise<NewsItemWrite[]>): Promise<void> => {
+  /** Assets, für die Marketaux nichts lieferte, weil die Anfrage scheiterte. */
+  const marketauxFailed = new Set<string>();
+  const attempt = async (
+    provider: NewsProvider,
+    securityId: string,
+    run: () => Promise<NewsItemWrite[]>,
+  ): Promise<number> => {
     result.requests += 1;
     try {
-      result.items.push(...(await run()));
+      const items = await run();
+      result.items.push(...items);
+      return items.length;
     } catch (error) {
       result.failed += 1;
-      result.errorCodes.push(errorCode(error));
+      result.errorCodes.push(errorCode(provider, error));
+      if (provider === "marketaux") marketauxFailed.add(securityId);
+      return 0;
     }
   };
 
@@ -412,7 +513,7 @@ export async function collectNews(
         const task = marketaux[next];
         next += 1;
         if (!key) break;
-        await attempt(async () =>
+        await attempt("marketaux", task.security.id, async () =>
           parseMarketaux(
             await fetchMarketaux(marketauxUrl(task.symbol, options.since, key)),
             task.security,
@@ -424,5 +525,38 @@ export async function collectNews(
   );
   await Promise.all(workers);
   result.skipped = marketaux.length - next;
+
+  // Yahoo für alles, wofür Marketaux nicht zuständig war oder scheiterte.
+  // Übersprungene Aktien (Zeit, Kontingent) fragt der nächste Lauf wieder.
+  const viaMarketaux = new Set(marketaux.map((task) => task.security.id));
+  const yahoo = options.securities.flatMap((security) => {
+    const wanted = !viaMarketaux.has(security.id) || marketauxFailed.has(security.id);
+    const symbol = wanted ? yahooSymbol(security) : null;
+    return symbol ? [{ security, symbol }] : [];
+  });
+  const yahooStopAt = Date.now() + (options.yahooBudgetMs ?? YAHOO_BUDGET_MS);
+  let nextYahoo = 0;
+  await Promise.all(
+    Array.from({ length: Math.min(YAHOO_CONCURRENCY, yahoo.length) }, async () => {
+      while (nextYahoo < yahoo.length && Date.now() < yahooStopAt) {
+        const task = yahoo[nextYahoo];
+        nextYahoo += 1;
+        result.yahoo.requests += 1;
+        result.yahoo.items += await attempt("yahoo", task.security.id, async () =>
+          parseYahoo(
+            await fetchText(
+              doFetch,
+              yahooUrl(task.symbol),
+              "application/rss+xml, application/xml, text/xml",
+              YAHOO_HEADERS,
+            ),
+            task.security,
+            options.since,
+          ),
+        );
+      }
+    }),
+  );
+  result.skipped += yahoo.length - nextYahoo;
   return result;
 }

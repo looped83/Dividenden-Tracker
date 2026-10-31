@@ -19,7 +19,7 @@ function row(
   return {
     id,
     security_id: securityId,
-    provider: "gdelt",
+    provider: "yahoo",
     title,
     snippet,
     url: `https://example.test/${id}`,

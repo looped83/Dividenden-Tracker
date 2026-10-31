@@ -1,7 +1,7 @@
 /**
- * Edge Function `sync-news` — holt Meldungen zu den Aktien im Bestand von
- * Marketaux und schreibt sie nach `news_items`. GDELT fragt der Browser
- * selbst (`src/lib/news/gdelt.ts`).
+ * Edge Function `sync-news` — holt Meldungen zu den Assets im Bestand von
+ * Marketaux (Aktien) und Yahoo Finance (ETFs und was Marketaux ablehnt) und
+ * schreibt sie nach `news_items`.
  *
  * Laufzeit: Deno (Supabase Edge Runtime). Abruf und Auswertung stehen in
  * `../_shared/news.ts` und werden von den Unit-Tests des Projekts geprüft.
@@ -214,7 +214,7 @@ async function handle(request: Request): Promise<Response> {
 
     // Nur Zähler und Fehlercodes — keine Adresse, kein Key, keine Titel.
     console.log(
-      `news-sync: ok ms=${String(Date.now() - now.getTime())} assets=${String(securities.length)} req=${String(result.requests)} failed=${String(result.failed)} skipped=${String(result.skipped)} items=${String(result.items.length)}${result.errorCodes.length > 0 ? ` codes=${countCodes(result.errorCodes)}` : ""}`,
+      `news-sync: ok ms=${String(Date.now() - now.getTime())} assets=${String(securities.length)} req=${String(result.requests)} failed=${String(result.failed)} skipped=${String(result.skipped)} items=${String(result.items.length)} yahoo=${String(result.yahoo.requests)}/${String(result.yahoo.items)}${result.errorCodes.length > 0 ? ` codes=${countCodes(result.errorCodes)}` : ""}`,
     );
     return json(
       { status: "success", items: result.items.length, lastSuccessAt: nowIso },
