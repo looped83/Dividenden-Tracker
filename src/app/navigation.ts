@@ -158,16 +158,16 @@ export const DEPOT_TABS: readonly { to: string; label: string; end?: boolean }[]
 
 /**
  * Unterbereiche des Planers (seit 2.20.0): **Nachkauf** verteilt einen Betrag
- * auf den Bestand, **Tausch** (seit 2.61.0) rechnet einen Verkauf zugunsten
- * eines anderen Assets durch, **Sparplaene** (seit 2.21.0) zeigt die eigenen Sparplaene
+ * auf den Bestand, **Sparplaene** (seit 2.21.0) zeigt die eigenen Sparplaene
  * und was sie bringen, **Optimierungen** (bis 2.26 „Monatslücken") zeigt die schwachen Monate,
- * **Schneeball** rechnet hoch, ab wann Dividenden das Ziel tragen.
+ * **Tausch** (seit 2.61.0, seit 2.62.0 nach Optimierungen) verteilt den Erlös
+ * eines Verkaufs auf den Bestand, **Schneeball** rechnet hoch, ab wann Dividenden das Ziel tragen.
  */
 export const PLANNER_TABS: readonly { to: string; label: string; end?: boolean }[] = [
   { to: "/planer", label: "Nachkauf", end: true },
-  { to: "/planer/tausch", label: "Tausch" },
   { to: "/planer/sparplaene", label: "Sparpläne" },
   { to: "/planer/luecken", label: "Optimierungen" },
+  { to: "/planer/tausch", label: "Tausch" },
   { to: "/planer/schneeball", label: "Schneeball" },
 ];
 

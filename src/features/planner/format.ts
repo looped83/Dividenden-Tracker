@@ -1,5 +1,6 @@
 import { EUR, Money, MoneyDecimal, type DecimalInstance } from "@/lib/money";
 import { monthNameDeShort } from "@/lib/statistics/dates";
+import type { PlanFocus } from "./purchase";
 
 /** Ausschuettungsrhythmus in Worten („quartalsweise", „3× im Jahr"). */
 const RHYTHM: Record<number, string> = {
@@ -48,3 +49,10 @@ export function payoutText(months: readonly number[]): {
     months: months.length === 12 ? null : months.map(monthNameDeShort).join(", "),
   };
 }
+
+/** Schwerpunkte von Nachkauf und Tausch. */
+export const FOCUS_LABEL: Record<PlanFocus, string> = {
+  dividende: "Mehr Dividende",
+  monate: "Monate glätten",
+  wachstum: "Dividendenwachstum",
+};

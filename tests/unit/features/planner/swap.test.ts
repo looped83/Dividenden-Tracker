@@ -5,7 +5,7 @@ import {
   type ForecastFacets,
   type TwelveMonthForecast,
 } from "@/features/securities/forecast";
-import { planSwap, swapAlternatives, swapPositions } from "@/features/planner/swap";
+import { planSwap, swapPositions } from "@/features/planner/swap";
 
 const TODAY = { year: 2026, month: 10, day: 25 };
 
@@ -103,19 +103,28 @@ function position(id: string) {
   return found;
 }
 
-function swap(sell: string, buy: string, amount: number) {
+function swap(
+  sell: string,
+  amount: number,
+  input: Partial<Omit<Parameters<typeof planSwap>[0], "sell" | "amount">> = {},
+) {
   return planSwap({
     forecast: forecast(),
+    snapshots: SNAPSHOTS,
     sell: position(sell),
-    buy: position(buy),
     amount,
+    focus: "dividende",
+    buys: 2,
+    caps: new Map(),
+    excluded: new Set(),
+    capPercent: null,
+    ...input,
   });
 }
 
 describe("swapPositions", () => {
   it("fuehrt alle Positionen mit Marktwert, auch ohne Ausschuettung, nach Namen", () => {
-    const list = positions();
-    expect(list.map((entry) => entry.name)).toEqual([
+    expect(positions().map((entry) => entry.name)).toEqual([
       "Alpha",
       "Beta",
       "Delta",
@@ -130,53 +139,61 @@ describe("swapPositions", () => {
 });
 
 describe("planSwap", () => {
-  it("rechnet Wegfall und Zugewinn je Monat und im Jahr", () => {
-    const result = swap("sec-a", "sec-b", 500);
-    // Alpha: 500 × 1 % je Quartal faellt weg (4 × 5 €), Beta: 500 × 6 % im Mai.
-    expect(result?.sell.annual.toStringValue()).toBe("20.00");
-    expect(result?.buy.annual.toStringValue()).toBe("30.00");
-    expect(result?.change.toStringValue()).toBe("10.00");
-    expect(result?.buy.shares?.toString()).toBe("10");
-    expect(result?.sell.yieldPercent.toString()).toBe("4");
-    expect(result?.buy.yieldPercent.toString()).toBe("6");
-    const total = (values: { toDecimal: () => { toNumber: () => number } }[]) =>
-      values.reduce((sum, value) => sum + value.toDecimal().toNumber(), 0);
-    expect(total(result?.after ?? []) - total(result?.before ?? [])).toBeCloseTo(10);
-  });
-
-  it("verschiebt die Gewichtung bei gleichem Depotwert", () => {
-    const result = swap("sec-a", "sec-b", 500);
-    // Depot 4.500 €: Alpha 1.000 → 500, Beta 1.000 → 1.500.
-    expect(result?.sell.shareBefore.toFixed(2)).toBe("22.22");
-    expect(result?.sell.shareAfter.toFixed(2)).toBe("11.11");
-    expect(result?.buy.shareAfter.toFixed(2)).toBe("33.33");
-  });
-
-  it("begrenzt den Betrag auf den Marktwert der verkauften Position", () => {
-    expect(swap("sec-e", "sec-b", 9000)?.amount.toStringValue()).toBe("500.00");
-  });
-
-  it("rechnet fuenf Jahre voraus nur mit bekanntem Wachstum", () => {
-    // Epsilon schuettet nicht aus, Gamma waechst 10 % p. a.: 15 € × 1,1⁵.
-    expect(swap("sec-e", "sec-c", 500)?.changeInFiveYears?.toStringValue()).toBe("24.16");
-    // Alpha nennt keinen CAGR.
-    expect(swap("sec-a", "sec-c", 500)?.changeInFiveYears).toBeNull();
-  });
-
-  it("verwirft Tausch in dieselbe Position und Betrag 0", () => {
-    expect(swap("sec-a", "sec-a", 500)).toBeNull();
-    expect(swap("sec-a", "sec-b", 0)).toBeNull();
-  });
-});
-
-describe("swapAlternatives", () => {
-  it("nennt ausschuettende Positionen nach Ertrag, ohne ausgeschlossene", () => {
+  it("verteilt den Erloes auf mehrere Titel und rechnet den Wegfall gegen", () => {
+    const result = swap("sec-a", 1000);
+    // Alpha faellt weg (4 × 10 €), Beta und Gamma bekommen je 500 €: 30 € + 15 €.
+    expect(result?.lost.toStringValue()).toBe("40.00");
     expect(
-      swapAlternatives(positions(), ["sec-a"], 5).map((entry) => entry.name),
-    ).toEqual(["Beta", "Gamma", "Delta"]);
-    expect(swapAlternatives(positions(), [], 2).map((entry) => entry.name)).toEqual([
-      "Beta",
-      "Alpha",
+      result?.purchase.buys.map((buy) => [buy.name, buy.invest.toStringValue()]),
+    ).toEqual([
+      ["Beta", "500.00"],
+      ["Gamma", "500.00"],
     ]);
+    expect(result?.change.toStringValue()).toBe("5.00");
+    expect(result?.sellYieldPercent.toString()).toBe("4");
+    // Januar: Alpha fehlt (−10 €), Gamma kommt dazu (+1,25 €).
+    const jan = forecast().months.findIndex((month) => month.month === 1);
+    expect(result?.before[jan].subtract(result.withoutSale[jan]).toStringValue()).toBe(
+      "10.00",
+    );
+    expect(result?.after[jan].subtract(result.withoutSale[jan]).toStringValue()).toBe(
+      "1.25",
+    );
+  });
+
+  it("kauft die verkaufte Position nicht zurueck und achtet Ausschluesse", () => {
+    const result = swap("sec-b", 1000, { buys: 1, excluded: new Set(["sec-a"]) });
+    expect(result?.purchase.buys.map((buy) => buy.name)).toEqual(["Gamma"]);
+    expect(result?.change.toStringValue()).toBe("-30.00");
+  });
+
+  it("misst die Zielgewichtung am Depot ohne den verkauften Teil", () => {
+    // Depot bleibt 4.500 €: Gamma (1.000 €) hat bis 30 % noch 350 € Platz.
+    const result = swap("sec-e", 500, {
+      buys: 1,
+      caps: new Map([["sec-c", 30]]),
+      capPercent: 0,
+    });
+    expect(result?.purchase.invested.toStringValue()).toBe("350.00");
+    expect(result?.purchase.unplaced.toStringValue()).toBe("150.00");
+  });
+
+  it("streut auch beim Glaetten der Monate auf mehrere Titel", () => {
+    const result = swap("sec-a", 1200, { focus: "monate", buys: 3 });
+    const invests =
+      result?.purchase.buys.map((buy) => buy.invest.toDecimal().toNumber()) ?? [];
+    expect(invests.length).toBeGreaterThanOrEqual(2);
+    for (const invest of invests) expect(invest).toBeLessThanOrEqual(400);
+  });
+
+  it("laesst bei krummen Betraegen keinen Rest liegen", () => {
+    // 1.000 € auf drei Kaeufe: je hoechstens 350 € (333 € auf 50 € aufgerundet).
+    const result = swap("sec-a", 1000, { focus: "monate", buys: 3 });
+    expect(result?.purchase.unplaced.toStringValue()).toBe("0.00");
+  });
+
+  it("begrenzt den Betrag auf den Marktwert und verwirft 0", () => {
+    expect(swap("sec-e", 9000)?.amount.toStringValue()).toBe("500.00");
+    expect(swap("sec-a", 0)).toBeNull();
   });
 });
