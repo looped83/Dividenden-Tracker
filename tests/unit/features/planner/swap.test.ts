@@ -192,6 +192,19 @@ describe("planSwap", () => {
     expect(result?.purchase.unplaced.toStringValue()).toBe("0.00");
   });
 
+  it("ohne Zielgewichtungen kommt jedes Asset in Frage, gestreut wird weiter", () => {
+    // Wie in der Oberflaeche bei „ignorieren": keine eigenen Grenzen, kein Standard.
+    const result = swap("sec-e", 500, { buys: 2, caps: new Map(), capPercent: null });
+    expect(
+      result?.purchase.buys.map((buy) => [buy.name, buy.invest.toStringValue()]).sort(),
+    ).toEqual([
+      ["Alpha", "250.00"],
+      ["Beta", "250.00"],
+    ]);
+    // Mit Standard 0 % und ohne eigene Grenze schlaegt der Tausch nichts vor.
+    expect(swap("sec-e", 500, { capPercent: 0 })?.purchase.buys).toEqual([]);
+  });
+
   it("begrenzt den Betrag auf den Marktwert und verwirft 0", () => {
     expect(swap("sec-e", 9000)?.amount.toStringValue()).toBe("500.00");
     expect(swap("sec-a", 0)).toBeNull();

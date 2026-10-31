@@ -972,6 +972,9 @@ Eine Rechnung beim Anzeigen (`planSwap`), keine Empfehlung. Eingaben in der Adre
   nicht zurückgekauft. Der Nachkauf rechnet mit dem Depot ohne den verkauften Teil, weil der
   Depotwert gleich bleibt. **Streuen:** Bei mehr als einem Kauf bekommt jede Position höchstens
   Erlös ÷ Käufe (auf 50 € aufgerundet), die eigene Zielgewichtung bleibt die Obergrenze.
+- **Zielgewichtung ignorieren** (seit 2.64.0, `ziel=ignorieren`): nur für diese Rechnung ohne
+  eigene Grenzen und ohne Standard 0 %; jedes Asset des Bestands (außer Ausschlüssen) kommt in
+  Frage, gestreut wird weiter. Gespeichert wird nichts.
 - **Ergebnis:** Veränderung netto im Jahr (Käufe − Wegfall, auch in % der Prognose), Rendite von
   Verkauf und Käufen, Ø-Monat und schwächster Monat heute und nachher, Streuung nach dem Tausch
   (§16, ohne den verkauften Teil), Ziel-Zeit (§14.4) früher oder später.
