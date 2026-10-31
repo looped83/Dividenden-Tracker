@@ -959,22 +959,24 @@ die Eingaben stehen in der Adresse (`?modus=sparplan&betrag=1000&fokus=monate&an
 ### 16.1 Tausch (Planer › Tausch, seit 2.61.0)
 
 Eine Rechnung beim Anzeigen (`planSwap`), keine Empfehlung. Eingaben in der Adresse
-(`?verkauf=<id>&kauf=<id>&betrag=2000`); ohne Betrag gilt die ganze Position (Marktwert auf
-volle Euro abgerundet), mehr als der Marktwert geht nicht.
+(`?verkauf=<id>&betrag=2000&anzahl=3&fokus=dividende`); ohne Betrag gilt die ganze Position
+(Marktwert auf volle Euro abgerundet), mehr als der Marktwert geht nicht. Der Reiter steht seit
+2.62.0 hinter „Optimierungen“.
 
-- **Positionen** (`swapPositions`): alle Positionen des jüngsten Depotstands mit Marktwert > 0,
-  auch ohne Ausschüttung (Ertrag 0). Ertrag je Zahlung und Euro und Zahlmonate wie bei den
-  Nachkauf-Kandidaten (§16), ausgeschlossene Assets zählen mit.
-- **Je Monat:** Verkauf fällt mit Betrag × Ertrag je Zahlung und Euro in seinen Zahlmonaten weg,
-  der Kauf kommt in seinen dazu. Der Depotwert bleibt gleich.
-- **Ergebnis:** Veränderung netto im Jahr (auch in % der Prognose), Rendite beider Seiten,
-  Ø-Monat und schwächster Monat vorher und nachher, Gewichtung beider Seiten vorher und nachher
-  (Anteil am Depotwert, rot über einer eigenen Zielgewichtung > 0), ungefähre Stückzahl zum
-  letzten Kurs, Ziel-Zeit (§14.4) früher oder später.
-- **In 5 Jahren:** Ertrag × (1 + CAGR)⁵ je Seite (CAGR auf 0–15 % begrenzt); nur, wenn jede
-  ausschüttende Seite einen CAGR nennt.
-- **Kaufziele** (`swapAlternatives`): bis zu fünf ausschüttende Positionen mit dem höchsten
-  Ertrag je Euro, ohne Verkauf und gewählten Kauf, je mit der Veränderung im Jahr.
+- **Verkauf** (`swapPositions`): jede Position des jüngsten Depotstands mit Marktwert > 0, auch
+  ohne Ausschüttung. Betrag × Ertrag je Zahlung und Euro (§16) fällt in ihren Zahlmonaten aus der
+  Prognose.
+- **Wiederanlage** (seit 2.62.0, bis dahin ein einzelnes Kaufziel): Der Erlös wird wie im
+  Nachkauf (§16) verteilt, mit Käufen (1–5, Standard 3), Schwerpunkt (Standard „Monate glätten“,
+  weil der Verkauf Lücken reißt), Zielgewichtungen und Ausschlüssen; die verkaufte Position wird
+  nicht zurückgekauft. Der Nachkauf rechnet mit dem Depot ohne den verkauften Teil, weil der
+  Depotwert gleich bleibt. **Streuen:** Bei mehr als einem Kauf bekommt jede Position höchstens
+  Erlös ÷ Käufe (auf 50 € aufgerundet), die eigene Zielgewichtung bleibt die Obergrenze.
+- **Ergebnis:** Veränderung netto im Jahr (Käufe − Wegfall, auch in % der Prognose), Rendite von
+  Verkauf und Käufen, Ø-Monat und schwächster Monat heute und nachher, Streuung nach dem Tausch
+  (§16, ohne den verkauften Teil), Ziel-Zeit (§14.4) früher oder später.
+- **Tipp:** Sinkt die Dividende und brächte ein anderer Schwerpunkt mehr, nennt der Tausch ihn
+  mit seiner Veränderung und lässt ihn übernehmen.
 
 ## 17. Sparpläne (Planer › Sparpläne und „Asset bearbeiten", seit 2.21.0)
 

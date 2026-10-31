@@ -2,27 +2,11 @@ import * as React from "react";
 import { useSearchParams } from "react-router";
 import { KpiHero, TrendPill } from "@/components/domain/KpiHero";
 import { AmountText } from "@/components/money/AmountText";
-import { ListGroup, ListItemBody, ListRow } from "@/components/ui/list";
+import { Button } from "@/components/ui/button";
 import { Section } from "@/components/ui/section";
 import { Select } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  MoneyDecimal,
-  formatMoneyWhole,
-  formatPercent,
-  type DecimalInstance,
-  type Money,
-} from "@/lib/money";
+import { formatMoneyWhole, formatPercent, type Money } from "@/lib/money";
 import { monthNameDe, monthNameDeShort } from "@/lib/statistics/dates";
-import { MD_BREAKPOINT_QUERY, useMediaQuery } from "@/lib/hooks/useMediaQuery";
-import { cn } from "@/lib/utils/cn";
 import {
   CategoryBarChart,
   type CategoryDatum,
@@ -31,49 +15,51 @@ import { ForecastGate, type ForecastBasis } from "@/features/securities/Forecast
 import { monthsEarlier } from "@/features/securities/snowball";
 import {
   DEFAULT_FORECAST_SETTINGS,
+  EXCLUDED_MAX,
   parseGermanNumber,
   useForecastSettings,
+  useSaveForecastSettings,
 } from "@/features/securities/forecastSettings";
-import { AssetLink } from "./AssetLink";
 import { NumberField, SettingCell, SettingsList } from "./fields";
-import { formatDecimal, monthlyAverage, payoutText, weakestMonth } from "./format";
-import { usePositionCaps } from "./positionCaps";
+import { FOCUS_LABEL, formatDecimal, monthlyAverage, weakestMonth } from "./format";
+import { BuyList, ExcludedList, SpreadLine } from "./PurchaseParts";
+import { PURCHASE_RULES, concentrationAfter, type PlanFocus } from "./purchase";
+import { POSITION_CAP_DEFAULT, usePositionCaps } from "./positionCaps";
 import { useSavingsPlans } from "./savingsPlanHooks";
 import { activeMonthlyTotal } from "./savingsPlans";
-import {
-  planSwap,
-  swapAlternatives,
-  swapPositions,
-  type SwapLeg,
-  type SwapPlan,
-  type SwapPosition,
-} from "./swap";
+import { planSwap, swapPositions, type SwapPlan } from "./swap";
 import { TargetGain } from "./TargetGain";
 import { MIN_GAIN_MONTHS, withPlanSavings } from "./targetTime";
 
-const ALTERNATIVES = 5;
 const NO_CAPS: ReadonlyMap<string, number> = new Map();
-const sharesFormat = new Intl.NumberFormat("de-DE", { maximumFractionDigits: 1 });
 
 /**
- * Planer › **Tausch** (seit 2.61.0): Was ändert sich, wenn du einen Teil von
- * A verkaufst und in B steckst? Dividende im Jahr, Monate, Gewichtung und
- * Ziel-Zeit vorher und nachher (CALCULATION_RULES.md §16.1). Die Eingaben
- * stehen in der Adresse (`?verkauf=…&kauf=…&betrag=2000`) wie im Nachkauf;
- * ohne Betrag gilt die ganze Position.
+ * Planer › **Tausch** (seit 2.61.0): Was ändert sich, wenn du ein Asset
+ * verkaufst und den Erlös wieder anlegst? Seit 2.62.0 verteilt der Nachkauf
+ * den Erlös auf mehrere Titel — mit Zielgewichtungen, Ausschlüssen und
+ * Schwerpunkt wie dort (CALCULATION_RULES.md §16.1). Vorbelegt ist „Monate
+ * glätten": Ein Verkauf reißt Lücken in die Monate, in denen das Asset
+ * zahlte. Die Eingaben stehen in der Adresse
+ * (`?verkauf=…&betrag=2000&anzahl=3&fokus=dividende`); ohne Betrag gilt die
+ * ganze Position.
  */
 export function SwapTab() {
   return (
-    <ForecastGate emptyDescription="Der Tausch rechnet durch, was sich ändert, wenn du ein Asset verkaufst und den Erlös in ein anderes steckst. Dafür braucht er einen Depotstand aus dem DivvyDiary-Portfolio-Export.">
+    <ForecastGate emptyDescription="Der Tausch rechnet durch, was sich ändert, wenn du ein Asset verkaufst und den Erlös auf andere verteilst. Dafür braucht er einen Depotstand aus dem DivvyDiary-Portfolio-Export.">
       {(basis) => <Swap basis={basis} />}
     </ForecastGate>
   );
 }
 
+function readFocus(raw: string | null): PlanFocus {
+  return raw === "dividende" || raw === "wachstum" ? raw : "monate";
+}
+
 function Swap({ basis }: { basis: ForecastBasis }) {
-  const { forecast, snapshots, names, depot } = basis;
+  const { forecast, snapshots, names, facets, depot } = basis;
   const [params, setParams] = useSearchParams();
   const settings = useForecastSettings().data ?? DEFAULT_FORECAST_SETTINGS;
+  const { mutate: save } = useSaveForecastSettings();
   const { data: savingsPlans = [] } = useSavingsPlans();
   const caps = usePositionCaps().data ?? NO_CAPS;
 
@@ -81,13 +67,8 @@ function Swap({ basis }: { basis: ForecastBasis }) {
     () => swapPositions(forecast, snapshots, names),
     [forecast, snapshots, names],
   );
-  const byId = React.useMemo(
-    () => new Map(positions.map((position) => [position.securityId, position])),
-    [positions],
-  );
-  const sell = byId.get(params.get("verkauf") ?? "") ?? null;
-  const rawBuy = byId.get(params.get("kauf") ?? "") ?? null;
-  const buy = rawBuy && rawBuy !== sell ? rawBuy : null;
+  const sell =
+    positions.find((entry) => entry.securityId === params.get("verkauf")) ?? null;
   // Ohne Betrag die ganze Position, auf volle Euro abgerundet.
   const fullAmount = sell ? Math.floor(sell.marketValue.toNumber()) : 0;
   const rawAmount = parseGermanNumber(params.get("betrag") ?? "");
@@ -95,6 +76,12 @@ function Swap({ basis }: { basis: ForecastBasis }) {
     typeof rawAmount === "number" && rawAmount > 0 && rawAmount <= fullAmount
       ? rawAmount
       : null;
+  const rawBuys = Number.parseInt(params.get("anzahl") ?? "", 10);
+  const buys =
+    rawBuys >= 1 && rawBuys <= PURCHASE_RULES.maxBuys
+      ? rawBuys
+      : PURCHASE_RULES.defaultBuys;
+  const focus = readFocus(params.get("fokus"));
 
   const setParam = React.useCallback(
     (patch: Record<string, string | null>) => {
@@ -112,13 +99,63 @@ function Swap({ basis }: { basis: ForecastBasis }) {
     },
     [setParams],
   );
+  const setExcluded = React.useCallback(
+    (excluded: readonly string[]) => {
+      save({ ...settings, excluded });
+    },
+    [save, settings],
+  );
 
-  const plan = React.useMemo(
-    () =>
-      sell && buy
-        ? planSwap({ forecast, sell, buy, amount: amount ?? fullAmount })
+  const excludedSet = React.useMemo(
+    () => new Set(settings.excluded),
+    [settings.excluded],
+  );
+  const planFor = React.useCallback(
+    (planFocus: PlanFocus) =>
+      sell
+        ? planSwap({
+            forecast,
+            snapshots,
+            sell,
+            amount: amount ?? fullAmount,
+            focus: planFocus,
+            buys,
+            caps,
+            excluded: excludedSet,
+            capPercent: POSITION_CAP_DEFAULT,
+          })
         : null,
-    [forecast, sell, buy, amount, fullAmount],
+    [forecast, snapshots, sell, amount, fullAmount, buys, caps, excludedSet],
+  );
+  const plan = React.useMemo(() => planFor(focus), [planFor, focus]);
+  const hasBuys = plan !== null && plan.purchase.buys.length > 0;
+
+  // Dividende geht zurück: Hielte ein anderer Schwerpunkt sie? Dann ein
+  // Wechsel mit einem Tipp statt einer stillen Einbuße.
+  const better = React.useMemo(() => {
+    if (!plan?.change.isNegative()) return null;
+    const keys = (Object.keys(FOCUS_LABEL) as PlanFocus[]).filter((key) => key !== focus);
+    let best: { focus: PlanFocus; change: Money } | null = null;
+    for (const key of keys) {
+      const other = planFor(key);
+      if (other && (best === null || other.change.compareTo(best.change) > 0))
+        best = { focus: key, change: other.change };
+    }
+    return best && best.change.compareTo(plan.change) > 0 ? best : null;
+  }, [plan, planFor, focus]);
+
+  const spread = React.useMemo(
+    () =>
+      plan && hasBuys
+        ? concentrationAfter({
+            snapshots,
+            facets,
+            names,
+            plan: plan.purchase,
+            sold: sell ? { securityId: sell.securityId, amount: plan.amount } : undefined,
+          })
+        : null,
+    [plan, hasBuys, snapshots, facets, names, sell],
   );
 
   // Ziel-Zeit (§14.4): Die Veränderung kommt ab heute zu dem hinzu, womit der
@@ -141,29 +178,14 @@ function Swap({ basis }: { basis: ForecastBasis }) {
     [plan, depot, snowball, forecast.netRatio],
   );
 
-  const alternatives = React.useMemo(
-    () =>
-      sell
-        ? swapAlternatives(
-            positions,
-            [sell.securityId, ...(buy ? [buy.securityId] : [])],
-            ALTERNATIVES,
-          )
-            .map((position) =>
-              planSwap({ forecast, sell, buy: position, amount: amount ?? fullAmount }),
-            )
-            .filter((entry) => entry !== null)
-        : [],
-    [positions, sell, buy, forecast, amount, fullAmount],
-  );
-
   return (
     <div className="space-y-10 lg:space-y-12">
       <div className="space-y-6">
-        {plan && (
+        {plan && hasBuys && (
           <SwapSummary
             plan={plan}
-            depotTotal={forecast.total}
+            sellName={sell?.name ?? ""}
+            total={forecast.total}
             gain={
               gain !== null && Math.abs(gain) >= MIN_GAIN_MONTHS ? (
                 <TargetGain months={gain} target={snowball.targetMonthly} />
@@ -172,18 +194,20 @@ function Swap({ basis }: { basis: ForecastBasis }) {
           />
         )}
 
-        <SettingsList label="Tausch" className="grid-cols-1 md:grid-cols-3">
-          <SettingCell label="Verkaufen" htmlFor="swap-sell">
+        <SettingsList label="Tausch" className="grid-cols-2 md:grid-cols-4">
+          <SettingCell
+            label="Verkaufen"
+            htmlFor="swap-sell"
+            className="col-span-2 md:col-span-1"
+          >
             <Select
               id="swap-sell"
               className="h-9 py-0"
               value={sell?.securityId ?? ""}
               onChange={(event) => {
-                const next = event.target.value;
                 setParam({
-                  verkauf: next === "" ? null : next,
+                  verkauf: event.target.value === "" ? null : event.target.value,
                   betrag: null,
-                  ...(next === buy?.securityId ? { kauf: null } : {}),
                 });
               }}
             >
@@ -209,49 +233,103 @@ function Swap({ basis }: { basis: ForecastBasis }) {
               });
             }}
           />
-          <SettingCell label="Kaufen" htmlFor="swap-buy">
+          <SettingCell label="Käufe" htmlFor="swap-buys">
             <Select
-              id="swap-buy"
+              id="swap-buys"
+              aria-label="Höchstens so viele Käufe"
               className="h-9 py-0"
-              value={buy?.securityId ?? ""}
+              value={String(buys)}
               onChange={(event) => {
-                setParam({ kauf: event.target.value === "" ? null : event.target.value });
+                setParam({ anzahl: event.target.value });
               }}
             >
-              <option value="">Asset wählen</option>
-              {positions
-                .filter((position) => position !== sell)
-                .map((position) => (
-                  <option key={position.securityId} value={position.securityId}>
-                    {position.name}
-                  </option>
-                ))}
+              {Array.from(
+                { length: PURCHASE_RULES.maxBuys },
+                (_, index) => index + 1,
+              ).map((count) => (
+                <option key={count} value={count}>
+                  {String(count)}
+                </option>
+              ))}
+            </Select>
+          </SettingCell>
+          <SettingCell
+            label="Schwerpunkt"
+            htmlFor="swap-focus"
+            className="col-span-2 md:col-span-1"
+          >
+            <Select
+              id="swap-focus"
+              className="h-9 py-0"
+              value={focus}
+              onChange={(event) => {
+                const next = event.target.value as PlanFocus;
+                setParam({ fokus: next === "monate" ? null : next });
+              }}
+            >
+              {(Object.keys(FOCUS_LABEL) as PlanFocus[]).map((key) => (
+                <option key={key} value={key}>
+                  {FOCUS_LABEL[key]}
+                </option>
+              ))}
             </Select>
           </SettingCell>
         </SettingsList>
 
-        {plan ? (
-          <AfterLine plan={plan} caps={caps} />
+        {plan && hasBuys ? (
+          <>
+            <SpreadLine
+              spread={spread}
+              cap={caps.get(spread?.position.key ?? "") ?? null}
+              plan={plan.purchase}
+            />
+            {better && (
+              <p className="flex flex-wrap items-center gap-x-2 px-1 text-sm text-muted-foreground">
+                <span>
+                  Mit „{FOCUS_LABEL[better.focus]}“ wären es{" "}
+                  <SignedAmount amount={better.change} /> im Jahr.
+                </span>
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="h-auto p-0"
+                  onClick={() => {
+                    setParam({ fokus: better.focus === "monate" ? null : better.focus });
+                  }}
+                >
+                  Übernehmen
+                </Button>
+              </p>
+            )}
+          </>
         ) : (
           <p className="px-1 text-sm text-muted-foreground">
-            {positions.length < 2
-              ? "Für einen Tausch braucht der Depotstand mindestens zwei Positionen."
-              : sell
-                ? "Wähle, was du stattdessen kaufen würdest – oder nimm eins der Kaufziele unten."
-                : "Wähle, was du verkaufen würdest. Der Tausch zeigt, was sich an deiner Dividende ändert."}
+            {sell === null
+              ? "Wähle, was du verkaufen würdest. Der Tausch verteilt den Erlös auf deinen Bestand und zeigt, was sich an deiner Dividende ändert."
+              : plan === null
+                ? `Mindestens ${String(PURCHASE_RULES.minimum)} €.`
+                : ![...caps.values()].some((cap) => cap > 0)
+                  ? "Gib Assets beim Bearbeiten eine Zielgewichtung, dann verteilt der Tausch den Erlös auf sie."
+                  : "Kein anderes Asset hat unter seiner Zielgewichtung noch Platz."}
           </p>
         )}
       </div>
 
-      {plan && (
+      {plan && hasBuys && (
         <>
-          <Section title="Verkauf und Kauf">
-            <LegList plan={plan} />
+          <Section title="Käufe">
+            <BuyList
+              plan={plan.purchase}
+              canExclude={settings.excluded.length < EXCLUDED_MAX}
+              onExclude={(id) => {
+                setExcluded([...settings.excluded, id]);
+              }}
+            />
           </Section>
 
           <Section title="Nächste 12 Monate">
             <CategoryBarChart
-              data={toBarData(basis, plan)}
+              data={toBarData(basis, plan, sell?.name ?? "")}
               ariaLabel="Erwartete Nettodividende je Monat nach dem Tausch"
               categoryHeader="Monat"
               color="primary"
@@ -261,21 +339,13 @@ function Swap({ basis }: { basis: ForecastBasis }) {
         </>
       )}
 
-      {alternatives.length > 0 && (
-        <Section title={plan ? "Andere Kaufziele" : "Kaufziele"}>
-          <AlternativeList
-            alternatives={alternatives}
-            caps={caps}
-            onChoose={(id) => {
-              setParam({ kauf: id });
-              const reduce = window.matchMedia(
-                "(prefers-reduced-motion: reduce)",
-              ).matches;
-              window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
-            }}
-          />
-        </Section>
-      )}
+      <ExcludedList
+        excluded={settings.excluded}
+        names={names}
+        onRestore={(id) => {
+          setExcluded(settings.excluded.filter((entry) => entry !== id));
+        }}
+      />
     </div>
   );
 }
@@ -292,17 +362,20 @@ function SignedAmount({ amount }: { amount: Money }) {
 
 function SwapSummary({
   plan,
-  depotTotal,
+  sellName,
+  total,
   gain,
 }: {
   plan: SwapPlan;
+  sellName: string;
   /** Erwartet in zwölf Monaten vor dem Tausch. */
-  depotTotal: Money;
+  total: Money;
   gain: React.ReactNode;
 }) {
-  const change = depotTotal.isZero()
+  const change = total.isZero()
     ? null
-    : plan.change.toDecimal().dividedBy(depotTotal.toDecimal()).times(100);
+    : plan.change.toDecimal().dividedBy(total.toDecimal()).times(100);
+  const count = plan.purchase.buys.length;
   return (
     <KpiHero
       label="Der Tausch ändert im Jahr"
@@ -317,7 +390,11 @@ function SwapSummary({
           </TrendPill>
         ) : undefined
       }
-      caption={`Rendite ${formatPercent(plan.sell.yieldPercent, 1)} → ${formatPercent(plan.buy.yieldPercent, 1)} auf ${formatMoneyWhole(plan.amount)}`}
+      caption={`${
+        plan.lost.isZero()
+          ? `${sellName} schüttet nicht aus`
+          : `−${formatMoneyWhole(plan.lost)} ohne ${sellName} (${formatPercent(plan.sellYieldPercent, 1)})`
+      } · +${formatMoneyWhole(plan.purchase.annual)} durch ${count === 1 ? "1 Kauf" : `${String(count)} Käufe`} (${formatPercent(plan.purchase.yieldPercent, 1)})`}
       footer={gain}
       stats={[
         {
@@ -335,225 +412,14 @@ function SwapSummary({
   );
 }
 
-/** Über der eigenen Zielgewichtung (0 % heißt „nicht aufstocken" und zählt nicht). */
-function overTarget(
-  caps: ReadonlyMap<string, number>,
-  id: string,
-  share: DecimalInstance,
-): boolean {
-  const cap = caps.get(id);
-  return cap !== undefined && cap > 0 && share.greaterThan(cap);
-}
-
-/**
- * Gewichtung beider Seiten vorher und nachher, dazu die Zielgewichtung des
- * gekauften Assets; darüber rot (wie die Streuungszeile im Nachkauf). Darunter
- * der Blick fünf Jahre voraus mit dem Dividendenwachstum.
- */
-function AfterLine({
-  plan,
-  caps,
-}: {
-  plan: SwapPlan;
-  caps: ReadonlyMap<string, number>;
-}) {
-  const part = (leg: SwapLeg) => {
-    const cap = caps.get(leg.position.securityId);
-    const over = overTarget(caps, leg.position.securityId, leg.shareAfter);
-    return (
-      <span className={cn(over && "font-medium text-negative")}>
-        {leg.position.name} {formatPercent(leg.shareBefore, 1)} →{" "}
-        {formatPercent(leg.shareAfter, 1)}
-        {cap !== undefined &&
-          cap > 0 &&
-          ` (Ziel ${formatPercent(new MoneyDecimal(cap), 1)})`}
-      </span>
-    );
-  };
-  const future = plan.changeInFiveYears;
-  return (
-    <div className="space-y-1 px-1 text-sm text-muted-foreground">
-      <p>
-        <span className="font-medium text-foreground">Gewichtung:</span> {part(plan.sell)}{" "}
-        · {part(plan.buy)}
-      </p>
-      {future && !future.isZero() && (
-        <p>
-          <span className="font-medium text-foreground">In 5 Jahren:</span>{" "}
-          <SignedAmount amount={future} /> im Jahr mit dem Dividendenwachstum beider
-          Assets
-        </p>
-      )}
-    </div>
-  );
-}
-
-function payoutLabel(position: SwapPosition): { rhythm: string; months: string | null } {
-  return position.months.length === 0
-    ? { rhythm: "keine Ausschüttung", months: null }
-    : payoutText(position.months);
-}
-
-function sharesLabel(leg: SwapLeg): string | null {
-  return leg.shares?.greaterThanOrEqualTo("0.1")
-    ? `≈ ${sharesFormat.format(leg.shares.toNumber())} Stück`
-    : null;
-}
-
-/** Verkauf und Kauf: ab `md` als Tabelle wie im Nachkauf, auf dem Telefon als Liste. */
-function LegList({ plan }: { plan: SwapPlan }) {
-  const isWide = useMediaQuery(MD_BREAKPOINT_QUERY);
-  const legs = [
-    { key: "sell", label: "Verkauf", leg: plan.sell, annual: plan.sell.annual.negate() },
-    { key: "buy", label: "Kauf", leg: plan.buy, annual: plan.buy.annual },
-  ] as const;
-
-  if (!isWide) {
-    return (
-      <ListGroup>
-        {legs.map(({ key, label, leg, annual }) => {
-          const payout = payoutLabel(leg.position);
-          const shares = sharesLabel(leg);
-          return (
-            <li key={key}>
-              <ListRow>
-                <ListItemBody
-                  title={
-                    <AssetLink id={leg.position.securityId} name={leg.position.name} />
-                  }
-                  meta={
-                    <>
-                      <span className="font-medium text-foreground">{label}</span>
-                      <span>{payout.rhythm}</span>
-                      {shares && <span className="tabular-amount">{shares}</span>}
-                    </>
-                  }
-                  trailing={
-                    <span className="flex flex-col items-end">
-                      <span className="font-medium text-foreground">
-                        {formatMoneyWhole(plan.amount)}
-                      </span>
-                      <span className="whitespace-nowrap">
-                        <SignedAmount amount={annual} /> im Jahr
-                      </span>
-                    </span>
-                  }
-                />
-              </ListRow>
-            </li>
-          );
-        })}
-      </ListGroup>
-    );
-  }
-
-  return (
-    <Table>
-      <caption className="sr-only">Verkauf und Kauf des Tauschs</caption>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Asset</TableHead>
-          <TableHead>Ausschüttung</TableHead>
-          <TableHead className="whitespace-nowrap text-right">Stück</TableHead>
-          <TableHead className="whitespace-nowrap text-right">Betrag</TableHead>
-          <TableHead className="whitespace-nowrap text-right">Rendite</TableHead>
-          <TableHead className="whitespace-nowrap text-right">Im Jahr</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {legs.map(({ key, label, leg, annual }) => {
-          const payout = payoutLabel(leg.position);
-          return (
-            <TableRow key={key}>
-              <TableCell>
-                <span className="block text-xs text-muted-foreground">{label}</span>
-                <AssetLink id={leg.position.securityId} name={leg.position.name} />
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {payout.rhythm}
-                {payout.months && <span className="block text-xs">{payout.months}</span>}
-              </TableCell>
-              <TableCell className="whitespace-nowrap text-right tabular-amount text-muted-foreground">
-                {sharesLabel(leg) ?? "—"}
-              </TableCell>
-              <TableCell className="whitespace-nowrap text-right font-semibold tabular-amount">
-                {formatMoneyWhole(plan.amount)}
-              </TableCell>
-              <TableCell className="whitespace-nowrap text-right tabular-amount">
-                {formatPercent(leg.yieldPercent, 1)}
-              </TableCell>
-              <TableCell className="whitespace-nowrap text-right tabular-amount">
-                <SignedAmount amount={annual} />
-              </TableCell>
-            </TableRow>
-          );
-        })}
-      </TableBody>
-    </Table>
-  );
-}
-
-/**
- * Andere Kaufziele für denselben Verkauf, nach Rendite: Was jedes im Jahr
- * gegenüber dem Behalten ändert. Antippen wählt es als Kauf.
- */
-function AlternativeList({
-  alternatives,
-  caps,
-  onChoose,
-}: {
-  alternatives: readonly SwapPlan[];
-  caps: ReadonlyMap<string, number>;
-  onChoose: (securityId: string) => void;
-}) {
-  return (
-    <ListGroup>
-      {alternatives.map((entry) => {
-        const { position } = entry.buy;
-        const over = overTarget(caps, position.securityId, entry.buy.shareAfter);
-        return (
-          <li key={position.securityId}>
-            <ListRow asChild>
-              <button
-                type="button"
-                className="w-full text-left"
-                aria-label={`${position.name} als Kauf wählen`}
-                onClick={() => {
-                  onChoose(position.securityId);
-                }}
-              >
-                <ListItemBody
-                  title={position.name}
-                  meta={
-                    <>
-                      <span>{formatPercent(entry.buy.yieldPercent, 1)} Rendite</span>
-                      <span>{payoutLabel(position).rhythm}</span>
-                      {over && (
-                        <span className="font-medium text-negative">
-                          über Zielgewichtung
-                        </span>
-                      )}
-                    </>
-                  }
-                  trailing={
-                    <span className="whitespace-nowrap">
-                      <SignedAmount amount={entry.change} /> im Jahr
-                    </span>
-                  }
-                />
-              </button>
-            </ListRow>
-          </li>
-        );
-      })}
-    </ListGroup>
-  );
-}
-
-function toBarData({ forecast }: ForecastBasis, plan: SwapPlan): CategoryDatum[] {
+function toBarData(
+  { forecast }: ForecastBasis,
+  plan: SwapPlan,
+  sellName: string,
+): CategoryDatum[] {
   return forecast.months.map((month, index) => {
-    const lost = plan.lost[index];
-    const gained = plan.gained[index];
+    const lost = plan.before[index].subtract(plan.withoutSale[index]);
+    const gained = plan.after[index].subtract(plan.withoutSale[index]);
     return {
       key: `${String(month.year)}-${String(month.month)}`,
       label: monthNameDeShort(month.month),
@@ -563,12 +429,8 @@ function toBarData({ forecast }: ForecastBasis, plan: SwapPlan): CategoryDatum[]
       count: 0,
       breakdown: [
         { name: "Bisher", money: plan.before[index] },
-        ...(lost.isZero()
-          ? []
-          : [{ name: `Ohne ${plan.sell.position.name}`, money: lost.negate() }]),
-        ...(gained.isZero()
-          ? []
-          : [{ name: `Mit ${plan.buy.position.name}`, money: gained }]),
+        ...(lost.isZero() ? [] : [{ name: `Ohne ${sellName}`, money: lost.negate() }]),
+        ...(gained.isZero() ? [] : [{ name: "Durch die Käufe", money: gained }]),
       ],
     };
   });
