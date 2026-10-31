@@ -6,7 +6,8 @@
  * 3 Meldungen; gefragt wird deshalb nur für Aktien, eine Anfrage je Aktie.
  *
  * **Yahoo Finance** (RSS-Schlagzeilen je Kürzel, ohne Key) übernimmt, was
- * Marketaux nicht liefert: ETFs und die Aktien, die Marketaux Free ablehnt.
+ * Marketaux nicht liefert: ETFs und Aktien, zu denen Marketaux nichts hat
+ * oder die es ablehnt (ab etwa 30 Anfragen in kurzer Folge 429).
  * Der Feed ist inoffiziell und kann wegfallen; dann fehlen nur diese
  * Meldungen. Google News (503) und GDELT (Drosselung je IP, auch im Browser)
  * scheiterten am 30./31.10.2026.
@@ -457,8 +458,8 @@ export async function collectNews(
     errorCodes: [],
     yahoo: { requests: 0, items: 0 },
   };
-  /** Assets, für die Marketaux nichts lieferte, weil die Anfrage scheiterte. */
-  const marketauxFailed = new Set<string>();
+  /** Aktien, zu denen Marketaux nichts lieferte (gescheitert oder leer). */
+  const marketauxEmpty = new Set<string>();
   const attempt = async (
     provider: NewsProvider,
     securityId: string,
@@ -468,11 +469,12 @@ export async function collectNews(
     try {
       const items = await run();
       result.items.push(...items);
+      if (provider === "marketaux" && items.length === 0) marketauxEmpty.add(securityId);
       return items.length;
     } catch (error) {
       result.failed += 1;
       result.errorCodes.push(errorCode(provider, error));
-      if (provider === "marketaux") marketauxFailed.add(securityId);
+      if (provider === "marketaux") marketauxEmpty.add(securityId);
       return 0;
     }
   };
@@ -526,11 +528,11 @@ export async function collectNews(
   await Promise.all(workers);
   result.skipped = marketaux.length - next;
 
-  // Yahoo für alles, wofür Marketaux nicht zuständig war oder scheiterte.
+  // Yahoo für alles, wofür Marketaux nicht zuständig war oder nichts lieferte.
   // Übersprungene Aktien (Zeit, Kontingent) fragt der nächste Lauf wieder.
   const viaMarketaux = new Set(marketaux.map((task) => task.security.id));
   const yahoo = options.securities.flatMap((security) => {
-    const wanted = !viaMarketaux.has(security.id) || marketauxFailed.has(security.id);
+    const wanted = !viaMarketaux.has(security.id) || marketauxEmpty.has(security.id);
     const symbol = wanted ? yahooSymbol(security) : null;
     return symbol ? [{ security, symbol }] : [];
   });
@@ -542,7 +544,8 @@ export async function collectNews(
         const task = yahoo[nextYahoo];
         nextYahoo += 1;
         result.yahoo.requests += 1;
-        result.yahoo.items += await attempt("yahoo", task.security.id, async () =>
+        // Erst warten, dann addieren: `x += await …` läse x vor dem Warten.
+        const found = await attempt("yahoo", task.security.id, async () =>
           parseYahoo(
             await fetchText(
               doFetch,
@@ -554,6 +557,7 @@ export async function collectNews(
             options.since,
           ),
         );
+        result.yahoo.items += found;
       }
     }),
   );
