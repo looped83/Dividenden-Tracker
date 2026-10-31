@@ -40,8 +40,10 @@ const NO_CAPS: ReadonlyMap<string, number> = new Map();
  * Schwerpunkt wie dort (CALCULATION_RULES.md §16.1). Vorbelegt ist „Monate
  * glätten": Ein Verkauf reißt Lücken in die Monate, in denen das Asset
  * zahlte. Die Eingaben stehen in der Adresse
- * (`?verkauf=…&betrag=2000&anzahl=3&fokus=dividende`); ohne Betrag gilt die
- * ganze Position.
+ * (`?verkauf=…&betrag=2000&anzahl=3&fokus=dividende&ziel=ignorieren`); ohne
+ * Betrag gilt die ganze Position. Seit 2.64.0 lassen sich die
+ * Zielgewichtungen für den Tausch ignorieren (`ziel=ignorieren`): Dann kommt
+ * jedes Asset des Bestands in Frage, gestreut wird weiter (Erlös ÷ Käufe).
  */
 export function SwapTab() {
   return (
@@ -82,6 +84,7 @@ function Swap({ basis }: { basis: ForecastBasis }) {
       ? rawBuys
       : PURCHASE_RULES.defaultBuys;
   const focus = readFocus(params.get("fokus"));
+  const ignoreCaps = params.get("ziel") === "ignorieren";
 
   const setParam = React.useCallback(
     (patch: Record<string, string | null>) => {
@@ -120,12 +123,12 @@ function Swap({ basis }: { basis: ForecastBasis }) {
             amount: amount ?? fullAmount,
             focus: planFocus,
             buys,
-            caps,
+            caps: ignoreCaps ? NO_CAPS : caps,
             excluded: excludedSet,
-            capPercent: POSITION_CAP_DEFAULT,
+            capPercent: ignoreCaps ? null : POSITION_CAP_DEFAULT,
           })
         : null,
-    [forecast, snapshots, sell, amount, fullAmount, buys, caps, excludedSet],
+    [forecast, snapshots, sell, amount, fullAmount, buys, caps, ignoreCaps, excludedSet],
   );
   const plan = React.useMemo(() => planFor(focus), [planFor, focus]);
   const hasBuys = plan !== null && plan.purchase.buys.length > 0;
@@ -194,7 +197,7 @@ function Swap({ basis }: { basis: ForecastBasis }) {
           />
         )}
 
-        <SettingsList label="Tausch" className="grid-cols-2 md:grid-cols-4">
+        <SettingsList label="Tausch" className="grid-cols-2 md:grid-cols-5">
           <SettingCell
             label="Verkaufen"
             htmlFor="swap-sell"
@@ -274,6 +277,25 @@ function Swap({ basis }: { basis: ForecastBasis }) {
               ))}
             </Select>
           </SettingCell>
+          <SettingCell
+            label="Zielgewichtung"
+            htmlFor="swap-caps"
+            className="col-span-2 md:col-span-1"
+          >
+            <Select
+              id="swap-caps"
+              className="h-9 py-0"
+              value={ignoreCaps ? "ignorieren" : "beachten"}
+              onChange={(event) => {
+                setParam({
+                  ziel: event.target.value === "ignorieren" ? "ignorieren" : null,
+                });
+              }}
+            >
+              <option value="beachten">beachten</option>
+              <option value="ignorieren">ignorieren</option>
+            </Select>
+          </SettingCell>
         </SettingsList>
 
         {plan && hasBuys ? (
@@ -308,9 +330,9 @@ function Swap({ basis }: { basis: ForecastBasis }) {
               ? "Wähle, was du verkaufen würdest. Der Tausch verteilt den Erlös auf deinen Bestand und zeigt, was sich an deiner Dividende ändert."
               : plan === null
                 ? `Mindestens ${String(PURCHASE_RULES.minimum)} €.`
-                : ![...caps.values()].some((cap) => cap > 0)
+                : !ignoreCaps && ![...caps.values()].some((cap) => cap > 0)
                   ? "Gib Assets beim Bearbeiten eine Zielgewichtung, dann verteilt der Tausch den Erlös auf sie."
-                  : "Kein anderes Asset hat unter seiner Zielgewichtung noch Platz."}
+                  : "Kein anderes Asset hat unter seiner Zielgewichtung noch Platz. Stell „Zielgewichtung“ auf „ignorieren“, um trotzdem zu tauschen."}
           </p>
         )}
       </div>

@@ -234,4 +234,9 @@ test("verteilt den Erlös eines Verkaufs auf mehrere Titel (seit 2.62.0)", async
   await page.getByLabel("Höchstens so viele Käufe").selectOption("2");
   await expect(kaeufe).toHaveCount(2);
   await expect(page).toHaveURL(/anzahl=2/);
+
+  // Zielgewichtungen ignorieren (seit 2.64.0): Die Wahl steht in der Adresse.
+  await page.getByLabel("Zielgewichtung").selectOption("ignorieren");
+  await expect(page).toHaveURL(/ziel=ignorieren/);
+  await expect(kaeufe).toHaveCount(2);
 });
