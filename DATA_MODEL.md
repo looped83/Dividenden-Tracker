@@ -537,7 +537,7 @@ Synchronisationen; eine Belegung verfällt nach der übergebenen Frist.
 
 Zwischenspeicher für Meldungen zu den Assets im Bestand, geschrieben allein von der Edge
 Function `sync-news` (Marketaux für Aktien, Yahoo Finance für ETFs und was Marketaux
-ablehnt; seit 2.62.0). Nicht in der Datensicherung: Die
+ablehnt; seit 2.63.0). Nicht in der Datensicherung: Die
 Meldungen kommen beim nächsten Abruf wieder, und nach 30 Tagen werden sie gelöscht.
 
 ### `news_items`

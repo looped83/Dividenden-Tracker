@@ -319,7 +319,7 @@ Sicherheitsmaßnahme.
 - **Yahoo Finance** (RSS je Kürzel, ohne Key) fragt ebenfalls nur die Edge Function. Aus
   dem Feed werden Tags entfernt und Entitäten aufgelöst; gespeichert wird reiner Text. Der
   Browser spricht mit keiner News-Quelle, `connect-src` bleibt auf Supabase beschränkt
-  (GDELT im Browser gab es nur in 2.60–2.61).
+  (GDELT im Browser gab es nur in 2.60–2.62).
 - **Geprüft** in `tests/unit/news/news.test.ts` (kein Key in Fehlercodes) und
   `tests/e2e/app/news.spec.ts`.
 
