@@ -125,6 +125,7 @@ create table securities (
   default_depot_id uuid references depots(id),                -- unverbindlicher Vorschlag, siehe unten
   payout_months smallint[] not null default '{}',              -- Ausschüttungsmonate (0017)
   reinvest_since date,                                        -- automatische Reinvestition ab (0044)
+  news_symbol text check (news_symbol ~ '^[A-Za-z0-9.-]{1,20}$'), -- Kürzel für die News-Suche (0048)
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now(),
   archived_at   timestamptz
@@ -149,6 +150,10 @@ reinvestiert (z. B. Trade Republic, Scalable Capital); leer = aus. Ein Datum sta
 Zahlungen vor dem Einschalten nicht als reinvestiert zählen. Die Einstellung gilt
 je Asset, nicht je Asset und Depot — ein Papier liegt in der Praxis in einem Depot. Sie ist Teil der
 Datensicherung; ältere Sicherungen ohne das Feld spielen „aus" ein.
+
+`news_symbol` (0048) ersetzt bei der News-Suche (`sync-news`) den Ticker, z. B. das US-Kürzel
+BTI für British American Tobacco oder JEPI für den US-Geschwisterfonds; leer = Ticker. Teil der
+Datensicherung.
 
 ### 3.5 `dividend_payments` — Kerntabelle
 

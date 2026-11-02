@@ -120,6 +120,8 @@ export interface Database {
           default_depot_id: string | null;
           payout_months: number[];
           reinvest_since: string | null;
+          /** Eigenes Kürzel für die News-Suche (Migration 0048). */
+          news_symbol: string | null;
           created_by_import_id: string | null;
           created_at: string;
           updated_at: string;
@@ -140,6 +142,7 @@ export interface Database {
           default_depot_id?: string | null;
           payout_months?: number[];
           reinvest_since?: string | null;
+          news_symbol?: string | null;
           created_by_import_id?: string | null;
           archived_at?: string | null;
         };
@@ -156,6 +159,7 @@ export interface Database {
           default_depot_id: string | null;
           payout_months: number[];
           reinvest_since: string | null;
+          news_symbol: string | null;
           archived_at: string | null;
         }>;
         Relationships: [

@@ -6,6 +6,8 @@ import { z } from "zod";
 export const TICKER_PATTERN = /^[A-Za-z0-9 .-]{1,20}$/;
 export const ISIN_PATTERN = /^[A-Za-z]{2}[A-Za-z0-9]{9}[0-9]$/;
 export const WKN_PATTERN = /^[A-Za-z0-9]{6}$/;
+/** Kürzel für die News-Suche (Migration 0048): ohne Leerzeichen. */
+export const NEWS_SYMBOL_PATTERN = /^[A-Za-z0-9.-]{1,20}$/;
 const COUNTRY_PATTERN = /^[A-Za-z]{2}$/;
 const CURRENCY_PATTERN = /^[A-Za-z]{3}$/;
 
@@ -33,5 +35,9 @@ export const securityFormSchema = z.object({
   currency: optionalUpper(CURRENCY_PATTERN, "3-stelliger Waehrungscode, z. B. EUR"),
   note: z.string().trim().max(5000).optional().or(z.literal("")),
   defaultDepotId: z.string().trim().optional().or(z.literal("")),
+  newsSymbol: optionalUpper(
+    NEWS_SYMBOL_PATTERN,
+    "Nur Buchstaben, Ziffern, Punkt und Bindestrich",
+  ),
 });
 export type SecurityFormValues = z.infer<typeof securityFormSchema>;

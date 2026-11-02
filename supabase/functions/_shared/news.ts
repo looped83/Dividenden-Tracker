@@ -30,6 +30,11 @@ export interface NewsSecurity {
   isin: string | null;
   /** Nur Aktien fragen bei Marketaux an (Kontingent). */
   isEquity: boolean;
+  /**
+   * Eigenes Kürzel für die Suche (Migration 0048), etwa das US-Kürzel einer
+   * britischen Aktie. Geht bei beiden Quellen unverändert vor dem Ticker.
+   */
+  newsSymbol?: string | null;
 }
 
 /** Eine Meldung, so wie sie in `news_items` landet (ohne `user_id`). */
@@ -121,8 +126,10 @@ const EXCHANGE_SUFFIX: Record<string, string> = {
 
 /** Kürzel für Marketaux, oder `null`, wenn keins vorliegt. */
 export function marketauxSymbol(
-  security: Pick<NewsSecurity, "ticker" | "isin">,
+  security: Pick<NewsSecurity, "ticker" | "isin" | "newsSymbol">,
 ): string | null {
+  const own = security.newsSymbol?.trim().toUpperCase();
+  if (own) return own;
   const ticker = security.ticker?.trim().toUpperCase();
   if (!ticker) return null;
   if (ticker.includes(".")) return ticker;
@@ -333,10 +340,17 @@ const YAHOO_HEADERS = { "user-agent": "Mozilla/5.0 (compatible; Dividenden-Track
  * „.DE“ — ohne Endung träfe „TDIV“ einen fremden US-Fonds.
  */
 export function yahooSymbol(
-  security: Pick<NewsSecurity, "ticker" | "isin" | "isEquity">,
+  security: Pick<NewsSecurity, "ticker" | "isin" | "isEquity" | "newsSymbol">,
 ): string | null {
   const symbol = marketauxSymbol(security);
-  if (!symbol || symbol.includes(".") || security.isEquity) return symbol;
+  if (
+    !symbol ||
+    symbol.includes(".") ||
+    security.isEquity ||
+    security.newsSymbol?.trim()
+  ) {
+    return symbol;
+  }
   const country = security.isin?.slice(0, 2).toUpperCase() ?? "";
   return country === "US" || country === "CA" ? symbol : `${symbol}.DE`;
 }

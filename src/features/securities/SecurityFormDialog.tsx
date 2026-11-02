@@ -186,6 +186,7 @@ function SecurityFormBody({
       currency: security?.currency ?? "",
       note: security?.note ?? "",
       defaultDepotId: security?.default_depot_id ?? "",
+      newsSymbol: security?.news_symbol ?? "",
     },
   });
 
@@ -232,6 +233,7 @@ function SecurityFormBody({
       currency: emptyToNull(values.currency),
       note: emptyToNull(values.note),
       default_depot_id: emptyToNull(values.defaultDepotId),
+      news_symbol: emptyToNull(values.newsSymbol),
       payout_months: normalizePayoutMonths(payoutMonths),
       // Ein bestehendes Datum bleibt; neu eingeschaltet gilt ab heute.
       reinvest_since: reinvest ? (security?.reinvest_since ?? isoFromRef(today)) : null,
@@ -341,6 +343,27 @@ function SecurityFormBody({
                 </option>
               ))}
             </Select>
+          </div>
+          {/* Nur nötig, wenn die News-Suche unter dem Ticker nichts findet:
+              Yahoo kennt nur US-Kürzel (sync-news). */}
+          <div className="col-span-6 space-y-1.5 sm:col-span-2">
+            <Label htmlFor="security-news-symbol">News-Kürzel</Label>
+            <Input
+              id="security-news-symbol"
+              placeholder={security?.ticker ?? ""}
+              aria-describedby="security-news-symbol-hint"
+              {...register("newsSymbol")}
+            />
+            {errors.newsSymbol ? (
+              <p className="text-sm text-negative">{errors.newsSymbol.message}</p>
+            ) : (
+              <p
+                id="security-news-symbol-hint"
+                className="text-[0.8125rem] text-muted-foreground"
+              >
+                US-Kürzel, falls News fehlen, z. B. BTI
+              </p>
+            )}
           </div>
         </div>
       </FormGroup>
