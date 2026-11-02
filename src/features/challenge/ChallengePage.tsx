@@ -1,7 +1,12 @@
 import * as React from "react";
 import { Link } from "react-router";
 import { Dumbbell, Gift } from "lucide-react";
-import { KpiHero, KpiHeroSkeleton, type KpiStat } from "@/components/domain/KpiHero";
+import {
+  KpiHero,
+  KpiHeroSkeleton,
+  KpiStats,
+  type KpiStat,
+} from "@/components/domain/KpiHero";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,6 +23,7 @@ import {
   activityCounts,
   canEditDay,
   challengeStatus,
+  investedMonths,
   monthKey,
   monthLength,
   monthRef,
@@ -35,7 +41,15 @@ import { getErrorMessage } from "@/lib/utils/errorMessage";
 import { formatCalendarDate } from "@/lib/utils/formatDate";
 import { formatCountNoun } from "@/lib/utils/formatNumber";
 import { DayDialog } from "./DayDialog";
-import { useChallenge, useSaveChallenge } from "./hooks";
+import { useChallengeData, useSaveChallenge } from "./hooks";
+import { useBonusValue, type BonusValue } from "./bonusValue";
+import {
+  EUR,
+  Money,
+  formatMoney,
+  formatPercent,
+  type DecimalInstance,
+} from "@/lib/money";
 import { courseLabel, courseVariant, formatPerWeek, formatWeekdayDate } from "./format";
 
 const BONUS_TEXT = `${String(CHALLENGE_BONUS)} €`;
@@ -53,9 +67,20 @@ function monthTitle(key: string): string {
  */
 export function ChallengePage() {
   const today = useToday();
-  const query = useChallenge();
-  const challenge = query.data ?? null;
+  const query = useChallengeData();
+  const challenge = query.data?.current ?? null;
+  const bonusMonths = React.useMemo(
+    () => (query.data ? investedMonths(query.data) : []),
+    [query.data],
+  );
   const [starting, setStarting] = React.useState(false);
+
+  // Unter der Challenge, über „Challenge beenden": Das Konto gehört zum
+  // Ergebnis, nicht zu den Aktionen.
+  const account =
+    bonusMonths.length > 0 ? (
+      <BonusAccount count={bonusMonths.length} today={today} />
+    ) : null;
 
   let content: React.ReactNode;
   if (query.isLoading) {
@@ -79,25 +104,29 @@ export function ChallengePage() {
     );
   } else if (!challenge || starting) {
     content = (
-      <StartForm
-        today={today}
-        onStarted={() => {
-          setStarting(false);
-        }}
-        onCancel={
-          challenge
-            ? () => {
-                setStarting(false);
-              }
-            : undefined
-        }
-      />
+      <div className="space-y-10 lg:space-y-12">
+        <StartForm
+          today={today}
+          onStarted={() => {
+            setStarting(false);
+          }}
+          onCancel={
+            challenge
+              ? () => {
+                  setStarting(false);
+                }
+              : undefined
+          }
+        />
+        {account}
+      </div>
     );
   } else {
     content = (
       <ChallengeView
         challenge={challenge}
         today={today}
+        account={account}
         onRestart={() => {
           setStarting(true);
         }}
@@ -120,13 +149,65 @@ export function ChallengePage() {
   );
 }
 
+function euros(value: DecimalInstance): string {
+  return formatMoney(Money.fromDecimal(value, EUR));
+}
+
+/**
+ * Bonus-Konto (seit 2.68.0): alle investierten Bonusse zusammen und was sie an
+ * Dividende bringen — heute und in 10 bzw. 20 Jahren, gerechnet wie der
+ * Schneeball (CALCULATION_RULES.md §18.1). Die Langzeit-Motivation steckt in
+ * der Summe über die Monate.
+ */
+function BonusAccount({ count, today }: { count: number; today: RefDate }) {
+  const amount = count * CHALLENGE_BONUS;
+  const value = useBonusValue(amount, today);
+  const stats: KpiStat[] = [
+    {
+      label: "Investiert",
+      value: formatMoney(Money.fromString(String(amount), EUR)),
+      caption: formatCountNoun(count, "Bonus", "Bonusse"),
+    },
+  ];
+  const [first, last] = value ? [value.later[0], value.later.at(-1)] : [];
+  if (value && first && last) {
+    stats.push(
+      {
+        label: "Heute",
+        value: euros(value.today),
+        caption: "netto im Jahr",
+      },
+      {
+        label: `In ${String(last.years)} Jahren`,
+        value: euros(last.annual),
+        caption: `${String(first.years)} J.: ${euros(first.annual)}`,
+      },
+    );
+  }
+
+  return (
+    <Section
+      title="Was deine Bonusse bringen"
+      description={
+        value
+          ? `Netto im Jahr, mit ${formatPercent(value.yieldPercent)} Rendite und ${formatPercent(value.growthPercent)} Dividendenwachstum wie im Schneeball${value.inflationPercent > 0 ? ", in heutiger Kaufkraft" : ""}.`
+          : undefined
+      }
+    >
+      <KpiStats stats={stats} className="mt-2" />
+    </Section>
+  );
+}
+
 function ChallengeView({
   challenge,
   today,
+  account,
   onRestart,
 }: {
   challenge: Challenge;
   today: RefDate;
+  account: React.ReactNode;
   onRestart: () => void;
 }) {
   const status = React.useMemo(
@@ -180,6 +261,7 @@ function ChallengeView({
           </Section>
         )}
       </div>
+      {account}
       <div className="flex flex-wrap gap-2">
         {status.phase === "ended" && (
           <Button onClick={onRestart}>
@@ -207,7 +289,7 @@ function ChallengeView({
         open={ending}
         onOpenChange={setEnding}
         title="Challenge beenden?"
-        description="Alle eingetragenen Sporttage werden gelöscht. Eine neue Challenge kannst du jederzeit starten."
+        description="Die eingetragenen Sporttage werden gelöscht, investierte Bonusse bleiben im Bonus-Konto. Eine neue Challenge kannst du jederzeit starten."
         error={save.error ? getErrorMessage(save.error, "Beenden fehlgeschlagen.") : null}
         isPending={save.isPending}
         confirmLabel="Beenden"
@@ -370,6 +452,7 @@ function MonthGrid({
 function BonusSection({ challenge, today }: { challenge: Challenge; today: RefDate }) {
   const { mutate: save } = useSaveChallenge();
   const invested = challenge.investedAt;
+  const value = useBonusValue(CHALLENGE_BONUS, today);
 
   return (
     <section
@@ -388,7 +471,7 @@ function BonusSection({ challenge, today }: { challenge: Challenge; today: RefDa
           </h2>
           <p className="text-sm text-muted-foreground">
             {invested
-              ? `Als investiert markiert am ${formatCalendarDate(invested)}.`
+              ? investedText(invested, value)
               : "Du hast dein Ziel erreicht. Der Nachkauf zeigt, wohin der Bonus am meisten bringt."}
           </p>
         </div>
@@ -428,6 +511,14 @@ function BonusSection({ challenge, today }: { challenge: Challenge; today: RefDa
       </div>
     </section>
   );
+}
+
+/** „Bringt ab jetzt rund 3,50 € Dividende im Jahr, in 20 Jahren 12,10 €." */
+function investedText(invested: string, value: BonusValue | null): string {
+  const base = `Als investiert markiert am ${formatCalendarDate(invested)}.`;
+  const last = value?.later.at(-1);
+  if (!value || !last) return base;
+  return `${base} Bringt rund ${euros(value.today)} Dividende im Jahr, in ${String(last.years)} Jahren ${euros(last.annual)}.`;
 }
 
 /**

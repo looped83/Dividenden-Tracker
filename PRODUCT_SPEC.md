@@ -416,6 +416,8 @@ als Pillen), Rangbalken der Aktivitäten, ab der Zielzahl die Bonus-Fläche mit 
 schmale Zeile mit „Heute eintragen“, solange die Challenge läuft; im Monatsabschluss eine Zeile zum
 Ergebnis. Gespeichert am Profil (`profiles.sport_challenge`), nicht in der Datensicherung; eine
 neue Challenge ersetzt die alte. Rechenregeln: CALCULATION_RULES.md §18.
+Seit 2.68.0 ein Bonus-Konto unter der Challenge: alle investierten Bonusse zusammen und was sie
+netto an Dividende bringen, heute und in 10 bzw. 20 Jahren, gerechnet wie der Schneeball (§18.1).
 ### 5.8 Datensicherung
 
 JSON-Vollexport (Restore-fähig, versioniert), CSV- und Excel-Export, Restore mit Vorschau und
