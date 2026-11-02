@@ -27,6 +27,26 @@ const MEASURE_OPTIONS: readonly SegmentOption<AnalysisMeasure>[] = [
   { value: "dividende", label: "Dividende" },
 ];
 
+type RingFacet = "assetType" | "currency" | "frequency";
+
+const RING_OPTIONS: readonly SegmentOption<RingFacet>[] = [
+  { value: "assetType", label: "Asset-Typ" },
+  { value: "currency", label: "Währung" },
+  { value: "frequency", label: "Rhythmus" },
+];
+
+const RING_SLICES = {
+  assetType: "assetTypes",
+  currency: "currencies",
+  frequency: "frequencies",
+} as const satisfies Record<RingFacet, keyof PortfolioAnalysis>;
+
+const RING_ARIA: Record<RingFacet, string> = {
+  assetType: "Asset-Typ",
+  currency: "Ausschüttungswährung",
+  frequency: "Ausschüttungsrhythmus",
+};
+
 /**
  * Unterbereich **Analyse** des Bestands: woraus das Depot besteht.
  *
@@ -38,6 +58,7 @@ const MEASURE_OPTIONS: readonly SegmentOption<AnalysisMeasure>[] = [
  *
  * **Ring oder Balken folgt einer Regel:** wenige feste Kategorien (Asset-Typ,
  * Waehrung, Rhythmus) als Ring, viele offene (Branche, Land) als Rangbalken.
+ * Die drei Ringe teilen sich seit 2.65.0 einen Ring mit Umschalter.
  *
  * Eine Aufteilung nach Depot gibt es hier nicht: Der Portfolio-Export fasst
  * alle Depots zusammen (docs/PORTFOLIO_IMPORT.md §3).
@@ -150,6 +171,7 @@ function AnalysisSections({
   analysis: PortfolioAnalysis;
   basis: string;
 }) {
+  const [ring, setRing] = React.useState<RingFacet>("assetType");
   return (
     <div className="space-y-10">
       {analysis.withoutAmount > 0 && (
@@ -159,28 +181,32 @@ function AnalysisSections({
         </p>
       )}
 
-      <div className="grid grid-cols-1 gap-x-8 gap-y-10 md:grid-cols-3">
-        <Section title="Asset-Typ">
+      {/* Ein Ring mit Umschalter statt drei Ringen nebeneinander: Die Seite
+          wird kuerzer, und Ring, Branche und Land teilen sich eine Zeile. */}
+      <div className="grid grid-cols-1 gap-x-8 gap-y-10 md:grid-cols-2 xl:grid-cols-3">
+        <Section
+          title="Aufteilung"
+          // Drei Pillen und die Ueberschrift passen auf dem Telefon nicht in
+          // eine Zeile: Der Umschalter steht deshalb darunter, so breit wie
+          // der Abschnitt.
+          actionClassName="basis-full"
+          action={
+            <SegmentedControl<RingFacet>
+              label="Aufteilung nach"
+              variant="pill"
+              className="flex w-full"
+              options={RING_OPTIONS}
+              value={ring}
+              onChange={setRing}
+            />
+          }
+        >
           <AllocationRing
-            slices={analysis.assetTypes}
-            ariaLabel={`Anteile nach Asset-Typ ${basis}`}
+            key={ring}
+            slices={analysis[RING_SLICES[ring]]}
+            ariaLabel={`Anteile nach ${RING_ARIA[ring]} ${basis}`}
           />
         </Section>
-        <Section title="Währung">
-          <AllocationRing
-            slices={analysis.currencies}
-            ariaLabel={`Anteile nach Ausschüttungswährung ${basis}`}
-          />
-        </Section>
-        <Section title="Rhythmus">
-          <AllocationRing
-            slices={analysis.frequencies}
-            ariaLabel={`Anteile nach Ausschüttungsrhythmus ${basis}`}
-          />
-        </Section>
-      </div>
-
-      <div className="grid grid-cols-1 gap-x-8 gap-y-10 xl:grid-cols-2">
         <Section title="Branche">
           <AllocationBars
             slices={analysis.sectors}
