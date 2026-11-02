@@ -582,7 +582,7 @@ interface GoalLists {
 function groupForList(items: readonly GoalProgress[]): GoalLists {
   const annual = items
     .filter((item) => item.goal.goalType === "annual")
-    .toSorted((a, b) => b.goal.year - a.goal.year);
+    .sort((a, b) => b.goal.year - a.goal.year);
   const byYear = new Map<number, GoalProgress[]>();
   for (const item of items) {
     if (item.goal.goalType === "annual") continue;
@@ -593,10 +593,10 @@ function groupForList(items: readonly GoalProgress[]): GoalLists {
   return {
     annual,
     months: [...byYear]
-      .toSorted(([a], [b]) => b - a)
+      .sort(([a], [b]) => b - a)
       .map(([year, list]) => ({
         year,
-        items: list.toSorted((a, b) => (b.goal.month ?? 0) - (a.goal.month ?? 0)),
+        items: list.sort((a, b) => (b.goal.month ?? 0) - (a.goal.month ?? 0)),
       })),
   };
 }

@@ -27,6 +27,14 @@ const moneyBanRules = {
         "Number(x) ist fuer Geldbetraege verboten (CALCULATION_RULES.md #8). Nutze lib/money (Decimal).",
     },
     {
+      // Seit 2.66.2: `toSorted` liess die Ziele-Seite in Safari vor 16 (Mac mit
+      // älterem macOS) abstürzen; der Build ergänzt solche Methoden nicht.
+      selector:
+        "CallExpression[callee.property.name=/^(toSorted|toReversed|toSpliced|findLast|findLastIndex)$/]",
+      message:
+        "Neue Array-Methoden fehlen in älteren Safari-Fassungen. Nutze [...a].sort(), slice().reverse() usw.",
+    },
+    {
       selector: "CallExpression[callee.name='parseInt']",
       message:
         "parseInt ist fuer Geldbetraege/Mengen verboten. Nutze lib/money oder Number.parseInt nur fuer nicht-finanzielle Werte mit Radix.",
