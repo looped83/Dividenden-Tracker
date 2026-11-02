@@ -743,7 +743,10 @@ export function PortfolioImportButton({
   /**
    * `inline`: als Textschaltflaeche „Aktualisieren" neben dem Stand im
    * Kennzahlkopf; der negative Rand gleicht ihren Innenabstand aus, damit sie
-   * auf der Linie des Textes daneben steht.
+   * auf der Linie des Textes daneben steht. Auf Touchgeraeten ist sie 44px
+   * hoch (`pointer-coarse:min-h-11`); dort gleicht der groessere Rand das aus,
+   * sonst wuerde die Zeile hoeher und die Kennzahlbox darunter rutschte tiefer
+   * als auf den anderen Seiten.
    */
   variant?: "outline" | "inline";
   onClick: () => void;
@@ -753,7 +756,7 @@ export function PortfolioImportButton({
       <Button
         variant="ghost"
         size="sm"
-        className="relative z-10 -my-2 -ml-3 text-primary"
+        className="relative z-10 -my-2 -ml-3 text-primary pointer-coarse:-my-2.75"
         aria-label="Depotstand aktualisieren"
         onClick={onClick}
       >
