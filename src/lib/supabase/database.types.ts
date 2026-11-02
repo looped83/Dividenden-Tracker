@@ -55,6 +55,7 @@ export interface Database {
           fixed_costs: Json | null;
           savings_plans: Json | null;
           position_caps: Json | null;
+          sport_challenge: Json | null;
           created_at: string;
           updated_at: string;
         };
@@ -69,6 +70,7 @@ export interface Database {
           fixed_costs: Json | null;
           savings_plans: Json | null;
           position_caps: Json | null;
+          sport_challenge: Json | null;
         }>;
         Relationships: [];
       };

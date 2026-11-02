@@ -1015,3 +1015,27 @@ Bestand noch Prognose.
   einschalten“ (höchstens drei, der meiste Platz zuerst, am Ende; steht das Asset schon unter
   „Platz ohne Sparplan“, nennt jener Tipp „Reinvestition aus“ statt einer zweiten Zeile). Ein
   Plan-Tipp „über der Gewichtung“ nennt eine Reinvestition dazu. Ohne Befund fehlt der Abschnitt.
+
+## 18. Sport-Challenge (Menüpunkt „Challenge“, seit 2.67.0)
+
+Ein Experiment ohne Bezug zu den Dividenden: Sporttage in einem Kalendermonat gegen eine Zielzahl.
+
+- **Speicher:** `profiles.sport_challenge` (Migration 0049), ein jsonb-Objekt bis 4 KB, nicht in der
+  Datensicherung: Monat (`JJJJ-MM`), Zielzahl, Aktivitäten je Tag (ISO-Datum → Liste) und
+  `investedAt`. Es gibt nur eine Challenge; eine neue ersetzt die alte, „Beenden“ löscht sie.
+  Unbekannte Aktivitäten und Tage außerhalb des Monats fallen beim Lesen weg.
+- **Sporttag:** ein Tag mit mindestens einer Aktivität (Spinning, Joggen, Krafttraining,
+  Jumping-Fitness, Cardio, Crosstrainer, Yoga, Radfahren). Die Stunde Bewegung ist Teil der Regel,
+  nicht der Eingabe.
+- **Zielzahl:** beim Start frei wählbar (1 bis Monatslänge), vorbelegt mit
+  round(Monatstage × 5 ÷ 7) — 31 → 22, 30 → 21, 28 → 20. Danach unveränderlich.
+- **Eintragen:** vergangene Tage des Monats und heute; am 1. des Folgemonats noch nachtragen.
+- **Einordnung** (`challengeStatus`): „Geschafft“ ab der Zielzahl. „Nicht erreicht“, wenn die
+  fehlenden Tage die noch offenen Tage übersteigen (heute zählt als offen, solange nicht
+  eingetragen) oder der Monat ohne Zielzahl endete. Sonst Rückstand r = Ziel × vergangene Tage ÷
+  Monatstage − Sporttage (heute zählt erst eingetragen als vergangen): r < 1 „Im Plan“, r < 3
+  „Knapp“, sonst „Unter Plan“.
+- **Pro Woche:** Sporttage × 7 ÷ Tage bis heute (nach Monatsende: Monatstage); Ziel daneben
+  Zielzahl × 7 ÷ Monatstage.
+- **Bonus:** fest 100 €, freigeschaltet ab der Zielzahl (auch vor Monatsende). „Bonus investieren“
+  öffnet Planer › Nachkauf mit `?betrag=100`; ob gekauft wurde, markiert man selbst.

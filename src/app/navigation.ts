@@ -3,6 +3,7 @@ import {
   Briefcase,
   CalendarDays,
   Compass,
+  Dumbbell,
   LayoutDashboard,
   Newspaper,
   Settings,
@@ -102,6 +103,14 @@ export const PRIMARY_NAV_ITEMS: readonly NavItem[] = [
     label: "Fortschritt",
     icon: Trophy,
   },
+  // Experiment (seit 2.67.0): Sporttage im Monat, bei Erfolg ein Bonus zum
+  // Extra-Investieren. Motivation wie Ziele und Fortschritt, deshalb in
+  // derselben Gruppe.
+  {
+    to: "/challenge",
+    label: "Challenge",
+    icon: Dumbbell,
+  },
   {
     to: "/einstellungen",
     label: "Einstellungen",
@@ -133,6 +142,7 @@ export const BOTTOM_NAV_MORE_ITEMS: readonly NavItem[] = [
   findNavItem("/news"),
   findNavItem("/ziele"),
   findNavItem("/fortschritt"),
+  findNavItem("/challenge"),
   findNavItem("/einstellungen"),
 ];
 

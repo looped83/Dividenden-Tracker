@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Undo2, X } from "lucide-react";
+import { Dumbbell, Undo2, X } from "lucide-react";
 import { KpiStats, type KpiStat } from "@/components/domain/KpiHero";
 import { AmountText } from "@/components/money/AmountText";
 import { formatPercent } from "@/lib/money";
@@ -14,6 +14,8 @@ import {
 import { formatCountNoun, formatCountNumber } from "@/lib/utils/formatNumber";
 import { cn } from "@/lib/utils/cn";
 import { useGoals } from "@/features/goals/hooks";
+import { useChallenge } from "@/features/challenge/hooks";
+import { challengeStatus, monthKey } from "@/lib/challenge";
 import { statusLabel, statusTone } from "@/features/goals/format";
 import { paymentsListHref, splitComparison, type EntityInfo } from "./format";
 
@@ -59,6 +61,7 @@ export function MonthRecapCard({
   today: RefDate;
 }) {
   const goals = useGoals().data;
+  const challenge = useChallenge().data ?? null;
   const [dismissed, setDismissed] = React.useState(readDismissed);
 
   const recap = React.useMemo(
@@ -86,6 +89,11 @@ export function MonthRecapCard({
   if (dismissed === key || (recap.count === 0 && goal === null)) return null;
 
   const monthName = monthNameDe(recap.month);
+  // Die Challenge des abgeschlossenen Monats als eine Zeile (seit 2.67.0).
+  const sport =
+    challenge && challenge.month === monthKey(recap.year, recap.month)
+      ? challengeStatus(challenge, today)
+      : null;
   const result = comparePeriods(recap.net, recap.priorNet);
   const stats: KpiStat[] = [
     {
@@ -166,6 +174,15 @@ export function MonthRecapCard({
           <Undo2 className="size-3.5 shrink-0" aria-hidden />
           <span>
             Davon <AmountText amount={recap.reinvested.net} /> automatisch reinvestiert
+          </span>
+        </p>
+      )}
+      {sport && (
+        <p className="flex items-center gap-1.5 px-2 pb-2 text-sm text-muted-foreground sm:px-4">
+          <Dumbbell className="size-3.5 shrink-0" aria-hidden />
+          <span>
+            Challenge: {sport.done} von {sport.target} Sporttagen ·{" "}
+            {sport.reached ? "Bonus freigeschaltet" : "nicht erreicht"}
           </span>
         </p>
       )}

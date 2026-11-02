@@ -3,8 +3,8 @@ import type { Json } from "@/lib/supabase/database.types";
 
 /**
  * Einstellungen am eigenen Profil: Annahmen des Dividenden-Schneeballs
- * (Migration 0034), Fixkosten des Fortschritts (0041), Sparplaene (0042) und
- * Gewichtungen je Asset (0043).
+ * (Migration 0034), Fixkosten des Fortschritts (0041), Sparplaene (0042),
+ * Gewichtungen je Asset (0043) und die Sport-Challenge (0049).
  *
  * Gefiltert wird ueber die Kennung der lokalen Sitzung, nicht ueber
  * `getUser()` — das kostete einen Umlauf zum Auth-Server. Welche Zeile gelesen
@@ -19,7 +19,11 @@ async function currentUserId(): Promise<string> {
 
 /** Die JSON-Spalten des Profils, die jeweils einen Bereich der App tragen. */
 type SettingsColumn =
-  "forecast_settings" | "fixed_costs" | "savings_plans" | "position_caps";
+  | "forecast_settings"
+  | "fixed_costs"
+  | "savings_plans"
+  | "position_caps"
+  | "sport_challenge";
 
 /**
  * Liest genau eine Spalte — je Bereich ein eigener Cache-Eintrag, damit ein
@@ -33,7 +37,7 @@ async function fetchSetting(column: SettingsColumn): Promise<Json | null> {
     .single();
   if (error) throw error;
   // Der Ergebnistyp einer zur Laufzeit gewaehlten Spalte ist fuer PostgREST
-  // nicht ableitbar; alle vier Spalten sind `jsonb`.
+  // nicht ableitbar; alle diese Spalten sind `jsonb`.
   return (data as Record<SettingsColumn, Json | null>)[column];
 }
 
@@ -60,3 +64,7 @@ export const updateSavingsPlans = (plans: Json) => updateSetting("savings_plans"
 
 export const fetchPositionCaps = () => fetchSetting("position_caps");
 export const updatePositionCaps = (caps: Json) => updateSetting("position_caps", caps);
+
+export const fetchSportChallenge = () => fetchSetting("sport_challenge");
+export const updateSportChallenge = (challenge: Json | null) =>
+  updateSetting("sport_challenge", challenge);
