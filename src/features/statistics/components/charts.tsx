@@ -503,12 +503,10 @@ export function DonutChart({
   }));
 
   return (
-    <div className="flex items-center gap-5 md:gap-4 2xl:gap-5">
-      <div
-        className="chart-rise size-32 shrink-0 md:size-24 2xl:size-32"
-        role="img"
-        aria-label={ariaLabel}
-      >
+    // Ring gross und mittig, die Legende darunter in voller Breite (seit
+    // 2.65.0: ein Ring mit Umschalter statt drei kleinen nebeneinander).
+    <div className="flex flex-col items-center gap-6">
+      <div className="chart-rise size-52 shrink-0" role="img" aria-label={ariaLabel}>
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
@@ -527,7 +525,7 @@ export function DonutChart({
           </PieChart>
         </ResponsiveContainer>
       </div>
-      <ul className="min-w-0 flex-1 space-y-2 text-sm">
+      <ul className="w-full min-w-0 space-y-2 text-sm">
         {data.map(({ key, slice, fill }) => (
           <li key={key} className="flex items-center gap-2">
             <span
