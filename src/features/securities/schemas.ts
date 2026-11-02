@@ -7,7 +7,7 @@ export const TICKER_PATTERN = /^[A-Za-z0-9 .-]{1,20}$/;
 export const ISIN_PATTERN = /^[A-Za-z]{2}[A-Za-z0-9]{9}[0-9]$/;
 export const WKN_PATTERN = /^[A-Za-z0-9]{6}$/;
 /** Kürzel für die News-Suche (Migration 0048): ohne Leerzeichen. */
-export const NEWS_SYMBOL_PATTERN = /^[A-Za-z0-9.-]{1,20}$/;
+const NEWS_SYMBOL_PATTERN = /^[A-Za-z0-9.-]{1,20}$/;
 const COUNTRY_PATTERN = /^[A-Za-z]{2}$/;
 const CURRENCY_PATTERN = /^[A-Za-z]{3}$/;
 
