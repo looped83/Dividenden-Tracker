@@ -38,7 +38,8 @@ export function PortfolioSummary({
   const dividend = totals.annualDividend;
   const dividendGaps =
     dividend.kind === "amount" && dividend.counted < totals.positions
-      ? `aus ${formatCountNumber(dividend.counted)} von ${formatCountNumber(totals.positions)} Positionen`
+      ? // Kurz wie „28/31 gedeckt“, damit die Zeile auf dem Telefon einzeilig bleibt.
+        `${formatCountNumber(dividend.counted)}/${formatCountNumber(totals.positions)} Positionen`
       : undefined;
   const { gain, gainPercent } = totals;
 

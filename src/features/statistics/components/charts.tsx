@@ -505,7 +505,7 @@ export function DonutChart({
   return (
     // Ring gross und mittig, die Legende darunter in voller Breite (seit
     // 2.65.0: ein Ring mit Umschalter statt drei kleinen nebeneinander).
-    <div className="flex flex-col items-center gap-6">
+    <div className="flex flex-col items-center gap-6 pt-6">
       <div className="chart-rise size-52 shrink-0" role="img" aria-label={ariaLabel}>
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
