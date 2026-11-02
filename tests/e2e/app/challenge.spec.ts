@@ -65,7 +65,12 @@ test("schaltet ab der Zielzahl den Bonus frei", async ({ page, konto }) => {
   await expect(page.getByRole("region", { name: /Extra-Invest erledigt/ })).toContainText(
     "10.11.2026",
   );
+  // Bonus-Konto (seit 2.68.0); ohne Depotstand nur der Betrag.
+  const bonusKonto = page.getByRole("region", { name: "Was deine Bonusse bringen" });
+  await expect(bonusKonto).toContainText("100,00 €");
+  await expect(bonusKonto).toContainText("1 Bonus");
   await page.getByRole("button", { name: "Rückgängig" }).click();
+  await expect(bonusKonto).toBeHidden();
   await page.getByRole("link", { name: "Bonus investieren" }).click();
   await expect(page).toHaveURL(/#\/planer\?betrag=100$/);
 });

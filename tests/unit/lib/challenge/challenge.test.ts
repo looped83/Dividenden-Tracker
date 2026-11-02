@@ -6,7 +6,10 @@ import {
   newChallenge,
   parseChallenge,
   suggestedTarget,
-  toStoredChallenge,
+  investedMonths,
+  parseChallengeData,
+  replaceCurrent,
+  toStoredChallengeData,
   toggleActivity,
   type Challenge,
 } from "@/lib/challenge";
@@ -56,9 +59,14 @@ describe("parseChallenge", () => {
   });
 
   it("übersteht den Rundweg über die Speicherform", () => {
-    const challenge = toggleActivity(newChallenge("2026-11", 21), "2026-11-02", "rad");
-    expect(parseChallenge(toStoredChallenge(challenge))).toEqual(challenge);
-    expect(toStoredChallenge(null)).toBeNull();
+    const current = toggleActivity(newChallenge("2026-11", 21), "2026-11-02", "rad");
+    const data = { current, bonuses: ["2026-09"] };
+    expect(parseChallengeData(toStoredChallengeData(data))).toEqual(data);
+    expect(toStoredChallengeData({ current: null, bonuses: [] })).toBeNull();
+    expect(parseChallengeData({ bonuses: ["2026-10", "x", "2026-10"] })).toEqual({
+      current: null,
+      bonuses: ["2026-10"],
+    });
   });
 });
 
@@ -135,5 +143,31 @@ describe("activityCounts", () => {
       { id: "yoga", label: "Yoga", count: 2 },
       { id: "joggen", label: "Joggen", count: 1 },
     ]);
+  });
+});
+
+describe("Bonus-Konto", () => {
+  const october = { ...newChallenge("2026-10", 22), investedAt: "2026-10-28" };
+
+  it("übernimmt einen investierten Bonus beim Neustart und beim Beenden", () => {
+    const data = { current: october, bonuses: ["2026-08"] };
+    const next = replaceCurrent(data, newChallenge("2026-11", 21));
+    expect(next.bonuses).toEqual(["2026-08", "2026-10"]);
+    expect(next.current?.month).toBe("2026-11");
+    expect(replaceCurrent(data, null)).toEqual({
+      current: null,
+      bonuses: ["2026-08", "2026-10"],
+    });
+  });
+
+  it("zählt den laufenden Monat erst, wenn er investiert ist", () => {
+    const open = { ...october, investedAt: null };
+    expect(investedMonths({ current: open, bonuses: ["2026-08"] })).toEqual(["2026-08"]);
+    expect(investedMonths({ current: october, bonuses: ["2026-08"] })).toEqual([
+      "2026-08",
+      "2026-10",
+    ]);
+    // Rückgängig im selben Monat lässt das Konto unverändert.
+    expect(replaceCurrent({ current: october, bonuses: [] }, open).bonuses).toEqual([]);
   });
 });

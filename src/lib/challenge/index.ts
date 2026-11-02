@@ -83,17 +83,84 @@ export function parseChallenge(raw: unknown): Challenge | null {
   };
 }
 
-/** Speicherform; `null` beendet die Challenge. */
-export function toStoredChallenge(challenge: Challenge | null) {
-  if (!challenge) return null;
+/**
+ * Alles, was gespeichert ist: die laufende (oder zuletzt beendete) Challenge
+ * und die Monate früherer Challenges, deren Bonus investiert wurde (seit
+ * 2.68.0). Die Monate tragen das Bonus-Konto über die einzelne Challenge
+ * hinaus — Tage und Aktivitäten werden bei einem Neustart weiterhin ersetzt.
+ */
+export interface ChallengeData {
+  current: Challenge | null;
+  /** Frühere Monate mit investiertem Bonus (`JJJJ-MM`), ohne `current`. */
+  bonuses: readonly string[];
+}
+
+/** Obergrenze der gemerkten Bonus-Monate: zehn Jahre, rund 1 KB. */
+const BONUSES_MAX = 120;
+
+export const NO_CHALLENGE: ChallengeData = { current: null, bonuses: [] };
+
+export function parseChallengeData(raw: unknown): ChallengeData {
+  const rawBonuses = isRecord(raw) ? raw["bonuses"] : undefined;
+  const bonuses = Array.isArray(rawBonuses)
+    ? [
+        ...new Set(
+          rawBonuses.filter(
+            (month): month is string => typeof month === "string" && MONTH.test(month),
+          ),
+        ),
+      ]
+        .sort()
+        .slice(-BONUSES_MAX)
+    : [];
+  return { current: parseChallenge(raw), bonuses };
+}
+
+/** Speicherform; ohne Challenge und ohne Bonus-Monate `null`. */
+export function toStoredChallengeData({ current, bonuses }: ChallengeData) {
+  if (!current && bonuses.length === 0) return null;
   return {
-    month: challenge.month,
-    target: challenge.target,
-    days: Object.fromEntries(
-      Object.entries(challenge.days).map(([day, activities]) => [day, [...activities]]),
-    ),
-    investedAt: challenge.investedAt,
+    ...(current && {
+      month: current.month,
+      target: current.target,
+      days: Object.fromEntries(
+        Object.entries(current.days).map(([day, activities]) => [day, [...activities]]),
+      ),
+      investedAt: current.investedAt,
+    }),
+    ...(bonuses.length > 0 && { bonuses: [...bonuses] }),
   };
+}
+
+/** Alle Monate mit investiertem Bonus, die laufende Challenge eingeschlossen. */
+export function investedMonths({ current, bonuses }: ChallengeData): string[] {
+  const months = new Set(bonuses);
+  if (current?.investedAt) months.add(current.month);
+  return [...months].sort();
+}
+
+/**
+ * Was beim Neustart oder Beenden bleibt: Ein investierter Bonus der
+ * bisherigen Challenge wandert ins Bonus-Konto.
+ */
+export function withoutCurrent(data: ChallengeData): ChallengeData {
+  return { current: null, bonuses: investedMonths(data).slice(-BONUSES_MAX) };
+}
+
+/**
+ * Setzt die laufende Challenge. Beginnt ein anderer Monat oder endet die
+ * Challenge (`null`), wandert ein investierter Bonus der bisherigen ins
+ * Bonus-Konto.
+ */
+export function replaceCurrent(
+  data: ChallengeData,
+  next: Challenge | null,
+): ChallengeData {
+  if (!next) return withoutCurrent(data);
+  if (data.current && data.current.month !== next.month) {
+    return { ...withoutCurrent(data), current: next };
+  }
+  return { ...data, current: next };
 }
 
 export function monthKey(year: number, month: number): string {

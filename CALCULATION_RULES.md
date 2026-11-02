@@ -1039,3 +1039,16 @@ Ein Experiment ohne Bezug zu den Dividenden: Sporttage in einem Kalendermonat ge
   Zielzahl × 7 ÷ Monatstage.
 - **Bonus:** fest 100 €, freigeschaltet ab der Zielzahl (auch vor Monatsende). „Bonus investieren“
   öffnet Planer › Nachkauf mit `?betrag=100`; ob gekauft wurde, markiert man selbst.
+
+### 18.1 Bonus-Konto (seit 2.68.0)
+
+- **Speicher:** In `profiles.sport_challenge` zusätzlich `bonuses`, die früheren Monate mit
+  investiertem Bonus (höchstens 120). Beginnt eine Challenge in einem anderen Monat oder endet sie,
+  wandert ein investierter Bonus der bisherigen dorthin; Tage und Aktivitäten werden weiterhin
+  ersetzt. Ohne Challenge und ohne Bonus-Monate ist die Spalte `null`.
+- **Investiert:** Anzahl der Monate (frühere plus die laufende, sobald markiert) × 100 €.
+- **Was es bringt** (`bonusValue`): der Schneeball aus §14 mit dem investierten Betrag als
+  einzigem Bestand — Bruttodividende = Betrag × Rendite (Annahme, sonst Depot), Netto-Quote,
+  Wachstum, Reinvestition und Inflation wie dort, keine Sparrate. Gezeigt werden die
+  Nettodividende im Jahr heute und nach 10 bzw. 20 Jahren (Dezember-Punkte des Schneeballs,
+  heutige Kaufkraft). Ohne Depotstand nur der investierte Betrag.
