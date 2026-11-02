@@ -210,6 +210,33 @@ describe("collectNews", () => {
     expect(result.errorCodes).toEqual(["marketaux:http:429"]);
   });
 
+  it("fragt Yahoo für eine Aktie, zu der Marketaux nichts hat", async () => {
+    const fetchImpl = byHost(() => new Response(JSON.stringify({ data: [] })));
+    const result = await collectNews({
+      securities: [AKTIE],
+      since: SINCE,
+      marketauxKey: API_KEY,
+      fetchImpl,
+    });
+    expect(result).toMatchObject({
+      requests: 2,
+      failed: 0,
+      yahoo: { requests: 1, items: 1 },
+    });
+  });
+
+  it("zählt Yahoo-Treffer auch bei gleichzeitigen Anfragen richtig", async () => {
+    const fetchImpl = byHost(() => new Response(marketauxBody));
+    const etfs = [1, 2, 3, 4].map((n) => ({ ...ETF, id: `etf-${String(n)}` }));
+    const result = await collectNews({
+      securities: etfs,
+      since: SINCE,
+      marketauxKey: API_KEY,
+      fetchImpl,
+    });
+    expect(result.yahoo).toEqual({ requests: 4, items: 4 });
+  });
+
   it("fragt ohne Key nur Yahoo", async () => {
     const fetchImpl = byHost(() => new Response(marketauxBody));
     const result = await collectNews({
