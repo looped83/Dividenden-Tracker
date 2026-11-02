@@ -324,6 +324,7 @@ async function fetchSecurities(): Promise<SecurityBackup[]> {
         default_depot_id: s.default_depot_id,
         payout_months: ensureNumberArray(s.payout_months),
         reinvest_since: s.reinvest_since,
+        news_symbol: s.news_symbol,
         created_at: ts(s.created_at),
         updated_at: ts(s.updated_at),
         archived_at: ts(s.archived_at),

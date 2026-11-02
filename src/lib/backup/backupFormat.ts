@@ -199,6 +199,11 @@ const securityBackupSchema = z.object({
   payout_months: z.array(z.number().int().min(1).max(12)).optional(),
   // Seit 2.38.0: Datum, ab dem reinvestiert wird. Fehlt es, gilt „aus".
   reinvest_since: businessDate.optional(),
+  // Seit 2.66.0: eigenes Kürzel für die News-Suche. Fehlt es, gilt das Kürzel.
+  news_symbol: z
+    .string()
+    .regex(/^[A-Za-z0-9.-]{1,20}$/)
+    .optional(),
   created_at: isoTimestamp,
   updated_at: isoTimestamp,
   archived_at: isoTimestamp.optional(),

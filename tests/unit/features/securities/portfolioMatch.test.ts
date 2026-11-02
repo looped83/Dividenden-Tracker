@@ -19,6 +19,7 @@ function security(partial: Partial<Security> = {}): Security {
     default_depot_id: null,
     payout_months: [],
     reinvest_since: null,
+    news_symbol: null,
     created_by_import_id: null,
     created_at: "2026-01-01T00:00:00Z",
     updated_at: "2026-01-01T00:00:00Z",

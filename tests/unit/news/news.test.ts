@@ -116,6 +116,16 @@ describe("yahooSymbol", () => {
     expect(yahooSymbol({ ...ETF, ticker: null })).toBeNull();
   });
 
+  it("nimmt ein eigenes News-Kürzel unverändert", () => {
+    expect(yahooSymbol({ ...ETF, newsSymbol: "jepi" })).toBe("JEPI");
+    expect(yahooSymbol({ ...AKTIE, isin: "GB0000000001", newsSymbol: "BTI" })).toBe(
+      "BTI",
+    );
+    expect(marketauxSymbol({ ...AKTIE, isin: "DE0000000001", newsSymbol: "DHLGY" })).toBe(
+      "DHLGY",
+    );
+  });
+
   it("baut die Feed-Adresse", () => {
     expect(new URL(yahooUrl("MGDV.DE")).searchParams.get("s")).toBe("MGDV.DE");
   });

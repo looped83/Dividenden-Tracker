@@ -64,7 +64,9 @@ async function loadHoldings(
 
   const { data, error } = await admin
     .from("security_snapshots")
-    .select("asset_type, securities!inner(id, name, ticker, isin, archived_at)")
+    .select(
+      "asset_type, securities!inner(id, name, ticker, isin, news_symbol, archived_at)",
+    )
     .eq("user_id", userId)
     .eq("run_id", run.id)
     .gt("quantity", 0);
@@ -77,6 +79,7 @@ async function loadHoldings(
       name: string;
       ticker: string | null;
       isin: string | null;
+      news_symbol: string | null;
       archived_at: string | null;
     };
   };
@@ -88,6 +91,7 @@ async function loadHoldings(
       ticker: row.securities.ticker,
       isin: row.securities.isin,
       isEquity: row.asset_type === "equity",
+      newsSymbol: row.securities.news_symbol,
     }));
 }
 

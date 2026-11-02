@@ -1078,3 +1078,52 @@ describe("restore_backup — Reinvestition (0044)", () => {
     ]);
   });
 });
+
+describe("restore_backup — News-Kürzel (0048)", () => {
+  it("übernimmt news_symbol und setzt es ohne Feld zurück", async () => {
+    const user = await createTestUser("restore-news-symbol@example.test");
+    const [withId, withoutId] = await asUser(user, async (client) => [
+      await seedSecurity(client, { name: "Muster Tabak" }),
+      await seedSecurity(client, { name: "Muster Post" }),
+    ]);
+    await asUser(user, (client) =>
+      client.query("update securities set news_symbol = 'MSTPY' where id = $1", [
+        withoutId,
+      ]),
+    );
+
+    await restore(
+      user,
+      backupPayload(user, {
+        securities: [
+          { id: withId, name: "Muster Tabak", news_symbol: "MSTB" },
+          // Ältere Sicherung: Das Feld fehlt.
+          { id: withoutId, name: "Muster Post" },
+        ],
+      }),
+      "replace",
+    );
+
+    const rows = await asUser(user, (client) =>
+      client.query<{ name: string; news_symbol: string | null }>(
+        "select name, news_symbol from securities order by name",
+      ),
+    );
+    expect(rows.rows).toEqual([
+      { name: "Muster Post", news_symbol: null },
+      { name: "Muster Tabak", news_symbol: "MSTB" },
+    ]);
+  });
+
+  it("lehnt ein Kürzel mit Leerzeichen ab", async () => {
+    const user = await createTestUser("news-symbol-check@example.test");
+    const id = await asUser(user, (client) =>
+      seedSecurity(client, { name: "Muster AG" }),
+    );
+    await expect(
+      asUser(user, (client) =>
+        client.query("update securities set news_symbol = 'A B' where id = $1", [id]),
+      ),
+    ).rejects.toThrow(/securities_news_symbol_format/);
+  });
+});
