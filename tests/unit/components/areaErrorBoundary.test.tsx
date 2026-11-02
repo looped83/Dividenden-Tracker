@@ -24,6 +24,10 @@ describe("AreaErrorBoundary", () => {
       screen.getByText("Dieser Bereich konnte nicht angezeigt werden"),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Neu laden" })).toBeInTheDocument();
+    // Der Fehlertext steht aufklappbar dabei, damit sich ein Absturz auf
+    // einem Geraet nachvollziehen laesst.
+    expect(screen.getByText("Fehlerdetail anzeigen")).toBeInTheDocument();
+    expect(screen.getByText("Error: kaputt")).toBeInTheDocument();
 
     rerender(
       <AreaErrorBoundary resetKey="/statistiken">

@@ -107,13 +107,25 @@ export class AreaErrorBoundary extends React.Component<AreaProps, State> {
         title="Dieser Bereich konnte nicht angezeigt werden"
         description="Ein unerwarteter Fehler ist aufgetreten. Deine Daten sind davon nicht betroffen."
         action={
-          <Button
-            onClick={() => {
-              window.location.reload();
-            }}
-          >
-            Neu laden
-          </Button>
+          <div className="flex flex-col items-center gap-4">
+            <Button
+              onClick={() => {
+                window.location.reload();
+              }}
+            >
+              Neu laden
+            </Button>
+            {/* Seit 2.66.2: Ohne den Fehlertext liess sich ein Absturz, der nur
+                auf einem Geraet auftrat, nicht nachvollziehen. */}
+            {this.state.error && (
+              <details className="max-w-md text-xs text-muted-foreground">
+                <summary className="cursor-pointer">Fehlerdetail anzeigen</summary>
+                <pre className="mt-2 whitespace-pre-wrap break-words text-left font-mono">
+                  {this.state.error.toString()}
+                </pre>
+              </details>
+            )}
+          </div>
         }
       />
     );
