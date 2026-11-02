@@ -397,7 +397,7 @@ laufenden Jahres statt des Monats die Zahl der Dividenden samt Breite.
 **Diagramm im Kopf:** ein eigenes SVG (`HeroChart`) statt Recharts — es steht im ersten
 Bildschirm, die Übersicht lädt Recharts damit gar nicht mehr. Ein Jahr hat zwei Sichten
 (Umschalter „Kumuliert | Monatlich" oben links im Diagramm, Voreinstellung kumuliert): die laufende Jahressumme als
-Linie in Orange gegen das Vorjahr (grau gestrichelt; im laufenden Jahr endet die Linie heute) oder die
+Linie in Orange gegen das Vorjahr (grau gestrichelt; ein Punkt je Monat unter seinem Kürzel, die Summe bis Monatsende; im laufenden Jahr endet die Linie im laufenden Monat mit dem Stand von heute) oder die
 Monatssummen als Linie gegen das Vorjahr (seit 1.12.0, zuvor Balkenpaare; ein Punkt je Monat). „Alle Jahre" zeigt den Verlauf der Jahressummen als Linie (seit 1.11.0; fünfzehn Säulen
 wurden auf dem Telefon zu Strichen), beschriftet ist jedes Jahr, für das Platz ist, das
 laufende immer. **Wischen statt Tooltip:**

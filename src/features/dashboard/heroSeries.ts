@@ -1,7 +1,6 @@
 import { EUR, Money } from "@/lib/money";
 import {
   currentMonthComparison,
-  lastDayOfMonth,
   monthNameDe,
   monthlyBuckets,
   selectedYearComparison,
@@ -43,9 +42,7 @@ export type HeroSeries =
   | {
       kind: "cumulative";
       year: number;
-      /** Laufende Summe des Jahres: Jahresbeginn, Monatsenden, ggf. heute. */
-      line: { x: number; value: Money }[];
-      /** Laufende Summe des Vorjahres an den 13 Monatsgrenzen. */
+      /** Laufende Summe des Vorjahres bis Ende jedes der 12 Monate. */
       priorLine: Money[];
       points: HeroPoint[];
     }
@@ -89,8 +86,9 @@ function untilLabel(year: number, month: number, day?: number): string {
  * „Dashboard"). Rein und ohne Darstellung: Was gezeichnet wird und was der
  * Kopf beim Wischen zeigt, kommt aus derselben Rechnung.
  *
- * - **Kumuliert:** laufende Jahressumme gegen die des Vorjahres. Im laufenden
- *   Jahr endet die Linie heute; ihr letzter Punkt ist genau die Zahl im Kopf
+ * - **Kumuliert:** laufende Jahressumme gegen die des Vorjahres, ein Punkt je
+ *   Monat (die Linie sind die Punkte). Im laufenden Jahr endet sie im
+ *   laufenden Monat; ihr letzter Punkt ist genau die Zahl im Kopf
  *   und wird mit dem Vorjahr bis zum gleichen Tag verglichen
  *   ({@link selectedYearComparison}).
  * - **Monatlich:** Monatssummen beider Jahre; Monate, die noch nicht begonnen
@@ -169,23 +167,27 @@ export function buildHeroSeries(
     return { kind: "monthly", year, months, points };
   }
 
-  const priorLine = [ZERO];
-  for (const bar of months)
-    priorLine.push(priorLine[priorLine.length - 1].add(bar.prior));
+  // Jeder Punkt steht wie in „Monatlich" unter seinem Monatskürzel: die Summe
+  // bis Monatsende, im laufenden Monat bis heute. Am Monatsende (seit 1.21.1)
+  // endete die Linie am 2. November noch unter „Okt".
+  const priorLine: Money[] = [];
+  let priorRunning = ZERO;
+  for (const bar of months) {
+    priorRunning = priorRunning.add(bar.prior);
+    priorLine.push(priorRunning);
+  }
 
   const isCurrent = year === today.year;
   const completed = year < today.year ? 12 : isCurrent ? today.month - 1 : 0;
-  const line = [{ x: 0, value: ZERO }];
   const points: HeroPoint[] = [];
   let running = ZERO;
   for (let month = 1; month <= completed; month += 1) {
     running = running.add(months[month - 1].current ?? ZERO);
-    line.push({ x: month, value: running });
     points.push({
-      x: month,
+      x: month - 0.5,
       label: untilLabel(year, month),
       value: running,
-      prior: priorLine[month],
+      prior: priorLine[month - 1],
       // Kurz: Der Zeitraum steht schon darüber, „ggü. bis Ende September
       // 2025" brach auf dem Telefon um.
       priorLabel: String(year - 1),
@@ -194,10 +196,8 @@ export function buildHeroSeries(
   }
   if (isCurrent) {
     const { current, prior } = selectedYearComparison(payments, year, today);
-    const x = today.month - 1 + today.day / lastDayOfMonth(year, today.month);
-    line.push({ x, value: current });
     points.push({
-      x,
+      x: today.month - 0.5,
       label: untilLabel(year, today.month, today.day),
       value: current,
       prior,
@@ -205,5 +205,5 @@ export function buildHeroSeries(
       href: paymentsListHref({ year }),
     });
   }
-  return { kind: "cumulative", year, line, priorLine, points };
+  return { kind: "cumulative", year, priorLine, points };
 }

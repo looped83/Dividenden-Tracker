@@ -34,15 +34,14 @@ describe("buildHeroSeries", () => {
   it("endet kumuliert im laufenden Jahr heute, mit dem Vorjahr bis zum gleichen Tag", () => {
     const series = buildHeroSeries(PAYMENTS, 2026, TODAY, "cumulative");
     if (series.kind !== "cumulative") throw new Error("falsche Sicht");
-    // Jahresbeginn, sechs volle Monate, heute.
-    expect(series.line).toHaveLength(8);
+    // Sechs volle Monate und der laufende bis heute, je unter seinem Monat.
+    expect(series.points.map((p) => p.x)).toEqual([0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5]);
     const last = series.points[series.points.length - 1];
     expect(last.label).toBe("bis 20. Juli 2026");
     expect(last.value.toStringValue()).toBe("100.00");
     expect(last.prior?.toStringValue()).toBe("30.00");
-    expect(last.x).toBeCloseTo(6 + 20 / 31);
     // Die Vorjahreslinie läuft über das ganze Jahr.
-    expect(series.priorLine[12].toStringValue()).toBe("100.00");
+    expect(series.priorLine[11].toStringValue()).toBe("100.00");
   });
 
   it("zeigt ein abgeschlossenes Jahr kumuliert bis Dezember", () => {

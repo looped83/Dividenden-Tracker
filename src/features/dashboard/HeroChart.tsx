@@ -236,7 +236,7 @@ function Cumulative({
   const max =
     Math.max(
       ...series.priorLine.map(num),
-      ...series.line.map((point) => num(point.value)),
+      ...series.points.map((point) => num(point.value)),
       1,
     ) * 1.06;
   const y = (value: number) => top + (1 - value / max) * (height - top - 2);
@@ -244,8 +244,8 @@ function Cumulative({
     values
       .map((p, i) => `${i ? "L" : "M"}${x(p.x).toFixed(1)},${y(p.value).toFixed(1)}`)
       .join("");
-  const prior = series.priorLine.map((value, i) => ({ x: i, value: num(value) }));
-  const line = series.line.map((p) => ({ x: p.x, value: num(p.value) }));
+  const prior = series.priorLine.map((value, i) => ({ x: i + 0.5, value: num(value) }));
+  const line = series.points.map((p) => ({ x: p.x, value: num(p.value) }));
   const end = line[line.length - 1];
   const point = active === null ? null : series.points[active];
   const priorEnd = prior[prior.length - 1];
@@ -330,7 +330,6 @@ function Cumulative({
       <MonthAxis
         x={x}
         y={height + LABELS - 6}
-        atMonthEnd
         strong={Math.ceil((point ?? series.points[series.points.length - 1]).x)}
       />
     </>
@@ -342,9 +341,9 @@ const MONTH_TICK_WIDTH = 26;
 
 /**
  * Monatsachse beider Jahressichten (seit 1.21.0, zuvor Anfangsbuchstaben bzw.
- * nur „Jan" und „Dez"). Jedes Kürzel steht dort, wo die Punkte des Monats
- * liegen: in „Monatlich" in der Monatsmitte, in „Kumuliert" am Monatsende
- * (`atMonthEnd`, seit 1.21.1) — dort steht die Summe „bis Ende Mai". Der
+ * nur „Jan" und „Dez"). Jedes Kürzel steht in der Monatsmitte, dort, wo die
+ * Punkte des Monats liegen — in „Kumuliert" seit 2.66.1 auch (zuvor am
+ * Monatsende, wo die Linie am 2. November noch unter „Okt" endete). Der
  * gewählte bzw. letzte Monat steht kräftiger. Auf sehr schmalen Schirmen
  * steht jeder zweite Monat, gezählt vom Dezember aus.
  */
@@ -352,12 +351,10 @@ function MonthAxis({
   x,
   y,
   strong,
-  atMonthEnd = false,
 }: {
   x: (slot: number) => number;
   y: number;
   strong: number;
-  atMonthEnd?: boolean;
 }) {
   const step = x(1) - x(0) >= MONTH_TICK_WIDTH ? 1 : 2;
   return MONTH_NAMES_DE_SHORT.map((name, index) => {
@@ -370,7 +367,7 @@ function MonthAxis({
     return (
       <text
         key={name}
-        x={x(atMonthEnd ? month : index + 0.5)}
+        x={x(index + 0.5)}
         y={y}
         textAnchor="middle"
         fontSize={11}
