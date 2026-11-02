@@ -98,8 +98,6 @@ export interface ChallengeData {
 /** Obergrenze der gemerkten Bonus-Monate: zehn Jahre, rund 1 KB. */
 const BONUSES_MAX = 120;
 
-export const NO_CHALLENGE: ChallengeData = { current: null, bonuses: [] };
-
 export function parseChallengeData(raw: unknown): ChallengeData {
   const rawBonuses = isRecord(raw) ? raw["bonuses"] : undefined;
   const bonuses = Array.isArray(rawBonuses)
@@ -143,7 +141,7 @@ export function investedMonths({ current, bonuses }: ChallengeData): string[] {
  * Was beim Neustart oder Beenden bleibt: Ein investierter Bonus der
  * bisherigen Challenge wandert ins Bonus-Konto.
  */
-export function withoutCurrent(data: ChallengeData): ChallengeData {
+function withoutCurrent(data: ChallengeData): ChallengeData {
   return { current: null, bonuses: investedMonths(data).slice(-BONUSES_MAX) };
 }
 

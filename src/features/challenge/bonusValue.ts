@@ -14,7 +14,7 @@ import { MoneyDecimal, type DecimalInstance } from "@/lib/money";
 import { isoFromRef, type RefDate } from "@/lib/statistics";
 
 /** Jahre der Hochrechnung: kurz und lang. */
-export const BONUS_YEARS = [10, 20] as const;
+const BONUS_YEARS = [10, 20] as const;
 
 export interface BonusValue {
   /** Nettodividende im Jahr, die der Betrag heute bringt. */
