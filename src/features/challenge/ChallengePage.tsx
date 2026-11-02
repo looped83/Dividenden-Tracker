@@ -231,7 +231,7 @@ function ChallengeView({
           description={
             status.phase === "upcoming"
               ? `Eintragen ab dem 1. ${monthNameDe(monthRef(challenge.month).month)}`
-              : "Tippe auf einen Tag, um einzutragen, was du gemacht hast."
+              : undefined
           }
         >
           <MonthGrid challenge={challenge} today={today} onSelect={setDay} />

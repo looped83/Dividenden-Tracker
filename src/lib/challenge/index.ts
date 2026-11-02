@@ -13,15 +13,18 @@ export const CHALLENGE_BONUS = 100;
 /** Sporttage pro Woche, aus denen die vorgeschlagene Zielzahl folgt. */
 const DAYS_PER_WEEK = 5;
 
+/** Alphabetisch (seit 2.68.1): So findet man eine Sportart ohne Suchen. */
 export const ACTIVITIES = [
-  { id: "spinning", label: "Spinning" },
-  { id: "joggen", label: "Joggen" },
-  { id: "kraft", label: "Krafttraining" },
-  { id: "jumping", label: "Jumping-Fitness" },
   { id: "cardio", label: "Cardio" },
   { id: "crosstrainer", label: "Crosstrainer" },
-  { id: "yoga", label: "Yoga" },
+  { id: "hiit", label: "HIIT" },
+  { id: "joggen", label: "Joggen" },
+  { id: "jumping", label: "Jumping-Fitness" },
+  { id: "kraft", label: "Krafttraining" },
   { id: "rad", label: "Radfahren" },
+  { id: "rudern", label: "Rudern" },
+  { id: "spinning", label: "Spinning" },
+  { id: "yoga", label: "Yoga" },
 ] as const;
 
 export type ActivityId = (typeof ACTIVITIES)[number]["id"];

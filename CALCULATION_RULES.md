@@ -1024,8 +1024,8 @@ Ein Experiment ohne Bezug zu den Dividenden: Sporttage in einem Kalendermonat ge
   Datensicherung: Monat (`JJJJ-MM`), Zielzahl, Aktivitäten je Tag (ISO-Datum → Liste) und
   `investedAt`. Es gibt nur eine Challenge; eine neue ersetzt die alte, „Beenden“ löscht sie.
   Unbekannte Aktivitäten und Tage außerhalb des Monats fallen beim Lesen weg.
-- **Sporttag:** ein Tag mit mindestens einer Aktivität (Spinning, Joggen, Krafttraining,
-  Jumping-Fitness, Cardio, Crosstrainer, Yoga, Radfahren). Die Stunde Bewegung ist Teil der Regel,
+- **Sporttag:** ein Tag mit mindestens einer Aktivität (Cardio, Crosstrainer, HIIT,
+  Joggen, Jumping-Fitness, Krafttraining, Radfahren, Rudern, Spinning, Yoga; alphabetisch). Die Stunde Bewegung ist Teil der Regel,
   nicht der Eingabe.
 - **Zielzahl:** beim Start frei wählbar (1 bis Monatslänge), vorbelegt mit
   round(Monatstage × 5 ÷ 7) — 31 → 22, 30 → 21, 28 → 20. Danach unveränderlich.
