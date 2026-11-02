@@ -12,9 +12,16 @@ test("schlüsselt den Depotstand auf und schaltet die Bezugsgröße um", async (
   await seedPortfolio(konto.userId);
   await page.goto("/#/depot/analyse");
 
-  for (const titel of ["Asset-Typ", "Währung", "Rhythmus", "Branche", "Land"]) {
+  for (const titel of ["Aufteilung", "Branche", "Land"]) {
     await expect(page.getByRole("heading", { name: titel })).toBeVisible();
   }
+  // Ein Ring, der Umschalter waehlt Asset-Typ, Waehrung oder Rhythmus (seit 2.65.0).
+  await expect(page.getByRole("img", { name: /Anteile nach Asset-Typ/ })).toBeVisible();
+  await page.getByRole("radio", { name: "Währung" }).click();
+  await expect(
+    page.getByRole("img", { name: /Anteile nach Ausschüttungswährung/ }),
+  ).toBeVisible();
+  await expect(page.getByRole("img", { name: /Anteile nach Asset-Typ/ })).toHaveCount(0);
   // Die Laender stehen direkt da: Allianz, Münchener Rück und BASF mit
   // 11.100 € von 57.300 € Depotwert.
   const land = page.getByRole("list", { name: /Anteile nach Land/ });
@@ -29,6 +36,10 @@ test("schlüsselt den Depotstand auf und schaltet die Bezugsgröße um", async (
   await expect(land.getByRole("link", { name: "Allianz" })).toBeVisible();
 
   // Der Rhythmus kennt nur ausschuettende Positionen.
+  await page.getByRole("radio", { name: "Rhythmus" }).click();
+  await expect(
+    page.getByRole("img", { name: /Anteile nach Ausschüttungsrhythmus/ }),
+  ).toBeVisible();
   await expect(page.getByText("Keine Ausschüttung")).toHaveCount(0);
 
   await page.getByRole("radio", { name: "Dividende" }).click();
