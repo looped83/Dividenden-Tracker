@@ -209,7 +209,7 @@ export function CategoryBarChart({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {(tableOrder === "desc" ? data.slice().reverse() : data).map((row) => (
+            {(tableOrder === "desc" ? data.toReversed() : data).map((row) => (
               <TableRow key={row.key}>
                 {/* Der Drill-down lag zuvor ausschliesslich auf dem Balken —
                     als `onClick`. Damit war er per Maus erreichbar und sonst
