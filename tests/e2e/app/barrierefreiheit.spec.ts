@@ -45,6 +45,7 @@ const ROUTEN = [
   { pfad: "/#/statistiken/vergleich", name: "Statistik Vergleich", warten: "Statistik" },
   { pfad: "/#/ziele", name: "Ziele", warten: "Ziele" },
   { pfad: "/#/fortschritt", name: "Fortschritt", warten: "Fortschritt" },
+  { pfad: "/#/challenge", name: "Challenge", warten: "Challenge" },
   { pfad: "/#/einstellungen", name: "Einstellungen", warten: "Einstellungen" },
   { pfad: "/#/einstellungen/depots", name: "Depots", warten: "Einstellungen" },
   { pfad: "/#/einstellungen/importe", name: "Importe", warten: "Einstellungen" },

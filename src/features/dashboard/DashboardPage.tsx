@@ -20,6 +20,7 @@ import { RecentPayments } from "./RecentPayments";
 import { HistoricalOverview } from "./HistoricalOverview";
 import { MilestoneCard } from "./MilestoneCard";
 import { MonthRecapCard } from "./MonthRecapCard";
+import { ChallengeQuickRow } from "@/features/challenge/ChallengeQuickRow";
 import { buildEntityMap, describeSelection } from "./format";
 import { usePaymentComposer } from "@/features/payments/PaymentComposer";
 
@@ -177,8 +178,15 @@ export function DashboardPage() {
               <MilestoneCard payments={payments} today={today} />
             </div>
           )}
-          <div className="order-1">
+          <div className="order-1 space-y-4">
             <DashboardHero payments={payments} selection={selection} today={today} />
+            {/* Schnell-Tipp der Challenge (seit 2.67.0): eine schmale Zeile
+                unter dem Kopf, nur im laufenden Challenge-Monat. */}
+            {(selection === "all" || selection === today.year) && (
+              <div className="empty:hidden">
+                <ChallengeQuickRow today={today} />
+              </div>
+            )}
           </div>
           <div className="order-4">
             <RecentPayments payments={payments} securities={securities} depots={depots} />

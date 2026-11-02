@@ -115,6 +115,7 @@ Feldnamen wie „Zahlungsdatum" und „Zahlungsart" bleiben, ebenso die Adresse 
 | **Importe** | Import-Assistent, Importhistorie, Rollback |
 | **Ziele** | Persönliche Jahres- und Langfristziele |
 | **Fortschritt** | Welche Fixkosten die Dividenden bezahlen, Meilensteine (seit 2.12.0) |
+| **Challenge** | Experiment: Sporttage im Monat, bei Erfolg einmalig 100 € Extra-Invest (seit 2.67.0) |
 | **Datensicherung** | Export, Backup, Restore, Backup-Status |
 | **Einstellungen** | Profil, Basiswährung, Darstellung, Sicherheit |
 
@@ -403,6 +404,18 @@ nächste Meilensteine und offene Fixkosten einen voraussichtlichen Monat aus dem
 (§15.4), und ein neu erreichter Meilenstein steht 30 Tage lang über dem Kopf der Übersicht
 (ausblendbar).
 
+
+### 5.7b Challenge (seit 2.67.0, Experiment)
+
+Eine persönliche Sport-Challenge über einen Kalendermonat: Wer die Zielzahl an Sporttagen (ab einer
+Stunde Bewegung) erreicht, schaltet einmalig 100 € zum Extra-Investieren frei. Start mit Monat
+(dieser oder nächster) und Zielzahl, vorbelegt mit fünf Tagen je Woche; danach gesperrt. Seite:
+Kennzahlkopf „Sporttage“ mit Einordnung, Raster Mo–So zum Eintragen (Tipp auf den Tag, Aktivitäten
+als Pillen), Rangbalken der Aktivitäten, ab der Zielzahl die Bonus-Fläche mit „Bonus investieren“
+(Planer › Nachkauf mit 100 € vorbelegt) und „Als investiert markieren“. Auf der Übersicht eine
+schmale Zeile mit „Heute eintragen“, solange die Challenge läuft; im Monatsabschluss eine Zeile zum
+Ergebnis. Gespeichert am Profil (`profiles.sport_challenge`), nicht in der Datensicherung; eine
+neue Challenge ersetzt die alte. Rechenregeln: CALCULATION_RULES.md §18.
 ### 5.8 Datensicherung
 
 JSON-Vollexport (Restore-fähig, versioniert), CSV- und Excel-Export, Restore mit Vorschau und
