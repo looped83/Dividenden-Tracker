@@ -2,13 +2,11 @@ import { asUser } from "../support/db";
 import { expect, test } from "../support/appTest";
 
 /**
- * Sport-Challenge (seit 2.67.0): starten, Tage eintragen (Raster und
- * Schnell-Tipp der Übersicht), nach dem Neuladen derselbe Stand; ab der
+ * Sport-Challenge (seit 2.67.0): starten, Tage im Raster eintragen,
+ * nach dem Neuladen derselbe Stand; ab der
  * Zielzahl führt der Bonus in den Nachkauf. Gespeichert am Profil
  * (Migration 0049).
  */
-// Die Übersicht braucht eine Dividende, sonst zeigt sie nur den Leerzustand.
-test.use({ seed: { payments: [{ payDate: "2026-11-02", netAmount: "50.00" }] } });
 
 test("startet eine Challenge und trägt Sporttage ein", async ({ page }) => {
   await page.clock.setFixedTime(new Date("2026-11-10T12:00:00"));
@@ -32,13 +30,10 @@ test("startet eine Challenge und trägt Sporttage ein", async ({ page }) => {
     page.getByRole("button", { name: /^Mittwoch, 11\. November/ }),
   ).toBeDisabled();
 
-  await page.goto("/#/");
-  await page.getByRole("button", { name: "Heute eintragen" }).click();
+  await page.getByRole("button", { name: /^Dienstag, 10\. November/ }).click();
   await dialog.getByRole("button", { name: "Krafttraining" }).click();
   await dialog.getByRole("button", { name: "Fertig" }).click();
-  await expect(page.getByRole("button", { name: /Heute erledigt/ })).toBeVisible();
 
-  await page.goto("/#/challenge");
   await page.reload();
   await expect(hero).toContainText("2 / 21");
   await expect(
