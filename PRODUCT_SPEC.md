@@ -412,9 +412,8 @@ Stunde Bewegung) erreicht, schaltet einmalig 100 € zum Extra-Investieren frei.
 (dieser oder nächster) und Zielzahl, vorbelegt mit fünf Tagen je Woche; danach gesperrt. Seite:
 Kennzahlkopf „Sporttage“ mit Einordnung, Raster Mo–So zum Eintragen (Tipp auf den Tag, Aktivitäten
 als Pillen), Rangbalken der Aktivitäten, ab der Zielzahl die Bonus-Fläche mit „Bonus investieren“
-(Planer › Nachkauf mit 100 € vorbelegt) und „Als investiert markieren“. Auf der Übersicht eine
-schmale Zeile mit „Heute eintragen“, solange die Challenge läuft; im Monatsabschluss eine Zeile zum
-Ergebnis. Gespeichert am Profil (`profiles.sport_challenge`), nicht in der Datensicherung; eine
+(Planer › Nachkauf mit 100 € vorbelegt) und „Als investiert markieren“. Im Monatsabschluss eine
+Zeile zum Ergebnis; die Zeile „Heute eintragen“ auf der Übersicht ist seit 2.69.0 entfallen. Gespeichert am Profil (`profiles.sport_challenge`), nicht in der Datensicherung; eine
 neue Challenge ersetzt die alte. Rechenregeln: CALCULATION_RULES.md §18.
 Seit 2.68.0 ein Bonus-Konto unter der Challenge: alle investierten Bonusse zusammen und was sie
 netto an Dividende bringen, heute und in 10 bzw. 20 Jahren, gerechnet wie der Schneeball (§18.1).
