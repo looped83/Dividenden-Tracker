@@ -9,6 +9,7 @@ export const Dialog = DialogPrimitive.Root;
 export function DialogContent({
   className,
   children,
+  onEscapeKeyDown,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content>) {
   return (
@@ -47,6 +48,17 @@ export function DialogContent({
           "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-bottom-2 motion-reduce:animate-none",
           className,
         )}
+        // Escape in einem aufgeklappten Suchfeld (ui/combobox.tsx) schliesst
+        // nur dessen Liste. Radix hoert schon in der Capture-Phase am
+        // Dokument mit und haette sonst den ganzen Dialog samt Eingaben
+        // verworfen.
+        onEscapeKeyDown={(event) => {
+          const target = event.target instanceof Element ? event.target : null;
+          if (target?.closest('[role="combobox"][aria-expanded="true"]')) {
+            event.preventDefault();
+          }
+          onEscapeKeyDown?.(event);
+        }}
         {...props}
       >
         {children}

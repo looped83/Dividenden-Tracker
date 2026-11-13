@@ -58,7 +58,9 @@ export function Combobox({
 
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
-  const [activeIndex, setActiveIndex] = React.useState(0);
+  // -1 = keine Zeile markiert. Beim Tippen bleibt das so, damit der erste
+  // Pfeil nach unten den **ersten** Vorschlag markiert — nicht den zweiten.
+  const [activeIndex, setActiveIndex] = React.useState(-1);
   const rootRef = React.useRef<HTMLDivElement>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const listRef = React.useRef<HTMLUListElement>(null);
@@ -87,7 +89,7 @@ export function Combobox({
 
   // Aktive Zeile in Sicht halten (Tastaturbedienung bei langen Listen).
   React.useEffect(() => {
-    if (!open) return;
+    if (!open || activeIndex < 0) return;
     listRef.current?.children[activeIndex]?.scrollIntoView({ block: "nearest" });
   }, [activeIndex, open]);
 
@@ -103,14 +105,13 @@ export function Combobox({
     };
   }, [open]);
 
-  const openList = () => {
+  // Beim Aufklappen steht die Markierung auf der getroffenen Auswahl (sonst
+  // auf keiner Zeile). Per Pfeil geoeffnet, auf der ersten Zeile — damit
+  // Enter danach sofort uebernimmt.
+  const openList = (markFirst = false) => {
+    const selectedIndex = options.findIndex((o) => o.value === value);
     setQuery("");
-    setActiveIndex(
-      Math.max(
-        0,
-        matches.findIndex((o) => o.value === value),
-      ),
-    );
+    setActiveIndex(selectedIndex >= 0 ? selectedIndex : markFirst ? 0 : -1);
     setOpen(true);
   };
 
@@ -127,25 +128,30 @@ export function Combobox({
   const onKeyDown = (event: React.KeyboardEvent) => {
     if (!open && (event.key === "ArrowDown" || event.key === "Enter")) {
       event.preventDefault();
-      openList();
+      openList(true);
       return;
     }
     if (!open) return;
 
+    // Von „keine Zeile" (-1) aus fuehrt Pfeil nach unten zur ersten, Pfeil
+    // nach oben zur letzten Zeile; an den Enden geht es rundherum.
+    const count = matches.length;
     if (event.key === "ArrowDown") {
       event.preventDefault();
-      setActiveIndex((i) => (matches.length === 0 ? 0 : (i + 1) % matches.length));
+      setActiveIndex((i) => (count === 0 ? -1 : (i + 1) % count));
     } else if (event.key === "ArrowUp") {
       event.preventDefault();
-      setActiveIndex((i) =>
-        matches.length === 0 ? 0 : (i - 1 + matches.length) % matches.length,
-      );
+      setActiveIndex((i) => (count === 0 ? -1 : i <= 0 ? count - 1 : i - 1));
     } else if (event.key === "Enter") {
-      if (activeOption) {
-        event.preventDefault();
-        commit(activeOption);
-      }
+      // Ohne Markierung uebernimmt Enter den ersten Treffer einer Suche —
+      // wer „rea" tippt und Enter drueckt, meint Realty Income.
+      const option = activeOption ?? (query.trim() !== "" ? matches[0] : undefined);
+      // Nie das Formular abschicken, solange die Liste offen ist.
+      event.preventDefault();
+      if (option) commit(option);
     } else if (event.key === "Escape") {
+      // Nur die Liste schliessen, nicht den umgebenden Dialog (siehe
+      // ui/dialog.tsx, onEscapeKeyDown).
       event.preventDefault();
       setOpen(false);
       setQuery("");
@@ -196,7 +202,7 @@ export function Combobox({
         onChange={(event) => {
           if (!open) setOpen(true);
           setQuery(event.target.value);
-          setActiveIndex(0);
+          setActiveIndex(-1);
         }}
         // Bewusst **nicht** `onFocus`: Fokus allein ist keine Absicht. Wer das
         // Formular betritt oder mit der Tabulatortaste durchgeht, stand sonst
@@ -266,7 +272,9 @@ export function Combobox({
                   }}
                   className={cn(
                     "flex min-h-11 cursor-pointer items-center gap-2 px-3 py-2 text-base sm:text-sm",
-                    isActive && "bg-muted",
+                    // `accent` statt `muted`: Im Dunkelmodus war die
+                    // markierte Zeile vom Listenhintergrund kaum zu trennen.
+                    isActive && "bg-accent text-accent-foreground",
                   )}
                 >
                   <Check
