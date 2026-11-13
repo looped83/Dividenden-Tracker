@@ -39,6 +39,30 @@ test("erfasst eine Dividende und zeigt sie in Liste und Übersicht", async ({
   await expect(page.getByText("123,45").first()).toBeVisible();
 });
 
+// Am Desktop ohne Maus: tippen, Pfeil nach unten, Enter. Escape schliesst nur
+// die Vorschlagsliste, nicht den Dialog.
+test("waehlt das Asset per Tastatur", async ({ page, konto }) => {
+  await page.goto("/#/eingaenge/neu");
+  const asset = page.getByRole("combobox", { name: "Asset" });
+  await expect(asset).toBeFocused();
+
+  await page.keyboard.type("Muster");
+  await page.keyboard.press("Escape");
+  await expect(asset).toHaveAttribute("aria-expanded", "false");
+  await expect(page.getByRole("heading", { name: "Neue Dividende" })).toBeVisible();
+
+  await page.keyboard.type("Muster");
+  await page.keyboard.press("ArrowDown");
+  await expect(page.getByRole("option", { name: konto.securityName })).toHaveClass(
+    /bg-accent/,
+  );
+  await page.keyboard.press("Enter");
+
+  await expect(asset).toHaveValue(konto.securityName);
+  // Enter hat nur ausgewaehlt, nicht das Formular abgeschickt.
+  await expect(page.getByText(/ist erforderlich/)).toHaveCount(0);
+});
+
 test("weist unvollständige Eingaben zurück, statt sie zu speichern", async ({ page }) => {
   await page.goto("/#/eingaenge/neu");
   await page.getByRole("button", { name: "Speichern" }).click();

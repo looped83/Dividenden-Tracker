@@ -95,6 +95,59 @@ describe("Combobox", () => {
     expect(field).toHaveAttribute("aria-expanded", "false");
   });
 
+  // Am Desktop: tippen, Pfeil nach unten markiert den **ersten** Vorschlag,
+  // Enter uebernimmt ihn. Frueher war die erste Zeile beim Tippen schon
+  // vormarkiert, der Pfeil sprang damit auf die zweite.
+  it("markiert mit Pfeil nach unten den ersten Treffer, Enter uebernimmt ihn", async () => {
+    const user = userEvent.setup();
+    const { field, onChange } = renderCombobox();
+
+    await user.tab();
+    await user.keyboard("a");
+    expect(field).not.toHaveAttribute("aria-activedescendant");
+
+    await user.keyboard("{ArrowDown}");
+    expect(field).toHaveAttribute("aria-activedescendant", "test-combobox-option-1");
+
+    await user.keyboard("{ArrowDown}");
+    expect(field).toHaveAttribute("aria-activedescendant", "test-combobox-option-2");
+
+    await user.keyboard("{Enter}");
+    expect(onChange).toHaveBeenCalledWith("2");
+    expect(field).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("springt mit Pfeil nach oben ohne Markierung auf den letzten Treffer", async () => {
+    const user = userEvent.setup();
+    const { field } = renderCombobox();
+
+    await user.tab();
+    await user.keyboard("a{ArrowUp}");
+
+    expect(field).toHaveAttribute("aria-activedescendant", "test-combobox-option-2");
+  });
+
+  it("uebernimmt mit Enter ohne Markierung den ersten Treffer der Suche", async () => {
+    const user = userEvent.setup();
+    const { onChange } = renderCombobox();
+
+    await user.tab();
+    await user.keyboard("alv{Enter}");
+
+    expect(onChange).toHaveBeenCalledWith("2");
+  });
+
+  it("schliesst mit Escape die Liste, ohne etwas zu uebernehmen", async () => {
+    const user = userEvent.setup();
+    const { field, onChange } = renderCombobox();
+
+    await user.tab();
+    await user.keyboard("a{ArrowDown}{Escape}");
+
+    expect(field).toHaveAttribute("aria-expanded", "false");
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
   it("zeigt geschlossen die getroffene Auswahl", () => {
     const { field } = renderCombobox("2");
 
