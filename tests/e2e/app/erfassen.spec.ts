@@ -53,7 +53,9 @@ test("waehlt das Asset per Tastatur", async ({ page, konto }) => {
 
   await page.keyboard.type("Muster");
   await page.keyboard.press("ArrowDown");
-  await expect(page.getByRole("option", { name: konto.securityName })).toHaveClass(/bg-accent/);
+  await expect(page.getByRole("option", { name: konto.securityName })).toHaveClass(
+    /bg-accent/,
+  );
   await page.keyboard.press("Enter");
 
   await expect(asset).toHaveValue(konto.securityName);
